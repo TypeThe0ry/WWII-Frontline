@@ -25,9 +25,13 @@ class Item:
     reps: int = 5
     protocol: str = ""
     series: bool = False
+    dists: tuple[int, ...] = ()
 
     def rows(self) -> list[tuple[str, str]]:
-        """(row id, subject id) pairs: weapon items get the `.weapon_id` suffix (8.2)."""
+        """(row id, subject id) pairs: weapon items get the `.weapon_id` suffix (8.2); items measured at
+        several distances (H-01: near / mid / far) get a further `@{d}m` suffix, one row per distance."""
+        if self.dists:
+            return [(f"{self.id}.{s}@{d}m", s) for s in self.subjects for d in self.dists]
         if not self.subjects:
             return [(self.id, "")]
         if self.subjects == (ROLE,):
@@ -68,21 +72,21 @@ M0_ITEMS: tuple[Item, ...] = (
     Item("W-13", W, "栓动单次循环时间", "秒", "M-FRM", "S-RANGE", "weapons/{w}.json:bolt.cycle_s", "timing", KAR, 5,
          "开火 -> 上膛完成 -> 可再开火"),
     Item("W-15", W, "后坐模式：竖直（前10发）", "度/发", "M-TPL;M-ANG", "S-RANGE", "weapons/{w}.json:recoil.pattern_pitch_deg[]", "angle", BOTH, 10,
-         "固定远景地物，腰射连发，n>=10 次；先做 FOV 标定", True),
+         "固定远景地物，腰射连发，n>=10 次；先做 FOV 标定；记录每发视角竖直位移（度）", True),
     Item("W-16", W, "后坐模式：水平（前10发）", "度/发", "M-TPL;M-ANG", "S-RANGE", "weapons/{w}.json:recoil.pattern_yaw_deg[]", "angle", BOTH, 10,
-         "同 W-15", True),
+         "同 W-15；统计量 = 每发水平位移绝对值的中位数（度），带符号序列存 series", True),
     Item("W-17", W, "后坐恢复：停火后回正时间与方式", "秒", "M-TPL;M-FRM", "S-RANGE", "weapons/{w}.json:recoil.recovery_s", "timing", BOTH, 5,
          "单发/连发后视角回正曲线"),
     Item("W-18", W, "ADS 与腰射后坐倍率", "比值", "M-TPL", "S-RANGE", "weapons/{w}.json:recoil.ads_mult", "ratio", BOTH, 10,
          "同一武器腰射 vs 开镜各 n>=10"),
     Item("W-19", W, "腰射扩散", "度", "M-STAT", "S-RANGE", "weapons/{w}.json:spread.hip_deg", "stat", BOTH, 30,
-         "固定靶，>= 30 发弹着点，转角度；每发间隔足够使后坐/扩散恢复", False),
+         "固定靶，>= 30 发弹着点，转角度；每发间隔足够使后坐/扩散恢复。统计量 = 弹着点相对瞄准点的角偏差中位数（P95 记在备注）", False),
     Item("W-20", W, "开镜扩散（站/蹲/趴）", "度", "M-STAT", "S-RANGE", "weapons/{w}.json:spread.ads_deg", "stat", BOTH, 30,
          "同 W-19，开镜"),
-    Item("W-21", W, "扩散随移动/姿态/连射的增长与恢复", "度", "M-STAT;M-FRM", "S-RANGE", "weapons/{w}.json:spread.move_mult", "stat", BOTH, 30,
-         "静止/走/跑 x 站/蹲 各一组", True),
+    Item("W-21", W, "扩散随移动/姿态的增长倍率（跑动/静止，中位角偏差之比）", "比值", "M-STAT;M-FRM", "S-RANGE", "weapons/{w}.json:spread.move_mult", "stat", BOTH, 30,
+         "静止/走/跑 x 站/蹲 各一组；比值 = 跑动中位角偏差 / 静止中位角偏差，走/蹲比值与恢复时间记在备注", True),
     Item("W-22", W, "弹头速度（曳光飞行时间法，>= 200 m）", "米/秒", "M-CAL;M-FRM", "S-RANGE", "weapons/{w}.json:ballistics.muzzle_velocity_mps", "speed", BOTH, 5,
-         "枪口火光首帧 -> 命中靶标首帧，>= 200 m"),
+         "枪口火光首帧 -> 命中靶标首帧，>= 200 m；记录 v = d / t（飞行平均速度，非初速），与我方同定义对比"),
     Item("W-23", W, "下坠：100 m 落点偏移", "米", "M-CAL-F", "S-RANGE", "weapons/{w}.json:ballistics.drop_table_m[100]", "distance", BOTH, 5,
          "固定瞄准基准，带垂直刻度的靶"),
     Item("W-24", W, "下坠：200 m 落点偏移", "米", "M-CAL-F", "S-RANGE", "weapons/{w}.json:ballistics.drop_table_m[200]", "distance", BOTH, 5, "同 W-23"),
@@ -113,7 +117,7 @@ M0_ITEMS: tuple[Item, ...] = (
     Item("M-24", M, "加速时间（静止->95 % 稳定速度）", "秒", "M-TPL;M-CAL", "S-FIELD", "movement.json:accel.to_run_s", "timing", (ROLE,), 5, "从静止直线起步，帧级位移"),
     Item("M-25", M, "减速时间与滑行距离", "秒", "M-TPL;M-CAL", "S-FIELD", "movement.json:accel.stop_s", "timing", (ROLE,), 5, "稳定速度下松键"),
     Item("M-26", M, "转向惯性：180 度反向时间", "秒", "M-TPL", "S-FIELD", "movement.json:accel.reverse_s", "timing", (ROLE,), 5, "稳定前进时瞬间反向"),
-    Item("H-01", H, "致死发数（躯干，近/中/远）", "发", "M-STAT", "S-DUMMY", "weapons/{w}.json:damage.shots_to_kill[dist]", "count", BOTH, 10, "近/中/远至少各一个距离，每距离 n>=10"),
+    Item("H-01", H, "致死发数（躯干，近/中/远）", "发", "M-STAT", "S-DUMMY", "weapons/{w}.json:damage.shots_to_kill[dist]", "count", BOTH, 10, "近 50 m / 中 150 m / 远 300 m 三个距离各一行（行 ID 带 @50m/@150m/@300m），每距离 n>=10", dists=(50, 150, 300)),
     Item("H-02", H, "头部致死发数", "发", "M-STAT", "S-DUMMY", "weapons/{w}.json:damage.headshot_stk", "count", BOTH, 10, "同 H-01，瞄准头部"),
     Item("H-03", H, "四肢致死发数/伤害倍率", "发", "M-STAT", "S-DUMMY", "weapons/{w}.json:damage.limb_mult", "count", BOTH, 10, "同 H-01，瞄准四肢"),
 )

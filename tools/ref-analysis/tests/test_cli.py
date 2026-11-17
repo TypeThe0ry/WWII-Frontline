@@ -48,7 +48,7 @@ def test_status_gate_fails_while_batch_incomplete(capsys, tmp_path, monkeypatch)
     record.write_summary(tmp_path / "summary.csv", [])
     monkeypatch.setenv("REF_MEASUREMENTS_DIR", str(tmp_path))
     code, out = run(capsys, "status")
-    assert code == 1 and "74 rows" in out and "74 missing" in out
+    assert code == 1 and "78 rows" in out and "78 missing" in out
     code, out = run(capsys, "validate")
     assert code == 0 and "25 columns" in out
 
@@ -73,3 +73,43 @@ def test_status_gate_passes_when_every_row_is_measured_with_a_record(capsys, tmp
     record.write_summary(tmp_path / "summary.csv", rows)
     code, out = run(capsys, "status")
     assert code == 1 and "1 measured but not pass" in out
+
+
+def test_record_command_writes_record_and_row_and_is_idempotent(capsys, tmp_path, monkeypatch):
+    from ref_analysis import record
+    monkeypatch.setenv("REF_MEASUREMENTS_DIR", str(tmp_path))
+    record.write_summary(tmp_path / "summary.csv", [])
+    spec = {
+        "row_id": "W-03.us_m1_garand", "ref_version": "synthetic-0", "date": "2026-11-17", "fps": 120,
+        "capture": "120 fps / 1920x1080 / 80 Mbps", "cross_validation": "无第二种方法",
+        "reps": [{"file": f"synthetic_r{i}.mkv", "value": v, "start_frame": 10, "end_frame": 10 + int(v * 120)}
+                 for i, v in enumerate([2.80, 2.82, 2.78, 2.81, 2.79, 9.9], start=1)],
+        "notes": ["synthetic"],
+    }
+    spec["reps"][5].update(excluded=True, reason="按键失误，换弹被打断")
+    sp = tmp_path / "spec.json"
+    sp.write_text(json.dumps(spec), encoding="utf-8")
+    code, out = run(capsys, "record", str(sp))
+    assert code == 0 and "W-03.us_m1_garand: measured" in out
+    row = record.read_summary(tmp_path / "summary.csv")[0]
+    assert row["n"] == "5" and float(row["median"]) == 2.8 and row["unit"] == "秒" and row["confidence"] == "B"
+    assert float(row["uncertainty"]) == pytest.approx(max(0.02, 1 / 120))
+    txt = (tmp_path / "W-03.us_m1_garand.md").read_text(encoding="utf-8")
+    assert "| r06 |" in txt and "按键失误" in txt and "是" in txt
+    before = (tmp_path / "summary.csv").read_text(encoding="utf-8")
+    run(capsys, "record", str(sp))
+    assert (tmp_path / "summary.csv").read_text(encoding="utf-8") == before
+    # excluded repetitions need a reason; unknown rows are refused; infeasible rows carry no numbers
+    spec["reps"][5]["reason"] = ""
+    sp.write_text(json.dumps(spec), encoding="utf-8")
+    with pytest.raises(record.RecordError):
+        cli.main(["record", str(sp)])
+    sp.write_text(json.dumps({**spec, "row_id": "W-99"}), encoding="utf-8")
+    with pytest.raises(record.RecordError):
+        cli.main(["record", str(sp)])
+    inf = {"row_id": "M-17", "ref_version": "synthetic-0", "date": "2026-11-17", "fps": 120, "infeasible": True,
+           "notes": ["无可测翻越"]}
+    sp.write_text(json.dumps(inf), encoding="utf-8")
+    code, out = run(capsys, "record", str(sp))
+    rows = {r["id"]: r for r in record.read_summary(tmp_path / "summary.csv")}
+    assert rows["M-17"]["status"] == "infeasible" and rows["M-17"]["confidence"] == "D" and rows["M-17"]["median"] == ""

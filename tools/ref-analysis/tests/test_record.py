@@ -135,8 +135,9 @@ def test_m0_catalogue_matches_doc_9_1():
 
 def test_catalogue_rows_unique_and_weapon_suffixed():
     rows = [r for _, r, _ in all_rows()]
-    assert len(rows) == len(set(rows)) == 74
+    assert len(rows) == len(set(rows)) == 78
     assert "W-13.ger_kar98k" in rows and "W-13.us_m1_garand" not in rows
+    assert "H-01.us_m1_garand@50m" in rows and "H-01.ger_kar98k@300m" in rows and "H-01.us_m1_garand" not in rows
     assert "W-02.us_m1_garand" in rows and "M-01.rifleman" not in rows and "M-01" in rows
 
 
@@ -145,18 +146,47 @@ def test_own_fill_compares_with_7_3_tolerances(tmp_path):
     p = tmp_path / "summary.csv"
     record.write_summary(p, [])
     record.upsert_summary_row(p, _row(
-        "H-01.us_m1_garand", median=2, min=2, max=2, n=10, uncertainty=0, unit="发"))
+        "H-01.us_m1_garand@50m", median=2, min=2, max=2, n=10, uncertainty=0, unit="发"))
     own = tmp_path / "own.json"
     own.write_text(json.dumps({"entries": [
-        {"id": "H-01.us_m1_garand", "unit": "发", "median": 2, "min": 2, "max": 2, "n": 1, "data_value": 2.0}]}))
+        {"id": "H-01.us_m1_garand@50m", "unit": "发", "median": 2, "min": 2, "max": 2, "n": 1, "data_value": 2.0}]}))
     assert fill_own(p, own) == 1
     r = record.read_summary(p)[0]
     assert r["pass"] == "yes" and float(r["own_median"]) == 2.0
-    own.write_text(json.dumps([{"id": "H-01.us_m1_garand", "unit": "发", "median": 3, "min": 3, "max": 3, "n": 1}]))
+    own.write_text(json.dumps([{"id": "H-01.us_m1_garand@50m", "unit": "发", "median": 3, "min": 3, "max": 3, "n": 1}]))
     fill_own(p, own)
     assert record.read_summary(p)[0]["pass"] == "no"      # shots to kill must be exactly equal
-    own.write_text(json.dumps([{"id": "H-01.us_m1_garand", "unit": "秒", "median": 2}]))
+    own.write_text(json.dumps([{"id": "H-01.us_m1_garand@50m", "unit": "秒", "median": 2}]))
     with pytest.raises(record.RecordError):
         fill_own(p, own)
     md = own_table_md([{"id": "A", "unit": "m", "median": None, "notes": "x|y"}])
     assert "不可测" in md and "x/y" in md
+
+
+def test_own_json_covers_every_catalogue_row_and_feeds_summary(tmp_path):
+    """Integration with `cargo test -p frontline-sim --test own_remeasure` output (docs/measurements/own_m0.json):
+    every M0 row has an own entry (a number, or an explicit 'unavailable' with a reason), units agree with the
+    catalogue, and the numbers flow into summary.csv through own-fill."""
+    import json
+    own_path = REPO / "docs" / "measurements" / "own_m0.json"
+    if not own_path.exists():
+        pytest.skip("own_m0.json not generated (run own_remeasure with OWN_REMEASURE_OUT)")
+    own = {e["id"]: e for e in json.loads(own_path.read_text(encoding="utf-8"))["entries"]}
+    missing = [rid for _, rid, _ in all_rows() if rid not in own]
+    assert not missing, missing
+    for it, rid, _ in all_rows():
+        e = own[rid]
+        if e["median"] is None:
+            assert e["notes"], rid                      # unavailable rows always say why
+        else:
+            assert e["unit"] == it.unit, (rid, e["unit"], it.unit)
+    p = tmp_path / "summary.csv"
+    record.write_summary(p, [])
+    it, sid = by_id()["M-02"]
+    st = stats.summarize([4.4, 4.41, 4.39, 4.4, 4.4])
+    record.upsert_summary_row(p, record.row_from_stats(
+        it, "M-02", sid, st, fps=120, method="M-CAL", scene="S-FIELD", ref_version="synthetic",
+        date="2026-11-17", confidence="B"))
+    assert fill_own(p, own_path) == 1
+    r = record.read_summary(p)[0]
+    assert r["pass"] == "yes" and abs(float(r["own_median"]) - 4.4) < 0.01 and r["tolerance_pct"] != ""

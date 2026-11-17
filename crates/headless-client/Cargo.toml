@@ -1,6 +1,6 @@
 [package]
 name = "frontline-headless-client"
-description = "Frontline headless-client (M0-001 skeleton)"
+description = "Frontline headless-client: render-free client for load tests (M0-027)"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -10,6 +10,23 @@ publish.workspace = true
 [lints]
 workspace = true
 
+[lib]
+name = "frontline_headless"
+path = "src/lib.rs"
+
+[[bin]]
+name = "headless-client"
+path = "src/main.rs"
+
 [dependencies]
-frontline-sim = { path = "../sim" }
+frontline-sim = { path = "../sim", features = ["client-predict"] }
 frontline-protocol = { path = "../protocol" }
+tokio = { version = "1", default-features = false, features = ["rt-multi-thread", "net", "io-util", "signal", "macros", "time", "sync"] }
+clap = { version = "4", features = ["derive"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio-tungstenite = "0.26"
+futures-util = "0.3.34"
+bytes = "1.12.1"
+arrayvec = { version = "0.7", default-features = false }
+wtransport = { version = "=0.7.2", features = ["quinn"] }

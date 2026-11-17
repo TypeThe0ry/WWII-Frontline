@@ -246,3 +246,23 @@ cargo test -p frontline-server --test bots_soak --test bots_validation
 cargo test --release -p frontline-server --test bots_soak -- --ignored --nocapture   # 5 min soak (FRONTLINE_SOAK_SECS / FRONTLINE_SOAK_BOTS)
 cargo bench -p frontline-bots --bench think                     # think_10 / think_60 / think_100 / path_query -> reports/baselines/bots-m0.json
 ```
+
+## Local demo / remote preview
+
+Server plus a Vite dev server whose `/game-ws` path proxies to the game server's WebSocket port, so a preview that
+forwards only the page port (TCP, no UDP) can still play. `?server=same` (also the default when the page is not opened
+from localhost / 127.0.0.1) connects to `<page origin>/game-ws` over WebSocket only (no WebTransport attempt).
+
+```sh
+PYTHONPATH=tools/map-pipeline python3 -m map_pipeline m0 --seed 1 --out data/maps/m0   # terrain (skip if already generated)
+cargo build --release -p frontline-server
+target/release/frontline-server --bots 10 --ws-port 7000                               # WebSocket only
+pnpm -C client sync-map                                                                 # terrain + collision + wasm into client/public
+pnpm -C client dev --host 0.0.0.0 --port 5173                                           # FRONTLINE_WS_TARGET=ws://host:port overrides the proxy target
+```
+
+Recommended URLs: `/?server=same&scene=vegetation&debug=1` (terrain + vegetation; software rendering is slow, 1-4 fps) and the
+light `/?server=same&scene=empty&debug=1`. Add `&renderer=webgl2` to force WebGL2.
+
+Keys (defaults from `client/src/input/keymap.ts`; click the canvas for pointer lock): W/A/S/D move, mouse look, Left Shift
+sprint (hold), C crouch, Space jump, left mouse fire, right mouse aim, R reload. Walk is unbound by default (debug: hold CapsLock).

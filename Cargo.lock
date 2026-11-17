@@ -723,8 +723,16 @@ dependencies = [
 name = "frontline-headless-client"
 version = "0.0.0"
 dependencies = [
+ "bytes",
+ "clap",
  "frontline-protocol",
  "frontline-sim",
+ "futures-util",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tokio-tungstenite",
+ "wtransport",
 ]
 
 [[package]]

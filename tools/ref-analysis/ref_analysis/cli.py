@@ -150,6 +150,17 @@ def cmd_validate(a):
     return 0
 
 
+def cmd_record(a):
+    from .record import build_from_spec
+    spec = json.loads(Path(a.spec).read_text(encoding="utf-8"))
+    specs = spec if isinstance(spec, list) else [spec]
+    for sp in specs:
+        path, row = build_from_spec(sp, _meas())
+        print(f"{row['id']}: {row['status']} median={row.get('median') or '-'} n={row.get('n') or '-'} "
+              f"confidence={row['confidence']} -> {path.name}")
+    return 0
+
+
 def cmd_own_fill(a):
     n = fill_own(_meas() / "summary.csv", a.own)
     print(f"own-fill: {n} rows updated")
@@ -222,6 +233,8 @@ def build_parser() -> argparse.ArgumentParser:
     s = add("status", cmd_status, help="M0 batch completeness gate (exit 1 while rows are missing)")
     s.add_argument("-v", "--verbose", action="store_true")
     add("validate", cmd_validate, help="validate docs/measurements/summary.csv (25 columns, enums)")
+    s = add("record", cmd_record, help="write {ID}.md + summary.csv row from a JSON spec (one object or a list)")
+    s.add_argument("spec")
     s = add("own-fill", cmd_own_fill, help="fill own_* / pass columns from own_remeasure JSON")
     s.add_argument("own")
     s = add("own-table", cmd_own_table, help="markdown table of our own numbers")

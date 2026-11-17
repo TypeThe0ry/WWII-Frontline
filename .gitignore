@@ -32,3 +32,7 @@ client/playwright-report/
 /dev-cert/
 dev-cert*.pem
 dev-key*.pem
+
+# M0-032: private analysis scratch (frames, extracted audio) — recordings themselves live in raw/ or ref-captures/
+docs/measurements/frames/
+docs/measurements/tmp/

@@ -225,3 +225,68 @@ def row_from_stats(item, row_id: str, subject: str, st, *, fps: int | None, meth
         "status": status, "public_source_agrees": public, "data_field": data_field or item.data_field,
         "data_value": "" if data_value is None else data_value, "notes": notes,
     }
+
+
+# ------------------------------------------------------------------------------ spec -> files
+
+def build_from_spec(spec: dict, meas_dir: str | Path) -> tuple[Path, dict]:
+    """One call per measurement row: JSON spec (values from the analysis commands) -> statistics ->
+    `{meas_dir}/{row_id}.md` + upserted `summary.csv` row. See docs/measurements/CAPTURE_GUIDE_M0.md.
+
+    Required keys: row_id, ref_version, date, fps, reps[{file, value, ...}] (or infeasible=true).
+    Optional: measurer, analyst, recorder, capture, fov, mouse, scene_desc, script, cross_validation (text),
+    cross_validated (bool), public (list of text), public_source_agrees, public_conflict (bool), notes (list),
+    mapped (list), frame_unc (same unit as the values), data_value."""
+    from . import stats as st
+    from .items import by_id
+
+    cat = by_id()
+    rid = spec["row_id"]
+    if rid not in cat:
+        raise RecordError(f"{rid!r} is not a row of the M0 batch")
+    item, subject = cat[rid]
+    meas = Path(meas_dir)
+    fps = int(spec["fps"])
+    infeasible = bool(spec.get("infeasible", False))
+    reps = []
+    kept: list[float] = []
+    for i, r in enumerate(spec.get("reps", []), start=1):
+        excl = bool(r.get("excluded", False))
+        if excl and not r.get("reason"):
+            raise RecordError(f"{rid} r{i:02d}: an excluded repetition needs a reason (2.5)")
+        reps.append(Rep(f"r{i:02d}", r["file"], r.get("start_frame", ""), r.get("end_frame", ""),
+                        r.get("events", ""), r.get("value", ""), item.unit, excl, r.get("reason", "")))
+        if not excl and "value" in r:
+            kept.append(float(r["value"]))
+    frame_unc = float(spec.get("frame_unc", (1.0 / fps) if item.unit == "秒" else 0.0))
+    meta = {
+        "version": spec.get("ref_version"), "date": spec.get("date"), "measurer": spec.get("measurer"),
+        "analyst": spec.get("analyst"), "recorder": spec.get("recorder"), "capture": spec.get("capture"),
+        "fov": spec.get("fov"), "mouse": spec.get("mouse"), "frame_unc": f"{1000.0 / fps:.2f} ms",
+        "scene": item.scene, "scene_desc": spec.get("scene_desc"), "subject": subject or None,
+        "method": item.method, "script": spec.get("script"),
+    }
+    if infeasible:
+        rs = RecordSpec(rid, item.item, meta, reps, {}, spec.get("public", []), [], spec.get("mapped", []),
+                        ["infeasible：黑盒无法测得，改用史实/公开资料/估计（置信度 D）"] + spec.get("notes", []))
+        row = {"id": rid, "category": item.category, "item": item.item, "subject_id": subject, "unit": item.unit,
+               "fps": fps, "method": item.method, "scene": item.scene, "ref_version": spec["ref_version"],
+               "date": spec["date"], "confidence": "D", "status": "infeasible",
+               "public_source_agrees": spec.get("public_source_agrees", "na"), "data_field": item.data_field,
+               "notes": spec.get("notes", [""])[0] if spec.get("notes") else ""}
+    else:
+        s = st.summarize(kept, frame_unc=frame_unc)
+        conf = st.confidence(s.n, s.range_pct, public_conflict=bool(spec.get("public_conflict", False)),
+                             cross_validated=spec.get("cross_validated"))
+        stats_d = {"n": s.n, "median": s.median, "min": s.min, "max": s.max, "uncertainty": s.uncertainty,
+                   "unit": item.unit, "confidence": conf,
+                   "cross_validation": spec.get("cross_validation", "待测")}
+        rs = RecordSpec(rid, item.item, meta, reps, stats_d, spec.get("public", []), [], spec.get("mapped", []),
+                        spec.get("notes", []))
+        row = row_from_stats(item, rid, subject, s, fps=fps, method=item.method, scene=item.scene,
+                             ref_version=spec["ref_version"], date=spec["date"], confidence=conf,
+                             public=spec.get("public_source_agrees", "na"),
+                             data_value=spec.get("data_value"), notes=" ".join(spec.get("notes", [])).replace(",", ";"))
+    path = write_record(meas, rs)
+    upsert_summary_row(meas / "summary.csv", row)
+    return path, row

@@ -4,6 +4,9 @@
  *                         (the server's 7000/7001 defaults). Host defaults to the page's hostname.
  *   ?wtport=<n>           explicit WebTransport (UDP) port.
  *   ?transport=wt|ws|auto auto (default): WebTransport first, fall back to WebSocket.
+ *   ?server=same          same-origin WebSocket `<page origin>/game-ws` (for a dev-server / reverse-proxy that forwards only the
+ *                         page port; see vite.config.ts). Also the default when no `server` is given and the page is not served
+ *                         from localhost / 127.0.0.1. WebTransport (UDP) cannot go through such a proxy, so transport is forced to ws.
  *   ?certhash=<hash>      SHA-256 of the dev certificate (64 hex chars, or base64/base64url), M0-017.
  */
 export type TransportChoice = 'wt' | 'ws' | 'auto';
@@ -13,12 +16,19 @@ export interface NetConfig {
   wsPort: number;
   wtPort: number;
   secure: boolean;
+  /** Same-origin mode: `host:port` of the page (as in `location.host`); `wsUrl` then uses `/game-ws` on it. */
+  sameOriginHost?: string;
   transport: TransportChoice;
   /** Raw SHA-256 bytes of the pinned certificate, when `certhash` was given. */
   certHash?: Uint8Array;
 }
 
 export const DEFAULT_WS_PORT = 7000;
+export const SAME_ORIGIN_WS_PATH = '/game-ws';
+
+function isLoopbackHost(h: string): boolean {
+  return h === 'localhost' || h === '127.0.0.1' || h === '[::1]' || h === '::1';
+}
 
 export function parseCertHash(text: string): Uint8Array {
   const t = text.trim();
@@ -41,8 +51,24 @@ function parsePort(v: string, what: string): number {
 }
 
 /** `location` is only used for defaults (hostname, protocol); pass a stub in tests. */
-export function parseNetConfig(search: string, location?: { hostname: string; protocol: string }): NetConfig {
+export function parseNetConfig(
+  search: string,
+  location?: { hostname: string; protocol: string; host?: string },
+): NetConfig {
   const q = new URLSearchParams(search);
+  const serverParam = q.get('server')?.trim();
+  const same = serverParam === 'same' || (!serverParam && !!location && !isLoopbackHost(location.hostname));
+  if (same) {
+    if (!location) throw new Error('server=same needs a page location');
+    return {
+      host: location.hostname,
+      wsPort: DEFAULT_WS_PORT,
+      wtPort: DEFAULT_WS_PORT + 1,
+      secure: location.protocol === 'https:',
+      sameOriginHost: location.host || location.hostname,
+      transport: 'ws', // no UDP through a TCP-only proxy: never try WebTransport first
+    };
+  }
   let host = location?.hostname || 'localhost';
   let wsPort = DEFAULT_WS_PORT;
   const server = q.get('server');
@@ -68,6 +94,7 @@ export function parseNetConfig(search: string, location?: { hostname: string; pr
 }
 
 export function wsUrl(c: NetConfig): string {
+  if (c.sameOriginHost) return `${c.secure ? 'wss' : 'ws'}://${c.sameOriginHost}${SAME_ORIGIN_WS_PATH}`;
   return `${c.secure ? 'wss' : 'ws'}://${c.host}:${c.wsPort}/`;
 }
 
