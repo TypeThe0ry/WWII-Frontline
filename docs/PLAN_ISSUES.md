@@ -506,3 +506,17 @@
 - **受影响任务**：M1-003（读取 `lodN{_fp,_tp}.glb`、`collision.glb`、`stats.json`）、M1-005（`stats.chains[].lods[]`）、M1-006（RRRG 法线与 KTX2 转码）、M1-064。
 - **临时处理**：已按上实现。
 - **裁决（Fable 填写）**：
+
+### PI-034 CI 上两个确定性哈希与本机不一致的根因：`f32::atan2` 走平台 libm、`native.json` 数据哈希过期
+
+- **状态**：resolved（待 CI 复核）
+- **类别**：测试/运维
+- **提出者 / 日期**：用户指派的修复线程 / 2026-11-17
+- **问题**：PR 1 上 `test-rust`（`bot_input_hash_is_pinned`）与 `wasm-build`（`node-smoke.mjs` 数据哈希）在 GitHub runner 失败，本机通过。
+- **证据**：
+  1. `wasm-build`：不是平台问题。干净克隆上 `cargo run --example trace` 得到 `dataHash=17150076847956766228`，与 CI 的 wasm 值一致，而入库的 `crates/sim-wasm/tests/golden/native.json` 记的是旧值 `16955763235307373660`（该文件在 M1-002 提交时没有随 `data/` 重新生成）。用 `gen_golden` 重新生成即可。
+  2. `test-rust`：`crates/bots/src/soldier.rs` 里两处 `dir[0].atan2(dir[1])` 是 sim/bots 中仅有的未走 `libm` 的超越函数调用（其余全是 `libm::sinf/cosf/sqrtf`）。`f32::atan2` 在 Linux 上调用系统 glibc 的 `atan2f`，不同 glibc 版本/CPU 变体可差 1 ulp，进而改变机器人输入哈希（CI `0xb6050c0e229e2aa1` vs 本机 `0x6f09df7c5f721374`）。
+- **做法**：改用 `libm::atan2f`（与其余确定性代码一致）；重新生成 `native.json`。bots 金哈希**不改**（本机换 libm 后仍为 `0x6f09df7c5f721374`）。
+- **规则**：sim / bots / protocol 内禁止使用 `f32::{sin,cos,tan,atan,atan2,exp,ln,powf,...}`，一律用 `libm::*f`。
+- **受影响任务**：M0 确定性闸门（determinism / wasm-build / test-rust）。
+- **裁决（Fable 填写）**：

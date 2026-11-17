@@ -530,7 +530,7 @@ impl SoldierBrain {
         }
         match self.steer(me, goal, tick) {
             Some(dir) => {
-                self.want_yaw = dir[0].atan2(dir[1]);
+                self.want_yaw = libm::atan2f(dir[0], dir[1]);
                 self.want_pitch = 0.0;
                 dec.mv = Mv::Go { dir, sprint: true };
             }
@@ -569,7 +569,7 @@ impl SoldierBrain {
             }
             match self.steer(me, goal, tick) {
                 Some(dir) => {
-                    let heading = dir[0].atan2(dir[1]);
+                    let heading = libm::atan2f(dir[0], dir[1]);
                     // Sweep the view +-35 deg around the heading so side contacts are possible.
                     let sweep = 0.6 * libm::sinf(tick as f32 * 0.07 + f32::from(bot_id));
                     self.want_yaw = heading + sweep;
