@@ -409,3 +409,21 @@
 - **受影响任务**：M0-032（B 部分）、M0-033（验收时参考作品数值"待测"是预期状态）、M1-011/M1-013（实现后补测 4 中的项）、M4-044（版本漂移复测复用工具）。
 - **临时处理**：按此实现。
 - **裁决（Fable 填写）**：
+
+### PI-028 M0-027：headless 客户端必须做预测（任务卡"不预测"不可行）、初始同步的量化偏移、`step_overhead` 改为 release 才断言
+
+- **状态**：open
+- **类别**：接口细化 / 验收口径
+- **提出者 / 日期**：M0-027 / 2026-11-17
+- **问题 / 做法**：
+  1. 任务卡写"`pred_hash` 固定使用权威位置量化 CRC8——不预测"。服务器不发自身实体记录，客户端只有在 `pos_corr` 出现时才知道权威位置，无预测就无法给出匹配的哈希（服务器会每包都带 `pos_corr`）。做法：headless 默认复用 `sim::PredictSim` 预测并按 PI-023 对账（`crates/headless-client/src/predictor.rs`，与 TS 版同构）；报告新增 `corrections{total,snaps,around_death,tolerance_kept,...}`。
+  2. 死亡期间服务器不消费输入，预测需冻结，否则每次死亡产生数次回滚；重生是传送（≥1 m），回滚应从全新的 `PlayerAuthState::spawn` 重放而非沿用死前速度/姿态。浏览器客户端（M0-025/M1）需同样处理：死亡后停止预测、重生按初始同步处理。
+  3. 初始同步用量化的 `pos_corr`（xz 1/32 m）作起点，预测轨迹与服务器的 f32 轨迹相差 ≤1.6 cm 且永不收敛，于是约 30–50 % 的快照仍带 `pos_corr`（误差全在 5 cm 容差内、不触发回滚，实测 `tolerance_max_err_m` ≈ 0.03 m），每包多 6 B（约 +1 kbps）。可接受；若要消除，服务器端可在"容差内连续 N 次匹配"后停发，或哈希改用更粗的量化。留给 M1 对账调优。
+  4. `crates/server/tests/step_overhead.rs` 的 `hundred_players_empty_world_p99_under_1ms` 是毫秒级计时断言，debug 构建在负载高的虚机上偶发失败：现仅 release 启用（`cfg_attr(debug_assertions, ignore)`），并新增在所有构建都运行的功能性用例 `hundred_players_loop_runs_150_ticks`。
+  5. **服务器 RSS 缓慢增长（仅 WT 路径）**：30 min WT 联测（10 headless + 10 bot）服务器 RSS 11.9→17.2 MB，近似线性约 1.9 KB/s，最后 10 min 增长 7.8 %（验收 4 要求 <2 %）；同配置 WS 10 min 无增长。绝对量很小，未定位来源（疑 wtransport/quinn 每连接状态或某个无上限容器），建议 M1-067 前用 heaptrack/计数器查证；已把数据留在 reports/m0/loadtest-wt.json（`rss_samples`）。
+  6. 服务器每 IP 最多 4 个连接，同机多客户端须各绑 `127.x.y.z`（`--no-bind-spread` 可关）；服务器 `--report` 增加 `events{shots,hits,kills,headshots,spawns}`（`sim_thread::Report` 追加一个字段）以便联测报告击杀/重生。
+- **证据**：crates/headless-client/、scripts/loadtest-m0*.sh、scripts/summarize-loadtest.mjs、reports/m0/。
+- **建议方案**：按上；M1-068（netem）与 M2-049 复用 `scripts/loadtest-m0.sh`。
+- **受影响任务**：M0-025/M1-040（死亡/重生时的预测处理）、M1-068、M2-049、M0-030/033（对照基线）。
+- **临时处理**：按此实现。
+- **裁决（Fable 填写）**：

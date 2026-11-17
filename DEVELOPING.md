@@ -247,6 +247,30 @@ cargo test --release -p frontline-server --test bots_soak -- --ignored --nocaptu
 cargo bench -p frontline-bots --bench think                     # think_10 / think_60 / think_100 / path_query -> reports/baselines/bots-m0.json
 ```
 
+## Headless client and load tests (M0-027)
+
+`headless-client` (`crates/headless-client`) runs N synthetic players over the real WebSocket / WebTransport paths (30 Hz waypoint walking
+from `spawns.json` `patrol_points`, a burst every 2-6 s, the odd jump/crouch), decodes C2 snapshots, predicts with `sim::PredictSim` and
+reconciles on `pos_corr` exactly like the browser client (PI-023), and writes a JSON report. It never links `server`. The server allows 4
+connections per IP, so on loopback each client binds its own `127.x.y.z` source address (`--no-bind-spread` turns that off).
+
+```sh
+cargo build --release -p frontline-server -p frontline-headless-client
+scripts/loadtest-m0.sh --transport wt --duration 1800            # acceptance 1: 10 headless + 10 bots, writes reports/m0/loadtest-wt.json
+scripts/loadtest-m0.sh --transport ws --duration 600             # acceptance 2
+scripts/loadtest-m0-matrix.sh --duration 120                     # 10 / 20 / 100 clients, with and without bots -> reports/m0/matrix/
+cargo test -p frontline-headless-client                          # units + smoke_ws/smoke_wt (need `cargo build -p frontline-server`; FRONTLINE_REQUIRE_SERVER=1 fails instead of skipping)
+cargo test -p frontline-headless-client --test smoke -- --ignored --nocapture   # loadtest-smoke: 60 s x 3 clients, WT + WS
+target/release/headless-client --hash-only 6000 --count 5 --seed 1   # input-sequence fingerprints (equal for equal seed)
+HEADLESS_TRACE=1 target/release/headless-client ...              # print every rollback (time, error, health, ack)
+```
+
+The script starts its own server on random ports (never 7000/7001/9100), pins server and client to separate CPU pairs when `taskset` and 4
+CPUs exist, samples `/metrics` and RSS every 10 s and stops only the PIDs it started. `scripts/summarize-loadtest.mjs` merges the server's
+`--report` (exact tick percentiles, event tally), the final `/metrics` scrape (bucket upper bounds for AOI / bytes) and the headless report
+and judges the acceptance numbers. Bandwidth is reported on the line-estimate basis (payload + 58 B per packet) with payload-only next to it.
+Timing judgements are for release builds.
+
 ## Local demo / remote preview
 
 Server plus a Vite dev server whose `/game-ws` path proxies to the game server's WebSocket port, so a preview that

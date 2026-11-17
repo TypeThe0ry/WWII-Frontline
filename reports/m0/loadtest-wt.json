@@ -1,0 +1,1480 @@
+{
+  "task": "M0-027",
+  "generated_at": "2026-11-17T10:15:23.038Z",
+  "transport": "wt",
+  "count": 10,
+  "bots": 10,
+  "duration_s": 1800,
+  "warmup_s": 5,
+  "seed": 1,
+  "build": "release",
+  "host": {
+    "cpus": 4,
+    "cpu_model": "Intel(R) Xeon(R) Processor @ 2.30GHz",
+    "os": "Linux 6.18.44-fc-v553",
+    "loadavg_at_end": [
+      0.31,
+      0.23,
+      0.26
+    ],
+    "pinned": true,
+    "note": "server on CPUs 0-1 and headless client on CPUs 2-3 of the same VM (taskset); other tenants/jobs on the VM are not controlled"
+  },
+  "server": {
+    "ticks": 54087,
+    "elapsed_s": 1802.9,
+    "tick_ms": {
+      "p50": 0.655,
+      "p99": 1.215,
+      "max": 19.707,
+      "mean": 0.677
+    },
+    "tick_interval_error_ms": {
+      "p99": 0.015,
+      "max": 18.882
+    },
+    "overrun_total": 0,
+    "overrun_consecutive_max": 0,
+    "tick_skipped_slots_total": 0,
+    "input_queue_full_total": 0,
+    "aoi_encode_ms": {
+      "p99": 0.25,
+      "p50": 0.1,
+      "count": 54086,
+      "note": "bucket upper bounds of the final scrape"
+    },
+    "snapshot_bytes": {
+      "p50": 100,
+      "p99": 200,
+      "count": 360000
+    },
+    "bytes_out_per_client": [
+      {
+        "labels": {
+          "kind": "payload"
+        },
+        "p50_kbps": 16,
+        "p99_kbps": 32,
+        "count": 18000
+      },
+      {
+        "labels": {
+          "kind": "wire"
+        },
+        "p50_kbps": 32,
+        "p99_kbps": 32,
+        "count": 18000
+      }
+    ],
+    "events": {
+      "shots": 3880,
+      "hits": 874,
+      "kills": 536,
+      "headshots": 114,
+      "spawns": 536
+    },
+    "input_rejected": {
+      "duplicate": 1079850
+    },
+    "bots": 10,
+    "rss": {
+      "window_s": 600,
+      "requested_window_s": 600,
+      "server_rss_start_mb": 15.984,
+      "server_rss_end_mb": 17.227,
+      "growth_pct": 7.771,
+      "server_rss_max_mb": 17.227,
+      "samples": 181
+    }
+  },
+  "clients": {
+    "joined": 10,
+    "failed": 0,
+    "down_kbps": {
+      "p50": 21.656,
+      "p99": 26.784,
+      "max": 31.288
+    },
+    "up_kbps": {
+      "p50": 20.464,
+      "p99": 21.168,
+      "max": 21.584
+    },
+    "down_kbps_p50_worst_client": 22.184,
+    "up_kbps_p50_worst_client": 20.8,
+    "rtt_ms": {
+      "p50": 0.24927,
+      "p99": 0.616748,
+      "max": 14.710742
+    },
+    "decode_errors": 0,
+    "missing_baseline": 0,
+    "disconnects": 0,
+    "snapshots": 360000,
+    "keyframe_record_ratio": 0.806,
+    "corrections": {
+      "total": 797,
+      "snaps": 262,
+      "around_death": 724,
+      "tolerance_kept": 146737,
+      "initial_syncs": 10,
+      "unknown_acks": 0,
+      "max_err_m": 183.29473876953125,
+      "tolerance_max_err_m": 0.04992016777396202
+    },
+    "deaths_observed": 262,
+    "respawns_observed": 262,
+    "shots_fired_observed": 0,
+    "client_cpu_pct_of_one_core": 5.377
+  },
+  "reference": {
+    "arch_6_9_2_typical_down_kbps": 54,
+    "measured_down_p50_over_typical": 0.401,
+    "exceeds_2x_typical": false
+  },
+  "thresholds": {
+    "tick_p99_ms": 28,
+    "overrun_consecutive_max": 1,
+    "down_p50_kbps": 128,
+    "up_p50_kbps": 32
+  },
+  "checks": {
+    "tick_p99": {
+      "value": 1.215,
+      "limit": 28,
+      "ok": true
+    },
+    "overrun_consecutive_max": {
+      "value": 0,
+      "limit": 1,
+      "ok": true
+    },
+    "down_p50_each_client": {
+      "value": 22.184,
+      "limit": 128,
+      "ok": true
+    },
+    "up_p50_each_client": {
+      "value": 20.8,
+      "limit": 32,
+      "ok": true
+    },
+    "disconnects": {
+      "value": 0,
+      "limit": 0,
+      "ok": true
+    },
+    "decode_errors": {
+      "value": 0,
+      "limit": 0,
+      "ok": true
+    },
+    "client_cpu_pct_of_one_core": {
+      "value": 5.377,
+      "limit": 50,
+      "ok": true
+    },
+    "server_rss_growth_pct": {
+      "value": 7.771,
+      "limit": 2,
+      "ok": false,
+      "window_s": 600
+    }
+  },
+  "verdict": {
+    "all_ok": false,
+    "hard_ok": true,
+    "failed": [
+      "server_rss_growth_pct"
+    ]
+  },
+  "per_client": [
+    {
+      "id": 0,
+      "player_id": 0,
+      "team": 0,
+      "join_error": null,
+      "down_kbps": {
+        "p50": 21.568,
+        "p99": 26.848,
+        "max": 28.456
+      },
+      "up_kbps": {
+        "p50": 20.664,
+        "p99": 21.36,
+        "max": 21.584
+      },
+      "rtt_ms": {
+        "p50": 0.298999,
+        "p99": 0.6340480000000001,
+        "max": 5.519477
+      },
+      "decode_errors": 0,
+      "missing_baseline": 0,
+      "disconnects": 0,
+      "snapshots": 36000,
+      "keyframe_ratio": 0.824,
+      "corrections": {
+        "total": 43,
+        "snaps": 9,
+        "around_death": 32,
+        "tolerance_kept": 16736,
+        "initial_syncs": 1,
+        "unknown_acks": 0,
+        "max_err_m": 96.23831176757812,
+        "tolerance_max_err_m": 0.049742259085178375
+      },
+      "deaths": 9,
+      "respawns": 9
+    },
+    {
+      "id": 1,
+      "player_id": 1,
+      "team": 1,
+      "join_error": null,
+      "down_kbps": {
+        "p50": 22.184,
+        "p99": 27.304,
+        "max": 31.288
+      },
+      "up_kbps": {
+        "p50": 20.4,
+        "p99": 21,
+        "max": 21.456
+      },
+      "rtt_ms": {
+        "p50": 0.22686599999999998,
+        "p99": 0.503229,
+        "max": 14.710742
+      },
+      "decode_errors": 0,
+      "missing_baseline": 0,
+      "disconnects": 0,
+      "snapshots": 36000,
+      "keyframe_ratio": 0.803,
+      "corrections": {
+        "total": 113,
+        "snaps": 45,
+        "around_death": 98,
+        "tolerance_kept": 17522,
+        "initial_syncs": 1,
+        "unknown_acks": 0,
+        "max_err_m": 180.37777709960938,
+        "tolerance_max_err_m": 0.049887653440237045
+      },
+      "deaths": 45,
+      "respawns": 45
+    },
+    {
+      "id": 2,
+      "player_id": 2,
+      "team": 0,
+      "join_error": null,
+      "down_kbps": {
+        "p50": 21.616,
+        "p99": 26.552,
+        "max": 28.344
+      },
+      "up_kbps": {
+        "p50": 20.664,
+        "p99": 21.344,
+        "max": 21.472
+      },
+      "rtt_ms": {
+        "p50": 0.265703,
+        "p99": 0.609001,
+        "max": 3.7008829999999997
+      },
+      "decode_errors": 0,
+      "missing_baseline": 0,
+      "disconnects": 0,
+      "snapshots": 36000,
+      "keyframe_ratio": 0.83,
+      "corrections": {
+        "total": 44,
+        "snaps": 13,
+        "around_death": 29,
+        "tolerance_kept": 15930,
+        "initial_syncs": 1,
+        "unknown_acks": 0,
+        "max_err_m": 101.24266052246094,
+        "tolerance_max_err_m": 0.04992016777396202
+      },
+      "deaths": 13,
+      "respawns": 13
+    },
+    {
+      "id": 3,
+      "player_id": 3,
+      "team": 1,
+      "join_error": null,
+      "down_kbps": {
+        "p50": 21.8,
+        "p99": 26.832,
+        "max": 29
+      },
+      "up_kbps": {
+        "p50": 20.4,
+        "p99": 21.056,
+        "max": 21.416
+      },
+      "rtt_ms": {
+        "p50": 0.208623,
+        "p99": 0.5382870000000001,
+        "max": 2.4186810000000003
+      },
+      "decode_errors": 0,
+      "missing_baseline": 0,
+      "disconnects": 0,
+      "snapshots": 36000,
+      "keyframe_ratio": 0.771,
+      "corrections": {
+        "total": 160,
+        "snaps": 41,
+        "around_death": 159,
+        "tolerance_kept": 14048,
+        "initial_syncs": 1,
+        "unknown_acks": 0,
+        "max_err_m": 170.04592895507812,
+        "tolerance_max_err_m": 0.04952631890773773
+      },
+      "deaths": 41,
+      "respawns": 41
+    },
+    {
+      "id": 4,
+      "player_id": 4,
+      "team": 0,
+      "join_error": null,
+      "down_kbps": {
+        "p50": 21.432,
+        "p99": 27.192,
+        "max": 29.456
+      },
+      "up_kbps": {
+        "p50": 20.8,
+        "p99": 21.36,
+        "max": 21.584
+      },
+      "rtt_ms": {
+        "p50": 0.279827,
+        "p99": 0.6915410000000001,
+        "max": 5.888642
+      },
+      "decode_errors": 0,
+      "missing_baseline": 0,
+      "disconnects": 0,
+      "snapshots": 36000,
+      "keyframe_ratio": 0.836,
+      "corrections": {
+        "total": 45,
+        "snaps": 10,
+        "around_death": 35,
+        "tolerance_kept": 15960,
+        "initial_syncs": 1,
+        "unknown_acks": 0,
+        "max_err_m": 102.41650390625,
+        "tolerance_max_err_m": 0.04906123876571655
+      },
+      "deaths": 10,
+      "respawns": 10
+    },
+    {
+      "id": 5,
+      "player_id": 5,
+      "team": 1,
+      "join_error": null,
+      "down_kbps": {
+        "p50": 21.976,
+        "p99": 26.896,
+        "max": 29.024
+      },
+      "up_kbps": {
+        "p50": 20.4,
+        "p99": 21.016,
+        "max": 21.456
+      },
+      "rtt_ms": {
+        "p50": 0.207492,
+        "p99": 0.529455,
+        "max": 3.9709410000000003
+      },
+      "decode_errors": 0,
+      "missing_baseline": 0,
+      "disconnects": 0,
+      "snapshots": 36000,
+      "keyframe_ratio": 0.774,
+      "corrections": {
+        "total": 105,
+        "snaps": 41,
+        "around_death": 103,
+        "tolerance_kept": 12706,
+        "initial_syncs": 1,
+        "unknown_acks": 0,
+        "max_err_m": 183.29473876953125,
+        "tolerance_max_err_m": 0.04826575517654419
+      },
+      "deaths": 41,
+      "respawns": 41
+    },
+    {
+      "id": 6,
+      "player_id": 6,
+      "team": 0,
+      "join_error": null,
+      "down_kbps": {
+        "p50": 21.52,
+        "p99": 26.272,
+        "max": 27.312
+      },
+      "up_kbps": {
+        "p50": 20.648,
+        "p99": 21.32,
+        "max": 21.568
+      },
+      "rtt_ms": {
+        "p50": 0.28441,
+        "p99": 0.661392,
+        "max": 9.87507
+      },
+      "decode_errors": 0,
+      "missing_baseline": 0,
+      "disconnects": 0,
+      "snapshots": 36000,
+      "keyframe_ratio": 0.838,
+      "corrections": {
+        "total": 29,
+        "snaps": 10,
+        "around_death": 19,
+        "tolerance_kept": 13100,
+        "initial_syncs": 1,
+        "unknown_acks": 0,
+        "max_err_m": 107.9583969116211,
+        "tolerance_max_err_m": 0.04975331574678421
+      },
+      "deaths": 10,
+      "respawns": 10
+    },
+    {
+      "id": 7,
+      "player_id": 7,
+      "team": 1,
+      "join_error": null,
+      "down_kbps": {
+        "p50": 22.16,
+        "p99": 26.736,
+        "max": 28.376
+      },
+      "up_kbps": {
+        "p50": 20.4,
+        "p99": 20.984,
+        "max": 21.456
+      },
+      "rtt_ms": {
+        "p50": 0.239465,
+        "p99": 0.605348,
+        "max": 2.634893
+      },
+      "decode_errors": 0,
+      "missing_baseline": 0,
+      "disconnects": 0,
+      "snapshots": 36000,
+      "keyframe_ratio": 0.79,
+      "corrections": {
+        "total": 135,
+        "snaps": 44,
+        "around_death": 128,
+        "tolerance_kept": 16680,
+        "initial_syncs": 1,
+        "unknown_acks": 0,
+        "max_err_m": 175.6249542236328,
+        "tolerance_max_err_m": 0.049919452518224716
+      },
+      "deaths": 44,
+      "respawns": 44
+    },
+    {
+      "id": 8,
+      "player_id": 8,
+      "team": 0,
+      "join_error": null,
+      "down_kbps": {
+        "p50": 21.232,
+        "p99": 26.416,
+        "max": 27.488
+      },
+      "up_kbps": {
+        "p50": 20.512,
+        "p99": 21.248,
+        "max": 21.552
+      },
+      "rtt_ms": {
+        "p50": 0.27208,
+        "p99": 0.787944,
+        "max": 2.5244199999999997
+      },
+      "decode_errors": 0,
+      "missing_baseline": 0,
+      "disconnects": 0,
+      "snapshots": 36000,
+      "keyframe_ratio": 0.829,
+      "corrections": {
+        "total": 21,
+        "snaps": 10,
+        "around_death": 20,
+        "tolerance_kept": 12049,
+        "initial_syncs": 1,
+        "unknown_acks": 0,
+        "max_err_m": 100.72978210449219,
+        "tolerance_max_err_m": 0.04709257930517197
+      },
+      "deaths": 10,
+      "respawns": 10
+    },
+    {
+      "id": 9,
+      "player_id": 9,
+      "team": 1,
+      "join_error": null,
+      "down_kbps": {
+        "p50": 21.216,
+        "p99": 26.744,
+        "max": 29.28
+      },
+      "up_kbps": {
+        "p50": 20.4,
+        "p99": 21.024,
+        "max": 21.32
+      },
+      "rtt_ms": {
+        "p50": 0.21898600000000001,
+        "p99": 0.532902,
+        "max": 6.141106000000001
+      },
+      "decode_errors": 0,
+      "missing_baseline": 0,
+      "disconnects": 0,
+      "snapshots": 36000,
+      "keyframe_ratio": 0.778,
+      "corrections": {
+        "total": 102,
+        "snaps": 39,
+        "around_death": 101,
+        "tolerance_kept": 12006,
+        "initial_syncs": 1,
+        "unknown_acks": 0,
+        "max_err_m": 181.0526885986328,
+        "tolerance_max_err_m": 0.04900765419006348
+      },
+      "deaths": 39,
+      "respawns": 39
+    }
+  ],
+  "rss_samples": [
+    {
+      "t": 0,
+      "server_kb": 12192,
+      "headless_kb": 10384
+    },
+    {
+      "t": 10,
+      "server_kb": 13268,
+      "headless_kb": 18728
+    },
+    {
+      "t": 20,
+      "server_kb": 13492,
+      "headless_kb": 18740
+    },
+    {
+      "t": 30,
+      "server_kb": 13580,
+      "headless_kb": 18744
+    },
+    {
+      "t": 40,
+      "server_kb": 13636,
+      "headless_kb": 18768
+    },
+    {
+      "t": 50,
+      "server_kb": 13712,
+      "headless_kb": 18776
+    },
+    {
+      "t": 60,
+      "server_kb": 13736,
+      "headless_kb": 18780
+    },
+    {
+      "t": 70,
+      "server_kb": 13784,
+      "headless_kb": 18844
+    },
+    {
+      "t": 80,
+      "server_kb": 13804,
+      "headless_kb": 18844
+    },
+    {
+      "t": 90,
+      "server_kb": 13924,
+      "headless_kb": 18844
+    },
+    {
+      "t": 100,
+      "server_kb": 13940,
+      "headless_kb": 18844
+    },
+    {
+      "t": 110,
+      "server_kb": 13956,
+      "headless_kb": 18848
+    },
+    {
+      "t": 120,
+      "server_kb": 13976,
+      "headless_kb": 18848
+    },
+    {
+      "t": 130,
+      "server_kb": 13996,
+      "headless_kb": 18904
+    },
+    {
+      "t": 140,
+      "server_kb": 14012,
+      "headless_kb": 18904
+    },
+    {
+      "t": 150,
+      "server_kb": 14024,
+      "headless_kb": 18904
+    },
+    {
+      "t": 160,
+      "server_kb": 14040,
+      "headless_kb": 18936
+    },
+    {
+      "t": 170,
+      "server_kb": 14116,
+      "headless_kb": 18936
+    },
+    {
+      "t": 180,
+      "server_kb": 14128,
+      "headless_kb": 18936
+    },
+    {
+      "t": 190,
+      "server_kb": 14140,
+      "headless_kb": 18936
+    },
+    {
+      "t": 200,
+      "server_kb": 14152,
+      "headless_kb": 18936
+    },
+    {
+      "t": 210,
+      "server_kb": 14164,
+      "headless_kb": 18936
+    },
+    {
+      "t": 220,
+      "server_kb": 14172,
+      "headless_kb": 18936
+    },
+    {
+      "t": 230,
+      "server_kb": 14184,
+      "headless_kb": 18936
+    },
+    {
+      "t": 240,
+      "server_kb": 14196,
+      "headless_kb": 18936
+    },
+    {
+      "t": 250,
+      "server_kb": 14212,
+      "headless_kb": 18936
+    },
+    {
+      "t": 260,
+      "server_kb": 14224,
+      "headless_kb": 19032
+    },
+    {
+      "t": 270,
+      "server_kb": 14236,
+      "headless_kb": 19032
+    },
+    {
+      "t": 280,
+      "server_kb": 14384,
+      "headless_kb": 19032
+    },
+    {
+      "t": 290,
+      "server_kb": 14408,
+      "headless_kb": 19032
+    },
+    {
+      "t": 300,
+      "server_kb": 14424,
+      "headless_kb": 19032
+    },
+    {
+      "t": 310,
+      "server_kb": 14440,
+      "headless_kb": 19036
+    },
+    {
+      "t": 320,
+      "server_kb": 14456,
+      "headless_kb": 19036
+    },
+    {
+      "t": 330,
+      "server_kb": 14472,
+      "headless_kb": 19036
+    },
+    {
+      "t": 340,
+      "server_kb": 14488,
+      "headless_kb": 19036
+    },
+    {
+      "t": 350,
+      "server_kb": 14512,
+      "headless_kb": 19036
+    },
+    {
+      "t": 360,
+      "server_kb": 14528,
+      "headless_kb": 19036
+    },
+    {
+      "t": 370,
+      "server_kb": 14544,
+      "headless_kb": 19036
+    },
+    {
+      "t": 380,
+      "server_kb": 14560,
+      "headless_kb": 19036
+    },
+    {
+      "t": 390,
+      "server_kb": 14576,
+      "headless_kb": 19036
+    },
+    {
+      "t": 400,
+      "server_kb": 14592,
+      "headless_kb": 19040
+    },
+    {
+      "t": 410,
+      "server_kb": 14612,
+      "headless_kb": 19040
+    },
+    {
+      "t": 420,
+      "server_kb": 14628,
+      "headless_kb": 19040
+    },
+    {
+      "t": 430,
+      "server_kb": 14644,
+      "headless_kb": 19040
+    },
+    {
+      "t": 440,
+      "server_kb": 14660,
+      "headless_kb": 19040
+    },
+    {
+      "t": 450,
+      "server_kb": 14668,
+      "headless_kb": 19040
+    },
+    {
+      "t": 460,
+      "server_kb": 14688,
+      "headless_kb": 19040
+    },
+    {
+      "t": 470,
+      "server_kb": 14704,
+      "headless_kb": 19040
+    },
+    {
+      "t": 480,
+      "server_kb": 14720,
+      "headless_kb": 19040
+    },
+    {
+      "t": 490,
+      "server_kb": 14736,
+      "headless_kb": 19040
+    },
+    {
+      "t": 500,
+      "server_kb": 14752,
+      "headless_kb": 19040
+    },
+    {
+      "t": 511,
+      "server_kb": 14768,
+      "headless_kb": 19040
+    },
+    {
+      "t": 521,
+      "server_kb": 14788,
+      "headless_kb": 19232
+    },
+    {
+      "t": 531,
+      "server_kb": 14804,
+      "headless_kb": 19236
+    },
+    {
+      "t": 541,
+      "server_kb": 14820,
+      "headless_kb": 19240
+    },
+    {
+      "t": 551,
+      "server_kb": 14972,
+      "headless_kb": 19240
+    },
+    {
+      "t": 561,
+      "server_kb": 14992,
+      "headless_kb": 19240
+    },
+    {
+      "t": 571,
+      "server_kb": 15024,
+      "headless_kb": 19256
+    },
+    {
+      "t": 581,
+      "server_kb": 15052,
+      "headless_kb": 19256
+    },
+    {
+      "t": 591,
+      "server_kb": 15068,
+      "headless_kb": 19288
+    },
+    {
+      "t": 601,
+      "server_kb": 15084,
+      "headless_kb": 19288
+    },
+    {
+      "t": 611,
+      "server_kb": 15100,
+      "headless_kb": 19288
+    },
+    {
+      "t": 621,
+      "server_kb": 15124,
+      "headless_kb": 19288
+    },
+    {
+      "t": 631,
+      "server_kb": 15140,
+      "headless_kb": 19288
+    },
+    {
+      "t": 641,
+      "server_kb": 15160,
+      "headless_kb": 19288
+    },
+    {
+      "t": 651,
+      "server_kb": 15184,
+      "headless_kb": 19288
+    },
+    {
+      "t": 661,
+      "server_kb": 15200,
+      "headless_kb": 19288
+    },
+    {
+      "t": 671,
+      "server_kb": 15216,
+      "headless_kb": 19300
+    },
+    {
+      "t": 681,
+      "server_kb": 15228,
+      "headless_kb": 19300
+    },
+    {
+      "t": 691,
+      "server_kb": 15252,
+      "headless_kb": 19300
+    },
+    {
+      "t": 701,
+      "server_kb": 15272,
+      "headless_kb": 19300
+    },
+    {
+      "t": 711,
+      "server_kb": 15288,
+      "headless_kb": 19300
+    },
+    {
+      "t": 721,
+      "server_kb": 15312,
+      "headless_kb": 19300
+    },
+    {
+      "t": 731,
+      "server_kb": 15328,
+      "headless_kb": 19300
+    },
+    {
+      "t": 741,
+      "server_kb": 15344,
+      "headless_kb": 19300
+    },
+    {
+      "t": 751,
+      "server_kb": 15372,
+      "headless_kb": 19300
+    },
+    {
+      "t": 761,
+      "server_kb": 15388,
+      "headless_kb": 19300
+    },
+    {
+      "t": 771,
+      "server_kb": 15404,
+      "headless_kb": 19300
+    },
+    {
+      "t": 781,
+      "server_kb": 15420,
+      "headless_kb": 19300
+    },
+    {
+      "t": 791,
+      "server_kb": 15448,
+      "headless_kb": 19300
+    },
+    {
+      "t": 801,
+      "server_kb": 15464,
+      "headless_kb": 19300
+    },
+    {
+      "t": 811,
+      "server_kb": 15484,
+      "headless_kb": 19304
+    },
+    {
+      "t": 821,
+      "server_kb": 15516,
+      "headless_kb": 19304
+    },
+    {
+      "t": 831,
+      "server_kb": 15532,
+      "headless_kb": 19304
+    },
+    {
+      "t": 841,
+      "server_kb": 15548,
+      "headless_kb": 19304
+    },
+    {
+      "t": 851,
+      "server_kb": 15564,
+      "headless_kb": 19304
+    },
+    {
+      "t": 861,
+      "server_kb": 15588,
+      "headless_kb": 19304
+    },
+    {
+      "t": 871,
+      "server_kb": 15608,
+      "headless_kb": 19304
+    },
+    {
+      "t": 881,
+      "server_kb": 15624,
+      "headless_kb": 19304
+    },
+    {
+      "t": 891,
+      "server_kb": 15648,
+      "headless_kb": 19308
+    },
+    {
+      "t": 901,
+      "server_kb": 15664,
+      "headless_kb": 19308
+    },
+    {
+      "t": 911,
+      "server_kb": 15672,
+      "headless_kb": 19308
+    },
+    {
+      "t": 921,
+      "server_kb": 15696,
+      "headless_kb": 19308
+    },
+    {
+      "t": 931,
+      "server_kb": 15716,
+      "headless_kb": 19308
+    },
+    {
+      "t": 941,
+      "server_kb": 15732,
+      "headless_kb": 19308
+    },
+    {
+      "t": 951,
+      "server_kb": 15748,
+      "headless_kb": 19308
+    },
+    {
+      "t": 961,
+      "server_kb": 15772,
+      "headless_kb": 19308
+    },
+    {
+      "t": 971,
+      "server_kb": 15788,
+      "headless_kb": 19308
+    },
+    {
+      "t": 981,
+      "server_kb": 15808,
+      "headless_kb": 19316
+    },
+    {
+      "t": 991,
+      "server_kb": 15832,
+      "headless_kb": 19324
+    },
+    {
+      "t": 1001,
+      "server_kb": 15848,
+      "headless_kb": 19324
+    },
+    {
+      "t": 1011,
+      "server_kb": 15864,
+      "headless_kb": 19324
+    },
+    {
+      "t": 1021,
+      "server_kb": 15880,
+      "headless_kb": 19324
+    },
+    {
+      "t": 1031,
+      "server_kb": 15904,
+      "headless_kb": 19564
+    },
+    {
+      "t": 1041,
+      "server_kb": 15924,
+      "headless_kb": 19588
+    },
+    {
+      "t": 1051,
+      "server_kb": 15940,
+      "headless_kb": 19588
+    },
+    {
+      "t": 1061,
+      "server_kb": 15964,
+      "headless_kb": 19588
+    },
+    {
+      "t": 1071,
+      "server_kb": 15980,
+      "headless_kb": 19588
+    },
+    {
+      "t": 1081,
+      "server_kb": 15996,
+      "headless_kb": 19604
+    },
+    {
+      "t": 1091,
+      "server_kb": 16012,
+      "headless_kb": 19632
+    },
+    {
+      "t": 1101,
+      "server_kb": 16172,
+      "headless_kb": 19632
+    },
+    {
+      "t": 1111,
+      "server_kb": 16188,
+      "headless_kb": 19632
+    },
+    {
+      "t": 1121,
+      "server_kb": 16204,
+      "headless_kb": 19632
+    },
+    {
+      "t": 1131,
+      "server_kb": 16228,
+      "headless_kb": 19632
+    },
+    {
+      "t": 1141,
+      "server_kb": 16244,
+      "headless_kb": 19632
+    },
+    {
+      "t": 1151,
+      "server_kb": 16260,
+      "headless_kb": 19640
+    },
+    {
+      "t": 1161,
+      "server_kb": 16292,
+      "headless_kb": 19640
+    },
+    {
+      "t": 1172,
+      "server_kb": 16308,
+      "headless_kb": 19640
+    },
+    {
+      "t": 1182,
+      "server_kb": 16324,
+      "headless_kb": 19640
+    },
+    {
+      "t": 1192,
+      "server_kb": 16340,
+      "headless_kb": 19640
+    },
+    {
+      "t": 1202,
+      "server_kb": 16368,
+      "headless_kb": 19640
+    },
+    {
+      "t": 1212,
+      "server_kb": 16388,
+      "headless_kb": 19640
+    },
+    {
+      "t": 1222,
+      "server_kb": 16404,
+      "headless_kb": 19640
+    },
+    {
+      "t": 1232,
+      "server_kb": 16432,
+      "headless_kb": 19640
+    },
+    {
+      "t": 1242,
+      "server_kb": 16448,
+      "headless_kb": 19656
+    },
+    {
+      "t": 1252,
+      "server_kb": 16464,
+      "headless_kb": 19656
+    },
+    {
+      "t": 1262,
+      "server_kb": 16488,
+      "headless_kb": 19660
+    },
+    {
+      "t": 1272,
+      "server_kb": 16520,
+      "headless_kb": 19660
+    },
+    {
+      "t": 1282,
+      "server_kb": 16536,
+      "headless_kb": 19660
+    },
+    {
+      "t": 1292,
+      "server_kb": 16552,
+      "headless_kb": 19660
+    },
+    {
+      "t": 1302,
+      "server_kb": 16580,
+      "headless_kb": 19660
+    },
+    {
+      "t": 1312,
+      "server_kb": 16596,
+      "headless_kb": 19660
+    },
+    {
+      "t": 1322,
+      "server_kb": 16612,
+      "headless_kb": 19660
+    },
+    {
+      "t": 1332,
+      "server_kb": 16644,
+      "headless_kb": 19660
+    },
+    {
+      "t": 1342,
+      "server_kb": 16660,
+      "headless_kb": 19696
+    },
+    {
+      "t": 1352,
+      "server_kb": 16676,
+      "headless_kb": 19704
+    },
+    {
+      "t": 1362,
+      "server_kb": 16684,
+      "headless_kb": 19708
+    },
+    {
+      "t": 1372,
+      "server_kb": 16712,
+      "headless_kb": 19708
+    },
+    {
+      "t": 1382,
+      "server_kb": 16728,
+      "headless_kb": 19708
+    },
+    {
+      "t": 1392,
+      "server_kb": 16748,
+      "headless_kb": 19708
+    },
+    {
+      "t": 1402,
+      "server_kb": 16776,
+      "headless_kb": 19708
+    },
+    {
+      "t": 1412,
+      "server_kb": 16792,
+      "headless_kb": 19708
+    },
+    {
+      "t": 1422,
+      "server_kb": 16808,
+      "headless_kb": 19708
+    },
+    {
+      "t": 1432,
+      "server_kb": 16824,
+      "headless_kb": 19708
+    },
+    {
+      "t": 1442,
+      "server_kb": 16856,
+      "headless_kb": 19708
+    },
+    {
+      "t": 1452,
+      "server_kb": 16872,
+      "headless_kb": 19708
+    },
+    {
+      "t": 1462,
+      "server_kb": 16888,
+      "headless_kb": 19708
+    },
+    {
+      "t": 1472,
+      "server_kb": 16916,
+      "headless_kb": 19708
+    },
+    {
+      "t": 1482,
+      "server_kb": 16932,
+      "headless_kb": 19708
+    },
+    {
+      "t": 1492,
+      "server_kb": 16948,
+      "headless_kb": 19712
+    },
+    {
+      "t": 1502,
+      "server_kb": 16980,
+      "headless_kb": 19728
+    },
+    {
+      "t": 1512,
+      "server_kb": 16996,
+      "headless_kb": 19736
+    },
+    {
+      "t": 1522,
+      "server_kb": 17012,
+      "headless_kb": 19736
+    },
+    {
+      "t": 1532,
+      "server_kb": 17028,
+      "headless_kb": 19736
+    },
+    {
+      "t": 1542,
+      "server_kb": 17056,
+      "headless_kb": 19736
+    },
+    {
+      "t": 1552,
+      "server_kb": 17072,
+      "headless_kb": 19736
+    },
+    {
+      "t": 1562,
+      "server_kb": 17092,
+      "headless_kb": 19736
+    },
+    {
+      "t": 1572,
+      "server_kb": 17120,
+      "headless_kb": 19736
+    },
+    {
+      "t": 1582,
+      "server_kb": 17136,
+      "headless_kb": 19736
+    },
+    {
+      "t": 1592,
+      "server_kb": 17148,
+      "headless_kb": 19748
+    },
+    {
+      "t": 1602,
+      "server_kb": 17164,
+      "headless_kb": 19772
+    },
+    {
+      "t": 1612,
+      "server_kb": 17192,
+      "headless_kb": 19772
+    },
+    {
+      "t": 1622,
+      "server_kb": 17212,
+      "headless_kb": 19772
+    },
+    {
+      "t": 1632,
+      "server_kb": 17228,
+      "headless_kb": 19772
+    },
+    {
+      "t": 1642,
+      "server_kb": 17324,
+      "headless_kb": 19772
+    },
+    {
+      "t": 1652,
+      "server_kb": 17340,
+      "headless_kb": 19772
+    },
+    {
+      "t": 1662,
+      "server_kb": 17356,
+      "headless_kb": 19772
+    },
+    {
+      "t": 1672,
+      "server_kb": 17388,
+      "headless_kb": 19772
+    },
+    {
+      "t": 1682,
+      "server_kb": 17404,
+      "headless_kb": 19772
+    },
+    {
+      "t": 1692,
+      "server_kb": 17420,
+      "headless_kb": 19776
+    },
+    {
+      "t": 1702,
+      "server_kb": 17436,
+      "headless_kb": 19776
+    },
+    {
+      "t": 1712,
+      "server_kb": 17464,
+      "headless_kb": 19776
+    },
+    {
+      "t": 1722,
+      "server_kb": 17480,
+      "headless_kb": 19776
+    },
+    {
+      "t": 1732,
+      "server_kb": 17500,
+      "headless_kb": 19776
+    },
+    {
+      "t": 1742,
+      "server_kb": 17532,
+      "headless_kb": 19776
+    },
+    {
+      "t": 1752,
+      "server_kb": 17548,
+      "headless_kb": 19788
+    },
+    {
+      "t": 1762,
+      "server_kb": 17564,
+      "headless_kb": 19792
+    },
+    {
+      "t": 1772,
+      "server_kb": 17580,
+      "headless_kb": 19792
+    },
+    {
+      "t": 1782,
+      "server_kb": 17608,
+      "headless_kb": 19792
+    },
+    {
+      "t": 1792,
+      "server_kb": 17628,
+      "headless_kb": 19792
+    },
+    {
+      "t": 1802,
+      "server_kb": 17640,
+      "headless_kb": null
+    }
+  ]
+}

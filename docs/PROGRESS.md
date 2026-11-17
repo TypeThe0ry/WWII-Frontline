@@ -378,6 +378,12 @@ M0 共 21 个任务已提交（M0-021 待提交）；提交哈希取自 `git log
 - 遗留 / 需人工：缺批 M0 录像（H-011 / H-025 / H-026，汇总为 NEEDS_HUMAN H-104），录像到位后由 M0-032b 按 `docs/measurements/CAPTURE_GUIDE_M0.md` 回填；PI-027（`_meta.ref` 字段推迟、口径细化、sim 不可测项、docs/measurements 里有其它任务截图）。
 - 影响：M0-033 验收时对标值"待测"是预期状态；M1-011/013 实现匍匐/逐发装填后补测 own_m0 里的"不可测"项；M4-044 复用同一工具链。
 
+### M0-027 headless-client v0 与 10 客户端联测 — partial — 2026-11-17 — 提交 （待总控填）
+- 做了什么：`crates/headless-client`（库 + 二进制）：WS/WT 真实传输（同机各绑 127.x.y.z 避开每 IP 4 连接）、握手、30 Hz 路点行走/点射/跳蹲合成输入、`SnapshotDecoder` 解码、`PredictSim` 预测 + PI-023 对账（死亡冻结、重生传送）、按秒带宽窗口（线路估计 +58 B/包与纯负载并列）、JSON 报告；`scripts/loadtest-m0.sh`（自起服务器、随机端口、绑核、每 10 s 抓 /metrics 与 RSS、只结束自己的 PID）、`scripts/loadtest-m0-matrix.sh`、`scripts/summarize-loadtest.mjs`；服务器仅追加 `Report.events`；`step_overhead` 计时断言改为 release 才启用。
+- 关键实测（release，4 核云主机，服务器/客户端绑不同核，非参考机）：WT 30 min，10 headless+10 bot：tick P50 0.655 / P99 1.215 ms，超限 0，下行 P50 21.7 kbps（预算 128）/ P99 26.8，上行 20.5，0 断线 0 解码错误，击杀 536；WS 10 min：tick P99 1.248，下行 P50 16.9。矩阵 120 s：WT 100 客户端+10 bot tick P50 5.1 / P99 8.3 ms、下行 P50 68 kbps，客户端进程 34 % 单核；20 客户端 P99 1.8–2.5 ms。
+- 遗留：服务器 RSS 在 WT 30 min 最后 10 min 增长 7.8 %（验收 <2 %，WS 无此现象，绝对量 1.2 MB，原因未查，PI-028 第 5 点）；`loadtest_smoke`（60 s×3，`--ignored`）已写未长跑；初始同步量化偏移使约 30–50 % 快照仍带容差内 `pos_corr`（+≈1 kbps，PI-028 第 3 点）；演示服务器曾被我误用 `pkill` 按名杀掉，之后只按自己的 PID 结束。
+- 影响：M1-068/M2-049 复用 `scripts/loadtest-m0.sh`；M0-030/033 以 `reports/m0/loadtest-wt.json` 为对照基线；浏览器客户端须同样做死亡冻结预测（PI-028）；`target/release/frontline-server` 被我的 release 构建覆盖过（含 `Report.events`）。
+
 ## 8. 如何维护本文件
 
 - **执行者**：收工前，在"任务日志"末尾追加本任务条目（`### 任务 ID 标题 — 状态 — 日期 — 提交 abc1234`，3–6 行：做了什么、关键实测数字、遗留问题/需人工事项、对后续任务的影响）；写入前重新读取文件末尾（并行执行者可能同时追加），只追加、不改别人的条目。数字必须来自实测，查不到写"未记录"。同时更新 `tasks/STATUS.md` 自己那一行。

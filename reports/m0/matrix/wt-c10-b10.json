@@ -1,0 +1,643 @@
+{
+  "task": "M0-027",
+  "generated_at": "2026-11-17T09:32:17.654Z",
+  "transport": "wt",
+  "count": 10,
+  "bots": 10,
+  "duration_s": 120,
+  "warmup_s": 10,
+  "seed": 1,
+  "build": "release",
+  "host": {
+    "cpus": 4,
+    "cpu_model": "Intel(R) Xeon(R) Processor @ 2.30GHz",
+    "os": "Linux 6.18.44-fc-v553",
+    "loadavg_at_end": [
+      0.25,
+      0.25,
+      0.62
+    ],
+    "pinned": true,
+    "note": "server on CPUs 0-1 and headless client on CPUs 2-3 of the same VM (taskset); other tenants/jobs on the VM are not controlled"
+  },
+  "server": {
+    "ticks": 3909,
+    "elapsed_s": 130.334,
+    "tick_ms": {
+      "p50": 0.658,
+      "p99": 1.187,
+      "max": 8.714,
+      "mean": 0.663
+    },
+    "tick_interval_error_ms": {
+      "p99": 0.027,
+      "max": 48.282
+    },
+    "overrun_total": 0,
+    "overrun_consecutive_max": 0,
+    "tick_skipped_slots_total": 1,
+    "input_queue_full_total": 0,
+    "aoi_encode_ms": {
+      "p99": 0.25,
+      "p50": 0.1,
+      "count": 3908,
+      "note": "bucket upper bounds of the final scrape"
+    },
+    "snapshot_bytes": {
+      "p50": 100,
+      "p99": 200,
+      "count": 23994
+    },
+    "bytes_out_per_client": [
+      {
+        "labels": {
+          "kind": "payload"
+        },
+        "p50_kbps": 16,
+        "p99_kbps": 32,
+        "count": 1190
+      },
+      {
+        "labels": {
+          "kind": "wire"
+        },
+        "p50_kbps": 32,
+        "p99_kbps": 32,
+        "count": 1190
+      }
+    ],
+    "events": {
+      "shots": 279,
+      "hits": 62,
+      "kills": 37,
+      "headshots": 12,
+      "spawns": 34
+    },
+    "input_rejected": {
+      "duplicate": 71923
+    },
+    "bots": 10,
+    "rss": {
+      "window_s": 60,
+      "requested_window_s": 60,
+      "server_rss_start_mb": 13.418,
+      "server_rss_end_mb": 13.602,
+      "growth_pct": 1.368,
+      "server_rss_max_mb": 13.602,
+      "samples": 14
+    }
+  },
+  "clients": {
+    "joined": 10,
+    "failed": 0,
+    "down_kbps": {
+      "p50": 21.448,
+      "p99": 26.208,
+      "max": 27.144
+    },
+    "up_kbps": {
+      "p50": 20.448,
+      "p99": 21.288,
+      "max": 21.552
+    },
+    "down_kbps_p50_worst_client": 22.432,
+    "up_kbps_p50_worst_client": 20.864,
+    "rtt_ms": {
+      "p50": 0.262219,
+      "p99": 0.695453,
+      "max": 6.8489070000000005
+    },
+    "decode_errors": 0,
+    "missing_baseline": 0,
+    "disconnects": 0,
+    "snapshots": 23994,
+    "keyframe_record_ratio": 0.789,
+    "corrections": {
+      "total": 59,
+      "snaps": 16,
+      "around_death": 51,
+      "tolerance_kept": 10750,
+      "initial_syncs": 10,
+      "unknown_acks": 0,
+      "max_err_m": 148.5049285888672,
+      "tolerance_max_err_m": 0.04994809255003929
+    },
+    "deaths_observed": 17,
+    "respawns_observed": 16,
+    "shots_fired_observed": 0,
+    "client_cpu_pct_of_one_core": 5.594
+  },
+  "reference": {
+    "arch_6_9_2_typical_down_kbps": 54,
+    "measured_down_p50_over_typical": 0.397,
+    "exceeds_2x_typical": false
+  },
+  "thresholds": {
+    "tick_p99_ms": 28,
+    "overrun_consecutive_max": 1,
+    "down_p50_kbps": 128,
+    "up_p50_kbps": 32
+  },
+  "checks": {
+    "tick_p99": {
+      "value": 1.187,
+      "limit": 28,
+      "ok": true
+    },
+    "overrun_consecutive_max": {
+      "value": 0,
+      "limit": 1,
+      "ok": true
+    },
+    "down_p50_each_client": {
+      "value": 22.432,
+      "limit": 128,
+      "ok": true
+    },
+    "up_p50_each_client": {
+      "value": 20.864,
+      "limit": 32,
+      "ok": true
+    },
+    "disconnects": {
+      "value": 0,
+      "limit": 0,
+      "ok": true
+    },
+    "decode_errors": {
+      "value": 0,
+      "limit": 0,
+      "ok": true
+    },
+    "client_cpu_pct_of_one_core": {
+      "value": 5.594,
+      "limit": 50,
+      "ok": true
+    },
+    "server_rss_growth_pct": {
+      "value": 1.368,
+      "limit": 2,
+      "ok": true,
+      "window_s": 60
+    }
+  },
+  "verdict": {
+    "all_ok": true,
+    "hard_ok": true,
+    "failed": []
+  },
+  "per_client": [
+    {
+      "id": 0,
+      "player_id": 0,
+      "team": 0,
+      "join_error": null,
+      "down_kbps": {
+        "p50": 21.504,
+        "p99": 25.528,
+        "max": 26
+      },
+      "up_kbps": {
+        "p50": 20.592,
+        "p99": 21.32,
+        "max": 21.392
+      },
+      "rtt_ms": {
+        "p50": 0.305956,
+        "p99": 0.537868,
+        "max": 0.799218
+      },
+      "decode_errors": 0,
+      "missing_baseline": 0,
+      "disconnects": 0,
+      "snapshots": 2400,
+      "keyframe_ratio": 0.863,
+      "corrections": {
+        "total": 1,
+        "snaps": 1,
+        "around_death": 1,
+        "tolerance_kept": 1304,
+        "initial_syncs": 1,
+        "unknown_acks": 0,
+        "max_err_m": 84.3105239868164,
+        "tolerance_max_err_m": 0.041583120822906494
+      },
+      "deaths": 1,
+      "respawns": 1
+    },
+    {
+      "id": 1,
+      "player_id": 1,
+      "team": 1,
+      "join_error": null,
+      "down_kbps": {
+        "p50": 21.272,
+        "p99": 25.896,
+        "max": 26.184
+      },
+      "up_kbps": {
+        "p50": 20.4,
+        "p99": 20.968,
+        "max": 21.328
+      },
+      "rtt_ms": {
+        "p50": 0.24359499999999998,
+        "p99": 0.610077,
+        "max": 0.63818
+      },
+      "decode_errors": 0,
+      "missing_baseline": 0,
+      "disconnects": 0,
+      "snapshots": 2400,
+      "keyframe_ratio": 0.752,
+      "corrections": {
+        "total": 8,
+        "snaps": 3,
+        "around_death": 6,
+        "tolerance_kept": 1251,
+        "initial_syncs": 1,
+        "unknown_acks": 0,
+        "max_err_m": 148.5049285888672,
+        "tolerance_max_err_m": 0.04981467127799988
+      },
+      "deaths": 3,
+      "respawns": 3
+    },
+    {
+      "id": 2,
+      "player_id": 2,
+      "team": 0,
+      "join_error": null,
+      "down_kbps": {
+        "p50": 21.192,
+        "p99": 26.4,
+        "max": 26.696
+      },
+      "up_kbps": {
+        "p50": 20.432,
+        "p99": 21.072,
+        "max": 21.304
+      },
+      "rtt_ms": {
+        "p50": 0.28414,
+        "p99": 0.981355,
+        "max": 1.645215
+      },
+      "decode_errors": 0,
+      "missing_baseline": 0,
+      "disconnects": 0,
+      "snapshots": 2399,
+      "keyframe_ratio": 0.808,
+      "corrections": {
+        "total": 8,
+        "snaps": 2,
+        "around_death": 7,
+        "tolerance_kept": 1193,
+        "initial_syncs": 1,
+        "unknown_acks": 0,
+        "max_err_m": 73.2161636352539,
+        "tolerance_max_err_m": 0.04902570694684982
+      },
+      "deaths": 2,
+      "respawns": 2
+    },
+    {
+      "id": 3,
+      "player_id": 3,
+      "team": 1,
+      "join_error": null,
+      "down_kbps": {
+        "p50": 22.432,
+        "p99": 26.64,
+        "max": 26.68
+      },
+      "up_kbps": {
+        "p50": 20.4,
+        "p99": 20.984,
+        "max": 20.992
+      },
+      "rtt_ms": {
+        "p50": 0.242086,
+        "p99": 0.705991,
+        "max": 1.3794899999999999
+      },
+      "decode_errors": 0,
+      "missing_baseline": 0,
+      "disconnects": 0,
+      "snapshots": 2399,
+      "keyframe_ratio": 0.699,
+      "corrections": {
+        "total": 12,
+        "snaps": 3,
+        "around_death": 12,
+        "tolerance_kept": 944,
+        "initial_syncs": 1,
+        "unknown_acks": 0,
+        "max_err_m": 101.92945861816406,
+        "tolerance_max_err_m": 0.049057357013225555
+      },
+      "deaths": 3,
+      "respawns": 3
+    },
+    {
+      "id": 4,
+      "player_id": 4,
+      "team": 0,
+      "join_error": null,
+      "down_kbps": {
+        "p50": 20.264,
+        "p99": 24.832,
+        "max": 24.856
+      },
+      "up_kbps": {
+        "p50": 20.864,
+        "p99": 21.304,
+        "max": 21.552
+      },
+      "rtt_ms": {
+        "p50": 0.304419,
+        "p99": 0.622086,
+        "max": 0.720305
+      },
+      "decode_errors": 0,
+      "missing_baseline": 0,
+      "disconnects": 0,
+      "snapshots": 2399,
+      "keyframe_ratio": 0.854,
+      "corrections": {
+        "total": 0,
+        "snaps": 0,
+        "around_death": 0,
+        "tolerance_kept": 618,
+        "initial_syncs": 1,
+        "unknown_acks": 0,
+        "max_err_m": 0,
+        "tolerance_max_err_m": 0.03997071459889412
+      },
+      "deaths": 0,
+      "respawns": 0
+    },
+    {
+      "id": 5,
+      "player_id": 5,
+      "team": 1,
+      "join_error": null,
+      "down_kbps": {
+        "p50": 21.96,
+        "p99": 26.928,
+        "max": 27.144
+      },
+      "up_kbps": {
+        "p50": 20.432,
+        "p99": 20.936,
+        "max": 21.072
+      },
+      "rtt_ms": {
+        "p50": 0.21813600000000002,
+        "p99": 0.46342,
+        "max": 0.481511
+      },
+      "decode_errors": 0,
+      "missing_baseline": 0,
+      "disconnects": 0,
+      "snapshots": 2400,
+      "keyframe_ratio": 0.775,
+      "corrections": {
+        "total": 5,
+        "snaps": 1,
+        "around_death": 5,
+        "tolerance_kept": 1103,
+        "initial_syncs": 1,
+        "unknown_acks": 0,
+        "max_err_m": 93.1318359375,
+        "tolerance_max_err_m": 0.04285519942641258
+      },
+      "deaths": 1,
+      "respawns": 1
+    },
+    {
+      "id": 6,
+      "player_id": 6,
+      "team": 0,
+      "join_error": null,
+      "down_kbps": {
+        "p50": 22.256,
+        "p99": 25.856,
+        "max": 25.896
+      },
+      "up_kbps": {
+        "p50": 20.864,
+        "p99": 21.304,
+        "max": 21.32
+      },
+      "rtt_ms": {
+        "p50": 0.31424799999999997,
+        "p99": 0.79504,
+        "max": 1.714523
+      },
+      "decode_errors": 0,
+      "missing_baseline": 0,
+      "disconnects": 0,
+      "snapshots": 2400,
+      "keyframe_ratio": 0.782,
+      "corrections": {
+        "total": 4,
+        "snaps": 0,
+        "around_death": 1,
+        "tolerance_kept": 1500,
+        "initial_syncs": 1,
+        "unknown_acks": 0,
+        "max_err_m": 0.054808277636766434,
+        "tolerance_max_err_m": 0.04870454594492912
+      },
+      "deaths": 1,
+      "respawns": 0
+    },
+    {
+      "id": 7,
+      "player_id": 7,
+      "team": 1,
+      "join_error": null,
+      "down_kbps": {
+        "p50": 21.784,
+        "p99": 26.208,
+        "max": 26.536
+      },
+      "up_kbps": {
+        "p50": 20.4,
+        "p99": 20.928,
+        "max": 21
+      },
+      "rtt_ms": {
+        "p50": 0.236486,
+        "p99": 0.525143,
+        "max": 0.5329039999999999
+      },
+      "decode_errors": 0,
+      "missing_baseline": 0,
+      "disconnects": 0,
+      "snapshots": 2399,
+      "keyframe_ratio": 0.838,
+      "corrections": {
+        "total": 6,
+        "snaps": 2,
+        "around_death": 5,
+        "tolerance_kept": 968,
+        "initial_syncs": 1,
+        "unknown_acks": 0,
+        "max_err_m": 123.36436462402344,
+        "tolerance_max_err_m": 0.04994809255003929
+      },
+      "deaths": 2,
+      "respawns": 2
+    },
+    {
+      "id": 8,
+      "player_id": 8,
+      "team": 0,
+      "join_error": null,
+      "down_kbps": {
+        "p50": 20.944,
+        "p99": 25.656,
+        "max": 25.896
+      },
+      "up_kbps": {
+        "p50": 20.496,
+        "p99": 21.312,
+        "max": 21.392
+      },
+      "rtt_ms": {
+        "p50": 0.258851,
+        "p99": 0.7644420000000001,
+        "max": 6.8489070000000005
+      },
+      "decode_errors": 0,
+      "missing_baseline": 0,
+      "disconnects": 0,
+      "snapshots": 2399,
+      "keyframe_ratio": 0.811,
+      "corrections": {
+        "total": 2,
+        "snaps": 1,
+        "around_death": 2,
+        "tolerance_kept": 883,
+        "initial_syncs": 1,
+        "unknown_acks": 0,
+        "max_err_m": 71.30391693115234,
+        "tolerance_max_err_m": 0.038479994982481
+      },
+      "deaths": 1,
+      "respawns": 1
+    },
+    {
+      "id": 9,
+      "player_id": 9,
+      "team": 1,
+      "join_error": null,
+      "down_kbps": {
+        "p50": 22.048,
+        "p99": 25.928,
+        "max": 26.832
+      },
+      "up_kbps": {
+        "p50": 20.4,
+        "p99": 21.024,
+        "max": 21.056
+      },
+      "rtt_ms": {
+        "p50": 0.232073,
+        "p99": 0.618772,
+        "max": 0.9084819999999999
+      },
+      "decode_errors": 0,
+      "missing_baseline": 0,
+      "disconnects": 0,
+      "snapshots": 2399,
+      "keyframe_ratio": 0.749,
+      "corrections": {
+        "total": 13,
+        "snaps": 3,
+        "around_death": 12,
+        "tolerance_kept": 986,
+        "initial_syncs": 1,
+        "unknown_acks": 0,
+        "max_err_m": 117.39737701416016,
+        "tolerance_max_err_m": 0.0387541688978672
+      },
+      "deaths": 3,
+      "respawns": 3
+    }
+  ],
+  "rss_samples": [
+    {
+      "t": 0,
+      "server_kb": 12184,
+      "headless_kb": 10300
+    },
+    {
+      "t": 10,
+      "server_kb": 13236,
+      "headless_kb": 18756
+    },
+    {
+      "t": 20,
+      "server_kb": 13476,
+      "headless_kb": 18760
+    },
+    {
+      "t": 30,
+      "server_kb": 13552,
+      "headless_kb": 18772
+    },
+    {
+      "t": 40,
+      "server_kb": 13584,
+      "headless_kb": 18796
+    },
+    {
+      "t": 50,
+      "server_kb": 13664,
+      "headless_kb": 18800
+    },
+    {
+      "t": 60,
+      "server_kb": 13680,
+      "headless_kb": 18808
+    },
+    {
+      "t": 70,
+      "server_kb": 13740,
+      "headless_kb": 18852
+    },
+    {
+      "t": 80,
+      "server_kb": 13748,
+      "headless_kb": 18864
+    },
+    {
+      "t": 90,
+      "server_kb": 13868,
+      "headless_kb": 18864
+    },
+    {
+      "t": 100,
+      "server_kb": 13888,
+      "headless_kb": 18876
+    },
+    {
+      "t": 110,
+      "server_kb": 13908,
+      "headless_kb": 18876
+    },
+    {
+      "t": 120,
+      "server_kb": 13924,
+      "headless_kb": 18848
+    },
+    {
+      "t": 130,
+      "server_kb": 13928,
+      "headless_kb": null
+    }
+  ]
+}
