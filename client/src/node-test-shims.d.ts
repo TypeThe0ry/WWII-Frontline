@@ -13,4 +13,7 @@ declare module 'node:crypto' {
 declare module 'node:url' {
   export function fileURLToPath(url: string | URL): string;
 }
+declare module 'node:module' {
+  export function createRequire(url: string | URL): unknown;
+}
 declare const process: { env: Record<string, string | undefined> };

@@ -473,3 +473,7 @@ blocked / in-progress / todo：无。M0 的 33 个任务全部已提交（M0-033
 
 - 新增 4 个 role（officer/medic/support/crewman）、11 个 loadout、8 个 gadget、capture/spawn/supplies 三份规则及 schema，校验器与 fixtures 同步（PI-043）。
 - `ammo_mags` 改为含枪内一个（备弹 = cap×(N−1)），两处 sim 金哈希重定标。
+
+### M1-006c 纹理转码（BasisU） — done — 2026-11-17 — 提交见 git log
+
+- 自托管 Apache-2.0 转码器，KTX2 重建 + 按 GPU 能力选格式 + Worker 内按需加载（PI-044）；LICENSES §5 已登记。
