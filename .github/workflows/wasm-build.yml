@@ -1,0 +1,43 @@
+# PR gate: sim-wasm build (ARCHITECTURE §17.5, target < 8 min).
+# M0-014 removes the "detect" skip and adds wasm-opt + size check (<= 1.2 MB / 400 KB br).
+name: wasm-build
+on:
+  pull_request:
+  push:
+    branches: [main]
+concurrency:
+  group: wasm-build-${{ github.ref }}
+  cancel-in-progress: true
+permissions:
+  contents: read
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: "0"
+jobs:
+  wasm-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Detect whether sim-wasm is a real wasm crate yet
+        id: detect
+        # Until M0-014 adds wasm-bindgen, wasm-pack has nothing to build; stay green.
+        run: |
+          if grep -q 'wasm-bindgen' crates/sim-wasm/Cargo.toml; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::sim-wasm has no wasm-bindgen dependency yet; skipping (M0-014 removes this skip)"
+          fi
+      - name: Install Rust toolchain (pinned by rust-toolchain.toml)
+        if: steps.detect.outputs.ready == 'true'
+        run: rustup show active-toolchain || rustup toolchain install
+      - uses: Swatinem/rust-cache@v2
+        if: steps.detect.outputs.ready == 'true'
+      - uses: taiki-e/install-action@v2
+        if: steps.detect.outputs.ready == 'true'
+        with:
+          tool: wasm-pack
+      - name: wasm-pack build
+        if: steps.detect.outputs.ready == 'true'
+        run: wasm-pack build crates/sim-wasm --target web --release

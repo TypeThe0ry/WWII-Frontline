@@ -9,6 +9,7 @@
     "lint": "pnpm -C client lint",
     "typecheck": "pnpm -C client typecheck",
     "test": "pnpm -C client test",
-    "check-layout": "node tools/ci/check-layout.mjs"
+    "check-layout": "node tools/ci/check-layout.mjs",
+    "ci:test": "node --test \"tools/ci/test/*.test.mjs\""
   }
 }

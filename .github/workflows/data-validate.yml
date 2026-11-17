@@ -1,0 +1,19 @@
+# PR gate: /data validation (ARCHITECTURE §17.5, target < 2 min).
+# Placeholder created by M0-002; M0-004 adds the validator and replaces the step below.
+name: data-validate
+on:
+  pull_request:
+    paths: ["data/**", ".github/workflows/data-validate.yml"]
+  push:
+    branches: [main]
+    paths: ["data/**"]
+permissions:
+  contents: read
+jobs:
+  data-validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate data (placeholder)
+        run: echo "data validation lands with M0-004"

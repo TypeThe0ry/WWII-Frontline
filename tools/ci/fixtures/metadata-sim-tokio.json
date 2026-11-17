@@ -1,0 +1,358 @@
+{
+  "packages": [
+    {
+      "name": "frontline-protocol",
+      "version": "0.0.0",
+      "id": "path+file:///fixture/crates/protocol#frontline-protocol@0.0.0",
+      "manifest_path": "/fixture/crates/protocol/Cargo.toml",
+      "dependencies": []
+    },
+    {
+      "name": "frontline-sim",
+      "version": "0.0.0",
+      "id": "path+file:///fixture/crates/sim#frontline-sim@0.0.0",
+      "manifest_path": "/fixture/crates/sim/Cargo.toml",
+      "dependencies": [
+        {
+          "name": "frontline-protocol",
+          "kind": null,
+          "path": "/fixture/crates/protocol"
+        },
+        {
+          "name": "tokio",
+          "kind": null,
+          "source": "registry+https://github.com/rust-lang/crates.io-index"
+        }
+      ]
+    },
+    {
+      "name": "frontline-sim-wasm",
+      "version": "0.0.0",
+      "id": "path+file:///fixture/crates/sim-wasm#frontline-sim-wasm@0.0.0",
+      "manifest_path": "/fixture/crates/sim-wasm/Cargo.toml",
+      "dependencies": [
+        {
+          "name": "frontline-protocol",
+          "kind": null,
+          "path": "/fixture/crates/protocol"
+        },
+        {
+          "name": "frontline-sim",
+          "kind": null,
+          "path": "/fixture/crates/sim"
+        }
+      ]
+    },
+    {
+      "name": "frontline-server",
+      "version": "0.0.0",
+      "id": "path+file:///fixture/crates/server#frontline-server@0.0.0",
+      "manifest_path": "/fixture/crates/server/Cargo.toml",
+      "dependencies": [
+        {
+          "name": "frontline-protocol",
+          "kind": null,
+          "path": "/fixture/crates/protocol"
+        },
+        {
+          "name": "frontline-sim",
+          "kind": null,
+          "path": "/fixture/crates/sim"
+        },
+        {
+          "name": "frontline-bots",
+          "kind": null,
+          "path": "/fixture/crates/bots"
+        }
+      ]
+    },
+    {
+      "name": "frontline-gateway",
+      "version": "0.0.0",
+      "id": "path+file:///fixture/crates/gateway#frontline-gateway@0.0.0",
+      "manifest_path": "/fixture/crates/gateway/Cargo.toml",
+      "dependencies": [
+        {
+          "name": "frontline-protocol",
+          "kind": null,
+          "path": "/fixture/crates/protocol"
+        }
+      ]
+    },
+    {
+      "name": "frontline-bots",
+      "version": "0.0.0",
+      "id": "path+file:///fixture/crates/bots#frontline-bots@0.0.0",
+      "manifest_path": "/fixture/crates/bots/Cargo.toml",
+      "dependencies": [
+        {
+          "name": "frontline-protocol",
+          "kind": null,
+          "path": "/fixture/crates/protocol"
+        },
+        {
+          "name": "frontline-sim",
+          "kind": null,
+          "path": "/fixture/crates/sim"
+        }
+      ]
+    },
+    {
+      "name": "frontline-headless-client",
+      "version": "0.0.0",
+      "id": "path+file:///fixture/crates/headless-client#frontline-headless-client@0.0.0",
+      "manifest_path": "/fixture/crates/headless-client/Cargo.toml",
+      "dependencies": [
+        {
+          "name": "frontline-protocol",
+          "kind": null,
+          "path": "/fixture/crates/protocol"
+        },
+        {
+          "name": "frontline-sim",
+          "kind": null,
+          "path": "/fixture/crates/sim"
+        }
+      ]
+    },
+    {
+      "name": "frontline-balance-sim",
+      "version": "0.0.0",
+      "id": "path+file:///fixture/crates/balance-sim#frontline-balance-sim@0.0.0",
+      "manifest_path": "/fixture/crates/balance-sim/Cargo.toml",
+      "dependencies": [
+        {
+          "name": "frontline-protocol",
+          "kind": null,
+          "path": "/fixture/crates/protocol"
+        },
+        {
+          "name": "frontline-sim",
+          "kind": null,
+          "path": "/fixture/crates/sim"
+        },
+        {
+          "name": "frontline-bots",
+          "kind": null,
+          "path": "/fixture/crates/bots"
+        }
+      ]
+    },
+    {
+      "name": "tokio",
+      "version": "1.0.0",
+      "id": "registry+https://github.com/rust-lang/crates.io-index#tokio@1.0.0",
+      "manifest_path": "/registry/tokio/Cargo.toml",
+      "dependencies": []
+    }
+  ],
+  "workspace_members": [
+    "path+file:///fixture/crates/protocol#frontline-protocol@0.0.0",
+    "path+file:///fixture/crates/sim#frontline-sim@0.0.0",
+    "path+file:///fixture/crates/sim-wasm#frontline-sim-wasm@0.0.0",
+    "path+file:///fixture/crates/server#frontline-server@0.0.0",
+    "path+file:///fixture/crates/gateway#frontline-gateway@0.0.0",
+    "path+file:///fixture/crates/bots#frontline-bots@0.0.0",
+    "path+file:///fixture/crates/headless-client#frontline-headless-client@0.0.0",
+    "path+file:///fixture/crates/balance-sim#frontline-balance-sim@0.0.0"
+  ],
+  "resolve": {
+    "nodes": [
+      {
+        "id": "path+file:///fixture/crates/protocol#frontline-protocol@0.0.0",
+        "deps": []
+      },
+      {
+        "id": "path+file:///fixture/crates/sim#frontline-sim@0.0.0",
+        "deps": [
+          {
+            "name": "frontline_protocol",
+            "pkg": "path+file:///fixture/crates/protocol#frontline-protocol@0.0.0",
+            "dep_kinds": [
+              {
+                "kind": null,
+                "target": null
+              }
+            ]
+          },
+          {
+            "name": "tokio",
+            "pkg": "registry+https://github.com/rust-lang/crates.io-index#tokio@1.0.0",
+            "dep_kinds": [
+              {
+                "kind": null,
+                "target": null
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "path+file:///fixture/crates/sim-wasm#frontline-sim-wasm@0.0.0",
+        "deps": [
+          {
+            "name": "frontline_protocol",
+            "pkg": "path+file:///fixture/crates/protocol#frontline-protocol@0.0.0",
+            "dep_kinds": [
+              {
+                "kind": null,
+                "target": null
+              }
+            ]
+          },
+          {
+            "name": "frontline_sim",
+            "pkg": "path+file:///fixture/crates/sim#frontline-sim@0.0.0",
+            "dep_kinds": [
+              {
+                "kind": null,
+                "target": null
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "path+file:///fixture/crates/server#frontline-server@0.0.0",
+        "deps": [
+          {
+            "name": "frontline_protocol",
+            "pkg": "path+file:///fixture/crates/protocol#frontline-protocol@0.0.0",
+            "dep_kinds": [
+              {
+                "kind": null,
+                "target": null
+              }
+            ]
+          },
+          {
+            "name": "frontline_sim",
+            "pkg": "path+file:///fixture/crates/sim#frontline-sim@0.0.0",
+            "dep_kinds": [
+              {
+                "kind": null,
+                "target": null
+              }
+            ]
+          },
+          {
+            "name": "frontline_bots",
+            "pkg": "path+file:///fixture/crates/bots#frontline-bots@0.0.0",
+            "dep_kinds": [
+              {
+                "kind": null,
+                "target": null
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "path+file:///fixture/crates/gateway#frontline-gateway@0.0.0",
+        "deps": [
+          {
+            "name": "frontline_protocol",
+            "pkg": "path+file:///fixture/crates/protocol#frontline-protocol@0.0.0",
+            "dep_kinds": [
+              {
+                "kind": null,
+                "target": null
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "path+file:///fixture/crates/bots#frontline-bots@0.0.0",
+        "deps": [
+          {
+            "name": "frontline_protocol",
+            "pkg": "path+file:///fixture/crates/protocol#frontline-protocol@0.0.0",
+            "dep_kinds": [
+              {
+                "kind": null,
+                "target": null
+              }
+            ]
+          },
+          {
+            "name": "frontline_sim",
+            "pkg": "path+file:///fixture/crates/sim#frontline-sim@0.0.0",
+            "dep_kinds": [
+              {
+                "kind": null,
+                "target": null
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "path+file:///fixture/crates/headless-client#frontline-headless-client@0.0.0",
+        "deps": [
+          {
+            "name": "frontline_protocol",
+            "pkg": "path+file:///fixture/crates/protocol#frontline-protocol@0.0.0",
+            "dep_kinds": [
+              {
+                "kind": null,
+                "target": null
+              }
+            ]
+          },
+          {
+            "name": "frontline_sim",
+            "pkg": "path+file:///fixture/crates/sim#frontline-sim@0.0.0",
+            "dep_kinds": [
+              {
+                "kind": null,
+                "target": null
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "path+file:///fixture/crates/balance-sim#frontline-balance-sim@0.0.0",
+        "deps": [
+          {
+            "name": "frontline_protocol",
+            "pkg": "path+file:///fixture/crates/protocol#frontline-protocol@0.0.0",
+            "dep_kinds": [
+              {
+                "kind": null,
+                "target": null
+              }
+            ]
+          },
+          {
+            "name": "frontline_sim",
+            "pkg": "path+file:///fixture/crates/sim#frontline-sim@0.0.0",
+            "dep_kinds": [
+              {
+                "kind": null,
+                "target": null
+              }
+            ]
+          },
+          {
+            "name": "frontline_bots",
+            "pkg": "path+file:///fixture/crates/bots#frontline-bots@0.0.0",
+            "dep_kinds": [
+              {
+                "kind": null,
+                "target": null
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "registry+https://github.com/rust-lang/crates.io-index#tokio@1.0.0",
+        "deps": []
+      }
+    ],
+    "root": null
+  },
+  "workspace_root": "/fixture"
+}

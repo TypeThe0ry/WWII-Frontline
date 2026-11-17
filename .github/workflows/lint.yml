@@ -1,0 +1,50 @@
+# PR gate: formatting, lint, type check, dependency policy (ARCHITECTURE §17.5, target < 6 min).
+name: lint
+on:
+  pull_request:
+  push:
+    branches: [main]
+concurrency:
+  group: lint-${{ github.ref }}
+  cancel-in-progress: true
+permissions:
+  contents: read
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: "0"
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4 # version comes from package.json "packageManager"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install Rust toolchain (pinned by rust-toolchain.toml)
+        run: rustup show active-toolchain || rustup toolchain install
+      - uses: Swatinem/rust-cache@v2
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-deny@0.18.9
+      - run: pnpm install --frozen-lockfile
+      - name: cargo fmt
+        run: cargo fmt --all --check
+      - name: cargo clippy
+        run: cargo clippy --workspace --all-targets -- -D warnings
+      - name: eslint
+        run: pnpm -C client exec eslint .
+      - name: tsc
+        run: pnpm -C client exec tsc --noEmit
+      - name: cargo deny
+        run: cargo deny check
+      - name: Crate dependency graph (ARCHITECTURE §4.5)
+        run: node tools/ci/check-deps.mjs
+      - name: sim purity scan (ARCHITECTURE §4.3.2)
+        run: node tools/ci/check-sim-purity.mjs
+      - name: Repository layout (ARCHITECTURE §4.1)
+        run: node tools/ci/check-layout.mjs
+      - name: CI script self-tests
+        run: node --test "tools/ci/test/*.test.mjs"

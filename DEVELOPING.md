@@ -33,6 +33,18 @@ pnpm lint | pnpm typecheck | pnpm test
 
 `node tools/ci/check-layout.mjs` verifies the ARCHITECTURE §4.1 directory layout.
 
+## CI checks (M0-002)
+
+Workflows live in `.github/workflows/` (`lint`, `test-rust`, `test-ts`, `wasm-build`, `data-validate`).
+Run the repo-specific gates locally:
+
+```sh
+node tools/ci/check-deps.mjs          # §4.5 crate dependency matrix (data: tools/ci/dep-matrix.mjs)
+node tools/ci/check-sim-purity.mjs    # §4.3.2 banned APIs in crates/sim/src; waive with `// purity-allow: <why>`
+pnpm ci:test                          # node --test for the scripts above
+cargo deny check                      # licenses (list pending H-037), bans, advisories, sources
+```
+
 ## Directories
 
 See `README.md`. `assets/incoming/` is created manually and never committed; `assets/processed/`
