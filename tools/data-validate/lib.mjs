@@ -11,7 +11,7 @@ import { checkRefs } from './rules/refs.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 export const REPO_ROOT = resolve(here, '..', '..');
-export const KINDS = ['weapon', 'role', 'loadout', 'vehicle', 'map_meta', 'spawns', 'rules'];
+export const KINDS = ['weapon', 'role', 'loadout', 'vehicle', 'map_meta', 'spawns', 'rules', 'bots'];
 const DIR_KIND = { weapons: 'weapon', roles: 'role', loadouts: 'loadout', vehicles: 'vehicle' };
 const MAP_FILE_KIND = { 'meta.json': 'map_meta', 'spawns.json': 'spawns' };
 const SLUG = /^[a-z][a-z0-9]*(_[a-z0-9]+)*$/;
@@ -86,9 +86,9 @@ export function discover(root) {
     if (parts[0] === 'schemas') continue;
     let kind = null;
     if (parts.length === 2 && DIR_KIND[parts[0]]) kind = DIR_KIND[parts[0]];
-    else if (parts.length === 2 && parts[0] === 'rules') kind = 'rules';
+    else if (parts.length === 2 && parts[0] === 'rules') kind = rel === 'rules/bots.json' ? 'bots' : 'rules';
     else if (parts.length === 3 && parts[0] === 'maps' && MAP_FILE_KIND[parts[2]]) kind = MAP_FILE_KIND[parts[2]];
-    if (kind) files.push({ kind, file: rel, abs, stemId: kind === 'map_meta' || kind === 'spawns' || kind === 'rules' ? null : basename(rel, '.json') });
+    if (kind) files.push({ kind, file: rel, abs, stemId: kind === 'map_meta' || kind === 'spawns' || kind === 'rules' || kind === 'bots' ? null : basename(rel, '.json') });
     else unchecked.push(rel);
   }
   return { files, unchecked };

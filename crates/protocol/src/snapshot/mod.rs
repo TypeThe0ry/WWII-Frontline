@@ -29,6 +29,7 @@ pub mod encoder;
 pub mod entity;
 pub mod events;
 pub mod header;
+pub mod pred_hash;
 pub mod self_state;
 
 pub use baseline::{ClientBaselines, BASELINE_RING};

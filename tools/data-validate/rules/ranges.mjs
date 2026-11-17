@@ -110,11 +110,21 @@ function checkMapMeta(doc, errors) {
   }
 }
 
+function checkBots(doc, errors) {
+  for (const [name, d] of Object.entries(doc.difficulties ?? {})) {
+    const r = d?.reaction_ms;
+    if (Array.isArray(r) && r.length === 2 && num(r[0]) && num(r[1]) && r[0] > r[1]) {
+      errors.push({ pointer: `/difficulties/${name}/reaction_ms`, message: 'reaction_ms must be [min,max] with min <= max' });
+    }
+  }
+}
+
 export function checkRanges(doc, kind) {
   const errors = [];
   if (kind === 'weapon') checkWeapon(doc, errors);
   else if (kind === 'role') checkRole(doc, errors);
   else if (kind === 'vehicle') checkVehicle(doc, errors);
   else if (kind === 'map_meta') checkMapMeta(doc, errors);
+  else if (kind === 'bots') checkBots(doc, errors);
   return errors;
 }
