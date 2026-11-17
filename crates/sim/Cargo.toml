@@ -109,3 +109,11 @@ harness = false
 [[test]]
 name = "spawn_hq"
 required-features = ["test-util"]
+
+[[test]]
+name = "spawn_garrison"
+required-features = ["test-util"]
+
+[[bench]]
+name = "spawn"
+harness = false

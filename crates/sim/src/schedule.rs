@@ -376,6 +376,7 @@ pub fn respawns(
     mut queue: ResMut<RespawnQueue>,
     mut events: ResMut<EventBuf>,
     mut rules: ResMut<crate::spawn::SpawnRules>,
+    mut gs: ResMut<crate::spawn::garrison::Garrisons>,
     mut q: Query<(
         &mut Transform,
         &mut Motion,
@@ -395,7 +396,7 @@ pub fn respawns(
         let Some(&(eid, e)) = index.map.get(&pid) else {
             continue;
         };
-        // M1-019a: HQ rules (penalties, protection, spawn placement).
+        // M1-019: HQ / Garrison rules (penalties, protection, spawn placement).
         let hq_pos = match q.get(e) {
             Ok((.., team, _, _, _)) if rules.active() => rules.hq_of(*team),
             _ => None,
@@ -408,26 +409,72 @@ pub fn respawns(
                 continue;
             };
             let team = *team;
-            let extra = crate::spawn::timing::penalty_s(
-                t_kia,
-                rules.last_spawn.get(&pid).copied(),
-                &rules.recent[team as usize],
-                cfg.hz,
-            );
-            if extra > 0 {
-                let due = crate::spawn::timing::hq_spawn_tick(
+            // A picked Garrison, if it is still usable; otherwise back to the HQ.
+            let mut gid = rules.choice.get(&pid).copied();
+            if let Some(id) = gid {
+                let g = &gs.list[&id];
+                let usable = g.state == crate::spawn::garrison::GarrisonState::Active
+                    && g.team == team
+                    && !g.blocked(tick.0 .0, cfg.hz);
+                if !usable {
+                    rules.choice.remove(&pid);
+                    gid = None;
+                } else if g.slots < 1.0 {
+                    // Out of slots: wait for the next one to regenerate.
+                    let per_tick = 1.0 / (crate::spawn::garrison::SLOT_REGEN_S * f32::from(cfg.hz));
+                    let wait = libm::ceilf((1.0 - g.slots) / per_tick) as u32;
+                    queue.schedule(pid, crate::ids::Tick(tick.0 .0 + wait.max(1)));
+                    continue;
+                }
+            }
+            if let Some(id) = gid {
+                // Throughput: at most 2 spawns per second through one point.
+                let gap = u32::from(cfg.hz) / crate::spawn::garrison::THROUGHPUT_PER_S;
+                if let Some(ls) = gs.list[&id].last_spawn {
+                    if tick.0 .0 < ls + gap {
+                        queue.schedule(pid, crate::ids::Tick(ls + gap));
+                        continue;
+                    }
+                }
+            }
+            let extra = {
+                let recent: &[u32] = match gid {
+                    Some(id) => &gs.list[&id].recent,
+                    None => &rules.recent[team as usize],
+                };
+                crate::spawn::timing::penalty_s(
                     t_kia,
-                    policy.0.pick_tick(t_kia, cfg.hz),
-                    &policy.0,
-                    1.0,
-                    extra,
+                    rules.last_spawn.get(&pid).copied(),
+                    recent,
                     cfg.hz,
-                );
+                )
+            };
+            if extra > 0 {
+                let due = match gid {
+                    Some(_) => crate::spawn::timing::garrison_spawn_tick(
+                        t_kia,
+                        crate::ids::Tick(0),
+                        extra,
+                        cfg.hz,
+                    ),
+                    None => crate::spawn::timing::hq_spawn_tick(
+                        t_kia,
+                        policy.0.pick_tick(t_kia, cfg.hz),
+                        &policy.0,
+                        1.0,
+                        extra,
+                        cfg.hz,
+                    ),
+                };
                 if due.0 > tick.0 .0 {
                     queue.schedule(pid, due);
                     continue;
                 }
             }
+            let hq = match gid {
+                Some(id) => gs.list[&id].pos,
+                None => hq,
+            };
             let mut all = Vec::new();
             let mut enemies = Vec::new();
             for (&other, &(_, oe)) in &index.map {
@@ -476,12 +523,25 @@ pub fn respawns(
             ) {
                 *w = fresh;
             }
-            prot.until = tick.0 .0 + crate::spawn::PROTECTION_S * u32::from(cfg.hz);
             rules.last_spawn.insert(pid, tick.0 .0);
             let win = crate::spawn::FLOOD_WINDOW_S * u32::from(cfg.hz);
-            let rec = &mut rules.recent[team as usize];
-            rec.retain(|&x| tick.0 .0.saturating_sub(x) <= win);
-            rec.push(tick.0 .0);
+            let now = tick.0 .0;
+            let rec = match gid {
+                Some(id) => {
+                    let g = gs.list.get_mut(&id).unwrap();
+                    g.slots -= 1.0;
+                    g.last_spawn = Some(now);
+                    // No spawn protection at a Garrison (GAMEDESIGN 10.6).
+                    &mut g.recent
+                }
+                None => {
+                    prot.until = now + crate::spawn::PROTECTION_S * u32::from(cfg.hz);
+                    &mut rules.recent[team as usize]
+                }
+            };
+            rec.retain(|&x| now.saturating_sub(x) <= win);
+            rec.push(now);
+            rules.choice.remove(&pid);
             events.0.push(SimEvent::Spawn { player: pid, pos });
             continue;
         }
@@ -578,6 +638,7 @@ pub fn build_schedule() -> Schedule {
             vitals,
             crate::rules::objectives,
             crate::rules::match_state,
+            crate::spawn::garrison::garrisons,
             respawns,
             bookkeeping,
         )
@@ -602,6 +663,7 @@ pub fn build_schedule() -> Schedule {
             vitals,
             crate::rules::objectives,
             crate::rules::match_state,
+            crate::spawn::garrison::garrisons,
             respawns,
             bookkeeping,
         )

@@ -24,6 +24,7 @@ pub mod rules;
 pub mod schedule;
 pub mod spawn;
 pub mod step;
+pub mod supply_iface;
 pub mod suppression;
 pub mod throwables;
 pub mod view;
