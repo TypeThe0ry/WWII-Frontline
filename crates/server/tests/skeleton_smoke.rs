@@ -228,7 +228,12 @@ fn real_map_is_loaded_at_startup() {
         .spawn()
         .unwrap();
     let mut out = String::new();
-    child.stdout.take().unwrap().read_to_string(&mut out).unwrap();
+    child
+        .stdout
+        .take()
+        .unwrap()
+        .read_to_string(&mut out)
+        .unwrap();
     assert!(child.wait().unwrap().success());
     let line = out
         .lines()

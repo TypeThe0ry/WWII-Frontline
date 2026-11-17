@@ -282,7 +282,10 @@ mod tests {
         assert_ne!(p.resolve(10).cmd.buttons & buttons::FIRE, 0);
         let r = p.resolve(11);
         assert_eq!(r.cmd.buttons & EDGE_BUTTONS, 0);
-        assert_eq!(r.cmd.aux, 0x01, "walk modifier kept, one-shot aux bits cleared");
+        assert_eq!(
+            r.cmd.aux, 0x01,
+            "walk modifier kept, one-shot aux bits cleared"
+        );
     }
 
     #[test]

@@ -268,8 +268,9 @@ fn validate_inner(state: &mut PlayerInputState, cmd: &InputCmd) -> Result<Valida
     let len = mx.hypot(mz);
     if len > MAX_MOVE_LEN {
         let k = 127.0 / len;
-        out.move_x = ((mx * k).floor() as i32).clamp(-127, 127) as i8;
-        out.move_z = ((mz * k).floor() as i32).clamp(-127, 127) as i8;
+        // `as i32` truncates towards zero, so the clamped vector is never longer than 127.
+        out.move_x = ((mx * k) as i32).clamp(-127, 127) as i8;
+        out.move_z = ((mz * k) as i32).clamp(-127, 127) as i8;
         clamps |= Clamps::MOVE;
     }
 
@@ -356,10 +357,8 @@ mod tests {
     #[test]
     fn monotonic_seq_across_the_wrap() {
         let mut s = st();
-        let mut t = 100;
-        for seq in [65533u16, 65534, 65535, 0, 1, 2] {
+        for (t, seq) in (100..).zip([65533u16, 65534, 65535, 0, 1, 2]) {
             assert!(validate_input(&mut s, &cmd(seq, t)).is_ok(), "seq {seq}");
-            t += 1;
         }
         assert_eq!(
             validate_input(&mut s, &cmd(0, 200)).unwrap_err(),
@@ -452,10 +451,7 @@ mod tests {
         );
         c.buttons = 0x3FFF;
         c.weapon_slot = MAX_WEAPON_SLOT + 1;
-        assert_eq!(
-            validate_input(&mut s, &c).unwrap_err(),
-            Reject::WeaponSlot
-        );
+        assert_eq!(validate_input(&mut s, &c).unwrap_err(), Reject::WeaponSlot);
         c.weapon_slot = MAX_WEAPON_SLOT;
         assert!(validate_input(&mut s, &c).is_ok());
         let f = FireCmd {
@@ -474,7 +470,7 @@ mod tests {
     fn rate_limit_with_default_cfg_is_unreachable_for_one_tick() {
         // 8000 deg/s * 1/30 s = 266 deg > 180 deg, the largest change a wrapped 16-bit yaw (or a
         // 16-bit pitch spanning 180 deg) can express between two ticks: nothing can trip the
-        // default limit at 1-tick spacing (PLAN_ISSUES PI-020).
+        // default limit at 1-tick spacing (PLAN_ISSUES PI-022).
         let mut s = st();
         validate_input(&mut s, &cmd(1, 1)).unwrap();
         let mut c = cmd(2, 2);

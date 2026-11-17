@@ -169,9 +169,8 @@ impl Sessions {
     pub fn alloc_player_team(&self, handle: &ClientHandle) -> Option<(PlayerId, Team)> {
         let now = Instant::now();
         let mut g = self.lock();
-        let id = (0..128usize).find(|&i| {
-            g.players[i].is_none() && g.cooling_until[i].is_none_or(|t| t <= now)
-        })?;
+        let id = (0..128usize)
+            .find(|&i| g.players[i].is_none() && g.cooling_until[i].is_none_or(|t| t <= now))?;
         let team = if g.team_count[Team::Ger as usize] < g.team_count[Team::Us as usize] {
             Team::Ger
         } else {
@@ -196,7 +195,8 @@ impl Sessions {
         if i < 128 && g.players[i].take().is_some() {
             let t = g.team_of[i] as usize;
             g.team_count[t] = g.team_count[t].saturating_sub(1);
-            g.cooling_until[i] = (!self.reuse_delay.is_zero()).then(|| Instant::now() + self.reuse_delay);
+            g.cooling_until[i] =
+                (!self.reuse_delay.is_zero()).then(|| Instant::now() + self.reuse_delay);
         }
     }
 
@@ -297,7 +297,11 @@ pub async fn run_connection<T: ClientTransport>(
     };
     // The sim learns about the player before the client can send its first C1 (it only starts
     // after Welcome), so `Join` is always ordered ahead of that player's inputs.
-    if ctx.commands.try_send(Command::Join { player, team }).is_err() {
+    if ctx
+        .commands
+        .try_send(Command::Join { player, team })
+        .is_err()
+    {
         ctx.sessions.release_player(player);
         reject_label_count(&ctx, "server_full");
         send_reject(&handle, RejectReason::ServerFull);

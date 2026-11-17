@@ -2,10 +2,10 @@
 
 pub mod clock;
 pub mod config;
+pub mod input_buffer;
 pub mod logging;
 pub mod metrics;
 pub mod net;
-pub mod input_buffer;
 pub mod session;
 pub mod shutdown;
 pub mod sim_bridge;

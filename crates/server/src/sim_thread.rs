@@ -40,14 +40,9 @@ pub enum Command {
     /// Handshake finished: put the player into the world and open its input session. The team
     /// was chosen by the net layer (it is already in `Welcome`); the join position comes from the
     /// map's HQ point. (`Hello` carries no nickname in M0.)
-    Join {
-        player: PlayerId,
-        team: Team,
-    },
+    Join { player: PlayerId, team: Team },
     /// Spawn at an explicit place (tests, benches, bots); also opens a session.
-    SpawnPlayer {
-        req: SpawnReq,
-    },
+    SpawnPlayer { req: SpawnReq },
     /// Remove a player now (no session bookkeeping beyond that).
     RemovePlayer(PlayerId),
     /// The client's connection closed (published by the net layer). Idempotent.

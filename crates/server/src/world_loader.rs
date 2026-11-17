@@ -18,14 +18,30 @@ pub const REGEN_COMMAND: &str =
 #[derive(Debug)]
 pub enum MapError {
     /// `data/maps/<map>/` could not be located.
-    DataDirNotFound { map: String, searched: Vec<PathBuf> },
+    DataDirNotFound {
+        map: String,
+        searched: Vec<PathBuf>,
+    },
     /// The directory exists but has no (or unreadable) collision chunks.
-    NoChunks { dir: PathBuf },
-    Io { path: PathBuf, error: String },
-    BadChunk { path: PathBuf, error: String },
-    BadJson { path: PathBuf, error: String },
+    NoChunks {
+        dir: PathBuf,
+    },
+    Io {
+        path: PathBuf,
+        error: String,
+    },
+    BadChunk {
+        path: PathBuf,
+        error: String,
+    },
+    BadJson {
+        path: PathBuf,
+        error: String,
+    },
     /// `spawns.json` has no HQ point for this team.
-    MissingHq { team: &'static str },
+    MissingHq {
+        team: &'static str,
+    },
 }
 
 impl fmt::Display for MapError {
@@ -197,12 +213,12 @@ pub fn load_map(data_dir: &Path, map: &str) -> Result<LoadedMap, MapError> {
     let mut chunks = Vec::with_capacity(names.len());
     for (bx, bz, path) in &names {
         let bytes = read(path)?;
-        chunks.push(
-            CollisionChunk::from_bytes(*bx, *bz, &bytes).map_err(|e| MapError::BadChunk {
+        chunks.push(CollisionChunk::from_bytes(*bx, *bz, &bytes).map_err(|e| {
+            MapError::BadChunk {
                 path: path.clone(),
                 error: e.to_string(),
-            })?,
-        );
+            }
+        })?);
     }
     let chunk_count = chunks.len();
     let collision = CollisionData::from_chunks(chunks);
@@ -216,10 +232,7 @@ pub fn load_map(data_dir: &Path, map: &str) -> Result<LoadedMap, MapError> {
             .map(|(_, v)| v)
             .ok_or(MapError::MissingHq { team })?;
         let (x, z) = (e.pos[0], e.pos[1]);
-        let y = e
-            .y_m
-            .or_else(|| collision.height_at(x, z))
-            .unwrap_or(0.0);
+        let y = e.y_m.or_else(|| collision.height_at(x, z)).unwrap_or(0.0);
         Ok(HqSpawn {
             x,
             z,

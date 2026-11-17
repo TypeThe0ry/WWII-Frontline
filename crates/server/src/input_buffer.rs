@@ -154,7 +154,12 @@ mod tests {
     #[test]
     fn out_of_order_arrival_is_taken_in_tick_order() {
         let now = 100;
-        for perm in [[0, 1, 2, 3, 4], [4, 3, 2, 1, 0], [2, 4, 0, 3, 1], [1, 0, 4, 2, 3]] {
+        for perm in [
+            [0, 1, 2, 3, 4],
+            [4, 3, 2, 1, 0],
+            [2, 4, 0, 3, 1],
+            [1, 0, 4, 2, 3],
+        ] {
             let mut b = InputBuffer::new();
             for i in perm {
                 assert_eq!(b.push(c(100 + i, i as u16), now), PushResult::Accepted);

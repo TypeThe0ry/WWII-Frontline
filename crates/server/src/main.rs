@@ -79,10 +79,11 @@ fn run(cfg: Config) -> Result<(), String> {
     };
     // Terrain + spawn points. A missing map is a startup error that names the regeneration
     // command; only the hidden --empty-world (tests) skips it.
-    let map_data = if cfg.empty_world {
+    // --dev-echo never feeds inputs to the sim, so terrain is pointless there as well.
+    let map_data = if cfg.empty_world || cfg.dev_echo {
         tracing::warn!(
             event = "empty_world",
-            "--empty-world: no terrain loaded (test scaffolding; players cannot move)"
+            "--empty-world/--dev-echo: no terrain loaded (test scaffolding; players cannot move)"
         );
         None
     } else {

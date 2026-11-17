@@ -20,9 +20,7 @@ use frontline_server::shutdown::StopFlag;
 use frontline_server::sim_bridge::NetLink;
 use frontline_server::sim_thread::{build_loop, SimLoop, SimThreadConfig};
 use frontline_server::world_loader::LoadedMap;
-use frontline_sim::{
-    GameData, GameMode, MapId, PlayerId, SimConfig, SpawnReq, Team, World, WorldView,
-};
+use frontline_sim::{GameData, GameMode, MapId, PlayerId, SimConfig, SpawnReq, Team, World};
 
 const SEED: u64 = 0x5EED;
 
@@ -50,7 +48,8 @@ async fn rig(wt: bool, reuse_delay: Duration) -> Option<Rig> {
         }),
         ..SimThreadConfig::bare(SEED, MapId(0), GameMode::Sandbox)
     };
-    let (lp, _inputs, commands) = build_loop(StepClock::new(), &cfg, metrics.clone(), StopFlag::new());
+    let (lp, _inputs, commands) =
+        build_loop(StepClock::new(), &cfg, metrics.clone(), StopFlag::new());
     let srv = start_listeners(metrics, sessions, &inbound, commands, wt).await;
     Some(Rig { lp, srv, map })
 }
@@ -83,8 +82,15 @@ fn mirror(map: &LoadedMap, players: &[(PlayerId, Team)]) -> World {
 }
 
 async fn wait_c1(m: &Metrics, n: u64) {
-    let ok = wait_until(Duration::from_secs(10), || m.net_c1_inbound_total.get() >= n).await;
-    assert!(ok, "only {} of {n} bundles arrived", m.net_c1_inbound_total.get());
+    let ok = wait_until(Duration::from_secs(10), || {
+        m.net_c1_inbound_total.get() >= n
+    })
+    .await;
+    assert!(
+        ok,
+        "only {} of {n} bundles arrived",
+        m.net_c1_inbound_total.get()
+    );
 }
 
 fn rejected(m: &Metrics, reason: &str) -> u64 {
@@ -137,7 +143,8 @@ async fn two_ws_two_wt_clients_join_balanced_move_like_the_offline_world_and_lea
     let mag0 = off.weapon_state(0).unwrap().mag;
     for t in 1..=N {
         for (i, c) in clients.iter_mut().enumerate() {
-            c.send(Channel::C1, &encode(&bundle_upto(ids[i], t + 3))).await;
+            c.send(Channel::C1, &encode(&bundle_upto(ids[i], t + 3)))
+                .await;
             sent += 1;
         }
         wait_c1(&m, sent).await;
@@ -162,7 +169,11 @@ async fn two_ws_two_wt_clients_join_balanced_move_like_the_offline_world_and_lea
     for &p in &ids {
         let a = r.lp.world().player_state(p).unwrap();
         let b = off.player_state(p).unwrap();
-        assert_eq!(a.to_bytes(), b.to_bytes(), "player {p} movement state differs");
+        assert_eq!(
+            a.to_bytes(),
+            b.to_bytes(),
+            "player {p} movement state differs"
+        );
         assert_eq!(
             r.lp.world().weapon_state(p).unwrap().to_bytes(),
             off.weapon_state(p).unwrap().to_bytes(),
@@ -172,17 +183,34 @@ async fn two_ws_two_wt_clients_join_balanced_move_like_the_offline_world_and_lea
         assert!(!a.blocked, "player {p} is stuck outside the terrain");
         let (spawn, _) = r.map.join_spawn(p, joined[p as usize].1);
         let d = ((a.pos.x - spawn.x).powi(2) + (a.pos.z - spawn.z).powi(2)).sqrt();
-        eprintln!("player {p}: moved {d:.1} m from the join point, pos {:?}", a.pos);
+        eprintln!(
+            "player {p}: moved {d:.1} m from the join point, pos {:?}",
+            a.pos
+        );
         if d > 3.0 {
             moved += 1;
         }
     }
     assert_eq!(moved, 4, "terrain must be loaded: every player walks");
     // Player 0 (even) fired in ticks 20..40 of the pattern: ammo went down identically.
-    assert!(r.lp.world().weapon_state(0).unwrap().mag < mag0, "player 0 fired");
+    assert!(
+        r.lp.world().weapon_state(0).unwrap().mag < mag0,
+        "player 0 fired"
+    );
     // Redundancy produced only benign duplicates; nothing was clamped or refused otherwise.
     assert!(rejected(&m, "duplicate") > 0);
-    for reason in ["reserved_bits", "weapon_slot", "move_clamped", "yaw_rate", "pitch_rate", "too_far", "too_old", "tick_regress", "ring_overwrite", "no_session"] {
+    for reason in [
+        "reserved_bits",
+        "weapon_slot",
+        "move_clamped",
+        "yaw_rate",
+        "pitch_rate",
+        "too_far",
+        "too_old",
+        "tick_regress",
+        "ring_overwrite",
+        "no_session",
+    ] {
         assert_eq!(rejected(&m, reason), 0, "{reason}");
     }
     assert_eq!(m.input_missing_ticks_total.get(), 0);
@@ -196,7 +224,10 @@ async fn two_ws_two_wt_clients_join_balanced_move_like_the_offline_world_and_lea
         if r.lp.world().view().players().is_empty() {
             break;
         }
-        assert!(t0.elapsed() < Duration::from_secs(8), "players were not removed");
+        assert!(
+            t0.elapsed() < Duration::from_secs(8),
+            "players were not removed"
+        );
         tokio::time::sleep(Duration::from_millis(10)).await;
     }
     assert_eq!(m.players.with_label_values(&["us"]).get(), 0);
@@ -284,12 +315,57 @@ async fn replays_stale_and_far_commands_are_counted_per_reason() {
     for (cmd, _why) in [
         (cmd, "accepted"),
         (cmd, "same seq again -> duplicate"),
-        ({ let mut x = gen_cmd(p, 5); x.seq = 101; x }, "too old"),
-        ({ let mut x = gen_cmd(p, 90); x.seq = 102; x }, "too far"),
-        ({ let mut x = gen_cmd(p, 23); x.seq = 99; x }, "seq went backwards -> duplicate"),
-        ({ let mut x = gen_cmd(p, 22); x.seq = 103; x }, "tick already buffered -> duplicate"),
-        ({ let mut x = gen_cmd(p, 23); x.seq = 104; x.weapon_slot = 9; x }, "weapon slot"),
-        ({ let mut x = gen_cmd(p, 24); x.seq = 105; x.move_x = 127; x.move_z = 127; x }, "clamped but accepted"),
+        (
+            {
+                let mut x = gen_cmd(p, 5);
+                x.seq = 101;
+                x
+            },
+            "too old",
+        ),
+        (
+            {
+                let mut x = gen_cmd(p, 90);
+                x.seq = 102;
+                x
+            },
+            "too far",
+        ),
+        (
+            {
+                let mut x = gen_cmd(p, 23);
+                x.seq = 99;
+                x
+            },
+            "seq went backwards -> duplicate",
+        ),
+        (
+            {
+                let mut x = gen_cmd(p, 22);
+                x.seq = 103;
+                x
+            },
+            "tick already buffered -> duplicate",
+        ),
+        (
+            {
+                let mut x = gen_cmd(p, 23);
+                x.seq = 104;
+                x.weapon_slot = 9;
+                x
+            },
+            "weapon slot",
+        ),
+        (
+            {
+                let mut x = gen_cmd(p, 24);
+                x.seq = 105;
+                x.move_x = 127;
+                x.move_z = 127;
+                x
+            },
+            "clamped but accepted",
+        ),
     ] {
         c.send(Channel::C1, &encode(&send(cmd))).await;
         n += 1;
@@ -343,7 +419,9 @@ async fn player_id_is_not_reused_within_one_second_of_a_disconnect() {
     drop(c);
     let t_drop = Instant::now();
     assert!(
-        wait_until(Duration::from_secs(5), || r.srv.sessions.team_counts() == [0, 0]).await
+        wait_until(Duration::from_secs(5), || r.srv.sessions.team_counts()
+            == [0, 0])
+        .await
     );
     let (c2, w2) = Conn::handshake(r.srv.target(Kind::Ws)).await;
     assert_ne!(w2.player_id, 0, "id 0 is cooling down");
@@ -361,6 +439,8 @@ fn welcome_team_matches_the_team_counts_of_the_sessions() {
     let m = Metrics::new();
     let s = Sessions::with_reuse_delay(m.clone(), 4, 128, Duration::ZERO);
     let h = frontline_server::net::transport::ClientHandle::new(m);
-    let teams: Vec<_> = (0..8).map(|_| s.alloc_player_team(&h).unwrap().1 as u8).collect();
+    let teams: Vec<_> = (0..8)
+        .map(|_| s.alloc_player_team(&h).unwrap().1 as u8)
+        .collect();
     assert_eq!(teams, vec![0, 1, 0, 1, 0, 1, 0, 1]);
 }

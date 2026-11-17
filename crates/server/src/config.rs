@@ -46,7 +46,7 @@ pub struct Config {
     pub dev_cert: bool,
     /// Test scaffolding only: answer every valid C1 bundle with a C2 datagram **instead of**
     /// feeding it to the session layer (players then never move). Used by the transport stress
-    /// tests that need a downlink before snapshots exist (M0-019).
+    /// tests that need a downlink before snapshots exist (M0-019). Implies `--empty-world`.
     #[arg(long, hide = true, env = "FRONTLINE_DEV_ECHO", default_value_t = false)]
     pub dev_echo: bool,
     /// Directory holding `maps/<map>/` (the repository's `data/`). Default: searched upwards
@@ -55,7 +55,12 @@ pub struct Config {
     pub data_dir: Option<std::path::PathBuf>,
     /// Test scaffolding only: start with an empty collision world instead of loading the map
     /// (players cannot move). Never use in a real match.
-    #[arg(long, hide = true, env = "FRONTLINE_EMPTY_WORLD", default_value_t = false)]
+    #[arg(
+        long,
+        hide = true,
+        env = "FRONTLINE_EMPTY_WORLD",
+        default_value_t = false
+    )]
     pub empty_world: bool,
     /// Prometheus `/metrics` port. 0 = ephemeral (actual port is logged).
     #[arg(long, env = "FRONTLINE_METRICS_PORT", default_value_t = 9100)]

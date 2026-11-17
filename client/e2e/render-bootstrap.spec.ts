@@ -91,7 +91,7 @@ test('window.__perf.dump() has the fixed schema (acceptance 2)', async ({ page }
   await framesAtLeast(page, 30);
   const d = await page.evaluate(() => window.__perf!.dump() as unknown as Record<string, unknown>);
   expect(Object.keys(d).sort()).toEqual(
-    ['active_meshes', 'cpu_ms', 'draw_calls', 'fallback_reason', 'fps', 'frames', 'gpu_ms', 'interval_ms', 'render_scale', 'renderer', 'resolution', 'schema', 'sim', 'slots', 'timestamp_ms', 'triangles'].sort(),
+    ['active_meshes', 'cpu_ms', 'draw_calls', 'fallback_reason', 'fps', 'frames', 'gpu_ms', 'interval_ms', 'render_scale', 'renderer', 'resolution', 'schema', 'sim', 'slots', 'timestamp_ms', 'triangles', 'vegetation'].sort(),
   );
   expect(Object.keys(d.cpu_ms as object).sort()).toEqual(['count', 'max', 'mean', 'p50', 'p99']);
   expect(d.draw_calls as number).toBeGreaterThan(0);

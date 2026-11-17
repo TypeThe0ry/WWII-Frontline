@@ -7,7 +7,7 @@ use std::sync::{Arc, OnceLock};
 use std::time::{Duration, Instant};
 
 use crossbeam_channel::Sender;
-use frontline_protocol::msg::input::{encode_input_bundle, buttons, InputBundle, InputCmd};
+use frontline_protocol::msg::input::{buttons, encode_input_bundle, InputBundle, InputCmd};
 use frontline_protocol::Channel;
 use frontline_server::clock::Clock;
 use frontline_server::metrics::Metrics;
@@ -19,8 +19,8 @@ use frontline_server::sim_thread::Command;
 use frontline_server::world_loader::{self, LoadedMap};
 use wtransport::tls::Sha256Digest;
 
-use super::Target;
 use super::Kind;
+use super::Target;
 
 /// Test clock: `sleep_until` jumps straight to the deadline, so a manually driven loop runs as
 /// fast as the CPU allows while keeping the real tick bookkeeping.
@@ -180,10 +180,10 @@ pub fn gen_cmd(player: u8, tick: u32) -> InputCmd {
     if phase == 4 {
         b |= buttons::CROUCH;
     }
-    if tick % 45 == 0 {
+    if tick.is_multiple_of(45) {
         b |= buttons::JUMP;
     }
-    if player % 2 == 0 && (30..40).contains(&(tick % 90)) {
+    if player.is_multiple_of(2) && (30..40).contains(&(tick % 90)) {
         b |= buttons::FIRE;
     }
     if tick % 70 > 50 {
