@@ -10,6 +10,8 @@
     "typecheck": "pnpm -C client typecheck",
     "test": "pnpm -C client test",
     "check-layout": "node tools/ci/check-layout.mjs",
-    "ci:test": "node --test \"tools/ci/test/*.test.mjs\""
+    "ci:test": "node --test \"tools/ci/test/*.test.mjs\"",
+    "data:validate": "node tools/data-validate/index.mjs --root data",
+    "data:test": "pnpm -C tools/data-validate test"
   }
 }

@@ -15,6 +15,8 @@ export const CLEAR_COLOR = { r: 0.04, g: 0.06, b: 0.1 } as const;
 export interface TestSceneOptions {
   /** WASD + mouse free camera (reused by M0-023). */
   fly: boolean;
+  /** Camera + light only (no meshes); noise-floor measurement for M0-030. */
+  empty?: boolean;
 }
 
 function mat(scene: Scene, name: string, c: Color3): StandardMaterial {
@@ -34,7 +36,12 @@ export function createTestScene(engine: AbstractEngine, canvas: HTMLCanvasElemen
   const light = new DirectionalLight('PH_TEST_sun', new Vector3(-0.4, -1, -0.3), scene);
   light.intensity = 1.0;
 
-  const ground = MeshBuilder.CreateGround('PH_TEST_ground', { width: 100, height: 100 }, scene);
+  if (!opts.empty) addGrayBox(scene);
+  return finishCamera(scene, canvas, opts);
+}
+
+function addGrayBox(scene: Scene): void {
+  const ground = MeshBuilder.CreateGround('PH_TEST_ground', { width: 400, height: 400 }, scene);
   ground.material = mat(scene, 'PH_TEST_ground_mat', new Color3(0.25, 0.4, 0.22));
 
   // Grid lines every 10 m.
@@ -60,6 +67,9 @@ export function createTestScene(engine: AbstractEngine, canvas: HTMLCanvasElemen
     s.material = sphMat;
   }
 
+}
+
+function finishCamera(scene: Scene, canvas: HTMLCanvasElement, opts: TestSceneOptions): Scene {
   let camera: Camera;
   if (opts.fly) {
     const cam = new UniversalCamera('PH_TEST_flycam', new Vector3(0, 3, -20), scene);
@@ -77,7 +87,7 @@ export function createTestScene(engine: AbstractEngine, canvas: HTMLCanvasElemen
     });
     camera = cam;
   } else {
-    const cam = new ArcRotateCamera('PH_TEST_orbitcam', -Math.PI / 2, Math.PI / 3, 40, new Vector3(0, 1, 0), scene);
+    const cam = new ArcRotateCamera('PH_TEST_orbitcam', -Math.PI / 2, 0.9, 45, new Vector3(0, 1, 0), scene);
     cam.minZ = 0.1;
     cam.wheelPrecision = 20;
     cam.attachControl(canvas, true);

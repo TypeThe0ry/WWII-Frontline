@@ -6,6 +6,7 @@ declare global {
   interface Window {
     __perf?: PerfApi;
     __smoke?: unknown;
+    __caps?: unknown;
   }
 }
 
@@ -22,6 +23,7 @@ async function boot(): Promise<void> {
   const ctx = await createRenderer(canvas, {
     renderer: parseRendererParam(params.get('renderer')),
     fly: params.get('fly') === '1',
+    empty: params.get('empty') === '1',
   });
 
   const overlay = new DebugOverlay(params.get('debug') === '1');

@@ -64,3 +64,39 @@
 - **受影响任务**：M0-006、M0-014、M0-016、M0-018（使用这些编码）。
 - **临时处理**：按上述实现并以 golden bytes 固定（crates/protocol/tests/golden/）。
 - **裁决（Fable 填写）**：
+
+### PI-002 文档冲突：数据字段命名（ID 与单位后缀）以 GAMEDESIGN §0.3 / §6.4–6.6 口径统一
+
+- **状态**：open
+- **类别**：文档冲突
+- **提出者 / 日期**：M0-004 / 2026-11-17
+- **问题**：ARCHITECTURE §8.5.1 示例用 `m1_garand`、绝对伤害 `damage_head`、`drag_k_per_m`；GAMEDESIGN §6.1/§6.3 用 `us_m1_garand`、`part_mult`、`k_drag`、`rpm_cyclic`。ARCH §8.5.2/§8.5.4 的 `health`、`max_speed_kph`、`stiffness` 等也不带单位后缀或使用 kph，违反 §8.5 通则"所有数值带单位后缀"。
+- **证据**：`data/README.md` "Field-name mapping" 表逐项列出；校验器 `tools/data-validate/rules/units.mjs` 强制。
+- **建议方案**：Fable 把 ARCH §8.5.1–§8.5.4 示例改为 `data/schemas/*.schema.json` 的字段名（ID 取 GAMEDESIGN §0.3）。
+- **受影响任务**：M0-008、M0-011、M0-013（按本 schema 写数据）。
+- **临时处理**：按 data/schemas 与 data/README.md 的映射实现。
+- **裁决（Fable 填写）**：
+
+### PI-003 数据 schema 细化：M0 字段集、可选 _meta、loadout 引用口径
+
+- **状态**：open
+- **类别**：协议/数据
+- **提出者 / 日期**：M0-004 / 2026-11-17
+- **问题**：落地时补全了文档未定的细节：①weapon `class`/vehicle `type` 为封闭枚举，新类别须先改 schema；②`historical` 数值可写 `"未核实"`，`_source` 必填；③map_meta/spawns 按 MAPS §6.2 原样，`_meta` 可选（其余四类必填）；④loadout 的 `gadget_1/2`、`melee` 的 id 都必须指向 weapon id（GAMEDESIGN §6.1 把手雷等列为 weapon）；⑤role 增加可选 `capsule{radius_m,height_stand_m,height_crouch_m}`；⑥校验器额外规则：role 速度需 prone<crouch<walk<run<sprint，role.loadout_ids 所指 loadout 的 role/faction 必须匹配，文件名须等于 id；⑦faction 枚举小写 `us|ger`（data 文件），`US|GER`（MAPS spawns）。`rules/*.json`、`maps/*/map.json` 暂无 schema（只进哈希）。
+- **证据**：data/schemas/*.schema.json、tools/data-validate/rules/*.mjs。
+- **建议方案**：Fable 在 ARCH §8.5 加"变更说明"指向 data/README.md；后续任务新增字段一律追加可选字段并同步 `crates/sim/src/data_defs.rs`。
+- **受影响任务**：M0-008、M0-011、M0-013、M0-032。
+- **临时处理**：按此实现。
+- **裁决（Fable 填写）**：
+
+### PI-004 依赖登记：sim 新增 serde / serde_json / sha2；crate 包名为 frontline-sim
+
+- **状态**：open
+- **类别**：其它
+- **提出者 / 日期**：M0-004 / 2026-11-17
+- **问题**：`crates/sim` 新增 dependency 与 build-dependency：serde 1（derive）、serde_json 1、sha2 0.10（均 MIT/Apache-2.0）。ARCH §4.3.2 允许 serde（仅数据解析）；sha2 若 INDEX 未列出，在此登记。另：任务验收写 `cargo test -p sim`，实际包名是 `frontline-sim`（M0-001），应使用 `cargo test -p frontline-sim data_hash_stable`。`sim` 的 wasm32 构建需确认 sha2/serde_json 可编译（M0-014 验证）。
+- **证据**：`cargo test -p frontline-sim` 通过；Cargo.lock。
+- **建议方案**：接受；任务/文档里的 `-p sim` 改 `-p frontline-sim`。
+- **受影响任务**：M0-007、M0-014。
+- **临时处理**：按此实现。
+- **裁决（Fable 填写）**：

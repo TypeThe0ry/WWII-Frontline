@@ -1,12 +1,13 @@
 # PR gate: /data validation (ARCHITECTURE §17.5, target < 2 min).
-# Placeholder created by M0-002; M0-004 adds the validator and replaces the step below.
+# M0-002 created the placeholder; M0-004 wires in tools/data-validate.
+# Triggers only on data / validator changes (the sim build.rs type-check runs in test-rust).
 name: data-validate
 on:
   pull_request:
-    paths: ["data/**", ".github/workflows/data-validate.yml"]
+    paths: ["data/**", "tools/data-validate/**", ".github/workflows/data-validate.yml"]
   push:
     branches: [main]
-    paths: ["data/**"]
+    paths: ["data/**", "tools/data-validate/**"]
 permissions:
   contents: read
 jobs:
@@ -15,5 +16,15 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
-      - name: Validate data (placeholder)
-        run: echo "data validation lands with M0-004"
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile --filter @frontline/data-validate...
+      - name: Validator unit tests (rules + every invalid fixture via the CLI)
+        run: pnpm -C tools/data-validate test
+      - name: Fixture suite
+        run: node tools/data-validate/index.mjs --fixtures
+      - name: Validate /data
+        run: node tools/data-validate/index.mjs --root data

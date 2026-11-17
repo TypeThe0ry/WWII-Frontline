@@ -15,6 +15,7 @@ export type RendererKind = 'webgpu' | 'webgl2';
 export interface RendererOptions {
   renderer: RendererPref;
   fly: boolean;
+  empty?: boolean;
 }
 
 export interface RenderContext {
@@ -76,7 +77,7 @@ function freshCanvas(old: HTMLCanvasElement): HTMLCanvasElement {
 }
 
 export async function createRenderer(canvas: HTMLCanvasElement, opts: RendererOptions): Promise<RenderContext> {
-  const caps = await probeCapabilities(navigator, location.search.includes('nogl') ? undefined : probeGl2);
+  const caps = await probeCapabilities(navigator, probeGl2);
   let fallbackReason: string | null = null;
   let engine: AbstractEngine | null = null;
   let kind: RendererKind = 'webgl2';
@@ -90,7 +91,7 @@ export async function createRenderer(canvas: HTMLCanvasElement, opts: RendererOp
       const gpu = new WebGPUEngine(canvas, {
         antialias: true,
         adaptToDeviceRatio: true,
-        deviceDescriptor: caps.webgpu.timestampQuery && !location.search.includes('nots') ? { requiredFeatures: ['timestamp-query'] } : undefined,
+        deviceDescriptor: caps.webgpu.timestampQuery ? { requiredFeatures: ['timestamp-query'] } : undefined,
       });
       try {
         await withTimeout(gpu.initAsync(), WEBGPU_INIT_TIMEOUT_MS, 'WebGPUEngine.initAsync');
@@ -125,7 +126,7 @@ export async function createRenderer(canvas: HTMLCanvasElement, opts: RendererOp
   }
 
   const eng = engine;
-  const scene = createTestScene(eng, canvas, { fly: opts.fly });
+  const scene = createTestScene(eng, canvas, { fly: opts.fly, empty: opts.empty });
   const frameStats = new FrameStats();
   const gpuTimer = new GpuTimer(eng, kind, caps);
   const sceneInstr = new SceneInstrumentation(scene);
@@ -135,6 +136,7 @@ export async function createRenderer(canvas: HTMLCanvasElement, opts: RendererOp
     kind,
     fallbackReason,
     gpuTimerSource: gpuTimer.source,
+    readyMs: performance.now(),
     ...caps,
   };
 

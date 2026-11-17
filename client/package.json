@@ -12,7 +12,8 @@
     "preview": "vite preview",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run --passWithNoTests"
+    "test": "vitest run --passWithNoTests",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@babylonjs/core": "8.56.2",
@@ -21,6 +22,7 @@
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
+    "@playwright/test": "1.63.0",
     "eslint": "10.15.0",
     "typescript": "6.0.3",
     "typescript-eslint": "8.73.0",
