@@ -1822,3 +1822,366 @@ stateDiagram-v2
 
 **i18n 前缀：** `ui.toast.*`、`ui.banner.*`、`ui.tutorial.*`、`ui.dialog.*`
 
+
+---
+
+## 5. 默认热键表
+
+### 5.1 设计原则
+
+1. 以左手 WASD 为中心，常用键在 `Shift/C/Z/Q/E/F/R/V/B/N` 范围内可达。
+2. **不使用 `Ctrl`、`Alt`、`Win/Cmd`、`F5`/`F11`/`F12` 作为战斗核心键**（与浏览器/操作系统冲突，见 §5.5）。
+3. 所有动作可重绑定；"按住/切换"成对提供。
+4. 同一键在不同"上下文"可有不同功能（步行/载具/菜单），上下文之间不得冲突（§5.3）。
+
+### 5.2 默认键位
+
+| 分类 | 动作 | 默认键 | 备注 |
+|---|---|---|---|
+| 移动 | 前/左/后/右 | `W` `A` `S` `D` | |
+| 移动 | 冲刺 | `Left Shift`（按住） | 可改为切换 |
+| 移动 | 跳跃/翻越 | `Space` | |
+| 姿态 | 蹲伏 | `C`（按住/切换可选） | **不使用 Ctrl**（`Ctrl+W` 等无法拦截） |
+| 姿态 | 卧倒 | `Z`（切换） | 双击 `C` 亦可（可选） |
+| 探身 | 左探/右探 | `Q` / `E` | 按住 |
+| 交互 | 交互/拾取/修理/上下车 | `F`（长按触发长动作） | |
+| 武器 | 主武器/副武器/投掷物/装备A/装备B | `1` `2` `3` `4` `5` | 4/5 随兵种而异（望远镜/医疗包/弹药箱/锤等） |
+| 武器 | 上/下一把 | 滚轮 | 可改为"调整瞄准距离"（机枪/载具） |
+| 武器 | 开火 | 鼠标左键 | |
+| 武器 | 瞄准 ADS | 鼠标右键（按住/切换可选） | |
+| 武器 | 换弹 | `R` | 载具内=切换弹种 |
+| 武器 | 射击模式 | `X` | Semi/Auto/Burst，机枪=架设 |
+| 武器 | 快速投掷 | `G` | 按住瞄准，松开投出 |
+| 武器 | 近战 | `H` | |
+| 地图 | 战术地图 | `M` | |
+| 界面 | 记分板 | `Tab`（按住） | `Shift+Tab` 锁定 |
+| 界面 | 小队面板 | `U` | |
+| 界面 | 指挥官面板 | `K` | 仅 Commander |
+| 语音 | 小队 PTT | `V`（按住） | |
+| 语音 | 近距 PTT | `B`（按住） | |
+| 语音 | 指挥/车组 PTT | `N`（按住） | 车内自动为车组 |
+| 文字 | 打开聊天 | `Enter` | 输入态内 `Tab` 切换频道 |
+| 标记 | Ping | 鼠标中键（短按）；按住=Ping 轮盘 | |
+| 轮盘 | 语音短语轮盘 | `T`（按住） | |
+| 轮盘 | 建造轮盘 | `Y`（按住） | |
+| 载具 | 切换座位 1–5 | `1`–`5`（车内） | 与武器槽共用数字键，上下文区分 |
+| 载具 | 视角切换 | `C`（车内） | |
+| 载具 | 离车 | `F`（长按） | |
+| 通用 | 暂停菜单 | `Esc` | 浏览器强制保留 |
+| 通用 | 投票赞成/反对 | `F1` / `F2` | 仅投票横幅可见时生效 |
+| 通用 | 截图 | 浏览器/系统默认 | 不拦截 |
+
+### 5.3 上下文与冲突规则
+
+- **上下文集合：** `OnFoot`、`InVehicle`、`Gunner`（火炮/炮塔）、`Downed`、`Map`、`Menu`、`Chat`。同一上下文内不允许两个动作绑定同一键；跨上下文可复用，但"全局动作"（Esc、Tab、M、Enter 聊天）不得被局部上下文覆盖。
+- **重绑定冲突：** 设置页实时检测。同上下文冲突 → 红框（`danger`+⚠形）并提示"与 X 冲突"，提供"互换/解除对方/取消"三选项。
+- **保留键（不可绑定）：** `Esc`、`F11`、`F12`、`Left/Right Win/Meta`、`Print Screen`、`Ctrl+W/T/N/Q/Tab`（及其 Cmd 版）。绑定界面直接拒绝并说明原因。
+- **允许绑定：** 字母、数字、小键盘、`Shift`（独立修饰键）、`Space`、`Enter`、`Tab`（有限）、方向键、鼠标 1–5 键、滚轮上下、`CapsLock`。
+- **组合键：** 仅允许 `Shift+x`（部分动作），不允许 `Ctrl+x`/`Alt+x`。
+- **键盘布局：** 用 `KeyboardEvent.code`（物理位置）而不是 `key`，保证 AZERTY/QWERTZ 下 WASD 位置不变；界面显示时用 `navigator.keyboard.getLayoutMap()`（Chromium，未核实其他浏览器）取本地化键帽字符，不可用则显示 `code` 名称。
+
+### 5.4 可重绑定范围
+
+- 全部游戏动作（§5.2 全部行）可重绑定，**除** `Esc`、投票键 `F1/F2`（可改但仅限 F 键区）。
+- 每个动作支持 **主键 + 副键**；鼠标键与键盘键均可。
+- 提供"重置此项/重置全部"与 3 个键位方案槽（本地存储）；可导出/导入 JSON（`ui.settings.controls.export`）。
+- 灵敏度与"按住/切换"选项独立于键位。
+
+### 5.5 浏览器限制与规避方案
+
+| 限制 | 现象 | 规避/设计应对 |
+|---|---|---|
+| **Pointer Lock 需用户手势** | 必须在点击/按键等手势中 `requestPointerLock()`；刚被 `Esc` 退出后立即重锁可能被拒（Chromium 有短暂冷却，具体时长未核实） | 所有"返回战斗"路径都落在用户手势上；若请求失败显示"点击继续"全屏遮罩；不设自动重锁 |
+| **`Esc` 退出 Pointer Lock，且不可 `preventDefault`** | 玩家按 `Esc` 会被浏览器先解锁 | 把 `Esc` 设计为"暂停菜单"（§4.18）；`pointerlockchange` 事件触发打开菜单，而不是报错；地图/记分板的关闭用 `M`/`Tab` 自己的键 |
+| **Keyboard Lock API** | `navigator.keyboard.lock([...])` 在全屏下可让页面接收通常被系统/浏览器保留的按键，并可用"长按 Esc"退出全屏；仅 Chromium 系，行为未核实 | 提供"进入全屏并锁定键盘"设置项（默认关闭，首次进入游戏时一次性提示）；锁定码列表仅包含游戏需要的键（`Escape`, `KeyW`, …），**不依赖它来保证核心操作** |
+| **`Ctrl+W` / `Ctrl+T` / `Ctrl+N` / `Ctrl+Tab` / `Alt+F4` / `Alt+Tab`** | 页面无法拦截（关闭标签/退出）；`Ctrl+W` 可能在对局中误关页面 | 默认键位**完全不用 Ctrl/Alt**；`beforeunload` 对话框（仅对局中）降低误关风险；蹲伏默认 `C` |
+| **`F5` / `Ctrl+R`** | 会刷新页面 | 对局中 `preventDefault` + `beforeunload` 提示；服务器浏览器内 F5 仅刷新列表 |
+| **`F11`** | 浏览器全屏 | 提供游戏内全屏按钮（`requestFullscreen()` 用户手势） |
+| **`Tab` 切换焦点** | 默认移动浏览器焦点 | 对局内全局 `preventDefault`；菜单内保留 Tab 焦点循环 |
+| **右键菜单** | 默认弹出 | 对局内 `contextmenu` `preventDefault` |
+| **鼠标侧键（后退/前进）** | 浏览器后退 | 绑定时 `preventDefault` 并拦截 `auxclick` 导航；仍可能因浏览器而异（未核实） |
+| **滚轮缩放（`Ctrl+滚轮`）** | 页面缩放 | 不使用 Ctrl；若检测到页面缩放 ≠ 100% 显示 `warn`（影响 UI 缩放计算） |
+| **失焦/切标签** | 键位"粘住" | `blur`/`visibilitychange` 时清空所有按键状态并打开暂停菜单 |
+| **未调整的鼠标移动** | 系统鼠标加速影响瞄准 | 使用 `requestPointerLock({ unadjustedMovement: true })`（Chromium，未核实）；不可用则提示 |
+
+---
+
+## 6. 响应式与缩放规则、安全区、超宽屏
+
+### 6.1 基准与缩放
+
+- **设计基准：1920×1080**。`--pl-ui-scale = clamp(0.667, min(vw/1920, vh/1080), 2.0) × userScale`（`userScale` 来自设置 75%–200%）。HUD 与菜单整体按此缩放，不做逐元素重排（避免 1280×720 下的 reflow 差异）。
+- 最小支持窗口 1280×720：在此尺寸 `--pl-ui-scale ≈ 0.667`；`--pl-fs-xs`（12 px）实际 8 px 过小 → **字号下限规则**：计算后字号 `< 11 px`（中文 `< 12 px`）时按下限夹紧，并相应使元素间距允许 reflow（HUD 元素允许变为"紧凑变体"）。
+- devicePixelRatio：DOM 以 CSS 像素布局；Canvas（地图）用 `devicePixelRatio` 缩放，上限 2×（防止 4K 屏重绘预算爆炸）。
+- 页面缩放（浏览器 Ctrl+±）：检测 `devicePixelRatio` 与 `visualViewport.scale` 异常并提示，不尝试补偿。
+
+### 6.2 断点（以视口宽度/高度比与高度为准）
+
+| 档位 | 视口 | 变化 |
+|---|---|---|
+| Compact | 高 < 800 或宽 < 1500 | 部署界面详情抽屉改底部面板；服务器浏览器筛选栏折叠为图标；记分板隐藏次要列（助攻/防守分）；HUD 紧凑变体（击杀播报 2 条、小队成员 ≤ 6 行） |
+| Standard | 1500 ≤ 宽 < 2560 | 基准布局 |
+| Large | 2560 ≤ 宽 < 3440 | 菜单最大容器 1600 px 居中；HUD 缩放继续按 `ui-scale`，但上限 1.5×（避免巨型 HUD） |
+| Ultrawide | 宽高比 ≥ 2.1:1（含 3440×1440） | 见 §6.4 |
+
+### 6.3 安全区
+
+- **HUD 安全框：** 左右各 `max(48 px, 2.5% 宽)`，上下各 `max(32 px, 3% 高)`（× `ui-scale`）；设置内"安全区边距"滑块 0–10% 供用户调整（适配大屏电视式显示器/过扫描）。
+- 刘海/异形屏：不支持移动端，忽略 `env(safe-area-inset-*)`；但全屏时仍读取这些值作为兜底（0）。
+- 模态框与面板必须完全落在安全框内；全屏背景（地图、遮罩）可铺满。
+
+### 6.4 超宽屏（21:9 / 32:9）
+
+- **HUD 锚定到 16:9 中央区域**：设置项"HUD 宽度"默认"16:9 居中"（避免要转头才能看到弹药）；可选"全宽"。
+- 3D 视野（水平 FOV）由渲染层处理（Hor+）；UI 不得假设中心偏移。
+- 战术地图/记分板等全屏界面：地图保持方形比例居中，两侧空白放置图层栏与信息栏（不拉伸地图）。
+- 部署界面：最大容器 2000 px 居中；两侧留白显示背景制图纹理（静态，低成本）。
+- 竖屏/窄窗（宽高比 < 1.3）：显示"请使用更宽的窗口"提示并禁用部署界面（可继续主菜单）。
+
+### 6.5 测试矩阵（执行要求）
+
+| 分辨率 | 目的 |
+|---|---|
+| 1280×720 | 最小；字号下限与紧凑变体 |
+| 1366×768 | 常见笔记本；Compact |
+| 1920×1080 | 基准；视觉回归主机位 |
+| 2560×1440 | Large |
+| 3440×1440 | Ultrawide |
+| 3840×2160 | DPR 与 Canvas 预算 |
+
+Playwright 视觉回归覆盖每屏 × 以上分辨率 × 两种语言（中文文本最长、英文最宽）。
+
+---
+
+## 7. 辅助功能
+
+### 7.1 色盲模式
+
+- 提供：默认 / 红绿色盲优化 / 蓝黄色盲优化 / 高对比 / 自定义（§2.2.3）。
+- 形状冗余始终开启：友军=切角矩形、敌军=菱形、中立=方形、未知=四瓣；不可由设置关闭。
+- 地图区域着色在色盲模式下追加图案：我方=横向细纹、敌方=斜纹、中立=点阵。
+- 状态色全部配形（§2.2.2 第 4 条）。
+- 所有以颜色编码的列表（重生点状态、小队状态）额外有文字或图标标签。
+
+### 7.2 字幕与声音可视化
+
+- **字幕：** 对语音（若 LiveKit 提供转写则显示；首发**不做**语音转写，标注 `未实现`）、关键 UI 音效与游戏事件提供文字/图标等价：命令到达、被击倒、医疗靠近、友军呼叫、爆炸/空袭预警。字幕样式：字号 3 档、背景不透明度 0–100%、说话者名称色标。
+- **声音可视化（可选）：** HUD 外环以楔形显示重要声音方向（脚步、枪声、载具、爆炸），强度映射距离；与"受击方向"不同形状（虚线短楔 vs 实心楔）。**注意：** 这会向玩家提供额外情报（与普通玩家的听觉对称），因此默认关闭，并受服务器声音 AOI 限制（只显示听得到的声音）。
+
+### 7.3 字号与布局
+
+- UI 缩放 75–200%；聊天与字幕独立字号（12–24 px）；中文最小 13 px。
+- 文本不使用纯图片；全部 DOM 文本，支持系统字体大小（`rem` 基准，由 `--pl-ui-scale` 覆盖）。
+- 行高与段落间距在"大字号"模式下增 15%。
+- 点击目标：辅助模式下最小 40×40 px；悬停提示的触发区放大。
+- 键盘全可达：菜单 100% 可用 Tab/方向键/Enter/Space/Esc 操作；焦点环 §2.6；读屏：`role`/`aria-label`/`aria-live` 规范（菜单类屏有读屏；**战斗 HUD 不保证读屏可用**，诚实标注）。
+
+### 7.4 减少晃动 / 动态
+
+- 总开关"减少动态"（默认遵循系统 `prefers-reduced-motion`）：
+  - 关闭：屏幕震动、镜头晃动/呼吸、受击抖动、过渡缩放/弹跳、描线绘制、脉动暗角/倒计时环动画。
+  - 保留：状态变化（用静态替代）：受击=静态方向楔 + 静态边框；流血=固定斜线纹边框；压制=固定暗角。
+- 单独开关：运动模糊、镜头晃动（头部摆动）、武器后坐视觉强度（0–100%，不影响实际弹道）。
+- **闪光/频闪：** 限制任何元素每秒闪烁 > 3 次（WCAG 闪光阈值参考，未逐条核实）；爆炸闪白设"光敏模式"（上限亮度与时长）。
+
+### 7.5 其他
+
+- 按住/切换替代：蹲伏、卧倒、冲刺、ADS、PTT 均可改为切换。
+- 单手模式（实验）：提供将"蹲/卧/探身"移到鼠标侧键的预设。
+- 计时型操作（长按交互、倒地放弃）可调节"长按时长"系数 ×0.5–×2。
+
+---
+
+## 8. UI 性能预算
+
+### 8.1 总预算
+
+| 指标 | 目标（High 档，RTX 3060，1080p） | 上限（Low 档/核显） | 测量方法 |
+|---|---|---|---|
+| UI 总 CPU 时间/帧（脚本+样式+布局+绘制，主线程） | ≤ 1.5 ms 均值，≤ 3 ms P95 | ≤ 2.5 ms 均值 | `performance.measure` + Chrome tracing，Playwright 跑 100 人压测录像 |
+| 战斗态 HUD DOM 节点数 | ≤ 350 | ≤ 500 | 脚本统计 `document.querySelectorAll('*')` 范围（HUD 根） |
+| 菜单/部署界面 DOM 节点数 | ≤ 1500（记分板虚拟化） | ≤ 2500 | 同上 |
+| 战术地图 Canvas 重绘 | 静态底图 0 次/帧；动态层 ≤ 15 fps（全屏地图打开时 ≤ 30 fps） | ≤ 10 fps | 帧计时 |
+| 地图单次重绘耗时 | ≤ 2 ms（200 个单位+100 个标记） | ≤ 4 ms | `performance.now` |
+| 每秒 DOM 写入（属性/文本变更） | ≤ 400 | ≤ 600 | MutationObserver 采样 |
+| 布局抖动（强制同步布局次数/帧） | 0 | 0 | tracing 校验 |
+| UI 内存（JS 堆，不含资源） | ≤ 60 MB | ≤ 80 MB | `performance.memory`（Chromium） |
+| 首次交互延迟（主菜单可点击） | ≤ 2 s（二次访问），≤ 6 s（首次，4G 估算） | — | 实测 |
+
+注：以上均为初值【待调参】，须在 M0/M1 以实测校准；"UI 总预算 ≤ 3 ms/帧"是为 16.6 ms 帧预算中给渲染留足余量的取舍。
+
+### 8.2 更新频率策略
+
+- **信号粒度：** 每个 HUD 元素订阅独立信号（弹药、姿态、体力…），禁止订阅整个游戏状态对象；`TEAM` 通道到来时批量更新到一个 `requestAnimationFrame` 中。
+- **数据到视图的节流：** `SNAP`→UI 默认最高 20 Hz；数值型元素（体力条、计时）用 CSS transform/`transition` 插值，不逐帧改文本。
+- **每帧更新（允许）：** 准星位置（transform）、指南针带（单个 `transform: translateX`）、受击楔形淡出（`opacity`）。其它元素禁止每帧写 DOM。
+- **事件驱动：** 击杀播报、toast、横幅为纯事件，不轮询。
+- **列表：** 小队列表 ≤ 8 行常驻；记分板 100 行用虚拟滚动；聊天保留 100 条上限，DOM 回收。
+- **后台：** 页面 `visibilityState !== 'visible'` 时暂停所有 UI 动画与 Canvas 重绘。
+
+### 8.3 渲染与样式约束
+
+- 只动画 `transform`/`opacity`；`will-change` 仅用于指南针带、受击楔、血雾覆盖层（≤ 6 个层）。
+- **禁止**：大面积 `backdrop-filter`（成本高）、CSS `filter: blur()` 大面积、`box-shadow` 模糊阴影、`clip-path` 动画（切角在静态元素上使用；动画时用遮罩/伪元素）。
+- 切角面板：静态 `clip-path`，批量面板少于 30 个；否则用 SVG 背景。
+- 图标：SVG sprite `<use>`；地图用 `Path2D` 缓存；位图图集合并绘制。
+- 字体：`font-display: swap`；中文分片按需；`font-variant-numeric: tabular-nums` 避免数字抖动。
+- DOM 与 3D Canvas 分层：UI 根为独立合成层（`position: fixed; contain: layout paint`），HUD 元素 `contain: layout paint style`。
+
+### 8.4 地图重绘频率
+
+| 层 | 重绘触发 | 频率 |
+|---|---|---|
+| L-Base（底图） | 缩放/平移结束 | 离屏缓存；拖拽时用 CSS transform 位移缓存位图，松手后重烘焙 |
+| L-Grid | 缩放层级变化 | 缓存 |
+| L-Front/L-Points | `EVT` 变化 | 事件触发（≤ 1/s） |
+| L-Units | `TEAM` 到达 + 插值（5–10 fps 视觉插值） | ≤ 15 fps（打开时 ≤ 30） |
+| L-Markers/L-Cmd | 事件 + 倒计时环（≤ 10 fps） | ≤ 10 fps |
+| 光标/测距 | 鼠标移动 | `requestAnimationFrame` 合并 |
+
+- 地图关闭时：Canvas 不绘制；小地图（若启用）只绘制动态层 ≤ 10 fps。
+- 部署界面地图与战术地图共用同一渲染器实例（避免重复构建缓存）。
+
+### 8.5 性能验收
+
+- CI：Playwright + tracing 对 "HUD 战斗态（模拟 100 单位事件流）" 与 "记分板打开" 两个场景采集 UI 脚本耗时，超过 §8.1 阈值 20% 即失败。
+- 开发者开关：`?uiperf=1` 显示 UI 耗时/节点数叠加层。
+
+---
+
+## 9. UI 组件清单（可复用组件与 props 草案）
+
+约定：Preact 函数组件；props 为草案（TypeScript 风格仅示意，非实现）；文案一律通过 `t(key, params)` 获取；所有组件支持 `className`、`data-testid`；状态来自信号（`@preact/signals`），组件内部不直接访问网络层。
+
+### 9.1 基础组件
+
+| 组件 | 用途 | props 草案 |
+|---|---|---|
+| `Panel` | 切角面板容器 | `{ title?: string; cornerCut?: 'sm'\|'md'\|'lg'; ticks?: boolean; tone?: 'default'\|'friend'\|'enemy'\|'cmd'; children }` |
+| `Button` | 按钮 | `{ variant: 'primary'\|'secondary'\|'danger'\|'ghost'; size: 'sm'\|'md'\|'lg'; disabled?: boolean; reason?: string; hotkey?: ActionId; onClick }`（`reason` 显示 tooltip 解释禁用原因） |
+| `KeyCap` | 按键帽（随绑定变化） | `{ action: ActionId; size?: 'sm'\|'md' }` |
+| `Icon` | 图标（SVG sprite） | `{ id: IconId; size: 'S'\|'M'\|'L'\|'XL'; tone?: Tone; label?: string }`（缺省 `aria-hidden`，有 `label` 则 `aria-label`） |
+| `Frame` | 友/敌/中立/未知框形符号 | `{ affiliation: 'friend'\|'enemy'\|'neutral'\|'unknown'; squad?: boolean; glyph: IconId; level?: 0\|1\|2; status?: 'ok'\|'down'\|'dead' }` |
+| `ProgressRing` / `ProgressBar` | 进度 | `{ value: number; max: number; tone?: Tone; showText?: boolean; indeterminate?: boolean }` |
+| `Gauge` | 刻度条（体力、方位） | `{ value; min; max; ticks: number; tone }` |
+| `Tabs` / `SegmentedControl` | 分页/分段 | `{ items: {id; labelKey}[]; value; onChange }` |
+| `Select` / `Slider` / `Toggle` / `TextField` | 表单 | 标准 `{ value; onChange; labelKey; hintKey?; error?: string; disabled? }` |
+| `Tooltip` | 提示 | `{ contentKey: string; params?; placement; delayMs? }` |
+| `Modal` | 模态框 | `{ titleKey; onClose; dismissible?: boolean; severity?: Severity; actions: ActionSpec[] }` |
+| `Toast` / `Banner` | 通知 | `Notice`（见 §4.19.2） |
+| `VirtualList` | 虚拟滚动列表 | `{ items: T[]; rowHeight: number; renderRow; overscan?: number }` |
+| `Skeleton` | 骨架 | `{ shape: 'row'\|'card'\|'text'; count?: number }`（减少动态时静态） |
+| `FocusTrap` | 焦点陷阱 | `{ active: boolean; returnFocus?: boolean }` |
+
+### 9.2 游戏业务组件
+
+| 组件 | 用途 | props 草案 |
+|---|---|---|
+| `Crosshair` | 准星 | `{ style; spread: Signal<number>; hitMarker: Signal<HitKind\|null> }` |
+| `Compass` | 指南针刻度带 | `{ heading: Signal<number>; markers: Signal<CompassMarker[]> ; fovDeg: number }` |
+| `AmmoCounter` | 弹药 | `{ mag: Signal<number>; reserve: Signal<number>; magCapacity: number; lowThreshold?: number }` |
+| `WeaponSlots` | 武器槽 | `{ slots: Signal<SlotInfo[]>; active: Signal<number>; fireMode: Signal<FireMode> }` |
+| `StanceIndicator` | 姿态 | `{ stance: Signal<Stance>; lean: Signal<-1\|0\|1>; sprinting: Signal<boolean> }` |
+| `StaminaBar` | 体力 | `{ value: Signal<number>; exhausted: Signal<boolean> }` |
+| `SquadList` | 小队成员 | `{ members: Signal<SquadMember[]>; compact?: boolean; showDistance?: boolean }` |
+| `VoiceIndicator` | 语音说话者 | `{ speakers: Signal<Speaker[]>; self: Signal<PttState> }` |
+| `CapturePanel` | 据点占领 | `{ point: Signal<CapturePointState\|null> }` |
+| `MatchClock` | 计时+战线条 | `{ remainingSec: Signal<number>; frontline: Signal<FrontlineState> }` |
+| `KillFeed` | 击杀播报 | `{ entries: Signal<FeedEntry[]>; maxRows: number }` |
+| `InteractPrompt` | 交互提示 | `{ prompt: Signal<InteractPromptState\|null> }` |
+| `DamageIndicator` | 受击方向环 | `{ hits: Signal<HitEvent[]> }` |
+| `ScreenFx` | 压制/流血/倒地覆盖 | `{ suppression: Signal<number>; bleeding: Signal<boolean>; downed: Signal<boolean>; reducedMotion: boolean }` |
+| `VehicleHud` | 载具 HUD | `{ seats: Signal<Seat[]>; ammo: Signal<VehicleAmmo>; modules: Signal<ModuleStatus[]>; speed: Signal<number> }` |
+| `ArtyHud` | 火炮 HUD | `{ azimuth; elevation; target: Signal<ArtyTarget\|null>; loadState: Signal<LoadState> }` |
+| `RadialMenu` | 径向菜单 | `{ sectors: RadialSector[]; open: Signal<boolean>; onConfirm(id) }` |
+| `TacticalMap` | 战术地图（Canvas） | `{ mode: 'full'\|'deploy'\|'mini'; layers: Signal<LayerFlags>; selection: Signal<MapSelection>; tool: Signal<MapTool\|null>; onPlace(marker) }` |
+| `SpawnList` | 重生点列表 | `{ spawns: Signal<SpawnPoint[]>; selectedId: Signal<string\|null>; onSelect }`（状态：available/blocked/cooldown/destroyed/full/locked） |
+| `RolePicker` | 兵种选择 | `{ roles: Signal<RoleSlot[]>; selected; onSelect }` |
+| `LoadoutPicker` | Loadout | `{ role: RoleId; slots: LoadoutSlot[]; onChange }` |
+| `SquadPanel` | 小队创建/加入/管理 | `{ squads: Signal<Squad[]>; mySquadId; canCreate: boolean; onJoin; onCreate; onLock; onKick }` |
+| `DeployButton` | 部署按钮+倒计时环 | `{ readyAtMs: Signal<number>; summary: DeploySummary; state: DeployState; onDeploy }` |
+| `Scoreboard` | 记分板 | `{ teams: Signal<TeamScore[]>; mode: 'peek'\|'locked'; sort: SortKey }` |
+| `ChatBox` / `ChatInput` | 聊天 | `{ lines: Signal<ChatLine[]>; channels: Channel[]; active: Signal<Channel> }` |
+| `ServerRow` / `ServerFilters` | 服务器浏览器 | `{ server: ServerInfo; selected: boolean; onSelect; onJoin }` / `{ value: Filters; onChange }` |
+| `FactionCard` | 阵营选择卡 | `{ faction: 'us'\|'ger'; count: number; cap: number; state: 'open'\|'full'\|'unbalanced'\|'cooldown'; reason?: string }` |
+| `CommanderBar` | 指挥官能力槽/资源 | `{ resources: Signal<Resources>; abilities: Signal<AbilitySlot[]>; onSelect }` |
+| `PlacementGhost` | 放置虚影合法性标签 | `{ legal: boolean; reasonKey?: string; cost?: Cost }` |
+| `SettingsForm` | 设置表单生成器（schema 驱动） | `{ schema: SettingSchema[]; values; onChange; onApplyPreview }` |
+| `KeyBindingRow` | 键位行 | `{ action: ActionId; bindings: [Key?, Key?]; conflict?: ActionId; onRebind }` |
+| `ReportDialog` / `VoteBanner` | 举报/投票 | `{ candidates: Player[]; onSubmit }` / `{ vote: Signal<VoteState>; onCast }` |
+
+### 9.3 横向约定
+
+- **i18n：** `t(key, params)` 返回字符串；复数/性别用 ICU MessageFormat；key 命名见各屏末尾前缀；所有 key 在 `en` 与 `zh-Hans` 同步，CI 校验缺失键。长度预留：德文无关（不支持），但英文比中文宽，英文以 +30% 预留；中文以行高 1.5 预留。
+- **ActionId：** 取自键位表（§5.2）的稳定枚举，用于 `KeyCap`/`Button.hotkey`。
+- **错误边界：** 每个顶层屏一个 `ErrorBoundary`；崩溃不影响战斗核心（HUD 组件互相隔离），并上报诊断包。
+- **测试：** 每个组件有视觉回归快照（两种语言 × 两种缩放）与一次键盘可达性测试。
+
+---
+
+## 10. 原创性自查清单
+
+执行者**每完成一屏/一组图标**，逐项自检并在 PR 描述中粘贴勾选结果。任何一项为"否"则不得合并。
+
+### 10.1 来源与流程
+
+- [ ] 我没有打开、对照、描摹任何商业游戏截图/素材来设计此屏（核对规则只读 `docs/REFERENCE_MEASUREMENTS.md`）。
+- [ ] 此屏的版式由"信息需求 → 分区 → 比例"推导，且在本文该屏的"设计理由"之外没有未记录的借鉴来源。
+- [ ] 若我曾在参考过程中见过相似布局，已改为不同的信息分区或比例，并在 PR 描述写明差异。
+- [ ] 所有字体、图标、音效、图片都登记在 `LICENSES.md`（来源、许可证、是否允许商用与网页分发、链接与核实日期）。
+
+### 10.2 命名与文案
+
+- [ ] 所有名称使用总纲原创命名（Frontline/Assault/Skirmish、Garrison/Outpost/Airhead/OP、Supply Drop 等能力名）。
+- [ ] 界面文案没有出现参考作品的名称、商标、独有词汇或其 wiki 原句。
+- [ ] 文案全部走 i18n key，`en` 与 `zh-Hans` 均已提供，且不是对参考作品文案的翻译/改写。
+
+### 10.3 视觉
+
+- [ ] 仅使用 `--pl-*` token 色值，无硬编码色；友敌不只靠颜色区分（形状冗余已落实）。
+- [ ] 面板使用 Plotline 特征（切角、套准十字、刻度、描线）至少 3 项；无圆角卡片+渐变+发光这类通用"游戏 HUD"套路。
+- [ ] 无模糊阴影、无外发光；字体仅为 §2.3 所列。
+- [ ] 图标遵循 §2.5：网格/线宽/角度集；每枚有构成规则说明与 `origin: original`；完成"盲对照"防近似检查并记录结果。
+- [ ] 医疗相关图形不使用红十字（日内瓦标志混淆风险）。
+- [ ] 重生点、命令、能力的符号与参考作品并排对照时轮廓+内部构成不会被一眼认作相同。
+
+### 10.4 功能与可用性
+
+- [ ] 信息元素表、线框、状态机、交互、空/加载/错误状态与 i18n 前缀均已覆盖本文对应小节。
+- [ ] 键鼠全路径可达；焦点环可见；Pointer Lock 与 Esc 行为符合 §5.5。
+- [ ] 色盲三模式下截图验收；减少动态模式下无动画残留。
+- [ ] 在 1280×720、1920×1080、3440×1440 下截图验收；中英文均不溢出。
+- [ ] 性能：节点数、每帧耗时、地图重绘频率不超过 §8.1 预算。
+- [ ] 游戏性数值未硬编码在 UI 中（来自 `/data`），初值已标注 `【待调参】`。
+
+### 10.5 合规
+
+- [ ] 无反编译/拆包/内存读取/协议解析/素材提取行为参与本屏制作。
+- [ ] 文本中无第三方受保护文字的整段照抄。
+- [ ] 对外名称、域名、社交账号与任何商业游戏无混淆可能。
+
+---
+
+## 附录 A：i18n key 前缀一览
+
+| 前缀 | 屏 | | 前缀 | 屏 |
+|---|---|---|---|---|
+| `ui.boot.*` | 4.1 | | `ui.build.*` | 4.13 |
+| `ui.menu.*` | 4.2 | | `ui.veh.*` | 4.14 |
+| `ui.browser.*` | 4.3 | | `ui.chat.*` `ui.voice.*` | 4.15 |
+| `ui.faction.*` | 4.4 | | `ui.settings.*` | 4.16 |
+| `ui.deploy.*` | 4.5 | | `ui.result.*` | 4.17 |
+| `ui.hud.*` | 4.6 | | `ui.pause.*` `ui.report.*` `ui.vote.*` | 4.18 |
+| `ui.map.*` | 4.7 | | `ui.toast.*` `ui.banner.*` `ui.tutorial.*` `ui.dialog.*` | 4.19 |
+| `ui.radial.*` | 4.8 | | `ui.cmdr.*` | 4.11 |
+| `ui.score.*` | 4.9 | | `ui.officer.*` | 4.12 |
+| `ui.down.*` | 4.10 | | `ui.common.*`（按钮/单位/错误码） | 全局 |
+
+## 附录 B：未核实事项（执行者引入前必须核对）
+
+1. Barlow Semi Condensed / IBM Plex Sans / IBM Plex Mono / Noto Sans SC 的许可证（认为是 SIL OFL 1.1，**未核实**）及各字体当前发布版本与可网页嵌入条款。
+2. 各浏览器对 Pointer Lock 重锁冷却、`unadjustedMovement`、Keyboard Lock API、`navigator.keyboard.getLayoutMap()`、`adapter.info` 的支持与行为。
+3. 鼠标侧键后退拦截在各浏览器的可行性。
+4. APP-6 具体版本的框形约定与"仅借语义、图形自绘"的合规表述（法务/许可层面未核实）。
+5. Noto Sans SC 子集化后的实际体积与预算 ≤ 400 KB 的可达性。
+6. WCAG 闪光阈值的具体条款引用。
