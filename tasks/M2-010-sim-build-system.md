@@ -30,6 +30,7 @@
 - `crates/sim/src/build/connectivity.rs` —— `nav_critical` 连通检查（粗网格洪水填充，2 m 栅格）
 - `crates/sim/src/build/effects.rs` —— 铁丝减速/伤害、散兵坑减伤、MG Nest 座位、Tank Trap 碰撞
 - `data/structures/{barbed_wire,tank_trap,sandbag_wall,foxhole,mg_nest}.json`
+- `crates/server/src/c0/build.rs` —— C0 `BuildPlace/BuildCancel/BuildJoin/Demolish`（M2-007）的薄转发层：速率限制后调用 sim，并广播 C4 `StructureState`（无规则逻辑；INDEX 没有独立任务承担此胶水）
 ### 要实现的行为
 1. `validate_placement(team, kind, pos, yaw) -> Result<(), BuildError>`：错误码枚举 `NotOwnSector / TooCloseToStrongpoint / EnemyNearby / BlocksNavCritical / TeamCapReached / TypeCapReached / NoSupplies / SlopeTooSteep / InWater / Overlap`；客户端全息红/绿直接用同一函数（经 `sim-wasm` 暴露只读校验）。
 2. 开工：扣 Supplies（从 15 m 内箱按距离升序抽取；失败回滚）；生成 `Structure{state:Building,hp:20%}`；施工进度按施工者数量计速并每 tick 推进；施工者离开 > 3 m 或受伤暂停（沿用 M1-020 交互规则）。
