@@ -45,6 +45,7 @@ pub fn ingest_inputs(
 
 /// Moves every player with [`step_player`], ascending `EntityId` (ARCHITECTURE 6.10 stage 2).
 /// A player without a command this tick repeats its last one (input buffering is M0-018).
+#[allow(clippy::type_complexity)]
 pub fn movement(
     params: Res<MoveParamsRes>,
     collision: Res<CollisionRes>,
@@ -55,21 +56,34 @@ pub fn movement(
         &LastInput,
         &LifeState,
         Option<&WeaponState>,
+        &MeleeState,
     )>,
 ) {
     let Some(p) = params.0 else {
         return;
     };
     for (_, e) in table.sorted() {
-        if let Ok((mut t, mut m, last, life, w)) = q.get_mut(e) {
-            if !life.is_alive() {
+        if let Ok((mut t, mut m, last, life, w, melee)) = q.get_mut(e) {
+            let mut cmd = last.cmd;
+            if life.is_downed() {
+                // Crawl (GAMEDESIGN 7.1): prone only, at the downed speed.
+                let k = (p.crawl_mps / p.prone_mps).min(1.0);
+                cmd.buttons = buttons::PRONE;
+                cmd.move_x = (f32::from(cmd.move_x) * k) as i8;
+                cmd.move_z = (f32::from(cmd.move_z) * k) as i8;
+            } else if !life.is_alive() {
                 continue;
+            } else if melee.executing() {
+                // The executioner stands still (GAMEDESIGN 7.4).
+                cmd.move_x = 0;
+                cmd.move_z = 0;
+                cmd.buttons &= !(buttons::SPRINT | buttons::JUMP);
             }
             let ctx = MoveCtx {
                 reloading: w.is_some_and(|w| w.fsm.is_reloading()),
                 load_kg: None,
             };
-            let next = step_player_ex(&m.to_auth(&t), &last.cmd, &p, &collision.0, &ctx);
+            let next = step_player_ex(&m.to_auth(&t), &cmd, &p, &collision.0, &ctx);
             t.pos = next.pos;
             t.yaw = next.yaw;
             t.pitch = next.pitch;
@@ -141,11 +155,13 @@ pub fn weapons(
     }
 }
 
-/// Melee stage (M1-013b): advances every attacker's windup/cooldown and resolves strikes against
-/// the post-movement poses, ascending `EntityId`; kills are attributed through the [`HitLog`].
+/// Melee stage (M1-013b, M1-016b): advances every attacker's windup/cooldown and resolves strikes
+/// against the post-movement poses, ascending `EntityId`; a strike on a downed enemy starts an
+/// execution (GAMEDESIGN 7.4) instead of damage. Kills are attributed through the [`HitLog`].
 #[allow(clippy::type_complexity)]
 pub fn melee(
     mt: Res<MeleeTable>,
+    cfg: Res<SimCfgRes>,
     table: Res<EntityTable>,
     mut log: ResMut<HitLog>,
     mut events: ResMut<EventBuf>,
@@ -164,10 +180,13 @@ pub fn melee(
         pos: Vec3,
         yaw: f32,
         team: Team,
+        downed: bool,
     }
     let mut strikes: Vec<(crate::ids::EntityId, bool)> = Vec::new();
+    // Executions in progress: (attacker, target) pairs that may finish this tick.
+    let mut running: Vec<(crate::ids::EntityId, crate::ids::EntityId)> = Vec::new();
     for (id, e) in table.sorted() {
-        let Ok((_, m, last, team, life, mut ms, _)) = q.get_mut(e) else {
+        let Ok((_, m, last, team, life, mut ms, hp)) = q.get_mut(e) else {
             continue;
         };
         let Some(p) = mt.params(*team) else {
@@ -177,17 +196,22 @@ pub fn melee(
             *ms = MeleeState::default();
             continue;
         }
+        if ms.executing() {
+            if hp.hp < ms.exec_hp - 0.01 {
+                ms.exec_ticks = 0; // hit while executing: interrupted
+            } else {
+                running.push((id, ms.exec_target));
+            }
+        }
         let want = last.cmd.buttons & buttons::MELEE != 0;
         let sprinting = is_sprinting(&last.cmd);
-        let out = step_melee(&mut ms, p, want, m.vault.is_none(), sprinting);
+        let can_start = m.vault.is_none() && !ms.executing();
+        let out = step_melee(&mut ms, p, want, can_start, sprinting);
         if out.strike {
             strikes.push((id, ms.lunging));
         }
     }
-    if strikes.is_empty() {
-        return;
-    }
-    // Snapshot of the living players at strike time (poses do not change inside this stage).
+    // Snapshot of the players who can be hit at strike time (poses do not change in this stage).
     let snaps: Vec<Snap> = table
         .sorted()
         .filter_map(|(id, e)| {
@@ -197,9 +221,52 @@ pub fn melee(
                 pos: t.pos,
                 yaw: t.yaw,
                 team: *team,
+                downed: life.is_downed(),
             })
         })
         .collect();
+    // Progress the executions that were already running before this tick's strikes.
+    for (aid, tid) in running {
+        let (Some(a), Some(tg)) = (
+            snaps.iter().find(|s| s.id == aid),
+            snaps.iter().find(|s| s.id == tid),
+        ) else {
+            if let Some(e) = table.get(aid) {
+                if let Ok((.., mut ms, _)) = q.get_mut(e) {
+                    ms.exec_ticks = 0;
+                }
+            }
+            continue;
+        };
+        let near = (a.pos - tg.pos).length() <= 2.5;
+        let Some(ae) = table.get(aid) else { continue };
+        let Ok((.., mut ms, _)) = q.get_mut(ae) else {
+            continue;
+        };
+        if !tg.downed || !near {
+            ms.exec_ticks = 0;
+            continue;
+        }
+        ms.exec_ticks -= 1;
+        if ms.exec_ticks == 0 {
+            let Some(te) = table.get(tid) else { continue };
+            let Ok((.., mut hp)) = q.get_mut(te) else {
+                continue;
+            };
+            let dmg = hp.hp.max(1.0);
+            hp.hp = 0.0;
+            log.0.push(HitRec {
+                target: tid,
+                shooter: aid,
+                weapon: MELEE_WEAPON_IDX,
+                zone: crate::weapon::HitZone::Torso,
+                dist_m: (a.pos - tg.pos).length(),
+                damage: dmg,
+                kind: crate::combat::DamageKind::Melee,
+                direct_kia: false,
+            });
+        }
+    }
     for (aid, lunging) in strikes {
         let Some(a) = snaps.iter().find(|s| s.id == aid) else {
             continue;
@@ -211,6 +278,21 @@ pub fn melee(
             let Some(hit) = melee_trace(p, lunging, a.pos, a.yaw, tg.pos, tg.yaw) else {
                 continue;
             };
+            if tg.downed {
+                // Strike on a downed enemy: start the execution, no damage (one at a time).
+                let Some(ae) = table.get(aid) else { continue };
+                let hp_now = q.get(ae).map_or(0.0, |r| r.6.hp);
+                if let Ok((.., mut ms, _)) = q.get_mut(ae) {
+                    if !ms.executing() {
+                        ms.exec_target = tg.id;
+                        ms.exec_ticks = ((crate::weapon::melee::EXECUTION_S * f32::from(cfg.hz))
+                            .ceil() as u16)
+                            .max(1);
+                        ms.exec_hp = hp_now;
+                    }
+                }
+                break;
+            }
             let Some(e) = table.get(tg.id) else {
                 continue;
             };
@@ -242,7 +324,7 @@ pub fn melee(
     }
 }
 
-pub use crate::medical::{deaths, medical};
+pub use crate::medical::{deaths, falls, medical, vitals};
 
 /// Rules stage, respawns: players whose spawn tick has come re-enter at their team's spawn point
 /// (plus a deterministic offset of at most `spawn_jitter_m`), full health and weapon, facing the
@@ -355,12 +437,14 @@ pub fn build_schedule() -> Schedule {
             ingest_inputs,
             test_jitter,
             movement,
+            falls,
             melee,
             weapons,
             throwables,
             projectiles_system,
             deaths,
             medical,
+            vitals,
             respawns,
             bookkeeping,
         )
@@ -371,12 +455,14 @@ pub fn build_schedule() -> Schedule {
         (
             ingest_inputs,
             movement,
+            falls,
             melee,
             weapons,
             throwables,
             projectiles_system,
             deaths,
             medical,
+            vitals,
             respawns,
             bookkeeping,
         )

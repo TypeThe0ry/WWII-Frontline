@@ -307,6 +307,10 @@ fn fatigue_shortens_the_next_bleed_out() {
                 w.player_life(B).unwrap().is_alive(),
                 "revived in round {round}"
             );
+            // Let the revived player stand up again before the next shot.
+            for _ in 0..60 {
+                w.step(&[(A, idle()), (B, idle()), (C, idle())]);
+            }
         } else {
             let Some(LifeState::Downed { fatigue, .. }) = w.player_life(B) else {
                 panic!("downed")
@@ -350,7 +354,9 @@ fn credit_down_assist_finish_and_team_kill() {
     assert_eq!(down, (Some(A), vec![], false));
     // Another shot into the downed player is a finish (the victim is KIA from the hit).
     let mut fin = None;
-    let pitch = pitch_to_torso(6.0);
+    // The downed player lies prone, so aim lower.
+    let bp = BallisticsParams::from_def(exact().weapon("ger_kar98k").unwrap());
+    let pitch = solve_pitch(&bp, EYE, 6.0, 0.35);
     for i in 0..120 {
         let b = if i == 90 { BTN_FIRE } else { 0 };
         for e in w

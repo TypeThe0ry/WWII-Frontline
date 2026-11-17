@@ -66,19 +66,30 @@ pub enum MeleePhase {
     Cooldown = 2,
 }
 
-#[derive(Component, Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Component, Debug, Clone, Copy, PartialEq, Default)]
 pub struct MeleeState {
     pub phase: MeleePhase,
     pub ticks_left: u16,
     /// The windup began while sprinting with a bayonet.
     pub lunging: bool,
+    /// Execution of a downed enemy in progress (M1-016b): target, ticks left (0 = none) and the
+    /// attacker's hit points when it began (losing any ends it).
+    pub exec_target: u16,
+    pub exec_ticks: u16,
+    pub exec_hp: f32,
 }
 
 impl MeleeState {
     pub fn is_idle(&self) -> bool {
         self.phase == MeleePhase::Idle
     }
+    pub fn executing(&self) -> bool {
+        self.exec_ticks > 0
+    }
 }
+
+/// Execution duration, seconds (GAMEDESIGN 7.4).
+pub const EXECUTION_S: f32 = 1.2;
 
 /// What one tick of the state machine asks for.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]

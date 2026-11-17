@@ -210,18 +210,22 @@ impl World {
                 Motion::from_auth(&PlayerAuthState::spawn(req.pos, req.yaw)),
                 Health::full(max_hp),
                 LifeState::Alive,
-                crate::weapon::MeleeState::default(),
-                crate::throwables::Gadgets::default(),
-                crate::combat::credit::RecentDamage::default(),
-                crate::medical::ReviveHistory::default(),
-                crate::medical::ReviveAction::default(),
-                crate::medical::FireLock::default(),
                 Home {
                     pos: req.pos,
                     yaw: req.yaw,
                 },
             ))
             .id();
+        self.ecs.entity_mut(e).insert((
+            crate::weapon::MeleeState::default(),
+            crate::throwables::Gadgets::default(),
+            crate::combat::credit::RecentDamage::default(),
+            crate::medical::ReviveHistory::default(),
+            crate::medical::ReviveAction::default(),
+            crate::medical::FireLock::default(),
+            crate::medical::Vitals::default(),
+            crate::medical::FallTracker::default(),
+        ));
         if let Some(w) = weapon {
             self.ecs.entity_mut(e).insert(w);
         }
@@ -352,6 +356,48 @@ impl World {
         self.ecs.resource_mut::<TestJitter>().0 = on;
     }
 
+    /// Test-only (feature `test-util`): sets a player's hit points.
+    #[cfg(feature = "test-util")]
+    pub fn debug_set_hp(&mut self, id: PlayerId, hp: f32) {
+        if let Some(&(_, e)) = self.ecs.resource::<PlayerIndex>().map.get(&id) {
+            if let Some(mut h) = self.ecs.entity_mut(e).get_mut::<Health>() {
+                h.hp = hp;
+            }
+        }
+    }
+
+    /// Test-only (feature `test-util`): puts a player into the downed state (40 hp, bleeding).
+    #[cfg(feature = "test-util")]
+    pub fn debug_down(&mut self, id: PlayerId) {
+        let t = self.tick();
+        if let Some(&(_, e)) = self.ecs.resource::<PlayerIndex>().map.get(&id) {
+            let mut er = self.ecs.entity_mut(e);
+            if let Some(mut h) = er.get_mut::<Health>() {
+                h.hp = crate::medical::DOWNED_HP;
+            }
+            if let Some(mut l) = er.get_mut::<LifeState>() {
+                *l = LifeState::Downed {
+                    t_down: t,
+                    killer: None,
+                    weapon: 0,
+                    fatigue: 0,
+                    give_up_ticks: 0,
+                    stable: false,
+                };
+            }
+        }
+    }
+
+    /// Test-only (feature `test-util`): moves a player to `pos` (e.g. onto a ledge to fall).
+    #[cfg(feature = "test-util")]
+    pub fn debug_teleport(&mut self, id: PlayerId, pos: Vec3) {
+        if let Some(&(_, e)) = self.ecs.resource::<PlayerIndex>().map.get(&id) {
+            if let Some(mut t) = self.ecs.entity_mut(e).get_mut::<Transform>() {
+                t.pos = pos;
+            }
+        }
+    }
+
     /// Stable hash key of the weapon at `idx` in `GameData::weapons`: FNV-1a of its string id
     /// (the index itself for an out-of-range value), independent of the data ordering.
     fn weapon_key(&self, idx: u16) -> u64 {
@@ -440,6 +486,7 @@ impl World {
                 weapon,
                 fatigue,
                 give_up_ticks,
+                stable,
             }) = er.get::<LifeState>()
             {
                 h.write_u8(0xD4);
@@ -448,6 +495,7 @@ impl World {
                 h.write_u64(self.weapon_key(u16::from(*weapon)));
                 h.write_u8(*fatigue);
                 h.write_u16(*give_up_ticks);
+                h.write_u8(u8::from(*stable));
             }
             if let Some(ra) = er.get::<crate::medical::ReviveAction>() {
                 if let Some(a) = ra.0 {
@@ -485,6 +533,11 @@ impl World {
             }
             // M1-013b: written only while a melee action runs.
             if let Some(ms) = er.get::<crate::weapon::MeleeState>() {
+                if ms.executing() {
+                    h.write_u8(0xE8);
+                    h.write_u16(ms.exec_target);
+                    h.write_u16(ms.exec_ticks);
+                }
                 if !ms.is_idle() {
                     h.write_u8(0xE0 | ms.phase as u8 | (u8::from(ms.lunging) << 3));
                     h.write_u16(ms.ticks_left);

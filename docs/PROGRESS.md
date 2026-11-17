@@ -522,3 +522,9 @@ blocked / in-progress / todo：无。M0 的 33 个任务全部已提交（M0-033
 ### M1-016a 倒地、救起与击杀归属 — partial（余 016b）— 2026-11-17 — 提交见 git log
 
 `medical.rs`（状态转移、流血、放弃、救起、疲劳、归属）、`LifeState::Downed`、`SimEvent::{Downed,KillCredit,Revive}`、`World::set_medic`；`tests/health_m1.rs` 9 项；M0 的击杀发数/skirmish/duel 测试按"先倒地"调整并重定 golden。决策见 PI-055。
+
+### M1-016b 绷带、自然恢复、处决、环境伤害、爬行 — done（M1-016 完成）— 2026-11-17 — 提交见 git log
+- 新增 `Vitals`/`FallTracker`、`falls`/`vitals` 系统、`Downed.stable`、`DamageKind::Fall`、`MeleeState` 处决字段；`movement` 对倒地者强制俯卧并按 `crawl_mps` 限速，处决中攻击者不能移动。
+- 测试 `health_vitals` 10 项；重定 golden 3 个（见 PI-056），重复运行稳定；`cargo test --workspace`、clippy、fmt 通过。
+- 事故：构建盘写满时 `cargo fmt` 截断了 `medical.rs`（16384 B），已按会话记录重放编辑恢复，前缀与截断文件逐字节一致后继续。
+

@@ -60,8 +60,11 @@ fn duel(seed: u64, ticks: u32) -> (Vec<SimEvent>, World) {
             w.weapon_state(US).unwrap().mag,
             w.weapon_state(GER).unwrap().mag,
         ];
-        // A shooter stops when the enemy is dead (hp 0 until the respawn, M0-013).
-        let down = [w.health(GER).unwrap() <= 0.0, w.health(US).unwrap() <= 0.0];
+        // A shooter stops when the enemy is downed or dead (M0-013, M1-016).
+        let down = [
+            !w.player_life(GER).is_some_and(|l| l.is_alive()),
+            !w.player_life(US).is_some_and(|l| l.is_alive()),
+        ];
         let [a, b] = duel_cmds(t, mags, pitch, down);
         events.extend(w.step(&[(US, a), (GER, b)]).events);
     }
@@ -72,15 +75,30 @@ fn duel(seed: u64, ticks: u32) -> (Vec<SimEvent>, World) {
 fn weapon_duel_events_and_damage_are_conserved() {
     let (events, w) = duel(11, 900);
     let data = GameData::embedded();
-    let eid = |p| {
-        w.view()
-            .players()
-            .iter()
-            .find(|v| v.player == p)
-            .unwrap()
-            .entity
-    };
-    let (e_us, e_ger) = (eid(US), eid(GER));
+    // The loser may be dead (not in the alive-only view) at the end: take ids from the shots.
+    let gid = data
+        .weapons
+        .iter()
+        .position(|x| x.id == "ger_kar98k")
+        .unwrap() as u16;
+    let e_ger = events
+        .iter()
+        .find_map(|e| match e {
+            SimEvent::Shot {
+                shooter, weapon, ..
+            } if *weapon == gid => Some(*shooter),
+            _ => None,
+        })
+        .unwrap();
+    let e_us = events
+        .iter()
+        .find_map(|e| match e {
+            SimEvent::Shot {
+                shooter, weapon, ..
+            } if *weapon != gid => Some(*shooter),
+            _ => None,
+        })
+        .unwrap();
     let mut shots = [0u32; 2];
     let mut dry = [0u32; 2];
     let mut dealt = [0.0f32; 2]; // damage dealt BY us / ger
@@ -139,12 +157,24 @@ fn weapon_duel_events_and_damage_are_conserved() {
         shots[0], hits[0], dealt[0], hp[1], shots[1], hits[1], dealt[1], hp[0]
     );
     println!("duel kills (ger died, us died): {kills:?}");
-    assert!(kills[0] + kills[1] >= 1, "the duel must produce a kill");
+    let downs = events
+        .iter()
+        .filter(|e| matches!(e, SimEvent::Downed { .. }))
+        .count();
+    assert!(
+        kills[0] + kills[1] + downs as u32 >= 1,
+        "the duel must produce a down or a kill"
+    );
     // Damage conservation: health lost since the last spawn == damage of the Hit events (a dead
     // player is at 0 hp, not below).
     for (p, i) in [(US, 0usize), (GER, 1)] {
-        let expect = (100.0 - lost[i]).max(0.0);
-        assert!((w.health(p).unwrap() - expect).abs() < 1e-3, "player {p}");
+        // M1-016: downed players bleed and wounded players regenerate, so only the bounds and
+        // the untouched case are exact (the health tests pin the rest).
+        let hp = w.health(p).unwrap();
+        assert!((0.0..=100.0).contains(&hp), "player {p}");
+        if lost[i] < 1e-3 {
+            assert_eq!(hp, 100.0, "player {p}");
+        }
     }
     // Ammunition conservation (per life).
     for (p, s) in [(US, shots_life[0]), (GER, shots_life[1])] {
@@ -200,7 +230,9 @@ fn duel_is_deterministic_and_golden() {
 /// respawns, so the 600-tick sequence contains `Kill` / `Spawn` events and the duel goes on after
 /// the respawn (before, the loser stayed at hp <= 0 and the winner stopped shooting).
 /// M1-016: re-pinned (0x3849_3e76_201d_9cd5 before): lethal hits now down first, adding events.
-const GOLDEN_DUEL_EVENTS: u64 = 0xff00_043d_6c81_f8cf;
+/// M1-016b: re-pinned (0xff00_043d_6c81_f8cf before): shooters stop on a down (downed players
+/// crawl prone, so the standing-torso aim no longer finishes them).
+const GOLDEN_DUEL_EVENTS: u64 = 0xfca9_b1fc_08b1_5dd2;
 
 fn script(n: usize, seed: u64) -> Vec<InputCmd> {
     let mut r = Rng(seed);

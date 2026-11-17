@@ -596,7 +596,7 @@ fn twenty_players_fight_without_panic_and_counts_balance() {
 }
 
 /// M1-016: re-pinned (0x90cd_4193_862c_a94c before): lethal hits now down players first.
-const GOLDEN_SKIRMISH_FINAL: u64 = 0x5eeb_1d5c_73c0_7f81;
+const GOLDEN_SKIRMISH_FINAL: u64 = 0x3701_e23b_63cd_4aae;
 
 #[test]
 fn deaths_and_respawns_are_deterministic_5000_ticks() {
