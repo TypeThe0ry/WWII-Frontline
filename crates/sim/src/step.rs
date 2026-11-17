@@ -51,6 +51,26 @@ pub enum SimEvent {
         headshot: bool,
         dist_m: f32,
     },
+    /// A grenade left a hand (M1-015).
+    Thrown {
+        thrower: EntityId,
+        pos: Vec3,
+        smoke: bool,
+    },
+    /// A blast went off at `pos` (`kind` 0 = grenade).
+    Explosion {
+        pos: Vec3,
+        radius_m: f32,
+        kind: u8,
+    },
+    SmokeStarted {
+        pos: Vec3,
+        radius_m: f32,
+    },
+    /// `count` smoke clouds ran out this tick.
+    SmokeEnded {
+        count: u8,
+    },
     /// A melee strike landed (M1-013b); `damage_hp` has been subtracted, `backstab` = rear kill.
     MeleeHit {
         attacker: EntityId,

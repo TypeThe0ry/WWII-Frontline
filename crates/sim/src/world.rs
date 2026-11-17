@@ -117,6 +117,12 @@ impl World {
         });
         ecs.insert_resource(WeaponTable::new(cfg.data, cfg.tick_hz));
         ecs.insert_resource(crate::components::MeleeTable::new(cfg.data, cfg.tick_hz));
+        ecs.insert_resource(crate::throwables::ThrowableTable::new(
+            cfg.data,
+            cfg.tick_hz,
+        ));
+        ecs.insert_resource(crate::throwables::Throwables::default());
+        ecs.insert_resource(crate::throwables::Smokes::default());
         ecs.insert_resource(Projectiles::default());
         ecs.insert_resource(EventBuf::default());
         ecs.insert_resource(HitLog::default());
@@ -205,6 +211,7 @@ impl World {
                 Health::full(max_hp),
                 LifeState::Alive,
                 crate::weapon::MeleeState::default(),
+                crate::throwables::Gadgets::default(),
                 Home {
                     pos: req.pos,
                     yaw: req.yaw,
@@ -424,6 +431,19 @@ impl World {
                 h.write_u64(self.weapon_key(u16::from(*weapon)));
                 h.write_u32(respawn_tick.0);
             }
+            // M1-015: grenade counts and cooking, written only once a grenade was used.
+            if let Some(g) = er.get::<crate::throwables::Gadgets>() {
+                use crate::throwables::system::{START_FRAG, START_SMOKE};
+                if g.frag != START_FRAG || g.smoke != START_SMOKE || g.cook.is_some() {
+                    h.write_u8(0xF0);
+                    h.write_u8(g.frag);
+                    h.write_u8(g.smoke);
+                    if let Some(c) = g.cook {
+                        h.write_u8(c.kind as u8);
+                        h.write_u16(c.ticks);
+                    }
+                }
+            }
             // M1-013b: written only while a melee action runs.
             if let Some(ms) = er.get::<crate::weapon::MeleeState>() {
                 if !ms.is_idle() {
@@ -438,6 +458,33 @@ impl World {
                 h.write_u64(self.weapon_key(w.def_id));
                 h.write_bytes(&b[2..]);
             }
+        }
+        let th = self.ecs.resource::<crate::throwables::Throwables>();
+        if th.next_id > 0 {
+            h.write_u32(th.next_id);
+            for g in &th.list {
+                h.write_u32(g.id);
+                h.write_u16(g.owner);
+                h.write_u8(g.kind as u8);
+                h.write_u16(g.fuse_left);
+                for f in [
+                    g.flight.pos.x,
+                    g.flight.pos.y,
+                    g.flight.pos.z,
+                    g.flight.vel.x,
+                    g.flight.vel.y,
+                    g.flight.vel.z,
+                ] {
+                    h.write_f32(f);
+                }
+            }
+        }
+        let sm = self.ecs.resource::<crate::throwables::Smokes>();
+        for c in &sm.clouds {
+            h.write_u32(c.start.0);
+            h.write_f32(c.pos.x);
+            h.write_f32(c.pos.y);
+            h.write_f32(c.pos.z);
         }
         let projs = self.ecs.resource::<Projectiles>();
         h.write_u32(projs.next_id());
@@ -554,7 +601,14 @@ impl WorldView for World {
                 .is_some_and(LifeState::is_alive)
     }
     fn los(&self, from: Vec3, to: Vec3) -> bool {
+        let now = self.ecs.resource::<CurrentTick>().0;
         self.collision().los(from, to)
+            && !crate::throwables::smoke_blocks_los(
+                &self.ecs.resource::<crate::throwables::Smokes>().clouds,
+                now,
+                from,
+                to,
+            )
     }
     fn height_at(&self, x: f32, z: f32) -> Option<f32> {
         self.collision().height_at(x, z)

@@ -368,6 +368,8 @@ pub fn respawns(
 }
 
 /// End-of-tick housekeeping. Currently a no-op slot (the view cache is refreshed by `World`).
+pub use crate::throwables::system::throwables;
+
 pub fn bookkeeping(_table: Res<EntityTable>) {}
 
 /// Test-only: each tick, draw once per entity (ascending `EntityId`) and jitter the position.
@@ -404,6 +406,7 @@ pub fn build_schedule() -> Schedule {
             movement,
             melee,
             weapons,
+            throwables,
             projectiles_system,
             deaths,
             respawns,
@@ -418,6 +421,7 @@ pub fn build_schedule() -> Schedule {
             movement,
             melee,
             weapons,
+            throwables,
             projectiles_system,
             deaths,
             respawns,
