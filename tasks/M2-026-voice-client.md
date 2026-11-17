@@ -4,7 +4,7 @@
 - 里程碑：M2
 - 工作流：voice
 - 规模：L
-- 依赖：M2-025, M1-062, M1-040
+- 前置依赖：M2-025, M1-062, M1-040
 - 素材需求：H-RAD-001（可选）；素材状态：placeholder
 - 引用文档：ARCHITECTURE §14.4; ARCHITECTURE §12.5; ARCHITECTURE §14.5; ARCHITECTURE §14.1; GAMEDESIGN §16.1; ARCHITECTURE §12.6
 

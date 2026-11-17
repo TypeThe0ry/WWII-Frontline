@@ -4,7 +4,7 @@
 - 里程碑：M2
 - 工作流：bots
 - 规模：L
-- 依赖：M2-027, M2-009
+- 前置依赖：M2-027, M2-009, M2-010, M2-015, M2-019
 - 素材需求：无（灰盒即可）；素材状态：n.a.
 - 引用文档：GAMEDESIGN §20.4; ARCHITECTURE §16.1; ARCHITECTURE §16.4; GAMEDESIGN §11; GAMEDESIGN §16.3; GAMEDESIGN §14.6
 
@@ -71,6 +71,6 @@ ARCH §16.1：规则式指挥官不占逐 tick 预算（15 s 级）；ARCH §6.1
 - [ ] `tasks/STATUS.md` 对应行与顶部摘要已更新；提交信息含任务 ID
 
 ## 备注/已知风险
-- 计划缺口：M2 无 Commander 能力，"≥ 10 条合法指令"只能靠标记/任务/载具请求；Squad Order/Command Order 的 sim 侧校验由 M2-019 提供，载具请求由 M2-015 提供，本任务依赖它们（INDEX 未列依赖，编号顺序保证）。
+- M2 无 Commander 能力，"≥ 10 条合法指令"只能靠标记/任务/载具请求；Squad Order/Command Order 的 sim 侧校验由 M2-019 提供，载具请求由 M2-015 提供，本任务依赖它们（依赖已补 M2-010/M2-015/M2-019）。
 - C-02 的"保留 ≥ 100 Manpower 作 Airhead 预算"在 M2 无 Airhead，默认仍按 GD 保留，参数在 `commander.json`，M2-051 观察是否造成资源闲置。
 - 评估间隔 15 s（GD C-01）与 ARCH §16.1 的 5 s 级不一致 → PLAN_ISSUES。

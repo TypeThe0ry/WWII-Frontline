@@ -4,7 +4,7 @@
 - 里程碑：M4
 - 工作流：test
 - 规模：M
-- 依赖：M0-028（浏览器/传输初测）, M4-020, M4-017
+- 前置依赖：M0-028, M4-020, M4-017
 - 素材需求：无（灰盒即可）；素材状态：n.a.
 - 引用文档：ARCHITECTURE §5.0; ARCHITECTURE §20; ARCHITECTURE §12.7; ARCHITECTURE §14.5; ARCHITECTURE §6.6
 

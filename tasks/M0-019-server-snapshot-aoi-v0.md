@@ -4,7 +4,7 @@
 - 里程碑：M0
 - 工作流：server
 - 规模：L
-- 依赖：M0-018, M0-006
+- 前置依赖：M0-018, M0-006
 - 素材需求：无（灰盒即可）；素材状态：n.a.
 - 引用文档：ARCHITECTURE §6.5.4; ARCHITECTURE §6.9; ARCHITECTURE §6.10; ARCHITECTURE §6.5.2; ARCHITECTURE §6.6.2
 

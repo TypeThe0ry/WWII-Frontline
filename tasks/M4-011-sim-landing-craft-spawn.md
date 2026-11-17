@@ -4,7 +4,7 @@
 - 里程碑：M4
 - 工作流：sim
 - 规模：M
-- 依赖：M4-004, M3-020（Assault 规则）, M1-019（HQ 出生与 Garrison）
+- 前置依赖：M4-004, M3-020, M1-019
 - 素材需求：V-VEH-*（灰盒可）；素材状态：placeholder
 - 引用文档：GAMEDESIGN §10.1; GAMEDESIGN §2.6; GAMEDESIGN §10.6; GAMEDESIGN §3.4; MAPS §4.6; MAPS §4.8; MAPS §6.2; ARCHITECTURE §4.3.2; ARCHITECTURE §8.1; ARCHITECTURE §6.8
 

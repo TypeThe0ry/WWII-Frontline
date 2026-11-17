@@ -4,7 +4,7 @@
 - 里程碑：M1
 - 工作流：data
 - 规模：M
-- 依赖：M0-032（`tools/ref-analysis` 与 `docs/measurements/` 模板）, M1-011（移动）, M1-017（压制）, M1-019（Garrison/重生）, M1-023（坦克）, M1-015（手雷）
+- 前置依赖：M0-032, M1-011, M1-017, M1-019, M1-023, M1-015
 - 素材需求：无（灰盒即可）；素材状态：n.a.
 - 引用文档：REFERENCE_MEASUREMENTS §9.1; REFERENCE_MEASUREMENTS §7.4; REFERENCE_MEASUREMENTS §7.3; REFERENCE_MEASUREMENTS §7.2; REFERENCE_MEASUREMENTS §7.5
 

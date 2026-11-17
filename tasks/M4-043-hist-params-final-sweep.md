@@ -4,7 +4,7 @@
 - 里程碑：M4
 - 工作流：data
 - 规模：S
-- 依赖：M3-051（载具与剩余武器史实复核）, M3-047
+- 前置依赖：M3-051, M3-047
 - 素材需求：无（灰盒即可）；素材状态：n.a.
 - 引用文档：REFERENCE_MEASUREMENTS §6; GAMEDESIGN §0.4; REFERENCE_MEASUREMENTS §6.1; REFERENCE_MEASUREMENTS §6.3; ARCHITECTURE §8.5
 

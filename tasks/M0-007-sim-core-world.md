@@ -4,7 +4,7 @@
 - 里程碑：M0
 - 工作流：sim
 - 规模：L
-- 依赖：M0-005, M0-004
+- 前置依赖：M0-005, M0-004
 - 素材需求：无（灰盒即可）；素材状态：n.a.
 - 引用文档：ARCHITECTURE §4.3.2; ARCHITECTURE §8.1; ARCHITECTURE §6.1; ARCHITECTURE §17.1; ARCHITECTURE §5.2
 

@@ -4,7 +4,7 @@
 - 里程碑：M1
 - 工作流：client-render
 - 规模：L
-- 依赖：M1-042
+- 前置依赖：M1-042
 - 素材需求：V-SKY-001（CC0 HDRI）；素材状态：placeholder（程序化天空 + 渐变，真 HDRI 到位后由 M1-064 或本任务内的配置接入）
 - 引用文档：ARCHITECTURE §10.1; ARCHITECTURE §10.2; ARCHITECTURE §9.8; ARCHITECTURE §13.5.2
 

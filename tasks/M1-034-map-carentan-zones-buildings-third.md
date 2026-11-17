@@ -4,7 +4,7 @@
 - 里程碑：M1
 - 工作流：maps
 - 规模：L
-- 依赖：M1-030, M1-032, M1-033
+- 前置依赖：M1-030, M1-032, M1-033
 - 素材需求：无（地标用灰盒）；素材状态：placeholder（V-BLD-* 建筑地标，真素材由 M1-064 接入）
 - 引用文档：MAPS §3.8; MAPS §3.6; MAPS §3.4; MAPS §6.2; MAPS §6.3; MAPS §1.6; MAPS §1.7; GAMEDESIGN §3.6
 
@@ -21,7 +21,7 @@
 ## 具体内容
 ### 要创建/修改的文件
 - `data/maps/carentan/m1/zones.json` —— `lines`（L1/L2/L3 各含 a 点，`origin:"R|G"`、`pos`、`pos_error_m`、`radius_m`、`tags`）、`playable_polygon`（切片矩形，含 `out_of_bounds_buffer_m 64`）、`m1_active:["L1a","L2a","L3a"]`
-- `data/maps/carentan/m1/spawns.json` —— `hq`（US/GER，pos、radius 40）、`garrison_candidates`（含上述临时点，`m1_temp:true`）、`kinds_supported:["hq","garrison"]`、`cover_zones`
+- `data/maps/carentan/m1/spawns.json` —— `hq`（US/GER，pos、radius 40）、`garrison_candidates`（M1 切片候选点，已按裁定移到距各自 HQ ≥ 200 m，见 MAPS §3.8）、`kinds_supported:["hq","garrison"]`、`cover_zones`
 - `data/maps/carentan/vehicle_routes.json` —— `m1_main_route` 折线 + 不可通行区引用（`flood_marsh`、树篱封锁段）
 - `data/maps/carentan/landmarks.json` —— M1 区域内核心地标灰盒定义（`id/name/kind/pos_e/pos_n/design/fidelity/state_1944/asset_ref`、`placeholder_dims_m`）
 - `data/maps/carentan/buildings.geojson`（更新：样式/levels/enterable/roof 标注）
@@ -33,7 +33,7 @@
 2. 建筑标注：规则 + 半自动：`style` 由所在区域（市中心/农场/郊区）与足迹形状启发式；`levels` 由足迹面积与区位（核心区 2–3、其余 1–2）；`enterable` 选取据点周边（≤ 60 m）面积 ≥ 60 m² 的建筑，总占比 ≤ 25%；教堂/农场/拱廊建筑按地标定义覆盖。
 3. 核心地标：每个地标输出 `placeholder_dims_m {l,w,h}`、`doors[]`（门洞中心/宽度）、`floors[]`，用于 M1-052 生成灰盒 + 碰撞；教堂塔高度标注（供视线/掩体设计）。
 4. 载具路线：从 N13 堤道入口（切片边界）到 L1a 再到老城主路，沿 `roads.geojson` 的 `vehicle_ok` 路段；检查宽度 ≥ 车体宽 + 1 m（Sherman 2.62 m）；标出咽喉点（桥）。
-5. 校验规则（`map-pipeline validate`）：JSON schema；坐标 0..2048；**据点不落入水体与实心建筑**；**每据点 ≥ 3 条步兵入口**（以 `nav_critical`+建筑门洞+开阔弧段计数，脚本实现为：据点圆周上与通行区的离散扇区≥3）；**HQ 间可通行**（步兵与载具分别用栅格 A* 做粗连通检查，精确检查在 M1-036 navmesh）；Garrison 候选距离规则（距 HQ ≥ 200 m）仅警告并标 `m1_temp`；`out_of_bounds_buffer_m` 存在。
+5. 校验规则（`map-pipeline validate`）：JSON schema；坐标 0..2048；**据点不落入水体与实心建筑**；**每据点 ≥ 3 条步兵入口**（以 `nav_critical`+建筑门洞+开阔弧段计数，脚本实现为：据点圆周上与通行区的离散扇区≥3）；**HQ 间可通行**（步兵与载具分别用栅格 A* 做粗连通检查，精确检查在 M1-036 navmesh）；Garrison 候选距离规则（距 HQ ≥ 200 m，GD §10.2）为**错误**级校验；`out_of_bounds_buffer_m` 存在。
 6. 写 `reports/m1-zones-validate.json`（每条规则 pass/fail 与细节）。
 ### 接口与数据
 ```json
@@ -77,7 +77,7 @@
 - [ ] `tasks/STATUS.md` 对应行与顶部摘要已更新；提交信息含任务 ID
 
 ## 备注/已知风险
-- **文档冲突**：MAPS §3.8 的 M1 Garrison 位置与各自 HQ 仅相距约 78 m（US）/45 m（GER），违反 GAMEDESIGN §10.2"距任何 HQ ≥ 200 m"。本任务照 MAPS 写入但标 `m1_temp:true`，`validate` 对该规则只警告；请总控/Fable 裁决（见 M1-019 备注）。
+- **已裁定**：MAPS §3.8 的 M1 临时 Garrison 候选点已移动到距各自 HQ ≥ 200 m（满足 GAMEDESIGN §10.2），不再需要 `m1_temp` 例外；本任务按修订后的 MAPS §3.8 写入。
 - 据点 L1a 半径 45 m、位置 ±250 m 不确定度较大，锚定（H-051）后位置可能整体平移；锚定未完成时写 `pos_error_m` 并保持设计值。
 - 地标/建筑真素材缺口见 ASSET_GAPS（GAP-V02 灰盒）；M1 允许灰盒（MILESTONES §2.5）。
 - Place de la République 与 Augustine 修道院位置**未核实**（MAPS §3.4）；M1 仅用前者且标 `fidelity:"B"`、`verified:false`。

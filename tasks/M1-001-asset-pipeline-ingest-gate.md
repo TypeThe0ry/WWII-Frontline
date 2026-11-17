@@ -4,7 +4,7 @@
 - 里程碑：M1
 - 工作流：assets
 - 规模：L
-- 依赖：M0-002, M0-003
+- 前置依赖：M0-002, M0-003
 - 素材需求：无（灰盒即可；用 CC0 样例测试）；素材状态：n.a.
 - 引用文档：ARCHITECTURE §11.1; ARCHITECTURE §11.2; ARCHITECTURE §11.7; LICENSES.md §1; LICENSES.md §2; LICENSES.md §3; LICENSES.md §4.4; ASSET_GAPS §3.4
 

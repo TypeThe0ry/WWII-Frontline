@@ -4,7 +4,7 @@
 - 里程碑：M1
 - 工作流：client-render
 - 规模：L
-- 依赖：M1-006（资产加载器）, M0-025（灰盒角色/第一人称枪）, M1-042（PBR 材质）
+- 前置依赖：M1-006, M0-025, M1-042
 - 素材需求：V-CHR-US-001; V-CHR-GE-001; V-ANM-001; V-ANM-002; V-ANM-004; V-ANM-005（占位可）；素材状态：placeholder（胶囊+头球，程序化占位动画）
 - 引用文档：ARCHITECTURE §13.5.3; ASSET_GAPS §3（§3.1、§3.2）; ARCHITECTURE §7.1; GAMEDESIGN §9.2
 

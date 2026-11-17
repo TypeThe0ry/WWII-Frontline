@@ -4,7 +4,7 @@
 - 里程碑：M4
 - 工作流：server
 - 规模：M
-- 依赖：M4-030, M2-023
+- 前置依赖：M4-030, M2-023
 - 素材需求：无（灰盒即可）；素材状态：n.a.
 - 引用文档：ARCHITECTURE §19; ARCHITECTURE §17.1; ARCHITECTURE §19.1; ARCHITECTURE §19.3; ARCHITECTURE §19.5; ARCHITECTURE §15.1
 

@@ -4,7 +4,7 @@
 - 里程碑：M2
 - 工作流：voice
 - 规模：M
-- 依赖：M1-066, M1-028
+- 前置依赖：M1-066, M1-028
 - 素材需求：无（灰盒即可）；素材状态：n.a.
 - 引用文档：ARCHITECTURE §14.1; ARCHITECTURE §14.3; ARCHITECTURE §18.1; ARCHITECTURE §19.4; ARCHITECTURE §7.4; ARCHITECTURE §5.8
 

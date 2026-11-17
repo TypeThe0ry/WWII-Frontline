@@ -4,7 +4,7 @@
 - 里程碑：M1
 - 工作流：server
 - 规模：M
-- 依赖：M0-018, M1-011
+- 前置依赖：M0-018, M1-011
 - 素材需求：无（灰盒即可）；素材状态：n.a.
 - 引用文档：ARCHITECTURE §15.1; ARCHITECTURE §15.4; ARCHITECTURE §6.3; ARCHITECTURE §18.3; GAMEDESIGN §9.6; GAMEDESIGN §19.5
 

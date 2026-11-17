@@ -4,7 +4,7 @@
 - 里程碑：M1
 - 工作流：assets
 - 规模：M
-- 依赖：M1-063（枪声/脚步/命中的事件与 ID 映射）, M1-004（音频打包）, M1-053（UI 字体加载）
+- 前置依赖：M1-063, M1-004, M1-053
 - 素材需求：A-WPN-*; C-BUL-*; D-TNK-001..004; E-GER-001; F-AMB-*; G-VOX-001; G-VOX-002; H-RAD-001; H-UI-002; J-IR-001; V-FNT-*；素材状态：real / placeholder（静音）混合
 - 引用文档：ASSET_SHOPPING_LIST §4.2; ASSET_GAPS §3.5; ASSET_GAPS §3.3; ARCHITECTURE §12.7; ARCHITECTURE §11.4; ARCHITECTURE §11.8
 

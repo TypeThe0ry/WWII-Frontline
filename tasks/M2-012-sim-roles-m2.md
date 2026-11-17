@@ -4,7 +4,7 @@
 - 里程碑：M2
 - 工作流：sim
 - 规模：L
-- 依赖：M2-006, M1-013, M1-011
+- 前置依赖：M2-006, M1-013, M1-011, M2-010
 - 素材需求：无（灰盒即可）；素材状态：n.a.
 - 引用文档：GAMEDESIGN §5.7; GAMEDESIGN §5.8; GAMEDESIGN §5.11; GAMEDESIGN §5.12; GAMEDESIGN §5.13; GAMEDESIGN §5.1; GAMEDESIGN §9.3; GAMEDESIGN §6.5
 
@@ -67,6 +67,6 @@ ARCH §6.10 阶段 2「角色移动 3.0 ms（100 KCC）」不得回归：以 `ca
 - [ ] `tasks/STATUS.md` 对应行与顶部摘要已更新；提交信息含任务 ID
 
 ## 备注/已知风险
-- INDEX 依赖未含 M2-010（剪线钳作用对象是 M2-010 的铁丝网）：编号顺序保证 M2-010 先完成，建议 Fable 补依赖；若 M2-010 未完成则剪线验收记 `未测`。
+- 依赖已含 M2-010（剪线钳作用对象是 M2-010 的铁丝网）。
 - AR/MG 的 `fire_mode` 输入位使用 `InputCmd.aux`（ARCH §8.2：开火模式切换/标记等），不新增消息。
 - 数值状态 `initial`，校准见 M2-054。

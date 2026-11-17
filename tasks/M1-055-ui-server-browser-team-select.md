@@ -4,7 +4,7 @@
 - 里程碑：M1
 - 工作流：ui
 - 规模：M
-- 依赖：M1-054, M1-028（gateway：服务器列表/游客鉴权/join ticket）
+- 前置依赖：M1-054, M1-028
 - 素材需求：无（灰盒即可）；素材状态：n.a.
 - 引用文档：UI_SPEC §4.3; UI_SPEC §4.4; GAMEDESIGN §2.3; GAMEDESIGN §2.4; ARCHITECTURE §19.2; ARCHITECTURE §3.3
 

@@ -4,7 +4,7 @@
 - 里程碑：M4
 - 工作流：bots
 - 规模：M
-- 依赖：M3-028, M4-011, M4-012, M4-005, M4-010
+- 前置依赖：M3-028, M4-011, M4-012, M4-005, M4-010
 - 素材需求：无（灰盒即可）；素材状态：n.a.
 - 引用文档：GAMEDESIGN §20.3; GAMEDESIGN §20.4; GAMEDESIGN §3.4; GAMEDESIGN §3.5; ARCHITECTURE §16.1; ARCHITECTURE §16.2; ARCHITECTURE §16.5
 
@@ -25,7 +25,7 @@ bot 通过与真人同构的 `InputCmd` 路径行动（ARCHITECTURE §16.1），
 - `data/maps/*/offmesh_links.json` —— 补充缺失的 off-mesh（与 M4-005/010 协调，若缺则在此补并写 PLAN_ISSUES）。
 - `crates/bots/tests/{omaha_landing.rs,foy_forest.rs,skirmish_fill.rs}`；`crates/headless-client` 增加 `scenario bot-match --map --mode`。
 ### 要实现的行为
-1. 部署：bot 在 Omaha（Assault 攻方 US）使用 Boat 出生点；Skirmish 使用 HQ/Garrison；Foy 德军攻方使用 HQ/fallback。
+1. 部署：bot 在 Omaha（Assault 攻方 US）使用 Boat 出生点；Skirmish 使用 HQ/Garrison；Foy 美军攻方使用 HQ、德军防守方使用 HQ/fallback。
 2. 冲滩：落地后 `beach_dash_s`（初值 8 s【待调参】）内向 ≥ 30 m 外的最近可用掩体移动，随后转入 B-02/B-03。
 3. 卡住检测 B-21：5 s 位移 < 1 m → 重规划 / 跳跃 / 切换目标；记录 `bot_stuck_total` 指标。
 4. 路线：Assault 阶段切换时重新评估目标（M3-028 已有，复用）；Skirmish 目标仅据点。

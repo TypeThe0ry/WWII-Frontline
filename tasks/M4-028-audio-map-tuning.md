@@ -4,7 +4,7 @@
 - 里程碑：M4
 - 工作流：audio
 - 规模：M
-- 依赖：M2-046（混响总线/环境/载具声）, M4-014, M4-015
+- 前置依赖：M2-046, M4-014, M4-015
 - 素材需求：F-AMB-002; F-AMB-004; J-IR-*（缺则静音）；素材状态：placeholder
 - 引用文档：ARCHITECTURE §12.2; ARCHITECTURE §12.7; ARCHITECTURE §12.1; ARCHITECTURE §12.4; ARCHITECTURE §11.4; ASSET_GAPS §3.3
 

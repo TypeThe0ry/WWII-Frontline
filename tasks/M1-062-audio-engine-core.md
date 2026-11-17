@@ -4,7 +4,7 @@
 - 里程碑：M1
 - 工作流：audio
 - 规模：L
-- 依赖：M1-006（fpak 加载器；音频块读取与 `.fpak` 缓存接口）
+- 前置依赖：M1-006
 - 素材需求：无（静音占位）；素材状态：placeholder（缺失需求 ID 返回短静音 `AudioBuffer`，ASSET_GAPS §3.3）
 - 引用文档：ARCHITECTURE §12.1; ARCHITECTURE §12.4; ARCHITECTURE §12.6; ARCHITECTURE §12.7; ASSET_GAPS §3.3; ARCHITECTURE §4.3.9
 

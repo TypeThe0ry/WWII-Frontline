@@ -4,14 +4,14 @@
 - 里程碑：M3
 - 工作流：data
 - 规模：M
-- 依赖：M2-006
+- 前置依赖：M2-006
 - 素材需求：无（灰盒即可）；素材状态：n.a.
 - 引用文档：GAMEDESIGN §5.4; GAMEDESIGN §5.14; GAMEDESIGN §5.16; GAMEDESIGN §5.17; GAMEDESIGN §6.2; GAMEDESIGN §6.3; GAMEDESIGN §6.5; GAMEDESIGN §4.4; ARCHITECTURE §8.5
 
 ## 背景
 M0–M2 已落地 Officer/Rifleman/Medic/Support/Crewman（M1-007）与 Assault/AR/MG/AT/Engineer（M2-006）的 roles 与 loadout，以及对应武器。M3 的目标是 **14 兵种 × 2 阵营全部可选**（MILESTONES E3-1），本任务补齐四个新兵种 Commander（GD §5.4）、Tank Commander（§5.14）、Spotter（§5.16）、Sniper（§5.17）以及此前 loadout 引用到、但 `/data/weapons/` 尚不存在的全部武器。
 数值第一来源是史料；游戏性数值只写 GD §6.3/§6.5 的初值，状态一律 `initial`（R8），史实复核由 M3-051 完成。`/data` 是数值唯一真源（ARCHITECTURE §4.4），客户端不硬编码数值。
-关键事实：GD 的 loadout 表实际只到 L8（Officer/MG/AT/Engineer 的 `_3`），XP 公式（GD §5.2）才到 L10；INDEX 写"L1–L10 全部"指"覆盖到表内出现的全部等级"，**不得自行发明 L9/L10 loadout**，缺口写 `docs/PLAN_ISSUES.md`。
+关键事实（已裁定）：GD 的 loadout 表只到 L8（Officer/MG/AT/Engineer 的 `_3`），XP 公式（GD §5.2）才到 L10；INDEX 已统一为"GD 表中全部等级"，**不得自行发明 L9/L10 loadout**。
 
 ## 具体内容
 ### 要创建/修改的文件
@@ -65,4 +65,4 @@ M0–M2 已落地 Officer/Rifleman/Medic/Support/Crewman（M1-007）与 Assault/
 ## 备注/已知风险
 - GD §5.5/§5.12 表中部分武器（如 StG 44、FG 42）可能已在 M2-006 建过；先做差集再补，不重复建。
 - Commander loadout 的"Garrison 套件""无线电（指挥面板）"是 tool 标记而非武器，写入 `gadget`/`tools[]` 字段。
-- INDEX 写"L1–L10"与 GD 表（最高 L8）不符，见背景；需 Fable 确认是否要补 L9/L10。
+- 已裁定：覆盖 GD 表内出现的全部等级（最高 L8）；L9/L10 无 loadout 内容，不补。

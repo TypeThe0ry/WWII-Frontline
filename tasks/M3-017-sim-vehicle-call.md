@@ -4,7 +4,7 @@
 - 里程碑：M3
 - 工作流：sim
 - 规模：M
-- 依赖：M3-006, M2-015, M3-016
+- 前置依赖：M3-006, M2-015, M3-016
 - 素材需求：无（灰盒即可）；素材状态：n.a.
 - 引用文档：GAMEDESIGN §13.9; GAMEDESIGN §14.6; GAMEDESIGN §14.6.1; GAMEDESIGN §11.4; GAMEDESIGN §14.1
 
@@ -66,6 +66,6 @@ ARCHITECTURE §6.10 阶段 5（规则 0.7 ms）与阶段 3（载具 2.0 ms）：
 - [ ] `tasks/STATUS.md` 对应行与顶部摘要已更新；提交信息含任务 ID
 
 ## 备注/已知风险
-- GD §14.6 说"Armor Crew 需求：认领者所在小队当前人数 ≥ 需求"，而 §13.9 说 Commander 呼叫后 60 s 内无人认领回收；本任务因此在**认领**而非呼叫时校验人数，若 Commander 在没有 Armor Crew 时呼叫坦克，资源会在 60 s 后返还（请 Fable 确认意图，写 PLAN_ISSUES）。
+- 已裁定：Armor Crew 人数在**认领**时校验（GD §14.6）；呼叫后 60 s 无人认领则回收并退还全部资源（GD §13.9）。若 Commander 在没有 Armor Crew 时呼叫坦克，资源会在 60 s 后返还（意图已确认）。
 - 呼叫"M8/Puma 成本区间 90–100"取值沿用 M3-002 的数据，不在代码中判断。
 - GD 14.6.1 的"Skirmish 固定刷新"与本任务无关。

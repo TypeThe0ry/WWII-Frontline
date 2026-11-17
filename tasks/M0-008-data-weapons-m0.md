@@ -4,7 +4,7 @@
 - 里程碑：M0
 - 工作流：data
 - 规模：S
-- 依赖：M0-004
+- 前置依赖：M0-004
 - 素材需求：无（灰盒即可）；素材状态：n.a.
 - 引用文档：ARCHITECTURE §8.5.1; GAMEDESIGN §6.2; GAMEDESIGN §6.3; GAMEDESIGN §6.4; GAMEDESIGN §6.5; GAMEDESIGN §6.6
 
@@ -78,6 +78,6 @@ ID 约定 GAMEDESIGN §0.3：`us_m1_garand`、`ger_kar98k`（ARCHITECTURE §8.5.
 - [ ] `tasks/STATUS.md` 对应行与顶部摘要已更新；提交信息含任务 ID
 
 ## 备注/已知风险
-- ARCHITECTURE §8.5.1 示例 Garand 的 `muzzle_velocity_mps: 850` 与 GAMEDESIGN §6.2 的"约 853 m/s"不同；取 GAMEDESIGN，M0-031 以史料为准最终定值。
+- 已裁定：Garand 初速示例统一 853 m/s（ARCHITECTURE §8.5.1 已同步）；M0-031 以史料为准最终定值。
 - GAMEDESIGN §6.3 对 Garand 弹夹抛出规则（`partial_clip_policy`）属 M1-013 范围，本任务只存战术/空仓装填时间。
 - 对标测量（射速、后坐、致死发数）由 H-026（录像）驱动，缺录像时数值保持 `initial`。

@@ -4,7 +4,7 @@
 - 里程碑：M1
 - 工作流：maps
 - 规模：M
-- 依赖：M0-009
+- 前置依赖：M0-009
 - 素材需求：无（灰盒即可）；素材状态：n.a.（地图数据源登记属素材台账范畴，见 LICENSES.md）
 - 引用文档：MAPS §2.1; MAPS §2.5; MAPS §2.6; MAPS §0.4; MAPS §1.3; MAPS §3.4; MAPS §6.2; MAPS §7.1; LICENSES.md §1; LICENSES.md §3
 

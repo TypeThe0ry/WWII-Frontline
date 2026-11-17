@@ -22,7 +22,8 @@
    - 发票/订单截图 → `licenses/receipts/{asset_id}.pdf`。
    - 以上目录**进 git**（它们是法律证据，体积小）；原始素材文件放 `assets/incoming/`（`.gitignore`，不进 git）。
 7. **疑似游戏提取检查**：登记前必须按 `docs/ASSET_SHOPPING_LIST.md` §2.3 的检查表核对；通过后在 `notes` 写"已按 §2.3 核对"。
-8. **"不自制"边界（D-MOD）**：台账 `allowed_processing` 只能填 D-MOD 允许的处理，且不得超过卖家书面确认的范围；允许的加工代码见 §2 末尾。
+8. **"不自制"边界（D-MOD）**：台账 `allowed_processing` 只能填 D-MOD 允许的处理，且不得超过卖家书面确认的范围；允许的加工代码见 §2 末尾。**D-MOD 例外（默认允许，待人确认）**：为合规，对素材贴图/模型上的纳粹符号（卐等）与现实厂商商标做**遮盖/移除**（`MATPARAM` / 贴图遮盖处理）属于允许的处理，不视为“重画贴图”；仍不得新绘制替代图案以外的内容。
+8a. **执行者职责**：AI 执行者**可以且必须**在本文件登记新素材/新依赖（来源、作者、许可证、链接、订单号），但**不得把状态从 `PENDING` 改为 `OK`**，除非 `licenses/` 下已有条款全文或卖家书面确认作为证据；执行者不得购买任何素材（购买由人类负责人完成）。
 9. **原始文件与处理后包**：原始文件路径填 `assets/incoming/{需求ID}/{渠道}-{订单号}/…`；处理后素材只以 `.fpak` 容器分块形式交付（D-PAK），**不以标准 `.glb/.ktx2/.ogg` 独立文件暴露**；源 WAV/源模型永不进入公开 CDN。
 10. **日常节奏**：每次购买当天登记；每个里程碑验收前，执行者运行一次"台账校验"（见 §4.4）。
 
@@ -118,7 +119,7 @@
 | wtransport | 服务器 WebTransport | 未核实（凭记忆倾向 MIT/Apache-2.0 类宽松许可，不确定） | **必须实测**，不得凭记忆放行 |
 | Preact | UI | MIT（未核实） | 同上；MIT 要求保留版权声明与许可证文本 |
 | 其余直接/间接依赖（tokio、gltf-transform、meshoptimizer、KTX/Basis Universal、libopus、Recast 导航库、Vite 等） | 各模块 | **未核实**（不在此凭记忆给出） | 自动生成，覆盖全部传递依赖 |
-| 字体（Black Ops One、Saira Stencil One、Allerta Stencil、Inter/Roboto Condensed/IBM Plex Sans Condensed、Noto Sans SC/Source Han Sans 等，如采用） | UI | SIL OFL（部分来自聚合站或凭记忆，未核实） | 作为素材登记在 §3（`type = font`），并存档 OFL 文本；注意保留字体名（RFN）限制与子集化是否触发改名条款 |
+| 字体（与 `docs/UI_SPEC.md` §2.3 一致：Barlow Semi Condensed、IBM Plex Sans、IBM Plex Mono、Noto Sans SC） | UI | 计划为 SIL OFL 1.1（**未核实**） | 状态 `PENDING`，**M0 任务核实**许可证文本、可网页嵌入/子集化条款与当前版本后，作为素材登记在 §3（`type = font`）并存档 OFL 文本；注意保留字体名（RFN）限制与子集化是否触发改名条款；未登记不得入库（R10） |
 
 **依赖许可证政策（建议，待负责人确认）**：
 

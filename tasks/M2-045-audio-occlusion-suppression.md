@@ -4,7 +4,7 @@
 - 里程碑：M2
 - 工作流：audio
 - 规模：M
-- 依赖：M1-063, M1-017
+- 前置依赖：M1-063, M1-017
 - 素材需求：C-BUL-005（子弹擦过/压制相关音，缺则静音）；素材状态：placeholder
 - 引用文档：ARCHITECTURE §12.1; ARCHITECTURE §12.3; ARCHITECTURE §12.4; ARCHITECTURE §12.6; GAMEDESIGN §8.3; GAMEDESIGN §8.1; GAMEDESIGN §8.2; REFERENCE_MEASUREMENTS §4.12
 

@@ -4,7 +4,7 @@
 - 里程碑：M2
 - 工作流：maps
 - 规模：M
-- 依赖：M2-003
+- 前置依赖：M2-003
 - 素材需求：无（灰盒即可）；素材状态：n.a.
 - 引用文档：MAPS §3.6; MAPS §6.2; MAPS §6.3; GAMEDESIGN §3.3; GAMEDESIGN §3.7; GAMEDESIGN §10.5; GAMEDESIGN §15.1
 

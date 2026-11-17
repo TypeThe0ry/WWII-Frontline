@@ -4,7 +4,7 @@
 - 里程碑：M2
 - 工作流：sim
 - 规模：L
-- 依赖：M1-018, M1-019
+- 前置依赖：M1-018, M1-019
 - 素材需求：无（灰盒即可）；素材状态：n.a.
 - 引用文档：GAMEDESIGN §3.3; GAMEDESIGN §3.2; GAMEDESIGN §2.2; GAMEDESIGN §3.6; GAMEDESIGN §10.5; ARCHITECTURE §4.3.2; ARCHITECTURE §6.10; ARCHITECTURE §8.1
 
@@ -69,6 +69,6 @@ ARCH §6.10 阶段 5「规则 0.7 ms」整体预算（据点+资源+补给+重�
 - [ ] `tasks/STATUS.md` 对应行与顶部摘要已更新；提交信息含任务 ID
 
 ## 备注/已知风险
-- INDEX 范围写"胜负/超时/加时"，GD §3.3.4 明确 Frontline 无加时；按 GD 实现并在 PLAN_ISSUES 记一条。
+- INDEX 行已删去"加时"（GD §3.3.4：Frontline 无加时），按 GD 实现。
 - 若 M2-004 的 Sector 多边形组合有缺口，`recompute` 不应 panic；以日志 + 指标 `sector_gap_total` 暴露。
 - 占点参数 `k_cap` 待 REF §capture 校准（M2-054），读自 `/data`，不得硬编码。

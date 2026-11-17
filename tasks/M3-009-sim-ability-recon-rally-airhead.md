@@ -4,7 +4,7 @@
 - 里程碑：M3
 - 工作流：sim
 - 规模：M
-- 依赖：M3-006, M1-019
+- 前置依赖：M3-006, M1-019
 - 素材需求：无（灰盒即可）；素材状态：n.a.
 - 引用文档：GAMEDESIGN §13.7; GAMEDESIGN §13.8; GAMEDESIGN §10.4; GAMEDESIGN §10.6; GAMEDESIGN §2.6; GAMEDESIGN §17.2; ARCHITECTURE §6.5.4
 

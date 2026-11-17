@@ -4,7 +4,7 @@
 - 里程碑：M2
 - 工作流：ui
 - 规模：M
-- 依赖：M1-057, M2-017
+- 前置依赖：M1-057, M2-017
 - 素材需求：无（灰盒即可）；素材状态：n.a.
 - 引用文档：UI_SPEC §4.9; UI_SPEC §8.1; UI_SPEC §8.2; GAMEDESIGN §18.1; GAMEDESIGN §18.3; GAMEDESIGN §16.1
 

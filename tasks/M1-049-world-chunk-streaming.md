@@ -4,7 +4,7 @@
 - 里程碑：M1
 - 工作流：world
 - 规模：L
-- 依赖：M1-006（fpak 加载/解码 Worker/缓存）, M1-035（区块烘焙与索引）
+- 前置依赖：M1-006, M1-035
 - 素材需求：无（灰盒即可）；素材状态：n.a.
 - 引用文档：ARCHITECTURE §9.3; ARCHITECTURE §9.4; ARCHITECTURE §9.1; ARCHITECTURE §9.5; ARCHITECTURE §11.5; ARCHITECTURE §13.5.1
 

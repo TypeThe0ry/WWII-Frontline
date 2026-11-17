@@ -738,7 +738,7 @@
 
 类别：运营｜概率：中｜影响：低｜最晚验证：M3｜负责方：执行者
 
-- **描述**：可选功能（每队 1 个 LLM 指挥官，ARCHITECTURE §16.4）。风险：①成本——BRIEF R4 已把决策间隔改为 **60 s**，每局上限 0.5 美元；**模型价格未核实**，实现前按官方价格重算。【估算】按 4 局并发、每局 75 分钟计，一天约 77 局，若每局触顶 $0.5，则约 $38/天、≈ $1,150/月，是**上限情景**，非预测；若指挥官始终关闭则为 0。②可用性：API 限流/宕机，规则指挥官热备已设计；③提示注入：设计已规定输入只含该队可见信息、不含聊天内容，输出为受限枚举并经校验；④数据外发：结构化战况 JSON，不含个人信息（但需在隐私政策披露第三方处理，R-39）；⑤ARCHITECTURE §16.4 正文仍写 45 s，与 BRIEF R4 的 60 s 不一致（见 R-51）。
+- **描述**：可选功能（每队 1 个 LLM 指挥官，ARCHITECTURE §16.4）。风险：①成本——BRIEF R4 已把决策间隔改为 **60 s**，每局上限 0.5 美元；**模型价格未核实**，实现前按官方价格重算。【估算】按 4 局并发、每局 75 分钟计，一天约 77 局，若每局触顶 $0.5，则约 $38/天、≈ $1,150/月，是**上限情景**，非预测；若指挥官始终关闭则为 0。②可用性：API 限流/宕机，规则指挥官热备已设计；③提示注入：设计已规定输入只含该队可见信息、不含聊天内容，输出为受限枚举并经校验；④数据外发：结构化战况 JSON，不含个人信息（但需在隐私政策披露第三方处理，R-39）；⑤ARCHITECTURE §16.4 已统一为 60 s（2026-11-17 终审，见 R-51）。
 - **触发信号**：`llm_cost_usd_total`/局 > 0.45（§18.3 告警线）；`llm_fallback_total` 比例 > 20%；账单月度超预算。
 - **缓解方案**：默认**关闭**，仅在真人少于阈值/活动场启用；全局月度预算硬上限（H-073，在 Anthropic 控制台设置支出上限）；成本控制器（90% 拉长间隔，100% 回退）已设计，实现后用实际用量校准；API key 仅在服务器环境变量，不进日志（R-55）。
 - **应急预案**：成本/可用性问题 → 关闭 LLM，规则指挥官接管（热备）；功能砍掉不影响核心。
@@ -793,9 +793,9 @@
 类别：流程｜概率：高｜影响：中｜最晚验证：M0｜负责方：Fable 审阅（主）、执行者
 
 - **描述**：多文档由不同作者并行撰写、总纲几经追加（§3b、§3c 裁定优先）。已知或疑似不一致（**审阅时核对，若并行编辑已修复则忽略**）：
-  1. **LLM 指挥官决策间隔**：ARCHITECTURE §16.4 写 45 s，BRIEF R4 裁定 60 s。
-  2. **字体清单**：UI_SPEC 附录 B 提及 Barlow Semi Condensed / IBM Plex Sans / IBM Plex Mono / Noto Sans SC；LICENSES §5 列的是 Black Ops One、Saira Stencil One、Allerta Stencil、Inter/Roboto Condensed/IBM Plex Sans Condensed、Noto Sans SC/Source Han Sans，两边不是同一套（BRIEF R10 要求 M0 核实字体许可证并登记）。
-  3. **敌方信息下发**：BRIEF R3 统一规则（≤ 400 m 且在视锥 +30° 内或 ≤ 96 m；标记敌人只下发 1 Hz 5 m 量化图标）需与 ARCHITECTURE §6/§15、GAMEDESIGN §17.2 一致；ARCHITECTURE §20.2 原备注与之有关，需总控确认已落实。
+  1. **LLM 指挥官决策间隔**：【已修复，终审 2026-11-17】ARCHITECTURE §16.4 已统一为 60 s（BRIEF R4）。
+  2. **字体清单**：【已修复，终审 2026-11-17：LICENSES §5 已改为与 UI_SPEC §2.3 一致】原状：UI_SPEC 附录 B 提及 Barlow Semi Condensed / IBM Plex Sans / IBM Plex Mono / Noto Sans SC；LICENSES §5 列的是 Black Ops One、Saira Stencil One、Allerta Stencil、Inter/Roboto Condensed/IBM Plex Sans Condensed、Noto Sans SC/Source Han Sans，两边不是同一套（BRIEF R10 要求 M0 核实字体许可证并登记）。
+  3. **敌方信息下发**：BRIEF R3 统一规则（≤ 400 m 且在视锥 +30° 内或 ≤ 96 m；标记敌人只下发 1 Hz 5 m 量化图标）需与 ARCHITECTURE §6/§15、GAMEDESIGN §17.2 一致；ARCHITECTURE §20.2 原备注与之有关，【已修复，终审 2026-11-17：三处已一致】
   4. **WebTransport/Safari 版本**、**Firefox WebGPU 版本**在 ARCHITECTURE §5.0 标"未核实"，而其它文档（如 UI_SPEC）若引用需同步。
   5. 数值/章节引用（"GAMEDESIGN §x 回填"占位）：REFERENCE_MEASUREMENTS 的 §9.3 与 GAMEDESIGN 附录 A 的占位章节号需回填。
 - **触发信号**：执行者在实现时发现两个文档对同一量给出不同值；评审在不同文档中读到相互矛盾的验收标准；`/data` 字段与文档字段不同。
@@ -952,5 +952,5 @@
   2. **A8 匿名游客 vs 反作弊**：匿名游客使封禁无成本（R-42），建议把"推荐服务器/语音/聊天"限定为 OAuth 登录用户，作为可选产品决定（H-063）。
   3. **仓库公开性与 IP 边界**：若代码仓库公开，docs 中大量"对标参考作品"措辞会成为"有意复制"的证据（R-31）；建议公开前做"对标内容私有化"（H-041）。
   4. **A7 简体中文 UI**：不等于面向中国大陆运营；若大陆可访问，合规要求（版号/ICP/未成年人规则）未核实，默认不面向大陆运营（R-33 末，NEEDS_HUMAN H-092）。
-  5. **ARCHITECTURE §16.4 的 45 s 与 BRIEF R4 的 60 s 不一致**（R-51 #1）。
-  6. **UI_SPEC 与 LICENSES §5 的字体清单不一致**（R-51 #2）。
+  5. ~~ARCHITECTURE §16.4 的 45 s 与 BRIEF R4 的 60 s 不一致~~：已修复（R-51 #1）。
+  6. ~~UI_SPEC 与 LICENSES §5 的字体清单不一致~~：已修复（R-51 #2）。

@@ -4,7 +4,7 @@
 - 里程碑：M2
 - 工作流：server
 - 规模：M
-- 依赖：M1-024
+- 前置依赖：M1-024
 - 素材需求：无（灰盒即可）；素材状态：n.a.
 - 引用文档：ARCHITECTURE §6.6.3; ARCHITECTURE §6.9.4; ARCHITECTURE §6.5.4; ARCHITECTURE §6.6.2; ARCHITECTURE §18.3
 

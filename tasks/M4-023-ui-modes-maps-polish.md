@@ -4,7 +4,7 @@
 - 里程碑：M4
 - 工作流：ui
 - 规模：M
-- 依赖：M1-055（服务器浏览器与阵营选择）, M4-012, M4-011
+- 前置依赖：M1-055, M4-012, M4-011
 - 素材需求：无（灰盒即可）；素材状态：n.a.
 - 引用文档：UI_SPEC §4.3; UI_SPEC §4.4; UI_SPEC §4.1; UI_SPEC §4.5; GAMEDESIGN §2.3; GAMEDESIGN §3.7; GAMEDESIGN §10.1
 
@@ -36,7 +36,7 @@
 - `interface MapCard { map_id: 'carentan'|'omaha_dog_green'|'foy'; modes: ('frontline'|'assault'|'skirmish')[]; thumb: string; brief_key: string }`；`ServerListItem` 已有字段沿用（`GW` 返回）。
 
 ## 不做什么
-- 不做模式规则/登陆艇生命周期（M4-011/M4-012）；不做 matchd（M4-031）。
+- 不做模式规则/登陆艇生命周期（M4-011/M4-012）；不做 gateway 编排（M4-031）。
 - 不做画质设置页（M4-024）；不做新手引导（M4-027）。
 - 不做地图真实缩略图渲染（用线稿占位，素材接入后续）。
 

@@ -4,7 +4,7 @@
 - 里程碑：M3
 - 工作流：sim
 - 规模：M
-- 依赖：M2-014, M2-005
+- 前置依赖：M2-014, M2-005
 - 素材需求：无（灰盒即可；破坏阶段用程序化替换盒体）；素材状态：n.a.
 - 引用文档：MAPS §6.2; MAPS §1.6; ARCHITECTURE §16.2; ARCHITECTURE §9.5; ARCHITECTURE §8.1; GAMEDESIGN §13.4
 

@@ -4,7 +4,7 @@
 - 里程碑：M2
 - 工作流：bots
 - 规模：L
-- 依赖：M1-039, M2-008, M2-011
+- 前置依赖：M1-039, M2-008, M2-011, M2-010, M2-015, M2-019
 - 素材需求：无（灰盒即可）；素材状态：n.a.
 - 引用文档：GAMEDESIGN §20.3; ARCHITECTURE §16.3; GAMEDESIGN §20.2; GAMEDESIGN §20.6; ARCHITECTURE §16.1; GAMEDESIGN §10.3
 
@@ -67,5 +67,5 @@ ARCH §16.5：士兵 bot 单次思考 ≈ 30–60 µs；60 bot 合计 ≈ 3.0 ms
 ## 备注/已知风险
 - 规模 L，行为条目多；若超一次会话，按"目标/站位/Outpost → 兵种行为"拆续作 M2-027b。
 - 树篱/洪泛地形下 navmesh 卡死风险（MILESTONES §3.8）：B-21 的"无进展计数"必须作为指标暴露给 M2-049。
-- INDEX 依赖未含 M2-010（建造系统），但 B-10 依赖其 `validate_placement`；编号顺序保证其先完成。
+- 依赖已含 M2-010（B-10 依赖其 `validate_placement`）、M2-015、M2-019。
 - `cover_points` 在 M2-004/M2-005 数据里没有明确列出，缺失时用启发式并 PLAN_ISSUES 登记。

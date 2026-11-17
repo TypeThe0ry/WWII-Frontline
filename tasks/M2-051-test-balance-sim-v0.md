@@ -4,13 +4,13 @@
 - 里程碑：M2
 - 工作流：test
 - 规模：L
-- 依赖：M2-008, M2-028
+- 前置依赖：M2-008, M2-028
 - 素材需求：无（灰盒即可）；素材状态：n.a.
 - 引用文档：ARCHITECTURE §17.3; ARCHITECTURE §17.5; ARCHITECTURE §4.5; GAMEDESIGN §20; GAMEDESIGN §21; MILESTONES §3.3
 
 ## 背景
-ARCHITECTURE §17.3：`balance-sim`：无渲染、无网络、可 > 10× 实时，bot 对战 N 局（并行进程），输出 CSV：胜率（按地图/阵营）、局时长、武器击杀占比、各兵种 KDA、资源曲线、据点争夺周期。目标：以 REFERENCE_MEASUREMENTS 的黑盒测量校准的"节奏指标"（TTK、冲锋时间等）作为回归基线；改动数值的 PR 必须附带前后对比。**bot 行为 ≠ 真人，只用于发现数值异常（一边倒、不可用武器），不替代真人试玩。**
-M2 退出标准 E2-11：200 局 ≤ 40 min（CI nightly `balance` job，§17.5 目标 < 40 min），CSV 字段齐全，同 seed 可复现。依赖方向（ARCH §4.5）：`balance-sim` 允许依赖 `protocol`、`sim`、`bots`，**不得依赖 `server`/`gateway`/`client`**；因此模拟循环必须自行驱动 `sim::World::step` 与 `bots`（不经网络与 AOI 编码）。M2-008 提供 Frontline 规则，M2-028 提供 RuleCommander，M2-029/M2-027 提供 bot 行为。
+ARCHITECTURE §17.3：`balance-sim`：无渲染、无网络，以**缩比对局**（总控裁定：默认 20v20、30 min、简化物理/无渲染/粗粒度导航）跑 bot 对战 N 局（并行进程）；全尺寸 100 人局只做少量抽样（≥ 5 局），输出 CSV：胜率（按地图/阵营）、局时长、武器击杀占比、各兵种 KDA、资源曲线、据点争夺周期。目标：以 REFERENCE_MEASUREMENTS 的黑盒测量校准的"节奏指标"（TTK、冲锋时间等）作为回归基线；改动数值的 PR 必须附带前后对比。**bot 行为 ≠ 真人，只用于发现数值异常（一边倒、不可用武器），不替代真人试玩。**
+M2 退出标准 E2-11（已按总控裁定改口径）：缩比对局单核 ≥ 10× 实时，200 局缩比对局可在夜间作业 ≤ 4 h 内完成（CI nightly `balance` job），CSV 字段齐全，同 seed 可复现。依赖方向（ARCH §4.5）：`balance-sim` 允许依赖 `protocol`、`sim`、`bots`，**不得依赖 `server`/`gateway`/`client`**；因此模拟循环必须自行驱动 `sim::World::step` 与 `bots`（不经网络与 AOI 编码）。M2-008 提供 Frontline 规则，M2-028 提供 RuleCommander，M2-029/M2-027 提供 bot 行为。
 
 ## 具体内容
 ### 要创建/修改的文件
@@ -19,7 +19,7 @@ M2 退出标准 E2-11：200 局 ≤ 40 min（CI nightly `balance` job，§17.5 �
 - `crates/balance-sim/src/parallel.rs` —— 多进程并行（`std::process::Command` 重入自身子进程，每进程跑一批局，禁用线程内共享 `World`；`sim` 仍单线程）；结果汇总。
 - `crates/balance-sim/src/stats.rs`、`csv.rs` —— 统计采集与 CSV 输出。
 - `reports/balance/` —— 输出目录（CSV 与摘要 JSON 不进 git；基线摘要 `reports/balance/baseline_m2.json` 进 git）。
-- `.github/workflows/balance.yml` —— nightly/手动：200 局、上传 CSV artifact。
+- `.github/workflows/balance.yml` —— nightly/手动：200 局缩比对局、上传 CSV artifact。
 - `docs/` 不修改；字段说明写入 `crates/balance-sim/README` 不创建，改为 `--help` 与 CSV 头注释。
 ### 要实现的行为
 1. 输出 CSV（至少 5 个文件，字段齐全）：
@@ -45,7 +45,7 @@ pub fn run_match(cfg: &RunConfig, index: u32) -> MatchResult; // 纯函数式，
 - 不在 `balance-sim` 内实现游戏规则（只调用 `sim`）。
 
 ## 验收标准
-1. 速度与吞吐（E2-11）：在 nightly runner（≥ 8 逻辑核，机型记录）上，`balance-sim run --matches 200` 总墙钟 ≤ 40 min。**本任务必须先实测单局 `speedup`**：若中位数 < 10×，按 INDEX 目标"> 10× 实时"判为未达标并写 PLAN_ISSUES（含根因分解：sim/bots/规则耗时占比），同时给出缩短局时（`--time-limit-s`）或减小人数的可行配置以满足 200 局 ≤ 40 min；两种结果都如实记入 STATUS。
+1. 速度与吞吐（E2-11）：缩比对局（默认 20v20、30 min）单核 `speedup` 中位数 ≥ 10×（实测，记录机型）；nightly runner（≥ 8 逻辑核）上 `balance-sim run --matches 200`（缩比）总墙钟 ≤ 4 h。另跑全尺寸 100 人局抽样 ≥ 5 局，记录 `speedup`（仅记录，不设阈值）。若缩比口径未达标，写 PLAN_ISSUES 并含根因分解（sim/bots/规则耗时占比），如实记入 STATUS。
 2. 可复现：同 seed 运行两次 `--matches 20`，除 `wall_ms/speedup` 外 CSV 逐字节一致（`diff`，0 差异）。
 3. CSV 字段齐全：5 个文件的列集合与上述一致（`tests/csv_schema.rs`），无空列、无 NaN。
 4. 容错：注入 1 局 panic（测试开关），其余 19 局完成，`matches.csv` 有该局错误记录。
@@ -59,7 +59,7 @@ pub fn run_match(cfg: &RunConfig, index: u32) -> MatchResult; // 纯函数式，
 - 回归：与 `reports/balance/baseline_m2.json` 比较的脚本 `tools/balance/compare.py`（输出差异表，M3-046 使用）。
 
 ## 性能预算
-- ARCHITECTURE §17.5：`balance` job < 40 min（200 局）；单局目标 > 10× 实时（§17.3）。参考：服务器预算 §6.10 单 tick 约 16.4 ms 含网络/AOI/编码；去掉网络后阶段 1–6 约 11.5 ms，对应单核 ≈ 2.9× 实时（粗算）。
+- 缩比对局单核 ≥ 10× 实时；200 局缩比对局夜间作业 ≤ 4 h（总控裁定，替代原"200 局 < 40 min"）。参考：服务器预算 §6.10 单 tick 约 16.4 ms 含网络/AOI/编码；去掉网络后阶段 1–6 约 11.5 ms，对应单核 ≈ 2.9× 实时（粗算）。
 
 ## 完成定义
 - [ ] 全部验收标准有实测数字，已写入 `tasks/STATUS.md`
@@ -71,6 +71,6 @@ pub fn run_match(cfg: &RunConfig, index: u32) -> MatchResult; // 纯函数式，
 - [ ] `tasks/STATUS.md` 对应行与顶部摘要已更新；提交信息含任务 ID
 
 ## 备注/已知风险
-- **INDEX/文档目标的可行性风险**："> 10× 实时"与"200 局 ≤ 40 min"在 100 人局下很可能同时不可达：一局 90 min × 200 = 18 000 模拟分钟，≤ 40 min 墙钟意味着聚合吞吐 ≥ 450× 实时；8 核并行时每进程需 ≈ 56× 实时，而 100 bot 的 `sim` 单 tick 成本（KCC 3 ms + 弹道 2.5 ms + bot 3–5 ms + 规则 0.7 ms ≈ 10 ms）仅给出约 3× 实时/核。须在任务内实测并如实上报，建议方案：缩短局时、降低人数（如 20v20）、降低 bot 思考频率或放宽验收，由 Fable 裁决（PLAN_ISSUES）。
+- **口径已裁定（缩比对局）**：原"> 10× 实时"与"200 局 ≤ 40 min"在 100 人全尺寸局下不可同时达到（以下为推导）：一局 90 min × 200 = 18 000 模拟分钟，≤ 40 min 墙钟意味着聚合吞吐 ≥ 450× 实时；8 核并行时每进程需 ≈ 56× 实时，而 100 bot 的 `sim` 单 tick 成本（KCC 3 ms + 弹道 2.5 ms + bot 3–5 ms + 规则 0.7 ms ≈ 10 ms）仅给出约 3× 实时/核。总控已裁定采用缩比对局口径（见背景）；任务内仍须实测并如实上报。
 - 远程分批执行时需 CPU 隔离；nightly runner 规格决定可行性（H-014）。
 - bot 对战结果受 bot 难度与行为影响大，结果只作异常检测。

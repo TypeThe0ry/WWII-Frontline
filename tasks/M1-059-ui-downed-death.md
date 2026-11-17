@@ -4,7 +4,7 @@
 - 里程碑：M1
 - 工作流：ui
 - 规模：M
-- 依赖：M1-057, M1-016（sim 倒地/救起/击杀归属）
+- 前置依赖：M1-057, M1-016
 - 素材需求：无（灰盒即可）；素材状态：n.a.
 - 引用文档：UI_SPEC §4.10; GAMEDESIGN §7; GAMEDESIGN §10.6; GAMEDESIGN §2.2; UI_SPEC §7.4
 

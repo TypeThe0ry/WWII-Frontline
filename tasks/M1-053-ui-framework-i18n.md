@@ -4,7 +4,7 @@
 - 里程碑：M1
 - 工作流：ui
 - 规模：L
-- 依赖：M0-001（client 脚手架）, M0-003（字体许可证登记）
+- 前置依赖：M0-001, M0-003
 - 素材需求：V-FNT-*（OFL 字体，见 LICENSES.md）；素材状态：real（字体到位且 OK）/ placeholder（系统无衬线 + SVG，ASSET_GAPS §3.2）
 - 引用文档：UI_SPEC §2; UI_SPEC §8; UI_SPEC §9; UI_SPEC §0.3; ARCHITECTURE §2; ARCHITECTURE §4.3.9
 

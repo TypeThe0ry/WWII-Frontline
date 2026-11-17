@@ -4,7 +4,7 @@
 - 里程碑：M4
 - 工作流：ops
 - 规模：M
-- 依赖：M1-067（预发布部署）, M4-031, M2-048（监控与日志）
+- 前置依赖：M1-067, M4-031, M2-048
 - 素材需求：无（灰盒即可）；素材状态：n.a.
 - 引用文档：ARCHITECTURE §18.1; ARCHITECTURE §18.2; ARCHITECTURE §5.17; ARCHITECTURE §3.2; ARCHITECTURE §19.2; NEEDS_HUMAN H-015, H-016, H-017, H-018, H-087, H-093
 
@@ -30,7 +30,7 @@ TLS（§18.2）：WebTransport 要求受信任证书（Let's Encrypt），绑定
 - `tools/ops/cert_expiry_exporter.*` —— 证书到期指标（`cert_expiry_days`）。
 ### 要实现的行为
 1. 基础设施即脚本：从空主机到运行所需的全部步骤可重复（幂等 `provision.sh`），敏感值只来自环境/密钥存储（`request_credential`/CI secrets），不进仓库、不进日志。
-2. 部署：对局镜像（Docker，带 tag）、gateway、matchd（M4-031）、LiveKit、监控；客户端静态资源上传 R2 并按 manifest 切换入口 `index.html`。
+2. 部署：对局镜像（Docker，带 tag）、gateway（含 M4-031 编排与 host-agent）、LiveKit、监控；客户端静态资源上传 R2 并按 manifest 切换入口 `index.html`。
 3. TLS：证书申请/续期、SIGHUP 重载演练；`cert_expiry_days` 指标与 14 天告警规则（规则本体在 M4-034，此处提供指标源）。
 4. 外网冒烟：从外网用 Chromium（WebTransport）与强制 WS 各完成"主菜单→浏览器→加入→进入对局→发射/移动→退出"；语音（LiveKit）可加入房间并互听（2 个客户端）。
 5. 成本/容量记录：把实际主机型号、带宽、月费（按实时报价，**不写入文档的价格需标"未核实"**）记入 `deploy/prod/CAPACITY.md`，供 M4-037 引用。

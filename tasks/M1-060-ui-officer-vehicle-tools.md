@@ -4,7 +4,7 @@
 - 里程碑：M1
 - 工作流：ui
 - 规模：M
-- 依赖：M1-057, M1-019（sim Garrison）, M1-020（sim Supplies/补给箱）, M1-041（载具座位同步）
+- 前置依赖：M1-057, M1-019, M1-020, M1-041
 - 素材需求：无（灰盒即可）；素材状态：n.a.
 - 引用文档：UI_SPEC §4.12; UI_SPEC §4.13; UI_SPEC §4.14; GAMEDESIGN §10.2; GAMEDESIGN §12.1; GAMEDESIGN §12.2; GAMEDESIGN §12.3; GAMEDESIGN §14.7
 
@@ -64,7 +64,7 @@ export const placement: { mode: Signal<'idle'|'placing'|'invalid'|'committing'>;
 - [ ] 性能预算已测（或明确标注"参考机不可用，partial"）
 - [ ] 无新增禁用依赖（ARCHITECTURE §4.5）；`/data` 校验通过
 - [ ] 占位素材已按 ASSET_GAPS §3 命名；缺失素材需求 ID 已列出（虚影灰盒无素材需求）
-- [ ] 文档同步：合法性颜色与 INDEX"绿/红"差异登记 PLAN_ISSUES
+- [ ] 文档同步：合法性颜色以 UI_SPEC 为准（蓝/斜纹 warn/灰），INDEX 已改，无需再登记
 - [ ] `tasks/STATUS.md` 对应行与顶部摘要已更新；提交信息含任务 ID
 
 ## 备注/已知风险

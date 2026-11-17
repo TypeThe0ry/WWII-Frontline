@@ -4,7 +4,7 @@
 - 里程碑：M4
 - 工作流：maps
 - 规模：S
-- 依赖：M2-004, M4-009, M4-012
+- 前置依赖：M2-004, M4-009, M4-012, M4-004, M4-005
 - 素材需求：无（灰盒即可）；素材状态：n.a.
 - 引用文档：MAPS §6.2; MAPS §3.6; MAPS §4.6; MAPS §5.6; GAMEDESIGN §3.5; GAMEDESIGN §3.7
 
@@ -33,7 +33,7 @@ Skirmish 在地图上取一个子区域，单据点位于子区中央（GAMEDESI
 
 ## 不做什么
 - 不实现 Skirmish 规则（M4-012）。
-- 不做 matchd 轮换/随机选择子区（M4-031）。
+- 不做 gateway 轮换/随机选择子区（M4-031）。
 - 不改动 Frontline/Assault 的 `lines` 数据。
 - 不做新子区的区块/navmesh 烘焙（沿用全图 navmesh，子区靠边界约束）。
 
@@ -63,6 +63,6 @@ Skirmish 在地图上取一个子区域，单据点位于子区中央（GAMEDESI
 - [ ] `tasks/STATUS.md` 对应行与顶部摘要已更新；提交信息含任务 ID
 
 ## 备注/已知风险
-- INDEX 依赖未列 M4-004/M4-005，但若要覆盖 Omaha 子区则隐含依赖 M4-004；本任务默认只强制覆盖 Carentan + Foy（INDEX 范围），Omaha 子区为可选，若 M4-004 已写入矩形则补全出生点。
-- GAMEDESIGN §3.7 不列 Omaha/Foy 的 Skirmish，而 MAPS 列出；以"数据存在、模式开关由 matchd 决定"处理。
-- Garrison 间距规则（≥150 m）在小子区不可行，需要新增 per-area 覆盖，写 PLAN_ISSUES 请 Fable 确认。
+- 依赖已补 M4-004/M4-005：Omaha 子区矩形来自 M4-004；本任务强制覆盖 Carentan + Foy（INDEX 范围），Omaha 子区若 M4-004 已写入矩形则补全出生点。
+- GAMEDESIGN §3.7 不列 Omaha/Foy 的 Skirmish，而 MAPS 列出；以"数据存在、模式开关由 gateway 编排（rotation.json）决定"处理。
+- 已裁定：Skirmish 模式 Garrison 间距可由地图 per-area 覆盖（GAMEDESIGN §10.2 已补）；本任务在 `skirmish_areas[].garrison_spacing_m` 写覆盖值。

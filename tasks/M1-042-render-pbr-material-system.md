@@ -4,7 +4,7 @@
 - 里程碑：M1
 - 工作流：client-render
 - 规模：L
-- 依赖：M0-020（引擎初始化/能力探测）, M1-006（fpak 加载与 KTX2 解码）
+- 前置依赖：M0-020, M1-006
 - 素材需求：V-NAT-007（CC0 地表材质，可选）；素材状态：placeholder（棋盘格/纯色材质即可，真材质由 M1-050/M1-064 接入）
 - 引用文档：ARCHITECTURE §10.4; ARCHITECTURE §13.5.3; ARCHITECTURE §10.3; ARCHITECTURE §5.1
 

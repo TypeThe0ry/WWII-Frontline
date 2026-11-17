@@ -4,7 +4,7 @@
 - 里程碑：M1
 - 工作流：server
 - 规模：S
-- 依赖：M1-028, M0-018
+- 前置依赖：M1-028, M0-018
 - 素材需求：无（灰盒即可）；素材状态：n.a.
 - 引用文档：ARCHITECTURE §3.3; ARCHITECTURE §19.2; ARCHITECTURE §4.3.4; ARCHITECTURE §19.1
 
@@ -40,7 +40,7 @@ impl GatewayClient { pub async fn register(&self, r:&MatchRegister) -> Result<Ma
 ## 不做什么
 - gateway 的路由/签发/限速：M1-028；
 - 战绩展示与入库查询：M2；
-- 对局迁移、`matchd` 守护、进程拉起：M2/M1-066（ops）；
+- 对局迁移、gateway 编排模块（M4-031）、进程拉起：M2/M1-066（ops）；
 - LiveKit token：M2；
 - OAuth 与管理员 ticket 流程（`is_admin` 仅解析与记录）。
 

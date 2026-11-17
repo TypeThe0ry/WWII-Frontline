@@ -4,7 +4,7 @@
 - 里程碑：M1
 - 工作流：sim
 - 规模：L
-- 依赖：M1-019, M1-007
+- 前置依赖：M1-019, M1-007
 - 素材需求：无（灰盒即可）；素材状态：n.a.
 - 引用文档：GAMEDESIGN §2.4; GAMEDESIGN §2.5; GAMEDESIGN §4.1; GAMEDESIGN §4.3; GAMEDESIGN §4.4; GAMEDESIGN §4.5; GAMEDESIGN §5; ARCHITECTURE §6.8.1; ARCHITECTURE §15.1; BRIEF R2
 
@@ -17,7 +17,7 @@
 - 部署四步（GD §2.5）：小队 → 兵种 → loadout（含解锁等级，M1 无 XP 则全部 L1–L3 视为已解锁）→ 重生点。`DeployRequest{spawn_point, role, loadout, squad}` 全部由服务器权威校验。
 - 阵营/平衡（GD §2.4）：每队 ≤ 50；`H_t − H_other ≤ 2` 才可加入多的一方；换队：入局 3 min 内不得换、两次间隔 ≥ 10 min（`team_switch_cooldown=600 s`）；Bot 动态让位（M1-039）。
 - 权限（GD §4.5）：放小队标记仅队长；**放置 Garrison 仅 Officer（R1）**；Outpost 属 M2。
-- **M1 兵种缺口（需总控知晓）**：Armor Crew 的队长应为 Tank Commander（GD §4.1/§4.4），但 M1 的 5 兵种不含 Tank Commander；本任务提供配置 `m1_override.armor_crew_leader_role = "crewman"`，使 M1 车组由 Crewman 组成。
+- **M1 兵种缺口（已裁定，INDEX 与 MILESTONES M1 范围已注明）**：Armor Crew 的队长应为 Tank Commander（GD §4.1/§4.4），但 M1 的 5 兵种不含 Tank Commander；本任务提供配置 `m1_override.armor_crew_leader_role = "crewman"`，使 M1 车组由 Crewman 组成。
 
 ## 具体内容
 ### 要创建/修改的文件
@@ -83,6 +83,6 @@ pub fn apply_squad_op(w:&mut World, p:PlayerId, op:SquadOp) -> Result<Vec<SimEve
 - [ ] `tasks/STATUS.md` 对应行与顶部摘要已更新；提交信息含任务 ID
 
 ## 备注/已知风险
-- M1 兵种缺口（无 Tank Commander）见背景，需总控确认 `m1_override` 做法；写 PLAN_ISSUES。
+- M1 兵种缺口（无 Tank Commander）已裁定：M1 用 `m1_override` 让 Crewman 当车组队长，M3 起恢复 Tank Commander。
 - 平衡规则 `H_t−H_other ≤ 2` 的语义以 GD §2.4 文字为准；若歧义，保守实现并登记。
 - 规模 L：先做小队操作 + 部署校验，名额与平衡校验作为纯函数库，若超出追加 `M1-021b`。

@@ -4,7 +4,7 @@
 - 里程碑：M0
 - 工作流：net
 - 规模：L
-- 依赖：M0-021, M0-020
+- 前置依赖：M0-021, M0-020
 - 素材需求：无（灰盒即可）；素材状态：n.a.
 - 引用文档：ARCHITECTURE §6.3; ARCHITECTURE §6.4; ARCHITECTURE §8.4; ARCHITECTURE §7.1; BRIEF R5
 
@@ -61,6 +61,6 @@ CPU：输入+`game` 更新 ≤ 1.5 ms（含预测约 0.3 ms）、快照解码+�
 - [ ] `tasks/STATUS.md` 对应行与顶部摘要已更新；提交信息含任务 ID
 
 ## 备注/已知风险
-- **阈值冲突**：INDEX 写"误差 < 0.02 m 不回滚"，ARCHITECTURE §6.4 与总控裁定 R5 为 0.05 m；本任务按 R5 实现，并在 PLAN_ISSUES 登记"文档冲突"。
+- **阈值已裁定**：INDEX 已改为"误差 < 0.05 m 不回滚"，与 ARCHITECTURE §6.4 及总控裁定 R5 一致。
 - native 与 wasm 的浮点可能不比特一致（R5/T1）：真实服务器对拍会偶发小纠正，验收 3 的 12 次上限就是为此留的余量；若超标，先看 M0-029 的漂移报告再动阈值。
 - 验收 2 里的 wasm-vs-wasm "服务器"无法暴露 native/wasm 差异，因此验收 3（实机）不可省；缺环境时记 `未测`，任务至多 `partial`。

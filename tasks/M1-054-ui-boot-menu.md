@@ -4,7 +4,7 @@
 - 里程碑：M1
 - 工作流：ui
 - 规模：M
-- 依赖：M1-053, M1-006（资产加载/进度/着色器预热接口）
+- 前置依赖：M1-053, M1-006
 - 素材需求：I-MUS-001（可选，主菜单音乐；缺则静音）；素材状态：placeholder（静音）
 - 引用文档：UI_SPEC §4.1; UI_SPEC §4.2; ARCHITECTURE §13.6; ARCHITECTURE §11.4; ARCHITECTURE §10.4
 

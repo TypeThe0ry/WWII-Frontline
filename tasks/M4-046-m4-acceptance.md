@@ -4,7 +4,7 @@
 - 里程碑：M4
 - 工作流：test
 - 规模：M
-- 依赖：M4-045, M4-039, M4-044, M4-029, M4-028, M4-024, M4-025, M4-026, M4-027, M4-023, M4-019, M4-018, M4-021, M4-036, M4-032, M4-013
+- 前置依赖：M4-045, M4-039, M4-044, M4-029, M4-028, M4-024, M4-025, M4-026, M4-027, M4-023, M4-019, M4-018, M4-021, M4-036, M4-032, M4-013, M4-030, M4-031, M4-033, M4-034, M4-035, M4-037
 - 素材需求：无（灰盒即可）；素材状态：n.a.
 - 引用文档：MILESTONES §5; MILESTONES §5.3; MILESTONES §5.4; MILESTONES §5.10; ARCHITECTURE §1.6; tasks/README.md §4; tasks/README.md §9
 
@@ -21,7 +21,7 @@
 - E4-10 运维：告警均有演练、回滚 ≤ 10 min、证书续期演练、无人工连续 8 局。E4-11 合规：导出/删除端到端、遥测默认关闭抓包验证。
 - E4-12 浏览器矩阵：Chromium/Edge 全功能；Firefox/Safari 分级登记。E4-13 封闭测试：≥ 3 局 × ≥ 60 人，缺陷分级入 PLAN_ISSUES。
 - E4-14 可访问性与布局：文本对比度 ≥ 4.5:1、UI §6.5 矩阵通过、全部交互键盘可达。E4-15 史实与测量：无 `initial` historical 字段（或有 PLAN_ISSUES）、locked 抽样复测通过。E4-16 视觉回归：三图×12 机位×3 时段×四档子集基线入库，CI 阈值生效。
-演示脚本（MILESTONES §5.4）8 步：浏览器按模式/地图过滤 + 基准向导推荐；Omaha Assault 登陆艇→滩头→崖顶；Foy 冬季 Frontline 与德军 Assault；Skirmish（Carentan 子区）；四档画质切换与强制 WebGL2 的 Low；运维（Grafana、告警/回滚演练、matchd 自动开局、复核队列）；隐私（导出/删除、遥测同意）；展示 STATUS 的 E4 实测数字与 Go/No-Go 清单。
+演示脚本（MILESTONES §5.4）8 步：浏览器按模式/地图过滤 + 基准向导推荐；Omaha Assault 登陆艇→滩头→崖顶；Foy 冬季 Frontline 与美军进攻的 Assault；Skirmish（Carentan 子区）；四档画质切换与强制 WebGL2 的 Low；运维（Grafana、告警/回滚演练、gateway 自动开局、复核队列）；隐私（导出/删除、遥测同意）；展示 STATUS 的 E4 实测数字与 Go/No-Go 清单。
 Go/No-Go 额外必审（§5.10）：性能、稳定性、安全合规、反作弊（诚实对外说明浏览器局限）、内容（三图三模式可玩性与平衡）、素材与许可证（LICENSES.md 无 PENDING 入主分支、署名页含 OSM ODbL、对外材料无参考作品名称/截图）、成本（容量与月度成本，公开测试规模上限与降级策略）、结论（Go/有条件 Go/No-Go）。
 
 ## 具体内容
@@ -36,7 +36,7 @@ Go/No-Go 额外必审（§5.10）：性能、稳定性、安全合规、反作�
 1. 运行 `m4_check.py`：对每个 E4 项找出对应报告并读取实测数字；缺证据的项标 `缺证据`。
 2. 逐步走演示脚本（在可用环境；缺参考机则在软件渲染/占位素材下尽可能走通并注明）。
 3. 汇总 STATUS：M4-001…045 每个任务状态；`partial/blocked/未测` 全部列出并映射到 Go/No-Go 清单的"条件"。
-4. 汇总 PLAN_ISSUES：未决条目分级；需 Fable 裁决/回写文档的条目（如 ARCHITECTURE §13.5 预算偏差、navmesh 参数不一致、Foy Assault 攻方差异、`SpawnKind::Boat`、per-area Garrison 间距）单列。
+4. 汇总 PLAN_ISSUES：未决条目分级；需 Fable 裁决/回写文档的条目（如 ARCHITECTURE §13.5 预算偏差、`SpawnKind::Boat`、per-area Garrison 间距的落地细化）单列；navmesh 参数（以 ARCHITECTURE §16.2 为准）与 Foy Assault 攻方（已裁定美军攻）不再列为未决。
 5. 起草 Go/No-Go 清单（§5.10 八项），每项附证据路径；给出"建议结论"，**最终结论由 Fable/人类决定**（H-089、H-096）。
 6. 核对合规项：LICENSES.md 无 PENDING 入主分支（脚本）、Credits 含 OSM ODbL 署名（R9）、对外材料禁用词扫描 0 命中（M4-037 工具）。
 7. 不得把 `partial` 写成 `done`（README §4）；`m4-acceptance` 为 `done` 的条件：每个 E4 项有实测数字，或已逐项登记 `partial` 原因并经 Fable 同意。
@@ -77,4 +77,4 @@ Go/No-Go 额外必审（§5.10）：性能、稳定性、安全合规、反作�
 ## 备注/已知风险
 - 依赖人类事项汇总：H-089（触发 M4 的 Fable 审阅）、H-081（并排相似度法律审查）、H-088（LICENSES 清零）、H-091/H-094（对外文案复核）、H-096（Go/No-Go）；这些均为人类输入，缺则对应清单项为"待人"，不得代填。
 - 若硬件缺失导致 E4-1 部分 `partial`，在清单中写明"对外标注最低/推荐配置"的建议（§5.10 第 1 项）。
-- INDEX 中本任务依赖未列出 M4-030/031/033/034/035/037 等（经由 M4-045/M4-036/M4-032 等传递）；验收时仍须检查全部 M4 任务的状态。
+- 依赖已补 M4-030/031/033/034/035/037；验收时仍须检查全部 M4 任务的状态。

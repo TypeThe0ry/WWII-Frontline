@@ -4,7 +4,7 @@
 - 里程碑：M4
 - 工作流：test
 - 规模：L
-- 依赖：M3-049（M3 性能基准）, M4-020, M4-022, M4-014, M4-015
+- 前置依赖：M3-049, M4-020, M4-022, M4-014, M4-015
 - 素材需求：无（灰盒即可）；素材状态：n.a.
 - 引用文档：ARCHITECTURE §13.1; ARCHITECTURE §13.5; ARCHITECTURE §13.4; ARCHITECTURE §13.3; ARCHITECTURE §20.1; NEEDS_HUMAN H-021, H-039
 

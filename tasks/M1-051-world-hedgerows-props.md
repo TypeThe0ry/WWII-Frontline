@@ -4,7 +4,7 @@
 - 里程碑：M1
 - 工作流：world
 - 规模：L
-- 依赖：M1-049
+- 前置依赖：M1-049
 - 素材需求：V-NAT-001; V-NAT-002; V-NAT-004; V-PRP-*（灰盒可，GAP-V03）；素材状态：placeholder（长条盒/圆柱）
 - 引用文档：MAPS §3.7; MAPS §1.6; MAPS §6.2; ARCHITECTURE §9.6; ARCHITECTURE §9.5; ASSET_GAPS §3.2
 

@@ -4,7 +4,7 @@
 - 里程碑：M0
 - 工作流：repo
 - 规模：M
-- 依赖：M0-001
+- 前置依赖：M0-001
 - 素材需求：无（灰盒即可）；素材状态：n.a.
 - 引用文档：ARCHITECTURE §17.5; ARCHITECTURE §4.5; ARCHITECTURE §4.3.2; ARCHITECTURE §19.5
 

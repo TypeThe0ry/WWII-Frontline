@@ -4,7 +4,7 @@
 - 里程碑：M0
 - 工作流：sim
 - 规模：M
-- 依赖：M0-011, M0-006
+- 前置依赖：M0-011, M0-006, M0-012
 - 素材需求：无（灰盒即可）；素材状态：n.a.
 - 引用文档：ARCHITECTURE §4.3.3; ARCHITECTURE §8.3; ARCHITECTURE §17.5; ARCHITECTURE §13.5.1
 
@@ -59,6 +59,6 @@ M0 的预测范围（ARCHITECTURE §6.4）：本地玩家的移动 + 本地武�
 - [ ] `tasks/STATUS.md` 对应行与顶部摘要已更新；提交信息含任务 ID
 
 ## 备注/已知风险
-- INDEX 依赖列为 M0-011、M0-006，但 `Predictor` 的武器预测需要 M0-012 的 `WeaponState`；因编号顺序 M0-012 先于本任务，按 README §7 会先被执行，不影响；若执行者发现 M0-012 未 `done`，不要跳过武器部分，先做 M0-012。
+- 依赖已含 M0-012：`Predictor` 的武器预测需要 M0-012 的 `WeaponState`，不得跳过武器部分。
 - 体积是最大风险：Rapier 在 wasm 下体积可观；超标的备选方案（只含 KCC 子集、关闭 `parallel/simd`）写 PLAN_ISSUES，不要放宽 1.2 MB。
 - INDEX 提到的 `apply_snapshot` 对应 `Predictor.reset(authState, tick)`（ARCHITECTURE §4.3.2 的 `apply_snapshot_for_prediction`）。

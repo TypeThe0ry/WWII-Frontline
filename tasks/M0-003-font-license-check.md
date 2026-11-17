@@ -4,7 +4,7 @@
 - 里程碑：M0
 - 工作流：assets
 - 规模：S
-- 依赖：M0-001
+- 前置依赖：M0-001
 - 素材需求：V-FNT-*（仅登记，不购买）；素材状态：n.a.（本任务不引入字体文件进构建）
 - 引用文档：UI_SPEC §2.3; ASSET_SHOPPING_LIST §4.1.6; LICENSES §1; LICENSES §3; BRIEF R10
 

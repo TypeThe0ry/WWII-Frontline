@@ -4,19 +4,19 @@
 - 里程碑：M4
 - 工作流：test
 - 规模：M
-- 依赖：M3-045（M3 全功能 100 客户端压测）, M4-031, M4-014, M4-015
+- 前置依赖：M3-045, M4-031, M4-014, M4-015
 - 素材需求：无（灰盒即可）；素材状态：n.a.
 - 引用文档：ARCHITECTURE §17.2; ARCHITECTURE §18.3; ARCHITECTURE §6.10; ARCHITECTURE §6.9; ARCHITECTURE §5.6
 
 ## 背景
 在 Carentan、Omaha、Foy 三张图上各做一次 **100 headless 客户端 × 60 min** 浸泡，传输分别为 WebTransport 与 WebSocket 兜底（共 3 图 × 2 传输 = 6 次运行，每次 60 min，含重连与断线注入）。ARCHITECTURE §17.2 通过标准（M2 起）：100 客户端 × 30 分钟，服务器 `tick_ms` P99 ≤ 28 ms，`tick_overrun` 无连续，末 10 分钟 RSS 增长 < 2%；**WS 兜底路径同样跑，降级指标放宽：P99 ≤ 40 ms tick、快照 15 Hz**；`headless-client` 注入：延迟与丢包（`tc netem`：RTT 40–150 ms、抖动 20 ms、丢包 0/2/5%）。带宽验收线（§6.9/§5.6）：每玩家下行均值 ≤ 256 kbps、峰值 ≤ 512 kbps，上行 ≤ 32 kbps（不含语音）。服务器 CPU 预算（§6.10）：稳态 ≤ 18 ms/tick，P99 ≤ 28 ms，绝不连续 2 tick 超 33 ms。
-M4 版本包含新地图（Omaha 海滩开阔视距、Foy 森林密集）与新模式（Assault/Skirmish）、matchd 编排（M4-031）、统计检测（M4-030）后的总体回归。
+M4 版本包含新地图（Omaha 海滩开阔视距、Foy 森林密集）与新模式（Assault/Skirmish）、gateway 编排（M4-031）、统计检测（M4-030）后的总体回归。
 指标来源：`/metrics`（`server_tick_ms` 直方图、`server_tick_overrun_total`、`net_bytes_out_per_client`、`net_rtt_ms`、RSS）。
 
 ## 具体内容
 ### 要创建/修改的文件
 - `crates/headless-client/src/scenarios/soak.rs` —— 浸泡场景（路径点行走 + 随机开火 + 部署/重生 + 小队行为，含断线重连、延迟/丢包轮换）。
-- `tests/loadtest/soak_matrix.sh` —— 3 图 × 2 传输 的编排（经 matchd 或直接启动 server），收集 `/metrics` 快照（每 10 s）。
+- `tests/loadtest/soak_matrix.sh` —— 3 图 × 2 传输 的编排（经 gateway 编排或直接启动 server），收集 `/metrics` 快照（每 10 s）。
 - `tests/loadtest/analyze.py` —— 读取指标时序，计算 P50/P99、连续 overrun、RSS 斜率、连接保持率、带宽分布，输出 `reports/loadtest/m4-soak-{map}-{transport}.json` 与汇总 `m4-soak-summary.md`。
 - `tests/loadtest/netem_profiles.sh` —— RTT/抖动/丢包轮换配置。
 - CI：nightly job `loadtest-soak`（手动触发或夜间，参考机 runner；非每 PR）。

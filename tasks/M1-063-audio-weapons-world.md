@@ -4,7 +4,7 @@
 - 里程碑：M1
 - 工作流：audio
 - 规模：L
-- 依赖：M1-062, M1-040（事件：`fire.local/remote`、`impact`、`hit.confirm`、`suppress`）
+- 前置依赖：M1-062, M1-040
 - 素材需求：A-WPN-*; C-BUL-*; E-FTS-001; H-UI-*（缺则静音）；素材状态：placeholder（静音）
 - 引用文档：ARCHITECTURE §12.2; ARCHITECTURE §12.3（压制简版）; ARCHITECTURE §12.6; GAMEDESIGN §6; GAMEDESIGN §8.3; REFERENCE_MEASUREMENTS §4.12
 

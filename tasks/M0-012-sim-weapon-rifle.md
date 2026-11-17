@@ -4,7 +4,7 @@
 - 里程碑：M0
 - 工作流：sim
 - 规模：L
-- 依赖：M0-011, M0-008
+- 前置依赖：M0-011, M0-008
 - 素材需求：无（灰盒即可）；素材状态：n.a.
 - 引用文档：GAMEDESIGN §6.3; GAMEDESIGN §6.4; GAMEDESIGN §6.5; GAMEDESIGN §6.6; ARCHITECTURE §6.7.3; ARCHITECTURE §7.2
 
@@ -61,6 +61,6 @@ M0 的核心玩法：两把步枪（半自动 Garand、栓动 Kar98k）的开火
 - [ ] `tasks/STATUS.md` 对应行与顶部摘要已更新；提交信息含任务 ID
 
 ## 备注/已知风险
-- GAMEDESIGN §6.4（子步积分）与 ARCHITECTURE §6.7.3（逐 tick 简化式）略有出入：按 GAMEDESIGN，并在 PLAN_ISSUES 记"文档冲突"。
-- 验收 1 的"解析值"实际无闭式解（阻力与重力耦合），故以高精度数值参考解为准；INDEX 原写"与解析值误差 < 3%"，此为细化。
+- 已裁定：弹道积分以 GAMEDESIGN §6.4（每 tick 4 子步）为准，ARCHITECTURE §6.7.3 已同步修订；Garand 初速统一 853 m/s。
+- 验收 1 的"解析值"实际无闭式解（阻力与重力耦合），故以高精度数值参考解为准；INDEX 验收已改为"对照 RK4 数值参考解误差 < 3%"。
 - 眼高、命中体尺寸等 GAMEDESIGN 未给数值，使用合理初值并全部标【待调参】【待测 → REFERENCE_MEASUREMENTS M-15】。

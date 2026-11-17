@@ -4,7 +4,7 @@
 - 里程碑：M4
 - 工作流：ui
 - 规模：M
-- 依赖：M2-041（完整设置）, M4-018
+- 前置依赖：M2-041, M4-018
 - 素材需求：无（灰盒即可）；素材状态：n.a.
 - 引用文档：UI_SPEC §4.16; ARCHITECTURE §13.6; ARCHITECTURE §13.2; ARCHITECTURE §13.1; UI_SPEC §4.1
 

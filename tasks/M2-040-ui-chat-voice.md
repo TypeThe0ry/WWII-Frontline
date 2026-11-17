@@ -4,7 +4,7 @@
 - 里程碑：M2
 - 工作流：ui
 - 规模：M
-- 依赖：M1-057, M2-026, M2-019
+- 前置依赖：M1-057, M2-026, M2-019
 - 素材需求：无（灰盒即可）；素材状态：n.a.
 - 引用文档：UI_SPEC §4.15; UI_SPEC §5.2; GAMEDESIGN §16.1; GAMEDESIGN §16.2; ARCHITECTURE §14.5; ARCHITECTURE §19.3
 
@@ -70,6 +70,6 @@ export interface VoiceUiState { transmitting: 'squad' | 'proximity' | 'command' 
 - [ ] `tasks/STATUS.md` 对应行与顶部摘要已更新；提交信息含任务 ID
 
 ## 备注/已知风险
-- **INDEX 与文档不一致**：INDEX 验收写"聊天 2 条/s 限速提示"，而 GAMEDESIGN §16.2 规定每人每 8 s 最多 5 条。按 README §5.1 以 GAMEDESIGN/服务器规则为准，数值取 `/data/comms.json`，并写 PLAN_ISSUES 请 Fable 确认。
+- **已裁定**：聊天限速以 GAMEDESIGN §16.2（每人每 8 s 最多 5 条）为准，INDEX 已改；数值取 `/data/comms.json`。PTT 键位以 UI_SPEC §5.2 为准（小队 V、近距 B、指挥/车组 N）。
 - **键位不一致**：GAMEDESIGN §16.1 写近距 `V`/小队 `B`，UI_SPEC §5.2 为小队 `V`/近距 `B`；GAMEDESIGN 明确"具体见 UI_SPEC"，按 UI_SPEC 实现。
 - 敏感词表初稿属人类待办（H-075）；服务器侧过滤为准，客户端仅提示。

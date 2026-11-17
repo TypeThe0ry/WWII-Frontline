@@ -4,7 +4,7 @@
 - 里程碑：M1
 - 工作流：data
 - 规模：M
-- 依赖：M1-008（M1 武器 JSON）, M1-009（Sherman JSON）
+- 前置依赖：M1-008, M1-009
 - 素材需求：无（灰盒即可）；素材状态：n.a.
 - 引用文档：REFERENCE_MEASUREMENTS §6; GAMEDESIGN §0.4; GAMEDESIGN §6.2; GAMEDESIGN §14.3
 

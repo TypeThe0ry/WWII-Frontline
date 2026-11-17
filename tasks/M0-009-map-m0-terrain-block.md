@@ -4,7 +4,7 @@
 - 里程碑：M0
 - 工作流：maps
 - 规模：M
-- 依赖：M0-001, M0-004
+- 前置依赖：M0-001, M0-004
 - 素材需求：无（灰盒即可）；素材状态：n.a.（可选 Carentan DEM，见 MAPS §2.1，缺失用程序化）
 - 引用文档：MAPS §7.3; MAPS §1.1; MAPS §1.2; MAPS §6; ARCHITECTURE §9.1; ARCHITECTURE §9.5
 

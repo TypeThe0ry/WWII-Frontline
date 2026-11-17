@@ -4,7 +4,7 @@
 - 里程碑：M4
 - 工作流：world
 - 规模：L
-- 依赖：M4-010, M2-036（全图流式与内存预算）
+- 前置依赖：M4-010, M2-036
 - 素材需求：V-NAT-003; V-SKY-002; V-FX-*（灰盒可）；素材状态：placeholder
 - 引用文档：MAPS §5.5; MAPS §5.7; ARCHITECTURE §9.8; ARCHITECTURE §9.6; ARCHITECTURE §10.2; ARCHITECTURE §10.4; ARCHITECTURE §13.5.2; ARCHITECTURE §13.5.3
 

@@ -4,7 +4,7 @@
 - 里程碑：M1
 - 工作流：maps
 - 规模：M
-- 依赖：M1-030
+- 前置依赖：M1-030
 - 素材需求：无（灰盒即可）；素材状态：n.a.
 - 引用文档：MAPS §1.2; MAPS §1.3; MAPS §3.8; MAPS §6.1; MAPS §6.2; ARCHITECTURE §9.1; ARCHITECTURE §9.8
 

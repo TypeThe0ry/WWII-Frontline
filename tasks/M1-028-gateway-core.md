@@ -4,7 +4,7 @@
 - 里程碑：M1
 - 工作流：server
 - 规模：L
-- 依赖：M1-010
+- 前置依赖：M1-010
 - 素材需求：无（灰盒即可）；素材状态：n.a.
 - 引用文档：ARCHITECTURE §4.3.5; ARCHITECTURE §19.2; ARCHITECTURE §19.3; ARCHITECTURE §3.3; ARCHITECTURE §18.3; GAMEDESIGN §2.3
 
@@ -50,7 +50,7 @@ pub struct ServerInfo { pub match_id:Uuid, pub name:String, pub map:String, pub 
 - OAuth（Discord/Google）、管理员 API、封禁、LiveKit token：M2+；
 - 对局服务器侧的注册/心跳客户端与 ticket 验签：M1-029；
 - 战绩展示/账号设置同步：M2；
-- 匹配/排队与多服务器调度（`matchd`）：M2；
+- 匹配/排队与多服务器调度（gateway 编排模块，不新增 crate）：M4-031；
 - 客户端服务器浏览器 UI：M1-055。
 
 ## 验收标准
@@ -82,7 +82,7 @@ pub struct ServerInfo { pub match_id:Uuid, pub name:String, pub map:String, pub 
 - [ ] `tasks/STATUS.md` 对应行与顶部摘要已更新；提交信息含任务 ID
 
 ## 备注/已知风险
-- INDEX 依赖仅 M1-010（需 `ServerInfo` DTO 落在 protocol）；M1-010 的范围未列该 DTO，本任务在 `protocol/src/dto.rs` 补充（"细化"，PLAN_ISSUES）。
+- INDEX 行已注明本任务含 protocol DTO（`ServerInfo`、`TicketClaims`、`MatchRegister`），落在 `protocol/src/dto.rs`；M1-010 不含这些 DTO。
 - JWT 算法在 ARCHITECTURE §19.2 为"HS256/EdDSA"二选一；游客 token 用 HS256 即可（gateway 自验），ticket 必须 EdDSA（server 只持公钥）。
 - 内部 API 的传输安全（内网/mTLS）属部署（M1-066/M1-067）；开发环境用共享 token。
 - 域名/TLS/账号等运维条目依赖人类（H-015、H-016、H-017）；本任务不被其阻塞（本地可跑）。

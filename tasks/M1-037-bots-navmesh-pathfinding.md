@@ -4,7 +4,7 @@
 - 里程碑：M1
 - 工作流：bots
 - 规模：L
-- 依赖：M1-036（navmesh.bin 与 off-mesh 链接格式）, M0-026（M0 基础 bot、BotBrain trait、服务器 bot 宿主）
+- 前置依赖：M1-036, M0-026
 - 素材需求：无（灰盒即可）；素材状态：n.a.
 - 引用文档：ARCHITECTURE §16.2; ARCHITECTURE §16.5; ARCHITECTURE §4.3.6; GAMEDESIGN §20.3（B-01、B-21）
 

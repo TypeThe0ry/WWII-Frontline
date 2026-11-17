@@ -4,7 +4,7 @@
 - 里程碑：M1
 - 工作流：ops
 - 规模：M
-- 依赖：M1-066, M1-005（manifest 与体积门禁，用于 R2 上传）
+- 前置依赖：M1-066, M1-005
 - 素材需求：无（灰盒即可）；素材状态：n.a.
 - 引用文档：ARCHITECTURE §18.1; ARCHITECTURE §18.2; ARCHITECTURE §5.17; ARCHITECTURE §11.6; ARCHITECTURE §18.5
 
@@ -35,7 +35,7 @@ GitHub Secrets / 主机密钥库：GATEWAY_SIGNING_KEY, R2_ACCESS_KEY_ID, R2_SEC
 ## 不做什么
 - 不做生产部署、DDoS 方案、CDN 域名与证书监控告警平台（M4-033、M2-048）。
 - 不做 LiveKit 部署（M2-024）、监控栈（M2-048）。
-- 不做多机调度/`matchd`；不做自动扩缩容。
+- 不做多机调度/gateway 编排模块；不做自动扩缩容。
 - 不购买域名/主机，不接触支付信息（人类，H-015/H-016/H-017）。
 
 ## 验收标准

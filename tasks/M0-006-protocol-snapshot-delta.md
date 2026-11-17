@@ -4,7 +4,7 @@
 - 里程碑：M0
 - 工作流：net
 - 规模：L
-- 依赖：M0-005
+- 前置依赖：M0-005
 - 素材需求：无（灰盒即可）；素材状态：n.a.
 - 引用文档：ARCHITECTURE §6.5; ARCHITECTURE §8.2; ARCHITECTURE §6.9.1; ARCHITECTURE §19.1; ARCHITECTURE §17.1
 

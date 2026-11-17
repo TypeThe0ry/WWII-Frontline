@@ -1,15 +1,15 @@
-# M3-002 数据：M3 全部载具
+# M3-002 数据：M3 其余载具（10 辆）
 
 ## 元数据
 - 里程碑：M3
 - 工作流：data
 - 规模：M
-- 依赖：M2-006
+- 前置依赖：M2-006
 - 素材需求：无（灰盒即可）；素材状态：n.a.
 - 引用文档：GAMEDESIGN §14.2; GAMEDESIGN §14.3; GAMEDESIGN §14.5; GAMEDESIGN §14.6; ARCHITECTURE §8.5.4
 
 ## 背景
-已有载具数据：M1-009 的 `us_m4a1_75`；M2-006 的 Panzer IV H、Jeep/Kübelwagen、CCKW/Opel Blitz。本任务补齐 GD §14.3 车辆总表中**其余 10 辆**：M8 Greyhound、M5A1 Stuart、M4A3(76)W、M4A3E2 Jumbo、M3 Half-track、Sd.Kfz. 234/2 Puma、Panzer II Luchs、Panther Ausf. G、Tiger I、Sd.Kfz. 251/1。INDEX 标题"全部载具"以最终覆盖 GD §14.3 全表为准。
+已有载具数据：M1-009 的 `us_m4a1_75`；M2-006 的 Panzer IV H、Jeep/Kübelwagen、CCKW/Opel Blitz。本任务补齐 GD §14.3 车辆总表中**其余 10 辆**：M8 Greyhound、M5A1 Stuart、M4A3(76)W、M4A3E2 Jumbo、M3 Half-track、Sd.Kfz. 234/2 Puma、Panzer II Luchs、Panther Ausf. G、Tiger I、Sd.Kfz. 251/1。INDEX 标题已改为"其余载具（10 辆）"；与 M1-009/M2-006 合计覆盖 GD §14.3 全表。
 数据按 ARCHITECTURE §8.5.4 的 schema（`historical` 与 `gameplay` 分块、全数值带单位）；游戏最高速 = 史实路速 × 0.75（GD §14.3 说明）；全部 `initial`，复核归 M3-051。本任务只产出数据，装甲判定/物理代码在 M3-013–016。
 
 ## 具体内容

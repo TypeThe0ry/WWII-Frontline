@@ -4,7 +4,7 @@
 - 里程碑：M1
 - 工作流：sim
 - 规模：L
-- 依赖：M1-022, M1-012, M1-014
+- 前置依赖：M1-022, M1-012, M1-014
 - 素材需求：无（灰盒即可）；素材状态：n.a.
 - 引用文档：GAMEDESIGN §14.2; GAMEDESIGN §14.3; GAMEDESIGN §14.4; GAMEDESIGN §14.5; GAMEDESIGN §14.7; GAMEDESIGN §6.9.4; ARCHITECTURE §6.7.3
 
@@ -86,7 +86,7 @@ pub fn armor_hit(shell:&ShellDef, dist_m:f32, n:Vec3, v_hat:Vec3, zone:&ArmorZon
 - [ ] `tasks/STATUS.md` 对应行与顶部摘要已更新；提交信息含任务 ID
 
 ## 备注/已知风险
-- **INDEX 缺口**：Panzerfaust 60 的发射/弹道/HEAT 判定在 INDEX M1-012…M1-023 中无明确归属，而 MILESTONES §2.4 演示脚本第 6 步要求 GER 用 Panzerfaust 击毁坦克。本任务暂纳入（第 8 条行为），规模风险高；请总控确认或另立任务。
+- **已裁定归属**：Panzerfaust 60 的发射与 HEAT 判定归本任务（INDEX 行与标题已注明；MILESTONES §2.4 演示脚本第 6 步需要）。规模风险高，如超出一次会话按 README §5.6 拆续作 M1-023b。
 - GD §14.4.2 的手算示例使用 `φ=30°` 而未做 5° normalization（与 §14.4.1 步骤 4 不一致）；本任务以 §14.4.1 步骤为准，示例仅参考，PLAN_ISSUES 登记。
 - 规模 L 且含 4 块逻辑（装甲、模块、炮塔、HEAT）；若超出按 §5.6 拆 `M1-023b`（模块/殉爆/Burning）。
 - 穿深、结构伤害等为"游戏标称值"【待调参】，对标 V-11–V-16、V-19–V-21 在 M1-071 回填。

@@ -4,7 +4,7 @@
 - 里程碑：M0
 - 工作流：client-render
 - 规模：M
-- 依赖：M0-001
+- 前置依赖：M0-001
 - 素材需求：无（灰盒即可）；素材状态：n.a.
 - 引用文档：ARCHITECTURE §5.1; ARCHITECTURE §10.3; ARCHITECTURE §13.6; ARCHITECTURE §6.1; ARCHITECTURE §20.1; ARCHITECTURE §13.5.1
 

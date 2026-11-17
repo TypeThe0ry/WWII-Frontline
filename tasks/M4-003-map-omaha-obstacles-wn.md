@@ -4,7 +4,7 @@
 - 里程碑：M4
 - 工作流：maps
 - 规模：M
-- 依赖：M4-002
+- 前置依赖：M4-002
 - 素材需求：V-BLD-006; V-BLD-007（灰盒可）；素材状态：placeholder
 - 引用文档：MAPS §4.4; MAPS §4.6; MAPS §4.7; MAPS §6.2; ASSET_GAPS §3.2; NEEDS_HUMAN H-077, H-079
 

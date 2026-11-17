@@ -4,7 +4,7 @@
 - 里程碑：M1
 - 工作流：world
 - 规模：L
-- 依赖：M1-049, M1-034（建筑足迹/enterable/levels 数据）
+- 前置依赖：M1-049, M1-034
 - 素材需求：V-BLD-001..003（灰盒可，GAP-V02）；素材状态：placeholder（盒体+屋顶斜面，门窗洞保留）
 - 引用文档：MAPS §3.6; MAPS §3.7; MAPS §1.6; MAPS §6.2; ARCHITECTURE §9.7; ARCHITECTURE §9.5; ASSET_GAPS §3.2
 

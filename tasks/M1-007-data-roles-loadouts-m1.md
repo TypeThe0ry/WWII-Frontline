@@ -4,7 +4,7 @@
 - 里程碑：M1
 - 工作流：data
 - 规模：M
-- 依赖：M0-004（INDEX 原文）；**隐含依赖 M1-008**（loadout 引用的武器/手雷 ID 须存在，见备注）
+- 前置依赖：M0-004
 - 素材需求：无（灰盒即可）；素材状态：n.a.
 - 引用文档：GAMEDESIGN §5; GAMEDESIGN §4.4; GAMEDESIGN §3.2; GAMEDESIGN §10; GAMEDESIGN §12; ARCHITECTURE §8.5.2; ARCHITECTURE §8.5.3; ARCHITECTURE §4.4
 
@@ -68,7 +68,7 @@ M1 只收 **L1–L3 解锁**的 loadout（INDEX 范围）。GER 无坦克，故�
 - [ ] `tasks/STATUS.md` 对应行与顶部摘要已更新；提交信息含任务 ID
 
 ## 备注/已知风险
-- **依赖问题**：INDEX 只列 M0-004，但 loadout 引用的武器/手雷在 M1-008（编号更大）。执行方式：先写 roles/rules/gadgets，loadout 的引用完整性检查在 M1-008 完成后再做；本任务在此之前最多标 `partial`（遗留：引用完整性）。建议总控把 M1-008 加入依赖。
+- 依赖仅 M0-004（M1-008 编号更大，不能依赖）：loadout 引用的武器/手雷 ID 是否存在，由 M1-008 的验收校验（INDEX 已注明）；本任务只校验引用 ID 格式。
 - `data/gadgets`、`data/rules` 不在 M0-004 的 schema 清单内，属"细化"，需在 PLAN_ISSUES 登记（ARCHITECTURE §8.5 未定义这两类文件）。
 - ID 命名以 GAMEDESIGN §0.3 为准，ARCHITECTURE §8.5.3 示例的 `*_default` 仅作结构示例（PLAN_ISSUES 登记文档不一致）。
 - 数值全部 `initial`；校准来源 REFERENCE_MEASUREMENTS（占领速度 `k_cap`、出生计时等标【待测】）。

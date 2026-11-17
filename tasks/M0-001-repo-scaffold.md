@@ -4,7 +4,7 @@
 - 里程碑：M0
 - 工作流：repo
 - 规模：M
-- 依赖：无
+- 前置依赖：无
 - 素材需求：无（灰盒即可）；素材状态：n.a.
 - 引用文档：ARCHITECTURE §4.1; ARCHITECTURE §4.2; ARCHITECTURE §4.5; ARCHITECTURE §5.1; ARCHITECTURE §5.2; MILESTONES §1.2
 

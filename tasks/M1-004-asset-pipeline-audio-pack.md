@@ -4,7 +4,7 @@
 - 里程碑：M1
 - 工作流：assets
 - 规模：M
-- 依赖：M1-003
+- 前置依赖：M1-003
 - 素材需求：无（用样例音频）；素材状态：n.a.
 - 引用文档：ARCHITECTURE §12.7; ARCHITECTURE §11.1; ARCHITECTURE §11.8; ASSET_SHOPPING_LIST §3.4; ASSET_GAPS §3.3; LICENSES.md §2
 

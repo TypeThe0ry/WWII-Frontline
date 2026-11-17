@@ -4,7 +4,7 @@
 - 里程碑：M2
 - 工作流：sim
 - 规模：M
-- 依赖：M2-010, M2-006
+- 前置依赖：M2-010, M2-006
 - 素材需求：无（灰盒即可）；素材状态：n.a.
 - 引用文档：GAMEDESIGN §10.3; GAMEDESIGN §12.4; GAMEDESIGN §15.7; GAMEDESIGN §14.8; GAMEDESIGN §14.2; GAMEDESIGN §10.6; BRIEF §3c R1; BRIEF §3c R7
 
@@ -66,4 +66,4 @@ ARCH §6.10 阶段 5（规则）总计 0.7 ms：本任务 ≤ 0.1 ms；阶段 4 
 ## 备注/已知风险
 - 规模 M 但含三类设施；若超出一次会话，把 AT 炮拆为续作 M2-011b（README §5.6），先交付 Outpost 与 Repair Station。
 - GD §3.3.6 对 Outpost 的位置检查与 §10.3 条件分属不同文档段，实现时统一放在 `outpost.rs` 并由 M2-008 调用。
-- AT 炮数据缺口（M2-006 不含）已在此补；INDEX 未列依赖修正，记 PLAN_ISSUES。
+- AT 炮数据（`data/emplacements/`）由本任务自建（INDEX 行已注明）；M2-006 不含。

@@ -681,8 +681,8 @@ stateDiagram-v2
 | 当前地图/战况摘要（进度、控制点数） | `EVT` | 5 s | — |
 
 **规则（须与 GAMEDESIGN 对齐，数值待调）：**
-- 允许差：某阵营真人数 − 另一阵营真人数 > 3 时，人多一方不可选（含 bot 不计）【待调参】。
-- 换队冷却 120 s、每局最多换 2 次【待调参】。
+- 允许差（GAMEDESIGN §2.4）：新玩家只能加入使「该队真人数 − 另一队真人数 ≤ 2」成立的队伍；差 ≥ 3 时人多一方不可选（bot 不计）【待调参】。
+- 换队规则（GAMEDESIGN §2.4）：加入后 3 min 内不得换队；两次换队间隔 ≥ 600 s（`team_switch_cooldown`）；须满足上面的平衡规则。冷却与限制文案以服务器下发的剩余秒数为准。
 - 小队邀请进入者优先放到邀请者阵营，并占用该阵营名额；若满则进入排队。
 
 #### 4.4.2 线框图
@@ -1009,25 +1009,20 @@ stateDiagram-v2
 
 #### 4.7.3 标记类型与角色权限
 
-标记数量上限与过期时间为初值【待调参】。"谁可见"：Officer 命令 = 本小队；Commander 命令 = 全队；ping/spot = 全队（但在小队内更醒目）。
+**标记的类型、谁能放、谁可见、持续时间、数量上限一律以 GAMEDESIGN.md §16.3/§16.4 为准（规则/权限/计时归 GAMEDESIGN）；本节只定义这些标记在地图与 HUD 上的呈现。** 数值不在本文重复，避免两处漂移。
 
-| 标记 | 含义 | 谁能放 | 可见范围 | 过期 / 数量上限 |
-|---|---|---|---|---|
-| Attention（通用 ping） | 引起注意的位置 | 所有人 | 全队 | 15 s / 每人 3 个（新替旧） |
-| Enemy Infantry（敌步兵） | 发现敌人 | 所有人 | 全队 | 25 s / 每人 3 个 |
-| Enemy Vehicle（敌载具） | 敌方载具/坦克 | 所有人（Spotter/Tank Commander 持续时间更长） | 全队 | 40 s |
-| Enemy Structure（敌 Garrison/OP/防御） | 发现敌建造物/重生点 | 所有人；Spotter 可延长并"确认" | 全队 | 120 s；确认后直到摧毁 |
-| Request Medic | 请求医疗 | 所有人 | 全队（Medic 优先显示） | 30 s |
-| Request Ammo/Supply | 请求弹药/补给 | 所有人 | Support/Officer 优先 | 30 s |
-| Request Engineer | 请求工兵 | 所有人 | Engineer 优先 | 30 s |
-| Order: Attack | 进攻命令 | Officer（小队） / Commander（全队） | 小队/全队 | 至撤销或 5 min |
-| Order: Defend | 防御命令 | 同上 | 同上 | 同上 |
-| Order: Move | 移动命令 | 同上 | 同上 | 同上 |
-| Order: Observe | 观察命令 | Officer / Commander；Spotter 优先接收 | 同上 | 同上 |
-| Order: Regroup | 集结 | Officer | 小队 | 2 min |
-| Ability Target | 指挥官能力落点（Bombing Run 等） | Commander | 全队（预警） | 至执行 |
-| Artillery Target | 火炮目标（观察手校准） | Spotter/Officer | 炮手可见 | 90 s |
-| Build Request | 请求某类建造 | Officer | 小队（Engineer 优先） | 3 min |
+| GAMEDESIGN §16.3/§16.4 标记 | 呈现（Plotline） | 颜色/强调 |
+|---|---|---|
+| Ping：Attention（此处） | 旗形 + 距离标签；剩余时间环 | `squad` |
+| Ping：Enemy（自动识别敌步兵/载具/建筑） | 菱形框 + 目标类别内标（步兵/载具/建筑）+ 剩余时间环 | `enemy` |
+| Ping：Need Medic / Need Ammo / Need Engineer / Need AT / Need Supplies | 旗形 + 对应兵种/物资图标；对应兵种玩家处图标闪烁 | `friend`（请求类） |
+| Ping：Thanks | 短暂（1.5 s）勾形气泡 | `ok` |
+| Squad Order：Move / Attack / Defend / Hold / Build | 小队色旗形 + 命令符号；地图上带箭头线（Attack/Move） | `squad` |
+| Team Mark（敌步兵/载具/火炮/AT 炮/Garrison） | 菱形框 + 剩余时间环；被 Spotter 确认者加粗外框 | `enemy` |
+| Command Order：Attack / Defend | 全队可见的大箭头线 + 命令符号 | `cmd` |
+| Fire Request / Fire Mission | 同心圆靶标；Fire Mission 对炮手显示网格坐标 | `warn`（炮火） |
+| Rally Marker | 旗形 + 倒计时环 | `cmd` |
+| Garrison Request / Supply Request | 方框门洞/箱形图标 + 请求者名 | `friend` |
 
 标记渲染：旗形/菱形图标 + 距离标签；世界内同步显示"指南针刻度 + 地面标柱"（HUD 层，见 §4.6）。
 
@@ -1108,7 +1103,7 @@ stateDiagram-v2
 
 | 轮盘 | 呼出键 | 可用角色 | 扇区（8 或 6，顺时针自顶部） |
 |---|---|---|---|
-| Ping 轮盘 | 按住 `Mouse3`（中键）≥ 180 ms；短按=Attention | 所有 | Attention / Enemy Infantry / Enemy Vehicle / Enemy Structure / Request Medic / Request Ammo / Request Engineer / Cancel |
+| Ping 轮盘 | 按住 `Mouse3`（中键）≥ 180 ms；短按=Attention | 所有 | 8 扇区，类型与权限以 GAMEDESIGN §16.4 为准：Attention / Enemy / Need Medic / Need Ammo / Need Engineer / Need AT / Need Supplies / Thanks（取消 = 松键于中心死区或 `Esc`）；持续时间与数量限制见 GAMEDESIGN §16.3 |
 | 语音快捷短语轮盘 | 按住 `T` | 所有（语音关闭时仍可用文字短语） | Yes / No / Thanks / Need Help / Moving / Covering / Reloading / Sorry |
 | 建造轮盘 | 按住 `Y`（需装备工具/可建造状态） | Engineer / Officer / Spotter / Commander / Support / Anti-Tank（按权限显示不同扇区） | 防御工事（Engineer）/ 补给箱（Support）/ 障碍（Engineer）/ AT 炮阵地（仅 Anti-Tank）/ Garrison*（仅 Officer、Spotter、Commander；**不是 Engineer**，R1）/ Outpost*（仅 Officer）/ 取消 |
 | 指挥官快捷 | 按住 `K` | Commander | 打开指挥层 / 常用能力 1–4 / Rally / 取消 |
@@ -1125,13 +1120,13 @@ stateDiagram-v2
 #### 4.8.3 线框图
 
 ```
-            Enemy Vehicle
+            Enemy
         ╱──────────────╲
-Attention │              │ Enemy Struct
+Attention │              │ Need Medic
   (顶)    │   [  中心  ] │
-Req Medic │   当前选项   │ Req Ammo
+Thanks    │   当前选项   │ Need Ammo
         ╲──────────────╱
-            Cancel
+   Need Supplies / Need AT / Need Engineer（其余扇区）
 (8 扇区，扇区间 2 px 缝；外缘 0/5/10 刻度；屏幕中心偏上 8%)
 ```
 
@@ -1230,8 +1225,8 @@ stateDiagram-v2
 | 状态标题（"被击倒 / 阵亡"） | `SNAP` | 事件 | — |
 | 流血倒计时环（剩余秒数）+ 声音/视觉脉动 | `SNAP` | 10 Hz | — |
 | 附近医疗兵（最近一名的距离、方向箭头、是否在途） | `TEAM`/`SNAP`（仅小队或近距 AOI） | 2 Hz | 点击无；按键"呼叫医疗" |
-| 呼叫医疗（发出 Request Medic 标记+语音短语） | `RPC` | — | `F`/`Mouse3`；冷却 5 s【待调参】 |
-| 放弃按钮（立即死亡并进入重新部署）— 需按住 1.5 s 或确认 | `RPC` | — | 按住 `Space` 1.5 s 或点击后确认 |
+| 呼叫医疗（发出 Need Medic 标记+语音短语） | `RPC` | — | `F`/`Mouse3`；冷却 5 s【待调参】 |
+| 放弃按钮（立即死亡并进入重新部署）— 倒地 5 s 后才可用（此前灰显并显示倒计时），按住 3 s（GAMEDESIGN §7.2） | `RPC` | — | 按住 `Space` 3 s 或点击后按住 3 s |
 | 击杀者信息（击杀者昵称、武器、距离；是否显示由规则决定） | `EVT` | 事件 | — |
 | 回放/死亡摄像机提示（可选） | LOCAL | — | `Space` 切换观察角度 |
 | 重新部署入口（阵亡后）→ §4.5 | — | — | `Enter` |
@@ -1253,7 +1248,7 @@ stateDiagram-v2
 |         ┌───────────────────────────────────────────────────────────┐            |
 |         │  被击倒                                    ◔ 18 s         │            |
 |         │  最近医疗兵  Kurt  42 m  ↗ 在途                           │            |
-|         │  [ 呼叫医疗 (F) ]                    [ 放弃 (按住 Space) ] │            |
+|         │  [ 呼叫医疗 (F) ]                    [ 放弃 (5 s 后按住 Space 3 s) ] │            |
 |         └───────────────────────────────────────────────────────────┘            |
 +-----------------------------------------------------------------------------------+
 阵亡态：标题变为"阵亡"，下方一行：被 Hans 的 Kar98k 击杀 · 63 m；按钮 [重新部署 (Enter)]
@@ -1509,7 +1504,7 @@ stateDiagram-v2
 | 方位角/仰角刻度（制图刻度风格：双刻度尺）与目标值 | `SNAP` | 10 Hz | 鼠标微调；`Shift` 精调 |
 | 射程圈与目标距离、预计飞行时间 | LOCAL | 每帧 | — |
 | 观察手目标（Artillery Target，网格坐标）与"采用"按钮 | `EVT` | 事件 | 点击采用→自动对准 |
-| 装填进度、弹药余量、炮管过热/冷却 | `SNAP` | 10 Hz | `R` 装填，左键开火 |
+| 装填进度（循环时间）、弹药余量（火炮无过热机制，GAMEDESIGN §15.3） | `SNAP` | 10 Hz | `R` 装填，左键开火 |
 | 修正量（偏左/右/远/近，由观察手发送） | `EVT` | 事件 | 自动应用/手动 |
 | 友军危险区预警（目标附近友军数） | `TEAM` | 1 Hz | 显示 `warn` |
 
@@ -1538,7 +1533,7 @@ stateDiagram-v2
 |---|---|---|---|
 | Proximity（近距） | ≤ 50 m 的所有人（含敌方，空间化） | `B` | 空心圆 `neutral` |
 | Squad（小队） | 本小队 | `V` | 实心圆 + `squad` |
-| Command（指挥） | Commander + 全体 Officer | `N` | 六边形 + `cmd` |
+| Command（指挥） | Commander + Officer + Spotter（侦察组长）+ Tank Commander（GAMEDESIGN §16.1） | `N` | 六边形 + `cmd` |
 | Crew（车组，车内自动） | 同车乘员 | `N`（车内优先） | 方形 + `friend` |
 | Team（文字） | 全队 | — | — |
 | All（文字，可选） | 全服 | — | 默认关闭（避免敌我辱骂/泄露）【待调参】 |
@@ -1933,6 +1928,9 @@ stateDiagram-v2
 
 ### 6.4 超宽屏（21:9 / 32:9）
 
+- **16:10（如 1920×1200、2560×1600）**：不属超宽屏，沿用 Standard 档；UI 缩放按 `min(vw/1920, vh/1080)`，纵向富余空间不放置额外 HUD 元素（保持安全框内布局一致）。
+- **32:9（如 5120×1440）**：按超宽屏处理，视觉回归降为**可选**（见 §6.5）。
+
 - **HUD 锚定到 16:9 中央区域**：设置项"HUD 宽度"默认"16:9 居中"（避免要转头才能看到弹药）；可选"全宽"。
 - 3D 视野（水平 FOV）由渲染层处理（Hor+）；UI 不得假设中心偏移。
 - 战术地图/记分板等全屏界面：地图保持方形比例居中，两侧空白放置图层栏与信息栏（不拉伸地图）。
@@ -1947,7 +1945,9 @@ stateDiagram-v2
 | 1366×768 | 常见笔记本；Compact |
 | 1920×1080 | 基准；视觉回归主机位 |
 | 2560×1440 | Large |
+| 1920×1200（16:10） | 16:10 规则：按 1920×1080 基准的 `min(vw/1920, vh/1080)` 缩放，多出的纵向空间留给安全区与上下留白；HUD 锚定安全框，不拉伸 |
 | 3440×1440 | Ultrawide |
+| 5120×1440（32:9） | 超宽规则同 §6.4（HUD 16:9 居中、地图方形居中）；**可选**项：资源紧张时可只做截图冒烟，不做完整视觉回归 |
 | 3840×2160 | DPR 与 Canvas 预算 |
 
 Playwright 视觉回归覆盖每屏 × 以上分辨率 × 两种语言（中文文本最长、英文最宽）。

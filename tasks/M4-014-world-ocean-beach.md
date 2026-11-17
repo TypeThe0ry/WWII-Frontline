@@ -4,7 +4,7 @@
 - 里程碑：M4
 - 工作流：world
 - 规模：L
-- 依赖：M2-035（水面与沼泽）, M4-005
+- 前置依赖：M2-035, M4-005
 - 素材需求：V-NAT-006; V-NAT-008；素材状态：placeholder（V-NAT-006 为免费 CC0，状态 OK 可直接用；V-NAT-008 需补搜，先用程序化）
 - 引用文档：ARCHITECTURE §9.8; ARCHITECTURE §9.2; ARCHITECTURE §10.3; ARCHITECTURE §13.5.2; MAPS §4.5; MAPS §4.7; ASSET_SHOPPING_LIST §4.5.1
 

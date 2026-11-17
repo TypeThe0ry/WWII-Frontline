@@ -4,7 +4,7 @@
 - 里程碑：M2
 - 工作流：ui
 - 规模：M
-- 依赖：M1-057, M2-019
+- 前置依赖：M1-057, M2-019
 - 素材需求：无（灰盒即可）；素材状态：n.a.（图标由执行者按 UI_SPEC §2.5 以 SVG 原创绘制）
 - 引用文档：UI_SPEC §4.8; UI_SPEC §4.7.3; UI_SPEC §5.2; UI_SPEC §8.2; GAMEDESIGN §16.3; GAMEDESIGN §16.4
 
@@ -66,6 +66,6 @@ export interface RadialSpec { id: 'ping' | 'phrase' | 'build' | 'command'; trigg
 - [ ] `tasks/STATUS.md` 对应行与顶部摘要已更新；提交信息含任务 ID
 
 ## 备注/已知风险
-- **文档冲突**：UI_SPEC §4.8.1 的 Ping 轮盘扇区（Attention/Enemy Infantry/Enemy Vehicle/Enemy Structure/Request Medic/Request Ammo/Request Engineer/Cancel）与 GAMEDESIGN §16.4 的 8 项（Attention/Enemy/Need Medic/Ammo/Engineer/AT/Supplies/Thanks）不一致；标记生命周期（UI_SPEC §4.7.3 如 Attention 15 s，GAMEDESIGN §16.3 为 8 s）也不同。按 README §5.1：以 M2-019 落地的 sim 规则与 `/data/comms.json` 为准，UI 动态读取，并写 PLAN_ISSUES 请 Fable 裁决。
+- **文档冲突**：UI_SPEC §4.8.1 的 Ping 轮盘扇区（Attention/Enemy Infantry/Enemy Vehicle/Enemy Structure/Request Medic/Request Ammo/Request Engineer/Cancel）与 GAMEDESIGN §16.4 的 8 项（Attention/Enemy/Need Medic/Ammo/Engineer/AT/Supplies/Thanks）不一致；标记生命周期（UI_SPEC §4.7.3 如 Attention 15 s，GAMEDESIGN §16.3 为 8 s）也不同。已裁定：标记类型、权限、持续时间以 GAMEDESIGN §16.3/§16.4 为准（UI_SPEC §4.8.1 已改为引用 GD，只定义呈现）；UI 动态读取 M2-019 落地的 `/data/comms.json`。
 - Mouse3 在部分浏览器/鼠标上可能触发自动滚动；需 `preventDefault`（UI_SPEC §5.5）。
 - 图标为原创 SVG（H-003 待人确认）。

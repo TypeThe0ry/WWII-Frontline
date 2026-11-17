@@ -4,7 +4,7 @@
 - 里程碑：M4
 - 工作流：client-render
 - 规模：S
-- 依赖：M1-042（PBR 材质系统与变体管理）, M4-017
+- 前置依赖：M1-042, M4-017
 - 素材需求：无（灰盒即可）；素材状态：n.a.
 - 引用文档：ARCHITECTURE §10.4; ARCHITECTURE §20; ARCHITECTURE §13.5.3; ARCHITECTURE §17.5
 

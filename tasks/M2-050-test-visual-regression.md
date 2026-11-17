@@ -4,7 +4,7 @@
 - 里程碑：M2
 - 工作流：test
 - 规模：L
-- 依赖：M2-032, M2-036, M2-030, M2-031
+- 前置依赖：M2-032, M2-036, M2-030, M2-031
 - 素材需求：无（灰盒即可）；素材状态：n.a.（基线随素材接入更新）
 - 引用文档：ARCHITECTURE §17.4; ARCHITECTURE §17.5; ARCHITECTURE §10.3; ARCHITECTURE §10.2; MILESTONES §3.3
 

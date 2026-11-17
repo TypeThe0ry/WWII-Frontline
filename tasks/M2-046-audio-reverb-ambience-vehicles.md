@@ -4,7 +4,7 @@
 - 里程碑：M2
 - 工作流：audio
 - 规模：M
-- 依赖：M1-062
+- 前置依赖：M1-062
 - 素材需求：J-IR-001; J-IR-002; F-AMB-*; D-TNK-*（载具引擎/履带）；素材状态：placeholder（缺则静音）
 - 引用文档：ARCHITECTURE §12.1; ARCHITECTURE §12.2; ARCHITECTURE §12.4; ARCHITECTURE §12.7; ASSET_GAPS §3.3; REFERENCE_MEASUREMENTS §4.12
 

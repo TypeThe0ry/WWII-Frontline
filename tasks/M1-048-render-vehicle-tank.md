@@ -4,7 +4,7 @@
 - 里程碑：M1
 - 工作流：client-render
 - 规模：M
-- 依赖：M1-042, M1-041
+- 前置依赖：M1-042, M1-041
 - 素材需求：V-VEH-US-003（占位可，GAP-V01）；素材状态：placeholder（盒体车体+炮塔盒+炮管圆柱+左右履带盒）
 - 引用文档：GAMEDESIGN §14.1; ARCHITECTURE §6.5.2; ASSET_GAPS §3.2; ARCHITECTURE §13.5.3; GAMEDESIGN §14.3
 

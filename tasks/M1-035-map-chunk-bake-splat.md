@@ -4,7 +4,7 @@
 - 里程碑：M1
 - 工作流：maps
 - 规模：L
-- 依赖：M1-031, M1-033, M1-034（**隐含：M1-003 fpak、M1-005 manifest**，见备注）
+- 前置依赖：M1-031, M1-033, M1-034, M1-003, M1-005
 - 素材需求：无（灰盒即可；地表材质 V-NAT 由 M1-064 接入）；素材状态：placeholder
 - 引用文档：ARCHITECTURE §9.1; ARCHITECTURE §9.5; ARCHITECTURE §9.6; ARCHITECTURE §11.2; ARCHITECTURE §11.3; ARCHITECTURE §11.8; MAPS §1.1; MAPS §6.1
 
@@ -77,7 +77,7 @@
 - [ ] `tasks/STATUS.md` 对应行与顶部摘要已更新；提交信息含任务 ID
 
 ## 备注/已知风险
-- **INDEX 依赖遗漏**：本任务要"输出 manifest 条目与 fpak 区块包"，实际需要 M1-003（fpak）与 M1-005（manifest 格式）已完成；编号上二者均小于本任务，仅需在依赖列补上。
+- 依赖已补 M1-003（fpak）与 M1-005（manifest 格式）。
 - 视觉与碰撞对角线方向若不一致，坡度大处会偏差 > 5 cm，须在 CDLOD（M1-049）与 Rapier `HeightField` 构造处对齐；不一致时写 PLAN_ISSUES。
 - 规模 L；若超出，可拆 `M1-035b`（植被分布 + props）。
 - 上游若为 `partial`（M1-033 缺人工树篱）：本任务照常用 OSM 初稿烘焙，manifest 条目标记 `data_quality:"draft"`，不阻塞联调。

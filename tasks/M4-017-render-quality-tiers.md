@@ -4,7 +4,7 @@
 - 里程碑：M4
 - 工作流：client-render
 - 规模：L
-- 依赖：M2-032（TAAU）, M2-030（GTAO/SSAO）, M2-031（体积雾）
+- 前置依赖：M2-032, M2-030, M2-031
 - 素材需求：无（灰盒即可）；素材状态：n.a.
 - 引用文档：ARCHITECTURE §13.1; ARCHITECTURE §13.5.3; ARCHITECTURE §10.3; ARCHITECTURE §10.4; ARCHITECTURE §13.3; UI_SPEC §4.16
 

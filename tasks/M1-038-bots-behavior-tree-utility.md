@@ -4,7 +4,7 @@
 - 里程碑：M1
 - 工作流：bots
 - 规模：L
-- 依赖：M1-037, M1-014（命中区/伤害，供射击决策与目标威胁评分）
+- 前置依赖：M1-037, M1-014
 - 素材需求：无（灰盒即可）；素材状态：n.a.
 - 引用文档：ARCHITECTURE §16.3; ARCHITECTURE §16.5; GAMEDESIGN §20.3; GAMEDESIGN §20.6; GAMEDESIGN §20.1
 

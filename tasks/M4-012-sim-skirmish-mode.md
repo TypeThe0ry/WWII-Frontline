@@ -4,7 +4,7 @@
 - 里程碑：M4
 - 工作流：sim
 - 规模：M
-- 依赖：M2-008（Frontline 模式规则；Skirmish 共用其代码路径）
+- 前置依赖：M2-008
 - 素材需求：无（灰盒即可）；素材状态：n.a.
 - 引用文档：GAMEDESIGN §3.5; GAMEDESIGN §3.7; GAMEDESIGN §3.2; GAMEDESIGN §10.1; GAMEDESIGN §14.6; ARCHITECTURE §8.1; ARCHITECTURE §4.3.2
 
@@ -37,7 +37,7 @@ Skirmish 是小规模单据点模式（GAMEDESIGN §3.5），首发适配 Carent
 
 ## 不做什么
 - 不做 Skirmish 子区地图数据（M4-013）。
-- 不做 matchd 对该模式的编排（M4-031）。
+- 不做 gateway 对该模式的编排（M4-031）。
 - 不做 UI（M4-023）、bot 目标（M4-016）。
 - 不新增与 Frontline 重复的占领/重生实现（若发现需要复制，必须停下并写 PLAN_ISSUES）。
 
@@ -68,6 +68,6 @@ Skirmish 是小规模单据点模式（GAMEDESIGN §3.5），首发适配 Carent
 - [ ] `tasks/STATUS.md` 对应行与顶部摘要已更新；提交信息含任务 ID
 
 ## 备注/已知风险
-- GAMEDESIGN §3.7 地图-模式表只列 Carentan 的 Skirmish，MAPS 另给 Omaha/Foy 子区；本任务代码对地图无关，具体适配由 M4-013 与 matchd（M4-031）决定。
+- GAMEDESIGN §3.7 地图-模式表只列 Carentan 的 Skirmish，MAPS 另给 Omaha/Foy 子区；本任务代码对地图无关，具体适配由 M4-013 与 gateway 编排（M4-031）决定。
 - 轻/中/运输车辆依赖 M2/M3 的载具数据；若某地图无对应刷新点则该项在数据里为空，不报错。
 - 所有数值【待调参】，校准在 M4-039（三图平衡）。

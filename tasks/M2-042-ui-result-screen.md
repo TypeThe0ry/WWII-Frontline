@@ -4,7 +4,7 @@
 - 里程碑：M2
 - 工作流：ui
 - 规模：M
-- 依赖：M2-038, M2-017
+- 前置依赖：M2-038, M2-017
 - 素材需求：I-MUS-002（结算短曲，可选，缺则静音）；素材状态：placeholder
 - 引用文档：UI_SPEC §4.17; GAMEDESIGN §18.4; GAMEDESIGN §18.2; GAMEDESIGN §19.3; GAMEDESIGN §3.3.4
 

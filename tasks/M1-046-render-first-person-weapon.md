@@ -4,7 +4,7 @@
 - 里程碑：M1
 - 工作流：client-render
 - 规模：M
-- 依赖：M1-045
+- 前置依赖：M1-045
 - 素材需求：V-WPN-US-*; V-WPN-GE-*（第一人称占位可，GAP-V06）；素材状态：placeholder
 - 引用文档：GAMEDESIGN §6.10; ASSET_SHOPPING_LIST §4.0; ASSET_GAPS §3.2; ARCHITECTURE §10.1; ARCHITECTURE §13.5.2
 

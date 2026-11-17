@@ -4,7 +4,7 @@
 - 里程碑：M4
 - 工作流：ops
 - 规模：M
-- 依赖：M2-048（监控与日志）, M4-033
+- 前置依赖：M2-048, M4-033
 - 素材需求：无（灰盒即可）；素材状态：n.a.
 - 引用文档：ARCHITECTURE §18.3; ARCHITECTURE §18.5; ARCHITECTURE §18.4; ARCHITECTURE §18.2; NEEDS_HUMAN H-093, H-065
 

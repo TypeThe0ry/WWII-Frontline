@@ -4,7 +4,7 @@
 - 里程碑：M2
 - 工作流：net
 - 规模：S
-- 依赖：M1-010
+- 前置依赖：M1-010
 - 素材需求：无（灰盒即可）；素材状态：n.a.
 - 引用文档：ARCHITECTURE §6.8; ARCHITECTURE §8.2; ARCHITECTURE §6.6; GAMEDESIGN §16.4; GAMEDESIGN §19.3; GAMEDESIGN §16.3
 

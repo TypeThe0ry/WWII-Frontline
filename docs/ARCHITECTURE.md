@@ -31,6 +31,7 @@
 | P6 | 渲染/音频/UI 可替换，模拟不可替换 | 客户端子系统通过事件总线解耦（§8.4）；`sim` 不依赖任何渲染概念。 |
 | P7 | 诚实 | 网页端有物理上限（§20），不承诺做不到的画质与反作弊能力。 |
 | P8 | 素材零自制 | 无专职美术/音频，只用许可证允许"商用 + 网页分发"的现成素材，来源登记在 `LICENSES.md`。 |
+| P9 | 跨文档冲突的裁决归属 | 规则/数值/计时/权限冲突以 `GAMEDESIGN.md` 为准；呈现/配色/键位/布局冲突以 `UI_SPEC.md` 为准；网络/性能预算/接口冲突以 `ARCHITECTURE.md` 为准。 |
 
 ### 1.4 非目标
 
@@ -82,7 +83,7 @@
 | T6 | WebTransport 在所有目标浏览器可用（见 §5.6 核实表）；但企业代理/部分网络会阻断 UDP/HTTP3 | 必须有 WebSocket 兜底；兜底路径体验降级但可玩（§6.6）。 |
 | T7 | 所有网络消息 MTU 目标 ≤ 1200 B 载荷（QUIC datagram 实际可用上限需运行时查询 `maxDatagramSize`） | 超限消息拆分为多包，不依赖 IP 分片。 |
 | T8 | LiveKit 自托管 SFU 与对局服务器同机房、RTT < 5 ms | 订阅权限更新延迟视为 < 300 ms（估计值，未核实，M2 实测）。 |
-| T9 | Opus 24 kbps/路、同时下行最多 8 路，语音带宽**不计入** §6.9 的 256 kbps | 总下行 = 游戏 ≤ 256 + 语音 ≤ 192 kbps（DTX 实际均值约 1/3）。 |
+| T9 | Opus 24 kbps/路、同时下行最多 8 路，语音带宽**不计入** §6.9 的 256 kbps | 总下行 = 游戏 ≤ 256 + 语音 ≤ 352 kbps（8 路 × 约 44 kbps/路 线上速率，含 RTP/UDP/IP 头开销，ptime 20 ms；DTX 实际均值约 1/3）。 |
 | T10 | 对局时长 40–90 分钟；单局 bot 补位后总实体数 ≤ 100 玩家 + ≤ 40 载具 + ≤ 400 活动弹体/投射物 | AOI、预算与压测均按此上限。 |
 | T11 | Babylon.js 8.x 的 `WebGPUEngine`、`ComputeShader`、`RenderTargetTexture` 足以搭自定义帧图；其 FrameGraph 功能成熟度**未核实**，不作为依赖 | 自行组织 pass 顺序（§10.1），M0 做可行性验证。 |
 
@@ -689,7 +690,7 @@ if 仍有 acc >= 2 的实体未发: 记录 aoi_starved++ 指标, 调节器可降
 
 #### 6.7.3 弹道与回溯
 
-- **非实时弹体**：子弹以段扫描（segment sweep）逐 tick 推进：`p(t+dt) = p + v*dt + g*dt²/2`，对阻力用简化模型 `v *= (1 - k*|v|*dt)`。以 800 m/s 的子弹每 tick 走 26.7 m，每段用 Rapier 的射线检测 + 命中体检测。
+- **非实时弹体**：子弹以段扫描（segment sweep）逐 tick 推进；**每 tick 内部 4 子步（等效 120 Hz）积分**（GAMEDESIGN §6.4 为准）：`a = (0,−g,0) − k_drag·|v|·v`，`v += a·h`，`x += v·h`（`h = Δt/4`，`k_drag` 单位 1/m，如 .30-06 为 0.00075）；整 tick 的 `x_t → x_{t+Δt}` 线段对世界/命中体做一次扫掠检测（Rapier 射线 + 命中体检测）。以 853 m/s（M1 Garand）的子弹每 tick 走约 28 m。
 - **射手视角时间**：弹体飞行第 `n` tick，目标命中体取 `view_time + n*dt`（不超过当前时间），即"让弹体以射手当时看到的世界速率飞行"，在达到当前 tick 后切换为实时碰撞。这保证"打得准的人看到命中即命中"，同时被害者在掩体后不会被"追溯杀死"超过上限（250 ms，且 `H` 限制回溯）。
 - **被害者保护**：若回溯命中与当前时刻视线检查（`LoS(shooter_now, target_now_pos)`）冲突（目标已在厚墙后 > 0.3 s 前进入掩体），则**拒绝命中**并记录 `lagcomp_wall_reject`。阈值 `【待调参】`。
 - 载具/火炮等非即时武器：爆炸按服务器当前时刻计算（无回溯）。
@@ -738,7 +739,7 @@ if 仍有 acc >= 2 的实体未发: 记录 aoi_starved++ 指标, 调节器可降
 | `Revive` | `medic:u8`, `target:u8` |
 | `ScoreDelta` | `player:u8`, `kind:u8`, `value:i16` |
 | `ObjectiveChange` | `objective:u8`, `owner:u8`, `reason:u8` |
-| `SpawnPointState` | `id:id16`, `kind:u8{garrison,outpost,airhead,op,vehicle}`, `team:u8`, `pos:q`, `state:u8` |
+| `SpawnPointState` | `id:id16`, `kind:u8{garrison,outpost,airhead,op,vehicle,boat}`, `team:u8`, `pos:q`, `state:u8` |
 | `ResourceDelta` | `team:u8`, `kind:u8`, `value:i32` |
 | `AbilityExecuted` | `ability:u8`, `team:u8`, `pos:q`, `eta:u16(ms)` |
 | `MatchPhase` | `phase:u8{warmup,live,overtime,ended}`, `ends_at:u32` |
@@ -1168,15 +1169,15 @@ export function decodeC0(bytes: Uint8Array): { kind: number; payload: Uint8Array
 
 ```json
 {
-  "id": "m1_garand",
-  "name_key": "weapon.m1_garand.name",
+  "id": "us_m1_garand",
+  "name_key": "weapon.us_m1_garand.name",
   "faction": "us",
   "class": "rifle_semi",
   "historical": {
     "caliber": ".30-06 Springfield",
     "magazine_capacity": 8,
     "magazine_type": "en_bloc_clip",
-    "muzzle_velocity_mps": 850,
+    "muzzle_velocity_mps": 853,
     "rate_of_fire_rpm_practical": 40,
     "effective_range_m": 450,
     "mass_kg": 4.3,
@@ -1188,7 +1189,7 @@ export function decodeC0(bytes: Uint8Array): { kind: number; payload: Uint8Array
     "spread_hip_deg": 2.5, "spread_ads_deg": 0.15, "recoil_pattern_id": "garand_v1",
     "reload_ms": 2600, "reload_empty_ms": 3000, "swap_in_ms": 600,
     "penetration": {"class": "light", "wood_m": 0.08, "metal_m": 0.0},
-    "bullet_drop_gravity_mps2": 9.81, "drag_k": 0.0009,
+    "bullet_drop_gravity_mps2": 9.81, "drag_k_per_m": 0.00075,
     "suppression_radius_m": 3.0, "suppression_strength": 0.4,
     "mag_reserve": 6
   },
@@ -1199,7 +1200,7 @@ export function decodeC0(bytes: Uint8Array): { kind: number; payload: Uint8Array
 }
 ```
 
-注：以上数值为**结构示例的初值**，游戏性字段一律 `【待调参】`；历史字段（弹径、容弹量等）须由执行者据公开史料核对。
+注：以上数值为**结构示例的初值**，游戏性字段一律 `【待调参】`；历史字段（弹径、容弹量等）须由执行者据公开史料核对（R8：核对前状态为 `initial`）。**ID 命名以 GAMEDESIGN §0.3 为准：武器 `{faction}_{name}`（如 `us_m1_garand`）、载具如 `us_m4a1_75`、loadout `{faction}_{role}_{n}`。载具座位、车体 HP（中型坦克 1600）与成本以 GAMEDESIGN §14 为准。**
 
 #### 8.5.2 `data/roles/{id}.json`
 
@@ -1207,7 +1208,7 @@ export function decodeC0(bytes: Uint8Array): { kind: number; payload: Uint8Array
 {
   "id": "rifleman",
   "name_key": "role.rifleman.name",
-  "faction_overrides": {"us": {"loadout_ids": ["us_rifleman_default"]}, "ger": {"loadout_ids": ["ger_rifleman_default"]}},
+  "faction_overrides": {"us": {"loadout_ids": ["us_rifleman_1"]}, "ger": {"loadout_ids": ["ger_rifleman_1"]}},
   "max_per_squad": 4, "max_per_team": null,
   "unlock": {"squad_size_min": 1, "requires_squad_leader": false},
   "movement": {"walk_mps": 1.8, "run_mps": 4.2, "sprint_mps": 6.0, "crouch_mps": 1.2, "prone_mps": 0.6, "stamina_max": 100},
@@ -1222,9 +1223,9 @@ export function decodeC0(bytes: Uint8Array): { kind: number; payload: Uint8Array
 
 ```json
 {
-  "id": "us_rifleman_default",
+  "id": "us_rifleman_1",
   "role": "rifleman", "faction": "us",
-  "primary": "m1_garand",
+  "primary": "us_m1_garand",
   "secondary": null,
   "gadget_1": {"id": "frag_mk2", "count": 2},
   "gadget_2": {"id": "bandage", "count": 2},
@@ -1238,22 +1239,29 @@ export function decodeC0(bytes: Uint8Array): { kind: number; payload: Uint8Array
 
 ```json
 {
-  "id": "m4a1_sherman",
-  "name_key": "vehicle.m4a1_sherman.name",
+  "id": "us_m4a1_75",
+  "name_key": "vehicle.us_m4a1_75.name",
   "faction": "us",
   "type": "medium_tank",
   "historical": { "mass_kg": 30300, "crew": 5, "main_gun": "75mm_m3", "max_speed_kph": 38, "_source": "待核对" },
   "gameplay": {
-    "hull_health": 1000, "armor_mm": {"front": 51, "side": 38, "rear": 38, "top": 19},
-    "seats": [{"id": "driver","role":"driver"},{"id":"gunner","role":"gunner","turret":true},{"id":"commander","role":"commander","turret":true},{"id":"hull_mg","role":"mg"},{"id":"loader","role":"loader"}],
+    "hull_health": 1600, "armor_mm": {"front": 51, "side": 38, "rear": 38, "top": 19},
+    "seats": [{"id": "driver","role":"driver"},{"id":"gunner","role":"gunner","turret":true},{"id":"commander","role":"commander","turret":true}],
     "suspension": {"rays_per_side": 6, "rest_length_m": 0.6, "stiffness": 38000, "damping": 3800},
     "tracks": {"max_torque_nm": 22000, "friction_forward": 1.1, "friction_lateral": 2.2},
     "turret_traverse_dps": 24, "gun_elevation_deg": [-10, 25],
-    "spawn_cost": {"manpower": 0, "munitions": 100, "fuel": 100},
-    "respawn_cooldown_s": 300
+    "spawn_cost": {"manpower": 140, "munitions": 80, "fuel": 120},
+    "respawn_cooldown_s": 240
   }
 }
 ```
+
+#### 8.5.4b M0 新增数据文件与模式枚举
+
+- `GameMode::Sandbox`：M0 技术验证用的无胜负模式（单块地形、bot、射击与同步；不跑据点/资源/重生波次规则）。`GameMode` 枚举 = `{Sandbox, Frontline, Assault, Skirmish}`，`Sandbox` 仅 M0/开发使用，不出现在服务器浏览器。
+- `data/rules/respawn.json`：重生计时与波次规则（`base_wait` 各出生点类型、HQ/据点波次间隔、重生槽恢复、出生保护等，字段对应 GAMEDESIGN §10.6、§2.6；M0 用其最小子集：HQ 波次 + 个人冷却）。
+- `data/rules/bots.json`：bot 难度档与行为参数（反应延迟、瞄准误差、命中率上限、协同程度，对应 GAMEDESIGN §20.6；规则式指挥官评估间隔 15 s；LLM 指挥官间隔 60 s 与成本上限 0.5 美元/局，见 §16.4）。
+- 以上均走与 §8.5 相同的 JSON Schema 校验与 `DATA_HASH` 机制；schema 随对应任务落地。
 
 #### 8.5.5 `data/maps/{id}/map.json`
 
@@ -1291,7 +1299,8 @@ export function decodeC0(bytes: Uint8Array): { kind: number; payload: Uint8Array
 ### 9.1 数据组织
 
 - 可玩区 2048 × 2048 m，高度图 2049²，16-bit；量程 `[min_h, max_h]` 线性映射 0..65535（量程 100 m 时精度 ≈ 1.5 mm）。原始 2049² × 2 B ≈ **8.4 MB**；按 64 m 区块切成 32 × 32 = **1 024 块**，每块 65 × 65 高度样本 = **8 450 B** 原始。
-- 区块文件 `terrain/b_{bx}_{bz}.bin`：`[height 65²×u16, delta-filter + brotli → ≈ 3–4 KB][splat 64×64×4 weights 8-bit, KTX2 或直接 u8 RGBA → 压缩 ≈ 8–16 KB][props 实例表][vegetation 种子]`，每块总计约 30–80 KB；全图 1 024 块 ≈ 30–80 MB 原始（Medium 只加载其子集）。
+- **地形区块与 splat 同样进入 `.fpak`（R11/D-PAK，§11.8）**：下文的 `terrain/b_{bx}_{bz}.bin` 是 `.fpak` 内的**条目名**（按 64 m 区块分包），不是 CDN 上独立可下载的文件；远景环高度图/颜色图亦封装在 `.fpak`。
+- 区块条目 `terrain/b_{bx}_{bz}.bin`：`[height 65²×u16, delta-filter + brotli → ≈ 3–4 KB][splat 64×64×4 weights 8-bit, KTX2 或直接 u8 RGBA → 压缩 ≈ 8–16 KB][props 实例表][vegetation 种子]`，每块总计约 30–80 KB；全图 1 024 块 ≈ 30–80 MB 原始（Medium 只加载其子集）。
 - 远景环：8192 × 8192 m，8 m 分辨率 = 1025² u16 ≈ 2.1 MB，整块一次性载入；与近景之间用 morph 带（§9.2）与阴影淡出避免接缝。
 
 ### 9.2 CDLOD
@@ -1516,7 +1525,7 @@ flowchart TD
 | 范围 | 预算 | 估算构成（Medium 首图 ≤ 150 MB） |
 |---|---|---|
 | 主菜单（gzip/br 后 JS+WASM+UI） | ≤ 8 MB | Babylon 子集 ≈ 1.8 MB br、业务 JS ≈ 1.2 MB、`sim-wasm` ≈ 0.4 MB br、BasisU transcoder ≈ 0.4 MB、字体子集（Latin + CJK 常用 3 500 字）≈ 1.5 MB、UI 图/音效 ≈ 1.5 MB → 约 6.8 MB |
-| 首张地图 Medium | ≤ 150 MB | 地形（高度+splat+颜色）≈ 30 MB；材质数组 8 层×1024² ETC1S/UASTC ≈ 12 MB；建筑/道具 ≈ 40 MB；角色/武器（US+GER）≈ 18 MB；载具（≈ 6 种）≈ 16 MB；植被 + impostor ≈ 6 MB；音频（Opus 精选）≈ 18 MB；导航/碰撞 ≈ 6 MB；其它 ≈ 4 MB → ≈ 150 MB |
+| 首张地图 Medium | ≤ 150 MB | 地形（高度+splat+颜色）≈ 30 MB；材质数组 8 层×1024² ETC1S/UASTC ≈ 12 MB；建筑/道具 ≈ 40 MB；角色/武器（US+GER；按 D-FP 含第一人称 25k–60k 与第三人称 5k–12k 三角形两套精度）≈ 18 MB【待调参，M1 实测校准；第一人称高精度网格可能使该项上升，须据实测重算并相应压缩其它项或调整预算】；载具（≈ 6 种）≈ 16 MB；植被 + impostor ≈ 6 MB；音频（Opus 精选）≈ 18 MB；导航/碰撞 ≈ 6 MB；其它 ≈ 4 MB → ≈ 150 MB |
 | High | ≤ 350 MB | 纹理分辨率 ×2、更高 LOD、更多道具、探针 |
 | Ultra | ≤ 600 MB | 4K 地面细节、SSR 资源、更高阴影源 |
 
@@ -1646,6 +1655,7 @@ LiveKit 轨道 → `MediaStreamAudioSourceNode` → `PannerNode`（HRTF，`refDi
 | 角色/载具 LOD 偏置 | +1 | 0 | 0 | −0.5 |
 | 纹理最大 mip | 512² | 1024² | 2048² | 2048²（建筑 4096²） |
 | 粒子上限 | 300 | 800 | 1 600 | 3 000 |
+| 贴花上限（弹孔/弹坑/血迹/焦痕，同屏活动数；FIFO 淘汰）【待调参】 | 64 | 160 | 400 | 800 |
 | 视距（地形 LOD 6） | 1.5 km | 3 km | 5 km | 8 km |
 | 光照探针 | 低精度 | 标准 | 标准 | 高精度 |
 | 动态灯（建筑内） | 2 | 4 | 8 | 12 |
@@ -1749,13 +1759,13 @@ Medium（内部 67%）：像素相关 pass 约 ×0.5，结合 GTX 1650 相对 30
 ### 14.1 房间/频道模型
 
 - **一个对局 = 一个 LiveKit Room**（`room = match_id`），每名真人玩家 = 一个 Participant（`identity = player_id`）。
-- 所有玩家发布 1 条麦克风 Audio Track（Opus，24 kbps，DTX 开启，`maxBitrate` 32 kbps）；**默认不自动订阅**（`autoSubscribe = false`）。订阅集合由对局服务器通过 Server API 决定。
+- 所有玩家发布 1 条麦克风 Audio Track（Opus，24 kbps，DTX 开启，`maxBitrate` 32 kbps；**ptime 20 ms**，即 50 包/s，RTP/UDP/IP 头开销使线上速率约 44 kbps/路，容量与带宽估算须按线上速率计）；**默认不自动订阅**（`autoSubscribe = false`）。订阅集合由对局服务器通过 Server API 决定。
 - 逻辑频道（服务器侧概念，不是 LiveKit 概念）：
 
 | 频道 | 成员 | 空间化 | 发话方式 |
 |---|---|---|---|
 | `squad` | 同小队（≤ 6） | 否（无线电滤波） | 按住 PTT 或 VOX |
-| `command` | Commander + 各小队长（≤ 1+8） | 否 | PTT（独立键） |
+| `command` | Commander + Officer + Spotter（侦察组长）+ Tank Commander（与 GAMEDESIGN §16.1 一致，均可听可说） | 否 | PTT（`N`） |
 | `crew` | 同载具乘员（≤ 5） | 否（内话，轻混响） | PTT |
 | `prox` | 任意玩家，距离 ≤ 50 m，含敌方 | 是（HRTF） | 说话即发（VOX） |
 | `all-dead` | 观战/死亡等待中 | 否 | 可选，【待调参】 |
@@ -1767,7 +1777,7 @@ Medium（内部 67%）：像素相关 pass 约 ×0.5，结合 GTX 1650 相对 30
 每 0.5 s（2 Hz）对每个真人玩家 `i`：
 
 ```
-candidates(i) = squad(i) ∪ (command if i is leader/commander) ∪ crew(i) ∪ { j : dist(i,j) ≤ 50 m(进入) }
+candidates(i) = squad(i) ∪ (command if i ∈ {Commander, Officer, Spotter 侦察组长, Tank Commander}，GAMEDESIGN §16.1) ∪ crew(i) ∪ { j : dist(i,j) ≤ 50 m(进入) }
 rank 优先级: crew(1) > squad(2) > command(3) > prox 按距离升序(4)
 subscribe_set(i) = 取前 8
 迟滞: prox 进入 50 m, 退出 60 m; 集合变动至少持续 1 个周期才下发; 
@@ -1820,7 +1830,7 @@ LiveKit 不可用或浏览器拒绝麦克风权限 → 游戏正常进行，仅�
 | 载具 | 座位权限、速度/扭矩上限、开火 | sim | |
 | 指挥官能力 | 资源/冷却/授权（仅 Commander） | sim | |
 | 部署 | 兵种名额、出生点合法、Manpower、冷却 | sim | |
-| 速率限制 | `C0` 各消息每秒上限（聊天 2/s、部署 1/s、举报 1/min…） | server | 超限丢弃 + 惩罚计数 |
+| 速率限制 | `C0` 各消息每秒上限（聊天 每 8 s 最多 5 条（GAMEDESIGN §16.2）、部署 1/s、举报 1/min…） | server | 超限丢弃 + 惩罚计数 |
 | 数据一致性 | `data_hash` 握手校验 | server | 拒绝 |
 | 信息暴露 | AOI：不下发视野外远距离敌人精确数据（§6.5.4，R3 规则）；敌方位置仅在被 Spotter/侦察标记期间以地图图标形式给出（1 Hz、量化到 5 m） | server | — |
 
@@ -1861,7 +1871,7 @@ LiveKit 不可用或浏览器拒绝麦克风权限 → 游戏正常进行，仅�
 
 ```mermaid
 flowchart TD
-  CMD[指挥官 Bot / LLM 指挥官: 战略意图 (LLM 每 60 s, 规则式 5 s 级)]
+  CMD[指挥官 Bot / LLM 指挥官: 战略意图 (LLM 每 60 s, 规则式 15 s 评估，R4/GAMEDESIGN)]
   SL[小队长 Bot: 小队目标/阵型 (每 2–5 s)]
   SOL[士兵 Bot: 战术动作 (行为树, 每 3 tick = 10 Hz)]
   NAV[导航: Recast navmesh + 局部避障]
@@ -1907,7 +1917,7 @@ pub struct LlmCommander { client: LlmClient, model: String, interval_s: u32 /*60
   `{"actions":[{"type":"assign_squad_objective","squad":3,"objective":"sp02"}, {"type":"use_ability","ability":"bombing_run","pos":[x,z],"dir":deg}, {"type":"request_supply","kind":"munitions","at":"sp01"}, {"type":"set_priority","objective":"sp03","level":"high"}]}` ；动作数 ≤ 6；任何非法值丢弃并记录。
 - **模型**：默认 `claude-haiku-5-5`（来自总纲）；可配置。
 - **成本上限**：每局 ≤ **0.5 美元**。成本计量：`cost = tokens_in × price_in + tokens_out × price_out`，价格从配置读取（**价格未核实，不在文档中固定**）；`CostBudget` 在每次调用前按"最坏估算"检查，调用后按实际用量记账；达到 90% 时把间隔拉长到 90 s，达到 100% 立即切换回退。
-- 粗算（**仅示意，价格为假设值**）：一局 60 分钟 × 2 队 / 60 s = 120 次调用；若每次输入 2 000 token、输出 300 token，则共 240 k 输入 + 36 k 输出 token；若（假设）单价为 1 美元/百万输入、5 美元/百万输出，成本 ≈ 0.24 + 0.18 = 0.42 美元，低于上限但余量有限——上限机制仍须生效，必要时压缩输入/拉长间隔（可用提示缓存降低输入成本，具体功能与价格未核实）。**实现前须以当时官方价格重新计算并写入配置**。
+- 成本粗算：一局 60 分钟 × 2 队 / 60 s = 120 次调用；若每次输入约 3 000 token（战况 JSON ≤ 2 000 + 系统提示约 1 000）、输出约 300 token，则共约 360 k 输入 + 36 k 输出 token。**本文不固定模型单价**：模型单价须以官方价目为准、实现前重算；`docs/BUDGET.md` §3.7 的 $0.10 / $0.50 每百万 token 为 2026-11-17 检索所得，**需复核**，成本数字以该节为准。上限机制（0.5 美元/局）无论价格如何都必须生效。
 - **回退**：`RuleCommander`（基于效用评分的规则指挥官）常驻热备；LLM 异常（超时、非法 JSON、成本超限、API 不可用）立即由规则指挥官接管，并记 `llm_fallback_total` 指标。
 - **安全**：LLM 输出不直接执行，只能产出已枚举的 `CommanderAction`，经与真人指挥官同等的校验（资源、冷却、权限）；提示词不含玩家聊天内容（防提示注入）；API key 仅在服务器环境变量/密钥存储，不进日志。
 - 观测：每次调用记录 `latency_ms`、`tokens`、`cost`、`actions_accepted/rejected`。
@@ -1941,7 +1951,8 @@ pub struct LlmCommander { client: LlmClient, model: String, interval_s: u32 /*60
 
 ### 17.3 平衡模拟
 
-- `balance-sim`：无渲染、无网络、可 > 10× 实时，bot 对战 N 局（并行进程）：输出 CSV：胜率（按地图/阵营）、局时长、武器击杀占比、各兵种 KDA、资源曲线、据点争夺周期。
+- `balance-sim`：无渲染、无网络，**用“缩比对局”**（默认 20v20、30 分钟、简化物理、粗粒度导航）以单核 ≥ 10× 实时跑；验收口径：200 局缩比对局可在夜间作业 ≤ 4 h 内完成；全尺寸 100 人局只做少量抽样（≥ 5 局）核对缩比结论。bot 对战 N 局（并行进程）：输出 CSV：胜率（按地图/阵营）、局时长、武器击杀占比、各兵种 KDA、资源曲线、据点争夺周期。
+- 阵营胜率口径：Frontline 阵营胜率 40–60%；Assault 攻方胜率 35–65%（两处写清模式，不混用）【待调参】。
 - 目标：用 `docs/REFERENCE_MEASUREMENTS.md` 的黑盒测量校准的"节奏指标"（TTK、冲锋时间等）作为回归基线；改动数值的 PR 必须附带前后对比。
 - 注意：bot 行为≠真人，**只用于发现数值异常（一边倒、不可用武器），不替代真人试玩**。
 
@@ -1980,7 +1991,7 @@ pub struct LlmCommander { client: LlmClient, model: String, interval_s: u32 /*60
 | R2 + CDN | Cloudflare | 静态资源 |
 | 监控 | 1 小机 | Prometheus + Grafana + Loki |
 
-容量估算（A5）：2 台主机 × 2 局 = 4 局 × 100 = 400 并发上限（含 bot）。流量：单局 5.4 Mbps 典型 + 语音（服务器侧，LiveKit 转发：每听者 ≤ 8 路 × 24 kbps × DTX 活跃率 ≈ 0.3 → ≈ 58 kbps 均值，100 人 ≈ 5.8 Mbps）→ 每局 ≈ 11 Mbps → 4 局 ≈ 45 Mbps（均值）。成本区间（"精简/标准/极致"，A6）：精简 = 1 台对局 + 小 gateway/LiveKit 合并；标准 = 2 台 + 独立 gateway/LiveKit + 监控；极致 = 3 台 + 冗余 gateway + 第二区域冷备。**具体价格未核实，不在本文给出。**
+容量估算（A5）：2 台主机 × 2 局 = 4 局 × 100 = 400 并发上限（含 bot）。流量：单局 5.4 Mbps 典型 + 语音（服务器侧，LiveKit 转发：每听者 ≤ 8 路 × 约 44 kbps/路（24 kbps Opus 载荷 + RTP/UDP/IP 头，ptime 20 ms） × DTX 活跃率 ≈ 0.3 → ≈ 106 kbps 均值，100 人 ≈ 10.6 Mbps）→ 每局 ≈ 16 Mbps → 4 局 ≈ 64 Mbps（均值）。成本区间（"精简/标准/极致"，A6）：精简 = 1 台对局 + 小 gateway/LiveKit 合并；标准 = 2 台 + 独立 gateway/LiveKit + 监控；极致 = 3 台 + 冗余 gateway + 第二区域冷备。**具体价格未核实，不在本文给出。**
 
 ### 18.2 TLS 与证书
 
@@ -2045,7 +2056,7 @@ pub struct LlmCommander { client: LlmClient, model: String, interval_s: u32 /*60
 |---|---|
 | gateway 登录/ticket | 每 IP 10/min，每账号 6/min |
 | 对局 C0 消息 | 见 §15.1 |
-| 聊天 | 2 条/s、10 条/10 s；重复内容检测；可选敏感词过滤（词表按语言，待人定） |
+| 聊天 | 每 8 s 最多 5 条（GAMEDESIGN §16.2 为准）；重复内容检测；可选敏感词过滤（词表按语言，待人定） |
 | 举报 | 每玩家 1/min、10/局 |
 | 连接 | 每 IP 4 并发；SYN/QUIC 初始包洪泛由主机防火墙/云厂商 DDoS 防护兜底（能力未核实） |
 

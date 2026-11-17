@@ -4,7 +4,7 @@
 - 里程碑：M3
 - 工作流：sim
 - 规模：L
-- 依赖：M3-003, M3-004, M3-006
+- 前置依赖：M3-003, M3-004, M3-006, M2-019
 - 素材需求：无（灰盒即可；火炮用盒体+socket 占位，接入见 M3-044）；素材状态：n.a.
 - 引用文档：GAMEDESIGN §15.1; GAMEDESIGN §15.2; GAMEDESIGN §15.3; GAMEDESIGN §15.4; GAMEDESIGN §15.5; GAMEDESIGN §15.6; GAMEDESIGN §16.3; BRIEF R7
 
@@ -68,7 +68,7 @@ ARCHITECTURE §6.10 阶段 4（武器与弹道 2.5 ms，含活动弹体）与阶
 - [ ] `tasks/STATUS.md` 对应行与顶部摘要已更新；提交信息含任务 ID
 
 ## 备注/已知风险
-- 规模 L；INDEX 依赖未含 M2-019（Fire Mission/Fire Request 标记权限，GD §16.3），若标记权限接口未就绪，本任务用 trait 桩并写 PLAN_ISSUES；M3-006 经 M2-009 间接依赖，请确认 M2-019 已 done。
+- 规模 L；依赖已含 M2-019（Fire Mission/Fire Request 标记权限，GD §16.3）。
 - INDEX 验收写"射表落点误差与 /data 散布一致"：本任务把"无散布时 ≤ 0.5 m、有散布时 σ 与数据一致"两项都测。
 - 炮击预警的 4 s 与 TOF 的关系：TOF<4 s 时预警在弹出膛时立即发出。
 - 数值【待调参 / 待测 → REFERENCE_MEASUREMENTS §artillery（A-01–A-13，M3-052）】。

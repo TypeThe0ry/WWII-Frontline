@@ -4,7 +4,7 @@
 - 里程碑：M1
 - 工作流：data
 - 规模：M
-- 依赖：M0-008
+- 前置依赖：M0-008
 - 素材需求：无（灰盒即可）；素材状态：n.a.
 - 引用文档：GAMEDESIGN §6.2; GAMEDESIGN §6.3; GAMEDESIGN §6.4; GAMEDESIGN §6.5; GAMEDESIGN §6.8; GAMEDESIGN §6.9; ARCHITECTURE §8.5.1
 

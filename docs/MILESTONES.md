@@ -1285,7 +1285,7 @@ flowchart LR
 - 画质：四档预设、动态分辨率与自动推荐、Ultra SSR、Low/WebGL2 路径、变体与预热门禁、显存与 mip 预算。
 - UI：模式/地图选择与加载界面、画质设置与基准向导、可访问性审计、缩放/超宽屏测试、新手引导。
 - 音频与素材：分地图混响与环境、M4 素材接入。
-- 服务器/运维：统计异常检测与回放、对局编排（matchd）、安全加固、生产部署、告警与运行手册与发布回滚、隐私与 GDPR 端点、匿名遥测、公开测试准备。
+- 服务器/运维：统计异常检测与回放、对局编排（并入 crates/gateway）、安全加固、生产部署、告警与运行手册与发布回滚、隐私与 GDPR 端点、匿名遥测、公开测试准备。
 - 测试：三图 60 min 浸泡、三图三模式平衡、全图视觉回归、四档性能矩阵（参考硬件）、浏览器矩阵、封闭测试；史实参数最终清扫与对标复测。
 
 **范围外（明确不做）**
@@ -1319,10 +1319,10 @@ flowchart LR
 
 1. 主菜单→服务器浏览器按模式/地图过滤：展示三图三模式；用基准向导自动推荐画质档。
 2. Omaha Assault：登陆艇出生→滩头→崖顶推进；展示海面/潮线与障碍。
-3. Foy：冬季雪地，Frontline 与德军 Assault；展示天气与云杉林。
+3. Foy：冬季雪地，Frontline 与美军进攻的 Assault；展示天气与云杉林。
 4. Skirmish（Carentan 子区）：小规模快节奏对局。
 5. 四档画质切换：展示性能叠层与截图；强制 WebGL2 的 Low 档运行。
-6. 运维：Grafana 看板、告警演练、回滚演练；matchd 自动开局；管理员复核队列。
+6. 运维：Grafana 看板、告警演练、回滚演练；gateway 自动开局；管理员复核队列。
 7. 隐私：数据导出/删除；遥测同意流程。
 8. 展示 `tasks/STATUS.md` 的 E4 实测数字与公开测试 Go/No-Go 清单。
 
@@ -1350,7 +1350,7 @@ flowchart LR
 | Omaha 的潮位/WN 史料不确定 | 史实性与关卡 | 标"未核实"、设计以拓扑为准（MAPS §0.4）；人工校对任务 |
 | Foy 数据许可证 PENDING | 地图无法入库 | 许可证未 OK 不入主分支；备选 Copernicus 低精度+手工修正（PLAN_ISSUES） |
 | 参考硬件不足 | E4-1 不能全测 | 对应档标 partial；封闭测试用遥测补充（需同意） |
-| 公开测试流量与成本不可控 | 运维 | 容量方案、对局上限、matchd 限流；价格未核实，按实时报价重算 |
+| 公开测试流量与成本不可控 | 运维 | 容量方案、对局上限、gateway 编排限流；价格未核实，按实时报价重算 |
 | 隐私/合规（GDPR） | 上线阻塞 | 提前启动 `ops-privacy-gdpr`；法务审阅 |
 | 冬季/海滩素材缺口（GAP-V04） | 视觉 | 替代方案或外包；灰盒可用 |
 | 反作弊误报 | 玩家流失 | 首发只进复核队列、不自动封禁（ARCH §15.3） |
@@ -1360,7 +1360,7 @@ flowchart LR
 
 共 **46** 个任务（M4-001 – M4-046）。关键路径（权重和 24）：
 
-M4-001 map-omaha-sources-geo → M4-002 map-omaha-dem-vectors → M4-003 map-omaha-obstacles-wn → M4-004 map-omaha-zones-assault → M4-011 sim-landing-craft-spawn → M4-031 gateway-matchd-matchmaking → M4-033 ops-prod-deploy → M4-034 ops-alerts-runbook-release → M4-037 ops-public-test-prep → M4-045 test-closed-beta → M4-046 m4-acceptance
+M4-001 map-omaha-sources-geo → M4-002 map-omaha-dem-vectors → M4-003 map-omaha-obstacles-wn → M4-004 map-omaha-zones-assault → M4-011 sim-landing-craft-spawn → M4-031 gateway-matchmaking → M4-033 ops-prod-deploy → M4-034 ops-alerts-runbook-release → M4-037 ops-public-test-prep → M4-045 test-closed-beta → M4-046 m4-acceptance
 
 | 工作流 | 数量 | 任务 ID |
 |---|---|---|
@@ -1387,7 +1387,7 @@ flowchart LR
   end
   subgraph S_server["server"]
     M4_030["M4-030<br/>server-anticheat-statistics"]
-    M4_031["M4-031<br/>gateway-matchd-matchmaking"]
+    M4_031["M4-031<br/>gateway-matchmaking"]
     M4_032["M4-032<br/>server-security-hardening"]
   end
   subgraph S_client_render["client-render"]

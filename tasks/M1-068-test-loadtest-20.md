@@ -4,7 +4,7 @@
 - 里程碑：M1
 - 工作流：test
 - 规模：M
-- 依赖：M0-027（headless-client v0）, M1-024（AOI v1）, M1-025（延迟补偿）, M1-039（bot 填充）
+- 前置依赖：M0-027, M1-024, M1-025, M1-039
 - 素材需求：无（灰盒即可）；素材状态：n.a.
 - 引用文档：ARCHITECTURE §17.2; ARCHITECTURE §6.9; ARCHITECTURE §6.10; ARCHITECTURE §6.7; ARCHITECTURE §15.2
 

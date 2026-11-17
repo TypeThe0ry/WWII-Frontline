@@ -4,7 +4,7 @@
 - 里程碑：M2
 - 工作流：ui
 - 规模：M
-- 依赖：M1-058, M2-008, M2-009, M2-005
+- 前置依赖：M1-058, M2-008, M2-009, M2-005
 - 素材需求：无（灰盒即可）；素材状态：n.a.（底图由 M2-005 的区块/矢量数据烘焙，图标为原创 SVG/Path2D）
 - 引用文档：UI_SPEC §4.7; UI_SPEC §8.4; UI_SPEC §7.1; GAMEDESIGN §3.3; GAMEDESIGN §11.3; GAMEDESIGN §10.1; GAMEDESIGN §17.4
 

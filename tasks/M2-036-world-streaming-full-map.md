@@ -4,7 +4,7 @@
 - 里程碑：M2
 - 工作流：world
 - 规模：M
-- 依赖：M2-005, M2-034
+- 前置依赖：M2-005, M2-034
 - 素材需求：无（灰盒即可）；素材状态：n.a.
 - 引用文档：ARCHITECTURE §9.3; ARCHITECTURE §9.4; ARCHITECTURE §13.3; ARCHITECTURE §13.4; ARCHITECTURE §11.6; ARCHITECTURE §11.8
 

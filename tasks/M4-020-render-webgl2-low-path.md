@@ -4,7 +4,7 @@
 - 里程碑：M4
 - 工作流：client-render
 - 规模：L
-- 依赖：M4-017, M2-034（遮挡剔除）
+- 前置依赖：M4-017, M2-034
 - 素材需求：无（灰盒即可）；素材状态：n.a.
 - 引用文档：ARCHITECTURE §10.3; ARCHITECTURE §13.5.3; ARCHITECTURE §13.1; ARCHITECTURE §9.7; ARCHITECTURE §10.2; ARCHITECTURE §20
 

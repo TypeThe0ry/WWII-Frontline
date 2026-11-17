@@ -4,7 +4,7 @@
 - 里程碑：M3
 - 工作流：bots
 - 规模：L
-- 依赖：M2-028, M3-008, M3-009, M3-007, M3-017, M3-018
+- 前置依赖：M2-028, M3-008, M3-009, M3-007, M3-017, M3-018
 - 素材需求：无（灰盒即可）；素材状态：n.a.
 - 引用文档：GAMEDESIGN §20.4; GAMEDESIGN §13; GAMEDESIGN §14.6; GAMEDESIGN §15; ARCHITECTURE §16.4; ARCHITECTURE §16.1
 

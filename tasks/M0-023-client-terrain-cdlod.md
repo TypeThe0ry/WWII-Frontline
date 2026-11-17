@@ -4,7 +4,7 @@
 - 里程碑：M0
 - 工作流：client-render
 - 规模：L
-- 依赖：M0-020, M0-009
+- 前置依赖：M0-020, M0-009
 - 素材需求：无（V-NAT-007 CC0 可选）；素材状态：n.a.（M0 程序化着色，不用外部贴图）
 - 引用文档：ARCHITECTURE §9.2; ARCHITECTURE §9.8; ARCHITECTURE §13.5.2; ARCHITECTURE §10.3; ARCHITECTURE §9.1
 

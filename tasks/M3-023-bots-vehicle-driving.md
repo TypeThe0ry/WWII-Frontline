@@ -4,7 +4,7 @@
 - 里程碑：M3
 - 工作流：bots
 - 规模：L
-- 依赖：M2-029, M3-016
+- 前置依赖：M2-029, M3-016, M3-004
 - 素材需求：无（灰盒即可）；素材状态：n.a.
 - 引用文档：ARCHITECTURE §16.2; ARCHITECTURE §16.3; ARCHITECTURE §16.5; GAMEDESIGN §20.3; GAMEDESIGN §14.7; GAMEDESIGN §20.5
 
@@ -64,6 +64,6 @@ ARCHITECTURE §16.5：士兵 bot 1.0 + 路径 1.0 + 战术 1.0 ≈ 3.0 ms/tick�
 
 ## 备注/已知风险
 - 规模 L；若超限把运输 bot（B-16）拆为 `M3-023b`。
-- INDEX 依赖未显式含地图路线（M3-004 的 `vehicle_routes.json` 补全）；若 M2-004 的初稿路线不足，本任务可用 M3-004 的补全版，请确认其状态。
+- 依赖已含 M3-004（`vehicle_routes.json` 补全）。
 - 道路图与 navmesh 的坐标系统一（本地米坐标，MAPS §6），路点对齐误差 ≤ 1 m。
 - 数值（反应/瞄准误差）与 GD §20.6 同为【待调参】。

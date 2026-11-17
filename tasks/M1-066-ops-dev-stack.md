@@ -4,7 +4,7 @@
 - 里程碑：M1
 - 工作流：ops
 - 规模：S
-- 依赖：M1-029（server 与 gateway 的注册/心跳/ticket 链路）
+- 前置依赖：M1-029
 - 素材需求：无（灰盒即可）；素材状态：n.a.
 - 引用文档：ARCHITECTURE §3.2; ARCHITECTURE §18.1; ARCHITECTURE §18.2; ARCHITECTURE §5.5
 
@@ -36,7 +36,7 @@ services:
 
 ## 不做什么
 - 不做预发布/生产部署、真实证书与域名（M1-067、M4-033）。
-- 不做 LiveKit、Prometheus/Grafana/Loki（M2-024、M2-048），也不做多局调度/`matchd`（首发由 gateway 简化启动，见 ARCHITECTURE §3.3，后续任务）。
+- 不做 LiveKit、Prometheus/Grafana/Loki（M2-024、M2-048），也不做多局调度/gateway 编排模块（首发由 gateway 简化启动，见 ARCHITECTURE §3.3，后续任务）。
 - 不做 CI 中的 compose 作业（可选，若做仅 smoke）。
 - 不在镜像或 compose 中放置密钥/ API key。
 

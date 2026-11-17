@@ -4,7 +4,7 @@
 - 里程碑：M1
 - 工作流：bots
 - 规模：L
-- 依赖：M1-038, M1-021（小队/名额/部署校验）, M1-026（部署/小队处理与可靠事件）
+- 前置依赖：M1-038, M1-021, M1-026
 - 素材需求：无（灰盒即可）；素材状态：n.a.
 - 引用文档：GAMEDESIGN §4.7; GAMEDESIGN §20.1; GAMEDESIGN §20.2; GAMEDESIGN §4.4; GAMEDESIGN §2.4; GAMEDESIGN §10.2; ARCHITECTURE §16.1
 

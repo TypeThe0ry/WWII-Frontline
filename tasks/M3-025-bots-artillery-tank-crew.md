@@ -4,7 +4,7 @@
 - 里程碑：M3
 - 工作流：bots
 - 规模：M
-- 依赖：M3-023, M3-019
+- 前置依赖：M3-023, M3-019, M3-024
 - 素材需求：无（灰盒即可）；素材状态：n.a.
 - 引用文档：GAMEDESIGN §20.3; GAMEDESIGN §15; GAMEDESIGN §15.3; GAMEDESIGN §15.4; GAMEDESIGN §14.1; GAMEDESIGN §16.3
 
@@ -63,6 +63,6 @@ ARCHITECTURE §16.5 bot 总预算 ≈ 3.0 ms/tick；炮组/车长 bot ≤ 0.2 ms
 - [ ] `tasks/STATUS.md` 对应行与顶部摘要已更新；提交信息含任务 ID
 
 ## 备注/已知风险
-- INDEX 依赖含 M3-023 与 M3-019，未显式含 M3-024（Spotter bot）与 M3-018；验收 3 的修正来源依赖 M3-024，若其未完成则用脚本化观察者替代并标 `partial`。
+- 依赖已含 M3-024（Spotter bot）；验收 3 的修正来源依赖 M3-024。
 - 火炮 bot 的 Fire Mission 来源是 Commander bot（M3-026）或 Officer bot 的 Fire Request；若 M3-026 未完成，用 `balance-sim` 脚本下发 `FireMission` 测试。
 - 弹着"观察者误差报告"依赖 M3-018 的观察者 LoS 接口。

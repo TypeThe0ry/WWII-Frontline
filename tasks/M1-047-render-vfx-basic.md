@@ -4,7 +4,7 @@
 - 里程碑：M1
 - 工作流：client-render
 - 规模：M
-- 依赖：M1-042
+- 前置依赖：M1-042
 - 素材需求：V-FX-*（占位可）；素材状态：placeholder（引擎内置纯色方片/球，不引入外部贴图）
 - 引用文档：ARCHITECTURE §13.5.3; ASSET_GAPS §3.2; ARCHITECTURE §8.4; ARCHITECTURE §6.8.4
 

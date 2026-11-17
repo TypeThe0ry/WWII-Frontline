@@ -4,7 +4,7 @@
 - 里程碑：M2
 - 工作流：client-render
 - 规模：M
-- 依赖：M1-047
+- 前置依赖：M1-047
 - 素材需求：V-FX-*（含 V-FX-005 血迹/飞溅/拖痕贴花）；素材状态：placeholder（灰盒即可，真素材由 M2-047 接入）
 - 引用文档：ARCHITECTURE §13.1; ARCHITECTURE §13.5.3; ARCHITECTURE §13.5.2; ASSET_GAPS §3.2; GAMEDESIGN §6.9.2; GAMEDESIGN §7.2
 

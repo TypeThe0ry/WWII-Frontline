@@ -4,7 +4,7 @@
 - 里程碑：M1
 - 工作流：client-render
 - 规模：L
-- 依赖：M1-003, M0-020
+- 前置依赖：M1-003, M0-020
 - 素材需求：无（灰盒即可）；素材状态：n.a.（本任务含"占位回退"）
 - 引用文档：ARCHITECTURE §11.5; ARCHITECTURE §11.6; ARCHITECTURE §11.8; ARCHITECTURE §9.3; ARCHITECTURE §8.4; ASSET_GAPS §3.1; ASSET_GAPS §3.3
 

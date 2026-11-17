@@ -4,7 +4,7 @@
 - 里程碑：M2
 - 工作流：sim
 - 规模：L
-- 依赖：M1-023, M2-006, M2-009
+- 前置依赖：M1-023, M2-006, M2-009
 - 素材需求：无（灰盒即可）；素材状态：n.a.
 - 引用文档：GAMEDESIGN §14.3; GAMEDESIGN §14.6; GAMEDESIGN §14.9; GAMEDESIGN §14.1; GAMEDESIGN §7.6; GAMEDESIGN §11.4; ARCHITECTURE §6.10
 
@@ -65,6 +65,6 @@ ARCH §6.10 阶段 3「载具 ≤ 40 辆 2.0 ms」；载具实体网络 delta �
 - [ ] `tasks/STATUS.md` 对应行与顶部摘要已更新；提交信息含任务 ID
 
 ## 备注/已知风险
-- **计划缺口**：GD §14.6 的刷新由 Commander 面板发起，GD §5.1 又说 Tank Commander 认领；M2 范围内两者都不开放（MILESTONES §3.2）。默认方案：人类入口 = Crewman 在 HQ 载具位旁按交互请求，经 `Requester::CrewClaim` 走同一资源/上限校验（临时规则，M3 由 Commander 面板取代）；登记 PLAN_ISSUES 请 Fable 裁决。
+- **M2 临时规则（已裁定，GD §14 载具刷新小节与 MILESTONES M2 范围已注明）**：M2 无 Commander 席位，由"规则指挥官（服务器自动，`Requester::RuleCommander`）"按固定节奏刷新载具到 HQ 载具位，Crewman 在 HQ 载具位旁按交互认领（`Requester::CrewClaim` 走同一资源/上限校验）；M3 由 Commander 面板取代。
 - 轮式物理是新模型（M1-022 仅履带），规模风险；超时则拆续作 M2-015b（轮式）。
 - hull_hp 取自 /data（M1-009 为准），GD 仅在维修示例里提到"1600 HP 中型坦克"。

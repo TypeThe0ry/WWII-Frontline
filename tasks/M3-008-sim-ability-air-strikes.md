@@ -4,7 +4,7 @@
 - 里程碑：M3
 - 工作流：sim
 - 规模：L
-- 依赖：M3-006, M2-014
+- 前置依赖：M3-006, M2-014
 - 素材需求：无（灰盒即可；飞机用十字形灰盒，渲染在 M3-030）；素材状态：n.a.
 - 引用文档：GAMEDESIGN §13.4; GAMEDESIGN §13.5; GAMEDESIGN §13.6; GAMEDESIGN §13.1; GAMEDESIGN §6.6; GAMEDESIGN §14.4.3; GAMEDESIGN §8.1
 

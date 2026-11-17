@@ -4,7 +4,7 @@
 - 里程碑：M1
 - 工作流：test
 - 规模：M
-- 依赖：M1-052, M1-051, M1-044, M0-030（M0 性能采集脚本与参考机流程）
+- 前置依赖：M1-052, M1-051, M1-044, M0-030
 - 素材需求：无（灰盒即可）；素材状态：n.a.（占位下测量，并记录占位比例）
 - 引用文档：ARCHITECTURE §13.5; ARCHITECTURE §20.1; ARCHITECTURE §13.3; ARCHITECTURE §13.1; MILESTONES §2.3
 

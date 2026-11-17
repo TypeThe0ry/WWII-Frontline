@@ -4,7 +4,7 @@
 - 里程碑：M4
 - 工作流：maps
 - 规模：L
-- 依赖：M4-006, M2-001（Carentan 全图 DEM/矢量管线）
+- 前置依赖：M4-006, M2-001
 - 素材需求：无（灰盒即可）；素材状态：n.a.
 - 引用文档：MAPS §5.2; MAPS §5.5; MAPS §1.2; MAPS §1.5; MAPS §1.6; MAPS §6.1; ARCHITECTURE §9.1
 

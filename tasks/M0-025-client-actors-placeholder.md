@@ -4,7 +4,7 @@
 - 里程碑：M0
 - 工作流：client-render
 - 规模：M
-- 依赖：M0-022, M0-023
+- 前置依赖：M0-022, M0-023
 - 素材需求：V-CHR-US-001, V-CHR-GE-001, V-WPN-US-001, V-WPN-GE-001, V-FX-001, V-FX-006（均灰盒占位）；素材状态：placeholder
 - 引用文档：ASSET_GAPS §3; ARCHITECTURE §7.1; ARCHITECTURE §7.2; ARCHITECTURE §8.4; UI_SPEC §2.5
 

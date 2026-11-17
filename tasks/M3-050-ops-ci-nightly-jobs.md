@@ -14,8 +14,8 @@ M0-002 建立了 PR 级 CI（`lint`/`test-rust`/`test-ts`/`wasm-build`/`determin
 |---|---|---|---|
 | `e2e-visual` | PR（改 client/render）与 nightly | Playwright 视觉回归 | < 20 min |
 | `loadtest` | nightly | 100 headless 客户端 15 分钟 | < 30 min |
-| `balance` | nightly/手动 | 200 局 balance-sim | < 40 min |
-M2-049/050/051 已有各自的脚本，但尚未按夜间调度运行。退出标准 E3-13：loadtest/balance/e2e-visual 连续 3 晚成功。本任务把它们接入定时作业，并提供报告归档与失败通知。
+| `balance` | nightly/手动 | 200 局缩比对局 balance-sim（M2-051 口径） | ≤ 4 h |
+M2-049/050/051 已有各自的脚本，但尚未按夜间调度运行。退出标准 E3-13：loadtest/balance/e2e-visual 连续 3 晚成功。本任务把它们接入定时作业，并提供报告归档与失败通知；**本任务验收只要求"夜间作业配置完成且首次运行成功"，连续 3 晚稳定性在 M3-054 验收时复核**（总控裁定）。
 
 ## 具体内容
 ### 要创建/修改的文件
@@ -40,8 +40,8 @@ M2-049/050/051 已有各自的脚本，但尚未按夜间调度运行。退出�
 - 修改 PR 级 CI 作业。
 
 ## 验收标准
-1. `workflow_dispatch` 手动触发一次，三个 job 全部成功且各自在目标时长内：loadtest < 30 min、balance < 40 min、e2e-visual < 20 min（Actions 日志记录）。
-2. 连续 3 个**定时（schedule）**夜晚三作业全部成功，且各自报告 artifact 可下载（`tools/ci/check_nightly_history.sh 3` 输出 OK）。此条需 3 个日历夜；未满足时本任务状态为 `partial`，不得用 `workflow_dispatch` 次数顶替。
+1. `workflow_dispatch` 手动触发一次，三个 job 全部成功且各自在目标时长内：loadtest < 30 min、balance ≤ 4 h、e2e-visual < 20 min（Actions 日志记录）。
+2. **首次定时（schedule）运行**三作业全部成功，且各自报告 artifact 可下载（`tools/ci/check_nightly_history.sh 1` 输出 OK）。连续 3 个定时夜晚的稳定性（`check_nightly_history.sh 3`）**不是本任务验收项**，在 M3-054 验收时复核；不得用 `workflow_dispatch` 次数顶替定时运行。
 3. 故意让 loadtest 失败一次（例如临时降低阈值的分支触发），`nightly-failure` issue 在 10 min 内被创建，且包含运行链接；再次成功后 issue 自动关闭。
 4. 报告 zip 内含 loadtest JSON、balance CSV、visual diff 目录（`unzip -l` 检查）。
 5. 工作流使用最小权限（`permissions:` 明确列出，仅 `contents: read`、`issues: write`、`actions: read`），无硬编码密钥（`grep -ri 'secret\|token' .github/workflows` 仅有 `secrets.GITHUB_TOKEN` 引用）。

@@ -4,7 +4,7 @@
 - 里程碑：M0
 - 工作流：sim
 - 规模：L
-- 依赖：M0-010
+- 前置依赖：M0-010
 - 素材需求：无（灰盒即可）；素材状态：n.a.
 - 引用文档：ARCHITECTURE §5.3; ARCHITECTURE §6.10; ARCHITECTURE §8.1; ARCHITECTURE §20.1; GAMEDESIGN §9.1; GAMEDESIGN §9.2; GAMEDESIGN §0.5
 

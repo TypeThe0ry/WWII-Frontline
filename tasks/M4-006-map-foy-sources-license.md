@@ -4,7 +4,7 @@
 - 里程碑：M4
 - 工作流：maps
 - 规模：M
-- 依赖：M1-030（Carentan 的 T-LIC/T-GEO 流程与脚本）
+- 前置依赖：M1-030
 - 素材需求：无（灰盒即可）；素材状态：n.a.
 - 引用文档：MAPS §5.3; MAPS §2; MAPS §7.2; MAPS §5.2; MAPS §1.3; MAPS §0.4; NEEDS_HUMAN H-072, H-078
 

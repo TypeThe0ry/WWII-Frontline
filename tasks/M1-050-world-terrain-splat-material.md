@@ -4,7 +4,7 @@
 - 里程碑：M1
 - 工作流：world
 - 规模：M
-- 依赖：M1-049, M0-023（CDLOD 地形）, M1-042（PBR 材质系统）
+- 前置依赖：M1-049, M0-023, M1-042
 - 素材需求：V-NAT-007（CC0 地表材质）；素材状态：placeholder（棋盘格/纯色）→ real（CC0 免费，应尽快换真，ASSET_GAPS §3.2）
 - 引用文档：ARCHITECTURE §9.2; ARCHITECTURE §9.1; ARCHITECTURE §13.5.2; MAPS §6.1
 

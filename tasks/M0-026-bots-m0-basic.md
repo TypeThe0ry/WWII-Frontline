@@ -4,7 +4,7 @@
 - 里程碑：M0
 - 工作流：bots
 - 规模：L
-- 依赖：M0-018, M0-012
+- 前置依赖：M0-018, M0-012
 - 素材需求：无（灰盒即可）；素材状态：n.a.
 - 引用文档：ARCHITECTURE §16.1; ARCHITECTURE §16.3; ARCHITECTURE §16.5; GAMEDESIGN §20.1; GAMEDESIGN §20.3; GAMEDESIGN §20.6
 

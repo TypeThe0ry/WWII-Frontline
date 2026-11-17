@@ -4,7 +4,7 @@
 - 里程碑：M1
 - 工作流：ui
 - 规模：L
-- 依赖：M1-055, M1-040（部署状态机/roster/出生点状态）, M1-021（sim 小队/名额/部署校验）
+- 前置依赖：M1-055, M1-040, M1-021
 - 素材需求：无（灰盒即可）；素材状态：n.a.
 - 引用文档：UI_SPEC §4.5; UI_SPEC §4.7（部署地图复用）; UI_SPEC §8.4; GAMEDESIGN §2.5; GAMEDESIGN §2.6; GAMEDESIGN §10.6; GAMEDESIGN §4.4; ARCHITECTURE §7.3; ARCHITECTURE §9.4
 

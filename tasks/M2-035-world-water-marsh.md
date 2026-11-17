@@ -4,7 +4,7 @@
 - 里程碑：M2
 - 工作流：world
 - 规模：M
-- 依赖：M1-049, M2-005
+- 前置依赖：M1-049, M2-005
 - 素材需求：V-NAT-008（水面/水体贴图，M4 前可灰盒）；素材状态：placeholder
 - 引用文档：MAPS §3.7; MAPS §3.4; MAPS §3.6; MAPS §1.6; ARCHITECTURE §9.8; ARCHITECTURE §10.2; ARCHITECTURE §13.5.2
 

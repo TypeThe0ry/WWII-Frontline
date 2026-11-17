@@ -4,7 +4,7 @@
 - 里程碑：M1
 - 工作流：net
 - 规模：M
-- 依赖：M1-022（sim 载具物理）, M0-022（预测/对账框架）
+- 前置依赖：M1-022, M0-022
 - 素材需求：无（灰盒即可）；素材状态：n.a.
 - 引用文档：ARCHITECTURE §6.4; ARCHITECTURE §6.5.2; ARCHITECTURE §5.3; GAMEDESIGN §14.7; GAMEDESIGN §14.1
 

@@ -4,7 +4,7 @@
 - 里程碑：M1
 - 工作流：data
 - 规模：S
-- 依赖：M0-004
+- 前置依赖：M0-004
 - 素材需求：无（灰盒即可；真素材见 V-VEH-US-003，由 M1-064 接入）；素材状态：placeholder
 - 引用文档：GAMEDESIGN §14.1; GAMEDESIGN §14.2; GAMEDESIGN §14.3; GAMEDESIGN §14.4; GAMEDESIGN §14.5; GAMEDESIGN §14.6; ARCHITECTURE §8.5.4; ARCHITECTURE §5.3
 

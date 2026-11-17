@@ -4,7 +4,7 @@
 - 里程碑：M2
 - 工作流：maps
 - 规模：L
-- 依赖：M2-004, M1-035, M1-036
+- 前置依赖：M2-004, M1-035, M1-036
 - 素材需求：无（灰盒即可）；素材状态：n.a.
 - 引用文档：ARCHITECTURE §9.1; ARCHITECTURE §9.5; ARCHITECTURE §16.2; MAPS §6.1; ARCHITECTURE §9.6; ARCHITECTURE §9.7; ARCHITECTURE §11.8
 
@@ -15,7 +15,7 @@ M1-035/M1-036 对 1/3 区域做了 64 m 区块切片、splat、植被表、碰�
 - 碰撞 `collision/c_{bx}_{bz}.bin`：`[heights f32/u16][static_mesh_indices][material_ids]`，Meshopt 压缩，与视觉分开（ARCH §9.5）；服务器载入全图 Rapier `HeightField`（2049² f32 = 16.8 MB）。
 - 植被实例 6 B：`(x:u16,z:u16,species:u8,scale:u8,rot:u8)`；每块上限 草 4 096 / 灌木 256 / 树 192（ARCH §9.6）。
 - navmesh（ARCH §16.2）：`cell_size 0.3 m`、`cell_height 0.2 m`、`agent_radius 0.4 m`、`agent_height 1.8 m`、`max_climb 0.5 m`、`max_slope 45°`，128 m 瓦片；载具网格独立（MAPS §6.2：半径 2.0 m、坡度 25°）。
-注意：MAPS §6.2 的 navmesh 参数（坡度 35°、台阶 0.4 m）与 ARCH §16.2 不同，**以 ARCH §16.2 为准**并在 PLAN_ISSUES 登记文档冲突。
+注意：MAPS §6.2 的 navmesh 参数（坡度 35°、台阶 0.4 m）与 ARCH §16.2 不同，**以 ARCH §16.2 为准**（已裁定，MAPS §6.2 已同步修订）。
 
 ## 具体内容
 ### 要创建/修改的文件

@@ -4,7 +4,7 @@
 - 里程碑：M4
 - 工作流：ops
 - 规模：M
-- 依赖：M2-022（战绩/设置/OAuth）, M4-033
+- 前置依赖：M2-022, M4-033
 - 素材需求：无（灰盒即可）；素材状态：n.a.
 - 引用文档：ARCHITECTURE §19.4; ARCHITECTURE §19.2; ARCHITECTURE §18.4; NEEDS_HUMAN H-074, H-082, H-083, H-085
 

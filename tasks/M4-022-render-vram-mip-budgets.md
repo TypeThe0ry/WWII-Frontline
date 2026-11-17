@@ -4,7 +4,7 @@
 - 里程碑：M4
 - 工作流：client-render
 - 规模：M
-- 依赖：M4-017, M2-036（全图流式与内存预算）
+- 前置依赖：M4-017, M2-036
 - 素材需求：无（灰盒即可）；素材状态：n.a.
 - 引用文档：ARCHITECTURE §13.3; ARCHITECTURE §13.4; ARCHITECTURE §9.3; ARCHITECTURE §10.4; ARCHITECTURE §11.5
 

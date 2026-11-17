@@ -4,7 +4,7 @@
 - 里程碑：M4
 - 工作流：server
 - 规模：L
-- 依赖：M1-027（基础校验）, M2-023（管理 API 与举报）
+- 前置依赖：M1-027, M2-023
 - 素材需求：无（灰盒即可）；素材状态：n.a.
 - 引用文档：ARCHITECTURE §15.3; ARCHITECTURE §15.4; ARCHITECTURE §15.1; ARCHITECTURE §18.3; ARCHITECTURE §19.2; GAMEDESIGN §19.5; GAMEDESIGN §19.6
 

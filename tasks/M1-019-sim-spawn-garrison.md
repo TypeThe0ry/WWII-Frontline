@@ -4,7 +4,7 @@
 - 里程碑：M1
 - 工作流：sim
 - 规模：L
-- 依赖：M1-018, M1-016
+- 前置依赖：M1-018, M1-016
 - 素材需求：无（灰盒即可）；素材状态：n.a.
 - 引用文档：GAMEDESIGN §10.1; GAMEDESIGN §10.2; GAMEDESIGN §10.5; GAMEDESIGN §10.6; GAMEDESIGN §10.8; GAMEDESIGN §2.6; GAMEDESIGN §2.7; BRIEF R1
 
@@ -81,6 +81,6 @@ pub fn validate_garrison_place(w:&World, who:PlayerId, pos:Vec3, sup:&dyn Supply
 
 ## 备注/已知风险
 - **INDEX 依赖提示**：Garrison 需要 Supplies，但 M1-020 依赖本任务（编号更大），故本任务用 `SupplyProvider` 桩，闭环验收推迟到 M1-020（E1-11）。
-- **地图数据冲突**：MAPS §3.8 的 M1 临时 Garrison 位置（US (420,1550)、GER (1500,600)）与各自 HQ（US (480,1600)、GER (1480,560)）距离约 78 m/45 m，违反本表"距任何 HQ ≥ 200 m"。请总控/Fable 裁决（视为预置测试点而非玩家放置，或调整数据）；M1-034 同步登记。本任务单测用合规夹具。
+- **地图数据冲突**：MAPS §3.8 的 M1 临时 Garrison 位置（US (420,1550)、GER (1500,600)）与各自 HQ（US (480,1600)、GER (1480,560)）距离约 78 m/45 m，违反本表"距任何 HQ ≥ 200 m"。已裁定：MAPS §3.8 的候选点已移动到距 HQ ≥ 200 m，规则不放宽；本任务单测用合规夹具，M1-034 按修订后的 MAPS 写入数据。
 - M1 无 Sector 概念：用"所在位置最近据点的所有者"近似（中立→50，敌方→100）；写 PLAN_ISSUES（细化）。
 - 规模 L；若超出，将 HQ 保护区与热身/重新部署拆出 `M1-019b`。

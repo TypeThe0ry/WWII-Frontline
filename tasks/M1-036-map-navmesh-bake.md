@@ -4,7 +4,7 @@
 - 里程碑：M1
 - 工作流：maps
 - 规模：M
-- 依赖：M1-035
+- 前置依赖：M1-035
 - 素材需求：无（灰盒即可）；素材状态：n.a.
 - 引用文档：ARCHITECTURE §16.2; MAPS §6.1; MAPS §6.2; MAPS §7.1; GAMEDESIGN §20.3
 
@@ -80,5 +80,5 @@ off-mesh links（ARCHITECTURE §16.2）：窗户翻越、梯子、楼梯，**手
 ## 备注/已知风险
 - Recast 的 Rust/Node/Python 绑定选型 INDEX/ARCH 未定（ARCHITECTURE §4.3.6 写"`recast-navigation` 绑定或纯 Rust 实现"）；格式取"Detour 标准 tile blob"以保持运行期可选 Rust 绑定。选型与许可证登记 PLAN_ISSUES/LICENSES §5。
 - 灰盒建筑的门洞/楼梯数据质量直接决定 E1 风险"bot 在建筑内多层导航失败"（MILESTONES §2.8）；M1-034 必须保证门洞与楼层字段完整。
-- MAPS §6.2 与 ARCH §16.2 的 `max_slope/max_climb` 差异需 Fable 裁决（ARCH 优先）；KCC 步行坡度上限（M0-010 为 35°）与 navmesh 45° 不一致可能导致 bot 卡坡，bot 层（M1-037 的卡住检测 B-21）兜底。
+- MAPS §6.2 与 ARCH §16.2 的 `max_slope/max_climb` 差异已裁定：以 ARCH §16.2 为准（MAPS 已改）；KCC 步行坡度上限（M0-010 为 35°）与 navmesh 45° 不一致可能导致 bot 卡坡，bot 层（M1-037 的卡住检测 B-21）兜底。
 - 地图上游若 `partial`（M1-031 DEM 缺失/M1-033 缺树篱），本任务仍可用程序化/初稿数据烘焙联调，但 STATUS 须标注数据质量。

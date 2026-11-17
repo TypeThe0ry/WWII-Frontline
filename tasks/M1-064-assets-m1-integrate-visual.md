@@ -4,7 +4,7 @@
 - 里程碑：M1
 - 工作流：assets
 - 规模：M
-- 依赖：M1-002（网格/纹理管线）, M1-003（fpak）, M1-046（FP 武器 pass）, M1-048（坦克渲染）, M1-052（建筑）, M1-051（树篱/植被/道具）
+- 前置依赖：M1-002, M1-003, M1-046, M1-048, M1-052, M1-051
 - 素材需求：V-CHR-US-001; V-CHR-GE-001; V-WPN-US-*; V-WPN-GE-*; V-ANM-*; V-VEH-US-003; V-NAT-*; V-PRP-*; V-BLD-*; V-FX-*；素材状态：real / placeholder 混合（逐 ID 以 LICENSES.md 为准）
 - 引用文档：ASSET_SHOPPING_LIST §4.2; ASSET_GAPS §3.5; ASSET_GAPS §3.4; LICENSES.md §4; ARCHITECTURE §11.7; ARCHITECTURE §11.8
 
