@@ -6,8 +6,10 @@ export function checkRefs(files) {
   const ids = { weapon: new Set(), role: new Set(), loadout: new Set(), vehicle: new Set() };
   const byKind = (k) => files.filter((f) => f.kind === k && f.doc && typeof f.doc === 'object');
 
+  // explosives and melee weapons are carried in loadout weapon slots: they share the weapon id space
+  const idKinds = { weapon: ['weapon', 'explosive', 'melee'], role: ['role'], loadout: ['loadout'], vehicle: ['vehicle'] };
   for (const k of Object.keys(ids)) {
-    for (const f of byKind(k)) {
+    for (const f of idKinds[k].flatMap((kk) => byKind(kk))) {
       const id = f.doc.id;
       if (typeof id !== 'string') continue;
       if (ids[k].has(id)) {

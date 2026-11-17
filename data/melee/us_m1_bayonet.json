@@ -1,0 +1,25 @@
+{
+  "id": "us_m1_bayonet",
+  "name_key": "weapon.us_m1_bayonet.name",
+  "faction": "us",
+  "class": "bayonet",
+  "gameplay": {
+    "damage_hp": 90,
+    "windup_s": 0.35,
+    "cooldown_s": 1.2,
+    "range_m": 1.7,
+    "backstab_angle_deg": 120,
+    "backstab_kill": true,
+    "ff_mult": 0
+  },
+  "_meta": {
+    "status": "initial",
+    "tunable": [
+      "gameplay.damage_hp",
+      "gameplay.windup_s",
+      "gameplay.cooldown_s",
+      "gameplay.range_m"
+    ],
+    "calibration_ref": "GAMEDESIGN §6.8 近战（待 M1-071）"
+  }
+}

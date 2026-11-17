@@ -203,6 +203,155 @@ pub struct WeaponDef {
     pub meta: Meta,
 }
 
+// ---- explosives / melee / ammo (M1-008b; PLAN_ISSUES PI-042) ----
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ExplosiveClass {
+    FragGrenade,
+    SmokeGrenade,
+    AtRocket,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ExplosiveHistorical {
+    pub mass_kg: f64,
+    #[serde(rename = "_source")]
+    pub source: HistSource,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct FragGameplay {
+    pub fuse_s: f64,
+    pub throw_speed_mps: f64,
+    pub can_cook: bool,
+    pub bounce_mult: f64,
+    pub friction_mult: f64,
+    pub damage_max_hp: f64,
+    pub damage_radius_m: f64,
+    pub lethal_radius_m: f64,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct SmokeGameplay {
+    pub fuse_s: f64,
+    pub throw_speed_mps: f64,
+    pub cloud_radius_m: f64,
+    pub expand_s: f64,
+    pub duration_s: f64,
+    pub decay_s: f64,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct RocketGameplay {
+    pub muzzle_velocity_mps: f64,
+    pub gravity_mps2: f64,
+    pub effective_range_m: f64,
+    pub max_range_m: f64,
+    pub heat_pen_mm: f64,
+    pub structure_damage_hp: f64,
+    pub damage_max_hp: f64,
+    pub damage_radius_m: f64,
+    pub backblast_length_m: f64,
+    pub backblast_damage_hp: f64,
+    pub single_use: bool,
+}
+
+/// Class-specific gameplay block; the variant must agree with [`ExplosiveDef::class`]
+/// (checked by the JSON Schema and by `GameData` tests).
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(untagged)]
+pub enum ExplosiveGameplay {
+    Frag(FragGameplay),
+    Smoke(SmokeGameplay),
+    Rocket(RocketGameplay),
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ExplosiveDef {
+    pub id: String,
+    pub name_key: String,
+    pub faction: Faction,
+    pub class: ExplosiveClass,
+    pub historical: ExplosiveHistorical,
+    pub gameplay: ExplosiveGameplay,
+    #[serde(rename = "_meta")]
+    pub meta: Meta,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum MeleeClass {
+    Bayonet,
+    Knife,
+    Butt,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum MeleeFaction {
+    Us,
+    Ger,
+    Any,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct MeleeGameplay {
+    pub damage_hp: f64,
+    pub windup_s: f64,
+    pub cooldown_s: f64,
+    pub range_m: f64,
+    pub backstab_angle_deg: f64,
+    pub backstab_kill: bool,
+    pub ff_mult: f64,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct MeleeDef {
+    pub id: String,
+    pub name_key: String,
+    pub faction: MeleeFaction,
+    pub class: MeleeClass,
+    pub gameplay: MeleeGameplay,
+    #[serde(rename = "_meta")]
+    pub meta: Meta,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct AmmoHistorical {
+    pub caliber: String,
+    pub mass_kg: f64,
+    #[serde(rename = "_source")]
+    pub source: HistSource,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct AmmoGameplay {
+    pub drag_k_per_m: f64,
+    pub pen_power: f64,
+    pub suppression_mult: f64,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct AmmoDef {
+    pub id: String,
+    pub name_key: String,
+    pub historical: AmmoHistorical,
+    pub gameplay: AmmoGameplay,
+    #[serde(rename = "_meta")]
+    pub meta: Meta,
+}
+
 // ---- role ----
 
 #[derive(Debug, Clone, PartialEq, Deserialize)]

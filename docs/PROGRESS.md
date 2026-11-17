@@ -462,3 +462,9 @@ blocked / in-progress / todo：无。M0 的 33 个任务全部已提交（M0-033
 - **执行者**：收工前，在"任务日志"末尾追加本任务条目（`### 任务 ID 标题 — 状态 — 日期 — 提交 abc1234`，3–6 行：做了什么、关键实测数字、遗留问题/需人工事项、对后续任务的影响）；写入前重新读取文件末尾（并行执行者可能同时追加），只追加、不改别人的条目。数字必须来自实测，查不到写"未记录"。同时更新 `tasks/STATUS.md` 自己那一行。
 - **总控**：每波任务后更新本文件顶部的里程碑表、"M0 概况"表、"退出标准对照"、"关键实测数字"与"卡在人这边的事项"，并同步 `tasks/STATUS.md` 顶部摘要；新裁定追加到"已生效裁定摘要"；定期整理（合并重复、把已解决的人工事项划掉）。
 - **不在本文件做的事**：不复制 STATUS 的完整实测长文；不记录架构变更（走 `docs/PLAN_ISSUES.md`）；不改任务范围（走 `tasks/INDEX.md`）。
+
+### M1-008b 数据：手雷/烟雾/火箭/近战/弹药 — done — 2026-11-17 — 提交见 git log
+
+- 新 kind `explosive`/`melee`/`ammo`（schema、Rust 类型、build.rs 类型化解析、`GameData` 字段），loadout 引用的武器 id 空间含 explosives 与 melee（PI-042）。
+- 数据：`data/explosives/`×5、`data/melee/`×6、`data/ammo/`×3，全部 `initial`，`_source` 占位待 M1-070。
+- 武器表与下标未变，sim/bots 金哈希不动；只有 `DATA_HASH` 与 `native.json` 更新。

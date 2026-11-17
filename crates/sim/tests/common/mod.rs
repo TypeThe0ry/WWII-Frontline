@@ -305,6 +305,9 @@ pub fn data_with(f: impl Fn(&mut WeaponDef)) -> &'static GameData {
         .collect();
     Box::leak(Box::new(GameData {
         weapons: Box::leak(weapons.into_boxed_slice()),
+        explosives: e.explosives,
+        melee: e.melee,
+        ammo: e.ammo,
         roles: e.roles,
         loadouts: e.loadouts,
         vehicles: e.vehicles,
@@ -322,6 +325,9 @@ pub fn with_respawn_rules(
     f(&mut rules.respawn);
     Box::leak(Box::new(GameData {
         weapons: e.weapons,
+        explosives: e.explosives,
+        melee: e.melee,
+        ammo: e.ammo,
         roles: e.roles,
         loadouts: e.loadouts,
         vehicles: e.vehicles,

@@ -16,8 +16,8 @@ mod embedded {
 }
 
 pub use defs::{
-    BotsRulesDef, DataStatus, Faction, LoadoutDef, RespawnRulesDef, RoleDef, RulesDef, VehicleDef,
-    WeaponDef,
+    AmmoDef, BotsRulesDef, DataStatus, ExplosiveDef, Faction, LoadoutDef, MeleeDef,
+    RespawnRulesDef, RoleDef, RulesDef, VehicleDef, WeaponDef,
 };
 /// SHA-256 (first 8 bytes, little-endian) of the canonicalised `/data` tree. Sent as
 /// `Hello.data_hash`; client and server must agree (ARCHITECTURE 8.2).
@@ -29,6 +29,10 @@ use std::sync::OnceLock;
 #[derive(Debug)]
 pub struct GameData {
     pub weapons: &'static [WeaponDef],
+    /// Grenades, smoke and the Panzerfaust (`data/explosives/`, M1-008b).
+    pub explosives: &'static [ExplosiveDef],
+    pub melee: &'static [MeleeDef],
+    pub ammo: &'static [AmmoDef],
     pub roles: &'static [RoleDef],
     pub loadouts: &'static [LoadoutDef],
     pub vehicles: &'static [VehicleDef],
@@ -49,6 +53,9 @@ impl GameData {
         static DATA: OnceLock<GameData> = OnceLock::new();
         DATA.get_or_init(|| GameData {
             weapons: leak(embedded::WEAPONS_JSON),
+            explosives: leak(embedded::EXPLOSIVES_JSON),
+            melee: leak(embedded::MELEE_JSON),
+            ammo: leak(embedded::AMMO_JSON),
             roles: leak(embedded::ROLES_JSON),
             loadouts: leak(embedded::LOADOUTS_JSON),
             vehicles: leak(embedded::VEHICLES_JSON),
@@ -64,6 +71,15 @@ impl GameData {
 
     pub fn weapon(&self, id: &str) -> Option<&'static WeaponDef> {
         self.weapons.iter().find(|w| w.id == id)
+    }
+    pub fn explosive(&self, id: &str) -> Option<&'static ExplosiveDef> {
+        self.explosives.iter().find(|e| e.id == id)
+    }
+    pub fn melee_weapon(&self, id: &str) -> Option<&'static MeleeDef> {
+        self.melee.iter().find(|m| m.id == id)
+    }
+    pub fn ammo_def(&self, id: &str) -> Option<&'static AmmoDef> {
+        self.ammo.iter().find(|a| a.id == id)
     }
     pub fn role(&self, id: &str) -> Option<&'static RoleDef> {
         self.roles.iter().find(|r| r.id == id)
@@ -137,6 +153,42 @@ mod tests {
     }
 
     #[test]
+    fn data_m1_008b_explosives_melee_ammo_load() {
+        use super::defs::{ExplosiveClass, ExplosiveGameplay};
+        let d = GameData::embedded();
+        assert_eq!(d.explosives.len(), 5);
+        assert_eq!(d.melee.len(), 6);
+        assert_eq!(d.ammo.len(), 3);
+        for e in d.explosives {
+            // the typed gameplay variant agrees with the declared class
+            let ok = matches!(
+                (e.class, &e.gameplay),
+                (ExplosiveClass::FragGrenade, ExplosiveGameplay::Frag(_))
+                    | (ExplosiveClass::SmokeGrenade, ExplosiveGameplay::Smoke(_))
+                    | (ExplosiveClass::AtRocket, ExplosiveGameplay::Rocket(_))
+            );
+            assert!(ok, "{}: class/gameplay mismatch", e.id);
+        }
+        let ExplosiveGameplay::Frag(g) = &d.explosive("us_mk2").unwrap().gameplay else {
+            panic!("us_mk2 is a frag grenade")
+        };
+        assert_eq!((g.fuse_s, g.lethal_radius_m), (4.0, 3.2));
+        assert_eq!(
+            d.melee_weapon("us_m1_bayonet").unwrap().gameplay.damage_hp,
+            90.0
+        );
+        assert_eq!(d.ammo_def("ger_9x19").unwrap().gameplay.drag_k_per_m, 0.002);
+        // ids are unique across the weapon-slot id space (weapons + explosives + melee)
+        let mut ids: Vec<&str> = d.weapons.iter().map(|w| w.id.as_str()).collect();
+        ids.extend(d.explosives.iter().map(|e| e.id.as_str()));
+        ids.extend(d.melee.iter().map(|m| m.id.as_str()));
+        let n = ids.len();
+        ids.sort_unstable();
+        ids.dedup();
+        assert_eq!(ids.len(), n);
+    }
+
+    #[test]
     fn data_canonical_json_sorted_compact() {
         let v: serde_json::Value =
             serde_json::from_str(r#"{ "b": [1, 2], "a": {"z": 1, "y": "s"} }"#).unwrap();
@@ -157,6 +209,18 @@ mod tests {
                     serde_json::from_str::<WeaponDef>(&text)
                         .unwrap_or_else(|e| panic!("{name}: {e}")),
                 ),
+                "explosive" => drop(
+                    serde_json::from_str::<ExplosiveDef>(&text)
+                        .unwrap_or_else(|e| panic!("{name}: {e}")),
+                ),
+                "melee" => drop(
+                    serde_json::from_str::<MeleeDef>(&text)
+                        .unwrap_or_else(|e| panic!("{name}: {e}")),
+                ),
+                "ammo" => drop(
+                    serde_json::from_str::<AmmoDef>(&text)
+                        .unwrap_or_else(|e| panic!("{name}: {e}")),
+                ),
                 "role" => drop(
                     serde_json::from_str::<RoleDef>(&text)
                         .unwrap_or_else(|e| panic!("{name}: {e}")),
@@ -173,7 +237,7 @@ mod tests {
             }
             n += 1;
         }
-        assert_eq!(n, 6);
+        assert_eq!(n, 9);
     }
 
     #[test]

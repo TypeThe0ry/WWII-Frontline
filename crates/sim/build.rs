@@ -23,6 +23,9 @@ fn parse_typed(rel: &str, text: &str) -> Result<(), String> {
     }
     match rel.split('/').next().unwrap_or("") {
         "weapons" if rel.matches('/').count() == 1 => typed!(defs::WeaponDef),
+        "explosives" if rel.matches('/').count() == 1 => typed!(defs::ExplosiveDef),
+        "melee" if rel.matches('/').count() == 1 => typed!(defs::MeleeDef),
+        "ammo" if rel.matches('/').count() == 1 => typed!(defs::AmmoDef),
         "roles" if rel.matches('/').count() == 1 => typed!(defs::RoleDef),
         "loadouts" if rel.matches('/').count() == 1 => typed!(defs::LoadoutDef),
         "vehicles" if rel.matches('/').count() == 1 => typed!(defs::VehicleDef),
@@ -53,6 +56,9 @@ fn main() {
     let mut embedded = format!("pub const DATA_HASH: u64 = {data_hash:#018x};\n");
     for (dir, konst) in [
         ("weapons", "WEAPONS_JSON"),
+        ("explosives", "EXPLOSIVES_JSON"),
+        ("melee", "MELEE_JSON"),
+        ("ammo", "AMMO_JSON"),
         ("roles", "ROLES_JSON"),
         ("loadouts", "LOADOUTS_JSON"),
         ("vehicles", "VEHICLES_JSON"),

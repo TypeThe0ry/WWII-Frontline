@@ -8,7 +8,7 @@ import { REPO_ROOT } from '../lib.mjs';
 
 const cli = join(REPO_ROOT, 'tools/data-validate/index.mjs');
 const fx = join(REPO_ROOT, 'data/schemas/fixtures');
-const DIRS = { weapon: 'weapons', role: 'roles', loadout: 'loadouts', vehicle: 'vehicles' };
+const DIRS = { weapon: 'weapons', explosive: 'explosives', melee: 'melee', ammo: 'ammo', role: 'roles', loadout: 'loadouts', vehicle: 'vehicles' };
 
 function place(root, kind, srcFile, id) {
   const dest = DIRS[kind]
