@@ -32,7 +32,7 @@ function triple(v: string | null): [number, number, number] | null {
 /**
  * Load the map height data and add the CDLOD terrain to the render context's scene.
  * Query: `terrain_debug=lod|morph|normal|height|flat`, `cam=0|1|2`, `pos=x,y,z`, `target=x,y,z`, `speed=m/frame`,
- * `map=<id>` (default m0; files from `/maps/<id>/`, see DEVELOPING.md).
+ * `terrain_yscale=k` (debug vertical exaggeration), `map=<id>` (default m0; files from `/maps/<id>/`, see DEVELOPING.md).
  */
 export async function attachTerrain(ctx: RenderContext, params: URLSearchParams): Promise<TerrainHandle> {
   const t0 = performance.now();
@@ -42,6 +42,8 @@ export async function attachTerrain(ctx: RenderContext, params: URLSearchParams)
   const terrain = new Terrain(ctx.scene, data, { kind: ctx.kind, debug, stitch: params.get('terrain_stitch') !== '0' });
   if (debug === 'flat') ctx.scene.clearColor = new Color4(1, 0, 1, 1);
 
+  const yScale = Number(params.get('terrain_yscale') ?? 1);
+  if (yScale !== 1) terrain.setYScale(yScale);
   const cam = ctx.scene.activeCamera as UniversalCamera;
   cam.maxZ = 12000;
   cam.minZ = 0.1;

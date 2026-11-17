@@ -63,6 +63,13 @@ async fn soak(secs: u64) {
             (pings, last_tick)
         }));
     }
+    // Midway through, all 10 connections must still be open (gauge sampled while they are live).
+    tokio::time::sleep(Duration::from_secs(secs / 2)).await;
+    assert_eq!(
+        h.metrics.net_connections.get(),
+        10,
+        "connections dropped mid-soak"
+    );
     let mut total = 0;
     let mut max_tick = 0;
     for t in tasks {
@@ -82,7 +89,6 @@ async fn soak(secs: u64) {
         h.metrics.net_frames_malformed_total.get()
     );
     assert_eq!(h.metrics.net_frames_malformed_total.get(), 0);
-    assert_eq!(h.metrics.net_connections.get(), 10);
     assert!(
         max_tick as u64 >= secs * 25,
         "published tick did not advance"

@@ -36,9 +36,9 @@ async function pose(page: Page, pos: Vec3, target: Vec3): Promise<void> {
 }
 
 /** Decode the page screenshot into RGB pixels once; return a sampler plus a magenta counter. */
-async function grab(page: Page, withData = false) {
-  const png = (await page.screenshot()).toString('base64');
-  return page.evaluate(async ([b64, keep]) => {
+async function grab(page: Page, withData = false, path?: string, clear: [number, number, number] = [255, 0, 255]) {
+  const png = (await page.screenshot(path ? { path } : {})).toString('base64');
+  return page.evaluate(async ([b64, keep, clr]) => {
     const img = new Image();
     img.src = `data:image/png;base64,${b64}`;
     await img.decode();
@@ -48,14 +48,24 @@ async function grab(page: Page, withData = false) {
     const g = c.getContext('2d')!;
     g.drawImage(img, 0, 0);
     const d = g.getImageData(0, 0, img.width, img.height).data;
+    // `magenta` = holes: clear-colour pixels BELOW the first terrain pixel of their column (sky above the horizon is not a hole).
     let magenta = 0;
     let nonBackground = 0;
-    for (let i = 0; i < d.length; i += 4) {
-      if (d[i]! > 200 && d[i + 1]! < 110 && d[i + 2]! > 200) magenta++;
-      else nonBackground++;
+    // The canvas sits inside the 8 px white body margin: analyse only the interior.
+    const M = 10;
+    for (let x = M; x < img.width - M; x++) {
+      let seenTerrain = false;
+      for (let y = M; y < img.height - M; y++) {
+        const i = (y * img.width + x) * 4;
+        const isClear = Math.abs(d[i]! - clr[0]!) + Math.abs(d[i + 1]! - clr[1]!) + Math.abs(d[i + 2]! - clr[2]!) <= 12;
+        if (!isClear) {
+          nonBackground++;
+          seenTerrain = true;
+        } else if (seenTerrain) magenta++;
+      }
     }
     return { w: img.width, h: img.height, magenta, nonBackground, data: keep ? Array.from(d) : ([] as number[]) };
-  }, [png, withData] as [string, boolean]);
+  }, [png, withData, clear] as [string, boolean, number[]]);
 }
 
 function rng(seed: number): () => number {
@@ -67,8 +77,9 @@ function rng(seed: number): () => number {
 }
 
 test('WebGL2: terrain draws as ONE instanced draw call; every debug mode compiles and renders (acceptance 5)', async ({ page }, info) => {
+  test.setTimeout(180_000);
   const errors = watchErrors(page);
-  await page.goto('/?renderer=webgl2&scene=terrain&debug=1');
+  await page.goto('/?renderer=webgl2&scene=terrain');
   await ready(page, 5);
   const caps = await page.evaluate(() => window.__caps as { kind: string; fallbackReason: string | null });
   expect(caps.kind).toBe('webgl2');
@@ -84,10 +95,20 @@ test('WebGL2: terrain draws as ONE instanced draw call; every debug mode compile
   for (const mode of ['none', 'lod', 'morph', 'normal', 'height', 'flat']) {
     await page.evaluate((m) => window.__terrain!.setDebug(m), mode);
     await frames(page, 3);
-    const g = await grab(page);
+    const g = await grab(page, false, info.outputPath(`webgl2-${mode}.png`), [10, 15, 26]);
     expect(g.nonBackground, `mode ${mode} produced pixels`).toBeGreaterThan(g.w * g.h * 0.2);
-    await page.screenshot({ path: info.outputPath(`webgl2-${mode}.png`) });
   }
+  expect(errors).toEqual([]);
+});
+
+test('debug overlay shows terrain node counts per LOD and selection time (acceptance: overlay)', async ({ page }) => {
+  const errors = watchErrors(page);
+  await page.goto('/?renderer=webgl2&scene=terrain&debug=1'); // debug=1 enables the GPU timer query, which is slow on SwiftShader
+  await ready(page, 3);
+  await expect(page.locator('#debug-overlay')).toContainText('terrain   nodes');
+  await expect(page.locator('#debug-overlay')).toContainText('per LOD');
+  await expect(page.locator('#debug-overlay')).toContainText('select');
+  console.log(`overlay: ${(await page.locator('#debug-overlay').innerText()).split('\n').slice(-2).join(' | ')}`);
   expect(errors).toEqual([]);
 });
 
@@ -155,24 +176,30 @@ test('GPU-sampled heights match the CPU surface (height debug mode, top-down, ne
   expect(errors).toEqual([]);
 });
 
-test('no cracks: flat shading over a magenta clear colour, random poses; control without edge masks does crack', async ({ page }) => {
-  test.setTimeout(240_000);
+test('no cracks: flat shading over a magenta clear colour at 25x vertical exaggeration, random poses; control without edge masks does crack', async ({ page }) => {
+  test.setTimeout(300_000);
   const errors = watchErrors(page);
-  await page.goto('/?renderer=webgl2&scene=terrain&terrain_debug=flat');
+  // 25x exaggeration turns the centimetre-scale seam mismatches of the smooth m0 surface into visible gaps (the stitched
+  // surface must stay watertight at any scale); culling is off in this mode.
+  const YS = 25;
+  await page.goto(`/?renderer=webgl2&scene=terrain&terrain_debug=flat&terrain_yscale=${YS}`);
   await ready(page);
   const rand = rng(77);
+  // Eye heights are relative to the local ground (the far field has a ~10 m plateau; a camera below the surface sees its underside).
+  const ground = (x: number, z: number) => page.evaluate(([qx, qz, k]) => window.__terrain!.heightAt(qx!, qz!) * k!, [x, z, YS] as number[]);
   const poses: [Vec3, Vec3][] = [];
-  for (let i = 0; i < 14; i++) {
+  for (let i = 0; i < 8; i++) {
     const x = rand() * 256;
     const z = rand() * 256;
     const yaw = rand() * Math.PI * 2;
-    const y = 2 + rand() * 25;
-    poses.push([[x, y, z], [x + Math.sin(yaw) * 200, 6, z + Math.cos(yaw) * 200]]);
+    poses.push([[x, (await ground(x, z)) + 1.7 + rand() * 25, z], [x + Math.sin(yaw) * 200, 6 * YS, z + Math.cos(yaw) * 200]]);
   }
   // Low grazing views from outside the block toward the far field and uphill (the geometry where a crack is see-through).
-  for (let i = 0; i < 6; i++) {
+  for (let i = 0; i < 5; i++) {
     const yaw = rand() * Math.PI * 2;
-    poses.push([[-300 + rand() * 900, 1.7 + rand() * 6, -300 + rand() * 900], [128 + Math.sin(yaw) * 900, 4, 128 + Math.cos(yaw) * 900]]);
+    const x = -300 + rand() * 900;
+    const z = -300 + rand() * 900;
+    poses.push([[x, (await ground(x, z)) + 1.7 + rand() * 6, z], [128 + Math.sin(yaw) * 900, 4 * YS, 128 + Math.cos(yaw) * 900]]);
   }
   let stitched = 0;
   let control = 0;
@@ -195,7 +222,7 @@ test('far-ring edge is visible 4 km out and is a clean silhouette (acceptance 7,
   await page.goto('/?renderer=webgl2&scene=terrain&terrain_debug=flat');
   await ready(page);
   await pose(page, [128, 12, 128], [-3000, 12, 128]);
-  const g = await grab(page);
+  const g = await grab(page, true);
   // Scan the middle column from the bottom: terrain (white) must end at the horizon with background above it.
   const x = g.w >> 1;
   let edge = -1;

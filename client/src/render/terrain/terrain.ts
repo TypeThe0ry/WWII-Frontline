@@ -79,6 +79,7 @@ export class Terrain {
   private readonly t0 = performance.now();
   private debug: TerrainDebugMode;
   private stitch: boolean;
+  private yScale = 1;
 
   constructor(scene: Scene, data: TerrainData, opts: TerrainOptions) {
     this.data = data;
@@ -126,7 +127,7 @@ export class Terrain {
       wgsl ? { vertexSource: TERRAIN_VERTEX_WGSL, fragmentSource: TERRAIN_FRAGMENT_WGSL } : { vertexSource: TERRAIN_VERTEX_GLSL, fragmentSource: TERRAIN_FRAGMENT_GLSL },
       {
         attributes: [VertexBuffer.PositionKind, 'inst0', 'inst1'],
-        uniforms: ['viewProjection', 'uCam', 'uHeightRange', 'uMap', 'uMap2', 'uDebug'],
+        uniforms: ['viewProjection', 'uCam', 'uHeightRange', 'uMap', 'uMap2', 'uDebug', 'uYScale'],
         samplers: ['heightNear', 'heightFar'],
         shaderLanguage: wgsl ? ShaderLanguage.WGSL : ShaderLanguage.GLSL,
       },
@@ -138,6 +139,7 @@ export class Terrain {
     mat.setVector4('uMap', new Vector4(data.nearSize, data.meta.height.samples, data.far.originX, data.meta.far_ring.res_m));
     mat.setVector2('uMap2', new Vector2(data.meta.far_ring.samples, NEAR_BLEND_M));
     mat.setFloat('uDebug', DEBUG_CODE[this.debug]);
+    mat.setFloat('uYScale', 1);
     mesh.material = mat;
     this.material = mat;
 
@@ -159,6 +161,15 @@ export class Terrain {
     this.stitch = on;
   }
 
+  /**
+   * Debug: vertical exaggeration. Seam checks use it to make sub-pixel height mismatches visible; frustum culling is
+   * disabled while it is != 1 because the node bounds are in unscaled metres.
+   */
+  setYScale(v: number): void {
+    this.yScale = v;
+    this.material.setFloat('uYScale', v);
+  }
+
   setDebug(mode: TerrainDebugMode | string): void {
     this.debug = parseTerrainDebug(mode);
     this.material.setFloat('uDebug', DEBUG_CODE[this.debug]);
@@ -177,7 +188,7 @@ export class Terrain {
     frustumPlanes(this.vp, this.planes);
     const p = camera.globalPosition;
     this.camPos.copyFrom(p);
-    this.tree.select(p.x, p.y, p.z, this.planes, this.selection);
+    this.tree.select(p.x, p.y, p.z, this.yScale === 1 ? this.planes : null, this.selection);
     const sel = this.selection;
     if (!this.stitch) {
       for (let i = 0; i < sel.count; i++) {

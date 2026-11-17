@@ -1,0 +1,20 @@
+{
+  "ticks": 18000,
+  "tick_ms": {
+    "p50": 0.006684,
+    "p99": 0.013345,
+    "max": 4.599706,
+    "mean": 0.008086454833333333
+  },
+  "tick_interval_error_ms": {
+    "p50": 0.000275,
+    "p99": 0.790648,
+    "max": 37.023776,
+    "mean": 0.03916722927777778
+  },
+  "tick_overrun_total": 0,
+  "tick_overrun_consecutive_max": 0,
+  "tick_skipped_slots_total": 1,
+  "input_queue_full_total": 0,
+  "elapsed_s": 600.033335764
+}

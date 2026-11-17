@@ -13,7 +13,7 @@ use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::watch;
 use tokio::task::JoinHandle;
 use tokio::time::{timeout_at, Instant};
-use tokio_tungstenite::tungstenite::error::{CapacityError, Error as WsError};
+use tokio_tungstenite::tungstenite::error::{CapacityError, Error as WsError, ProtocolError};
 use tokio_tungstenite::tungstenite::protocol::WebSocketConfig;
 use tokio_tungstenite::tungstenite::Message;
 use tokio_tungstenite::WebSocketStream;
@@ -59,6 +59,10 @@ impl ClientTransport for WsTransport {
                 Some(Ok(Message::Close(_))) | None => return Recv::Closed,
                 Some(Err(WsError::Capacity(CapacityError::MessageTooLong { .. }))) => {
                     return Recv::Malformed("oversize message")
+                }
+                // Peer vanished without a Close frame: an ordinary disconnect, not hostile input.
+                Some(Err(WsError::Protocol(ProtocolError::ResetWithoutClosingHandshake))) => {
+                    return Recv::Closed
                 }
                 Some(Err(WsError::Protocol(_) | WsError::Utf8)) => {
                     return Recv::Malformed("websocket protocol violation")

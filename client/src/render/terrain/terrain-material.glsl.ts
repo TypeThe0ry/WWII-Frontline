@@ -21,6 +21,7 @@ uniform vec3 uCam;
 uniform vec2 uHeightRange;  // hmin, hmax
 uniform vec4 uMap;          // near size (m), near samples, far origin (m), far res (m)
 uniform vec2 uMap2;         // far samples, near/far blend width (m)
+uniform float uYScale;      // debug vertical exaggeration, 1 = off
 uniform sampler2D heightNear;
 uniform sampler2D heightFar;
 
@@ -109,7 +110,7 @@ void main() {
   float hu = heightAt(p + vec2(0.0, e));
   vNormal = normalize(vec3(hl - hr, 2.0 * e, hd - hu));
 
-  vWorld = vec3(p.x, h, p.y);
+  vWorld = vec3(p.x, h * uYScale, p.y);
   vInfo = vec4(lod, k, 0.0, 0.0);
   gl_Position = viewProjection * vec4(vWorld, 1.0);
 }

@@ -15,6 +15,7 @@ uniform uCam: vec3f;
 uniform uHeightRange: vec2f;
 uniform uMap: vec4f;
 uniform uMap2: vec2f;
+uniform uYScale: f32;
 
 var heightNear: texture_2d<f32>;
 var heightFar: texture_2d<f32>;
@@ -111,7 +112,7 @@ fn main(input: VertexInputs) -> FragmentInputs {
   let hu = heightAt(p + vec2f(0.0, e));
   vertexOutputs.vNormal = normalize(vec3f(hl - hr, 2.0 * e, hd - hu));
 
-  let world = vec3f(p.x, h, p.y);
+  let world = vec3f(p.x, h * uniforms.uYScale, p.y);
   vertexOutputs.vWorld = world;
   vertexOutputs.vInfo = vec4f(lod, k, 0.0, 0.0);
   vertexOutputs.position = uniforms.viewProjection * vec4f(world, 1.0);
