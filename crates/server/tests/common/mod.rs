@@ -3,6 +3,7 @@
 #![allow(dead_code)]
 
 pub mod sim_harness;
+pub mod synth;
 
 use std::sync::atomic::AtomicU32;
 use std::sync::Arc;

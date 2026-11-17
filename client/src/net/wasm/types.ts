@@ -61,6 +61,8 @@ export interface SimWasmModule {
   protocolVersion(): number;
   dataHash(): bigint;
   layoutJson(): string;
+  /** CRC-8 of the wire-quantised position (ARCHITECTURE 6.5.3, PI-023); the only implementation is Rust (frontline-protocol). */
+  predHash(x: number, y: number, z: number): number;
   weaponDef(id: string): Uint8Array;
   roleDef(id: string): Uint8Array;
   weaponIndex(id: string): number;

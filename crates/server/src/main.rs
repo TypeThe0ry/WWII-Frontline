@@ -49,13 +49,6 @@ fn run(cfg: Config) -> Result<(), String> {
         bots = cfg.bots as u64,
         "frontline-server starting"
     );
-    if cfg.bots > 0 {
-        tracing::warn!(
-            event = "bots_not_available",
-            requested = cfg.bots as u64,
-            "bot subsystem arrives with M0-026; running without bots"
-        );
-    }
     let rt = tokio::runtime::Builder::new_multi_thread()
         .worker_threads(2)
         .thread_name("net")
@@ -103,7 +96,14 @@ fn run(cfg: Config) -> Result<(), String> {
     let game_data = frontline_sim::GameData::embedded();
     let inbound = frontline_server::net::conn::InboundQueue::new();
     let sessions = frontline_server::net::conn::Sessions::new(metrics.clone());
-    let handle = sim_thread::spawn(
+    if cfg.bots > 0 && map_data.is_none() {
+        tracing::warn!(
+            event = "bots_without_terrain",
+            bots = cfg.bots as u64,
+            "no terrain loaded: bots will stand still"
+        );
+    }
+    let handle = sim_thread::spawn_with_bots(
         SimThreadConfig {
             match_seed: seed,
             map: MapId(0),
@@ -116,6 +116,7 @@ fn run(cfg: Config) -> Result<(), String> {
                 sessions: sessions.clone(),
             }),
         },
+        cfg.bots,
         metrics.clone(),
         stop.clone(),
     )

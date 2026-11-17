@@ -38,6 +38,14 @@ pub fn data_hash() -> u64 {
     frontline_sim::data::DATA_HASH
 }
 
+/// `pred_hash` of a position in metres (ARCHITECTURE 6.5.3, PI-023): CRC-8 over the wire-quantised
+/// position. The only implementation lives in `frontline_protocol::snapshot::pred_hash`; the client
+/// calls this (task M0-025).
+#[wasm_bindgen(js_name = predHash)]
+pub fn pred_hash(x: f32, y: f32, z: f32) -> u32 {
+    u32::from(frontline_protocol::snapshot::pred_hash::pred_hash(x, y, z))
+}
+
 /// All `LAYOUT_*` constants as JSON (`{"STATE_LEN":22,"X":0,...}`); the TS constant table in
 /// `client/src/net/wasm/layout.ts` is checked against this by a test.
 #[wasm_bindgen(js_name = layoutJson)]

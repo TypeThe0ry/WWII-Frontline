@@ -70,6 +70,14 @@ pub trait WorldView {
     fn los(&self, from: Vec3, to: Vec3) -> bool;
     /// Bilinear terrain height; `None` where no collision chunk is loaded.
     fn height_at(&self, x: f32, z: f32) -> Option<f32>;
+    /// Terrain slope in degrees at `(x, z)`; `None` where no collision chunk is loaded. The
+    /// default derives it from [`height_at`](Self::height_at) over a 1 m central difference
+    /// (the sim's [`World`](crate::World) overrides it with the exact triangle slope).
+    fn slope_deg_at(&self, x: f32, z: f32) -> Option<f32> {
+        let dx = self.height_at(x + 0.5, z)? - self.height_at(x - 0.5, z)?;
+        let dz = self.height_at(x, z + 0.5)? - self.height_at(x, z - 0.5)?;
+        Some(libm::atanf(libm::sqrtf(dx * dx + dz * dz)).to_degrees())
+    }
     /// Placeholder: zero resources (no manpower / score model before M1).
     fn team_resources(&self, team: Team) -> Resources;
     fn objectives(&self) -> &[ObjectiveView];

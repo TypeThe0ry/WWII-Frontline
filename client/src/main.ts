@@ -1,5 +1,7 @@
 import { EventBus, FixedStepper } from './game';
+import type { GameEvents } from './game';
 import type { NetGameHandle } from './game/net-game';
+import type { ActorsHandle } from './actors-boot';
 import { createRenderer, parseRendererParam, DebugOverlay, buildPerfDump, installPerfApi } from './render';
 import type { PerfApi } from './render';
 import type { TerrainHandle } from './render/terrain/terrain-scene';
@@ -28,6 +30,10 @@ declare global {
     __vegetation?: VegetationHandle;
     /** `?server=`: networked play (M0-022); diagnostics and e2e. */
     __netGame?: NetGameHandle;
+    /** `?server=` or `?actors=demo`: placeholder actors, first-person camera and fx (M0-025); diagnostics and e2e. */
+    __actors?: ActorsHandle;
+    /** Placeholder (grey-box) requirement ids in use with live instance counts; feeds the missing-asset report (M1-001). */
+    __placeholders?: import('./render/actors').PlaceholderEntry[];
   }
 }
 
@@ -65,10 +71,30 @@ async function boot(): Promise<void> {
 
   // M0-022: networked play (`?server=host:port`): prediction, reconciliation, interpolation (client/src/game).
   let netGame: NetGameHandle | null = null;
+  const bus = new EventBus<GameEvents>();
   if (params.has('server')) {
     const { startNetGame } = await import('./game/net-game');
-    netGame = await startNetGame(canvas, new EventBus());
+    netGame = await startNetGame(canvas, bus);
     window.__netGame = netGame;
+  }
+
+  // M0-025: placeholder actors + first-person camera + shot feedback, on the real game state (`?server=`) or a synthetic one (`?actors=demo`).
+  let actors: ActorsHandle | null = null;
+  if (netGame || params.get('actors') === 'demo') {
+    const { bootActors } = await import('./actors-boot');
+    const ng = netGame;
+    const wasm = ng ? ng.wasm : await (await import('./game/net-game')).loadWasm(import.meta.env.BASE_URL);
+    actors = await bootActors({
+      ctx,
+      bus,
+      wasm,
+      params,
+      state: ng?.game.state,
+      localWeapon: ng ? () => ng.game.predictor.weaponDefId() : undefined,
+      aiming: ng ? () => ng.sampler.isHeld('aim') : undefined,
+      heightAt: terrainHandle ? (x, z) => terrainHandle!.terrain.heightAt(x, z) : undefined,
+    });
+    window.__actors = actors;
   }
 
   const overlay = new DebugOverlay(params.get('debug') === '1');
@@ -77,9 +103,19 @@ async function boot(): Promise<void> {
     buildPerfDump(ctx.snapshot(), { steps_total: stepper.totalSteps, stepper_clamped: stepper.stepperClamped }, Date.now(), undefined, vegHandle?.perf());
   installPerfApi(window, getDump);
 
+  // The game update and the actors / first-person camera run before every other frame callback, so the terrain and
+  // vegetation selection of this frame already see this frame's camera.
   ctx.onFrame((dt) => {
     const { steps, alpha } = stepper.advance(dt);
     netGame?.update(steps, alpha, dt);
+    actors?.update(alpha, dt);
+  }, 'first');
+  if (actors && window.__perf) {
+    const fx = actors.manager.fx;
+    window.__perf.fireEventFrame = fx.fireEventFrames;
+    window.__perf.muzzleFlashVisibleFrame = fx.muzzleFlashFrames;
+  }
+  ctx.onFrame(() => {
     overlay.update(performance.now(), getDump(), [...(terrainHandle?.overlayLines() ?? []), ...(vegHandle?.overlayLines() ?? []), ...(netGame?.overlayLines() ?? [])]);
   });
   // ?norender=1 skips the render loop (debug aid; also needed where WebGPU cannot present, e.g. SwiftShader).

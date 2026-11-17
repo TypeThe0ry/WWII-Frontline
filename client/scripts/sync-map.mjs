@@ -46,3 +46,14 @@ if (WASM_FILES.every((f) => existsSync(join(pkg, f)))) {
 } else {
   console.warn('[sync-map] crates/sim-wasm/pkg missing: networked play (?server=) needs `wasm-pack build crates/sim-wasm --target web --profile wasm-release`');
 }
+
+// M0-025: grey-box weapon sizes and first-person view placement (data/placeholders/weapon_models.json) -> /data/placeholders/.
+{
+  const f = join(repo, 'data', 'placeholders', 'weapon_models.json');
+  const d = join(here, '..', 'public', 'data', 'placeholders');
+  if (existsSync(f)) {
+    mkdirSync(d, { recursive: true });
+    copyFileSync(f, join(d, 'weapon_models.json'));
+    console.log(`[sync-map] weapon_models.json -> ${d}`);
+  } else console.warn('[sync-map] data/placeholders/weapon_models.json missing: the actors cannot be built');
+}

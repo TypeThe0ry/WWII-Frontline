@@ -417,8 +417,83 @@ pub struct RespawnRulesDef {
     pub meta: Meta,
 }
 
+/// One bot difficulty tier (GAMEDESIGN 20.6).
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct BotDifficultyDef {
+    /// Reaction delay range (min, max), recognition to first shot.
+    pub reaction_ms: [f64; 2],
+    pub aim_error_mult: f64,
+    /// How long a lost target is chased ("hit memory").
+    pub memory_s: f64,
+    pub view_distance_m: f64,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct BotDifficultiesDef {
+    pub recruit: BotDifficultyDef,
+    pub regular: BotDifficultyDef,
+    pub veteran: BotDifficultyDef,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct BotPerceptionDef {
+    pub fov_deg: f64,
+    pub view_distance_cap_m: f64,
+    pub min_recognition_mult: f64,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct BotNavDef {
+    pub cell_size_m: f64,
+    pub max_slope_deg: f64,
+    pub goal_radius_m: f64,
+    pub repath_min_interval_ms: f64,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct BotCombatDef {
+    pub blind_fire_max_m: f64,
+    pub turn_rate_deg_s: f64,
+    pub aim_error_base_deg: f64,
+    pub aim_error_per_100m_deg: f64,
+    pub fire_tolerance_deg: f64,
+    pub crouch_min_m: f64,
+    pub sprint_min_m: f64,
+    /// Visible enemies farther than this are approached instead of shot at.
+    pub approach_beyond_m: f64,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct BotStuckDef {
+    pub window_s: f64,
+    pub min_move_m: f64,
+}
+
+/// Bot tuning (`data/rules/bots.json`, M0-026). Server-side behaviour only; `sim` itself never
+/// reads it (the `bots` crate does, through [`GameData`](crate::GameData)).
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct BotsRulesDef {
+    pub default_difficulty: String,
+    pub difficulties: BotDifficultiesDef,
+    pub think_interval_ms: f64,
+    pub perception: BotPerceptionDef,
+    pub nav: BotNavDef,
+    pub combat: BotCombatDef,
+    pub stuck: BotStuckDef,
+    #[serde(rename = "_meta")]
+    pub meta: Meta,
+}
+
 /// All rule families under `data/rules/`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct RulesDef {
     pub respawn: RespawnRulesDef,
+    pub bots: BotsRulesDef,
 }

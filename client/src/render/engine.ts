@@ -27,8 +27,8 @@ export interface RenderContext {
   caps: Capabilities;
   /** Why the requested/auto-preferred WebGPU path was not used; null when no fallback happened. */
   fallbackReason: string | null;
-  /** Register a callback run at the start of every render frame with real_dt in ms. */
-  onFrame(cb: (realDtMs: number) => void): () => void;
+  /** Register a callback run at the start of every render frame with real_dt in ms (`'first'`: before all callbacks registered so far, e.g. the game update that feeds the camera). */
+  onFrame(cb: (realDtMs: number) => void, order?: 'first' | 'last'): () => void;
   /** Start the render loop. */
   start(): void;
   snapshot(): RenderSnapshot;
@@ -150,8 +150,9 @@ export async function createRenderer(canvas: HTMLCanvasElement, opts: RendererOp
     kind,
     caps,
     fallbackReason,
-    onFrame(cb) {
-      callbacks.push(cb);
+    onFrame(cb, order) {
+      if (order === 'first') callbacks.unshift(cb);
+      else callbacks.push(cb);
       return () => {
         const i = callbacks.indexOf(cb);
         if (i >= 0) callbacks.splice(i, 1);

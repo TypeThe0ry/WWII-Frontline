@@ -183,6 +183,19 @@ impl Sessions {
         Some((id as PlayerId, team))
     }
 
+    /// Takes `id` out of circulation for good (a bot lives there, M0-026) and counts it in
+    /// `team`'s seats so human joins keep balancing against the bots. Idempotent.
+    pub fn reserve_bot(&self, id: PlayerId, team: Team) {
+        let i = id as usize;
+        let mut g = self.lock();
+        if i >= 128 || g.players[i].is_some() || g.cooling_until[i].is_some() {
+            return;
+        }
+        g.cooling_until[i] = Some(Instant::now() + Duration::from_secs(10 * 365 * 24 * 3600));
+        g.team_of[i] = team;
+        g.team_count[team as usize] += 1;
+    }
+
     /// [`Self::alloc_player_team`] without the team.
     pub fn alloc_player(&self, handle: &ClientHandle) -> Option<PlayerId> {
         self.alloc_player_team(handle).map(|(id, _)| id)
@@ -552,5 +565,27 @@ mod tests {
         assert!(s.handle_of(0).is_none(), "released at once for sending");
         std::thread::sleep(ID_REUSE_DELAY + Duration::from_millis(50));
         assert_eq!(s.alloc_player(&h), Some(0));
+    }
+
+    #[test]
+    fn reserved_bot_ids_are_never_allocated_and_count_in_the_team_balance() {
+        let m = Metrics::new();
+        let s = Sessions::with_reuse_delay(m.clone(), 4, 128, Duration::ZERO);
+        let h = ClientHandle::new(m);
+        // Ten bots at 127, 126, ...: even indices US, odd GER.
+        for i in 0..10u8 {
+            s.reserve_bot(127 - i, if i % 2 == 0 { Team::Us } else { Team::Ger });
+        }
+        s.reserve_bot(127, Team::Ger); // idempotent
+        assert_eq!(s.team_counts(), [5, 5]);
+        let mut ids = vec![];
+        while let Some(id) = s.alloc_player(&h) {
+            ids.push(id);
+        }
+        assert_eq!(ids, (0..118).collect::<Vec<u8>>(), "humans must fill 0..=117 only");
+        // A human leaving does not free a bot's id.
+        s.release_player(3);
+        assert_eq!(s.alloc_player(&h), Some(3));
+        assert_eq!(s.alloc_player(&h), None);
     }
 }

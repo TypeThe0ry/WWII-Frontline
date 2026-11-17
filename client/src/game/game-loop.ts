@@ -11,7 +11,6 @@ import { LAYOUT_STATE_AMMO_IN_MAG, LAYOUT_STATE_AMMO_RESERVE, LAYOUT_STATE_RECOI
 import type { EventBus, GameEvents, Vec3 } from './event-bus';
 import { EventDecoder } from './events';
 import { EntityStore, INTERP_DELAY_TICKS, MAX_ENTITIES, RenderTimeline } from './interpolation';
-import { predHash } from './pred-hash';
 import { LocalPredictor, type PredictorOptions } from './predictor';
 import { Reconciler } from './reconcile';
 import { SnapshotApplier } from './snapshot-apply';
@@ -310,8 +309,8 @@ export class GameLoop {
     if (r.kind === 'unknown') return; // ack from the future: keep the previous hash / ack tick
     // pred_hash covers the position right after the acknowledged command: the server's own (an accepted
     // correction, so it stops resending it) or ours (predicted, or corrected = the server's).
-    if (r.kind === 'ok') this.hash = predHash(s.corrX, s.corrY, s.corrZ);
-    else this.hash = predHash(this.ring.base.x, this.ring.base.y, this.ring.base.z);
+    if (r.kind === 'ok') this.hash = this.wasm.predHash(s.corrX, s.corrY, s.corrZ);
+    else this.hash = this.wasm.predHash(this.ring.base.x, this.ring.base.y, this.ring.base.z);
     this.ackSnapshotTick = s.tick;
     if (r.kind === 'corrected' || r.kind === 'snapped' || r.kind === 'initial') {
       const n = this.ring.length;

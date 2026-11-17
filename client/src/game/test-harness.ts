@@ -10,7 +10,6 @@ import { fileURLToPath } from 'node:url';
 import { EventBus, type GameEvents } from './event-bus';
 import { FixedStepper } from './fixed-step';
 import { GameLoop, type ClockPort, type NetPort } from './game-loop';
-import { predHash } from './pred-hash';
 import type { InputCmdFields, InputSource } from '../input/sampler';
 import { LAYOUT_SELF_LEN, type SimWasmModule, type WasmPredictor, type WasmSnapshotDecoder } from '../net/wasm';
 import { HAVE_WASM, loadWasm } from '../net/test-support';
@@ -261,6 +260,10 @@ export interface Scenario {
   frameMs?: number;
   /** Collects every delivered snapshot (frame index + fields) for `replayFixture`. */
   record?: RecordedSnap[];
+  /** Called once after the game is created (attach render-side consumers to `game.state` / `bus`). */
+  setup?: (game: GameLoop, bus: EventBus<GameEvents>) => void;
+  /** Called after every client frame's `game.update` (frame index, frame duration ms, virtual time ms). */
+  onFrame?: (game: GameLoop, f: number, frameMs: number, tMs: number) => void;
 }
 
 export interface ScenarioResult {
@@ -344,6 +347,7 @@ export async function runScenario(sc: Scenario): Promise<ScenarioResult> {
   const input = new ScriptInput(sc.script);
   const game = new GameLoop({ wasm, decoder: dec, bus, net, input, matchSeed: 1n, mapId: 0, playerId: 3, now: () => t, log: () => undefined });
   game.loadCollision(chunks);
+  sc.setup?.(game, bus);
 
   // authoritative side
   const srv: WasmPredictor = new real.Predictor(1n, 0, 3);
@@ -415,7 +419,7 @@ export async function runScenario(sc: Scenario): Promise<ScenarioResult> {
       const dv = new DataView(a.buffer, a.byteOffset, a.byteLength);
       const p: [number, number, number] = [dv.getFloat32(0, true), dv.getFloat32(4, true), dv.getFloat32(8, true)];
       snapPos.set(T, p);
-      posAtSnap.set(T & 0xffff, predHash(p[0], p[1], p[2]));
+      posAtSnap.set(T & 0xffff, real.predHash(p[0], p[1], p[2]));
       snapPos.delete(T - 200);
       posAtSnap.delete((T - 200) & 0xffff);
       let corr: [number, number, number] | undefined;
@@ -476,6 +480,7 @@ export async function runScenario(sc: Scenario): Promise<ScenarioResult> {
     const { steps, alpha } = stepper.advance(frameMs);
     game.update(steps, alpha, frameMs);
     updateMs.push(performance.now() - w0);
+    sc.onFrame?.(game, f, frameMs, t);
     if (game.corrections !== lastCorr) {
       lastCorr = game.corrections;
       correctionTimesS.push(t / 1000);

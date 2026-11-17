@@ -256,7 +256,7 @@ export class Vegetation {
       if (withImpostor) {
         // flipV = false on both backends: Babylon renders into render targets with GL-consistent orientation on WebGPU too
         // (measured: flipV = true gave a vertically mirrored impostor, IoU 0.3 vs the mesh, see vegetation.spec.ts).
-        const imat = impostorMaterial(scene, `${matName}_impostor`, wgsl, bounds, false);
+        const imat = impostorMaterial(scene, `${matName}${matName.includes('__') ? '_' : '__'}impostor`, wgsl, bounds, false);
         const qm = quadMesh(scene, `PH_${info.reqId}__master_${info.key}_impostor`);
         qm.material = imat;
         masters.push(qm);
@@ -267,7 +267,7 @@ export class Vegetation {
       return { info, masters, materials, bounds, tris };
     };
     this.gfx[SPECIES_GRASS] = make(SPECIES[SPECIES_GRASS]!, [buildGrass, buildGrass], 'PH_V-NAT-004', 0.65, grassFade, false);
-    this.gfx[SPECIES_SHRUB] = make(SPECIES[SPECIES_SHRUB]!, [buildShrub, buildShrub], 'PH_V-NAT-004_shrub', 0.3, [0, 0], true);
+    this.gfx[SPECIES_SHRUB] = make(SPECIES[SPECIES_SHRUB]!, [buildShrub, buildShrub], 'PH_V-NAT-004__shrub', 0.3, [0, 0], true);
     this.gfx[SPECIES_TREE] = make(SPECIES[SPECIES_TREE]!, [buildTree, buildTree], 'PH_V-NAT-002', 0.15, [0, 0], true);
   }
 

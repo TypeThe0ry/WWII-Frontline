@@ -1,0 +1,44 @@
+{
+  "_meta": {
+    "status": "placeholder",
+    "note": "Grey-box model sizes and first-person view placement for the client placeholder weapons (task M0-025, ASSET_GAPS 3). Not read by sim and not used for balance; the real V-WPN-* models (M1-046) replace it. Lengths are rounded overall/barrel lengths of the historical rifles; box sizes are rough envelopes. All values tunable (待调参).",
+    "tunable": ["*"]
+  },
+  "weapons": {
+    "us_m1_garand": {
+      "requirement_id": "V-WPN-US-001",
+      "length_m": 1.107,
+      "barrel_length_m": 0.61,
+      "barrel_diameter_m": 0.022,
+      "receiver_height_m": 0.1,
+      "receiver_width_m": 0.045,
+      "magazine_length_m": 0.06,
+      "magazine_height_m": 0.07,
+      "magazine_width_m": 0.03,
+      "view": {
+        "hip_offset_m": [0.17, -0.2, 0.3],
+        "ads_offset_m": [0.0, -0.115, 0.28],
+        "ads_fov_mult": 0.8
+      }
+    },
+    "ger_kar98k": {
+      "requirement_id": "V-WPN-GE-001",
+      "length_m": 1.11,
+      "barrel_length_m": 0.6,
+      "barrel_diameter_m": 0.02,
+      "receiver_height_m": 0.1,
+      "receiver_width_m": 0.04,
+      "magazine_length_m": 0.07,
+      "magazine_height_m": 0.06,
+      "magazine_width_m": 0.035,
+      "view": {
+        "hip_offset_m": [0.17, -0.2, 0.3],
+        "ads_offset_m": [0.0, -0.112, 0.28],
+        "ads_fov_mult": 0.75
+      }
+    }
+  },
+  "view": {
+    "hip_fov_deg": 75
+  }
+}

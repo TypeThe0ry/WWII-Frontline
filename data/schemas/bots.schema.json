@@ -58,7 +58,7 @@
     "combat": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["blind_fire_max_m", "turn_rate_deg_s", "aim_error_base_deg", "aim_error_per_100m_deg", "fire_tolerance_deg", "crouch_min_m", "sprint_min_m"],
+      "required": ["blind_fire_max_m", "turn_rate_deg_s", "aim_error_base_deg", "aim_error_per_100m_deg", "fire_tolerance_deg", "crouch_min_m", "sprint_min_m", "approach_beyond_m"],
       "properties": {
         "blind_fire_max_m": { "type": "number", "minimum": 0, "maximum": 1000 },
         "turn_rate_deg_s": { "type": "number", "exclusiveMinimum": 0, "maximum": 8000 },
@@ -66,7 +66,8 @@
         "aim_error_per_100m_deg": { "type": "number", "minimum": 0, "maximum": 10 },
         "fire_tolerance_deg": { "type": "number", "exclusiveMinimum": 0, "maximum": 45 },
         "crouch_min_m": { "type": "number", "minimum": 0, "maximum": 1000 },
-        "sprint_min_m": { "type": "number", "minimum": 0, "maximum": 1000 }
+        "sprint_min_m": { "type": "number", "minimum": 0, "maximum": 1000 },
+        "approach_beyond_m": { "type": "number", "minimum": 0, "maximum": 1000 }
       }
     },
     "stuck": {

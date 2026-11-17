@@ -2,19 +2,28 @@
   "default_difficulty": "regular",
   "difficulties": {
     "recruit": {
-      "reaction_ms": [550, 850],
+      "reaction_ms": [
+        550,
+        850
+      ],
       "aim_error_mult": 2.0,
       "memory_s": 2.0,
       "view_distance_m": 150.0
     },
     "regular": {
-      "reaction_ms": [350, 600],
+      "reaction_ms": [
+        350,
+        600
+      ],
       "aim_error_mult": 1.3,
       "memory_s": 4.0,
       "view_distance_m": 220.0
     },
     "veteran": {
-      "reaction_ms": [250, 450],
+      "reaction_ms": [
+        250,
+        450
+      ],
       "aim_error_mult": 1.0,
       "memory_s": 6.0,
       "view_distance_m": 300.0
@@ -33,13 +42,14 @@
     "repath_min_interval_ms": 500
   },
   "combat": {
-    "blind_fire_max_m": 80.0,
+    "blind_fire_max_m": 12.0,
     "turn_rate_deg_s": 400.0,
     "aim_error_base_deg": 0.1,
     "aim_error_per_100m_deg": 0.25,
     "fire_tolerance_deg": 1.5,
-    "crouch_min_m": 60.0,
-    "sprint_min_m": 15.0
+    "crouch_min_m": 35.0,
+    "sprint_min_m": 15.0,
+    "approach_beyond_m": 50.0
   },
   "stuck": {
     "window_s": 5.0,
@@ -65,7 +75,8 @@
       "combat.aim_error_per_100m_deg",
       "combat.fire_tolerance_deg",
       "combat.crouch_min_m",
-      "combat.sprint_min_m"
+      "combat.sprint_min_m",
+      "combat.approach_beyond_m"
     ],
     "calibration_ref": "GAMEDESIGN 20.6 (initial values); ARCHITECTURE 16.3"
   }

@@ -94,7 +94,7 @@ export class Terrain {
 
     // Shared grid mesh + instance buffer.
     const grid = buildGridMesh();
-    const mesh = new Mesh('PH_V-NAT-007_terrain', scene);
+    const mesh = new Mesh('PH_V-NAT-007__terrain', scene);
     const vd = new VertexData();
     vd.positions = grid.positions;
     vd.indices = grid.indices;

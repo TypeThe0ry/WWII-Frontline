@@ -25,7 +25,8 @@ pub struct Config {
     /// Match id (UUID); random when omitted.
     #[arg(long, env = "FRONTLINE_MATCH_ID")]
     pub match_id: Option<String>,
-    /// Number of bots to run (bot subsystem arrives with M0-026).
+    /// Number of soldier bots to host (M0-026), split evenly between the teams; `PlayerId`s count
+    /// down from 127 and are reserved against human joins.
     #[arg(long, env = "FRONTLINE_BOTS", default_value_t = 0)]
     pub bots: u16,
     /// WebSocket port. 0 = ephemeral.

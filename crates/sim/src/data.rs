@@ -16,7 +16,7 @@ mod embedded {
 }
 
 pub use defs::{
-    DataStatus, Faction, LoadoutDef, RespawnRulesDef, RoleDef, RulesDef, VehicleDef, WeaponDef,
+    BotsRulesDef, DataStatus, Faction, LoadoutDef, RespawnRulesDef, RoleDef, RulesDef, VehicleDef, WeaponDef,
 };
 /// SHA-256 (first 8 bytes, little-endian) of the canonicalised `/data` tree. Sent as
 /// `Hello.data_hash`; client and server must agree (ARCHITECTURE 8.2).
@@ -53,6 +53,8 @@ impl GameData {
             vehicles: leak(embedded::VEHICLES_JSON),
             rules: Box::leak(Box::new(RulesDef {
                 respawn: serde_json::from_str(embedded::RESPAWN_JSON)
+                    .expect("embedded data parsed at build time"),
+                bots: serde_json::from_str(embedded::BOTS_JSON)
                     .expect("embedded data parsed at build time"),
             })),
             hash: DATA_HASH,

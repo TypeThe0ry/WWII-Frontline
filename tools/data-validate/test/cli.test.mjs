@@ -13,6 +13,8 @@ const DIRS = { weapon: 'weapons', role: 'roles', loadout: 'loadouts', vehicle: '
 function place(root, kind, srcFile, id) {
   const dest = DIRS[kind]
     ? join(root, DIRS[kind], `${id}.json`)
+    : kind === 'rules' || kind === 'bots'
+    ? join(root, 'rules', kind === 'bots' ? 'bots.json' : 'respawn.json')
     : join(root, 'maps', 'fixture_map', kind === 'map_meta' ? 'meta.json' : 'spawns.json');
   mkdirSync(join(dest, '..'), { recursive: true });
   const doc = JSON.parse(readFileSync(srcFile, 'utf8'));

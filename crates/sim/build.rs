@@ -27,6 +27,7 @@ fn parse_typed(rel: &str, text: &str) -> Result<(), String> {
         "loadouts" if rel.matches('/').count() == 1 => typed!(defs::LoadoutDef),
         "vehicles" if rel.matches('/').count() == 1 => typed!(defs::VehicleDef),
         "rules" if rel == "rules/respawn.json" => typed!(defs::RespawnRulesDef),
+        "rules" if rel == "rules/bots.json" => typed!(defs::BotsRulesDef),
         _ => Ok(()), // maps/, other rules/, ...: hashed only until their schemas land
     }
 }
@@ -70,17 +71,22 @@ fn main() {
             "pub const {konst}: &str = include_str!(concat!(env!(\"OUT_DIR\"), \"/{file}\"));\n"
         ));
     }
-    let respawn = files
-        .iter()
-        .find(|(rel, _)| rel == "rules/respawn.json")
-        .map(|(_, text)| {
-            let v: serde_json::Value = serde_json::from_str(text).expect("validated above");
-            hash::canonical_json(&v)
-        })
-        .unwrap_or_else(|| panic!("data/rules/respawn.json is required"));
-    fs::write(out.join("respawn.json"), respawn).expect("write embedded json");
-    embedded.push_str(
-        "pub const RESPAWN_JSON: &str = include_str!(concat!(env!(\"OUT_DIR\"), \"/respawn.json\"));\n",
-    );
+    for (rel, name, konst) in [
+        ("rules/respawn.json", "respawn.json", "RESPAWN_JSON"),
+        ("rules/bots.json", "bots.json", "BOTS_JSON"),
+    ] {
+        let canon = files
+            .iter()
+            .find(|(r, _)| r == rel)
+            .map(|(_, text)| {
+                let v: serde_json::Value = serde_json::from_str(text).expect("validated above");
+                hash::canonical_json(&v)
+            })
+            .unwrap_or_else(|| panic!("data/{rel} is required"));
+        fs::write(out.join(name), canon).expect("write embedded json");
+        embedded.push_str(&format!(
+            "pub const {konst}: &str = include_str!(concat!(env!(\"OUT_DIR\"), \"/{name}\"));\n"
+        ));
+    }
     fs::write(out.join("data_embedded.rs"), embedded).expect("write data_embedded.rs");
 }

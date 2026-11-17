@@ -56,6 +56,9 @@ export interface PerfApi {
   dump(): PerfDump;
   /** Frame counter, handy for e2e waits. */
   frames(): number;
+  /** M0-025: engine frame id at which each `fire.*` event was emitted / its muzzle flash became visible (same order, last 512). */
+  fireEventFrame?: number[];
+  muzzleFlashVisibleFrame?: number[];
 }
 
 /** Installs `window.__perf`. `getDump` is supplied by the composition root. */

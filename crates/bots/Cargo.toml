@@ -1,6 +1,6 @@
 [package]
 name = "frontline-bots"
-description = "Frontline bots (M0-001 skeleton)"
+description = "Frontline bots: M0 basic soldier bot (M0-026)"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -13,3 +13,11 @@ workspace = true
 [dependencies]
 frontline-sim = { path = "../sim" }
 frontline-protocol = { path = "../protocol" }
+libm = "=0.2.16"
+
+[dev-dependencies]
+serde_json = "1"
+
+[[bench]]
+name = "think"
+harness = false

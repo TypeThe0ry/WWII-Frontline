@@ -515,6 +515,9 @@ impl WorldView for World {
     fn height_at(&self, x: f32, z: f32) -> Option<f32> {
         self.collision().height_at(x, z)
     }
+    fn slope_deg_at(&self, x: f32, z: f32) -> Option<f32> {
+        self.collision().slope_deg_at(x, z)
+    }
     fn team_resources(&self, _team: Team) -> Resources {
         Resources::default() // resources arrive with M1 scoring
     }

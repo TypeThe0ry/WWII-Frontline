@@ -49,7 +49,8 @@
     "aim_error_per_100m_deg": 0.25,
     "fire_tolerance_deg": 1.5,
     "crouch_min_m": 60.0,
-    "sprint_min_m": 15.0
+    "sprint_min_m": 15.0,
+    "approach_beyond_m": 120.0
   },
   "stuck": {
     "window_s": 5.0,

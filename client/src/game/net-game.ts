@@ -17,6 +17,8 @@ export interface NetGameHandle {
   readonly game: GameLoop;
   readonly session: Session;
   readonly sampler: InputSampler;
+  /** The loaded sim-wasm module (data queries for the render side: roleDef / weaponDef / weaponIndex). */
+  readonly wasm: SimWasmModule;
   /** Called by the render loop with the steps granted by its `FixedStepper`. */
   update(steps: number, alpha: number, dtMs: number): void;
   overlayLines(): string[];
@@ -27,7 +29,7 @@ interface WasmPkg extends SimWasmModule {
   default(opts: { module_or_path: string }): Promise<unknown>;
 }
 
-async function loadWasm(base: string): Promise<SimWasmModule> {
+export async function loadWasm(base: string): Promise<SimWasmModule> {
   const mod = (await import(/* @vite-ignore */ `${base}wasm/frontline_sim_wasm.js`)) as WasmPkg;
   await mod.default({ module_or_path: `${base}wasm/frontline_sim_wasm_bg.wasm` });
   mod.init();
@@ -96,6 +98,7 @@ export async function startNetGame(canvas: HTMLCanvasElement, bus: EventBus<Game
     game,
     session,
     sampler,
+    wasm,
     update: (steps, alpha, dtMs) => {
       if (!document.hidden) game.update(steps, alpha, dtMs);
     },

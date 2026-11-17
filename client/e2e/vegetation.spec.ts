@@ -146,7 +146,7 @@ test('impostor vs LOD1 mesh: foreground area at 150 m from 8 azimuths differs <=
     window.__terrain!.pause();
     const v = window.__vegetation!.veg;
     v.isolate(true);
-    v.scene.getMeshByName('PH_V-NAT-007_terrain')!.isVisible = false;
+    v.scene.getMeshByName('PH_V-NAT-007__terrain')!.isVisible = false;
   });
   for (const species of ['tree', 'shrub'] as const) {
     const fov = species === 'tree' ? 0.14 : 0.05; // narrow lens: the object fills a useful part of the frame at 150 m
@@ -297,7 +297,7 @@ test('wind: crowns sway, trunks stay fixed (acceptance: wind in the vertex shade
     window.__terrain!.pause();
     const v = window.__vegetation!.veg;
     v.isolate(true);
-    v.scene.getMeshByName('PH_V-NAT-007_terrain')!.isVisible = false;
+    v.scene.getMeshByName('PH_V-NAT-007__terrain')!.isVisible = false;
     v.probe('tree', 0, 100, 10, 100, 0);
     v.windState.strength = 1.2; // exaggerated so the sway is several pixels at this range
     window.__terrain!.setPose([100, 14, 80], [100, 14, 100]);
@@ -357,7 +357,7 @@ test('WebGPU path (SwiftShader): WGSL foliage + impostor + bake compile and draw
     window.__terrain!.pause();
     const v = window.__vegetation!.veg;
     v.isolate(true);
-    v.scene.getMeshByName('PH_V-NAT-007_terrain')!.isVisible = false;
+    v.scene.getMeshByName('PH_V-NAT-007__terrain')!.isVisible = false;
   });
   let worst = 0;
   let worstIou = 1;

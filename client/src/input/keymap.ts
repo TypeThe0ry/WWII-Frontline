@@ -2,9 +2,9 @@
  * Default key bindings (constants; rebinding is M2-041). `KeyboardEvent.code` based, so they do not
  * depend on the keyboard layout. Mouse buttons use `Mouse0` (left) / `Mouse2` (right).
  *
- * UI_SPEC 5.2 binds sprint to Left Shift, while the task card and GAMEDESIGN 9.1 (sim `AUX_WALK`) make
- * Shift the walk modifier; the task acceptance is explicit, so Shift = walk here and sprint sits on
- * Right Shift until the rebinding UI exists (PLAN_ISSUES PI-023).
+ * UI_SPEC 5.2 is the authority: sprint = Left Shift (held). The walk modifier (`aux` bit 0, GAMEDESIGN 9.1) has no
+ * default key in UI_SPEC, so it is unbound by default and rebindable; the M0 debug key is CapsLock (held)
+ * (PLAN_ISSUES PI-023 ruling; the "Shift = walk" wording of the M0-022 task card is void).
  */
 import { AUX_WALK, BUTTONS, MOVE_MAX } from './buttons';
 
@@ -15,8 +15,8 @@ export const DEFAULT_KEYMAP: Readonly<Record<string, Action>> = {
   KeyS: 'back',
   KeyA: 'left',
   KeyD: 'right',
-  ShiftLeft: 'walk',
-  ShiftRight: 'sprint',
+  ShiftLeft: 'sprint',
+  CapsLock: 'walk', // M0 debug binding only; no UI_SPEC default (rebindable, M2-041)
   KeyC: 'crouch',
   Space: 'jump',
   KeyR: 'reload',

@@ -106,11 +106,21 @@ pub struct LoadedMap {
     pub collision: CollisionData,
     pub spawns: MapSpawns,
     pub chunk_count: usize,
+    /// Patrol points (x, z) of `spawns.json`, in file order (bots, M0-026).
+    pub patrol_points: Vec<[f32; 2]>,
+    /// Map edge length in metres (`meta.crs.size_m`; the loaded chunks' extent when absent).
+    pub size_m: f32,
 }
 
 #[derive(Deserialize)]
 struct SpawnsFile {
     hq: std::collections::BTreeMap<String, HqEntry>,
+    #[serde(default)]
+    patrol_points: Vec<PatrolEntry>,
+}
+#[derive(Deserialize)]
+struct PatrolEntry {
+    pos: [f32; 2],
 }
 #[derive(Deserialize)]
 struct HqEntry {
@@ -246,11 +256,15 @@ pub fn load_map(data_dir: &Path, map: &str) -> Result<LoadedMap, MapError> {
         Some(s) if s > 0.0 => (s * 0.5, s * 0.5),
         _ => ((hq[0].x + hq[1].x) * 0.5, (hq[0].z + hq[1].z) * 0.5),
     };
+    let size_m = (center.0 * 2.0).max(center.1 * 2.0);
+    let patrol_points = spawns_file.patrol_points.iter().map(|p| p.pos).collect();
     Ok(LoadedMap {
         name: map.to_string(),
         collision,
         spawns: MapSpawns { hq, center },
         chunk_count,
+        patrol_points,
+        size_m,
     })
 }
 

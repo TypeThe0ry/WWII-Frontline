@@ -41,7 +41,7 @@ describe('keyboard -> InputCmd mapping', () => {
       expect(Math.min(m.moveX, m.moveZ)).toBeGreaterThanOrEqual(-127);
     }
   });
-  it('Shift = walk (aux bit 0), buttons use the protocol bit positions', () => {
+  it('Left Shift = sprint (UI_SPEC 5.2), CapsLock = walk (aux bit 0, M0 debug key), buttons use the protocol bit positions', () => {
     const s = new InputSampler();
     s.press('ShiftLeft');
     s.press('KeyC');
@@ -49,11 +49,24 @@ describe('keyboard -> InputCmd mapping', () => {
     s.press('Mouse0');
     s.press('Mouse2');
     s.press('KeyR');
-    s.press('ShiftRight');
     const c = s.build(1, 10, 6);
-    expect(c.aux).toBe(AUX_WALK);
-    expect(c.buttons).toBe(BUTTONS.CROUCH | BUTTONS.JUMP | BUTTONS.FIRE | BUTTONS.AIM | BUTTONS.RELOAD | BUTTONS.SPRINT);
+    expect(c.aux).toBe(0);
+    expect(c.buttons).toBe(BUTTONS.SPRINT | BUTTONS.CROUCH | BUTTONS.JUMP | BUTTONS.FIRE | BUTTONS.AIM | BUTTONS.RELOAD);
     expect(c.weaponSlot).toBe(0);
+    s.press('CapsLock');
+    expect(s.build(2, 11, 6).aux).toBe(AUX_WALK);
+    s.release('CapsLock');
+    s.release('ShiftLeft');
+    const d = s.build(3, 12, 6);
+    expect(d.aux).toBe(0);
+    expect(d.buttons & BUTTONS.SPRINT).toBe(0);
+  });
+  it('walk has no default key besides the CapsLock debug binding; Right Shift is unbound', () => {
+    const walkKeys = Object.entries(DEFAULT_KEYMAP).filter(([, a]) => a === 'walk').map(([k]) => k);
+    expect(walkKeys).toEqual(['CapsLock']);
+    expect(DEFAULT_KEYMAP.ShiftRight).toBeUndefined();
+    const sprintKeys = Object.entries(DEFAULT_KEYMAP).filter(([, a]) => a === 'sprint').map(([k]) => k);
+    expect(sprintKeys).toEqual(['ShiftLeft']);
   });
   it('two keys on one action: the action stays held until both are up', () => {
     const km = { ...DEFAULT_KEYMAP, ArrowUp: 'forward' as const };

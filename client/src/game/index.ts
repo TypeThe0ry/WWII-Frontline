@@ -7,4 +7,3 @@ export type { ClockPort, GameLoopOptions, GameStats, NetPort } from './game-loop
 export { GameState } from './state';
 export type { EntityView, LocalView, NetView } from './state';
 export { RECONCILE_THRESHOLD_M, SNAP_DISTANCE_M, Reconciler, RenderSmoother } from './reconcile';
-export { predHash } from './pred-hash';

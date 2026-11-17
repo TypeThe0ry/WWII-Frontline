@@ -5,7 +5,7 @@ import { defineConfig } from '@playwright/test';
 //   pnpm -C client exec playwright test -c playwright.game.config.ts
 export default defineConfig({
   testDir: 'e2e',
-  testMatch: 'game-net.spec.ts',
+  testMatch: ['game-net.spec.ts', 'actors-net.spec.ts'],
   timeout: 90_000,
   workers: 1,
   reporter: [['list']],
