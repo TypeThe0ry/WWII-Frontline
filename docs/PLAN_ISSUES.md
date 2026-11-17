@@ -570,3 +570,13 @@
 - **临时处理**：已按上实现。
 - **裁决（Fable 填写）**：
 
+### PI-038 M1-006b：解码 Worker 已做网格（meshopt）与纹理条目解析，BasisU 转码留给 M1-006c
+- **问题 / 做法**（请 Fable 确认或改写）：
+  1. **已做**：`entry-decode.ts`（网格布局 v1 → 顶点/索引/材质，纹理布局 v1 → KTX2 层数据 + DFD/SGD + `RRRG` 布局标记）、`decode-worker.ts`（Worker 消息处理，Transferable 回传）、`worker-decoder.ts`（按池大小建 Worker 的 `Decoder`，以及同线程 `inlineDecoder` 作测试/无 Worker 回退）。client 新增依赖 `meshoptimizer@1.3.0`（MIT，已在 workspace 中被素材管线使用）。
+  2. **未做（M1-006c）**：KTX2 → BC7/ASTC/ETC2/RGBA 转码需要 BasisU transcoder WASM（或经 Babylon `KhronosTextureContainer2`，需把条目重新拼回 KTX2 文件）；来源与许可证须登记 LICENSES §5，且影响 core 体积（约 0.4 MB br）。需要先定"自带 transcoder"还是"用 Babylon 内置"（后者默认从 CDN 取 WASM，与自托管/离线策略冲突）。裁决前 `loadTexture` 返回已解析的 `DecodedTexture`。
+  3. **Playwright 指标**（长任务 = 0、100 MB 冷热启动）仍未做：需要参考机与 ≥100 MB 样例包，并入 H-021/H-102 之后。
+- **证据**：`client/src/render/assets/{entry-decode,decode-worker,worker-decoder}.ts`、`decode.test.ts`（4 项；网格往返：位置/UV/索引/材质/纹理引用逐项一致）。
+- **受影响任务**：M1-006c（转码）、M1-042（PBR 材质消费 `DecodedMesh`/`DecodedTexture`）、M1-049。
+- **临时处理**：已按上实现。
+- **裁决（Fable 填写）**：
+
