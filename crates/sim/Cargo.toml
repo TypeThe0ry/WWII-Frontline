@@ -77,3 +77,7 @@ harness = false
 [[bench]]
 name = "explosion"
 harness = false
+
+[[test]]
+name = "health_vitals"
+required-features = ["test-util"]

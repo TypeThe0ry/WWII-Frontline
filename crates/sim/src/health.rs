@@ -38,6 +38,8 @@ pub enum LifeState {
         fatigue: u8,
         /// Ticks the give-up button has been held.
         give_up_ticks: u16,
+        /// A bandage stopped the bleeding (no hp is restored).
+        stable: bool,
     },
     Dead {
         /// Tick at which the lethal hit landed.

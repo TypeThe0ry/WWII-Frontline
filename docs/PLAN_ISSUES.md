@@ -758,3 +758,13 @@
 - **做法**：①`LifeState` 新增 `Downed{t_down, killer, weapon, fatigue, give_up_ticks}`，原 `Dead` 即 KIA；倒地血量就是 `Health.hp`（40），流血与再受击都扣它，≤0 即 KIA。`is_alive()` 仍只指 Alive，新增 `is_downed()`/`is_dead()`；倒地者不能开火/近战/投掷/移动（爬行 0.6 m/s 在 016b），但保留输入以便放弃与被救。②转移：Alive 受致命击 → 超杀（hp≤−60）、爆头子弹、爆炸/载具、近战背刺 → Dead；否则 → Downed。Downed 受击 hp≤0 → Dead（`Finish`）。③流血 40 hp/80 s（0.5 hp/s），每次 120 s 窗口内的被救起使下次流血时长 −20 s，下限 20 s。④放弃：倒地满 5 s 后按住 `RELOAD` 3 s → Dead，无归属；输入键为实现者选定。⑤救起：`Medic` 标记（`World::set_medic`；玩家目前没有角色字段，兵种系统随 M1-020/loadout 补）按住 `USE`，目标是 1.5 m 内、有地形视线的最近倒地队友，5.0 s（150 tick）；松手后 3 s 内续上进度，之后重置；救起者 hp 损失 ≥20 重置；被救起者 hp 40、2 s 不能开火。⑥归属：`SimEvent::KillCredit{kind: Down|Finish|Direct, assists, team_kill}`，助攻 = 15 s 内对该受害者累计 ≥25 hp 的其他敌方玩家；友军击倒/击杀记 `team_kill`；流血耗尽/放弃无归属。保留 `SimEvent::Kill` = 进入 Dead。⑦数值暂为 `medical.rs` 常量，未进 `/data/health.json`（schema/构建管线改动留给后续）。⑧golden 重定：`damage_death` skirmish、`weapon_duel` 事件序列（致命击现在先倒地，多出事件）；M0 测试里"击杀所需发数"改为数到倒地事件。⑨`players()` 视图仍只列 Alive（倒地者不在内），bots 暂不会去处决/救助。
 - **受影响任务**：M1-017、M1-019、M1-025、M1-038、M1-040、M1-056。
 - **裁决（Fable 填写）**：
+
+### PI-056 M1-016b：绷带/自然恢复/处决/摔落/爬行的实现取舍
+
+- **状态**：resolved（实现者裁决，待 Fable 复核）
+- **类别**：sim
+- **提出者 / 日期**：M1 线程 / 2026-11-17
+- **做法**：①`USE` 键一键多用：持 `USE` 时，医疗兵身边有倒地队友（1.5 m）→ 救起（`medical`）；否则医疗兵给最近的受伤/流血队友绑绷带（2.5 s，+40 至 100，止血）；非医疗兵遇倒地队友 → 稳定（2.5 s，止血不回血，`Downed.stable`，不再流血）；身边无人可救 → 给自己绑（3.5 s，+25 至 75，止血）。绷带数：普通 2、医疗兵 6，用尽无效，死亡重置。②自然恢复：hp<60 且 10 s 内未受伤、未在流血 → +1 hp/s，至 60 封顶。③流血：单次伤害 ≥30 或爆炸且仍存活 → 流血 1 hp/s，到 5 hp 为止（不致死），绷带止血。④处决：对倒地敌人的近战命中不造成伤害，开始 1.2 s 处决（攻击者不能移动/冲刺/跳跃）；攻击者 hp 下降、目标不再倒地或相距 >2.5 m 则取消；完成时目标 hp 清零（`Melee` 归属 Finish）。⑤摔落：滞空峰值到落地 >3 m，每米 12 hp，≥12 m 直接 KIA（超杀同理）；伤害进 `HitLog`（weapon 0xFD，shooter=自己，无归属），不受友伤倍率。⑥爬行：倒地强制俯卧，速度 `crawl_mps`（0.6）。⑦推迟：越界/溺水/载具碾压（待地图水体、载具 M2）、`/data/health.json`（数值仍在 `medical.rs` 常量）、医疗兵绷带与 loadout 的衔接（M1-020）。⑧测试辅助：`World::{debug_set_hp, debug_teleport, debug_down}`（feature `test-util`）。⑨golden 重定：`determinism_basic`、`damage_death` skirmish、`weapon_duel`（倒地后爬行俯卧，站姿瞄准打不中，射手改为见倒地即停）；`health_m1` 的"补枪/疲劳"测试改瞄俯卧高度/等站起；重复运行稳定。
+- **受影响任务**：M1-017、M1-020、M1-025、M1-038、M1-040。
+- **裁决（Fable 填写）**：
+

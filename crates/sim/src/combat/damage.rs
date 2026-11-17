@@ -19,6 +19,8 @@ pub enum DamageKind {
     Melee,
     Vehicle,
     Tank,
+    /// Falling (M1-016b); never friendly fire.
+    Fall,
 }
 
 /// Friendly-fire coefficient per damage kind (GAMEDESIGN 6.6; 【待调参】). Self damage from your
@@ -28,7 +30,7 @@ pub fn ff_mult(kind: DamageKind) -> f32 {
         DamageKind::Bullet | DamageKind::Tank => 0.5,
         DamageKind::Explosion => 0.7,
         DamageKind::Melee => 0.0,
-        DamageKind::Vehicle => 1.0,
+        DamageKind::Vehicle | DamageKind::Fall => 1.0,
     }
 }
 
