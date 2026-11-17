@@ -207,7 +207,14 @@ impl Arena {
                 } else {
                     std::f32::consts::PI
                 };
-                self.add_bot(map, id, team, hx + r * libm::cosf(a), hz + r * libm::sinf(a), yaw);
+                self.add_bot(
+                    map,
+                    id,
+                    team,
+                    hx + r * libm::cosf(a),
+                    hz + r * libm::sinf(a),
+                    yaw,
+                );
             }
         }
     }
