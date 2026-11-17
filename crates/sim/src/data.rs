@@ -16,8 +16,8 @@ mod embedded {
 }
 
 pub use defs::{
-    AmmoDef, BotsRulesDef, DataStatus, ExplosiveDef, Faction, GadgetDef, LoadoutDef, MeleeDef,
-    RespawnRulesDef, RoleDef, RulesDef, VehicleDef, WeaponDef,
+    AmmoDef, BotsRulesDef, DataStatus, ExplosiveDef, Faction, GadgetDef, LoadoutDef, MaterialDef,
+    MeleeDef, RespawnRulesDef, RoleDef, RulesDef, VehicleDef, WeaponDef,
 };
 /// SHA-256 (first 8 bytes, little-endian) of the canonicalised `/data` tree. Sent as
 /// `Hello.data_hash`; client and server must agree (ARCHITECTURE 8.2).
@@ -33,6 +33,8 @@ pub struct GameData {
     pub explosives: &'static [ExplosiveDef],
     pub melee: &'static [MeleeDef],
     pub ammo: &'static [AmmoDef],
+    /// Penetration materials (`data/materials/`, M1-012).
+    pub materials: &'static [MaterialDef],
     pub gadgets: &'static [GadgetDef],
     pub roles: &'static [RoleDef],
     pub loadouts: &'static [LoadoutDef],
@@ -57,6 +59,7 @@ impl GameData {
             explosives: leak(embedded::EXPLOSIVES_JSON),
             melee: leak(embedded::MELEE_JSON),
             ammo: leak(embedded::AMMO_JSON),
+            materials: leak(embedded::MATERIALS_JSON),
             gadgets: leak(embedded::GADGETS_JSON),
             roles: leak(embedded::ROLES_JSON),
             loadouts: leak(embedded::LOADOUTS_JSON),
@@ -85,6 +88,9 @@ impl GameData {
     }
     pub fn ammo_def(&self, id: &str) -> Option<&'static AmmoDef> {
         self.ammo.iter().find(|a| a.id == id)
+    }
+    pub fn material(&self, id: &str) -> Option<&'static MaterialDef> {
+        self.materials.iter().find(|m| m.id == id)
     }
     pub fn role(&self, id: &str) -> Option<&'static RoleDef> {
         self.roles.iter().find(|r| r.id == id)
@@ -163,7 +169,7 @@ mod tests {
         let d = GameData::embedded();
         assert_eq!(d.explosives.len(), 5);
         assert_eq!(d.melee.len(), 6);
-        assert_eq!(d.ammo.len(), 3);
+        assert_eq!(d.ammo.len(), 6);
         for e in d.explosives {
             // the typed gameplay variant agrees with the declared class
             let ok = matches!(

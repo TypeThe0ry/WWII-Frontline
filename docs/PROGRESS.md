@@ -498,3 +498,7 @@ blocked / in-progress / todo：无。M0 的 33 个任务全部已提交（M0-033
 - 新增 `movement/vault.rs`、`movement/lean.rs`，`PlayerAuthState` 80 B；测试 `crates/sim/tests/movement_vault.rs`（5 项）；数据 15 项进 role（schema 同步）。
 - 实测：翻越 24 tick（±1）、攀爬 42 tick（±1）、耗体力 10/20；1.29/1.31/1.81 m 分别翻越/攀爬/拒绝；探身 5 tick 到位；趴姿窥视 +0.15 m；散布 ×1.10。
 - 余项：参考机基准、headless 回放对比；见 PI-049。
+
+### M1-012 弹道细化与穿透 — partial — 2026-11-17 — 提交见 git log
+- 新增 `crates/sim/src/ballistics/`（积分、材质、穿透、跳弹）、`data/materials/`（12 种）与 3 个弹药文件；`crates/sim/tests/ballistics_pen.rs`、`benches/projectile_step.rs`。
+- 实测见 `tasks/STATUS.md`；余项：接入命中结算（M1-014）、参考机基准、真实建筑层来源；见 PI-050。

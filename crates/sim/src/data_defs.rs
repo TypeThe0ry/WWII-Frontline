@@ -352,6 +352,34 @@ pub struct AmmoDef {
     pub meta: Meta,
 }
 
+/// Surface material of the penetration table (`data/materials/`, M1-012).
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct MaterialGameplay {
+    /// Penetration points spent per millimetre.
+    pub cost_per_mm: f64,
+    /// A layer thicker than this always stops the bullet (0 = no cap).
+    pub stop_mm: f64,
+    /// Layers thinner than this are ignored (water < 0.5 m).
+    pub min_mm: f64,
+    /// Direction change on exit, +- degrees.
+    pub deflect_deg: f64,
+    /// May ricochet at shallow angles.
+    pub ricochet: bool,
+    pub sound_class: String,
+    pub impact_fx_class: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct MaterialDef {
+    pub id: String,
+    pub name_key: String,
+    pub gameplay: MaterialGameplay,
+    #[serde(rename = "_meta")]
+    pub meta: Meta,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum GadgetClass {

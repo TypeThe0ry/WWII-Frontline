@@ -1,0 +1,144 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://frontline.invalid/schemas/material.schema.json",
+  "title": "Surface material for penetration (GAMEDESIGN 6.7; M1-012)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "name_key",
+    "gameplay",
+    "_meta"
+  ],
+  "properties": {
+    "id": {
+      "$ref": "#/$defs/slug"
+    },
+    "name_key": {
+      "$ref": "#/$defs/i18n_key"
+    },
+    "gameplay": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "cost_per_mm",
+        "stop_mm",
+        "min_mm",
+        "deflect_deg",
+        "ricochet",
+        "sound_class",
+        "impact_fx_class"
+      ],
+      "properties": {
+        "cost_per_mm": {
+          "$ref": "#/$defs/pos"
+        },
+        "stop_mm": {
+          "$ref": "#/$defs/nonneg"
+        },
+        "min_mm": {
+          "$ref": "#/$defs/nonneg"
+        },
+        "deflect_deg": {
+          "$ref": "#/$defs/nonneg"
+        },
+        "ricochet": {
+          "type": "boolean"
+        },
+        "sound_class": {
+          "$ref": "#/$defs/slug"
+        },
+        "impact_fx_class": {
+          "$ref": "#/$defs/slug"
+        }
+      }
+    },
+    "_meta": {
+      "$ref": "#/$defs/meta"
+    }
+  },
+  "$defs": {
+    "slug": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*$"
+    },
+    "i18n_key": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*(\\.[a-z0-9_]+)+$"
+    },
+    "pos": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "nonneg": {
+      "type": "number",
+      "minimum": 0
+    },
+    "unit01": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "meta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "tunable"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "initial",
+            "reviewed",
+            "measured"
+          ]
+        },
+        "tunable": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "calibration_ref": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "unverified": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "deviation_reason": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "source": {
+      "oneOf": [
+        {
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object"
+          }
+        }
+      ]
+    }
+  }
+}
