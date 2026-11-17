@@ -556,3 +556,17 @@
 - **受影响任务**：M1-006（消费 manifest；`entry` 为 `.fpak` 逻辑 ID）、M1-035（区块命名）、M1-054（core size-report）、M1-064（按类别汇总）。
 - **临时处理**：已按上实现。
 - **裁决（Fable 填写）**：
+
+### PI-037 M1-006：加载器先交付核心逻辑（partial），Worker 内 KTX2/Meshopt 解码与 Playwright 指标拆为 M1-006b
+- **问题 / 做法**（请 Fable 确认或改写）：
+  1. **拆分**：任务卡自己建议超规模时拆 `M1-006b`。本次（M1-006）交付与环境无关的核心：`fpak-reader`（Range/200 降级/index crc）、`manifest.resolve`、`CacheLayer`（内存 LRU + OPFS/Cache API 探测与自动降级）、`WorkerPool`（优先级/取消/池大小 `min(4, cores-2)`）、`UploadScheduler`（1.5 ms / 2 MB 每帧）、占位命名 `PH_{reqId}`/`PH_{reqId}__{instance}`、静音回退、去重、重试、节流进度。**未交付（M1-006b）**：`decode-worker.ts`（BasisU transcoder WASM + meshopt 解码，设备格式选择）、Playwright 长任务/冷热启动/100 MB 样例指标（验收 1、4 的浏览器部分）、OPFS `FileSystemSyncAccessHandle`（现用异步 `createWritable`，Safari 旧版本可能不支持，失败即降级内存）。解码默认是恒等解码器（`Decoder` 注入点），因此现在返回的 `MeshData` 仍是 `.fpak` 条目原始字节。
+  2. **重试语义**：「重试 3 次（200/400/800 ms）」解释为 1 次首发 + 3 次重试 = 共 4 次尝试，失败后返回占位。404 也重试（任务卡未区分）。
+  3. **占位未被缓存**：占位结果不进入会话级去重表，下一次请求会重试，避免一次网络抖动永久占位。
+  4. **缓存键**：用条目 `sha256`（manifest 提供），内容寻址，跨版本安全；`pak` 路径本身已内容哈希。
+  5. **测试位置**：沿用 client 的 `src/**/*.test.ts`（vite 配置不改），任务卡的 `client/test/assets/*.test.ts` 不使用。
+  6. **与 M1-005 manifest 的对应**：`entry` 为 `.fpak` 逻辑 ID（`x@lod0`），音频 `x@opus|aac`；`manifest.ts` 按 tier 过滤。
+- **证据**：`client/src/render/assets/*`，`pnpm -C client test` 全绿（新增 20 项），`tsc`/`eslint` 干净。
+- **受影响任务**：M1-006b（解码 Worker + 浏览器指标）、M1-049（区块流式用 `loadBytes`/`loadMesh` + 取消）、M1-062（`loadAudioBytes`）。
+- **临时处理**：已按上实现。
+- **裁决（Fable 填写）**：
+

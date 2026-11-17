@@ -442,6 +442,12 @@ blocked / in-progress / todo：无。M0 的 33 个任务全部已提交（M0-033
 - 遗留：`core` size-report 缺失；CI 墙钟待 PR 实跑；PI-036 待 Fable 确认。
 - 影响：M1-006 按 manifest 的 `entry`（`.fpak` 逻辑 ID）+ `offset/bytes` 取条目；M1-035 区块命名须与 bundle 通配一致。
 
+### M1-006 客户端：fpak 加载、解码 Worker 与缓存 — partial — 2026-11-17 — 提交见 git log
+- 新增 `client/src/render/assets/`：浏览器 `fpak-reader`（Range + 200 降级 + index crc）、`manifest`、`cache`（内存 LRU + OPFS/Cache API 自动降级）、`worker-pool`、`upload-scheduler`、`placeholder`、`index`（`AssetLoader`：去重/重试/取消/节流进度/静音回退）。
+- 实测：client vitest 新增 20 项全绿，tsc/eslint 干净。
+- 遗留：Worker 内 KTX2/Meshopt 解码与 Playwright 浏览器指标拆 M1-006b（PI-037）。
+- 影响：M1-049 / M1-062 通过 `loadBytes|loadMesh|loadAudioBytes` + `LoadToken` 取消使用。
+
 ## 8. 如何维护本文件
 
 - **执行者**：收工前，在"任务日志"末尾追加本任务条目（`### 任务 ID 标题 — 状态 — 日期 — 提交 abc1234`，3–6 行：做了什么、关键实测数字、遗留问题/需人工事项、对后续任务的影响）；写入前重新读取文件末尾（并行执行者可能同时追加），只追加、不改别人的条目。数字必须来自实测，查不到写"未记录"。同时更新 `tasks/STATUS.md` 自己那一行。
