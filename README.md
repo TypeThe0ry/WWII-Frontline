@@ -11,6 +11,7 @@ A browser-based, server-authoritative WWII multiplayer combined-arms shooter (Ru
 - `assets/` - `incoming/` (manual, gitignored) and `processed/` (generated, gitignored)
 - `docs/` - design and architecture documents; `tasks/` - task cards and `STATUS.md`
 - `LICENSES.md` - third-party asset/font license register
+- Current progress: [docs/PROGRESS.md](docs/PROGRESS.md) (overview and task log) and [tasks/STATUS.md](tasks/STATUS.md) (per-task status and measurements)
 
 ## Build and test
 

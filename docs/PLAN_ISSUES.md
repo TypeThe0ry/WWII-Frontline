@@ -51,7 +51,7 @@
 
 ## 3. 条目列表
 
-（暂无条目。首个条目编号为 `PI-001`。）
+> 编号核对（2026-11-17）：当前 PI-001 至 PI-020 无重复、无缺号；PI-011 的条目位于 PI-012 之后（登记顺序所致，编号未重排）；PI-008 原误编为第二个 PI-007，已更正为 PI-008，其内容未变。新增条目前先看本文件最大 PI 编号再 +1，写入前重新读取文件末尾。
 
 ### PI-001 protocol M0 接口细化：Welcome 字段、InputBundle 编码与 FireCmd.origin_hint
 
@@ -63,7 +63,7 @@
 - **建议方案**：Fable 把上述位宽写回 ARCHITECTURE §6.8.1/§6.8.2 的"变更说明"；M1 若实测鼠标 yaw 变化常超 ±127 码，可把小差分位宽从 8 改为 10 bit（需升 PROTOCOL_VERSION 前完成，M0 期间无兼容负担）。
 - **受影响任务**：M0-006、M0-014、M0-016、M0-018（使用这些编码）。
 - **临时处理**：按上述实现并以 golden bytes 固定（crates/protocol/tests/golden/）。
-- **裁决（Fable 填写）**：
+- **裁决（Fable 填写）**：见下方总控裁定（resolved，2026-11-17）。
 - **裁定（总控）**：采纳全部细化项：Welcome 增加 `data_hash`/`client_tick_offset`；InputBundle 的差分位宽；`move_x/move_z == -128` 判非法；C0 `msg_type` 双向共用编号、InputBundle 不写 `msg_type`；`FireCmd.origin_hint` 米制含义留到 M1。唯一修改：**pitch 量化由 8 bit 改为 9 bit**（8 bit 最大误差 0.353° 超出 0.35° 阈值）。M0-006 落实：新增 `quant::PITCH_BITS_EVENT = 9`，用于 `Shot` 事件 `dir_pitch`（原 §6.8.4 的 pitch8，是 M0 中唯一的 8 bit pitch）；实体快照 pitch 仍为 ARCHITECTURE §6.5.2 的 6 bit（远端玩家外观用，非瞄准关键）。InputBundle 的 pitch 是 i16 + 8 bit 小差分（非量化），无需调整；重测典型 3 条走动输入 InputBundle = 29 B（≤30），最坏 49 B，golden 无变化。
 
 ### PI-002 文档冲突：数据字段命名（ID 与单位后缀）以 GAMEDESIGN §0.3 / §6.4–6.6 口径统一
@@ -104,7 +104,7 @@
 
 ### PI-005 渲染：Babylon 8.56 compute 需自写薄封装（Hi-Z 逐 mip 视图/深度纹理绑定/indirect draw）；无头 WebGPU 无法 present
 
-- **状态**：open
+- **状态**：resolved
 - **类别**：渲染/性能
 - **提出者 / 日期**：M0-020 / 2026-11-17
 - **问题**：E0-6 试验（`reports/m0/compute-feasibility.md`）显示：①`ComputeShader.setStorageTexture` 不支持指定 mip level，Hi-Z 金字塔只能每级一张纹理，或自写封装；②深度纹理以 `texture_depth_2d` 绑定到 compute、`drawIndexedIndirect` 驱动 Babylon 网格（ARCH §9.7 Hi-Z + indirect draw）、TAAU 抖动/运动向量/RTT ping-pong 接入均未验证；③本机（无 GPU）的 SwiftShader WebGPU 适配器一 present 画布就丢失 Dawn 实例（裸 WebGPU 即复现），CI/容器里只能用测试 shim 离屏渲染，无法做 WebGPU 路径的像素校验与真实帧时间。
@@ -112,22 +112,22 @@
 - **建议方案**：M1 渲染任务（Hi-Z/froxel/TAAU）开工前在参考机（H-021）各做 ≤ 1 天 spike（缺口 2/3/5）；Hi-Z 提前规划"自写薄封装"工作量；WebGPU 视觉回归（M2-050）需 GPU runner 或参考机。
 - **受影响任务**：M0-020（E0-6 结论）、M0-030、M1-043/044、M2-032、M2-050。
 - **临时处理**：仅验证数据通路；WebGPU 帧率/画面类验收标"需在参考机上测"。
-- **裁决（Fable 填写）**：
+- **裁决（Fable 填写）**：总控裁定（2026-11-17 resolved）：Babylon 的 WebGPU compute 用自写薄封装（client/src/render 内）；逐 mip 视图、深度纹理绑定、indirect draw 留到各自用到的任务里验证。本机 WebGPU 只有 SwiftShader 软件适配器，present 画布会丢失 Dawn 实例：e2e 通过 client/e2e/webgpu-swiftshader-shim.js 把输出换成离屏纹理（WebGPU 路径无像素校验）；像素/截图校验走 WebGL2 路径。真 GPU 的验收项标"需在参考机上测（H-021）"，复测入口 `/?renderer=webgpu&smoke=compute&debug=1`。　文档回写：未记录。
 
 ### PI-006 FixedStepper 步长常量取 1000/30 而非字面 33.333
 
-- **状态**：open
+- **状态**：resolved
 - **类别**：文档冲突
 - **提出者 / 日期**：M0-020 / 2026-11-17
 - **问题**：任务文件写 `step_ms=33.333`，ARCH §6.1 写 `dt = 1/30 s = 33.333 ms`。字面 33.333 与 30 Hz 每小时漂移约 0.3 tick，故实现用 `1000/30`（约 33.3333…），构造参数仍可覆盖。验收（`advance(100)=3`、`advance(1000)=5` 且 clamp+1、1 h 随机 dt 偏差 ≤ 1）均已通过；内部带 1e-6 ms 容差避免 `3*(1000/30)` 浮点误差少算一步。
 - **建议方案**：接受。
 - **受影响任务**：M0-022。
 - **临时处理**：按此实现。
-- **裁决（Fable 填写）**：
+- **裁决（Fable 填写）**：总控裁定（2026-11-17 resolved）：固定步长取 1000/30 ms。　文档回写：未记录。
 
 ### PI-007 数据 schema 细化：weapon.part_mult.pelvis（可选）与 weapon.fx 块
 
-- **状态**：open
+- **状态**：resolved
 - **类别**：协议/数据
 - **提出者 / 日期**：M0-008 / 2026-11-17
 - **问题**：GAMEDESIGN §6.6 部位倍率含“盆骨/下腹 ×0.9”，M0-008 要求写入 `part_mult`，但 M0-004 的 weapon schema 的 `part_mult` 只有 head/neck/torso/limb；任务 M0-008 还要求 `fx{muzzle_flash_ms, tracer}`，schema 无此块。
@@ -135,22 +135,22 @@
 - **建议方案**：接受（均为可选字段，向后兼容）。`pelvis` 缺省时 sim 应回退到 `torso` 倍率或 0.9（由 M0-012 在读取处决定并写测试）；`fx` 仅供表现层，sim 逻辑不得读取。
 - **受影响任务**：M0-012（伤害结算读取 pelvis）、M0-025（曳光走客户端调试开关）。
 - **临时处理**：按此实现。
-- **裁决（Fable 填写）**：
+- **裁决（Fable 填写）**：总控裁定（2026-11-17 resolved）：weapon schema 的可选字段 `part_mult.pelvis` 与 `fx{...}` 保留；`pelvis` 缺省时回退为躯干（torso）倍率。　文档回写：未记录。
 
 ### PI-008 M0-009 细化：远景环与碰撞区块一并产出；meta/spawns schema 增加可选字段；二进制不入库
 
-- **状态**：open
+- **状态**：resolved
 - **类别**：范围细化 / 数据格式
 - **提出者 / 日期**：M0-009 / 2026-11-17
 - **问题**：①INDEX 只列 257² 高度图与 meta.json，本任务按任务卡一并产出 `heightmap_far_8m.r16`、`chunks/b_*`、`chunks/c_*`。②为写入 `generator`/`dequant`/`layout`/`chunks`，`map_meta.schema.json` 新增可选字段；`spawns.schema.json` 的 `hq.*` 新增可选 `y_m`、顶层新增可选 `patrol_points[{id,pos,y_m}]`（均为可选，sim 尚未解析 maps，故无需改 `data_defs.rs`）。③`units.mjs` 的无量纲白名单追加 `seed`。④总控约定"大二进制不入 git"：`*.r16` 与 `chunks/` 加入 .gitignore，仅 `meta/spawns/manifest.json` 入库（manifest 含各二进制的字节数与 SHA-256，`validate` 会核对）；重生成命令见 DEVELOPING.md。因此 M0-010/M0-023 在干净检出上须先运行重生成命令（`DATA_HASH` 只含 .json，不受二进制影响）。⑤M0 的 meta.crs 对程序化地形是占位（epsg 32630、原点 0,0）；`far_ring` 与近景共用同一 hmin/hmax（整数米，覆盖两者）。⑥spawns 的 hq 键沿用 schema 的 `US`/`GER`（大写），与"数据里 faction 小写"约定不一致，仅因既有 schema 如此。
 - **建议方案**：接受；若希望二进制入库（~2.4 MB），删除 .gitignore 末尾两行即可。
 - **受影响任务**：M0-010、M0-023、M0-004（schema）。
 - **临时处理**：按此实现。
-- **裁决（Fable 填写）**：
+- **裁决（Fable 填写）**：总控裁定（2026-11-17 resolved）：地形二进制不入库，干净检出先运行 `PYTHONPATH=tools/map-pipeline python3 -m map_pipeline m0 --seed 1 --out data/maps/m0`（约 1 s，见 DEVELOPING.md）；约定 x 东、z 北，数组行=z、列=x，`h = hmin + u16/65535*(hmax−hmin)`；map_meta / spawns 的新增可选字段保留。　文档回写：未记录。
 
 ### PI-009 IBM Plex 带 Reserved Font Name "Plex"：子集化/WOFF2 产物不能沿用原名（M0-003）
 
-- **状态**：open
+- **状态**：resolved
 - **类别**：许可证 / 素材
 - **提出者 / 日期**：M0-003 / 2026-11-17
 - **问题**：IBM Plex 的 LICENSE.txt 首行为 "Copyright © 2017 IBM Corp. with Reserved Font Name Plex"。OFL FAQ 2.6 称子集化属修改，2.2 称格式转换一般属修改，修改版不得使用 RFN（2.7 仅在功能等价时例外）。UI_SPEC §2.3 要求子集化 Plex Sans/Mono 并以原名提供。Noto Sans SC 的 RFN 为 "Source"，族名不含该词，无冲突；Barlow Semi Condensed 无 RFN。
@@ -158,11 +158,11 @@
 - **建议方案**：A）子集产物改族名（name 表与 CSS 均不含 Plex），保留许可证文本（推荐，零沟通成本）；B）不子集化，直接用 IBM 官方 WOFF2（体积可能超预算）；C）向 IBM 取书面许可。另建议 LICENSES §2 新增处理码 `SUBSET`（子集化）与 `RENAME`（改族名），当前只能用 `CONVERT`。
 - **受影响任务**：M1-053、M1-054。
 - **临时处理**：台账 PENDING，不入库任何 Plex 子集产物。
-- **裁决（Fable 填写）**：
+- **裁决（Fable 填写）**：总控裁定（2026-11-17 resolved）：采用方案 A——IBM Plex 的子集/WOFF2 产物改族名（不含保留字 "Plex"，用 `Frontline UI Sans` / `Frontline UI Mono`；CSS 变量与 font-family 引用这两个名字）；Noto Sans SC 子集产物的 name 表不得出现 "Source"。LICENSES.md 的 allowed_processing 增加处理码 `SUBSET`、`RENAME`（由 M1-053 落实并把 Plex 两行转 OK）。　文档回写：未记录。
 
 ### PI-010 snapshot 位宽与基线语义细化（M0-006）
 
-- **状态**：open
+- **状态**：resolved
 - **类别**：协议/数据
 - **提出者 / 日期**：M0-006 / 2026-11-17
 - **问题**：ARCHITECTURE §6.5.1/§6.5.2 的快照布局有若干未定细节，M0-006 作如下细化（均写在 `crates/protocol/src/snapshot/*` 模块文档里，golden bytes 固定）：(1) 头部 `flags(4b)` 前移到 `type` 之后（读者须先知道 tick 是 32 还是 16 bit）；flags = FULL_TICK / CRC / HAS_SELF / HAS_BASELINE；`baseline_tick_delta` 存 `delta-1`（5 bit 表示 1..32），故 ack 落后 32 tick 仍可 delta，33 起全关键帧。16 bit tick 取"离解码器最新 tick 最近的值"，仅在客户端已 ack 过之后使用。(2) 一个包只引用**一个**基线 tick（该包内被 ack 的最新快照）；只有"在那一包里出现过"的实体才发 delta，其余发关键帧——比 §6.5.2 的"每实体基线 tick"简单，且丢包下编解码端天然一致（实测 30% 丢包 60 s 0 次 MissingBaseline）。AOI 若让实体隔包出现，会多发关键帧（12.5 B vs 4–6 B）：M0-019 应尽量让近/中景实体每包都出现。(3) 记录类型：`id:8` 后 1 bit `1`=delta（后随 `field_mask:8`）、`01`=关键帧、`00`=移除（`removed_ids`）；mask 位 7 为 near 标志（rot 宽度）、位 2 vel 保留（M0 置位判非法）。(4) 位置差分大小类按 |步数| `<32/<256/<2048/其余(绝对值)` 对应 `6/9/12 bit/绝对 16 bit`（x、z 共用一个类；y 单独，绝对 13 bit）；原文 `<8/<64/<512` 与 6/9/12 bit 不自洽，已改。(5) 远景记录 yaw 8 bit、**不发 pitch**（保持基线值）。(6) EntityState：yaw 为 10 bit 码、pitch 为 6 bit 码、anim<16、stance<8、weapon<64；id 为 u8（与 EntityId u16 的差异见 M0-005）。(7) self_state：ammo_in_mag 8、ammo_reserve 12、stamina 6、suppression 4、cooldown 8，pos_corr 标签 4 bit（0=ok，1=后随 45 bit 位置）。(8) 事件类型码 Shot=1/Impact=2/HitConfirm=3/DamageDir=4（5 bit）；位置类字段为原始 14 bit 码，米制含义同 origin_hint 留 M1。(9) CRC-16/CCITT-FALSE（0x1021，init 0xFFFF），大端附在末尾。
@@ -170,11 +170,11 @@
 - **建议方案**：Fable 把上述写回 ARCHITECTURE §6.5/§6.8.4 的"变更说明"。
 - **受影响任务**：M0-014、M0-019、M0-016、M0-018、M0-027（使用快照编解码）。
 - **临时处理**：按此实现。
-- **裁决（Fable 填写）**：
+- **裁决（Fable 填写）**：总控裁定（2026-11-17 resolved）：一个快照包只引用一个基线 tick，只有在该基线包里出现过的实体才发 delta，其余发关键帧——所以 AOI（M0-019）应让近/中景实体每包都出现，避免隔包出现导致反复发关键帧；远景记录只发 yaw 8 bit、不发 pitch；位置差分大小类阈值 32/256/2048 步；基线环 32 tick，超出即全关键帧。快照实测：近景 delta 4–6 B/记录、关键帧 12.5 B/记录、40 实体包约 282 B。模糊测试：`cargo +nightly fuzz run <target> -- -max_total_time=60`（crates/protocol/fuzz 为独立 workspace）。　文档回写：未记录。
 
 ### PI-012 M0-031：weapon.historical._source 改为结构化数组；_meta 增加 unverified / deviation_reason；M1 实用射速 40 → 24
 
-- **状态**：open
+- **状态**：resolved
 - **类别**：数据格式细化 / 史实数值差异
 - **提出者 / 日期**：M0-031 / 2026-11-17
 - **问题**：①任务要求 `historical._source` 为结构化数组：`data/schemas/weapon.schema.json` 改为 `string | source_record[]`（`initial` 数据仍可写字符串），`_meta` 新增可选 `unverified[]`、`deviation_reason{}`；`crates/sim/src/data_defs.rs` 同步（`HistSource` untagged 枚举、`Meta.unverified/deviation_reason`、`SourceRecord`）。新规则 `tools/data-validate/rules/historical.mjs`（`hist-source-required`，status=reviewed/measured 时强制）。vehicle schema 尚未改（M3-051 做）。②数值差异：`us_m1_garand.historical.rate_of_fire_rpm_practical` 40 → 24（FM 23-5 Ch.1 par.4 的 16-24 发/分瞄准射击；GAMEDESIGN §6.2 的 40 出自记忆）；新增 `effective_range_m` = 460（FM 23-5）。GAMEDESIGN §6.2 / ARCHITECTURE §8.5.1 示例中的 853 与 760 经核对一致或未被推翻（853 有 FM 23-5 支持；Kar98k 760 未能核实，二手来源有 755/760/745）。`gameplay` 数值一律未改。③来源争议需人类裁决：Kar98k 有效射程（TM-E 30-451 约 732 m vs 二手 500 m 铁瞄）；FM 23-5 转写页未标版次，为战后版；Kar98k 的 s.S. 弹种名与初速/射速无一手来源（HDv/Merkblatt、Hogg、博物馆馆藏本次均未检索到）。
@@ -182,22 +182,22 @@
 - **建议方案**：接受 schema 细化；M1-070 补 Kar98k 的一手来源并复核 M1 的射速取值口径（24 为手册瞄准射速上限，另有"速射"口径）。
 - **受影响任务**：M1-070、M2-053、M3-051（沿用 `_source` 数组格式）、M0-032。
 - **临时处理**：按此实现。
-- **裁决（Fable 填写）**：
+- **裁决（Fable 填写）**：总控裁定（2026-11-17 resolved）：weapon 的 `historical._source` 用结构化数组（每字段的文献 + 段落定位 + 核实日期），`_meta.unverified[]` 登记查不到一手来源的字段，`_meta.deviation_reason{}` 记录游戏性数值偏离史实的原因；`historical` 只描述史实，`gameplay` 数值不因史实复核而改动。M1 Garand 史实瞄准射速 16–24 发/分（FM 23-5），游戏内射速上限是 gameplay 值。后续武器/载具数据沿用同一格式。　文档回写：未记录。
 
 ### PI-011 M0-007：bevy_ecs 在 wasm32 上传递依赖 wasm-bindgen/tokio，须锁 0.16.1 且不开 `std` feature；其它细化
 
-- **状态**：open
+- **状态**：resolved
 - **类别**：依赖 / 接口细化
 - **问题**：任务要求 `sim` 依赖图不含 `wasm-bindgen`/`tokio`（check-deps 与验收 3）。实测（`cargo metadata` 解析图，scratchpad 隔离工程 + 仓库内）：`bevy_ecs` 0.17/0.18/0.19/0.20 在 `cfg(target_arch="wasm32")` 下经 `bevy_platform`/`bevy_tasks`（web-task）传递引入 `wasm-bindgen`、`wasm-bindgen-futures`（→`tokio`）；0.16.x 开 `std` feature 也引入 `wasm-bindgen`；**仅 0.16.1 且 `default-features=false`（不开 `std`）图干净**，`node tools/ci/check-deps.mjs` 通过。
 - **建议方案**：`bevy_ecs = "=0.16.1", default-features = false`（已采用）；单线程 executor 用 `ExecutorKind::SingleThreaded`（该版本也无 `multi_threaded` feature）。升级 bevy_ecs 前须重新跑 check-deps；如必须升级，需放宽 check-deps 对 `cfg(wasm32)` 传递依赖的判定（总控/Fable 决定）。
 - **细化**：①`WorldView::entity_state` 返回 `Option<EntityStateView>`（旧 id 须得 `None`；`protocol::EntityState` 当前未导出，待 M0-015 接入时替换）；②`EntityId`/`PlayerId` 为类型别名，`Tick` 为不实现 `Ord` 的 newtype（环绕比较仅 `lt/le/diff`）；③`GameMode` 增加 `Sandbox`；④`test-util` 特性下的 determinism 集成测试以 `required-features` 声明，**CI 必须用 `cargo test -p frontline-sim --features test-util`**（自引用 dev-dependency 会被 check-deps 判为 sim->sim 禁止边，故未用）；⑤未使用 `indexmap`（全部走 `BTreeMap`）；⑥`rand_core` 0.10 的 `RngCore` 已更名 `Rng`，sim 里 `rng::RngCore` 为其重导出别名，`rng::Rng` 是 `Rng::for_` 的命名空间 struct。
 - **受影响任务**：M0-010/011/012/013（沿用 World 接口）、M0-014（sim-wasm 自带 wasm-bindgen，不受影响）、M0-029/M0-030（CI 命令）。
 - **临时处理**：按此实现。
-- **裁决（Fable 填写）**：
+- **裁决（Fable 填写）**：总控裁定（2026-11-17 resolved）：`bevy_ecs` 锁 `=0.16.1`、`default-features=false` 且不开 `std`（更高版本在 wasm32 上会传递引入 wasm-bindgen/tokio，使 check-deps 失败）；升级前必须重跑 `node tools/ci/check-deps.mjs`。sim 的测试命令是 `cargo test -p frontline-sim --features test-util`（determinism 集成测试 required-features=["test-util"]，不带会静默跳过）。sim 内遍历用 BTreeMap，保持确定性。sim 的占位接口：`WorldView::los`、`height_at`（M0-010 落实）、`team_resources`（M0-013）；`entity_state` 目前返回 sim 自己的 `EntityStateView`（M0-015 接入 protocol 类型时替换）。　文档回写：未记录。
 
 ### PI-013 M0-010：Rapier 0.36.1 精确锁定与特性取舍；查询自写、Rapier 仅作碰撞世界；若干接口细化
 
-- **状态**：open
+- **状态**：resolved
 - **类别**：依赖 / 接口细化
 - **提出者 / 日期**：M0-010 / 2026-11-17
 - **问题**：①依赖：`rapier3d = "=0.36.1"`，`default-features=false`，features = `dim3, f32, std, enhanced-determinism`（不开 `simd-*`、`parallel`、`profiler`（会引入 web-time）、`serde-serialize`）。`enhanced-determinism` = `simba/libm_force + parry3d/enhanced-determinism`，在 wasm32-unknown-unknown 下可构建，`check-deps` 仍通过（传递依赖 nalgebra 0.35 / parry3d 0.31 / glamx 0.3 / simba / wide / spade 等，许可均为 Apache-2.0 或 MIT/Zlib 系，在 deny 白名单内；本机无 cargo-deny，未实跑）。注意：Rapier 0.36 的 API 已不同于任务书假定的旧版（`PhysicsWorld`、`QueryPipeline<'a>` 借用式、数学类型为 glamx），KCC 为 `rapier3d::control::KinematicCharacterController::move_shape`。②native 与 wasm32 的逐位一致性：本机只能验证 native；`CollisionData::state_hash()` 已纳入区块样本与碰撞体顺序，M0-014/M0-029 应在 wasm 与 native 上各算一次比对。③任务书写"射线可用 Rapier QueryPipeline 或自写 DDA"：采用自写 1 m 网格 DDA（两三角形/格，对角线与 Rapier 非 zigzag 高度场一致），`height_at` 取双线性（验收 3 的参考），法线/坡度/射线用三角形面。实测 Rapier 0.36.1 对个别跨多个高度场碰撞体的长射线会漏检（3000 条随机射线中 1 条，原点(219.72,27.71,241.73)、方向(0.254,-0.200,-0.946)；自写结果经暴力步进验证正确），故不以 Rapier 射线作为权威。④接口：`CollisionChunk::from_bytes(bx, bz, bytes)`（文件头不含 bx/bz，须调用方传入；与任务书 `from_bytes(&[u8])` 的差异）；`WorldView::height_at` 改为返回 `Option<f32>`（缺块为 None）；`los` 在线段进入未载入区块/起点在地下时返回 false；`World::collision()` 暴露 `&CollisionData`；`World::new` 内部 `clone()`（Clone 重建 Rapier 世界，按 (bz,bx) 升序）。⑤基准未用 criterion（保持与 `world_step_empty` 相同的 `Instant` 手写 harness，避免新增 dev 依赖）。⑥`state_hash()` 为 `CollisionData` 的独立摘要，未并入 `World::state_hash`（静态数据，且避免改动 determinism golden）。
@@ -205,11 +205,11 @@
 - **建议方案**：接受；M0-011 的 KCC 直接用 `CollisionData::physics().world().query_pipeline()`。
 - **受影响任务**：M0-011（KCC）、M0-012（弹道用 `raycast`）、M0-014/M0-029（wasm 构建与 native/wasm 一致性）、M0-022（缺块限制）。
 - **临时处理**：按此实现。
-- **裁决（Fable 填写）**：
+- **裁决（Fable 填写）**：总控裁定（2026-11-17 resolved）：`rapier3d =0.36.1`（default-features=false；dim3, f32, std, enhanced-determinism）只作碰撞世界；高度/法线/射线/LOS 查询为 sim 自写（crates/sim/src/collision/）。`CollisionChunk::from_bytes(bx, bz, bytes)`；`WorldView::height_at` 返回 `Option<f32>`；`los` 遇缺块或起点在地下返回 false；KCC 用法见 crates/sim/tests/collision_kcc.rs。地形二进制缺失时相关测试打印重建命令后跳过，设 `FRONTLINE_REQUIRE_TERRAIN=1` 则改为失败（验收时请带上该环境变量跑一遍）。native 与 wasm 的逐位一致性待 M0-014 / M0-029 两端比对。　文档回写：未记录。
 
 ### PI-014 M0-023：CDLOD 地形——纯距离 morph 在 §9.2 参数下会裂缝（加边邻接掩码）；节点数与验收 2 下限不符；高度纹理 RG8；近远景融合带
 
-- **状态**：open
+- **状态**：resolved
 - **类别**：算法 / 验收口径 / 数据格式
 - **提出者 / 日期**：M0-023 / 2026-11-17
 - **问题**：
@@ -223,7 +223,7 @@
 - **建议方案**：接受①③④⑤；②由总控/Fable 裁决是否改验收口径（建议：验收 2 改为"可见节点中位 ≤ 450 且 < 0.3 ms"，下限删除）。
 - **受影响任务**：M1-049/050（区块槽位/材质沿用实例属性与掩码约定）、M0-030（地形三个机位的节点数/三角形数口径）、M0-024/025（用 `Terrain.heightAt`）。
 - **临时处理**：按此实现。
-- **裁决（Fable 填写）**：
+- **裁决（Fable 填写）**：总控裁定（2026-11-17 resolved）：CDLOD 用每实例邻接掩码 + 2:1 平衡保证无裂缝；高度纹理用 RG8（原样 u16）；近远景有融合带；**节点数验收改为"可见节点 ≤ 450"（删去下限 150——M0 的小地形只有约 27 个可见节点，原下限与 §9.2 参数表不自洽）**。地形入口 `?scene=terrain`，机位占位 `?cam=0|1|2`，素材同步 `pnpm -C client sync-map`。`?debug=1` 的 GPU timer 在 SwiftShader 上极慢，e2e 避开。CPU `heightAt` 与 sim `height_at` 的一致性比对在 M0-014 之后应改成 vitest 调 wasm（由 M0-029 或 M0-025 顺带落实）。　文档回写：未记录。
 
 ### PI-015 M0-011：移动/KCC 的数据字段、Rapier 自带 snap 超预算改为解析 snap、aux 约定、速度偏序校验、加减速模型
 
@@ -239,7 +239,7 @@
 
 ### PI-016 M0-012：加减速落实方式、步枪射击/弹道/命中体的数据与接口细化
 
-- **状态**：open
+- **状态**：resolved
 - **类别**：接口细化 / 数据
 - **提出者 / 日期**：M0-012 / 2026-11-17
 - **问题**：①**加减速（PI-015 补充裁定）**：`MoveParams` 增加 `accel_time_s` / `decel_time_s`（缺省 0 = 瞬时）。地面水平速度每 tick 向愿望速度线性逼近，步长 = 参考速度 × dt / 时间（参考速度 = 所选移动模式的满偏速度，故静止→目标恒为 `accel_time_s`；松手时取按住的按键所对应的模式速度）；愿望速度小于当前速度时用减速时间。**`PlayerAuthState.vel` 语义变化**：地面上存"指令速度"（斜坡/擦墙造成的实际位移损失不回灌到下一 tick 的斜坡逼近，否则 25° 坡速从 82% 掉到 62%，违反 M0-011 验收 5），仅当本次位移不足指令的一半（撞墙、过陡）时存实际速度；空中仍存实际速度。速度类测试改为"稳态后"测量，`movement_replay` golden 重钉（脚本命令保持 30 tick 以免净位移不足）、`determinism_basic` golden 重钉。②**数据**：role `capsule` 增加可选 `eye_height_stand_m` 1.65 / `eye_height_crouch_m` 1.05（出膛点用，`MoveParams::from_role` 要求齐备）；新增 `data/loadouts/{us,ger}_rifleman_1.json`（primary Garand / Kar98k，`ammo_mags` 6 = 6 个备用弹夹/夹子），`rifleman.faction_overrides.*.loadout_ids` 填入；出生武器 = 角色在该阵营的第一个 loadout，弹匣容量取 `historical.magazine_capacity`（无独立 gameplay 字段；Garand 8 / Kar98k 5），备弹 = 容量 × `ammo_mags`。③**命中体**（头球+躯干+大腿+小腿，站/蹲两套随 `stance_blend` 线性插值）写在 `weapon/hitbox.rs` 的常量表，标【待调参】【待测 → M-15】；躯干胶囊最下 25% 记为盆骨（×0.9），颈部 M0 无独立体积（M1-014 细化），大腿/小腿为肢体（×0.65）。④**射击规则细节**：冲刺判定 = SPRINT 位且前向分量 > 0 且非蹲（与移动同一条件）；站↔蹲过渡中（`stance_timer>0`）不可射击（GAMEDESIGN §9.2）；半自动/栓动都要扳机上升沿，开火按下发生在不可射击期间则丢失（M0 无输入缓冲）；空膛上升沿产生 `SimEvent::DryFire`；装填可在任意非装填状态开始（弹匣未满且有备弹），装填中不可射击；ADS 在持续按住 `ads_ms` 后生效，松开/冲刺/装填立即清零。移动散布类别按水平速度：<0.3 m/s 静止 1.0，≤3.2 m/s 走 1.5，其余跑 2.5。后坐全部自动回落（§6.5 的"40% 留给玩家下压"由客户端相机体现，sim 不模拟）。⑤**时间量化**：毫秒×tick_hz 为"毫刻"（1 tick = 1000），余数以不超过 1 tick 的信用带入下一间隔，故任意射速平均间隔精确（140 rpm 的 12.857 tick 实测均值 12.856）。⑥**弹道**：GAMEDESIGN §6.4 的半隐式欧拉在 4 子步/tick 下系统性多算下坠 ≈ ½·g·h·t（h=1/120 s，100 m 处 5 mm、500 m 处 4.4 cm）：对 RK4 的相对误差 500 m 2.0%（Garand）/1.7%（Kar98k）满足 <3%，100/200/300 m 的相对误差 7.7/4.1/2.9%（绝对误差 < 1.3 cm），验收只要求 500 m。弹丸离开已载入碰撞区域即静默销毁（空碰撞世界里弹丸第一子步后消失）；同队与射手自身不命中，已无生命（hp≤0）的玩家不再是目标（死亡处理 M0-013）。⑦**事件**：`SimEvent` 新增 `Shot{shooter,weapon,muzzle,dir}`、`DryFire{shooter}`、`Impact{pos,normal,material}`、`Hit{shooter,target,zone,damage_hp,dist_m}`；因含 f32，`SimEvent`/`StepOutput` 不再实现 `Eq`。`weapon` 为 `GameData::weapons` 下标（u16）。⑧**API**：`World::{weapon_state, health, projectiles, spawn_projectile}`；`PredictSim::{set_entity, reset_weapon, weapon, last_weapon_out}`（`reset_weapon(Some(state))` 在收到 `self_state` 时调用；`set_entity` 提供射击 RNG 流所需的服务端 EntityId）；`WeaponState::BYTES = 33`（布局见源码）。`state_hash` 折入生命、武器状态与弹丸列表。⑨`aux` 位：任务原计划在 bit1 起分配开火模式位，M0 两把枪无模式切换，未分配。
@@ -247,11 +247,11 @@
 - **建议方案**：接受；M0-014 在 Predictor 里按 PredictSim 的新 API 接武器状态；M0-015 的 self_state 带 `WeaponState::to_bytes`；M0-013 在 `Health` 上做死亡/重生；M1-014 细化命中区（颈/盆骨/头盔）与友伤；参考机上复测命中体尺寸（M-15）。
 - **受影响任务**：M0-013、M0-014、M0-015、M0-018、M0-022、M1-012、M1-013、M1-014。
 - **临时处理**：按此实现。
-- **裁决（Fable 填写）**：
+- **裁决（Fable 填写）**：总控裁定（2026-11-17 resolved）：`SimEvent` 含 `Shot`/`DryFire`/`Impact`/`Hit`（含 f32，不再实现 Eq）；`World::{weapon_state, health, projectiles, spawn_projectile}`、`PredictSim::{set_entity, reset_weapon, weapon, last_weapon_out}`、`WeaponState`（33 B，to_bytes/from_bytes）；地面 `vel` 存指令速度（位移不足一半时存实际速度）；弹丸飞出已载入碰撞区域即销毁；不可射击期间的扳机上升沿丢失（M0 无输入缓冲）；命中体尺寸、眼高、移动散布阈值为初值【待测】。弹道按 GAMEDESIGN §6.4 的半隐式欧拉 4 子步：500 m 下坠对 RK4 误差约 2%，近距离相对误差更大但绝对误差 ≤1.3 cm——保持不变。　文档回写：未记录。
 
 ### PI-017 M0-013：规则数据 `data/rules/` 与 `rules.schema.json`（INDEX 未列）、死亡/重生的接口细化
 
-- **状态**：open
+- **状态**：resolved
 - **类别**：数据 / 接口细化
 - **提出者 / 日期**：M0-013 / 2026-11-17
 - **问题**：①`data/rules/respawn.json` 与 `data/schemas/rules.schema.json` 是 M0-004 schema 列表之外的新增（任务文件已说明属细化）：字段 `death_cam_ms / base_wait_ms / wave_interval_ms / wave_aligned / _meta`，另加可选 `spawn_jitter_m`（初值 2.5 m，上限 3 m，使 3D 距离在缓坡上也 ≤3 m；任务写的是"≤3 m 偏移"）。data-validate 新增文件种类 `rules`（`data/rules/*.json`，需 `_meta`，无 id）；`GameData.rules: &'static RulesDef`（`RulesDef{respawn}`）、`build.rs` 对 `rules/respawn.json` 做类型化解析并嵌入；`tests/common::data_with` 的结构体字面量因此多一个字段（外部 crate 若手写 `GameData{..}` 需补 `rules`）。②**死亡状态**：死者保留实体（`EntityId` 不变、尸体位置冻结）、`LifeState::Dead{t_kia,killer,weapon,headshot,respawn_tick}`；`WorldView::players()` 只列存活者（与其文档一致），新增 `WorldView::{health, alive}`（带默认实现，不破坏其它实现者）、`EntityStateView` 增加 `health_q`（8 bit，0=死亡，正 hp 至少 1）与 `alive`；`World::{player_life, set_team_spawn, set_map_center, respawn_pending}`；`SimEvent::{Kill{victim,killer,weapon,headshot,dist_m}, Spawn{player,pos}}`。`headshot` 仅指 Head 区（M0 颈部无体积）。③**时间口径**：波次 tick 为从 tick 0 起每 `wave_interval` 的整数倍；所有时长按 `ceil(ms·hz/1000)` 取整为 tick（30 Hz 下 5/3/15 s = 150/90/450 tick 精确，出生 tick 与公式误差 0）。④**出生点**：sim 不读 spawns.json；服务器启动时对每队调用 `World::set_team_spawn(team, pos)`（HQ 点 xz，y 取地形高 +0.02），未设置时回到该玩家加入时的位置；朝向取已载入碰撞区块的中心（或 `set_map_center`）。偏移用 `Rng::for_(.., Purpose::Respawn)`，圆盘均匀；Y 取地形高度 +0.02 m。⑤**state_hash** 只在死亡状态下追加字节，无死亡场景的既有 golden（determinism_basic / movement_replay）不变；`weapon_duel` 的事件序列 golden 因对射现在以击杀+重生收尾而重钉（0x2ced… → 0x09a7e29170609f65）。
@@ -259,18 +259,23 @@
 - **建议方案**：接受；M0-018 在载入地图后用 spawns.json 的 HQ 点调用 `set_team_spawn`；M0-015/019 的快照用 `EntityStateView.health_q` / `alive`（死亡玩家当前不在 `players()` 中，若要在快照里保留尸体由 M0-019 决定）；M1-016 在 `LifeState` 上追加倒地。
 - **受影响任务**：M0-014、M0-015、M0-018、M0-019、M1-010、M1-016、M1-019。
 - **临时处理**：按此实现。
-- **裁决（Fable 填写）**：
+- **裁决（Fable 填写）**：总控裁定（2026-11-17 resolved）：规则数据在 `data/rules/respawn.json`（schema `rules.schema.json`），`GameData.rules`；死者保留实体（EntityId 不变）但不在 `view().players()` 里；`EntityStateView` 有 `health_q`（8 bit）与 `alive`；事件 `SimEvent::{Kill, Spawn}`；`World::{player_life, set_team_spawn, set_map_center, respawn_pending}`。**M0-018 载入地图后必须按 spawns.json 的 HQ 点对每队调用 `World::set_team_spawn`**，否则玩家在加入位置重生。新增数据文件会改变 DATA_HASH——不要在客户端写死哈希字面量。　文档回写：未记录。
 
 ### PI-018 M0-014：sim-wasm 的 JS 接口形态、工作区依赖、数据 JSON 来源、构建 profile
+
+- **状态**：resolved
+- **类别**：协议/数据 / 接口细化
+- **提出者 / 日期**：M0-014 / 2026-11-17
 - **问题**：①任务要求 `client/package.json` 加对 `crates/sim-wasm/pkg` 的 workspace 依赖——但 pkg 是被 git 忽略的构建产物，干净检出里不存在，`pnpm install` 会因此失败，并拖垮其它执行者/CI 的 TS 作业。②`decode(bytes): DecodedSnapshot` 若每帧返回 wasm-bindgen 对象会产生 GC；`encodeHello({...})` 的对象参数需要 serde-wasm-bindgen（增大体积）。③`weaponDef/roleDef` 要 JSON bytes，但 `sim` 的 `*Def` 只实现 `Deserialize`，`embedded` 模块私有。④任务写在 sim-wasm/Cargo.toml 的 release profile 在工作区成员里无效。
 - **证据**：crates/sim-wasm/{build.rs,src/*}、client/src/net/wasm/、根 Cargo.toml `[profile.wasm-release]`、reports/m0/M0-014-wasm-size.json。
 - **建议方案（已按此实现）**：①不加 workspace 依赖；`client/src/net/wasm/{types,layout,index}.ts` 手写类型与 `LAYOUT_*` 常量表（由 `layoutJson()` 与 Rust golden `tests/golden/layout.json` 双向校验），模块对象由 M0-022 注入/导入（pkg 构建后再把 `crates/sim-wasm/pkg` 列入 pnpm-workspace 即可）。②`SnapshotDecoder.decode(bytes)` 返回 tick，列数据用 `ids()/pos()/…` 取零拷贝视图（TS 的 `decodeSnapshot()` 组装成 DecodedSnapshot 形状）；消息函数用位置参数（TS 封装成对象）。③sim-wasm 的 build.rs 读 /data/weapons、/data/roles，去掉 `_meta` 与 `historical._source` 后嵌入（与 sim 同一批文件，哈希一致）；不改 sim。④根 Cargo.toml 新增 `[profile.wasm-release]`（opt-level z、lto、codegen-units 1、panic abort），构建用 `wasm-pack build crates/sim-wasm --target web --profile wasm-release`，不影响服务器/测试 profile。`Predictor.reset` 增第三参（武器状态）、增 `resetWeapon/equipWeapon/setEntity/authState/tick`。
 - **受影响任务**：M0-022（接入 wasm、对账）、M0-029（漂移比较）、M0-030。
 - **临时处理**：按此实现。
+- **裁决（Fable 填写）**：总控裁定（2026-11-17 resolved）：构建 `wasm-pack build crates/sim-wasm --target web --profile wasm-release`，体积检查 `node tools/ci/check-wasm-size.mjs`（当前 brotli 约 241 KB）；client 不把 pkg 作为 workspace 依赖（pkg 是忽略的构建产物），用 `client/src/net/wasm/` 的手写类型与 `LAYOUT_*` 常量，wasm 模块由 M0-022 注入；`SnapshotDecoder.decode` 返回 tick，列数据走零拷贝视图访问器；`Predictor.step`/`state` 返回 wasm 内存视图，须在下次调用前用完；消息函数用位置参数。native 与 wasm 已实测 3000 tick 逐字节一致（`crates/sim-wasm/examples/trace.rs` + `tests/native-vs-wasm.mjs`，M0-029 复用）。　文档回写：未记录。
 
 ### PI-019 M0-029：漂移度量定义、输入文件不入库、CI 严格模式建议
 
-- **状态**：open
+- **状态**：resolved
 - **类别**：测试 / 度量定义
 - **提出者 / 日期**：M0-029 / 2026-11-17
 - **问题**：①"RMS 漂移 < 2 cm/s"（ARCHITECTURE §20.1-3）未精确定义，按任务备注落为 `err(t)=|pos_native-pos_wasm|`（3D）对时间的最小二乘斜率 ×100（cm/s），同时报告 `rms_m`、`max_m`、`over_0_05m_ratio`、每 60 s 分段最大误差（`tools/determinism/{stats,compare}.mjs`），请确认。②任务要求把 3×18 000 条输入入库（`testdata/determinism/inputs_seed*.bin`）；改为由固定种子的 PCG（`crates/sim-wasm/tests/support/determinism.rs::gen_inputs`，不依赖 `rand`）在运行时生成，并把生成结果写入 `target/determinism/inputs_seed{N}.bin`，golden 终值哈希进 `determinism_native.rs`——避免约 1 MB 二进制入库，且生成器本身有单测。③三个种子的出生点各不相同（平地 / 南坡脚 / 北高地），以覆盖陡坡与区块边界；出生高度取地形高度。④为一致性测试给 sim-wasm 的 `Predictor` 追加了只读查询 `heightAt(x,z)`（NaN 表示该处无碰撞块），无 sim 逻辑改动。
@@ -278,7 +283,7 @@
 - **建议方案**：CI 的 native-vs-wasm 比较建议**开严格模式**（仓库变量 `DETERMINISM_STRICT=1`）：当前 3 种子×18 000 tick 实测逐位一致，严格模式零误报；一旦将来引入 libm 之外的平台差异，会在 PR 上立刻暴露而不是被告警淹没。R5 的"不阻断"原则保留为开关默认值，若出现合理的小幅漂移再关掉严格模式并以 `drift.cm_per_s` 为准。native×2 / wasm×2 / World×2 永远阻断。
 - **受影响任务**：M0-022（对账阈值 0.05 m 目前在 18 000 tick 内零次触发）、M0-030。
 - **临时处理**：按此实现；默认警告模式，严格模式由开关启用。
-- **裁决（Fable 填写）**：
+- **裁决（Fable 填写）**：总控裁定（2026-11-17 resolved）：入口 `tools/determinism/run.sh [--strict]`；3 种子 × 18000 tick 的 native×2 / wasm×2 / World×2 无论何种模式都阻断；native vs wasm 的比较**裁定 CI 默认开严格模式**（当前实测逐位一致；将来若出现合理的平台差异再关闭并改看 drift.cm_per_s）——下一个改动 .github/workflows/determinism.yml 的执行者请把严格模式设为默认开启。`Predictor.heightAt(x,z)` 已暴露；客户端地形与 sim 的高度一致性测试在 client/src/render/terrain/terrain-vs-sim.test.ts。　文档回写：未记录。
 
 
 ### PI-020 M0-024：植被实例表 §9.6 的"6 B"与字段宽度不自洽；植被入口、perf 导出与瞬移后的重分桶
