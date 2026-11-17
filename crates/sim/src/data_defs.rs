@@ -352,6 +352,28 @@ pub struct AmmoDef {
     pub meta: Meta,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum GadgetClass {
+    Consumable,
+    Deployable,
+    Tool,
+    Kit,
+}
+
+/// Non-weapon gadget; `gameplay` is a flat map of unit-suffixed numbers/booleans whose keys
+/// are validated by `data/schemas/gadget.schema.json` (consumers read the keys they need).
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct GadgetDef {
+    pub id: String,
+    pub name_key: String,
+    pub class: GadgetClass,
+    pub gameplay: BTreeMap<String, serde_json::Value>,
+    #[serde(rename = "_meta")]
+    pub meta: Meta,
+}
+
 // ---- role ----
 
 #[derive(Debug, Clone, PartialEq, Deserialize)]
@@ -469,6 +491,17 @@ pub struct LoadoutDef {
     #[serde(default)]
     pub melee: Option<String>,
     pub ammo_mags: u32,
+    /// Role level that unlocks this loadout (GAMEDESIGN 5.2).
+    pub unlock_level: u32,
+    /// Magazines of the secondary weapon (counting the one in the gun).
+    #[serde(default)]
+    pub secondary_mags: Option<u32>,
+    /// Non-weapon gadgets (`data/gadgets/`): bandages, kits, tools.
+    #[serde(default)]
+    pub tools: Vec<Gadget>,
+    /// `m1_only`: present only in the M1 build (reserved for `ger_rifleman_pf60`).
+    #[serde(default)]
+    pub tags: Vec<String>,
     #[serde(default)]
     pub unlock_condition: Option<String>,
     #[serde(rename = "_meta")]

@@ -1,0 +1,17 @@
+{
+  "id": "garrison_kit",
+  "name_key": "gadget.garrison_kit.name",
+  "class": "kit",
+  "gameplay": {
+    "build_s": 20,
+    "health_hp": 1200
+  },
+  "_meta": {
+    "status": "initial",
+    "tunable": [
+      "gameplay.build_s",
+      "gameplay.health_hp"
+    ],
+    "calibration_ref": "GAMEDESIGN §10.2（规则值见 rules/spawn.json）"
+  }
+}

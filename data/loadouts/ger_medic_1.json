@@ -1,0 +1,36 @@
+{
+  "id": "ger_medic_1",
+  "role": "medic",
+  "faction": "ger",
+  "unlock_level": 1,
+  "primary": "ger_mp40",
+  "secondary": "ger_p38",
+  "secondary_mags": 2,
+  "gadget_1": {
+    "id": "ger_nb39",
+    "count": 2
+  },
+  "gadget_2": null,
+  "tools": [
+    {
+      "id": "aid_kit",
+      "count": 3
+    },
+    {
+      "id": "bandage",
+      "count": 6
+    }
+  ],
+  "melee": "ger_combat_knife",
+  "ammo_mags": 4,
+  "unlock_condition": null,
+  "tags": [],
+  "_meta": {
+    "status": "initial",
+    "tunable": [
+      "ammo_mags",
+      "secondary_mags"
+    ],
+    "calibration_ref": "GAMEDESIGN §5.3 / 弹药记法含枪内一个"
+  }
+}

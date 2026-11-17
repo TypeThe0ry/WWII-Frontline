@@ -2,17 +2,29 @@
   "id": "us_rifleman_1",
   "role": "rifleman",
   "faction": "us",
+  "unlock_level": 1,
   "primary": "us_m1_garand",
   "secondary": null,
-  "gadget_1": null,
+  "gadget_1": {
+    "id": "us_mk2",
+    "count": 2
+  },
   "gadget_2": null,
-  "melee": null,
-  "ammo_mags": 6,
+  "tools": [
+    {
+      "id": "bandage",
+      "count": 2
+    }
+  ],
+  "melee": "us_m1_bayonet",
+  "ammo_mags": 10,
   "unlock_condition": null,
+  "tags": [],
   "_meta": {
     "status": "initial",
     "tunable": [
       "ammo_mags"
-    ]
+    ],
+    "calibration_ref": "GAMEDESIGN §5.3 / 弹药记法含枪内一个"
   }
 }

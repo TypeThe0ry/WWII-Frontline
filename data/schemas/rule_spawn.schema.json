@@ -1,0 +1,229 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://frontline.invalid/schemas/rule_spawn.schema.json",
+  "title": "Spawn rules (GAMEDESIGN 10.2, 10.6; M1-007). Wave/base wait for waves live in respawn.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "wave_interval_s",
+    "base_wait_s",
+    "spawn_protection_s",
+    "garrison",
+    "_meta"
+  ],
+  "properties": {
+    "wave_interval_s": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "base_wait_s": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "hq",
+        "garrison"
+      ],
+      "properties": {
+        "hq": {
+          "type": "number",
+          "minimum": 0
+        },
+        "garrison": {
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    },
+    "spawn_protection_s": {
+      "type": "number",
+      "minimum": 0
+    },
+    "garrison": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "capacity_slots",
+        "slot_regen_s",
+        "health_hp",
+        "build_s",
+        "cost_supplies",
+        "spacing_m",
+        "block_radius_m",
+        "overrun"
+      ],
+      "properties": {
+        "capacity_slots": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "slot_regen_s": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "health_hp": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "build_s": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "cost_supplies": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "friendly_or_neutral",
+            "enemy"
+          ],
+          "properties": {
+            "friendly_or_neutral": {
+              "type": "number",
+              "minimum": 0
+            },
+            "enemy": {
+              "type": "number",
+              "minimum": 0
+            }
+          }
+        },
+        "spacing_m": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "friendly_min",
+            "enemy_garrison_min",
+            "strongpoint_extra",
+            "hq_min"
+          ],
+          "properties": {
+            "friendly_min": {
+              "type": "number",
+              "minimum": 0
+            },
+            "enemy_garrison_min": {
+              "type": "number",
+              "minimum": 0
+            },
+            "strongpoint_extra": {
+              "type": "number",
+              "minimum": 0
+            },
+            "hq_min": {
+              "type": "number",
+              "minimum": 0
+            }
+          }
+        },
+        "block_radius_m": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "overrun": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "radius_m",
+            "duration_s"
+          ],
+          "properties": {
+            "radius_m": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "duration_s": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            }
+          }
+        }
+      }
+    },
+    "_meta": {
+      "$ref": "#/$defs/meta"
+    }
+  },
+  "$defs": {
+    "slug": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*$"
+    },
+    "i18n_key": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*(\\.[a-z0-9_]+)+$"
+    },
+    "pos": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "nonneg": {
+      "type": "number",
+      "minimum": 0
+    },
+    "unit01": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "meta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "tunable"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "initial",
+            "reviewed",
+            "measured"
+          ]
+        },
+        "tunable": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "calibration_ref": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "unverified": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "deviation_reason": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "source": {
+      "oneOf": [
+        {
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object"
+          }
+        }
+      ]
+    }
+  }
+}

@@ -8,11 +8,13 @@ import { REPO_ROOT } from '../lib.mjs';
 
 const cli = join(REPO_ROOT, 'tools/data-validate/index.mjs');
 const fx = join(REPO_ROOT, 'data/schemas/fixtures');
-const DIRS = { weapon: 'weapons', explosive: 'explosives', melee: 'melee', ammo: 'ammo', role: 'roles', loadout: 'loadouts', vehicle: 'vehicles' };
+const DIRS = { weapon: 'weapons', explosive: 'explosives', melee: 'melee', ammo: 'ammo', gadget: 'gadgets', role: 'roles', loadout: 'loadouts', vehicle: 'vehicles' };
 
 function place(root, kind, srcFile, id) {
   const dest = DIRS[kind]
     ? join(root, DIRS[kind], `${id}.json`)
+    : kind.startsWith('rule_')
+    ? join(root, 'rules', `${kind.slice(5)}.json`)
     : kind === 'rules' || kind === 'bots'
     ? join(root, 'rules', kind === 'bots' ? 'bots.json' : 'respawn.json')
     : join(root, 'maps', 'fixture_map', kind === 'map_meta' ? 'meta.json' : 'spawns.json');

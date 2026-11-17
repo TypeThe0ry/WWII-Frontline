@@ -468,3 +468,8 @@ blocked / in-progress / todo：无。M0 的 33 个任务全部已提交（M0-033
 - 新 kind `explosive`/`melee`/`ammo`（schema、Rust 类型、build.rs 类型化解析、`GameData` 字段），loadout 引用的武器 id 空间含 explosives 与 melee（PI-042）。
 - 数据：`data/explosives/`×5、`data/melee/`×6、`data/ammo/`×3，全部 `initial`，`_source` 占位待 M1-070。
 - 武器表与下标未变，sim/bots 金哈希不动；只有 `DATA_HASH` 与 `native.json` 更新。
+
+### M1-007 数据：五兵种、loadout 与基础规则 — done — 2026-11-17 — 提交见 git log
+
+- 新增 4 个 role（officer/medic/support/crewman）、11 个 loadout、8 个 gadget、capture/spawn/supplies 三份规则及 schema，校验器与 fixtures 同步（PI-043）。
+- `ammo_mags` 改为含枪内一个（备弹 = cap×(N−1)），两处 sim 金哈希重定标。

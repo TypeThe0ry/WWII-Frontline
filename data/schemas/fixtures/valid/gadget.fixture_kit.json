@@ -1,0 +1,23 @@
+{
+  "id": "fixture_kit",
+  "name_key": "gadget.aid_kit.name",
+  "class": "deployable",
+  "gameplay": {
+    "radius_m": 3,
+    "heal_hp_per_s": 8,
+    "duration_s": 10,
+    "max_uses": 3,
+    "place_s": 1
+  },
+  "_meta": {
+    "status": "initial",
+    "tunable": [
+      "gameplay.radius_m",
+      "gameplay.heal_hp_per_s",
+      "gameplay.duration_s",
+      "gameplay.max_uses",
+      "gameplay.place_s"
+    ],
+    "calibration_ref": "GAMEDESIGN §5.9"
+  }
+}

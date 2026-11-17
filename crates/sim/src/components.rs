@@ -211,7 +211,7 @@ impl WeaponTable {
 }
 
 /// Spawns the player's starting weapon from the role's loadout of its team (M0: the single
-/// default role, first loadout id; reserve = `ammo_mags` clips).
+/// default role, first loadout id; reserve = `ammo_mags - 1` clips: GAMEDESIGN 5.3 counts the one in the gun, PI-043).
 pub fn starting_weapon(data: &GameData, role: &str, team: Team, hz: u8) -> Option<WeaponState> {
     let key = match team {
         Team::Us => "us",
@@ -226,7 +226,7 @@ pub fn starting_weapon(data: &GameData, role: &str, team: Team, hz: u8) -> Optio
     let lo = data.loadout(lid)?;
     let idx = data.weapons.iter().position(|w| w.id == lo.primary)?;
     let p = WeaponParams::from_def(&data.weapons[idx], hz).ok()?;
-    let reserve = u32::from(p.mag_capacity) * lo.ammo_mags;
+    let reserve = u32::from(p.mag_capacity) * lo.ammo_mags.saturating_sub(1);
     Some(WeaponState::new(
         idx as u16,
         p.mag_capacity,

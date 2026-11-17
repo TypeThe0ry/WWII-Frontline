@@ -1,0 +1,29 @@
+{
+  "_expect_error": "missing: unlock_level",
+  "id": "us_bad",
+  "role": "fixture_rifleman",
+  "faction": "us",
+  "primary": "us_fixture_rifle",
+  "secondary": null,
+  "gadget_1": {
+    "id": "us_fixture_grenade",
+    "count": 2
+  },
+  "gadget_2": null,
+  "melee": null,
+  "ammo_mags": 6,
+  "unlock_condition": null,
+  "_meta": {
+    "status": "initial",
+    "tunable": [
+      "ammo_mags"
+    ]
+  },
+  "tags": [],
+  "tools": [
+    {
+      "id": "fixture_kit",
+      "count": 1
+    }
+  ]
+}

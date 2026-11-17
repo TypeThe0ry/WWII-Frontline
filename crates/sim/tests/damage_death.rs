@@ -352,7 +352,7 @@ fn respawn_state_dead_inert_then_restored() {
     let fresh = w.weapon_state(SHOOTER).unwrap();
     let ws = w.weapon_state(VICTIM).unwrap();
     assert_eq!(ws.mag, 5, "Kar98k clip");
-    assert_eq!(ws.reserve, 5 * 6);
+    assert_eq!(ws.reserve, 5 * 15); // 16 clips incl. the one in the gun
     assert_eq!(ws.recoil_pitch_deg, 0.0);
     assert_ne!(fresh.def_id, ws.def_id);
     assert!(w.view().alive(e_v));
@@ -592,7 +592,7 @@ fn twenty_players_fight_without_panic_and_counts_balance() {
     assert_eq!(dead, pending);
 }
 
-const GOLDEN_SKIRMISH_FINAL: u64 = 0x9405_54a5_af5b_4fdd;
+const GOLDEN_SKIRMISH_FINAL: u64 = 0x7d6a_b503_df9c_60ac;
 
 #[test]
 fn deaths_and_respawns_are_deterministic_5000_ticks() {

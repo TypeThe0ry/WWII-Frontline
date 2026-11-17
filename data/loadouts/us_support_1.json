@@ -1,0 +1,38 @@
+{
+  "id": "us_support_1",
+  "role": "support",
+  "faction": "us",
+  "unlock_level": 1,
+  "primary": "us_m1_garand",
+  "secondary": null,
+  "gadget_1": {
+    "id": "us_mk2",
+    "count": 1
+  },
+  "gadget_2": null,
+  "tools": [
+    {
+      "id": "bandage",
+      "count": 2
+    },
+    {
+      "id": "supply_crate_carry",
+      "count": 1
+    },
+    {
+      "id": "ammo_crate_kit",
+      "count": 2
+    }
+  ],
+  "melee": "us_m1_bayonet",
+  "ammo_mags": 8,
+  "unlock_condition": null,
+  "tags": [],
+  "_meta": {
+    "status": "initial",
+    "tunable": [
+      "ammo_mags"
+    ],
+    "calibration_ref": "GAMEDESIGN §5.3 / 弹药记法含枪内一个"
+  }
+}

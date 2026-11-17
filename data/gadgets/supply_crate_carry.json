@@ -1,0 +1,17 @@
+{
+  "id": "supply_crate_carry",
+  "name_key": "gadget.supply_crate_carry.name",
+  "class": "tool",
+  "gameplay": {
+    "carry_speed_mult": 0.75,
+    "place_s": 1.5
+  },
+  "_meta": {
+    "status": "initial",
+    "tunable": [
+      "gameplay.carry_speed_mult",
+      "gameplay.place_s"
+    ],
+    "calibration_ref": "GAMEDESIGN §12.2"
+  }
+}

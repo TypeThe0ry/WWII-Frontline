@@ -1,0 +1,26 @@
+{
+  "k_cap_pct_per_s": 0.2,
+  "regress_pct_per_s": 0.15,
+  "height_tolerance_m": 6,
+  "default_radius_m": 50,
+  "eff": {
+    "full_weight_players": 4,
+    "max_net_players": 10,
+    "partial_weight_mult": 0.5
+  },
+  "vehicle_occupants_counted": false,
+  "_meta": {
+    "status": "initial",
+    "tunable": [
+      "k_cap_pct_per_s",
+      "regress_pct_per_s",
+      "height_tolerance_m",
+      "default_radius_m",
+      "eff.full_weight_players",
+      "eff.max_net_players",
+      "eff.partial_weight_mult",
+      "vehicle_occupants_counted"
+    ],
+    "calibration_ref": "REFERENCE_MEASUREMENTS §capture / GAMEDESIGN §3.2"
+  }
+}

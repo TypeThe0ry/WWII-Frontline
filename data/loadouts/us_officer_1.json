@@ -1,0 +1,44 @@
+{
+  "id": "us_officer_1",
+  "role": "officer",
+  "faction": "us",
+  "unlock_level": 1,
+  "primary": "us_thompson_m1a1",
+  "secondary": "us_m1911a1",
+  "secondary_mags": 3,
+  "gadget_1": {
+    "id": "us_m18",
+    "count": 2
+  },
+  "gadget_2": null,
+  "tools": [
+    {
+      "id": "bandage",
+      "count": 2
+    },
+    {
+      "id": "binoculars",
+      "count": 1
+    },
+    {
+      "id": "outpost_kit",
+      "count": 1
+    },
+    {
+      "id": "garrison_kit",
+      "count": 1
+    }
+  ],
+  "melee": "us_m3_knife",
+  "ammo_mags": 5,
+  "unlock_condition": null,
+  "tags": [],
+  "_meta": {
+    "status": "initial",
+    "tunable": [
+      "ammo_mags",
+      "secondary_mags"
+    ],
+    "calibration_ref": "GAMEDESIGN §5.3 / 弹药记法含枪内一个"
+  }
+}

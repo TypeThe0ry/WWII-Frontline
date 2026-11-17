@@ -4,41 +4,168 @@
   "title": "Loadout (ARCHITECTURE 8.5.3)",
   "type": "object",
   "additionalProperties": false,
-  "required": ["id", "role", "faction", "primary", "ammo_mags", "_meta"],
+  "required": [
+    "id",
+    "role",
+    "faction",
+    "unlock_level",
+    "primary",
+    "ammo_mags",
+    "_meta"
+  ],
   "properties": {
-    "id": { "$ref": "#/$defs/slug" },
-    "role": { "$ref": "#/$defs/slug" },
-    "faction": { "enum": ["us", "ger"] },
-    "primary": { "$ref": "#/$defs/slug" },
-    "secondary": { "anyOf": [{ "$ref": "#/$defs/slug" }, { "type": "null" }] },
-    "gadget_1": { "$ref": "#/$defs/gadget" },
-    "gadget_2": { "$ref": "#/$defs/gadget" },
-    "melee": { "anyOf": [{ "$ref": "#/$defs/slug" }, { "type": "null" }] },
-    "ammo_mags": { "type": "integer", "minimum": 0 },
-    "unlock_condition": { "type": ["string", "null"] },
-    "_meta": { "$ref": "#/$defs/meta" }
+    "id": {
+      "$ref": "#/$defs/slug"
+    },
+    "role": {
+      "$ref": "#/$defs/slug"
+    },
+    "faction": {
+      "enum": [
+        "us",
+        "ger"
+      ]
+    },
+    "primary": {
+      "$ref": "#/$defs/slug"
+    },
+    "secondary": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/slug"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "gadget_1": {
+      "$ref": "#/$defs/gadget"
+    },
+    "gadget_2": {
+      "$ref": "#/$defs/gadget"
+    },
+    "melee": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/slug"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "ammo_mags": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "unlock_condition": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "unlock_level": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 10
+    },
+    "secondary_mags": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "tools": {
+      "type": "array",
+      "maxItems": 4,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "count"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/$defs/slug"
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      }
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "enum": [
+          "m1_only"
+        ]
+      },
+      "uniqueItems": true
+    },
+    "_meta": {
+      "$ref": "#/$defs/meta"
+    }
   },
   "$defs": {
-    "slug": { "type": "string", "pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*$" },
+    "slug": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*$"
+    },
     "gadget": {
       "anyOf": [
-        { "type": "null" },
+        {
+          "type": "null"
+        },
         {
           "type": "object",
           "additionalProperties": false,
-          "required": ["id", "count"],
-          "properties": { "id": { "$ref": "#/$defs/slug" }, "count": { "type": "integer", "minimum": 1 } }
+          "required": [
+            "id",
+            "count"
+          ],
+          "properties": {
+            "id": {
+              "$ref": "#/$defs/slug"
+            },
+            "count": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
         }
       ]
     },
     "meta": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["status", "tunable"],
+      "required": [
+        "status",
+        "tunable"
+      ],
       "properties": {
-        "status": { "enum": ["initial", "reviewed", "measured"] },
-        "tunable": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
-        "calibration_ref": { "type": ["string", "null"] }
+        "status": {
+          "enum": [
+            "initial",
+            "reviewed",
+            "measured"
+          ]
+        },
+        "tunable": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "calibration_ref": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
       }
     }
   }

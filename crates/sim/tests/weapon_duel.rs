@@ -149,10 +149,11 @@ fn weapon_duel_events_and_damage_are_conserved() {
     // Ammunition conservation (per life).
     for (p, s) in [(US, shots_life[0]), (GER, shots_life[1])] {
         let ws = w.weapon_state(p).unwrap();
-        let (cap, mags) = (if p == US { 8u32 } else { 5 }, 6u32);
+        // Loadout ammo_mags counts the clip in the gun (GAMEDESIGN 5.3): 10 x 8 and 16 x 5.
+        let (cap, mags) = if p == US { (8u32, 10u32) } else { (5, 16) };
         assert_eq!(
             u32::from(ws.mag) + u32::from(ws.reserve) + s,
-            cap * (1 + mags),
+            cap * mags,
             "player {p}"
         );
     }

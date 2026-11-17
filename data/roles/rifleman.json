@@ -2,11 +2,22 @@
   "id": "rifleman",
   "name_key": "role.rifleman.name",
   "faction_overrides": {
-    "us": { "loadout_ids": ["us_rifleman_1"] },
-    "ger": { "loadout_ids": ["ger_rifleman_1"] }
+    "us": {
+      "loadout_ids": [
+        "us_rifleman_1",
+        "us_rifleman_2"
+      ]
+    },
+    "ger": {
+      "loadout_ids": [
+        "ger_rifleman_1",
+        "ger_rifleman_3",
+        "ger_rifleman_pf60"
+      ]
+    }
   },
   "movement": {
-    "walk_mps": 2.0,
+    "walk_mps": 2,
     "run_mps": 4.4,
     "sprint_mps": 6.4,
     "crouch_mps": 2.4,
@@ -22,7 +33,7 @@
     "autostep_min_width_m": 0.2,
     "snap_to_ground_m": 0.3,
     "accel_time_s": 0.25,
-    "decel_time_s": 0.20
+    "decel_time_s": 0.2
   },
   "capsule": {
     "radius_m": 0.35,
@@ -51,7 +62,15 @@
       "movement.accel_time_s",
       "movement.decel_time_s",
       "capsule.eye_height_stand_m",
-      "capsule.eye_height_crouch_m"
-    ]
+      "capsule.eye_height_crouch_m",
+      "max_per_squad",
+      "unlock.squad_size_min"
+    ],
+    "calibration_ref": "GAMEDESIGN §4.4 / §9.1"
+  },
+  "max_per_squad": 6,
+  "unlock": {
+    "squad_size_min": 1,
+    "requires_squad_leader": false
   }
 }

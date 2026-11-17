@@ -1,0 +1,35 @@
+{
+  "id": "ger_rifleman_3",
+  "role": "rifleman",
+  "faction": "ger",
+  "unlock_level": 3,
+  "primary": "ger_kar98k",
+  "secondary": "ger_p38",
+  "secondary_mags": 2,
+  "gadget_1": {
+    "id": "ger_m24",
+    "count": 1
+  },
+  "gadget_2": {
+    "id": "ger_nb39",
+    "count": 2
+  },
+  "tools": [
+    {
+      "id": "bandage",
+      "count": 2
+    }
+  ],
+  "melee": "ger_s8498_bayonet",
+  "ammo_mags": 16,
+  "unlock_condition": "role_level_3",
+  "tags": [],
+  "_meta": {
+    "status": "initial",
+    "tunable": [
+      "ammo_mags",
+      "secondary_mags"
+    ],
+    "calibration_ref": "GAMEDESIGN §5.3 / 弹药记法含枪内一个"
+  }
+}

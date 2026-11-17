@@ -1,0 +1,11 @@
+{
+  "id": "binoculars",
+  "name_key": "gadget.binoculars.name",
+  "class": "tool",
+  "gameplay": {},
+  "_meta": {
+    "status": "initial",
+    "tunable": [],
+    "calibration_ref": "GAMEDESIGN §5.1 / §17"
+  }
+}

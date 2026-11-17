@@ -1,0 +1,131 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://frontline.invalid/schemas/gadget.schema.json",
+  "title": "Gadget / tool (GAMEDESIGN 5.9, 12; M1-007)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "name_key",
+    "class",
+    "gameplay",
+    "_meta"
+  ],
+  "properties": {
+    "id": {
+      "$ref": "#/$defs/slug"
+    },
+    "name_key": {
+      "$ref": "#/$defs/i18n_key"
+    },
+    "class": {
+      "enum": [
+        "consumable",
+        "deployable",
+        "tool",
+        "kit"
+      ]
+    },
+    "gameplay": {
+      "type": "object",
+      "additionalProperties": {
+        "anyOf": [
+          {
+            "type": "number",
+            "minimum": 0
+          },
+          {
+            "type": "boolean"
+          }
+        ]
+      }
+    },
+    "_meta": {
+      "$ref": "#/$defs/meta"
+    }
+  },
+  "$defs": {
+    "slug": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*$"
+    },
+    "i18n_key": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*(\\.[a-z0-9_]+)+$"
+    },
+    "pos": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "nonneg": {
+      "type": "number",
+      "minimum": 0
+    },
+    "unit01": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "meta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "tunable"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "initial",
+            "reviewed",
+            "measured"
+          ]
+        },
+        "tunable": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "calibration_ref": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "unverified": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "deviation_reason": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "source": {
+      "oneOf": [
+        {
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object"
+          }
+        }
+      ]
+    }
+  }
+}
