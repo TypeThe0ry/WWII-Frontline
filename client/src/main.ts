@@ -14,6 +14,7 @@ declare global {
       heightAt: (x: number, z: number) => number;
       nodes: () => number[][];
       loadMs: number;
+      project: (x: number, z: number) => { x: number; y: number; depth: number };
     };
   }
 }
@@ -39,7 +40,7 @@ async function boot(): Promise<void> {
     const { attachTerrain } = await import('./render/terrain/terrain-scene');
     terrainHandle = await attachTerrain(ctx, params);
     const t = terrainHandle.terrain;
-    window.__terrain = { stats: () => JSON.parse(JSON.stringify(t.stats)) as unknown, heightAt: (x, z) => t.heightAt(x, z), nodes: () => t.debugNodes(), loadMs: terrainHandle.loadMs };
+    window.__terrain = { stats: () => JSON.parse(JSON.stringify(t.stats)) as unknown, heightAt: (x, z) => t.heightAt(x, z), nodes: () => t.debugNodes(), loadMs: terrainHandle.loadMs, project: (x, z) => terrainHandle!.project(x, z) };
   }
 
   const overlay = new DebugOverlay(params.get('debug') === '1');

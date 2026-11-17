@@ -54,6 +54,8 @@ export interface TerrainStats {
 export interface TerrainOptions {
   kind: 'webgpu' | 'webgl2';
   debug?: TerrainDebugMode;
+  /** Edge-mask stitching (default true). `false` is a debug/control switch (`?terrain_stitch=0`): shows cracks. */
+  stitch?: boolean;
 }
 
 const MAX_NODES = 2048;
@@ -76,10 +78,12 @@ export class Terrain {
   private readonly vp = new Matrix();
   private readonly t0 = performance.now();
   private debug: TerrainDebugMode;
+  private readonly stitch: boolean;
 
   constructor(scene: Scene, data: TerrainData, opts: TerrainOptions) {
     this.data = data;
     this.debug = opts.debug ?? 'none';
+    this.stitch = opts.stitch ?? true;
     const engine = scene.getEngine();
     if (data.meta.height.res_m !== 1) throw new Error('Terrain: near height map must be 1 m resolution');
 
@@ -170,6 +174,12 @@ export class Terrain {
     this.camPos.copyFrom(p);
     this.tree.select(p.x, p.y, p.z, this.planes, this.selection);
     const sel = this.selection;
+    if (!this.stitch) {
+      for (let i = 0; i < sel.count; i++) {
+        sel.data[i * INSTANCE_STRIDE + 4] = 0;
+        sel.data[i * INSTANCE_STRIDE + 5] = 0;
+      }
+    }
     if (sel.count > 0) this.instances.update(sel.data.subarray(0, sel.count * INSTANCE_STRIDE));
     this.mesh.forcedInstanceCount = Math.max(sel.count, 1);
     this.mesh.setEnabled(sel.count > 0);

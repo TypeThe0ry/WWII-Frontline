@@ -1,5 +1,5 @@
 import { Color4 } from '@babylonjs/core/Maths/math.color';
-import { Vector3 } from '@babylonjs/core/Maths/math.vector';
+import { Matrix, Vector3 } from '@babylonjs/core/Maths/math.vector';
 import type { UniversalCamera } from '@babylonjs/core/Cameras/universalCamera';
 import type { RenderContext } from '../engine';
 import { Terrain, parseTerrainDebug } from './terrain';
@@ -7,6 +7,8 @@ import { loadTerrainData } from './terrain-data';
 
 export interface TerrainHandle {
   terrain: Terrain;
+  /** Screen position (CSS px of the canvas) of the terrain surface point above world (x,z); for e2e probes. */
+  project(x: number, z: number): { x: number; y: number; depth: number };
   loadMs: number;
   /** Overlay lines (nodes per LOD, select time, upload size). */
   overlayLines(): string[];
@@ -35,7 +37,7 @@ export async function attachTerrain(ctx: RenderContext, params: URLSearchParams)
   const mapId = params.get('map') ?? 'm0';
   const data = await loadTerrainData(`${import.meta.env.BASE_URL}maps/${mapId}/`);
   const debug = parseTerrainDebug(params.get('terrain_debug'));
-  const terrain = new Terrain(ctx.scene, data, { kind: ctx.kind, debug });
+  const terrain = new Terrain(ctx.scene, data, { kind: ctx.kind, debug, stitch: params.get('terrain_stitch') !== '0' });
   if (debug === 'flat') ctx.scene.clearColor = new Color4(1, 0, 1, 1);
 
   const cam = ctx.scene.activeCamera as UniversalCamera;
@@ -55,6 +57,12 @@ export async function attachTerrain(ctx: RenderContext, params: URLSearchParams)
 
   const handle: TerrainHandle = {
     terrain,
+    project(x, z) {
+      const eng = ctx.engine;
+      const vp = cam.viewport.toGlobal(eng.getRenderWidth(), eng.getRenderHeight());
+      const v = Vector3.Project(new Vector3(x, terrain.heightAt(x, z), z), Matrix.IdentityReadOnly, cam.getTransformationMatrix(), vp);
+      return { x: (v.x * ctx.canvas.clientWidth) / eng.getRenderWidth(), y: (v.y * ctx.canvas.clientHeight) / eng.getRenderHeight(), depth: v.z };
+    },
     loadMs: performance.now() - t0,
     overlayLines() {
       const s = terrain.stats;

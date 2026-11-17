@@ -356,4 +356,31 @@ describe('selection statistics (acceptance 2; timing is reported by cdlod-quadtr
     expect(med(counts)).toBeGreaterThanOrEqual(10);
     expect(med(counts)).toBeLessThanOrEqual(450);
   });
+
+  it('selectNodes CPU time: median over 1000 random poses < 0.3 ms (best of 3 rounds; node `performance.now`)', () => {
+    const qt = new CdlodQuadtree(layout, buildNodeBounds(layout, () => [1, 11]));
+    const sel = makeSelection();
+    const rand = rng(5);
+    const poses = Array.from({ length: 1000 }, () => {
+      const pos = new Vector3(rand() * 256, 1.7 + rand() * 30, rand() * 256);
+      const yaw = rand() * Math.PI * 2;
+      const target = pos.add(new Vector3(Math.sin(yaw), (rand() - 0.5) * 0.8, Math.cos(yaw)));
+      return { pos, vp: Matrix.LookAtLH(pos, target, Vector3.Up()).multiply(Matrix.PerspectiveFovLH(1.0, 16 / 9, 0.1, 12000)) };
+    });
+    const planes = new Float32Array(24);
+    const medians: number[] = [];
+    for (let round = 0; round < 3; round++) {
+      const t: number[] = [];
+      for (const { pos, vp } of poses) {
+        const t0 = performance.now();
+        frustumPlanes(vp, planes);
+        qt.select(pos.x, pos.y, pos.z, planes, sel);
+        t.push(performance.now() - t0);
+      }
+      t.sort((a, b) => a - b);
+      medians.push(t[500]!);
+      console.log(`selectNodes round ${round}: median ${t[500]!.toFixed(4)} ms, p99 ${t[990]!.toFixed(4)} ms (incl. plane extraction)`);
+    }
+    expect(Math.min(...medians)).toBeLessThan(0.3);
+  });
 });
