@@ -4,7 +4,7 @@
  *
  * UI_SPEC 5.2 binds sprint to Left Shift, while the task card and GAMEDESIGN 9.1 (sim `AUX_WALK`) make
  * Shift the walk modifier; the task acceptance is explicit, so Shift = walk here and sprint sits on
- * Right Shift until the rebinding UI exists (PLAN_ISSUES PI-021).
+ * Right Shift until the rebinding UI exists (PLAN_ISSUES PI-023).
  */
 import { AUX_WALK, BUTTONS, MOVE_MAX } from './buttons';
 

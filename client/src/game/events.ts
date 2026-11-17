@@ -13,7 +13,7 @@ export const EV_DAMAGE_DIR = 4;
 
 /**
  * Metres per code of the 14-bit position fields of Shot / Impact. The protocol leaves their metric
- * meaning to the consumer (M1); M0 assumes the 256 m test map spans the full 14 bits (PLAN_ISSUES PI-021).
+ * meaning to the consumer (M1); M0 assumes the 256 m test map spans the full 14 bits (PLAN_ISSUES PI-023).
  */
 export const EVENT_POS_STEP_M = 256 / 16384;
 const TAU = Math.PI * 2;

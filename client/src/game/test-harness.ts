@@ -219,6 +219,29 @@ const rd = {
   tick: (c: Uint8Array) => (((c[2] as number) << 24) | ((c[3] as number) << 16) | ((c[4] as number) << 8) | (c[5] as number)) >>> 0,
 };
 
+/** One delivered snapshot of a recorded run (compact: only what `GameLoop` reads from the self block). */
+export interface RecordedSnap {
+  /** Client frame index at which it was delivered. */
+  f: number;
+  tick: number;
+  ack: number;
+  slack: number;
+  corr?: [number, number, number];
+}
+
+export interface Fixture {
+  description: string;
+  frameMs: number;
+  frames: number;
+  /** input script name (see `SCRIPTS`) */
+  script: string;
+  rttMs: number;
+  expected: { corrections: number; snaps: number; initialSyncs: number; toleranceKept: number; replayedCommands: number; bundles: number };
+  snaps: RecordedSnap[];
+}
+
+export const SCRIPTS: Record<string, InputScript> = { standStill: () => ({}), walkCircle: (n) => ({ moveZ: 127, yaw: Math.round(((n * 0.5 * Math.PI) / 180 / (Math.PI * 2)) * 65536) & 0xffff }) };
+
 export interface Scenario {
   seconds: number;
   /** client -> server and server -> client link models */
@@ -236,8 +259,8 @@ export interface Scenario {
   bots?: number;
   /** Frame times of the client in ms (default 1000/60). */
   frameMs?: number;
-  /** Record per-frame samples (render pos) for post analysis. */
-  recordFrames?: boolean;
+  /** Collects every delivered snapshot (frame index + fields) for `replayFixture`. */
+  record?: RecordedSnap[];
 }
 
 export interface ScenarioResult {
@@ -442,7 +465,14 @@ export async function runScenario(sc: Scenario): Promise<ScenarioResult> {
       }
     }
     const w0 = performance.now();
-    for (const b of down.take(t)) game.onSnapshot(b);
+    for (const b of down.take(t)) {
+      if (sc.record) {
+        const sn = FakeSnapshotDecoder.store.get((b[0] as number) | ((b[1] as number) << 8) | ((b[2] as number) << 16)) as FakeSnap;
+        const hasCorr = sn.self !== null && (sn.self[1] as number) !== 0;
+        sc.record.push({ f, tick: sn.tick, ack: sn.ackInputSeq, slack: sn.inputSlack, ...(hasCorr && sn.self ? { corr: [sn.self[2] as number, sn.self[3] as number, sn.self[4] as number] as [number, number, number] } : {}) });
+      }
+      game.onSnapshot(b);
+    }
     const { steps, alpha } = stepper.advance(frameMs);
     game.update(steps, alpha, frameMs);
     updateMs.push(performance.now() - w0);
@@ -489,4 +519,39 @@ export async function runScenario(sc: Scenario): Promise<ScenarioResult> {
     correctionTimesS,
     game,
   };
+}
+
+/** Re-runs the client against a recorded snapshot sequence (no server): the regression harness for later changes. */
+export async function replayFixture(fx: Fixture): Promise<{ game: GameLoop }> {
+  const wasm = await loadWasm();
+  const sink: { last?: BundleArgs } = {};
+  const bus = new EventBus<GameEvents>();
+  const dec = new FakeSnapshotDecoder();
+  let t = 0;
+  const rtt = fx.rttMs;
+  const nowTicks = (): number => t / TICK_MS;
+  const clock: ClockPort = {
+    now: nowTicks,
+    estimatedServerTick: () => Math.floor(nowTicks()),
+    inputTargetTick: () => Math.floor(nowTicks()) + Math.ceil(rtt / 2 / TICK_MS) + 1,
+    applySlack: () => undefined,
+    rtt: () => rtt,
+  };
+  const net: NetPort = { clock, sendInputBundle: () => undefined };
+  void sink;
+  const game = new GameLoop({ wasm, decoder: dec, bus, net, input: new ScriptInput(SCRIPTS[fx.script]), matchSeed: 1n, mapId: 0, playerId: 3, now: () => t, log: () => undefined });
+  game.loadCollision(loadChunks());
+  const stepper = new FixedStepper();
+  let si = 0;
+  for (let f = 0; f < fx.frames; f++) {
+    t += fx.frameMs;
+    while (si < fx.snaps.length && (fx.snaps[si] as RecordedSnap).f === f) {
+      const r = fx.snaps[si++] as RecordedSnap;
+      const snap: FakeSnap = { tick: r.tick, ackInputSeq: r.ack, inputSlack: r.slack, self: selfArray({ ...(r.corr ? { corr: r.corr } : {}), ammo: 8, reserve: 80 }), ids: [], pos: [], yaw: [], pitch: [], removed: [], events: new Uint8Array(0) };
+      game.onSnapshot(FakeSnapshotDecoder.wire(snap));
+    }
+    const { steps, alpha } = stepper.advance(fx.frameMs);
+    game.update(steps, alpha, fx.frameMs);
+  }
+  return { game };
 }

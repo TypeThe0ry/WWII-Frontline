@@ -5,7 +5,7 @@ describe('pred_hash (CRC-8 poly 0x07 over the wire-quantised position)', () => {
   it('CRC-8 check value of "123456789" is 0xF4 (standard CRC-8/SMBUS)', () => {
     expect(crc8(new TextEncoder().encode('123456789'))).toBe(0xf4);
   });
-  // Golden values for the server side (computed independently in Python, see PLAN_ISSUES PI-021).
+  // Golden values for the server side (computed independently in Python, see PLAN_ISSUES PI-023).
   it('golden positions', () => {
     expect(predHash(0, 0, 0)).toBe(0);
     expect(predHash(128, 2.4, 56)).toBe(66);

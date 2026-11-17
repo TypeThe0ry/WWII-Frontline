@@ -2,7 +2,7 @@
  * `pred_hash` (ARCHITECTURE 6.5.3): CRC-8 over the wire-quantised position, so that the server can tell
  * "the client's prediction agrees with me" from one byte and only then omit `pos_corr`.
  *
- * Definition (shared contract with the server, PLAN_ISSUES PI-021; the task card asks for a sim-wasm
+ * Definition (shared contract with the server, PLAN_ISSUES PI-023; the task card asks for a sim-wasm
  * `predHash`, which does not exist yet, so the function lives here and `pred-hash.test.ts` pins golden
  * values for the server side to reproduce):
  *   codes  x = clamp(round(x * 32), 0, 65535)   (protocol::quant::quant_pos_xz, step 1/32 m)

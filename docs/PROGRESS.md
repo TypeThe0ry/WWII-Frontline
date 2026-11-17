@@ -346,6 +346,12 @@ M0 共 21 个任务已提交（M0-021 待提交）；提交哈希取自 `git log
 - 遗留：8000°/s 转速上限在 30 Hz/16 位角下不可触发（PI-022，M1 改滑动窗口）；缺失输入清边沿位是对 §6.3 的细化；Hello 无昵称；M0-019 从 `SimBridge`/`PlayerInputState` 读 ack 与 pred_hash。
 - 影响：M0-019 在 `sim_thread::tick_body` 的 `aoi_and_snapshot/send` 钩子里接 `Sessions::handle_of(..).send`；M0-026 的 bot 必须走 `PlayerInput::ingest`/`validate_input`；服务器二进制现需地形（或 `--empty-world`/`--dev-echo`）；`logging::CURRENT_TICK` 进程全局，同进程多服务器的测试需串行。
 
+### M0-022 client/game：输入、预测、对账与插值 — partial — 2026-11-17 — 提交 （待总控填）
+- 做了什么：键鼠采样与 Pointer Lock（`client/src/input`）、30 Hz 预测 + 未确认环（128）+ 对账（0.05 m / 1.0 m，平滑 100 ms τ=40 ms）+ 100 ms 缓冲插值 + 事件解码（`client/src/game`）、`?server=` 联网入口（`net-game.ts`）、`sync-map` 追加 16 块碰撞与 wasm 包；测试以进程内假服务器为主（同一 wasm Predictor 作权威端，含延迟/抖动/丢包/乱序）。
+- 关键实测（本机非参考机）：正常路径零纠正（走动 60 s、快照延迟 100 ms 丢 2 %：稳态 0 次、snaps 0；启动 1 次 initial sync）；注入 0.3 m 偏差每 10 s：稳态 5 次纠正、snaps 0、最大可见偏移 0.189 m；预测步 P50 0.010 ms，回滚+重放 8–32 条 0.03–0.07 ms；60 实体每帧 P99 0.088 ms（预算 2.1）；插值误差 P99 3.0 %；InputBundle 3 条 27.1 B（≈20 kbps 含 58 B 线路开销）。
+- 遗留：实机 `tc netem` 验收（需 M0-019 真实快照）未测；`pred_hash`/`pos_corr`/`ack_snapshot_tick` 语义由本任务暂定（PI-023，M0-019 须照此实现）；Shift=walk 与 UI_SPEC 冲突；事件位置码米制暂定。
+- 影响：M0-025 用 `window.__netGame.game.state`（本地位姿、实体 SoA、signals）与事件总线接渲染；M0-019 必须读 PI-023；M0-027 的 headless 客户端可复用 `GameLoop` 的 `NetPort`；e2e：`pnpm -C client exec playwright test -c playwright.game.config.ts`。
+
 
 ## 8. 如何维护本文件
 

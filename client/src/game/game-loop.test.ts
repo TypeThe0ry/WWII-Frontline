@@ -1,5 +1,7 @@
+import { readFileSync, writeFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { CAN_RUN, HAVE_TERRAIN, HAVE_WASM, REQUIRE, runScenario, standStill, walkCircle, type Scenario, type ScenarioResult } from './test-harness';
+import { CAN_RUN, HAVE_TERRAIN, HAVE_WASM, REQUIRE, replayFixture, runScenario, standStill, walkCircle, type Fixture, type RecordedSnap, type Scenario, type ScenarioResult } from './test-harness';
 
 if (!CAN_RUN && REQUIRE) throw new Error(`FRONTLINE_REQUIRE_TERRAIN=1 but wasm pkg (${HAVE_WASM}) or terrain chunks (${HAVE_TERRAIN}) is missing`);
 
@@ -129,4 +131,38 @@ describe.skipIf(!CAN_RUN)('main-thread cost (acceptance 7: game update + predict
     expect(r.game.state.entities.count).toBe(60);
     expect(q(0.99)).toBeLessThanOrEqual(2.1);
   }, 120_000);
+});
+
+describe.skipIf(!CAN_RUN)('regression fixture (recorded snapshot sequence, replayed without a server)', () => {
+  const FIXTURE = fileURLToPath(new URL('../../tests/fixtures/prediction-walk-kick.json', import.meta.url));
+  const scenario = (record: RecordedSnap[]): Scenario => base({ seconds: 20, up: link(50, 10, 0.02), down: link(50, 10, 0.02), script: walkCircle, seed: 21, kick: { everyS: 8, metres: 0.3 }, record });
+
+  it('replaying the stored run reproduces its reconciliation exactly', async () => {
+    if (process.env.FRONTLINE_UPDATE_FIXTURES === '1') {
+      const record: RecordedSnap[] = [];
+      const r = await runScenario(scenario(record));
+      const fx: Fixture = {
+        description: 'M0-022 regression: 20 s of walking in a circle, RTT 100 ms (+-10 ms jitter), 2 % loss, the server pushes the player 0.3 m every 8 s. Snapshots as delivered to the client (frame index f at 60 fps).',
+        frameMs: 1000 / 60,
+        frames: Math.floor(20000 / (1000 / 60)),
+        script: 'walkCircle',
+        rttMs: 110,
+        expected: { corrections: 0, snaps: 0, initialSyncs: 0, toleranceKept: 0, replayedCommands: 0, bundles: 0 },
+        snaps: record,
+      };
+      // the stored expectation comes from replaying the fixture itself (the clock model differs slightly from the live run)
+      const { game } = await replayFixture(fx);
+      const s = game.reconciler.stats;
+      fx.expected = { corrections: s.corrections, snaps: s.snaps, initialSyncs: s.initialSyncs, toleranceKept: s.toleranceKept, replayedCommands: s.replayedCommands, bundles: game.stats.bundles };
+      writeFileSync(FIXTURE, JSON.stringify(fx));
+      console.log(`[fixture] written ${record.length} snapshots, live run corrections ${r.corrections}, replay ${JSON.stringify(fx.expected)}`);
+    }
+    const fx = JSON.parse(readFileSync(FIXTURE, 'utf8')) as Fixture;
+    const { game } = await replayFixture(fx);
+    const s = game.reconciler.stats;
+    expect({ corrections: s.corrections, snaps: s.snaps, initialSyncs: s.initialSyncs, toleranceKept: s.toleranceKept, replayedCommands: s.replayedCommands, bundles: game.stats.bundles }).toEqual(fx.expected);
+    expect(s.initialSyncs).toBe(1);
+    expect(s.snaps).toBe(0);
+    expect(s.corrections).toBeGreaterThanOrEqual(2); // the two 0.3 m pushes
+  });
 });

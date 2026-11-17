@@ -327,3 +327,15 @@
 - **临时处理**：按此实现。
 - **裁决（Fable 填写）**：
 
+
+### PI-023 M0-022：pred_hash / pos_corr / ack_snapshot_tick 的精确语义；事件位置码米制；Shift 键位冲突
+
+- **状态**：open
+- **类别**：接口 / 协议语义 / 键位
+- **提出者 / 日期**：M0-022 / 2026-11-17
+- **问题**：①ARCHITECTURE §6.5.3 与 M0-019/022 任务卡只写"位置量化后 CRC8"，没说：哈希对应**哪个 tick/命令**的位置、`ack_snapshot_tick`（"16 bit 增量"）相对谁取增量、`pos_corr` 是哪一刻的位置、哈希函数的量化与字节序；任务卡要求 sim-wasm 暴露 `predHash(posBytes)`，但 wasm 包没有（且本任务不改 crates/）。②Shot / Impact 事件的 14 位位置码"米制含义由消费者定义"（协议注释），客户端必须先定一个。③任务验收 4（"Shift = walk 位"，M0-011/GAMEDESIGN §9.1）与 UI_SPEC §5.2（Left Shift = 冲刺）冲突；UI_SPEC §5.1 另禁止 Ctrl 作核心键。④`HitConfirm` 事件无击杀位；快照实体记录无"种类"字段；本地玩家在快照实体表里的线上 id 与 `player_id` 的对应关系未定。
+- **证据**：client/src/game/{pred-hash,events,snapshot-apply,game-loop}.ts、client/src/input/keymap.ts、client/src/game/{pred-hash,reconcile,game-loop}.test.ts（黄金值：`predHash(128,2.4,56)=66`、`(100.40625,12,300)=175`、`(255.97,200,3.5)=151`、`(0,0,0)=0`，由独立 Python 实现交叉核对）。
+- **建议方案（已按此实现，M0-019 请照此实现或回复修改）**：①`ack_snapshot_tick` = 客户端最近一次收到的快照 `server_tick` 的**低 16 位**（服务器用环绕比较还原）；`pred_hash` = 客户端在该快照的 `ack_input_seq` **之后**的预测位置（若该快照带了被接受的 `pos_corr`，则取该权威位置）的哈希；服务器与自己**发出该快照时**的玩家位置（即执行完 `ack_input_seq` 对应命令后的位置）比较，不等才在下一包的 `self_state` 带 `pos_corr`，`pos_corr` = 下一包自身 `ack_input_seq` 之后的权威位置（1/32 m 量化）。哈希 = CRC-8（多项式 0x07，初值 0，无反射/异或）over 6 字节小端 `[x u16, y u16(13 bit), z u16]`，码 = `floor(v*32+0.5)` 钳位到 0..65535 / 0..8191（同 `protocol::quant::quant_pos_*`）。若 M0-019 愿意，可在 sim-wasm 增加同名 `predHash(x,y,z)` 并让客户端改调用（pred-hash.test.ts 的黄金值即对拍样本）。启动时客户端起点是猜的，`ack_input_seq=0`（无条目）+ 哈希不匹配会让服务器在第 1 个快照里带 `pos_corr`，客户端把它当 initial sync（不计纠正）。②M0 暂把事件 14 位位置码当作覆盖 256 m 的 M0 地图（`EVENT_POS_STEP_M = 256/16384`），方向 yaw 10 位 / pitch 9 位（`PITCH_BITS_EVENT`）；M1 定米制时改这一个常量。③Shift = walk（任务验收与 sim `AUX_WALK` 一致），冲刺暂放 Right Shift，等 M2-041 重绑定界面；UI_SPEC §5.2 的默认键位表需要裁定"Shift 到底是走还是冲刺"。④`hit.confirm.killed` 恒 false（击杀走规则事件，M1）；`entity.spawned.kind` 恒 `'player'`；`selfWireId` 默认取 `player_id`（线上实体 id 若不同，M0-019/025 调整）。
+- **受影响任务**：M0-019（pred_hash 比较与 pos_corr 内容）、M0-025（`GameState` / 事件接线）、M0-027、M1-041（载具预测的哈希）、M2-041（键位）、M1-025（FireCmd）。
+- **临时处理**：按此实现。
+- **裁决（Fable 填写）**：
