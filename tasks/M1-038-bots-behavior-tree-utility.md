@@ -68,5 +68,5 @@ pub enum Goal { CapturePoint(ObjId), Defend(ObjId), Engage(PlayerId), Revive(Pla
 
 ## 备注/已知风险
 - 难度参数均为【待调参】初值，状态 `initial`；校准留给平衡模拟（M2+）。
-- 室内战斗的掩体点依赖地图数据 `cover_points`（MAPS §6.x）；M1 若缺则用 navmesh 边缘 + 墙体射线自动生成，写 PLAN_ISSUES。
+- 室内战斗的掩体点依赖地图数据 `cover_points`（GAMEDESIGN §20.3 B-03；字段若未在 MAPS §6.2 定义，写 PLAN_ISSUES）；M1 若缺则用 navmesh 边缘 + 墙体射线自动生成，写 PLAN_ISSUES。
 - 感知性能：LoS 射线数量需限预算（每次思考 ≤ 8 条射线），否则超 60 µs。
