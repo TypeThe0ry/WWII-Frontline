@@ -422,6 +422,36 @@ blocked / in-progress / todo：无。M0 的 33 个任务全部已提交（M0-033
 - 遗留 / 需人工：真实 CC0 样例未入库；体积比对法线图占比敏感；`toktx` 换为 WASM 编码器等取舍见 PI-033，待 Fable 确认；CI 墙钟 H-102。
 - 影响：M1-003 读 `work/{asset_id}/lod{N}{_fp|_tp}.glb`、`collision.glb`、`stats.json`；M1-006 需按 RRRG 还原法线。
 
+### M1-003 素材管线：.fpak 分块容器（D-PAK） — partial — 2026-11-17 — 提交见 git log
+
+- 做了什么：`src/fpak/`（格式常量、`FpakWriter`、`FpakReader`、Buffer/File/HTTP-Range 三种后端含 200 降级、自有网格/贴图条目布局、opaque 检查、standalone 扫描）、`SPEC.md`（字节级布局与版本策略）、`pack` 与 `assert-no-standalone` 子命令、`scripts/assert-*.ts`。
+- 关键实测：write 43 ms (16.0 MiB), 1000 reads 201 ms；16 MB 包打开 + 读 1 条目的传输 = footer 32 B + 索引 + 条目；1000 次随机 Range 读取全部一致；网格/贴图条目不被 GLB/KTX2/`file` 识别。
+- 遗留 / 需人工：PI-034 待 Fable 确认；蒙皮网格条目、浏览器端读取分别属 M1-045、M1-006；CI 墙钟 H-102。
+- 影响：M1-005 读 `assets/processed/packs.json`；M1-004 用 `kind:'audio'`、codec 3 槽位；条目 id 用 `@` 命名。
+
+### M1-004 素材管线：音频处理与打包 — partial — 2026-11-17 — 提交见 git log
+
+- 做了什么：`src/audio/`（ffmpeg 子进程封装、两遍 loudnorm、Opus-in-WebM + AAC-LC 编码、元数据剔除与自检、探测样本与 `chooseCodec`、`packAudio`）、`fpak/entry-audio.ts`（音频条目头）、`PROBE.md`、`audio-pack` 子命令（写 `audio-report.json`、`probe.json`）。
+- 关键实测：往返时长误差 ≤ 20 ms、相关系数 ≥ 0.95；归一后偏差 ≤ ±1 LU、TP ≤ -1 dBTP；1 s Opus 条目 ≤ 9 KB；30 x 5 s clips packed in 7.3 s (4 parallel ffmpeg jobs)。
+- 遗留 / 需人工：PI-035 待 Fable 确认；ffmpeg 许可证未核实；探测与取包由 M1-006/M1-062 实现。
+- 影响：M1-005 读 `work/audio-report.json` 与 `packs.json`；音频条目 id 用 `@opus`/`@aac`。
+
+### M1-005 素材管线：manifest 与体积预算门禁 — partial — 2026-11-17 — 提交见 git log
+- 新增 `manifest.ts`（读 `.fpak` 索引生成 `assets/manifests/manifest.json`，键/条目排序，仅 `build` 含时间戳）、`budget.ts`（bundle 求和、超预算 1 % 失败、较基线增量 > 20 % 无 `budget-approved` 失败、`core` 只读外部测量）、`consistency.ts`（offset/bytes/sha256 与 `.fpak` 复核、`placeholder:false` 对台账 OK），CLI `manifest` / `manifest-budget`，`manifest-budget.yml` 工作流。
+- 实测：vitest 160 项通过（新增 26）；1000 条目生成 + 校验 < 5 s；空仓库状态作业通过，`core` skipped。
+- 遗留：`core` size-report 缺失；CI 墙钟待 PR 实跑；PI-036 待 Fable 确认。
+- 影响：M1-006 按 manifest 的 `entry`（`.fpak` 逻辑 ID）+ `offset/bytes` 取条目；M1-035 区块命名须与 bundle 通配一致。
+
+### M1-006 客户端：fpak 加载、解码 Worker 与缓存 — partial — 2026-11-17 — 提交见 git log
+- 新增 `client/src/render/assets/`：浏览器 `fpak-reader`（Range + 200 降级 + index crc）、`manifest`、`cache`（内存 LRU + OPFS/Cache API 自动降级）、`worker-pool`、`upload-scheduler`、`placeholder`、`index`（`AssetLoader`：去重/重试/取消/节流进度/静音回退）。
+- 实测：client vitest 新增 20 项全绿，tsc/eslint 干净。
+- 遗留：Worker 内 KTX2/Meshopt 解码与 Playwright 浏览器指标拆 M1-006b（PI-037）。
+- 影响：M1-049 / M1-062 通过 `loadBytes|loadMesh|loadAudioBytes` + `LoadToken` 取消使用。
+
+### M1-006b 客户端解码 Worker（网格 meshopt、纹理条目解析） — partial — 2026-11-17 — 提交见 git log
+- 新增 `entry-decode.ts`、`decode-worker.ts`、`worker-decoder.ts`（Worker 池封装 + 同线程回退），client 依赖 `meshoptimizer@1.3.0`；网格条目往返测试（位置/UV/索引/材质/纹理引用）通过，client vitest 共 24 项。
+- 遗留：BasisU 转码（M1-006c，需先定 transcoder 来源与许可证）、Playwright 指标（需参考机与 100 MB 样例）。PI-038 待 Fable 确认。
+
 ## 8. 如何维护本文件
 
 - **执行者**：收工前，在"任务日志"末尾追加本任务条目（`### 任务 ID 标题 — 状态 — 日期 — 提交 abc1234`，3–6 行：做了什么、关键实测数字、遗留问题/需人工事项、对后续任务的影响）；写入前重新读取文件末尾（并行执行者可能同时追加），只追加、不改别人的条目。数字必须来自实测，查不到写"未记录"。同时更新 `tasks/STATUS.md` 自己那一行。

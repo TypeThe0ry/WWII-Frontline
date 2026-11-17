@@ -507,7 +507,80 @@
 - **临时处理**：已按上实现。
 - **裁决（Fable 填写）**：
 
-### PI-034 CI 上两个确定性哈希与本机不一致的根因：`f32::atan2` 走平台 libm、`native.json` 数据哈希过期
+### PI-034 M1-003：`.fpak` 的几处格式取舍（条目命名、header/footer 字段、网格/贴图条目内容、分包）
+
+- **状态**：open
+- **类别**：素材/管线（格式）
+- **提出者 / 日期**：M1-003 / 2026-11-17
+- **问题 / 做法**：
+  1. **条目命名**：任务卡用 `wpn_us_m1_garand@lod0`，ARCHITECTURE §11.3 的 manifest 示例用 `veh_us_m4a1_sherman/lod0`。实现按任务卡用 `@`（`^[a-z][a-z0-9_]*(@[a-z0-9_]+)?$`），M1-005 写 manifest 的 `entry` 字段时用同一写法；§11.3 的斜杠写法视为示意。
+  2. **header/footer**：header 32 B（magic、version、flags、entry_count、index_offset，其余保留），条目起点 32、16 B 对齐；footer 32 B，`version` 放在 footer（打开时不必读 header），CRC32 校验索引。任务卡写"fnv/crc32"，取 CRC32。
+  3. **条目布局 v1**：网格条目 = 自有头 + 每图元 `meshopt` 压缩的交错顶点缓冲 + 索引缓冲 + 4×4 矩阵（带 `quantize` 的反量化变换）+ 材质表（含贴图条目的逻辑 ID）；贴图条目 = KTX2 去掉标准头后按"最小 mip 在前"重排，保留 DFD 与 ETC1S 全局数据。**当前不支持蒙皮/动画网格**（M1-045 在新 `layout_version` 里扩展）。运行期解码属 M1-006。
+  4. **分包**：默认按类别（逻辑 ID 前缀）分组，单包超过 16 MiB 在资产之间切分；64 m 地图区块的分组通过 `pack({group})` 回调由地图任务传入（M1-049/M1-035），本任务不生成区块。
+  5. **`pack` 的权限**：对每个资产先调用 `assertAllowed(id, 'CONVERT')`（台账行必须存在且 OK；normalize 已要求过 CONVERT）；打包本身没有独立的 D-MOD 处理码。
+  6. **meta 条目**：每个资产一个 `@meta` JSON 条目（逻辑 ID、各 LOD 三角/顶点数、碰撞与贴图摘要），不含台账 ID、源文件名或渠道名；已核对产物中不含这些字符串（e2e 断言）。
+  7. **不透明性**：`assert-opaque` 检查魔数、GLB/glTF JSON 解析、`ktx-parse`、`file(1)`；对照组（真实 KTX2）会被识别，保证检查有效。这只说明"不是标准文件"，不是保护，SPEC.md 与代码注释均已写明。
+- **证据**：`tools/asset-pipeline/src/fpak/`、`src/pack.ts`、`tools/asset-pipeline/src/fpak/SPEC.md`；`pnpm -C tools/asset-pipeline test` 123 项、`test:e2e` 7 项通过。
+- **受影响任务**：M1-005（`packs.json` → manifest）、M1-006（读取器与解码 Worker）、M1-004（音频条目 `kind:'audio'`、codec 3）、M1-045（蒙皮网格布局）。
+- **临时处理**：已按上实现。
+- **裁决（Fable 填写）**：
+
+### PI-035 M1-004：音频条目命名（`@opus`/`@aac`）、Opus 码率模式、短剪辑响度回退与条目头
+
+- **状态**：open
+- **类别**：素材/管线（格式）
+- **提出者 / 日期**：M1-004 / 2026-11-17
+- **问题 / 做法**（请 Fable 确认或改写）：
+  1. **命名**：任务卡写 `…#opus` / `…#aac`；`.fpak` 逻辑 ID 的变体分隔符只允许 `@`（PI-034），所以用 `snd_…@opus` / `snd_…@aac`。M1-006/M1-062 按此取包；PROBE.md 已固定。
+  2. **Opus 用 CBR**（`-vbr off`）：1 s 单声道 64 kbps 正弦用 VBR 得 10.6 KB（> 9 KB 验收线），CBR 得 9.0 KB。代价是复杂音频的质量/体积折中不如 VBR；若需要可对 `ambience` 单独改回 VBR（`encode.ts` 一处）。
+  3. **条目不是裸 WebM/MP4**：音频条目 = 32 字节自有头 + 容器字节（`decodeAudioData` 需要完整容器）。头里放 `preload`、`loop`、时长等；条目因此不以 EBML/ftyp 魔数开头，但容器内容仍可被提取后识别，这只是"非独立文件分发"，不是保护。
+  4. **响度**：目标 LUFS 表 near -18 / ambience -24 / ui -20 取自任务卡；其余类别（gun_mid -20、gun_far -22、foley -20、music -20、voice -18）为【待调参】的暂定值。True Peak 目标 -1.5 dBTP（验收 ≤ -1）。ffmpeg `loudnorm` 对短于约 400 ms 的剪辑得不到积分响度（-inf）：回退为峰值归一到 -3 dBFS，报告里 `loudness_measured:false`、`integrated_lufs:-70`。
+  5. **AAC 容器**：MP4（`-movflags +faststart`，`-map_metadata -1`，bitexact），不是裸 ADTS，以便 Safari 的 `decodeAudioData`；解码侧 AAC 有编码器延迟/补零，往返时长判据只对 Opus 取 ±20 ms。
+  6. **fixtures**：任务卡写 `fixtures/sine_1s.wav`；测试里用自写的 WAV 写入器现场生成（含注入 `bext`/`iXML` 的版本），不新增二进制 fixture。
+  7. **依赖**：用系统 `ffmpeg`（GitHub `ubuntu-latest` 自带；本机 6.1.1），不新增 npm 依赖。许可证见 LICENSES §5 新增行（未核实，不随游戏分发）。
+- **证据**：`tools/asset-pipeline/src/audio/`、`src/fpak/entry-audio.ts`、`PROBE.md`；`pnpm -C tools/asset-pipeline test` 134 项、`test:e2e` 9 项通过。
+- **受影响任务**：M1-005（体积门禁读 `audio-report.json`）、M1-006/M1-062（探测与取包）、M1-065（真实音频接入）。
+- **临时处理**：已按上实现。
+- **裁决（Fable 填写）**：
+
+### PI-036 M1-005：manifest 由 `.fpak` 反推、`core` 只认外部测量、bundle 通配与分档规则、`audio-report` 资产 ID
+- **问题 / 做法**（请 Fable 确认或改写）：
+  1. **manifest 来源**：`manifest` 命令直接打开 `assets/processed/**/*.fpak` 读索引并计算每条目 sha256（任务卡写"汇总 stats.json、索引、台账"）。`pak/entry/offset/bytes/sha256` 因此天然正确；`stats.json` 只补 `tris` 与资产 ID；`consistency` 用同一读取路径逐条复核（偏移 +1 可被定位到条目）。
+  2. **`@` 变体 → manifest 字段**：`X@lodN[_fp|_tp]` → `lods[]`（带 `suffix`）；`@collision`、`@tex_*`、`@opus|@aac`（`audio[]`，`codec`）、`@meta`。与 ARCHITECTURE §11.3 示例相比，`entry` 是 `.fpak` 逻辑 ID（`veh_x@lod0`，不是 `veh_x/lod0`）、纹理放在资产内联 `textures[]`；示例仅追加 `placeholder`/`req_id`/`index_bytes`。
+  3. **`placeholder`**：台账行存在且 `status=OK` → `false`，否则 `true`；`--overrides` 可强制，但 `placeholder:false` 对应非 OK 台账一律失败（`checkPlaceholders`）。音频资产 ID 取自 `audio-report.json` 的 `asset_id`（`audio-pack` 已写入 item 的 `asset_id` 时才有）。
+  4. **`tier`**：stats 不含 asset-class 的档位，缺省为全档 `low..ultra`；用 overrides（通配）收窄。`*_medium|high|ultra` 的 bundle 只计 `tier` 含该档的资产；bundle 通配 `*` 不跨 `/`，`**` 跨。
+  5. **预算口径**：bundle 字节 = 命中资产全部条目 `bytes` + 每条目索引字节（26 + id 长度）；不含 16 字节对齐填充与头尾（≤ 约 0.1 %，在 1 % 容差内）。`core` 不由 manifest 计算，只读 `--core-size-file`（`core_bytes|br_bytes|total_br_bytes`），缺失即 `skipped`。M0 的 Vite 构建尚未输出 size-report（M1-054 前登记），所以 CI 当前 `core` 为 skipped。
+  6. **默认 bundles.json**：Medium/High/Ultra 暂用同一组类别通配（`bld_* chr_* prop_* snd_* tex_* veg_* veh_* wpn_*`），靠 `tier` 区分；`terrain_carentan/*` 区块（M1-035）使用 `/`，而 `.fpak` 逻辑 ID 不允许 `/`，M1-035 须决定用 `terrain_carentan_b_{bx}_{bz}` 命名并相应改通配。High/Ultra 预算按 350/600 MiB（367001600 / 629145600 B）。
+  7. **基线 manifest**：CI 取目标分支的 `assets/manifests/manifest.json`（`git show origin/<base>:…`），不存在则只做绝对预算；`budget-approved` 标签经环境变量 `BUDGET_APPROVED=1` 传入。
+- **证据**：`tools/asset-pipeline/src/{manifest,budget,consistency}.ts`、`.github/workflows/manifest-budget.yml`、`test/manifest.test.ts`。
+- **受影响任务**：M1-006（消费 manifest；`entry` 为 `.fpak` 逻辑 ID）、M1-035（区块命名）、M1-054（core size-report）、M1-064（按类别汇总）。
+- **临时处理**：已按上实现。
+- **裁决（Fable 填写）**：
+
+### PI-037 M1-006：加载器先交付核心逻辑（partial），Worker 内 KTX2/Meshopt 解码与 Playwright 指标拆为 M1-006b
+- **问题 / 做法**（请 Fable 确认或改写）：
+  1. **拆分**：任务卡自己建议超规模时拆 `M1-006b`。本次（M1-006）交付与环境无关的核心：`fpak-reader`（Range/200 降级/index crc）、`manifest.resolve`、`CacheLayer`（内存 LRU + OPFS/Cache API 探测与自动降级）、`WorkerPool`（优先级/取消/池大小 `min(4, cores-2)`）、`UploadScheduler`（1.5 ms / 2 MB 每帧）、占位命名 `PH_{reqId}`/`PH_{reqId}__{instance}`、静音回退、去重、重试、节流进度。**未交付（M1-006b）**：`decode-worker.ts`（BasisU transcoder WASM + meshopt 解码，设备格式选择）、Playwright 长任务/冷热启动/100 MB 样例指标（验收 1、4 的浏览器部分）、OPFS `FileSystemSyncAccessHandle`（现用异步 `createWritable`，Safari 旧版本可能不支持，失败即降级内存）。解码默认是恒等解码器（`Decoder` 注入点），因此现在返回的 `MeshData` 仍是 `.fpak` 条目原始字节。
+  2. **重试语义**：「重试 3 次（200/400/800 ms）」解释为 1 次首发 + 3 次重试 = 共 4 次尝试，失败后返回占位。404 也重试（任务卡未区分）。
+  3. **占位未被缓存**：占位结果不进入会话级去重表，下一次请求会重试，避免一次网络抖动永久占位。
+  4. **缓存键**：用条目 `sha256`（manifest 提供），内容寻址，跨版本安全；`pak` 路径本身已内容哈希。
+  5. **测试位置**：沿用 client 的 `src/**/*.test.ts`（vite 配置不改），任务卡的 `client/test/assets/*.test.ts` 不使用。
+  6. **与 M1-005 manifest 的对应**：`entry` 为 `.fpak` 逻辑 ID（`x@lod0`），音频 `x@opus|aac`；`manifest.ts` 按 tier 过滤。
+- **证据**：`client/src/render/assets/*`，`pnpm -C client test` 全绿（新增 20 项），`tsc`/`eslint` 干净。
+- **受影响任务**：M1-006b（解码 Worker + 浏览器指标）、M1-049（区块流式用 `loadBytes`/`loadMesh` + 取消）、M1-062（`loadAudioBytes`）。
+- **临时处理**：已按上实现。
+- **裁决（Fable 填写）**：
+
+### PI-038 M1-006b：解码 Worker 已做网格（meshopt）与纹理条目解析，BasisU 转码留给 M1-006c
+- **问题 / 做法**（请 Fable 确认或改写）：
+  1. **已做**：`entry-decode.ts`（网格布局 v1 → 顶点/索引/材质，纹理布局 v1 → KTX2 层数据 + DFD/SGD + `RRRG` 布局标记）、`decode-worker.ts`（Worker 消息处理，Transferable 回传）、`worker-decoder.ts`（按池大小建 Worker 的 `Decoder`，以及同线程 `inlineDecoder` 作测试/无 Worker 回退）。client 新增依赖 `meshoptimizer@1.3.0`（MIT，已在 workspace 中被素材管线使用）。
+  2. **未做（M1-006c）**：KTX2 → BC7/ASTC/ETC2/RGBA 转码需要 BasisU transcoder WASM（或经 Babylon `KhronosTextureContainer2`，需把条目重新拼回 KTX2 文件）；来源与许可证须登记 LICENSES §5，且影响 core 体积（约 0.4 MB br）。需要先定"自带 transcoder"还是"用 Babylon 内置"（后者默认从 CDN 取 WASM，与自托管/离线策略冲突）。裁决前 `loadTexture` 返回已解析的 `DecodedTexture`。
+  3. **Playwright 指标**（长任务 = 0、100 MB 冷热启动）仍未做：需要参考机与 ≥100 MB 样例包，并入 H-021/H-102 之后。
+- **证据**：`client/src/render/assets/{entry-decode,decode-worker,worker-decoder}.ts`、`decode.test.ts`（4 项；网格往返：位置/UV/索引/材质/纹理引用逐项一致）。
+- **受影响任务**：M1-006c（转码）、M1-042（PBR 材质消费 `DecodedMesh`/`DecodedTexture`）、M1-049。
+- **临时处理**：已按上实现。
+- **裁决（Fable 填写）**：
+
+### PI-039 CI 上两个确定性哈希与本机不一致的根因：`f32::atan2` 走平台 libm、`native.json` 数据哈希过期
 
 - **状态**：resolved（待 CI 复核）
 - **类别**：测试/运维

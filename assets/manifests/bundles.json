@@ -1,0 +1,6 @@
+{
+  "core": ["tex_common_*", "ui_*"],
+  "map_carentan_high": ["bld_*", "chr_*", "prop_*", "snd_*", "tex_*", "veg_*", "veh_*", "wpn_*"],
+  "map_carentan_medium": ["bld_*", "chr_*", "prop_*", "snd_*", "tex_*", "veg_*", "veh_*", "wpn_*"],
+  "map_carentan_ultra": ["bld_*", "chr_*", "prop_*", "snd_*", "tex_*", "veg_*", "veh_*", "wpn_*"]
+}
