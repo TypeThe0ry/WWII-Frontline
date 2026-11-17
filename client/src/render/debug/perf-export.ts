@@ -2,6 +2,12 @@ import type { WindowStats } from './frame-stats';
 
 export const PERF_SCHEMA_VERSION = 1;
 
+export interface VegetationPerf {
+  drawCalls: number;
+  instances: number;
+  tris: number;
+}
+
 /** Fixed-field JSON returned by `window.__perf.dump()` (consumed by M0-030). */
 export interface PerfDump {
   schema: number;
@@ -19,6 +25,8 @@ export interface PerfDump {
   render_scale: number;
   resolution: { width: number; height: number };
   sim: { steps_total: number; stepper_clamped: number };
+  /** Vegetation meshes that passed culling in the last frame (M0-024); zeros when vegetation is not attached. */
+  vegetation: VegetationPerf;
   slots: { rtt: string; transport: string; corrections: string };
 }
 
@@ -38,6 +46,7 @@ export const PERF_DUMP_KEYS: readonly (keyof PerfDump)[] = [
   'render_scale',
   'resolution',
   'sim',
+  'vegetation',
   'slots',
 ];
 
@@ -76,6 +85,7 @@ export function buildPerfDump(
   sim: PerfDump['sim'],
   now: number = Date.now(),
   slots: PerfDump['slots'] = { rtt: 'n/a', transport: 'n/a', corrections: 'n/a' },
+  vegetation: VegetationPerf = { drawCalls: 0, instances: 0, tris: 0 },
 ): PerfDump {
   return {
     schema: PERF_SCHEMA_VERSION,
@@ -93,6 +103,7 @@ export function buildPerfDump(
     render_scale: r.renderScale,
     resolution: { width: r.width, height: r.height },
     sim,
+    vegetation,
     slots,
   };
 }

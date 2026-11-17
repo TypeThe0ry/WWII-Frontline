@@ -2,6 +2,7 @@ import { FixedStepper } from './game';
 import { createRenderer, parseRendererParam, DebugOverlay, buildPerfDump, installPerfApi } from './render';
 import type { PerfApi } from './render';
 import type { TerrainHandle } from './render/terrain/terrain-scene';
+import type { VegetationHandle } from './render/vegetation/vegetation-scene';
 
 declare global {
   interface Window {
@@ -22,6 +23,8 @@ declare global {
       setYScale: (v: number) => void;
       setDebug: (mode: string) => void;
     };
+    /** `?scene=terrain` (unless `veg=0`): vegetation diagnostics for e2e/M0-030. */
+    __vegetation?: VegetationHandle;
   }
 }
 
@@ -49,16 +52,23 @@ async function boot(): Promise<void> {
     window.__terrain = { stats: () => JSON.parse(JSON.stringify(t.stats)) as unknown, heightAt: (x, z) => t.heightAt(x, z), nodes: () => t.debugNodes(), loadMs: terrainHandle.loadMs, project: (x, z) => terrainHandle!.project(x, z), setPose: (p, tg) => terrainHandle!.setPose(p, tg), setStitch: (on) => t.setStitch(on), pause: () => terrainHandle!.pause(), renderOnce: () => terrainHandle!.renderOnce(), setYScale: (v) => t.setYScale(v), setDebug: (m) => t.setDebug(m) };
   }
 
+  let vegHandle: VegetationHandle | null = null;
+  if (terrainHandle && params.get('veg') !== '0') {
+    const { attachVegetation } = await import('./render/vegetation/vegetation-scene');
+    vegHandle = await attachVegetation(ctx, terrainHandle.terrain, params);
+    window.__vegetation = vegHandle;
+  }
+
   const overlay = new DebugOverlay(params.get('debug') === '1');
   const stepper = new FixedStepper();
   const getDump = () =>
-    buildPerfDump(ctx.snapshot(), { steps_total: stepper.totalSteps, stepper_clamped: stepper.stepperClamped });
+    buildPerfDump(ctx.snapshot(), { steps_total: stepper.totalSteps, stepper_clamped: stepper.stepperClamped }, Date.now(), undefined, vegHandle?.perf());
   installPerfApi(window, getDump);
 
   ctx.onFrame((dt) => {
     const { steps } = stepper.advance(dt);
     void steps; // game.update(steps) / render interpolation (alpha) are wired by later tasks.
-    overlay.update(performance.now(), getDump(), terrainHandle?.overlayLines());
+    overlay.update(performance.now(), getDump(), [...(terrainHandle?.overlayLines() ?? []), ...(vegHandle?.overlayLines() ?? [])]);
   });
   // ?norender=1 skips the render loop (debug aid; also needed where WebGPU cannot present, e.g. SwiftShader).
   if (params.get('norender') !== '1') ctx.start();

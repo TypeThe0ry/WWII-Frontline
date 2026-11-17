@@ -14,7 +14,7 @@ const src = join(repo, 'data', 'maps', mapId);
 const dst = join(here, '..', 'public', 'maps', mapId);
 
 /** Files the client fetches (M0-023 terrain; M0-022 appends the collision chunks it needs). */
-const FILES = ['meta.json', 'heightmap_1m.r16', 'heightmap_far_8m.r16'];
+const FILES = ['meta.json', 'spawns.json', 'heightmap_1m.r16', 'heightmap_far_8m.r16']; // spawns.json: vegetation keep-out discs (M0-024)
 
 if (FILES.some((f) => !existsSync(join(src, f)))) {
   console.log(`[sync-map] ${src} incomplete -> running the map pipeline (seed 1)`);

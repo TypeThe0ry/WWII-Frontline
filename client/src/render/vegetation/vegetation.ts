@@ -10,6 +10,7 @@
  * `PH_V-NAT-004` grass/shrubs, ASSET_GAPS §3). The interface towards map data is the instance table bytes
  * (scatter.ts), so M1-035/M1-051 swap the source of tables and meshes without touching this class' API.
  */
+import '@babylonjs/core/Meshes/thinInstanceMesh';
 import { BoundingInfo } from '@babylonjs/core/Culling/boundingInfo';
 import { Mesh } from '@babylonjs/core/Meshes/mesh';
 import { VertexData } from '@babylonjs/core/Meshes/mesh.vertexData';
@@ -173,8 +174,11 @@ export class Vegetation {
   private readonly camVec = new Vector3();
   private readonly rebucketStats = new RingStats(2048);
   private quality: QualityM0;
+  private thr2: number[][] = [];
+  private thrVersion = 0;
   private budgetMs: number;
   private rotate = 0;
+  private lastStatsAt = 0;
   private isolated = false;
   private probes: Mesh[] = [];
   private trisOf: Map<Mesh, number> | null = null;
@@ -184,6 +188,7 @@ export class Vegetation {
     this.wgsl = opts.kind === 'webgpu';
     this.wind = opts.wind ?? defaultWind();
     this.quality = QUALITY_M0[opts.quality ?? 'high'];
+    this.refreshThresholds();
     this.budgetMs = opts.rebucketBudgetMs ?? 0.45;
     this.stats = {
       total: { grass: 0, shrub: 0, tree: 0 },
@@ -321,6 +326,7 @@ export class Vegetation {
         const meshes: Mesh[] = [];
         for (let l = 0; l < lodCount; l++) {
           const m = g.masters[l]!.clone(`PH_${info.reqId}__${info.key}_c${t.cx}_${t.cz}_${l === lodCount - 1 && lodCount === 3 ? 'imp' : `lod${l}`}`, null, true);
+          m.makeGeometryUnique(); // thin-instance buffers are attached to the geometry: clones must not share it
           m.material = g.materials[l]!;
           m.setEnabled(false);
           m.thinInstanceSetBuffer('matrix', lb.buffers[l]!, 16, false);
@@ -350,12 +356,18 @@ export class Vegetation {
     return [s.lod0, s.lod1, s.far];
   }
 
+  private refreshThresholds(): void {
+    this.thr2 = [0, 1, 2].map((sp) => this.thresholds(sp).map((t) => t * t));
+    this.thrVersion++;
+  }
+
   get qualityTier(): QualityTier {
     return this.quality.name;
   }
 
   setQuality(tier: QualityTier): void {
     this.quality = QUALITY_M0[tier];
+    this.refreshThresholds();
     const q = this.quality;
     const fade = this.gfx[SPECIES_GRASS]!.materials[0]!;
     fade.setVector2('uFade', new Vector2(q.grassDistance * 0.75, q.grassDistance));
@@ -369,6 +381,7 @@ export class Vegetation {
   /** Re-bucket instances for `camera` and advance the wind clock by `dtSec`. Call once per frame before rendering. */
   update(camera: Camera, dtSec: number): void {
     const t0 = performance.now();
+    camera.getViewMatrix(true); // refresh globalPosition (this runs before the scene renders the frame)
     const p = camera.globalPosition;
     this.wind.time = (this.wind.time + dtSec) % this.windPeriod;
     this.camVec.copyFrom(p);
@@ -380,7 +393,7 @@ export class Vegetation {
     }
 
     const grassLimit = Math.round(this.quality.grassDensity * 256);
-    const thr = [this.thresholds(0), this.thresholds(1), this.thresholds(2)];
+    const thr = this.thr2;
     const n = this.buckets.length;
     let moved = 0;
     let deferred = 0;
@@ -391,7 +404,7 @@ export class Vegetation {
         deferred++;
         continue;
       }
-      const r = b.buckets.update(p.x, p.y, p.z, thr[b.species]!, b.species === SPECIES_GRASS ? grassLimit : 256);
+      const r = b.buckets.update(p.x, p.y, p.z, thr[b.species]!, this.thrVersion, b.species === SPECIES_GRASS ? grassLimit : 256);
       if (r > 0) moved += r;
       const lb = b.buckets;
       for (let l = 0; l < lb.lodCount; l++) {
@@ -443,12 +456,22 @@ export class Vegetation {
       tris += t * m.thinInstanceCount;
     }
     this.stats.drawn = { instances, drawCalls, tris };
-    this.stats.rebucket = this.rebucketStats.stats();
     return { drawCalls, instances, tris };
+  }
+
+  /** Window statistics of the per-frame re-bucketing time (sorts the window: call at most a few times per second). */
+  refreshRebucketStats(): WindowStats {
+    this.stats.rebucket = this.rebucketStats.stats();
+    return this.stats.rebucket;
   }
 
   overlayLines(): string[] {
     const s = this.stats;
+    const now = performance.now();
+    if (now - this.lastStatsAt > 250) {
+      this.lastStatsAt = now;
+      this.refreshRebucketStats();
+    }
     const p = this.perfStats();
     const f = (a: number[]) => a.join('/');
     return [
@@ -467,6 +490,7 @@ export class Vegetation {
   probe(species: 'shrub' | 'tree', lod: number, x: number, y: number, z: number, yaw = 0, scale = 1): Mesh {
     const g = this.gfx[species === 'tree' ? SPECIES_TREE : SPECIES_SHRUB]!;
     const m = g.masters[lod]!.clone(`PH_${g.info.reqId}__probe_${species}_${lod}`, null, true);
+    m.makeGeometryUnique();
     m.material = g.materials[lod]!;
     const comp = makeCompact(1);
     comp.pos.set([x, y, z]);

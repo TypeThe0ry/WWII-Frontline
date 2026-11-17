@@ -6,6 +6,7 @@
  * (see BAKE_VERTEX_* in impostor-material.*) into a RenderTargetTexture, so WebGL2 and WebGPU share the code path and no
  * pixels are read back. The pure mapping functions below are mirrored in the shaders and unit-tested.
  */
+import '@babylonjs/core/Meshes/thinInstanceMesh';
 import { Constants } from '@babylonjs/core/Engines/constants';
 import { Color4 } from '@babylonjs/core/Maths/math.color';
 import { Vector3, Vector4 } from '@babylonjs/core/Maths/math.vector';

@@ -49,10 +49,7 @@ varying vColor: vec3f;
 
 @fragment
 fn main(input: FragmentInputs) -> FragmentOutputs {
-  var n = normalize(fragmentInputs.vNormal);
-  if (!fragmentInputs.frontFacing) {
-    n = -n;
-  }
+  let n = normalize(fragmentInputs.vNormal);
   let sun = normalize(vec3f(-0.45, 0.80, -0.35));
   let diff = max(dot(n, sun), 0.0);
   fragmentOutputs.color = vec4f(fragmentInputs.vColor * (0.34 + 0.74 * diff), 1.0);

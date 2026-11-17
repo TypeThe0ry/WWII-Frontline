@@ -85,7 +85,7 @@ export class LodBuckets {
   private lastY = NaN;
   private lastZ = NaN;
   private lastRankLimit = -1;
-  private lastThrKey = '';
+  private lastVersion = -1;
 
   constructor(
     readonly inst: CompactInstances,
@@ -144,19 +144,18 @@ export class LodBuckets {
   }
 
   /**
-   * Classify instances for camera (cx, cy, cz). `thr` = ascending upper distance bound of every visible LOD (instances
-   * beyond the last are hidden); `rankLimit` thins the set (instance shown iff rank < rankLimit).
+   * Classify instances for camera (cx, cy, cz). `thr2` = ascending SQUARED upper distance bound of every visible LOD
+   * (instances beyond the last are hidden); `version` identifies the threshold set (bump it when `thr2` changes);
+   * `rankLimit` thins the set (instance shown iff rank < rankLimit).
    * Returns the number of instances that changed LOD, or -1 if the call was skipped (camera hardly moved).
    */
-  update(cx: number, cy: number, cz: number, thr: readonly number[], rankLimit: number): number {
-    const thrKey = thr.join(',');
-    const unchanged = thrKey === this.lastThrKey && rankLimit === this.lastRankLimit;
+  update(cx: number, cy: number, cz: number, thr2: readonly number[], version: number, rankLimit: number): number {
+    const unchanged = version === this.lastVersion && rankLimit === this.lastRankLimit;
     const dx0 = cx - this.lastX;
     const dy0 = cy - this.lastY;
     const dz0 = cz - this.lastZ;
     if (unchanged && dx0 * dx0 + dy0 * dy0 + dz0 * dz0 < REEVAL_MOVE_M * REEVAL_MOVE_M) return -1;
 
-    const thr2 = thr.map((t) => t * t);
     if (unchanged && this.uniformLod !== UNASSIGNED) {
       // Whole-box shortcut: nearest and farthest box point in the same band that every eligible instance occupies.
       const b = this.box;
@@ -203,7 +202,7 @@ export class LodBuckets {
     this.lastY = cy;
     this.lastZ = cz;
     this.lastRankLimit = rankLimit;
-    this.lastThrKey = thrKey;
+    this.lastVersion = version;
     return moves;
   }
 }

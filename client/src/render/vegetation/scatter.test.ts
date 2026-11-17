@@ -25,9 +25,9 @@ describe('scatterChunk', () => {
     const a = scatterChunk(input(1, 2));
     const b = scatterChunk(input(1, 2));
     expect(a.length).toBeGreaterThan(0);
-    expect(Buffer.from(a).equals(Buffer.from(b))).toBe(true);
-    expect(Buffer.from(scatterChunk(input(1, 2, { seed: 2 }))).equals(Buffer.from(a))).toBe(false);
-    expect(Buffer.from(scatterChunk(input(2, 1))).equals(Buffer.from(a))).toBe(false);
+    expect(Array.from(a)).toEqual(Array.from(b));
+    expect(Array.from(scatterChunk(input(1, 2, { seed: 2 })))).not.toEqual(Array.from(a));
+    expect(Array.from(scatterChunk(input(2, 1)))).not.toEqual(Array.from(a));
   });
 
   it('is deterministic across every chunk of the M0 block (hash over all 16 tables is stable)', () => {
@@ -61,14 +61,10 @@ describe('scatterChunk', () => {
     console.log(`scatter 16 chunks, flat ground: max grass ${maxG}, shrub ${maxS}, tree ${maxT}`);
   });
 
-  it('caps are enforced when the density would exceed them (all caps hit at forced high density)', () => {
-    // A tiny exclusion-free flat chunk cannot exceed caps naturally; check the cap logic via a seed sweep of dense areas.
-    for (let seed = 0; seed < 6; seed++) {
-      const t = scatterChunk(input(0, 0, { seed }));
-      expect(count(t, SPECIES_GRASS)).toBeLessThanOrEqual(4096);
-      expect(count(t, SPECIES_SHRUB)).toBeLessThanOrEqual(256);
-      expect(count(t, SPECIES_TREE)).toBeLessThanOrEqual(192);
-    }
+  it('the shrub cap really bites: some chunk has more candidates than 256 and is cut to exactly 256', () => {
+    let atCap = 0;
+    for (let cz = 0; cz < 4; cz++) for (let cx = 0; cx < 4; cx++) if (count(scatterChunk(input(cx, cz)), SPECIES_SHRUB) === 256) atCap++;
+    expect(atCap).toBeGreaterThan(0);
   });
 
   it('keeps every instance inside its chunk', () => {

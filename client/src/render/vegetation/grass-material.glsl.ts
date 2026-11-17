@@ -57,8 +57,7 @@ varying vec3 vNormal;
 varying vec3 vColor;
 
 void main() {
-  vec3 n = normalize(vNormal);
-  if (!gl_FrontFacing) n = -n;
+  vec3 n = normalize(vNormal); // closed lumps: the outer faces are "back faces" in Babylon's winding, so no facing flip
   vec3 sun = normalize(vec3(-0.45, 0.80, -0.35));
   float diff = max(dot(n, sun), 0.0);
   gl_FragColor = vec4(vColor * (0.34 + 0.74 * diff), 1.0);
