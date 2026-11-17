@@ -15,5 +15,5 @@
     "rewriteRelativeImportExtensions": true,
     "noEmit": true
   },
-  "include": ["src", "test", "vitest.config.ts", "eslint.config.js"]
+  "include": ["src", "test", "vitest.config.ts", "vitest.e2e.config.ts", "eslint.config.js"]
 }

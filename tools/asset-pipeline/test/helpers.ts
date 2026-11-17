@@ -3,6 +3,8 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { parseLedger, type Ledger } from '../src/ledger.ts';
+
 export const FIXTURES = join(dirname(fileURLToPath(import.meta.url)), 'fixtures');
 
 export const COLUMNS = [
@@ -67,4 +69,9 @@ export function tmpRepo(text: string): TmpRepo {
       rmSync(root, { recursive: true, force: true });
     },
   };
+}
+
+/** Parsed ledger with one OK row `AST-V-TEST-001-01` that allows exactly the given processing codes. */
+export function assertAllowedFor(...codes: string[]): Ledger {
+  return parseLedger(ledgerText([{ asset_id: 'AST-V-TEST-001-01', allowed_processing: codes.join(',') }]));
 }

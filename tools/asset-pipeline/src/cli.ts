@@ -7,12 +7,17 @@ import { loadLedger, isBlank } from './ledger.ts';
 import type { Axis } from './math.ts';
 import { assertArchives, repoRootOf } from './gate.ts';
 import { normalize, type OriginMode } from './normalize.ts';
+import { loadAssetClass } from './asset-class.ts';
+import { processMesh } from './process.ts';
+import { readStats, sizeRatio, statsPath } from './stats.ts';
 import { buildReport, formatReport, parseShoppingList } from './report.ts';
 
 const USAGE = `asset-pipeline <command> [options]
 
   ingest            gate + copy assets/incoming/** to work/{asset_id}/raw/ (exit 2 unregistered, 3 not OK, 4 D-LIC, 5 archive missing)
   normalize         unit/axes/origin/triangulate/merge one ingested glTF -> work/{asset_id}/normalized.gltf
+  process            LOD chains, KTX2 textures, mesh compression, collision -> work/{asset_id}/lodN.glb, stats.json (M1-002)
+  check-size-ratio  LOD0 bytes / source bytes from stats.json (fails above --max, default 0.25)
   report            per requirement ID real/placeholder/missing (ASSET_GAPS 3.4)
   ledger-check      LICENSES.md 4.4 validation: counts per status, missing archive files
   gen-requirements  build assets/requirements.json from docs/ASSET_SHOPPING_LIST.md
@@ -20,6 +25,8 @@ const USAGE = `asset-pipeline <command> [options]
 common:  --ledger LICENSES.md   --work work   --root <repo root, default cwd>
 ingest:  --incoming assets/incoming
 normalize: --asset AST-... --id <logical_id> [--input rel/in/raw] [--unit-scale m] [--up Y|Z] [--forward +Z|-Y|...] [--origin bottom-center|center|none]
+process: --asset AST-... --id <logical_id> --class asset-class.json [--no-collision]
+check-size-ratio: --asset AST-... [--max 0.25] [--suffix _fp]
 report:  [--requirements assets/requirements.json] [--manifest draft.json] [--placeholders data/placeholders] [--milestone M1] [--out report.json] [--gaps] [--strict]
 gen-requirements: [--shopping-list docs/ASSET_SHOPPING_LIST.md] [--out assets/requirements.json]
 `;
@@ -50,6 +57,10 @@ export async function main(argv: string[], out: (s: string) => void = console.lo
       milestone: { type: 'string' },
       out: { type: 'string' },
       'shopping-list': { type: 'string' },
+      class: { type: 'string' },
+      max: { type: 'string' },
+      suffix: { type: 'string' },
+      'no-collision': { type: 'boolean' },
       gaps: { type: 'boolean' },
       strict: { type: 'boolean' },
     },
@@ -81,6 +92,26 @@ export async function main(argv: string[], out: (s: string) => void = console.lo
         out(`normalize: ${r.output} (${r.mode}, ${r.triangles} tris, bbox ${JSON.stringify(r.bbox)})`);
         for (const w of r.warnings) out(`  warning: ${w}`);
         return ExitCode.Ok;
+      }
+      case 'process': {
+        if (!v.asset || !v.id) throw new GateError(ExitCode.Usage, 'process needs --asset and --id');
+        const cls = v.class ? loadAssetClass(resolve(root, v.class)) : {};
+        const r = await processMesh({ work, ledger, assetId: v.asset, logicalId: v.id, cls, noCollision: v['no-collision'] });
+        for (const c of r.stats.chains) {
+          out(`process: chain "${c.suffix || 'base'}": ` + c.lods.map((l) => `LOD${l.lod} ${l.tris} tris ${l.bytes} B`).join(', '));
+        }
+        if (r.stats.collision) out(`  collision ${r.stats.collision.mode}: ${r.stats.collision.tris} tris, ${r.stats.collision.hulls} piece(s)`);
+        for (const t of r.textures) out(`  texture ${t.name}: ${t.slot}/${t.format} ${t.width}x${t.height} ${t.levels} mips ${t.bytes} B`);
+        for (const w of r.stats.warnings) out(`  warning: ${w}`);
+        return ExitCode.Ok;
+      }
+      case 'check-size-ratio': {
+        if (!v.asset) throw new GateError(ExitCode.Usage, 'check-size-ratio needs --asset');
+        const s = readStats(statsPath(work, v.asset));
+        const ratio = sizeRatio(s, v.suffix as '' | '_fp' | '_tp' | undefined);
+        const max = v.max !== undefined ? Number(v.max) : 0.25;
+        out(`check-size-ratio: ${v.asset} LOD0 ${(ratio * 100).toFixed(1)} % of source (limit ${(max * 100).toFixed(0)} %)`);
+        return ratio <= max ? ExitCode.Ok : ExitCode.NotOk;
       }
       case 'report': {
         const reqPath = resolve(root, v.requirements ?? 'assets/requirements.json');

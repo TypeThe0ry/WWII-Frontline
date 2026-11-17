@@ -43,6 +43,8 @@ jobs:
         run: pnpm -C tools/asset-pipeline typecheck
       - name: vitest
         run: pnpm -C tools/asset-pipeline test
+      - name: vitest e2e (ingest -> normalize -> process, M1-002)
+        run: pnpm -C tools/asset-pipeline test:e2e
       - name: Ledger check (LICENSES §4.4) and gate on the real ledger
         run: |
           node tools/asset-pipeline/bin/asset-pipeline.mjs ledger-check

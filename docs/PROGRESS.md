@@ -415,6 +415,13 @@ blocked / in-progress / todo：无。M0 的 33 个任务全部已提交（M0-033
 - 遗留 / 需人工：验收 7（Actions 墙钟）待 H-102；PI-032（D-LIC 与 LICENSES §6 的免费例外、FLAGGED 视同 PENDING、空 allowed_processing=全放行、源朝向默认约定、requirements.json 最小版本）待 Fable 确认；无需人类采购。
 - 影响：M1-002/003/004/005 在 `work/{asset_id}/` 目录布局（`raw/`、`ingest.json`、`normalized.gltf/.bin/.json`）与 `assertAllowed(assetId, code, ledger?)` 上扩展；运行用 Node type stripping（22.18+），或 `pnpm -C tools/asset-pipeline build`。
 
+### M1-002 素材管线：网格 LOD、纹理与碰撞简化 — partial — 2026-11-17 — 提交见 git log
+
+- 做了什么：`process` 命令（`processMesh`）：ORM 打包与 NPOT 补边、KTX2（ETC1S/UASTC，法线 RRRG 两通道）、meshoptimizer LOD 链（锁 UV 接缝）、gltf-transform 量化 + meshopt 压缩、碰撞简化（trimesh/convex）、`stats.json`；`_fp`/`_tp` 两套独立链；`check-size-ratio` 子命令；`test:e2e`。
+- 关键实测：20k 三角球体 LOD 比例偏差 0 %；包围盒误差 < 4e-6；碰撞 400 三角 / ≤ 32 块；全流程 8.6–16.1 s；体积比样例 A 18.3 %、样例 B 31.5 %。
+- 遗留 / 需人工：真实 CC0 样例未入库；体积比对法线图占比敏感；`toktx` 换为 WASM 编码器等取舍见 PI-033，待 Fable 确认；CI 墙钟 H-102。
+- 影响：M1-003 读 `work/{asset_id}/lod{N}{_fp|_tp}.glb`、`collision.glb`、`stats.json`；M1-006 需按 RRRG 还原法线。
+
 ## 8. 如何维护本文件
 
 - **执行者**：收工前，在"任务日志"末尾追加本任务条目（`### 任务 ID 标题 — 状态 — 日期 — 提交 abc1234`，3–6 行：做了什么、关键实测数字、遗留问题/需人工事项、对后续任务的影响）；写入前重新读取文件末尾（并行执行者可能同时追加），只追加、不改别人的条目。数字必须来自实测，查不到写"未记录"。同时更新 `tasks/STATUS.md` 自己那一行。

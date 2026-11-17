@@ -123,6 +123,7 @@
 | wtransport | 服务器 WebTransport | 未核实（凭记忆倾向 MIT/Apache-2.0 类宽松许可，不确定） | **必须实测**，不得凭记忆放行 |
 | Preact | UI | MIT（未核实） | 同上；MIT 要求保留版权声明与许可证文本 |
 | 其余直接/间接依赖（tokio、gltf-transform、meshoptimizer、KTX/Basis Universal、libopus、Recast 导航库、Vite 等） | 各模块 | **未核实**（不在此凭记忆给出） | 自动生成，覆盖全部传递依赖 |
+| 素材管线（`tools/asset-pipeline`，仅构建机，不随游戏分发；M1-002）：@gltf-transform/{core,extensions,functions} 4.5.1、meshoptimizer 1.3.0、ktx2-encoder 0.6.0（内含 Basis Universal 编码器 WASM，Apache-2.0，见其 THIRD_PARTY_NOTICES.md）、ktx-parse 2.0.0、pngjs 7.0.0、ajv 8.20.0 | 网格 LOD/压缩、KTX2 编码 | 各包 package.json 的 `license` 字段实测均为 MIT；Basis Universal 编码器为 Apache-2.0（据 ktx2-encoder 声明，**上游文本未单独核实**） | 版本已登记（2026-11-17）；M0 的自动生成流程覆盖全部传递依赖，此行不替代它 |
 | 字体（与 `docs/UI_SPEC.md` §2.3 一致：Barlow Semi Condensed、IBM Plex Sans、IBM Plex Mono、Noto Sans SC） | UI | 计划为 SIL OFL 1.1（**未核实**） | 状态 `PENDING`，**M0 任务核实**许可证文本、可网页嵌入/子集化条款与当前版本后，作为素材登记在 §3（`type = font`）并存档 OFL 文本；注意保留字体名（RFN）限制与子集化是否触发改名条款；未登记不得入库（R10） |
 
 **依赖许可证政策（建议，待负责人确认）**：
