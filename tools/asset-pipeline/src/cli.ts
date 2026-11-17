@@ -9,6 +9,8 @@ import { assertArchives, repoRootOf } from './gate.ts';
 import { normalize, type OriginMode } from './normalize.ts';
 import { loadAssetClass } from './asset-class.ts';
 import { processMesh } from './process.ts';
+import { pack } from './pack.ts';
+import { assertNoStandalone } from './fpak/standalone.ts';
 import { readStats, sizeRatio, statsPath } from './stats.ts';
 import { buildReport, formatReport, parseShoppingList } from './report.ts';
 
@@ -17,6 +19,8 @@ const USAGE = `asset-pipeline <command> [options]
   ingest            gate + copy assets/incoming/** to work/{asset_id}/raw/ (exit 2 unregistered, 3 not OK, 4 D-LIC, 5 archive missing)
   normalize         unit/axes/origin/triangulate/merge one ingested glTF -> work/{asset_id}/normalized.gltf
   process            LOD chains, KTX2 textures, mesh compression, collision -> work/{asset_id}/lodN.glb, stats.json (M1-002)
+  pack              work/ intermediates -> assets/processed/a/xx/yyyy.fpak + packs.json (M1-003)
+  assert-no-standalone  fail when the output directory holds .glb/.ktx2/.ogg/... files
   check-size-ratio  LOD0 bytes / source bytes from stats.json (fails above --max, default 0.25)
   report            per requirement ID real/placeholder/missing (ASSET_GAPS 3.4)
   ledger-check      LICENSES.md 4.4 validation: counts per status, missing archive files
@@ -26,6 +30,8 @@ common:  --ledger LICENSES.md   --work work   --root <repo root, default cwd>
 ingest:  --incoming assets/incoming
 normalize: --asset AST-... --id <logical_id> [--input rel/in/raw] [--unit-scale m] [--up Y|Z] [--forward +Z|-Y|...] [--origin bottom-center|center|none]
 process: --asset AST-... --id <logical_id> --class asset-class.json [--no-collision]
+pack:    [--assets AST-a,AST-b] [--out assets/processed] [--max-bytes 16777216]
+assert-no-standalone: [--out assets/processed]
 check-size-ratio: --asset AST-... [--max 0.25] [--suffix _fp]
 report:  [--requirements assets/requirements.json] [--manifest draft.json] [--placeholders data/placeholders] [--milestone M1] [--out report.json] [--gaps] [--strict]
 gen-requirements: [--shopping-list docs/ASSET_SHOPPING_LIST.md] [--out assets/requirements.json]
@@ -57,6 +63,8 @@ export async function main(argv: string[], out: (s: string) => void = console.lo
       milestone: { type: 'string' },
       out: { type: 'string' },
       'shopping-list': { type: 'string' },
+      assets: { type: 'string' },
+      'max-bytes': { type: 'string' },
       class: { type: 'string' },
       max: { type: 'string' },
       suffix: { type: 'string' },
@@ -103,6 +111,22 @@ export async function main(argv: string[], out: (s: string) => void = console.lo
         if (r.stats.collision) out(`  collision ${r.stats.collision.mode}: ${r.stats.collision.tris} tris, ${r.stats.collision.hulls} piece(s)`);
         for (const t of r.textures) out(`  texture ${t.name}: ${t.slot}/${t.format} ${t.width}x${t.height} ${t.levels} mips ${t.bytes} B`);
         for (const w of r.stats.warnings) out(`  warning: ${w}`);
+        return ExitCode.Ok;
+      }
+      case 'pack': {
+        const r = await pack({
+          work, ledger, out: resolve(root, v.out ?? 'assets/processed'),
+          ...(v.assets ? { assets: v.assets.split(',') } : {}),
+          ...(v['max-bytes'] ? { maxBytes: Number(v['max-bytes']) } : {}),
+        });
+        for (const p of r.packs) out(`pack: ${p.path} ${p.bytes} B, ${p.entries.length} entries (${p.group})`);
+        out(`pack: ${r.packs.length} pack(s); index ${r.indexFile}`);
+        return ExitCode.Ok;
+      }
+      case 'assert-no-standalone': {
+        const dir = resolve(root, v.out ?? 'assets/processed');
+        if (existsSync(dir)) assertNoStandalone(dir);
+        out(`assert-no-standalone: ${dir} is clean`);
         return ExitCode.Ok;
       }
       case 'check-size-ratio': {
