@@ -16,6 +16,8 @@ use frontline_server::metrics::Metrics;
 use frontline_server::net::conn::{Inbound, InboundQueue, NetCtx, Sessions};
 use frontline_server::net::limits::HANDSHAKE_TIMEOUT;
 use frontline_server::net::ws::WsListener;
+use frontline_server::net::wt::{cert_hash, dev_identity, WtListener};
+use wtransport::tls::Sha256Digest;
 use frontline_server::sim_thread::Command;
 use futures_util::{SinkExt, StreamExt};
 use tokio_tungstenite::tungstenite::Message;
@@ -23,8 +25,29 @@ use tokio_tungstenite::{connect_async, MaybeTlsStream, WebSocketStream};
 
 pub const DATA_HASH: u64 = 0xDA7A_0000_1234_5678;
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Kind {
+    Ws,
+    Wt,
+}
+
+impl Kind {
+    pub const ALL: [Kind; 2] = [Kind::Ws, Kind::Wt];
+}
+
+/// Where a test client connects.
+#[derive(Clone)]
+pub struct Target {
+    pub kind: Kind,
+    pub url: String,
+    /// Certificate hash for `serverCertificateHashes` (WebTransport only).
+    pub hash: Option<Sha256Digest>,
+}
+
 pub struct Harness {
     pub listener: Option<WsListener>,
+    pub wt: Option<WtListener>,
+    pub target: Target,
     pub ctx: Arc<NetCtx>,
     pub metrics: Arc<Metrics>,
     pub commands: Receiver<Command>,
@@ -47,6 +70,10 @@ impl Harness {
     }
 
     pub async fn start_cfg(handshake_timeout: Duration, per_ip: usize) -> Harness {
+        Self::start_kind(Kind::Ws, handshake_timeout, per_ip).await
+    }
+
+    pub async fn start_kind(kind: Kind, handshake_timeout: Duration, per_ip: usize) -> Harness {
         let metrics = Metrics::new();
         let (ctx_tx, commands) = crossbeam_channel::bounded(256);
         let inbound = InboundQueue::new();
@@ -69,12 +96,45 @@ impl Harness {
             started: Instant::now(),
             handshake_timeout,
         });
-        let listener = WsListener::bind(("127.0.0.1", 0), ctx.clone())
-            .await
-            .expect("bind");
-        let url = format!("ws://{}", listener.local_addr());
+        let (listener, wt, target) = match kind {
+            Kind::Ws => {
+                let l = WsListener::bind(("127.0.0.1", 0), ctx.clone())
+                    .await
+                    .expect("bind");
+                let url = format!("ws://{}", l.local_addr());
+                (
+                    Some(l),
+                    None,
+                    Target {
+                        kind,
+                        url,
+                        hash: None,
+                    },
+                )
+            }
+            Kind::Wt => {
+                let id = dev_identity(13).expect("identity");
+                let hash = cert_hash(&id);
+                let l = WtListener::bind(([127, 0, 0, 1], 0).into(), id, ctx.clone())
+                    .await
+                    .expect("bind wt");
+                let url = format!("https://127.0.0.1:{}/wt", l.local_addr().port());
+                (
+                    None,
+                    Some(l),
+                    Target {
+                        kind,
+                        url,
+                        hash: Some(hash),
+                    },
+                )
+            }
+        };
+        let url = target.url.clone();
         Harness {
-            listener: Some(listener),
+            listener,
+            wt,
+            target,
             ctx,
             metrics,
             commands,
@@ -86,6 +146,9 @@ impl Harness {
 
     pub async fn stop(mut self) {
         if let Some(l) = self.listener.take() {
+            l.shutdown().await;
+        }
+        if let Some(l) = self.wt.take() {
             l.shutdown().await;
         }
     }
@@ -204,4 +267,205 @@ pub async fn wait_until(d: Duration, mut f: impl FnMut() -> bool) -> bool {
         tokio::time::sleep(Duration::from_millis(10)).await;
     }
     f()
+}
+
+// ---------------------------------------------------------------------------------------------
+// Transport-agnostic client (WebSocket or WebTransport) for the parameterised tests.
+// ---------------------------------------------------------------------------------------------
+
+use frontline_server::net::datagram::{decode_datagram, encode_datagram, encode_stream_frame, StreamFramer};
+use tokio::sync::mpsc;
+use wtransport::{ClientConfig, Connection, Endpoint, SendStream};
+
+pub struct WtClient {
+    pub conn: Connection,
+    pub c0_tx: SendStream,
+    rx: mpsc::UnboundedReceiver<Got>,
+    _endpoint: Endpoint<wtransport::endpoint::endpoint_side::Client>,
+}
+
+impl WtClient {
+    pub async fn connect(url: &str, hash: Sha256Digest) -> Result<WtClient, String> {
+        Self::connect_from([127, 0, 0, 1], url, hash).await
+    }
+
+    /// Binds the client socket to `ip` (any 127.x.y.z works on Linux), so many clients can look
+    /// like different peers to the per-IP limit.
+    pub async fn connect_from(
+        ip: [u8; 4],
+        url: &str,
+        hash: Sha256Digest,
+    ) -> Result<WtClient, String> {
+        let cfg = ClientConfig::builder()
+            .with_bind_address((ip, 0).into())
+            .with_server_certificate_hashes([hash])
+            .keep_alive_interval(Some(Duration::from_secs(3)))
+            .build();
+        let ep = Endpoint::client(cfg).map_err(|e| e.to_string())?;
+        let conn = match tokio::time::timeout(Duration::from_secs(5), ep.connect(url)).await {
+            Ok(Ok(c)) => c,
+            Ok(Err(e)) => return Err(e.to_string()),
+            Err(_) => return Err("connect timeout".into()),
+        };
+        let (c0_tx, mut c0_rx) = conn
+            .open_bi()
+            .await
+            .map_err(|e| e.to_string())?
+            .await
+            .map_err(|e| e.to_string())?;
+        let (tx, rx) = mpsc::unbounded_channel();
+        // C0 reader
+        let t = tx.clone();
+        tokio::spawn(async move {
+            let mut f = StreamFramer::new(65_535);
+            let mut buf = vec![0u8; 4096];
+            loop {
+                match c0_rx.read(&mut buf).await {
+                    Ok(Some(n)) => {
+                        f.push(&buf[..n]);
+                        while let Ok(Some(p)) = f.next_frame() {
+                            let _ = t.send(Got::Frame(Channel::C0, p.to_vec()));
+                        }
+                    }
+                    _ => return,
+                }
+            }
+        });
+        // C4 (server uni stream) reader
+        let t = tx.clone();
+        let c = conn.clone();
+        tokio::spawn(async move {
+            let Ok(mut s) = c.accept_uni().await else { return };
+            let mut f = StreamFramer::new(65_535);
+            let mut buf = vec![0u8; 4096];
+            loop {
+                match s.read(&mut buf).await {
+                    Ok(Some(n)) => {
+                        f.push(&buf[..n]);
+                        while let Ok(Some(p)) = f.next_frame() {
+                            let _ = t.send(Got::Frame(Channel::C4, p.to_vec()));
+                        }
+                    }
+                    _ => return,
+                }
+            }
+        });
+        // datagrams
+        let t = tx.clone();
+        let c = conn.clone();
+        tokio::spawn(async move {
+            while let Ok(d) = c.receive_datagram().await {
+                if let Ok((ch, p)) = decode_datagram(&d.payload()) {
+                    let _ = t.send(Got::Frame(ch, p.to_vec()));
+                }
+            }
+        });
+        // closure
+        let c = conn.clone();
+        tokio::spawn(async move {
+            c.closed().await;
+            let _ = tx.send(Got::Closed);
+        });
+        Ok(WtClient {
+            conn,
+            c0_tx,
+            rx,
+            _endpoint: ep,
+        })
+    }
+
+    pub async fn recv_within(&mut self, d: Duration) -> Got {
+        match tokio::time::timeout(d, self.rx.recv()).await {
+            Err(_) => Got::Timeout,
+            Ok(Some(g)) => g,
+            Ok(None) => Got::Closed,
+        }
+    }
+
+    /// Waits for the connection to close (frames still arriving are discarded).
+    pub async fn recv_closed(&mut self, d: Duration) -> bool {
+        let end = Instant::now() + d;
+        loop {
+            let left = end.saturating_duration_since(Instant::now());
+            match self.recv_within(left).await {
+                Got::Closed => return true,
+                Got::Timeout => return false,
+                Got::Frame(..) => {}
+            }
+        }
+    }
+
+    pub async fn send_c0(&mut self, payload: &[u8]) -> bool {
+        match encode_stream_frame(payload) {
+            Some(f) => self.c0_tx.write_all(&f).await.is_ok(),
+            None => false,
+        }
+    }
+
+    pub fn send_datagram(&self, ch: Channel, payload: &[u8]) -> bool {
+        self.conn.send_datagram(encode_datagram(ch, payload)).is_ok()
+    }
+}
+
+pub enum Conn {
+    Ws(Client),
+    Wt(Box<WtClient>),
+}
+
+impl Conn {
+    pub async fn connect(t: &Target) -> Result<Conn, String> {
+        match t.kind {
+            Kind::Ws => Client::connect(&t.url).await.map(Conn::Ws),
+            Kind::Wt => WtClient::connect(&t.url, t.hash.clone().expect("hash"))
+                .await
+                .map(|c| Conn::Wt(Box::new(c))),
+        }
+    }
+
+    /// Sends one message on `ch` the way that transport carries it: WebSocket envelope, C0 stream
+    /// frame, or datagram `[ch][payload]` (C1, and illegal channels for the hostile-input tests).
+    pub async fn send(&mut self, ch: Channel, payload: &[u8]) -> bool {
+        match self {
+            Conn::Ws(c) => c.send(ch, payload).await,
+            Conn::Wt(c) => match ch {
+                Channel::C0 => c.send_c0(payload).await,
+                _ => c.send_datagram(ch, payload),
+            },
+        }
+    }
+
+    pub async fn recv_within(&mut self, d: Duration) -> Got {
+        match self {
+            Conn::Ws(c) => c.recv_within(d).await,
+            Conn::Wt(c) => c.recv_within(d).await,
+        }
+    }
+
+    pub async fn expect_closed(&mut self, d: Duration) -> bool {
+        let end = Instant::now() + d;
+        loop {
+            let left = end.saturating_duration_since(Instant::now());
+            match self.recv_within(left).await {
+                Got::Closed => return true,
+                Got::Timeout => return false,
+                Got::Frame(..) => {}
+            }
+        }
+    }
+
+    pub async fn server_msg(&mut self, d: Duration) -> Option<ServerMsgC0> {
+        match self.recv_within(d).await {
+            Got::Frame(Channel::C0, p) => decode_c0_server(&p).ok(),
+            _ => None,
+        }
+    }
+
+    pub async fn handshake(t: &Target) -> (Conn, Welcome) {
+        let mut c = Conn::connect(t).await.expect("connect");
+        c.send(Channel::C0, &good_hello()).await;
+        match c.server_msg(Duration::from_secs(3)).await {
+            Some(ServerMsgC0::Welcome(w)) => (c, w),
+            other => panic!("expected Welcome, got {other:?}"),
+        }
+    }
 }

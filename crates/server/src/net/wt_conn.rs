@@ -33,6 +33,8 @@ const CLOSE_NORMAL: u32 = 0;
 const CLOSE_DROPPED: u32 = 1;
 /// How long a graceful close waits for the peer to acknowledge the finished streams.
 const FLUSH_WAIT: Duration = Duration::from_secs(1);
+/// After the flush, how long the peer gets to close the session itself.
+const CLOSE_GRACE: Duration = Duration::from_millis(500);
 
 pub struct WtConn {
     handle: ClientHandle,
@@ -183,6 +185,9 @@ pub(crate) async fn writer(
         let _ = c4_tx.quic_stream_mut().stopped().await;
     })
     .await;
+    // Let the peer read what it was sent (a `Reject`, a last C4 event) and close first: a
+    // CONNECTION_CLOSE can make the peer discard stream data it has not yet handed to the app.
+    let _ = tokio::time::timeout(CLOSE_GRACE, conn.closed()).await;
     conn.close(VarInt::from_u32(CLOSE_NORMAL), b"bye");
 }
 
