@@ -1,0 +1,63 @@
+{
+  "budgets_ms": {
+    "path_per_tick": 1.0,
+    "think_10": 1.0,
+    "think_60": 3.0
+  },
+  "build": "release",
+  "path_query": {
+    "max_nodes_expanded": 993,
+    "max_us": 609.595,
+    "median_us": 22.799999999999997,
+    "p99_us": 148.738,
+    "queries": 2240
+  },
+  "think_10": {
+    "bots": 10,
+    "kills_in_window": 19,
+    "path_ms": {
+      "max": 0.086622,
+      "median": 0.0,
+      "p99": 0.012477
+    },
+    "shots_in_window": 122,
+    "think_ms": {
+      "max": 0.093325,
+      "median": 0.002668,
+      "p99": 0.025448
+    },
+    "ticks": 3600
+  },
+  "think_100": {
+    "bots": 100,
+    "kills_in_window": 138,
+    "path_ms": {
+      "max": 0.238516,
+      "median": 0.0,
+      "p99": 0.127013
+    },
+    "shots_in_window": 636,
+    "think_ms": {
+      "max": 3.713309,
+      "median": 0.155535,
+      "p99": 0.664857
+    },
+    "ticks": 1800
+  },
+  "think_60": {
+    "bots": 60,
+    "kills_in_window": 56,
+    "path_ms": {
+      "max": 0.191288,
+      "median": 0.0,
+      "p99": 0.107125
+    },
+    "shots_in_window": 539,
+    "think_ms": {
+      "max": 0.78252,
+      "median": 0.075476,
+      "p99": 0.355202
+    },
+    "ticks": 1800
+  }
+}

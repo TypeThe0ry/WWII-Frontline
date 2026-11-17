@@ -32,3 +32,7 @@ wtransport = { version = "=0.7.2", features = ["quinn"] }
 [[bin]]
 name = "frontline-server"
 path = "src/main.rs"
+
+[[bench]]
+name = "aoi_encode"
+harness = false

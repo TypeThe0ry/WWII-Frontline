@@ -15,6 +15,8 @@ use tokio::net::TcpListener;
 pub const TICK_MS_BUCKETS: &[f64] = &[
     0.5, 1.0, 2.0, 4.0, 8.0, 12.0, 16.0, 20.0, 24.0, 28.0, 33.3, 50.0, 100.0,
 ];
+/// Buckets of `bot_think_ms` / `bot_path_ms` (budget: 1 ms for 10 bots, 3 ms for 60).
+pub const BOT_MS_BUCKETS: &[f64] = &[0.02, 0.05, 0.1, 0.2, 0.5, 1.0, 2.0, 3.0, 5.0, 10.0];
 pub const INTERVAL_ERR_MS_BUCKETS: &[f64] =
     &[0.05, 0.1, 0.2, 0.3, 0.5, 0.75, 1.0, 1.5, 2.0, 3.0, 5.0];
 
@@ -50,6 +52,10 @@ pub struct Metrics {
     pub session_kicked_total: IntCounter,
     pub players: IntGaugeVec,
     pub bots: IntGauge,
+    /// Wall time of one tick's bot step: all `think` calls + input ingestion (ms; M0-026).
+    pub bot_think_ms: Histogram,
+    /// Time of that step spent in path queries (ms).
+    pub bot_path_ms: Histogram,
     pub uptime_seconds: Gauge,
     // ---- net (M0-016) ----
     pub net_connections: IntGauge,
@@ -69,6 +75,23 @@ pub struct Metrics {
     pub net_datagrams_in_total: IntCounter,
     /// Datagrams sent (C2/C3).
     pub net_datagrams_out_total: IntCounter,
+    // ---- snapshots / AOI (M0-019) ----
+    /// Size of each C2 snapshot payload (bytes).
+    pub snapshot_bytes: Histogram,
+    /// Payload / budget of each snapshot.
+    pub snapshot_budget_utilization: Histogram,
+    /// Entities that did not fit a packet (budget or record limit).
+    pub aoi_starved_total: IntCounter,
+    /// Wall time of steps 6+7 (AOI + encode) per tick (ms).
+    pub aoi_encode_ms: Histogram,
+    pub snapshots_sent_total: IntCounter,
+    pub snapshot_keyframe_records_total: IntCounter,
+    pub snapshot_delta_records_total: IntCounter,
+    /// Ticks spent in the reduced snapshot rate (3 consecutive tick overruns).
+    pub snapshot_degraded_ticks_total: IntCounter,
+    /// Per-client downstream rate over a sliding 1 s window (kbps), sampled once per second per
+    /// client; `kind` = `payload` (snapshot bytes) or `wire` (payload + 58 B per packet).
+    pub net_bytes_out_per_client_kbps: prometheus::HistogramVec,
     /// Latest published tick (for the report / smoke tests).
     pub ticks_run: AtomicU64,
     started: Instant,
@@ -141,6 +164,16 @@ impl Metrics {
             players: IntGaugeVec::new(Opts::new("server_players", "Connected players"), &["team"])
                 .expect("players"),
             bots: gauge("server_bots", "Active bots"),
+            bot_think_ms: hist(
+                "bot_think_ms",
+                "Bot step wall time per tick: think + input ingestion (ms)",
+                BOT_MS_BUCKETS,
+            ),
+            bot_path_ms: hist(
+                "bot_path_ms",
+                "Path-query time per tick inside the bot step (ms)",
+                BOT_MS_BUCKETS,
+            ),
             uptime_seconds: Gauge::new("server_uptime_seconds", "Process uptime").expect("uptime"),
             net_connections: gauge("net_connections", "Open client connections"),
             net_rejects_total: IntCounterVec::new(
@@ -180,6 +213,51 @@ impl Metrics {
             ),
             net_datagrams_in_total: counter("net_datagrams_in_total", "Datagrams received"),
             net_datagrams_out_total: counter("net_datagrams_out_total", "Datagrams sent"),
+            snapshot_bytes: hist(
+                "snapshot_bytes",
+                "Size of each snapshot payload (bytes)",
+                &[
+                    50.0, 100.0, 150.0, 200.0, 300.0, 400.0, 600.0, 800.0, 1000.0, 1150.0, 1200.0,
+                ],
+            ),
+            snapshot_budget_utilization: hist(
+                "snapshot_budget_utilization",
+                "Snapshot payload divided by the packet budget",
+                &[0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
+            ),
+            aoi_starved_total: counter(
+                "aoi_starved_total",
+                "Candidate entities that did not fit into a snapshot packet",
+            ),
+            aoi_encode_ms: hist(
+                "aoi_encode_ms",
+                "AOI selection + snapshot encoding per tick (ms)",
+                &[0.1, 0.25, 0.5, 1.0, 1.5, 2.0, 2.6, 4.0, 8.0, 16.0],
+            ),
+            snapshots_sent_total: counter("snapshots_sent_total", "Snapshot packets produced"),
+            snapshot_keyframe_records_total: counter(
+                "snapshot_keyframe_records_total",
+                "Entity records sent as keyframes",
+            ),
+            snapshot_delta_records_total: counter(
+                "snapshot_delta_records_total",
+                "Entity records sent as deltas",
+            ),
+            snapshot_degraded_ticks_total: counter(
+                "snapshot_degraded_ticks_total",
+                "Ticks in which the snapshot rate was reduced to 15 Hz",
+            ),
+            net_bytes_out_per_client_kbps: prometheus::HistogramVec::new(
+                HistogramOpts::new(
+                    "net_bytes_out_per_client_kbps",
+                    "Per-client downstream rate over 1 s windows (kbps)",
+                )
+                .buckets(vec![
+                    8.0, 16.0, 32.0, 54.0, 64.0, 96.0, 128.0, 192.0, 256.0, 400.0, 512.0,
+                ]),
+                &["kind"],
+            )
+            .expect("per-client kbps"),
             ticks_run: AtomicU64::new(0),
             started: Instant::now(),
             registry,
@@ -211,6 +289,8 @@ impl Metrics {
         }
         r.register(Box::new(m.players.clone())).unwrap();
         r.register(Box::new(m.bots.clone())).unwrap();
+        r.register(Box::new(m.bot_think_ms.clone())).unwrap();
+        r.register(Box::new(m.bot_path_ms.clone())).unwrap();
         r.register(Box::new(m.uptime_seconds.clone())).unwrap();
         for c in [
             Box::new(m.net_connections.clone()) as Box<dyn prometheus::core::Collector>,
@@ -225,6 +305,19 @@ impl Metrics {
             Box::new(m.net_datagram_oversize_total.clone()),
             Box::new(m.net_datagrams_in_total.clone()),
             Box::new(m.net_datagrams_out_total.clone()),
+        ] {
+            r.register(c).unwrap();
+        }
+        for c in [
+            Box::new(m.snapshot_bytes.clone()) as Box<dyn prometheus::core::Collector>,
+            Box::new(m.snapshot_budget_utilization.clone()),
+            Box::new(m.aoi_starved_total.clone()),
+            Box::new(m.aoi_encode_ms.clone()),
+            Box::new(m.snapshots_sent_total.clone()),
+            Box::new(m.snapshot_keyframe_records_total.clone()),
+            Box::new(m.snapshot_delta_records_total.clone()),
+            Box::new(m.snapshot_degraded_ticks_total.clone()),
+            Box::new(m.net_bytes_out_per_client_kbps.clone()),
         ] {
             r.register(c).unwrap();
         }

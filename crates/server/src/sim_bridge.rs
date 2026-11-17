@@ -61,12 +61,21 @@ impl SimBridge {
         }
     }
 
+    pub fn net(&self) -> Option<&NetLink> {
+        self.link.as_ref()
+    }
+
     pub fn map(&self) -> Option<&Arc<LoadedMap>> {
         self.map.as_ref()
     }
 
     pub fn session(&self, p: PlayerId) -> Option<&PlayerSession> {
         self.table.get(&p)
+    }
+
+    /// All sessions in ascending `PlayerId` order (the snapshot scheduler iterates these).
+    pub fn sessions(&self) -> impl Iterator<Item = (&PlayerId, &PlayerSession)> {
+        self.table.iter()
     }
 
     pub fn len(&self) -> usize {

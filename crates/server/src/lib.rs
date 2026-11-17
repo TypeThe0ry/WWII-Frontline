@@ -1,5 +1,6 @@
 //! Frontline match server (library half, so tests and benches can drive the sim loop).
 
+pub mod bot_host;
 pub mod clock;
 pub mod config;
 pub mod input_buffer;
@@ -10,6 +11,7 @@ pub mod session;
 pub mod shutdown;
 pub mod sim_bridge;
 pub mod sim_thread;
+pub mod snapshot;
 pub mod validate;
 pub mod world_loader;
 

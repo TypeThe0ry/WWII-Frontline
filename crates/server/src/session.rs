@@ -61,7 +61,17 @@ pub struct PlayerInput {
     last_cmd: InputCmd,
     stalled: bool,
     had_real: bool,
+    /// Arrival lead (ticks between arrival and execution tick) of the newest accepted
+    /// commands, for the snapshot header's `input_slack` (M0-019).
+    leads: [u8; SLACK_WINDOW],
+    lead_n: usize,
+    lead_i: usize,
 }
+
+/// Accepted commands remembered for the slack estimate.
+pub const SLACK_WINDOW: usize = 8;
+/// `input_slack` reported before any command has been accepted (the client's target).
+pub const DEFAULT_SLACK: u8 = 1;
 
 fn neutral(yaw: u16) -> InputCmd {
     InputCmd {
@@ -87,7 +97,32 @@ impl PlayerInput {
             last_cmd: neutral(yaw),
             stalled: false,
             had_real: false,
+            leads: [0; SLACK_WINDOW],
+            lead_n: 0,
+            lead_i: 0,
         }
+    }
+
+    /// Sequence number of the command the sim used for the latest resolved tick (the
+    /// snapshot's `ack_input_seq`; a repeated command keeps the sequence of the real one).
+    pub fn last_applied_seq(&self) -> u16 {
+        self.last_cmd.seq
+    }
+
+    /// `input_slack` (4 bit): how many ticks before its execution tick the input arrived - the
+    /// minimum over the last 8 accepted commands (the late ones decide what the client must do).
+    pub fn input_slack(&self) -> u8 {
+        if self.lead_n == 0 {
+            return DEFAULT_SLACK;
+        }
+        self.leads[..self.lead_n].iter().copied().min().unwrap_or(0)
+    }
+
+    fn note_lead(&mut self, cmd_tick: u32, now: u32) {
+        let lead = (cmd_tick as i64 - now as i64).clamp(0, 15) as u8;
+        self.leads[self.lead_i] = lead;
+        self.lead_i = (self.lead_i + 1) % SLACK_WINDOW;
+        self.lead_n = (self.lead_n + 1).min(SLACK_WINDOW);
     }
 
     /// Window check, validation, buffering - in that order. `now` is the tick about to run.
@@ -104,10 +139,16 @@ impl PlayerInput {
             };
         }
         match validate_input(&mut self.state, cmd) {
-            Ok(v) => Ingest {
-                result: self.buf.push(v.cmd, now),
-                clamps: v.clamps,
-            },
+            Ok(v) => {
+                let result = self.buf.push(v.cmd, now);
+                if result.is_accepted() {
+                    self.note_lead(v.cmd.tick, now);
+                }
+                Ingest {
+                    result,
+                    clamps: v.clamps,
+                }
+            }
             Err(Reject::Duplicate) => Ingest {
                 result: PushResult::Duplicate,
                 clamps: none,

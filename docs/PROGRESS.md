@@ -353,6 +353,12 @@ M0 共 21 个任务已提交（M0-021 待提交）；提交哈希取自 `git log
 - 影响：M0-025 用 `window.__netGame.game.state`（本地位姿、实体 SoA、signals）与事件总线接渲染；M0-019 必须读 PI-023；M0-027 的 headless 客户端可复用 `GameLoop` 的 `NetPort`；e2e：`pnpm -C client exec playwright test -c playwright.game.config.ts`。
 
 
+### M0-019 server：AOI v0 与快照发送 — done — 2026-11-17 — 提交 （待总控填）
+- 做了什么：`crates/server/src/snapshot/`（64 m 网格、优先级累加器与 R3 候选规则、每客户端基线/ack/`pred_hash` 记账、事件 3 包冗余、`self_state`、调度器），接入 `sim_thread` 的 `aoi_and_snapshot`/`send`；20 Hz 按 `player_id % 3` 错相、WS 15 Hz、连续 3 次 tick 超时全体降到 15 Hz（90 tick）；`pred_hash` 的唯一 Rust 实现放在 protocol（与客户端 TS 黄金值对拍）；新增指标 `snapshot_bytes`、`snapshot_budget_utilization`、`aoi_starved_total`、`aoi_encode_ms`、`net_bytes_out_per_client_kbps{kind}` 等。R3 按总控裁定在 M0 就实现。
+- 关键实测（release，非参考机）：10 客户端×5 min 线路估计 P50 16.0 / P99 18.8 kbps（预算 128 / 400）；100 客户端全员收快照 P50 59.7 / P99 91.6 kbps、平均包 336 B；AOI+编码每 tick 10 客户端 P99 0.036 ms、100 客户端 P50 0.79 / P99 1.44 ms（预算 2.6）；30 % 丢包事件送达 98.1 %；每实体记录 11–13 B，关键帧占记录 65–85 %（PI-010 的"近景每包出现"提示被实测推翻：开启反而 +20 % 字节，默认关，见 PI-024）。
+- 遗留：C3 团队通道、载具记录、带宽调节器未做（M1/M2）；`pred_hash` 应改由 sim-wasm 导出（M0-025）；实机 tc netem 对账可现在复测（M0-022 遗留）；Firefox/WebKit 仍未验证（H-103）；`bots_soak::bots_smoke_20s` 在 M0-026 进行中失败（非本任务）。
+- 影响：`client/e2e/net-support.ts` 默认不再起 `--dev-echo`，浏览器矩阵 C2 来源已是 `server`；`SimLoop::{snapshot_stats, snapshot_degraded}` 与 `SnapshotScheduler`（可被 M0-027 headless 对拍）；M0-025 须按 PI-024 第 4 条解释 `flags`/`anim`。
+
 ## 8. 如何维护本文件
 
 - **执行者**：收工前，在"任务日志"末尾追加本任务条目（`### 任务 ID 标题 — 状态 — 日期 — 提交 abc1234`，3–6 行：做了什么、关键实测数字、遗留问题/需人工事项、对后续任务的影响）；写入前重新读取文件末尾（并行执行者可能同时追加），只追加、不改别人的条目。数字必须来自实测，查不到写"未记录"。同时更新 `tasks/STATUS.md` 自己那一行。

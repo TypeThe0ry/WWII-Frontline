@@ -339,3 +339,24 @@
 - **受影响任务**：M0-019（pred_hash 比较与 pos_corr 内容）、M0-025（`GameState` / 事件接线）、M0-027、M1-041（载具预测的哈希）、M2-041（键位）、M1-025（FireCmd）。
 - **临时处理**：按此实现。
 - **裁决（Fable 填写）**：
+- **M0-019 对齐情况**（2026-11-17，按 PI-023 实现，无修改）：①`ack_snapshot_tick` 低 16 位用"不超过本客户端最近发出的快照 tick 的、低 16 位相同的最新 tick"还原（`ClientBook::extend_ack`，环绕测试）；只承认服务器真发出过的 tick。②服务器为每个发出的包记录 `(tick, CRC-8(该包所告知的自身位置))`，客户端 `pred_hash` 与"其 ack 所指快照的记录"比较；**每个客户端的第 1 个包必带 `pos_corr`**，之后只在不匹配时置位；置位后**每个包**都带 `pos_corr`（位置 = 该包 `ack_input_seq` 对应命令之后的权威位置），直到收到 ack ≥ 首个携带包的 tick 且哈希匹配才清除（丢包安全）；不匹配/清除各只在"更新的 ack"到来时评估一次，旧 ack 不会重新触发。③哈希只有一份实现：`crates/protocol/src/snapshot/pred_hash.rs`（`crc8`、`pred_hash(x,y,z)`、`pred_hash_q(QPos)`，纯函数，无新依赖），单元测试用 `pred-hash.test.ts` 的 5 个黄金值（66、175、151、0、16）+ CRC-8 检验值 0xF4 对拍通过；**后续应由 sim-wasm 导出 `predHash` 并替换 `client/src/game/pred-hash.ts`（接线留给 M0-025）**。④线上自身实体 id = `player_id`（实体记录的 id 即 PlayerId，0..127；服务器不向客户端发它自己的记录，自身状态走 `self_state`），客户端 `selfWireId = player_id` 的假定成立，无需映射。⑤`ack_input_seq` = sim 本 tick 实际用于该玩家的命令的 seq（重复/保持输入时仍为最后一条真实命令的 seq）；`input_slack` = 最近 8 条被接受命令的"到达时距执行 tick 的提前量（tick）"的最小值，钳到 0..15，无样本时为 1。⑥`HitConfirm` 无击杀位、事件 14 位位置码 256 m/16384（1/64 m）均按 crates/protocol 现状实现，未扩展协议。
+
+### PI-024 M0-019：AOI v0 / 快照发送的实现细化，以及与 PI-010 提示相悖的实测
+
+- **状态**：open
+- **类别**：接口细化 / 实测偏离
+- **提出者 / 日期**：M0-019 / 2026-11-17
+- **问题 / 做法**（`crates/server/src/snapshot/*`）：
+  1. **R3 现在就做**（总控裁定，任务卡原定 M1-024）：敌方实体仅当 ≤96 m，或 ≤400 m 且在视锥 +30°（半角 100°，已可见则保持到 110°）内才进候选；友军 ≤400 m（迟滞 440 m）；离开候选的实体立即发 `entity_remove`，连续 3 个包重复（客户端对已删除 id 的 remove 是空操作）。Shot 事件按同一规则路由（敌方视野外的枪声不下发）；`HitConfirm` 只给射手，`DamageDir` 只给被害者，`Impact` 给 400 m 内所有人。团队通道（C3）与载具不在本任务。
+  2. **PI-010 的"近/中景每包都出现"提示被实测推翻**：`SnapshotScheduler::near_every_packet`（≤96 m 实体每包出现、全部走 delta）默认**关**。40 人、30 s 同场景对比（`snapshot_bandwidth::near_every_packet_policy_comparison`）：开 = 线路估计 P50 36.7 kbps、关键帧记录 9.4 %；关（规格速率 20/10/5/2 Hz）= 30.2 kbps、关键帧记录 75.7 %。原因：真实移动玩家的近景 delta 是 8–10 B（M0-006 的 4–6 B 是匀速直线），关键帧 12.5 B，10 Hz 关键帧（125 B/s）比 20 Hz delta（≥160 B/s）便宜。取舍：默认遵守 §6.5.4 的速率；需要更平滑的 T1 时打开该选项，代价约 +20 % 字节。关键帧占比因此是 65–85 %（按记录数），但字节数低于预算很多。
+  3. **累加器**：只在该客户端出包的 tick 评估（`acc += rate × Δt`，Δt = 距上次评估的时间，等价于每 tick 累加），速率再被该客户端的包速率（20 或 15 Hz）封顶以免积压；`acc` 上限 20；`acc ≥ 10` 者强制先发；同分按 id 升序；新进入候选的实体 `acc` 置 1（首包必发）。"新进入实体首包全量关键帧"不单独强制：若它出现在 ack 基线包里（≤32 tick 内离开又回来）则以 delta 发送，解码结果与关键帧等价。
+  4. **线上实体记录**：id = PlayerId；`flags` bit0 正在开火（近 6 tick 有 Shot）、bit1 近 1 s 受伤/击杀相关、bit7 阵营（0 US / 1 GER）；`anim` bit0–2 移动类别（0 静止 1 走 2 跑 3 冲刺 4 空中）、bit3 换弹；`stance` = sim 的 `Stance`（0 站 / 1 蹲）；`weapon` = `def_id & 63`；`health_q` 8 位。`self_state`：`cooldown_bits` bit0–2 = 武器 FSM 码（0 就绪 1 冷却 2 拉栓 3 战术换弹 4 空仓换弹 5 空仓）、bit3 扳机按住、bit4 开镜；`stamina/suppression/deploy_state` 恒 0。
+  5. **事件**：全局递增 `event_id: u16`（客户端 128 个窗口去重）；每个事件每客户端最多随 3 个包发送，收到携带它的包的 ack 即停；位置码 1/64 m（PI-023）；法线 12 位八面体（6+6）；`Shot` 不发给射手自己（客户端本地已预测）；`DamageDir.angle` = 攻击者方位相对被害者朝向，0 = 正前，顺时针，`/256 × 2π`。实测 30 % 下行丢包时事件送达率 98.1 %（2748/2800，≥97 % 的目标；理论 1 − 0.3³ = 97.3 %，边缘值）。
+  6. **出包节奏**：20 Hz = 除 `tick % 3 == player_id % 3` 以外的 tick；WS（无 datagram 路径）= 每 2 tick 一包（15 Hz，`(tick + player_id) % 2 == 0`）且不带 CRC；连续 3 次 tick 超时 → 全体降为 15 Hz，持续 90 tick 并随超时刷新，计数 `snapshot_degraded_ticks_total`。`PACKET_BUDGET = min(1150, max_datagram_size − 1)`。机器人（无连接的会话）不出包。
+  7. **输入侧小改**（crates/server/src/session.rs，M0-018 的文件）：`PlayerInput::{last_applied_seq, input_slack}`；`SimBridge::{net, sessions}` 访问器。`sim_thread` 的 `tick_body` 现在保存 `StepOutput.events`（`step_events`）供快照与 bot 使用。
+  8. **C2 联调**：`client/e2e/net-support.ts` 的 `startServer` 默认不再传 `--dev-echo`（改为 `echo: true` 才传），`interop/server.ts` 注释同步；`reports/m0/browser-matrix.*` 重跑后 C2 来源记为 `server`，STATUS M0-028 行的 Chromium 格已按新结果更新（`scripts/check-interop-table.mjs` 一致）。`--dev-echo` 保留为隐藏的纯测试开关。
+- **证据**：tests/{aoi_priority,snapshot_bandwidth,snapshot_loss,snapshot_net}.rs、benches/aoi_encode.rs、reports/baselines/server-m0.json；数字见 tasks/STATUS.md M0-019 行与 docs/PROGRESS.md。
+- **建议方案**：①M1-024 的 AOI v1 在此基础上加团队通道与标记；②若 M1 要把 T1 提到 20 Hz 平滑，打开 `near_every_packet` 并重测带宽；③C3 团队通道、载具记录、带宽调节器（M2-020）未做。
+- **受影响任务**：M0-025（`predHash` 换 wasm、flags/anim 位含义）、M0-027、M1-024、M1-010、M2-020。
+- **临时处理**：按此实现。
+- **裁决（Fable 填写）**：

@@ -9,10 +9,12 @@ use std::time::Duration;
 use crossbeam_channel::{bounded, Receiver, Sender, TrySendError};
 use frontline_protocol::msg::input::InputCmd;
 use frontline_sim::{
-    CollisionData, GameData, GameMode, MapId, PlayerId, SimConfig, SpawnReq, Team, World,
+    CollisionData, GameData, GameMode, MapId, PlayerId, SimConfig, SimEvent, SpawnReq, Team, World,
 };
 
+use crate::bot_host::BotHost;
 use crate::sim_bridge::{NetLink, SimBridge};
+use crate::snapshot::{ClientIn, LinkInfo, Outgoing, SnapshotScheduler, DEGRADE_HOLD_TICKS};
 use crate::validate::ValidateCfg;
 use crate::world_loader::LoadedMap;
 use serde::Serialize;
@@ -162,12 +164,60 @@ pub struct SimLoop<C: Clock> {
     tick_ns: Vec<u32>,
     err_ns: Vec<u32>,
     started: std::time::Instant,
+    /// Snapshot / AOI scheduler (M0-019) and its per-tick scratch.
+    snap: SnapshotScheduler,
+    step_events: Vec<SimEvent>,
+    clients_in: Vec<ClientIn>,
+    outgoing: Vec<Outgoing>,
+    /// Bots hosted in this process (`--bots N`, M0-026); `None` without bots.
+    bot_host: Option<BotHost>,
+    /// Running count of the sim's gameplay events (shots, hits, kills, spawns).
+    tally: EventTally,
+}
+
+/// Running totals of gameplay events, for the soak / balance reports (M0-026).
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize)]
+pub struct EventTally {
+    pub shots: u64,
+    pub hits: u64,
+    pub kills: u64,
+    pub headshots: u64,
+    pub spawns: u64,
+}
+
+impl EventTally {
+    fn add(&mut self, events: &[SimEvent]) {
+        for e in events {
+            match e {
+                SimEvent::Shot { .. } => self.shots += 1,
+                SimEvent::Hit { .. } => self.hits += 1,
+                SimEvent::Kill { headshot, .. } => {
+                    self.kills += 1;
+                    self.headshots += u64::from(*headshot);
+                }
+                SimEvent::Spawn { .. } => self.spawns += 1,
+                _ => {}
+            }
+        }
+    }
 }
 
 /// Creates the channel pair plus a loop that is not yet running (tests drive it directly).
 pub fn build_loop<C: Clock>(
     clock: C,
     cfg: &SimThreadConfig,
+    metrics: Arc<Metrics>,
+    stop: StopFlag,
+) -> (SimLoop<C>, InputSender, Sender<Command>) {
+    build_loop_with_bots(clock, cfg, 0, metrics, stop)
+}
+
+/// [`build_loop`] with `bots` soldier bots hosted in the loop (`--bots N`): they join before the
+/// first tick, split evenly between the teams.
+pub fn build_loop_with_bots<C: Clock>(
+    clock: C,
+    cfg: &SimThreadConfig,
+    bots: u16,
     metrics: Arc<Metrics>,
     stop: StopFlag,
 ) -> (SimLoop<C>, InputSender, Sender<Command>) {
@@ -188,12 +238,23 @@ pub fn build_loop<C: Clock>(
     if let Some(m) = &cfg.map_data {
         m.apply_to(&mut world);
     }
-    let bridge = SimBridge::new(
+    let mut bridge = SimBridge::new(
         metrics.clone(),
         cfg.net.clone(),
         cfg.map_data.clone(),
         ValidateCfg::default(),
     );
+    let bot_host = (bots > 0).then(|| {
+        BotHost::with_soldiers(
+            bots,
+            cfg.match_seed,
+            &mut world,
+            &mut bridge,
+            cfg.map_data.as_deref(),
+            cfg.net.as_ref().map(|n| &n.sessions),
+            metrics.clone(),
+        )
+    });
     let now = clock.now();
     let lp = SimLoop {
         schedule: TickSchedule::new(now + TICK_PERIOD, TICK_PERIOD),
@@ -209,6 +270,12 @@ pub fn build_loop<C: Clock>(
         ticks: 0,
         tick_ns: Vec::new(),
         err_ns: Vec::new(),
+        snap: SnapshotScheduler::new(Some(metrics.clone())),
+        step_events: Vec::new(),
+        clients_in: Vec::new(),
+        outgoing: Vec::new(),
+        bot_host,
+        tally: EventTally::default(),
     };
     (lp, InputSender { tx: itx, metrics }, ctx)
 }
@@ -219,7 +286,18 @@ pub fn spawn(
     metrics: Arc<Metrics>,
     stop: StopFlag,
 ) -> std::io::Result<SimThreadHandle> {
-    let (lp, inputs_tx, commands_tx) = build_loop(SystemClock, &cfg, metrics, stop);
+    spawn_with_bots(cfg, 0, metrics, stop)
+}
+
+/// [`spawn`] with `bots` soldier bots (`--bots N`).
+pub fn spawn_with_bots(
+    cfg: SimThreadConfig,
+    bots: u16,
+    metrics: Arc<Metrics>,
+    stop: StopFlag,
+) -> std::io::Result<SimThreadHandle> {
+    let (lp, inputs_tx, commands_tx) =
+        build_loop_with_bots(SystemClock, &cfg, bots, metrics, stop);
     let pin = cfg.pin_core;
     let join = std::thread::Builder::new()
         .name("sim".into())
@@ -244,6 +322,20 @@ pub fn spawn(
 impl<C: Clock> SimLoop<C> {
     pub fn world(&self) -> &World {
         &self.world
+    }
+
+    /// The hosted bots, if any (`--bots`).
+    pub fn bot_host(&self) -> Option<&BotHost> {
+        self.bot_host.as_ref()
+    }
+
+    pub fn bot_host_mut(&mut self) -> Option<&mut BotHost> {
+        self.bot_host.as_mut()
+    }
+
+    /// Gameplay event totals since the loop was built.
+    pub fn tally(&self) -> EventTally {
+        self.tally
     }
 
     /// Runs until the stop flag is raised; returns the summary.
@@ -287,13 +379,17 @@ impl<C: Clock> SimLoop<C> {
         if dur > self.schedule.period() {
             self.metrics.tick_overrun_total.inc();
             self.consecutive += 1;
-            if self.consecutive == 3 {
-                // Degradation hook: M0-019 halves the snapshot rate on this signal.
-                tracing::warn!(
-                    event = "tick_overrun_degrade",
-                    consecutive = self.consecutive,
-                    "3 consecutive tick overruns"
-                );
+            if self.consecutive >= 3 {
+                // Degradation guard (ARCHITECTURE §6.10): all clients drop to 15 Hz snapshots
+                // for 3 s after the last overrun of the run.
+                if self.consecutive == 3 {
+                    tracing::warn!(
+                        event = "tick_overrun_degrade",
+                        consecutive = self.consecutive,
+                        "3 consecutive tick overruns: snapshot rate reduced to 15 Hz"
+                    );
+                }
+                self.snap.degrade(DEGRADE_HOLD_TICKS);
             }
             tracing::warn!(
                 event = "tick_overrun",
@@ -328,7 +424,8 @@ impl<C: Clock> SimLoop<C> {
             self.update_player_gauges();
         }
         let inputs = self.bridge.resolve(now);
-        self.world.step(inputs);
+        let out = self.world.step(inputs);
+        self.step_events = out.events;
         CURRENT_TICK.store(self.world.tick().0, Ordering::Relaxed);
         self.record_lag_comp();
         self.bots_think();
@@ -368,14 +465,16 @@ impl<C: Clock> SimLoop<C> {
     }
 
     fn update_player_gauges(&self) {
+        // `server_players` counts connected humans; bots have their own gauge (`server_bots`).
+        let bots = |t: Team| self.bot_host.as_ref().map_or(0, |b| b.count_team(t));
         self.metrics
             .players
             .with_label_values(&["us"])
-            .set(self.bridge.count_team(Team::Us) as i64);
+            .set(self.bridge.count_team(Team::Us).saturating_sub(bots(Team::Us)) as i64);
         self.metrics
             .players
             .with_label_values(&["ger"])
-            .set(self.bridge.count_team(Team::Ger) as i64);
+            .set(self.bridge.count_team(Team::Ger).saturating_sub(bots(Team::Ger)) as i64);
     }
 
     /// Step 1: drain the network->sim channels (bounded by their capacity) into the per-player
@@ -396,14 +495,74 @@ impl<C: Clock> SimLoop<C> {
     /// Step 4. TODO(M0-020): lag-compensation history.
     fn record_lag_comp(&mut self) {}
 
-    /// Step 5. TODO(M0-026): bot think (sharded).
-    fn bots_think(&mut self) {}
+    /// Step 5 (M0-026): every bot thinks (sharded inside the brains) and its command for the
+    /// next tick enters the same validation path as a human's. Also tallies this tick's events.
+    fn bots_think(&mut self) {
+        self.tally.add(&self.step_events);
+        if let Some(host) = self.bot_host.as_mut() {
+            host.tick(&self.world, &mut self.bridge);
+        }
+    }
 
-    /// Step 6. TODO(M0-019): AOI selection and snapshot encoding.
-    fn aoi_and_snapshot(&mut self) {}
+    /// Step 6 (M0-019): AOI selection and snapshot encoding for every connected client that
+    /// is due this tick. Bots have no connection and get no packets.
+    fn aoi_and_snapshot(&mut self) {
+        self.outgoing.clear();
+        self.clients_in.clear();
+        // Without a network link (pure-sim tests) there are no clients, but the scheduler still
+        // runs: it tracks spawns / shots and counts down the degradation guard.
+        if let Some(net) = self.bridge.net() {
+            for (p, s) in self.bridge.sessions() {
+                let Some(h) = net.sessions.handle_of(*p) else {
+                    continue;
+                };
+                self.clients_in.push(ClientIn {
+                    player: *p,
+                    team: s.team,
+                    ack_low: s.input.state.last_ack_snapshot_tick,
+                    pred_hash: s.input.state.last_pred_hash,
+                    ack_input_seq: s.input.last_applied_seq(),
+                    input_slack: s.input.input_slack(),
+                    link: LinkInfo::from_max_datagram(h.max_datagram_size()),
+                });
+            }
+        }
+        let now = self.world.tick().0;
+        self.snap.tick(
+            &self.world,
+            &self.step_events,
+            &self.clients_in,
+            now,
+            &mut self.outgoing,
+        );
+    }
 
-    /// Step 7. TODO(M0-019): hand packets to the network thread.
-    fn send(&mut self) {}
+    /// Step 7 (M0-019): hand the packets to the connection writers (never blocks).
+    fn send(&mut self) {
+        let Some(net) = self.bridge.net() else {
+            self.outgoing.clear();
+            return;
+        };
+        for o in self.outgoing.drain(..) {
+            if let Some(h) = net.sessions.handle_of(o.player) {
+                h.send(
+                    frontline_protocol::Channel::C2,
+                    bytes::Bytes::from(o.bytes),
+                    crate::net::transport::Rel::Unreliable,
+                );
+            }
+        }
+    }
+
+    /// Whether the snapshot rate is currently reduced to 15 Hz (3 consecutive tick overruns).
+    pub fn snapshot_degraded(&self) -> bool {
+        self.snap.is_degraded()
+    }
+
+    /// Snapshot statistics so far (benches, tests, the exit report).
+    pub fn snapshot_stats(&self) -> &crate::snapshot::SchedStats {
+        &self.snap.stats
+    }
 
     /// Drops collected samples (used to exclude warm-up from a measurement window).
     pub fn discard_samples(&mut self) {
@@ -476,6 +635,29 @@ mod tests {
         lp.tick_with(|_| c.advance(Duration::from_millis(1)));
         assert_eq!(m.tick_overrun_consecutive.get(), 0);
         assert_eq!(m.tick_overrun_consecutive_max.get(), 3);
+    }
+
+    #[test]
+    fn three_consecutive_overruns_reduce_the_snapshot_rate_and_recovery_restores_it() {
+        let c = FakeClock::new();
+        let (mut lp, m) = mk(&c);
+        assert!(!lp.snapshot_degraded());
+        for _ in 0..2 {
+            lp.tick_with(|_| c.advance(Duration::from_millis(50)));
+        }
+        assert!(!lp.snapshot_degraded(), "two overruns are tolerated");
+        lp.tick_with(|_| c.advance(Duration::from_millis(50)));
+        assert!(lp.snapshot_degraded(), "the third one triggers the guard");
+        assert_eq!(m.tick_overrun_consecutive.get(), 3);
+        // the hold time is 90 ticks of the scheduler pass; here the passes run via tick()
+        for _ in 0..crate::snapshot::DEGRADE_HOLD_TICKS + 2 {
+            lp.tick();
+        }
+        assert!(!lp.snapshot_degraded());
+        assert_eq!(
+            lp.snapshot_stats().degraded_ticks,
+            crate::snapshot::DEGRADE_HOLD_TICKS as u64
+        );
     }
 
     #[test]

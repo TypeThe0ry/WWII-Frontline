@@ -1,0 +1,41 @@
+{
+  "aoi_encode": {
+    "_note": "AOI selection + snapshot encoding wall time per tick (sim thread, serial), moving+firing players on the M0 terrain; budget ARCHITECTURE 6.10 stages 8+9 = 2.0 + 0.6 ms at ~67 packets per tick",
+    "clients_10": {
+      "entity_records_per_packet": 2.485333333333333,
+      "mean_packet_bytes": 44.91258333333333,
+      "tick_ms_max": 0.16400700000000001,
+      "tick_ms_mean": 0.020123290972222242,
+      "tick_ms_p50": 0.019458,
+      "tick_ms_p99": 0.036472,
+      "us_per_client_packet": 3.0184936458333365
+    },
+    "clients_100": {
+      "entity_records_per_packet": 27.209183333333332,
+      "mean_packet_bytes": 324.0921666666667,
+      "tick_ms_max": 2.097404,
+      "tick_ms_mean": 0.8381327652777786,
+      "tick_ms_p50": 0.78855,
+      "tick_ms_p99": 1.439608,
+      "us_per_client_packet": 12.571991479166678
+    },
+    "clients_100_dense": {
+      "entity_records_per_packet": 42.38088333333334,
+      "mean_packet_bytes": 472.50958333333335,
+      "tick_ms_max": 2.447736,
+      "tick_ms_mean": 1.0647274250000003,
+      "tick_ms_p50": 0.9794599999999999,
+      "tick_ms_p99": 2.053718,
+      "us_per_client_packet": 15.970911375000004
+    },
+    "clients_20": {
+      "entity_records_per_packet": 5.676958333333333,
+      "mean_packet_bytes": 78.36929166666667,
+      "tick_ms_max": 0.166215,
+      "tick_ms_mean": 0.05789682638888884,
+      "tick_ms_p50": 0.056726,
+      "tick_ms_p99": 0.094902,
+      "us_per_client_packet": 4.342261979166663
+    }
+  }
+}

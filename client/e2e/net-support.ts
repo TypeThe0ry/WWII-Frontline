@@ -138,15 +138,15 @@ export interface StartOptions {
   cert?: DevCert;
   wsPort?: number;
   wtPort?: number;
-  /** `false`: never pass `--dev-echo` (real simulation snapshots only; M0-028). Default: try it, fall back without. */
+  /** `true`: pass `--dev-echo` (C1 -> C2 echo scaffold, no simulation). Default (M0-019): off, so the server sends its real snapshots. */
   echo?: boolean;
 }
 
-/** Starts the server (ephemeral ports unless given). Tries `--dev-echo` first and falls back without it. */
+/** Starts the server (ephemeral ports unless given). Real snapshots by default; `--dev-echo` only on request (`echo: true`). */
 export async function startServer(o: StartOptions = {}): Promise<ServerProc> {
   const base = ['--ws-port', String(o.wsPort ?? 0), '--wt-port', String(o.wtPort ?? 0), '--metrics-port', '0'];
   if (o.cert) base.push('--cert', o.cert.cert, '--key', o.cert.key);
-  if (o.echo === false) return spawnServer(base);
+  if (o.echo !== true) return spawnServer(base);
   try {
     return await spawnServer([...base, '--dev-echo']);
   } catch (e) {
