@@ -84,7 +84,7 @@ pub fn may_pass(p0: Vec3, p1: Vec3, foot: Vec3) -> bool {
 /// Uniform grid of the players of one tick (cell 16 m on x / z) for the near-miss broad phase.
 #[derive(Debug, Default)]
 pub struct Grid {
-    cells: std::collections::HashMap<(i32, i32), Vec<u16>>,
+    cells: std::collections::BTreeMap<(i32, i32), Vec<u16>>,
 }
 
 const CELL_M: f32 = 16.0;
