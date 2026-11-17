@@ -248,3 +248,15 @@
 - **受影响任务**：M0-013、M0-014、M0-015、M0-018、M0-022、M1-012、M1-013、M1-014。
 - **临时处理**：按此实现。
 - **裁决（Fable 填写）**：
+
+### PI-017 M0-013：规则数据 `data/rules/` 与 `rules.schema.json`（INDEX 未列）、死亡/重生的接口细化
+
+- **状态**：open
+- **类别**：数据 / 接口细化
+- **提出者 / 日期**：M0-013 / 2026-11-17
+- **问题**：①`data/rules/respawn.json` 与 `data/schemas/rules.schema.json` 是 M0-004 schema 列表之外的新增（任务文件已说明属细化）：字段 `death_cam_ms / base_wait_ms / wave_interval_ms / wave_aligned / _meta`，另加可选 `spawn_jitter_m`（初值 2.5 m，上限 3 m，使 3D 距离在缓坡上也 ≤3 m；任务写的是"≤3 m 偏移"）。data-validate 新增文件种类 `rules`（`data/rules/*.json`，需 `_meta`，无 id）；`GameData.rules: &'static RulesDef`（`RulesDef{respawn}`）、`build.rs` 对 `rules/respawn.json` 做类型化解析并嵌入；`tests/common::data_with` 的结构体字面量因此多一个字段（外部 crate 若手写 `GameData{..}` 需补 `rules`）。②**死亡状态**：死者保留实体（`EntityId` 不变、尸体位置冻结）、`LifeState::Dead{t_kia,killer,weapon,headshot,respawn_tick}`；`WorldView::players()` 只列存活者（与其文档一致），新增 `WorldView::{health, alive}`（带默认实现，不破坏其它实现者）、`EntityStateView` 增加 `health_q`（8 bit，0=死亡，正 hp 至少 1）与 `alive`；`World::{player_life, set_team_spawn, set_map_center, respawn_pending}`；`SimEvent::{Kill{victim,killer,weapon,headshot,dist_m}, Spawn{player,pos}}`。`headshot` 仅指 Head 区（M0 颈部无体积）。③**时间口径**：波次 tick 为从 tick 0 起每 `wave_interval` 的整数倍；所有时长按 `ceil(ms·hz/1000)` 取整为 tick（30 Hz 下 5/3/15 s = 150/90/450 tick 精确，出生 tick 与公式误差 0）。④**出生点**：sim 不读 spawns.json；服务器启动时对每队调用 `World::set_team_spawn(team, pos)`（HQ 点 xz，y 取地形高 +0.02），未设置时回到该玩家加入时的位置；朝向取已载入碰撞区块的中心（或 `set_map_center`）。偏移用 `Rng::for_(.., Purpose::Respawn)`，圆盘均匀；Y 取地形高度 +0.02 m。⑤**state_hash** 只在死亡状态下追加字节，无死亡场景的既有 golden（determinism_basic / movement_replay）不变；`weapon_duel` 的事件序列 golden 因对射现在以击杀+重生收尾而重钉（0x2ced… → 0x09a7e29170609f65）。
+- **证据**：crates/sim/src/{health,respawn}.rs、schedule.rs（`deaths` / `respawns`）、crates/sim/tests/damage_death.rs；data/rules/respawn.json；tasks/STATUS.md M0-013 行。
+- **建议方案**：接受；M0-018 在载入地图后用 spawns.json 的 HQ 点调用 `set_team_spawn`；M0-015/019 的快照用 `EntityStateView.health_q` / `alive`（死亡玩家当前不在 `players()` 中，若要在快照里保留尸体由 M0-019 决定）；M1-016 在 `LifeState` 上追加倒地。
+- **受影响任务**：M0-014、M0-015、M0-018、M0-019、M1-010、M1-016、M1-019。
+- **临时处理**：按此实现。
+- **裁决（Fable 填写）**：

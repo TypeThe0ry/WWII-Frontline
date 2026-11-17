@@ -5,10 +5,9 @@ JSON game data. **The numeric single source of truth** (ARCHITECTURE §4.4, GAME
 - `crates/sim` embeds these files at build time (`build.rs`) and computes `DATA_HASH`.
 - The client never reads this directory for logic; it queries `GameData` through `sim-wasm`
   (display fields only).
-- Schemas: `schemas/{weapon,role,loadout,vehicle,map_meta,spawns}.schema.json` (JSON Schema 2020-12).
+- Schemas: `schemas/{weapon,role,loadout,vehicle,map_meta,spawns,rules}.schema.json` (JSON Schema 2020-12).
   Test fixtures: `schemas/fixtures/valid/*.json`, `schemas/fixtures/invalid/*.json`.
-- Not yet covered by a schema (hashed only): `rules/*.json`, `maps/*/map.json` and the other
-  map files. Their schemas arrive with their tasks.
+- Not yet covered by a schema (hashed only): `maps/*/map.json` and the other map files. Their schemas arrive with their tasks.
 
 ## Layout and file kinds
 
@@ -18,6 +17,7 @@ JSON game data. **The numeric single source of truth** (ARCHITECTURE §4.4, GAME
 | `roles/{id}.json` | role | |
 | `loadouts/{id}.json` | loadout | |
 | `vehicles/{id}.json` | vehicle | no instances before M3 |
+| `rules/{name}.json` | rules | respawn timing (`respawn.json`, GAMEDESIGN §10.6); no `id`, `_meta` required |
 | `maps/{map}/meta.json`, `maps/{map}/spawns.json` | map_meta, spawns | MAPS §6.2; `_meta` optional here |
 | `schemas/**` | schemas and fixtures | never part of `DATA_HASH` |
 
