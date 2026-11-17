@@ -8,7 +8,7 @@
 
 - **当前里程碑**：M0 技术验证——**验收已执行（M0-033，2026-11-17）：M0 记 `partial`，可带条件关闭**，等 Fable 审阅检查点 0（H-038）；验收报告 `reports/m0/ACCEPTANCE.md`，进度总览与任务日志见 `docs/PROGRESS.md`。
 - **M0 统计（2026-11-17）**：33 个任务——done 19、partial 14（含 M0-033 自身）、blocked 0；M1–M4 共 230 个全部 todo。退出标准 E0-1…E0-12：通过 5（E0-1/2/4/9/11）、部分 5（E0-3/6/7/8/10）、需参考机或人工 2（E0-5/12）、未通过 0。
-- **下一个任务**：`M1-011`（M1-006 已 partial，余项拆 M1-006b；M1-005 已 partial：PI-036；M1-001–004 已 partial：CI 墙钟待 H-102，PI-032/033/034/035 待确认）。M1 前置待办（须在对应任务前解除）：H-102（CI 实跑）、H-021（参考机，M1 渲染任务前）、H-011/025/026（录像，M1 退出前）、PI-030（KCC 判据，待 Fable 裁决）。
+- **下一个任务**：`M1-011b`（M1-006 已 partial，余项拆 M1-006b；M1-005 已 partial：PI-036；M1-001–004 已 partial：CI 墙钟待 H-102，PI-032/033/034/035 待确认）。M1 前置待办（须在对应任务前解除）：H-102（CI 实跑）、H-021（参考机，M1 渲染任务前）、H-011/025/026（录像，M1 退出前）、PI-030（KCC 判据，待 Fable 裁决）。
 - **blocked 清单**：（无）
   - 格式：`任务 ID — 所缺条目 — 登记日期 — 谁来解除（人类/素材/其它任务）`
   - 人工侧待办（不阻塞任务，但卡退出标准）：GitHub 无 main 分支/无法开 PR（H-102）、参考机（H-021）、对标录像（H-011/H-025/H-026，汇总 H-104）、受信任 TLS 证书（H-017）、Firefox/Safari 手工互通（H-103）、受限网络台（H-022）、Fable M0 审阅（H-038）。
@@ -87,8 +87,8 @@
 | M1-008 | 数据：M1 武器与投掷物 | partial | 已交付 6 个枪械（M1 卡宾、Thompson、Grease Gun、MP40、M1911A1、P38）：`data-validate` 0 错误（15 文件）；`_meta.status` 全 initial；金标重打并在新数据上连跑两次稳定（sim `GOLDEN_SKIRMISH_FINAL`/`GOLDEN_DUEL_EVENTS`、sim-wasm `GOLDEN_SEED1_18000` 与 `native.json`，bots 未变）；DATA_HASH = 16618067817150479949 | 手雷/火箭/近战/弹药表见 M1-008b；`historical` 值未复核（M1-070） |
 | M1-008b | 数据：手雷/烟雾/火箭/近战/弹药 | done | 新增 5 个 explosive（Mk2、M24、M18、Nb.Hgr.39、Panzerfaust 60）、6 个 melee、3 个 ammo；新 schema `explosive/melee/ammo` + Rust `ExplosiveDef/MeleeDef/AmmoDef`；`data-validate` 0 错误（29 文件，fixtures 13 valid/31 invalid）；data-validate 测试 55 通过；`cargo test --workspace` 与 `--features test-util` 全过，sim/bots 金哈希未变（武器表未动）；DATA_HASH = 3167872950372904002 | 目录与卡不同（PI-042）；`historical` 未复核（M1-070） |
 | M1-009 | 数据：M4A1 Sherman（M1 的 1 辆坦克） | done | `data/vehicles/us_m4a1_75.json`：3 座、主炮 AP30/HE24/WP6 装填 3.0 s、装甲 9 区 18 值、模块 HP 300/250/250/200/250/150（殉爆 60%）、hull 1600、最高速 7.9167 m/s（= 28.5 km/h，Rust 测试 `m4a1_sherman_matches_gd_14` 断言）；`data-validate` 0 错误（56 文件，fixtures 18 valid/44 invalid，测试 68 项）；`cargo test --workspace` 全过、clippy/fmt 干净；sim/bots 金哈希未变；DATA_HASH = 13133737544876726238 | PI-045 待 Fable 确认；`historical` 复核归 M1-070；悬挂/履带参数待 M1-022；sim-wasm 体积回归待 CI wasm-build 记录 |
-| M1-010 | protocol：M1 全消息集 | done（fuzz 10 分钟记录待 CI nightly） | A（PR #15）+ b：载具记录（均值 15.8 B / 最大 20 B，`vehicle_delta_size`）、四元数与炮塔 ≤0.35°、TeamState 49 人 199 B、WorldState 16 B、60 实体含 8 车 15 µs / 单车 delta 0.33 µs（`vehicle_timing`，非参考机）、proptest 每族 1e5；`PROTOCOL_VERSION`=3；fuzz 靶 `c0,c4,events,snapshot_vehicle` 已写，本环境无 cargo-fuzz，用 `tests/mutation.rs` 替代 | 未跑 10 分钟 cargo-fuzz（无 nightly）；PI-046/047 |
-| M1-011 | sim：完整移动（姿态、体力、翻越、探身） | todo | | | |
+| M1-010 | protocol：M1 全消息集 | done | A（PR #15）+ b：载具记录（均值 15.8 B / 最大 20 B，`vehicle_delta_size`）、四元数与炮塔 ≤0.35°、TeamState 49 人 199 B、WorldState 16 B、60 实体含 8 车 15 µs / 单车 delta 0.33 µs（`vehicle_timing`，非参考机）、proptest 每族 1e5；`PROTOCOL_VERSION`=3；fuzz 靶 `c0,c4,events,snapshot_vehicle` 已写，另有 `tests/mutation.rs` 变异测试 | cargo-fuzz（nightly 0.13.2）四个靶各 600 s 零崩溃：c0 5027 万次、c4 1.054 亿次、events 2041 万次、snapshot_vehicle 401 万次（2026-11-17，本环境；同时新增 `.github/workflows/fuzz.yml` 每日 5 分钟/靶）；PI-046/047 |
+| M1-011 | sim：完整移动 | partial（011a 完成，余项 011b：翻越/攀爬、探身） | 011a：趴姿与 6 项转换时间（8/8/15/18/21/27 tick，与 GD 0.25/0.25/0.5/0.6/0.7/0.9 s 逐项一致）、体力（冲刺 150 tick 耗尽、锁定至 ≥30、恢复 12/s ×1.2/×1.4、1 s 延迟、跳跃 −15）、速度 12 项误差 ≤0.002 %、负重表、GD §9.5 修正表、`check_displacement`（1.30× 1000/1000 标记，1.10× 0 误报，三姿态）、`PlayerAuthState` 45 B；金哈希重定标 | 011b：翻越 0.8 s/攀爬 1.4 s、探身、`head_offset`；kcc_step 基准与 100 玩家 3 ms 需参考机；headless 回放待 011b；PI-048 |
 | M1-012 | sim：弹道细化与穿透 | todo | | | |
 | M1-013 | sim：冲锋枪、卡宾、手枪与近战 | todo | | | |
 | M1-014 | sim：命中区与伤害模型 | todo | | | |

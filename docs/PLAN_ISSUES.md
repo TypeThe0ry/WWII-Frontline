@@ -683,3 +683,13 @@
 - **验证**：proptest 1e5 往返（车辆状态/团队/世界），四元数 ≤0.35°（1e5 样本），炮塔/炮管 12 bit ≤0.35°；`vehicle_delta_size`（1e4 步）；60 实体包（含 8 辆载具）编码 15 µs（≤25），单载具 0.33 µs（≤2）。cargo-fuzz 靶 `c0,c4,events,snapshot_vehicle` 已加入 `fuzz/`，但本环境无 nightly/cargo-fuzz，改以 `tests/mutation.rs`（同属性、每靶 ≥5e4 变异输入，随 CI 跑）替代；10 分钟 fuzz 记录待参考机/CI nightly（H-102）。
 - **受影响任务**：M1-024/025（发送策略）、M1-040（客户端解码与 JS 暴露）。
 - **裁决（Fable 填写）**：
+
+### PI-048 M1-011a：移动拆为 a（趴姿/体力/修正/验证）与 b（翻越/攀爬/探身），以及若干模型取舍
+
+- **状态**：resolved（实现者裁决，待 Fable 复核）
+- **类别**：sim/数据
+- **提出者 / 日期**：M1 线程 / 2026-11-17
+- **做法**：①拆分：碰撞世界目前只有地形高度场，没有可翻越的障碍物，翻越/攀爬/探身依赖的几何检测放 011b（用合成高度场台阶做测试）。②`stance_blend` 改为姿态坐标 0 站/1 蹲/2 趴；转换时间表由 `stance_from`（上一个指令姿态）+ 目标决定，中途反向从当前坐标继续，胶囊高度不跳变；站→趴取 0.70 s 直达表项而非 0.25+0.50。趴姿胶囊高 0.7 m（= 2×半径，KCC 最小值；GD 的 0.5 m 是命中盒高度，另存于 `hitbox_height_m`，命中盒 `PRONE` 表见 hitbox.rs）。③起身顶部空间检查用向上射线（目前只有地形遮挡），不足则退回较矮姿态。④输入：`PRONE` 键 > `CROUCH` 键 > 站；趴姿 `SPRINT` 为快爬（1.3 m/s，8/s 体力），`AUX_WALK` 强制慢爬；ADS 乘数在冲刺外生效；装填乘数和负重通过 `MoveCtx` 传入（`step_player` 保持旧签名，等价于默认上下文；`World` 与 `PredictSim` 用 `step_player_ex`，负重暂为 `None`，待 loadout 重量数据）。⑤体力：冲刺/快爬仅在有移动输入时扣；归零（≤0.001）锁定冲刺与跳跃直到 ≥30；跳跃需 ≥15 且未锁定。⑥`PlayerAuthState` 45 B：追加 `stance_from`、`stamina`（f32 位与 100.0 的位异或，使全零尾部等于满体力的新玩家且往返精确）、`stamina_delay`、flags bit2 `sprint_locked`；世界 `state_hash` 纳入这些字段，三处金哈希（skirmish、determinism_basic、movement_replay）重定标并连跑两次稳定。⑦所有新数值进 `data/roles/*.json`（schema 同步、列入 `_meta.tunable`），武器侧 `stance_recoil/stance_spread` 常量仍保留一份（已加测试断言与数据一致，M1-014 再并入数据驱动）。
+- **未做**：翻越/攀爬/探身（011b）；`self_state.stamina` 已接线（6 bit）；客户端 `LAYOUT_STATE_*` 暴露 stamina 留 M1-040；基准与 100 玩家 3 ms 需参考机；headless 回放对比待 011b。
+- **受影响任务**：M1-014（命中盒/修正表）、M1-016、M1-027（`check_displacement`）、M1-040/045。
+- **裁决（Fable 填写）**：

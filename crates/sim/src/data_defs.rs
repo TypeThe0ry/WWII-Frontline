@@ -425,6 +425,73 @@ pub struct Movement {
     /// Linear ground deceleration time from the reference speed to a stop, seconds. Absent = instant.
     #[serde(default)]
     pub decel_time_s: Option<f64>,
+    // M1-011 additions (stance times, stamina, speed and stance modifiers; GAMEDESIGN 9).
+    #[serde(default)]
+    pub prone_fast_mps: Option<f64>,
+    #[serde(default)]
+    pub prone_fast_cost_per_s: Option<f64>,
+    #[serde(default)]
+    pub crouch_to_prone_ms: Option<f64>,
+    #[serde(default)]
+    pub prone_to_crouch_ms: Option<f64>,
+    #[serde(default)]
+    pub stand_to_prone_ms: Option<f64>,
+    #[serde(default)]
+    pub prone_to_stand_ms: Option<f64>,
+    #[serde(default)]
+    pub ads_stand_mult: Option<f64>,
+    #[serde(default)]
+    pub ads_crouch_mult: Option<f64>,
+    #[serde(default)]
+    pub ads_prone_mult: Option<f64>,
+    #[serde(default)]
+    pub reload_move_mult: Option<f64>,
+    #[serde(default)]
+    pub crawl_mps: Option<f64>,
+    #[serde(default)]
+    pub load_ref_kg: Option<f64>,
+    #[serde(default)]
+    pub load_penalty_per_kg: Option<f64>,
+    #[serde(default)]
+    pub load_min_mult: Option<f64>,
+    #[serde(default)]
+    pub sprint_cost_per_s: Option<f64>,
+    #[serde(default)]
+    pub stamina_regen_per_s: Option<f64>,
+    #[serde(default)]
+    pub stamina_regen_delay_s: Option<f64>,
+    #[serde(default)]
+    pub stamina_regen_crouch_mult: Option<f64>,
+    #[serde(default)]
+    pub stamina_regen_prone_mult: Option<f64>,
+    #[serde(default)]
+    pub stamina_low_points: Option<f64>,
+    #[serde(default)]
+    pub stamina_unlock_points: Option<f64>,
+    #[serde(default)]
+    pub jump_cost_points: Option<f64>,
+    #[serde(default)]
+    pub stance_recoil_crouch_mult: Option<f64>,
+    #[serde(default)]
+    pub stance_recoil_prone_mult: Option<f64>,
+    #[serde(default)]
+    pub stance_spread_crouch_mult: Option<f64>,
+    #[serde(default)]
+    pub stance_spread_prone_mult: Option<f64>,
+    #[serde(default)]
+    pub visibility_crouch_mult: Option<f64>,
+    #[serde(default)]
+    pub visibility_prone_mult: Option<f64>,
+    #[serde(default)]
+    pub hitbox_height_stand_m: Option<f64>,
+    #[serde(default)]
+    pub hitbox_height_crouch_m: Option<f64>,
+    #[serde(default)]
+    pub hitbox_height_prone_m: Option<f64>,
+    #[serde(default)]
+    pub move_spread_walk_mult: Option<f64>,
+    #[serde(default)]
+    pub move_spread_run_mult: Option<f64>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize)]
@@ -438,6 +505,11 @@ pub struct Capsule {
     pub eye_height_stand_m: Option<f64>,
     #[serde(default)]
     pub eye_height_crouch_m: Option<f64>,
+    /// Prone capsule / eye height (M1-011).
+    #[serde(default)]
+    pub height_prone_m: Option<f64>,
+    #[serde(default)]
+    pub eye_height_prone_m: Option<f64>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize)]

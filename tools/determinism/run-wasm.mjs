@@ -30,7 +30,7 @@ function readInputs(seed) {
 function newPredictor(seed, spawn) {
   const p = new wasm.Predictor(BigInt(seed), 0, meta.player);
   for (const [bx, bz, c] of chunks) p.loadCollision(bx, bz, c);
-  const st = new DataView(new ArrayBuffer(39));
+  const st = new DataView(new ArrayBuffer(45));
   [...spawn, 0, 0, 0, 0, 0, 0].forEach((v, i) => st.setFloat32(i * 4, v, true));
   p.reset(new Uint8Array(st.buffer), 0);
   p.equipWeapon('us_m1_garand', meta.reserve);

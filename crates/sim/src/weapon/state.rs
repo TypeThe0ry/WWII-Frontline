@@ -33,6 +33,11 @@ pub enum Fsm {
 }
 
 impl Fsm {
+    /// A reload is in progress.
+    pub fn is_reloading(self) -> bool {
+        matches!(self, Fsm::Reloading(_))
+    }
+
     fn code(self) -> u8 {
         match self {
             Fsm::Ready => 0,

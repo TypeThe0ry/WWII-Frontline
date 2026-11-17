@@ -8,7 +8,7 @@ mod common;
 use common::*;
 use frontline_sim::Team;
 
-const GOLDEN: u64 = 0x6f09_df7c_5f72_1374;
+const GOLDEN: u64 = 0x2021_804c_0223_6403;
 
 fn fold(mut h: u64, v: u64) -> u64 {
     h ^= v;

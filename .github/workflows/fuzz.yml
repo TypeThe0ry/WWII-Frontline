@@ -1,0 +1,28 @@
+# Nightly cargo-fuzz of the protocol decoders (M1-010). Not a required check.
+name: fuzz
+on:
+  schedule:
+    - cron: "41 4 * * *"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  fuzz:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [c0, c4, events, snapshot_vehicle, snapshot_decode, input_bundle_decode]
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup toolchain install nightly --profile minimal
+      - run: cargo install cargo-fuzz --locked
+      - name: Fuzz ${{ matrix.target }} for 5 minutes
+        working-directory: crates/protocol
+        run: cargo +nightly fuzz run ${{ matrix.target }} -- -max_total_time=300 -rss_limit_mb=2048
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: fuzz-crash-${{ matrix.target }}
+          path: crates/protocol/fuzz/artifacts/

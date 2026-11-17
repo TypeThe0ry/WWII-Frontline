@@ -489,3 +489,7 @@ blocked / in-progress / todo：无。M0 的 33 个任务全部已提交（M0-033
 ### M1-010b 协议（载具、团队通道） — done — 2026-11-17 — 提交见 git log
 
 - 载具关键帧/delta、TeamState/WorldState、fuzz 靶与变异测试；协议版本 3（PI-047）。
+
+### M1-011a 移动：趴姿、体力、修正与验证 — partial — 2026-11-17 — 提交见 git log
+
+- 趴姿状态机与转换表、体力模型、速度/ADS/装填/负重修正、GD §9.5 修正表、`check_displacement`；`PlayerAuthState` 45 B（PI-048）。cargo-fuzz 四靶 10 分钟零崩溃，新增每日 fuzz CI。

@@ -15,7 +15,7 @@ const N = Number(process.argv[2] ?? 10000);
 
 const p = new wasm.Predictor(1n, 0, 3);
 for (let bz = 0; bz < 4; bz++) for (let bx = 0; bx < 4; bx++) p.loadCollision(bx, bz, readFileSync(join(root, `data/maps/m0/chunks/c_${bx}_${bz}.bin`)));
-const st = new DataView(new ArrayBuffer(39));
+const st = new DataView(new ArrayBuffer(45));
 [128, 2.4, 56].forEach((v, i) => st.setFloat32(i * 4, v, true));
 const spawn = new Uint8Array(st.buffer);
 p.reset(spawn, 0);

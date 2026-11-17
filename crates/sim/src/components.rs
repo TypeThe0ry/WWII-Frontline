@@ -117,6 +117,10 @@ pub struct Motion {
     pub stance: Stance,
     pub stance_blend: f32,
     pub stance_timer: u8,
+    pub stance_from: Stance,
+    pub stamina: f32,
+    pub stamina_delay: u8,
+    pub sprint_locked: bool,
     pub grounded: bool,
     pub blocked: bool,
 }
@@ -128,6 +132,10 @@ impl Motion {
             stance: a.stance,
             stance_blend: a.stance_blend,
             stance_timer: a.stance_timer,
+            stance_from: a.stance_from,
+            stamina: a.stamina,
+            stamina_delay: a.stamina_delay,
+            sprint_locked: a.sprint_locked,
             grounded: a.grounded,
             blocked: a.blocked,
         }
@@ -142,6 +150,10 @@ impl Motion {
             stance: self.stance,
             stance_blend: self.stance_blend,
             stance_timer: self.stance_timer,
+            stance_from: self.stance_from,
+            stamina: self.stamina,
+            stamina_delay: self.stamina_delay,
+            sprint_locked: self.sprint_locked,
             grounded: self.grounded,
             blocked: self.blocked,
         }
