@@ -340,6 +340,13 @@ M0 共 21 个任务已提交（M0-021 待提交）；提交哈希取自 `git log
 
 <!-- 执行者在此之后追加（只追加；写入前重新读取文件末尾；格式同上；不改别人的条目） -->
 
+### M0-018 server：会话、输入缓冲与校验 — done — 2026-11-17 — 提交 （待总控填）
+- 做了什么：启动时载入 `data/maps/m0` 的 16 个碰撞区块与 spawns.json（每队 `set_team_spawn`、`set_map_center`），缺图即报错并给出重生成命令；握手时真实分配队伍（人少者优先、平局 US）并先于 Welcome 发 `Command::Join`；`validate_input` 单一入口 + 8 槽输入环 + 缺失输入状态机 + 30 连违规踢出 + C0 Ping 5/s；`ClientGone` 幂等；PlayerId 释放后 1 s 内不复用；`--dev-echo` 降为隐藏测试脚手架。
+- 关键实测（release，本机 4 核、客户端同机）：20 客户端×30 Hz×60 s 的 `server_tick_ms` P50 0.243 / P99 0.939 ms（预算 28），100 客户端 P50 1.00 / P99 4.01 ms，`input_queue_full_total`=0；输入摄取+校验 100 玩家 P99 0.026 ms（预算 0.8）；4 玩家 90 tick 合成输入与离线 World 逐字节一致；10^5 条 fuzz 无 panic。
+- 遗留：8000°/s 转速上限在 30 Hz/16 位角下不可触发（PI-022，M1 改滑动窗口）；缺失输入清边沿位是对 §6.3 的细化；Hello 无昵称；M0-019 从 `SimBridge`/`PlayerInputState` 读 ack 与 pred_hash。
+- 影响：M0-019 在 `sim_thread::tick_body` 的 `aoi_and_snapshot/send` 钩子里接 `Sessions::handle_of(..).send`；M0-026 的 bot 必须走 `PlayerInput::ingest`/`validate_input`；服务器二进制现需地形（或 `--empty-world`/`--dev-echo`）；`logging::CURRENT_TICK` 进程全局，同进程多服务器的测试需串行。
+
+
 ## 8. 如何维护本文件
 
 - **执行者**：收工前，在"任务日志"末尾追加本任务条目（`### 任务 ID 标题 — 状态 — 日期 — 提交 abc1234`，3–6 行：做了什么、关键实测数字、遗留问题/需人工事项、对后续任务的影响）；写入前重新读取文件末尾（并行执行者可能同时追加），只追加、不改别人的条目。数字必须来自实测，查不到写"未记录"。同时更新 `tasks/STATUS.md` 自己那一行。
