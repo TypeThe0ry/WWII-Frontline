@@ -1,10 +1,18 @@
 # Frontline 素材采购清单（ASSET_SHOPPING_LIST）
 
+> **先看这里（2026-11-17 负责人最新指示，优先于本文下方的旧流程）**
+> 1. **当前基线 = "零采购 / 免费优先"**（总纲 R12）：模型、贴图、动画、音效、音乐最好全部用免费资源；许可证只记录来源页面标注的许可名称，不再逐条核对条款、不再要求卖家书面确认、不再因许可不确定而把免费素材卡在 PENDING。
+> 2. **请先读 §8（能免费找到哪些）和 §9（找不到免费的 → 哪里可以买）**；§10 是覆盖率总览（含各里程碑只用免费素材时的状态、调研局限、建议人工补搜的需求 ID）。
+> 3. §3–§6 的付费候选、渠道条款与许可流程**保留作参考，付费项为备选**（需负责人逐项批准）；§5.4 给出"零采购 = $0"与"最小补缺"两档金额。
+> 4. **唯一保留的排除项**：从商业游戏/电影提取或翻录的素材、盗版合集、倒卖的盗版包（**包括闲鱼等二手平台上转卖的模型包**）、来源不明的网盘资源——一律不列为候选。理由：这类素材的"作者"无权授权，一旦混入，整个游戏的授权链都会失效；同时我们不自制、不 AI 生成。（检查方法见 §2.3 与 §8.22。）
+> 5. 免费素材登记只需：asset_id、需求 ID、名称、作者、来源 URL、页面标注的许可、下载日期、是否需要署名——见 `LICENSES.md` §6"简化登记（当前生效）"。
+
 > 读者：人类负责人（审核、付款、把文件放进 `assets/incoming/`、在本表勾选"已购"）。
 > 核实日期：**2026-11-17**（本文所有"已核实"均指该日期当天的页面所见；促销价会变，**下单前以结算页为准**）。
 > 本文由两份调研片段（视觉、音频）合并整理而成：**全部链接、价格、证据强度标签均沿用调研原文，没有新增或编造**。片段中标"未核实/需人工确认"的内容原样保留该标记。
 > 本文不是法律意见；金额较大（> US$500）或条款含糊的采购，请负责人读一遍原文或取得卖家书面确认。
 > 章节编号稳定，其它文档/任务文件按 "ASSET_SHOPPING_LIST.md §4.2" 的方式引用，请勿重排。
+> 本文 §8–§10 为 2026-11-17 追加（零采购基线），不影响 §1–§7 的编号。
 
 ---
 
@@ -32,6 +40,8 @@
 > ③ 回复为否定或模糊的卖家，转向 Fab Standard/CC0 来源或外包（见 `docs/ASSET_GAPS.md`）。
 > ④ 每笔采购在 `LICENSES.md` 与 `assets/incoming/` 下留证。
 
+> **注记（负责人 2026-11-17 指示）**：按负责人 2026-11-17 指示，免费素材只需登记来源页面与标注的许可；本条流程仅在购买付费素材时作为建议。
+
 ### 1.3 表格列说明（§4 通用）
 
 | 列 | 含义 |
@@ -43,6 +53,9 @@
 | 许可证状态 | `OK`（条款已读且允许，可直接登记 OK）／`需书面确认`（付费素材必须先拿卖家书面确认，D-LIC）／`PENDING`（条款不明或互相矛盾，或购前须核对商品页许可证栏） |
 | 选定候选 | **你填** |
 | 已购 | `[ ] 已购`，**你勾选** |
+
+> **注记（负责人 2026-11-17 指示）**：按负责人 2026-11-17 指示，免费素材只需登记来源页面与标注的许可；本条流程仅在购买付费素材时作为建议。
+> 其中"许可证状态"列的"需书面确认 / PENDING"在购买付费素材时仍可参考；免费素材见 `LICENSES.md` §6（`OK` / `FLAGGED`）。
 
 ### 1.4 证据强度标签图例（调研原文两套标记，本文保留原样）
 
@@ -107,6 +120,9 @@
 
 > 重要：本清单所列候选均为作者名下上架的商品，但调研者**无法从搜索摘要证明任何一件的来源**；也没有打开过任何素材文件，无法验证质量、历史准确性、UV/贴图/绑定质量。购买前须按上表核对。
 
+> **注记（负责人 2026-11-17 指示）**：按负责人 2026-11-17 指示，免费素材只需登记来源页面与标注的许可；本条流程仅在购买付费素材时作为建议。
+> 但**游戏提取/盗版/倒卖/来源不明的排除项与上面的识别检查表仍然有效**（对免费素材同样适用，见 §8.22）。
+
 ### 2.4 禁用清单
 
 | 禁用项 | 原因 |
@@ -121,6 +137,9 @@
 | 一切游戏提取资源 | 见 §2.3 |
 | BuiltByBit 4 车包（含 GMC CCKW 与 Opel Blitz） | 用途为 Minecraft 类平台，许可不一定适用，不建议（片段原文"需核实，不建议"） |
 
+> **注记（负责人 2026-11-17 指示）**：按负责人 2026-11-17 指示，免费素材只需登记来源页面与标注的许可；本条流程仅在购买付费素材时作为建议。
+> 对**免费素材**，上表中的 NC / ND / SA / 许可未写明等条目降为"B 档"（§8.0.1），由负责人逐项决定是否使用；仍然硬排除的只有"游戏提取 / 盗版 / 倒卖 / 来源不明"。
+
 ---
 
 ## 3. 渠道条款总表
@@ -131,6 +150,8 @@
 - 五问：①非原生引擎（能否在 Babylon.js 等非 Unreal/Unity 引擎使用）②网页分发（含"可被玩家从浏览器提取"问题，见 §3.4）③商用与捐赠 ④署名 ⑤席位（单人/多人）。
 - 分级：**推荐 / 慎用 / 禁用**；另有"PENDING"（待书面确认）。
 - 来源列：URL｜核实日期（均为 2026-11-17）｜证据强度。取不到官方页面的已写明。
+
+> **注记（负责人 2026-11-17 指示）**：按负责人 2026-11-17 指示，免费素材只需登记来源页面与标注的许可；本条流程仅在购买付费素材时作为建议。
 
 ### 3.2 渠道 × 5 问总表（视觉 + 音频合并）
 
@@ -696,6 +717,18 @@
 
 > 提示：上述音频购买均为一次性购买（BOOM/Sonniss/A Sound Effect 按"永久授权"）；订阅（Soundly/Epidemic/Artlist）的"永久性"取决于条款，**不建议依赖订阅内容长期运营**。促销结束会涨价。
 
+### 5.4 "零采购"档与"最小补缺"档（负责人 2026-11-17 指示；不改动 §5.1–§5.3 的数字）
+
+| 档位 | 内容 | 金额 |
+|---|---|---|
+| **零采购（新基线）** | 全部使用 §8 的免费素材；§9 的缺口按 `docs/ASSET_GAPS.md` §3 用灰盒/静音占位 | **$0** |
+| **最小补缺** | §9.4 清单：视觉约 8 件 + 音频 3–5 个库 | 视觉 ≈ $325 + 音频 ≈ $354–$369，合计 **约 $680–$695【估算】**；其中"起步子集"（两个 Fab 枪包 + MoCap Online Rifle Starter + Sonniss Designed）约 **$82.47** |
+| 精简 / 标准 / 极致 | 见 §5.3 | **降为备选**（数字不变：约 $1,600–3,000 / $6,000–10,500 / $18,000–37,000+） |
+
+- 价格全部沿用本文 §4/§5.1 的原值，**未重新核实**；视觉合计中的德军步兵角色（价格需确认）按 $60 估算。
+- 音频调研原文写"总计控制在约 $320 以内"，与其所列五项价格相加（$354.25–$369.25）不符，本节按相加结果。
+- "零采购"档下的后果（哪些里程碑停留在灰盒/静音占位）见 §10.2；外包（诺曼底建筑、带内饰坦克等）不在本档，价格见 `docs/ASSET_GAPS.md`。
+
 ---
 
 ## 6. 给厂商/卖家的询问邮件模板（英文）
@@ -846,3 +879,579 @@ Best regards,
 **视觉关键候选页（已打开）**：https://www.fab.com/listings/00a8235f-055a-4532-9916-fe060949b9eb （美军枪械包 $19.99）；https://www.fab.com/listings/13b4dea1-2849-480a-a3c7-b16fa5bd329a （德军枪械包 $19.99）；https://www.fab.com/listings/690cc828-da71-4778-9433-894a7c0d99f5 （Panzer IV $25.99）；https://www.fab.com/listings/ba4a316f-a363-4c2f-a776-26082681b91b （战壕套件 $179.99，仅 UE）；https://www.renderhub.com/loss/world-war-2-german-weapons （德军步兵武器 bundle $70）
 
 **音频条款与渠道**：https://sonniss.com/gameaudiogdc ；https://rekkerd.org/sonniss-releases-gdc-2026-game-audio-bundle/ ；https://freesound.org/help/faq/ ；https://www.boomlibrary.com/sound-effects/world-war-ii-firearms/ ；https://www.boomlibrary.com/support/faq/what-am-i-allowed-to-do-with-your-sounds/ ；https://www.prosoundeffects.com/licensing/ ；https://www.soundsnap.com/licence ；https://asoundeffect.com/license-agreement ；https://getsoundly.com/faq/can-i-use-the-sounds-in-a-video-game/ ；https://www.epidemicsound.com/game-development/music-for-video-games/ ；https://help.artlist.io/hc/en-us/articles/33980035053213 ；https://www.zapsplat.com/license-agreement ；https://sound-effects.bbcrewind.co.uk/ ；https://www.openair.hosted.york.ac.uk/
+
+---
+
+## 8. 免费素材总表（零采购基线）
+
+> 负责人 2026-11-17 指示：当前基线 = **零采购 / 免费优先**。本节列出两份调研（视觉、音频，核实日期 2026-11-17）里**所有"有免费候选"的需求 ID**；找不到免费素材的需求 ID 与购买渠道见 §9，覆盖率与里程碑影响见 §10。
+> **链接、作者、许可、证据标签全部原样取自调研片段，没有新增或编造**；调研未给出完整 URL 的条目，原样写"调研未给 URL"。调研者**没有下载任何素材本体、没有聆听任何音频、没有注册账号**，所有"吻合度/不足"判断只来自页面文字、文件名或索引，**导入前必须打开页面确认许可、比例、贴图/绑定、音质**。
+> 本节不是法律意见。
+
+### 8.0 读表说明
+
+#### 8.0.1 档位与列含义
+
+| 项 | 含义 |
+|---|---|
+| **A 档** | 页面标注 CC0 / 公共领域 / CC-BY（游戏内署名）/ 平台免费商用许可（Fab Standard、CGTrader Royalty Free、Sonniss GameAudioGDC 许可等）。按负责人指示，**只记录页面标注的许可名称**，不逐条核对条款，不要求卖家书面确认。 |
+| **B 档** | 页面标注 CC-BY-NC / CC-BY-SA / CC-BY-NC-SA / CC-BY-NC-ND / 仅个人使用 / **许可未写明** / **来源存疑**（权属或出处无法判断）。是否使用由负责人决定（NEEDS_HUMAN H-101）；使用时在 `LICENSES.md` 登记为 `FLAGGED`。 |
+| 吻合度 | **准确** = 型号/用途对得上（不等于品质达标）；**近似** = 不是该型号，可作最接近替代；**仅可占位** = 风格或精度不足，只适合开发期占位；**部分** = 音频只覆盖该 ID 的一部分（如缺近场/缺全自动）。 |
+| 证据 | **[F]** = 调研时直接读到该页面/官方 API/文件索引；**[S]** = 仅搜索结果摘要，未打开页面；**[M]** = 凭记忆，未核实。 |
+| 状态 | `[ ] 已下载`：负责人（或执行者）下载后勾选，并把文件放入 `assets/incoming/{需求ID}/`，同时在 `LICENSES.md` §6 简化登记。 |
+
+#### 8.0.2 免费渠道简表（页面标注的许可；摘自调研渠道表）
+
+| 渠道 | 页面标注的许可 | 说明 | 证据 |
+|---|---|---|---|
+| Poly Haven | CC0（"any purpose, including commercial work"） | 模型 522 / 贴图 870 / HDRI 997（API 计数 2026-11-17）；站点文字/Logo/示例渲染不在 CC0 内 https://polyhaven.com/license | [F] |
+| ambientCG | CC0 1.0（可 "include the raw files in a project, such as a video game"） | 材质约 2042 / HDRI 439 / 贴花 127；基本无 3D 模型 https://docs.ambientcg.com/license/ | [F] |
+| Fab 免费内容 + Megascans | Fab Standard License | 2026-11-05 公告 Megascans 全库免费且 "for good"；调研**未逐个打开商品页确认价格=0 与许可栏**，下载时须逐件截图确认；Nanite 专用资产对 Babylon 无用 https://www.cgchannel.com/?p=179945 | [F]（新闻层面） |
+| Sketchfab（CC 模型） | 每模型各自（见 CC BY 4.0、CC BY-SA、CC BY-NC-SA、CC BY-NC-ND；有些页面不显示许可也无下载按钮） | 调研**未能使用站内"可下载"筛选**，召回率偏低；逐件看页面许可与作者来源 | [F]/[S] |
+| Sonniss GameAudioGDC（2015–2024、2026；无 2025） | Sonniss "Unlimited User License" v2.0：免版税、无需署名、无限项目；禁止把原件或改动件作为"音效"再分发；禁止用于 AI/ML 训练 | 下载页 https://sonniss.com/gameaudiogdc ；许可 https://sonniss.com/gdc-bundle-license/ ；本节引用文件名来自第三方索引 https://github.com/yansixing/gdc-bundle-finder（仅文件名/大小，未下载、未聆听） | [F] |
+| Freesound | 每条各自：CC0 / CC-BY / CC-BY-NC / Sampling+（旧） | 本节候选**全部为 CC0**（过滤串 `license:"Creative Commons 0"`）；游戏翻录泛滥，逐条核对（见 §8.22） https://freesound.org/help/faq/ | [F] |
+| Kenney | CC0（"public domain licensed (CC0)"） | 风格化低模/UI/音频，仅占位与 UI https://kenney.nl/support | [F] |
+| Quaternius | 各包页：CC0 | 风格化植被/低模，仅占位 | [S] |
+| OpenGameArt | 逐条：CC0 / CC-BY / CC-BY-SA / GPL | FAQ 页 403 未能访问；只取 CC0，逐条看评论 | [S] |
+| itch.io 免费/PWYW 包 | 各自；本次读到的两个 WWII 包页面均**未写许可**，一个自述 CC0 | 多为 B 档 | [F] |
+| Mixamo | 社区转述 FAQ：个人/商业/非营利可用，含电子游戏，署名不要求；不得转售或批量下载 | 官方 FAQ 页 403；需 Adobe ID；2026 年第三方指南称 "unmaintained" | [S] |
+| CMU Mocap Database | 摘要转述官方 FAQ："free for use in research and commercial projects"，请求署名 | FAQ 页 503 未能访问；4TU 的 FBX 转换版标 CC BY-NC 4.0（B 档） | [S] |
+| Incompetech（Kevin MacLeod） | CC BY 4.0 | 署名随游戏进 Credits 页 https://incompetech.com/music/royalty-free/faq.html | [F] |
+
+### 8.1 武器（V-WPN-US-001..012、V-WPN-GE-001..014）
+
+**覆盖率 14/26**（准确 9、近似/占位 3、仅 B 档 2；12 项无合格候选见 §9.1）。**所有 A 档 3D 武器面数几乎全在 4.5k–20k（第三人称区间），没有第一人称级（25k–60k + 内部结构 + 可动部件）免费模型**；拆分枪机/弹匣为独立网格需在 DCC 里切模型，属 D-MOD 边界（待确认，GAP-V06）。
+
+| 需求 ID | 需要什么 | 里程碑 | 免费候选（A 档：CC0 / 公共领域 / CC-BY / 平台免费商用许可）名称｜作者｜URL | B 档候选（标页面许可状态） | 页面标注的许可 | 吻合度与主要不足 | 证据 | 状态 |
+|---|---|---|---|---|---|---|---|---|
+| V-WPN-US-001 | M1 Garand（第一人称 25k–60k，可动部件） | M1 | ① 'M1 Garand, America's WW2 Work Horse'｜CannonMonkey｜https://sketchfab.com/3d-models/m1-garand-americas-ww2-work-horse-28d1e527d7f546a4b904d869ceba4aa2（4.5k 三角，Blender+Substance，可下载）<br>② 'M1 Garand'｜CG_Soup｜https://sketchfab.com/3d-models/m1-garand-4dac51f2da3642d1b66838eac3126cdd（20.6k 三角，可下载 1598 次，tag 含 pbr） | 'Mini pack of weapons of the second world war'（含 M1 Garand、Colt M1911 等，每枪带弹壳/弹匣）｜victorcstr｜https://victorcstr.itch.io/mini-pack-of-weapons-of-the-second-world-war｜**许可未写明**（PWYW 可付 0）；OBJ+.blend，合计约 14k 三角，无贴图 | ①② CC BY 4.0（需署名）；B 档：未写明 | 准确（型号）；仅第三人称精度：①面数不足；②面数最接近第一人称但作者自述首作、无可动部件拆分说明；贴图情况多未写 | [F] | [ ] 已下载 |
+| V-WPN-US-003 | M1A1 Thompson（含弹匣/鼓，全自动） | M1 | ① 'Thompson M1A1'｜Bora Özakaltun｜https://sketchfab.com/3d-models/thompson-m1a1-67977e1f6fac4feda2802c770b3d9271（约 5k 三角，Blender；需确认 Sketchfab 页是否仍可下载）<br>② 'The Survivalists Thompson'｜作者调研未给｜https://sketchfab.com/3d-models/the-survivalists-thompson-101f7a2c6f5146968f51aa7681d7592c（是 M1 而非 M1A1，游戏设计硕士项目） | — | CC Attribution（搜索摘要） | ①准确 / ②近似；仅第三人称精度；两条都只读到搜索摘要，WebFetch 返回空 | [S] | [ ] 已下载 |
+| V-WPN-US-004 | M3 Grease Gun | M3 | 'Free CC0 guns & explosives pack'（19 个模型：Grease gun M3、Luger、Frag Grenade、M24 Grenade、Smoke grenade、Anti-tank mine、Claymore 等；rar 154 MB）｜3dmodelscc0（itch.io）｜https://3dmodelscc0.itch.io/free-cc0-guns-explosives-pack | — | CC0（页面自述） | 准确（型号）；面数未写；**来源中风险**：页面写明这些模型来自已关闭的旧站、批量上传、无制作过程图（作者回复称全部自建），须看实物拓扑后再定；本包同时是 US-011、GE-008、GE-011、GE-013 的候选 | [F] | [ ] 已下载 |
+| V-WPN-US-005 | M1918A2 BAR | M1 | 无 A 档候选 | BAR 1918｜MikeeUSA｜https://opengameart.org/content/browning-automatic-rifle-1918-bar｜**CC-BY-SA / GPL v2 双许可**（B 档）；非 A2 版需核对 | B 档：CC-BY-SA / GPL v2 | 仅 B 档（SA/GPL）；另有两个 Sketchfab 低模（4k / 2.5k 三角）许可未见，调研未列为候选 | [S] | [ ] 已下载 |
+| V-WPN-US-008 | M1911A1 | M1 | 无 A 档候选 | ① 'M1911 Pistol - Game Ready'｜fadlparlak｜https://sketchfab.com/3d-models/m1911-pistol-game-ready-bdc0fe27306d48b0b2b23967b159971c｜**许可未写明**，页面链到 Fab 列表，是否可直接下载未写明；8.5k 三角，PBR，已绑定<br>② 'M1911 ｜ Post Apocalyptic Series'｜creationwasteland｜仅有聚合站链接 https://stlfinder.com/model/camilo/6292638（原 Sketchfab 页未打开，聚合站按调研口径不作可靠来源）｜CC Attribution（摘要）<br>③ victorcstr 包内 Colt M1911（见 V-WPN-US-001 的 B 档，许可未写明） | B 档：未写明 / 来源存疑 | 仅 B 档；①型号为 M1911 但许可与下载状态不明；②需回原页核对 | [F]（①）/[S]（②） | [ ] 已下载 |
+| V-WPN-US-011 | M18 烟雾手雷（小件） | M2 | 3dmodelscc0 包内 'Smoke grenade'（通用，非 M18）｜3dmodelscc0｜https://3dmodelscc0.itch.io/free-cc0-guns-explosives-pack | — | CC0（页面自述） | 仅可占位（通用烟雾手雷）；来源评估同 V-WPN-US-004 | [F] | [ ] 已下载 |
+| V-WPN-GE-001 | Kar98k（栓动，M0/M1） | M0 | 近似占位：'Bolt Action Rifle 7.62'｜Mateusz Sadek｜https://polyhaven.com/a/bolt_action_rifle_7_62（约 19,985 三角，8K 贴图，带分离弹匣与瞄准镜、磨损木托） | — | CC0（Poly Haven） | 近似/仅可占位：**不是 Kar98k**（长枪管/小瞄准镜/弹匣可拆，更像 Mosin 型狙击枪），可作栓动步枪占位，不可冒充 Kar98k | [F] | [ ] 已下载 |
+| V-WPN-GE-004 | MP40（折叠枪托） | M1 | 'MP40 - Final'｜Matt Rafferty｜https://sketchfab.com/3d-models/mp40-final-3685dd295e5d4773bdf59929e2dae71c（约 81k 三角，Maya 2017 + Substance Painter，测试导出） | — | CC Attribution（搜索摘要） | 准确（型号）；面数过高需减面（D-MOD 允许）；WebFetch 返回空，仅搜索摘要 | [S] | [ ] 已下载 |
+| V-WPN-GE-005 | StG 44（弧形弹匣） | M1 | 'Sturmgewehr STG 44 Mid-poly'｜leimoses3｜https://sketchfab.com/3d-models/sturmgewehr-stg-44-mid-poly-888beb836d784500b9d428bad4a0c404（13.8k 三角/7.1k 顶点，可下载 350 次，页面含史实介绍） | — | CC BY 4.0（需署名） | 准确（型号）；第三人称精度；无制作过程图（提取嫌疑 低-中） | [F] | [ ] 已下载 |
+| V-WPN-GE-007 | MG42（弹链、两脚架） | M1 | 'Low-Poly MG 42'｜TastyTony｜https://sketchfab.com/3d-models/low-poly-mg-42-141e542d223d483a88f04c5d1ae79872（11.7k 三角，可下载 3,667 次，未写贴图/绑定） | Sketchfab 'MG42'（2.5k 三角，2020；作者调研未给）｜https://sketchfab.com/3d-models/mg42-3bbe7e01e10949b2a923dcf3b5b83057｜**CC BY-SA** | A 档：CC BY 4.0；B 档：CC BY-SA | 准确（型号）；第三人称精度；未写贴图/绑定 | [F]（A）/[S]（B） | [ ] 已下载 |
+| V-WPN-GE-008 | Luger P08 / Walther P38 | M1 | 3dmodelscc0 包内 'Luger'（P08）｜3dmodelscc0｜https://3dmodelscc0.itch.io/free-cc0-guns-explosives-pack；P38：无 | 'German P.08 Luger Pistol (VCU_3D_1497)'｜VCU 3D｜https://sketchfab.com/3d-models/german-p08-luger-pistol-vcu-3d-1497-74f9047ea99249aa8645212492839916｜**CC BY-NC-ND**（摘要）；ND 禁止改动（含减面），实际不可用，仅备查 | A 档：CC0（页面自述）；B 档：CC BY-NC-ND | 准确（仅 P08；P38 无）；来源评估同 V-WPN-US-004 | [F]（A）/[S]（B） | [ ] 已下载 |
+| V-WPN-GE-010 | Panzerfaust（30/60/100 型） | M2 | A-档：'Panzerfaust WW2'（低模，2K PBR）｜Lord_akaal｜https://www.cgtrader.com/3d-models/military/gun/panzerfaust-ww2｜页面被摘要标"免费"，CGTrader Royalty Free（No AI）；免费状态与许可栏需再确认 | ① free3d 'low poly panzerfaust 2061'｜https://free3d.com/3d-model/low-poly-panzerfaust-2061.html｜摘要同时出现 "Royalty Free" 与 "Editorial"，**许可状态不清**<br>② BlendSwap 'Panzerfaust Modified'｜https://www.blendswap.com/blend/28561｜CC-BY，**下载需登录（未注册，未打开）** | A-档：CGTrader Royalty Free（No AI）；B 档：状态不清 / CC-BY（需登录） | 准确（型号）；免费状态未确认；A- 档不是 CC0/CC-BY，属平台免费商用许可 | [S] | [ ] 已下载 |
+| V-WPN-GE-011 | M24 Stielhandgranate（小件） | M1 | ① 3dmodelscc0 包内 'M24 Grenade'｜3dmodelscc0｜https://3dmodelscc0.itch.io/free-cc0-guns-explosives-pack<br>② A-档：CGTrader 免费 'world war ii german grenade'（低模）｜https://www.cgtrader.com/free-3d-models/military/other/world-war-ii-german-grenade | victorcstr 包内 Stielhandgranate｜https://victorcstr.itch.io/mini-pack-of-weapons-of-the-second-world-war｜许可未写明，无贴图 | A 档：①CC0（页面自述）；②CGTrader Royalty Free（No AI）；B 档：未写明 | 准确（型号）；来源评估同 V-WPN-US-004；②为搜索摘要 | [F]（①）/[S]（②） | [ ] 已下载 |
+| V-WPN-GE-013 | Tellermine 35/42（反坦克地雷） | M3 | 3dmodelscc0 包内 'Anti-tank mine'（通用，形状待核）｜3dmodelscc0｜https://3dmodelscc0.itch.io/free-cc0-guns-explosives-pack | — | CC0（页面自述） | 仅可占位（通用反坦克地雷）；来源评估同 V-WPN-US-004 | [F] | [ ] 已下载 |
+
+### 8.2 角色（V-CHR-*）
+
+**覆盖率 0/9**：A、B 档均未找到任何免费、带绑定的 WWII 士兵（搜索只见 CGTrader/RenderHub 付费或 3D 打印用模型）。这是零采购档**最大且唯一无法用加工弥补的缺口**：D-MOD 不允许从零建模，没有基础身体就无法拼装服装模块。全部 9 项见 §9.1。
+
+下面只是**占位**（不计入覆盖率；不是 WWII 角色，只可作 bot/调试占位）：
+
+| 占位 | 来源 | 页面标注的许可 | 证据 |
+|---|---|---|---|
+| Mixamo 自带通用人形角色与自动绑定（任意 FBX 上传后自动绑骨） | Adobe｜https://www.mixamo.com | 社区转述 FAQ（见 §8.0.2） | [S] |
+| Kenney 低模人偶 | Kenney｜https://kenney.nl/support | CC0 | [F] |
+| Quaternius 低模人偶 | Quaternius（调研未给人偶包链接） | CC0 | [S] |
+
+### 8.3 动画（V-ANM-001..010）
+
+**覆盖率 7/10**（全部为通用/近似，**准确 0**）；V-ANM-006、-008、-009 无合格候选（§9.1）。免费库**没有步枪专用、栓动、第一人称、载具乘员动画**；通用动作需重定向，手感与 AAA 差距大。
+
+| 需求 ID | 需要什么 | 里程碑 | 免费候选（A 档：CC0 / 公共领域 / CC-BY / 平台免费商用许可）名称｜作者｜URL | B 档候选（标页面许可状态） | 页面标注的许可 | 吻合度与主要不足 | 证据 | 状态 |
+|---|---|---|---|---|---|---|---|---|
+| V-ANM-001 | 第三人称步枪运动集（站/走/跑/蹲/跳、基础投掷） | M0/M1 | ① Mixamo｜Adobe｜https://www.mixamo.com（未打开；需 Adobe ID，未注册）<br>② CMU Mocap Database（BVH/C3D 原版）｜CMU｜http://mocap.cs.cmu.edu/faqs.php（FAQ 页 503，未能访问） | ① 'Free Pistol Animation Starter Pack'｜MoCap Online｜https://mocaponline.itch.io/free-pistol-animation-starter-pack｜标准许可（非开源）；发布者留言：可用于游戏，成功后或承包项目需商业许可；FBX/BIP 38 MB；**只有手枪**，不含换弹/冲刺/8 向<br>② Bandai Namco Research Motion Dataset｜https://github.com/BandaiNamcoResearchInc/Bandai-Namco-Research-Motiondataset｜CC BY-NC 4.0（不可商用）<br>③ Rokoko 免费动作｜https://rokoko.com/pricing/｜2020 年称可商用，当前条款未读 | Mixamo：社区转述 FAQ——可用于商业游戏，不要求署名，不得转售/批量下载（官方 FAQ 页 403）；CMU：摘要转述"free for use in research and commercial projects"，请求署名；B 档：见左 | 近似（通用动作）：**免费步枪专用动画无**；CMU 需重定向且无 WWII 持枪姿，工作量大；Mixamo 2026 年第三方指南称 "unmaintained"、2025-06 后有登录/下载故障报告 | [S]/[M]（Mixamo 具体步枪动作凭记忆） | [ ] 已下载 |
+| V-ANM-002 | 匍匐/趴姿（持枪、转向、射击、换弹） | M1 | Mixamo / CMU 有爬行类通用动作（凭记忆）；持枪匍匐无｜Adobe（Mixamo）｜https://www.mixamo.com；CMU http://mocap.cs.cmu.edu/faqs.php（503，未能访问） | — | 同 V-ANM-001（Mixamo 社区转述；CMU 摘要转述） | 近似（通用动作，需重定向；非军事版/无持枪版）；具体有哪些动作凭记忆，未核实 | [M] | [ ] 已下载 |
+| V-ANM-003 | 翻越矮墙/攀爬/跳跃/落地 | M2 | Mixamo 通用动作；CMU（摘要）｜Adobe（Mixamo）｜https://www.mixamo.com；CMU http://mocap.cs.cmu.edu/faqs.php（503，未能访问） | — | 同 V-ANM-001（Mixamo 社区转述；CMU 摘要转述） | 近似（通用动作，需重定向；非军事版/无持枪版）；具体有哪些动作凭记忆，未核实 | [M]/[S] | [ ] 已下载 |
+| V-ANM-004 | 投掷（手雷）、扔烟 | M1 | Mixamo 通用投掷｜Adobe（Mixamo）｜https://www.mixamo.com | — | 同 V-ANM-001（Mixamo 社区转述；CMU 摘要转述） | 近似（通用动作，需重定向；非军事版/无持枪版）；具体有哪些动作凭记忆，未核实 | [M] | [ ] 已下载 |
+| V-ANM-005 | 受击/倒地/死亡（多方向） | M1 | Mixamo 通用受击/倒地/死亡；CMU（摘要）｜Adobe（Mixamo）｜https://www.mixamo.com；CMU http://mocap.cs.cmu.edu/faqs.php（503，未能访问） | — | 同 V-ANM-001（Mixamo 社区转述；CMU 摘要转述） | 近似（通用动作，需重定向；非军事版/无持枪版）；具体有哪些动作凭记忆，未核实 | [M]/[S] | [ ] 已下载 |
+| V-ANM-007 | 建造/挖掘/修理 | M2 | Mixamo 部分通用动作｜Adobe（Mixamo）｜https://www.mixamo.com | — | 同 V-ANM-001（Mixamo 社区转述；CMU 摘要转述） | 近似（通用动作，需重定向；非军事版/无持枪版）；具体有哪些动作凭记忆，未核实 | [M] | [ ] 已下载 |
+| V-ANM-010 | 指挥官手势/敬礼/标记动作 | M3 | Mixamo 有敬礼/挥手类通用动作｜Adobe（Mixamo）｜https://www.mixamo.com | — | 同 V-ANM-001（Mixamo 社区转述；CMU 摘要转述） | 近似（通用动作，需重定向；非军事版/无持枪版）；具体有哪些动作凭记忆，未核实 | [M] | [ ] 已下载 |
+
+### 8.4 载具（V-VEH-*）
+
+**覆盖率 5/22**（准确 3、近似 1、仅 B 档 1；17 项无合格候选见 §9.1）。仅 Sherman（2 个，无贴图无绑定）、Panzer IV（1）、Panther（高面数）；**坦克无内饰、无可动部件**；无半履带/卡车/吉普/侦察车/火炮/飞机。
+
+| 需求 ID | 需要什么 | 里程碑 | 免费候选（A 档：CC0 / 公共领域 / CC-BY / 平台免费商用许可）名称｜作者｜URL | B 档候选（标页面许可状态） | 页面标注的许可 | 吻合度与主要不足 | 证据 | 状态 |
+|---|---|---|---|---|---|---|---|---|
+| V-VEH-US-003 | M4 Sherman（75mm，M1 的 1 辆坦克） | M1 | ① 'Low Poly M4 Early'｜Dezryelle｜https://sketchfab.com/3d-models/low-poly-m4-early-19f4f2295b6044c88a716ca371f3e502（30k 三角/17.1k 顶点，可下载 189 次，"历史上准确的中期 M4(75)"）<br>② 'Low Poly M4A3(75)W Sherman tank'｜Dezryelle｜https://sketchfab.com/3d-models/low-poly-m4a375w-sherman-tank-0d5533e114bf4849bc8c9213e4ee9cf9（25k 三角，UV 已展开，可下载 400 次，"1944 末期 M4A3(75)W"） | 待核：Toshuey 'M4A3 (75)W Sherman Medium Tank'（229.4k 三角）｜https://www.sketchfab.com/3d-models/m4a375w-sherman-medium-tank-toshueyi-4fc8d15fb5ae4f9490ae053b8c09e10b｜CC BY（摘要，页面未打开） | CC BY 4.0（需署名） | 准确（型号/年代）；**无贴图、未绑定、无内饰**；只能做材质参数调整；分拆炮塔/炮/履带为独立节点需切分网格（D-MOD 待确认，见 GAP-V01） | [F] | [ ] 已下载 |
+| V-VEH-US-004 | M4A3(76)W / Jumbo | M3 | 'Low poly M4A3(76) HVSS'｜Dezryelle｜https://sketchfab.com/3d-models/low-poly-m4a376-hvss-710e93ef16c84160a5e8b980ce07163a | — | CC BY（摘要，同作者同系列） | 近似：HVSS 悬挂的 M4A3(76)W（页面写 untextured/unrigged）；Jumbo（M4A3E2）无 | [S] | [ ] 已下载 |
+| V-VEH-GE-003 | Panzer IV（Ausf. H/J 为 1944 主力） | M1 | 'Tank PZ_IV'｜Don Adam｜https://sketchfab.com/3d-models/tank-pz-iv-3d11217421fc4eac80698d2c69c17fed（22.2k 三角/13.8k 顶点，可下载 222 次，3ds Max + Substance Painter，PBR 贴图，"为游戏优化"） | — | CC BY 4.0（需署名） | 准确（车型）；Ausf. 页面未写，需看图核对 H/J 型；无内饰；提取嫌疑 低-中（有制作流程自述） | [F] | [ ] 已下载 |
+| V-VEH-GE-004 | Panther（Ausf. G） | M3 | 'Panzer V Panther medium tank'｜作者调研未给｜https://www.sketchfab.com/3d-models/panzer-v-panther-medium-tank-b4693513fec841bbad571fbd0120ce95（约 211.5k 三角，2015 年上传）；另有 'tankerpanzer'（约 127.5k 三角，描述稀疏，调研不推荐）https://sketchfab.com/3d-models/tankerpanzer-402a8fa6dc5d40e38e456f0b222b1144 | — | CC Attribution（搜索摘要） | 准确（车型）；Ausf. 未核；需大幅减面；无内饰 | [S] | [ ] 已下载 |
+| V-VEH-GE-005 | Tiger I | M3 | 无 A 档候选 | OpenGameArt 'tank (panzer tiger)'｜作者调研未给｜https://opengameart.org/content/tank-panzer-tiger｜CC-BY 3.0，**但评论者指出贴图许可有疑问** | B 档：CC-BY 3.0（页面评论质疑贴图许可） | 仅 B 档；贴图许可存疑 | [S] | [ ] 已下载 |
+
+### 8.5 建筑与掩体（V-BLD-001..010）
+
+**覆盖率 5/10**（准确 1、近似 3、仅 B 档 1；5 项无合格候选见 §9.1）。**没有诺曼底/阿登民居、教堂、街道**；只有 Regelbau 低模和几个英国/泽西/Île de Ré 扫描。
+
+| 需求 ID | 需要什么 | 里程碑 | 免费候选（A 档：CC0 / 公共领域 / CC-BY / 平台免费商用许可）名称｜作者｜URL | B 档候选（标页面许可状态） | 页面标注的许可 | 吻合度与主要不足 | 证据 | 状态 |
+|---|---|---|---|---|---|---|---|---|
+| V-BLD-001 | 诺曼底石造民居模块套件（20–40 个模块） | M1 | 近似（材质来源，非建筑）：Poly Haven 材质 `rough_plaster_brick`、`plastered_stone_wall`、`stacked_stone_wall`、`old_stone_wall`、`church_bricks_02/03`、`clay_roof_tiles`、`grey_roof_tiles`、`slate`（asset 页格式 https://polyhaven.com/a/<asset_id>）；ambientCG Bricks/Plaster 系列（https://docs.ambientcg.com/license/）<br>近似扫描（非诺曼底）：'Abandonned farmhouse'（瑞士，293 张无人机照片）｜作者调研未给｜https://sketchfab.com/3d-models/abandonned-farmhouse-b35de1cb85ed4eb8924234943dd4056d | — | Poly Haven / ambientCG：CC0；农舍扫描：CC Attribution（摘要） | 近似：**无整套模块**；D-MOD 不允许从零建模，用材质拼装模块民居不成立；整体扫描体可玩性（进出、窗口、多层）受限；M1 仍以灰盒盒体 + 墙面材质占位（GAP-V02） | [F]（材质）/[S]（扫描） | [ ] 已下载 |
+| V-BLD-002 | 农场建筑（谷仓、牲畜棚、苹果园棚） | M1 | 近似同 V-BLD-001（瑞士废弃农舍扫描 https://sketchfab.com/3d-models/abandonned-farmhouse-b35de1cb85ed4eb8924234943dd4056d；材质同上） | — | 同 V-BLD-001 | 近似；无诺曼底型；'Old barn georeferenced scan' 许可未见，调研未列为候选 | [S] | [ ] 已下载 |
+| V-BLD-006 | 大西洋壁垒碉堡（Regelbau）、Tobruk 掩体 | M4 | ① 'German WWII Bunker Regelbau M178'｜ustoopia｜https://sketchfab.com/3d-models/german-wwii-bunker-regelbau-m178-078dfe6b2e4f47dca2eedf0b7752726a（2.4k 三角/1.3k 顶点，可下载 304 次，仿 IJmuiden 真实碉堡，手建）<br>② 近似扫描（英国非德军）'Greenway Pillbox'｜artfletch｜https://sketchfab.com/3d-models/greenway-pillbox-44c5481094de4f43a40909b244dd6942（1.8M 三角，Reality Capture，可下载 239 次） | ① 'German machine gun emplacement R.N. La Mare Mill'｜Underground｜https://sketchfab.com/3d-models/german-machine-gun-emplacement-rn-la-mare-mill-ecf4e30ce9644a9599dffb6d6be5d065｜CC BY-NC-SA 4.0；221.4k 三角（泽西岛，大西洋壁垒）<br>② 'German WWII bunker fading into the sand'（法国 Île de Ré）｜https://www.sketchfab.com/3d-models/german-wwii-bunker-fading-into-the-sand-1-62c836a9acfd476998b906bad5795307｜CC BY-NC-SA（摘要）<br>③ 'nuclearwinter94 3D trench warfare low poly'（含 1 个碉堡）｜nuclearwinter94｜https://nuclearwinter94.itch.io/tre｜许可未写明 | A 档：CC BY 4.0；B 档：CC BY-NC-SA / 未写明 | ①准确（型号 M178，面数偏低）；②近似（需大幅减面 + 烘焙）；Tobruk 无 | [F]（①②及 B①③）/[S]（B②） | [ ] 已下载 |
+| V-BLD-007 | 滩头障碍（捷克刺猬、比利时门、木桩） | M4 | 无 A 档候选 | ① itch '3D trench warfare low poly'（含捷克刺猬）｜nuclearwinter94｜https://nuclearwinter94.itch.io/tre｜许可未写明；glb/fbx/obj/blend，PWYW，低模<br>② 线索（许可未见，调研未列为候选）：Sketchfab 'Czech Hedgehog Seaweed' | B 档：未写明 | 仅 B 档；比利时门/木桩未见 | [F] | [ ] 已下载 |
+| V-BLD-010 | 废墟/受损建筑件 | M2 | 近似（材质）：Poly Haven `broken_brick_wall`、`concrete_debris`、`rough_plaster_broken`、`damaged_plaster`（asset 页格式 https://polyhaven.com/a/<asset_id>） | itch '3D trench warfare low poly' 内含 1 个受损建筑｜nuclearwinter94｜https://nuclearwinter94.itch.io/tre｜许可未写明 | A 档：CC0（Poly Haven）；B 档：未写明 | 近似：A 档只有材质，无整体模型 | [F] | [ ] 已下载 |
+
+### 8.6 自然（V-NAT-001..008）
+
+**覆盖率 7/8**（准确 5、近似 2；V-NAT-008 水见 §9.1）。地表/HDRI/岩石/冷杉强；**落叶乔木、bocage、农作物是真实缺口**。Poly Haven 链接格式为 `https://polyhaven.com/a/<asset_id>`（调研原文；asset_id 来自官方 API，2026-11-17 抓取）。
+
+| 需求 ID | 需要什么 | 里程碑 | 免费候选（A 档：CC0 / 公共领域 / CC-BY / 平台免费商用许可）名称｜作者｜URL | B 档候选（标页面许可状态） | 页面标注的许可 | 吻合度与主要不足 | 证据 | 状态 |
+|---|---|---|---|---|---|---|---|---|
+| V-NAT-001 | 树篱 bocage（土堤 + 灌木，可作掩体） | M1 | 近似拼装（需 D-MOD"多个部件组合装配"确认）：Poly Haven `shrub_01..04`、`fern_02`、`grass_medium_01/02`、`moss_01`，材质 `stacked_stone_wall`/`mossy_stone_wall`/`forest_floor`（asset 页格式 https://polyhaven.com/a/<asset_id>）；Megascans 土堤/灌木（Fab Standard，未逐件确认）https://www.cgchannel.com/?p=179945 | — | CC0（Poly Haven）；Megascans：Fab Standard License（需逐件确认价格=0） | 近似：**无 bocage 扫描**；真实缺口（GAP-V03） | [F]（Poly Haven）/[S]（Megascans） | [ ] 已下载 |
+| V-NAT-002 | 诺曼底落叶乔木（橡、榉、苹果树） | M1 | ① Poly Haven `tree_small_02`｜http://polyhaven.com/a/tree_small_02<br>② 'Textured LowPoly Trees'（45 棵，风格化）｜Quaternius｜https://quaternius.itch.io/textured-lowpoly-trees<br>③ Sketchfab 'apple tree'（可作果树）｜作者调研未给｜https://sketchfab.com/3d-models/apple-tree-512db13e35f9449cbd4215389edd905e<br>④ Megascans 欧洲山毛榉/橡树（Fab Standard，未逐件核；Nanite 版对 Babylon 不可用） | — | ① CC0；② CC0；③ CC Attribution（摘要）；④ Fab Standard | 近似：缺欧洲橡/榉的写实扫描；Quaternius 为风格化 | [F]（①）/[S]（②③④） | [ ] 已下载 |
+| V-NAT-003 | 阿登冬季云杉 + 积雪 | M4 | ① 'Fir Tree 01'｜Rob Tuytel（摄影）/Rico Cilliers（建模）｜https://polyhaven.com/a/fir_tree_01（约 7,853,731 三角，8K，带 LOD）<br>② 'Pine Tree 01'｜同作者｜https://polyhaven.com/a/pine_tree_01（约 17.4M 三角，带 LOD）<br>③ `fir_sapling`、`fir_sapling_medium`<br>雪面：Poly Haven `snow_01..05`、`snow_floor`、`asphalt_snow`、`snow_field_aerial`；ambientCG Snow001–015 | — | CC0 | 准确；**面数极高，需 impostor/减面** | [F] | [ ] 已下载 |
+| V-NAT-004 | 草、灌木、蕨、农作物、苹果园 | M1 | Poly Haven `grass_medium_01/02`、`grass_bermuda_01`、`shrub_01..04`、`fern_02`、`weed_plant_02`、`nettle_plant`、`periwinkle_plant`；苹果树：Sketchfab 'apple tree'（https://sketchfab.com/3d-models/apple-tree-512db13e35f9449cbd4215389edd905e）、itch 'Apple Tree GLB FBX'｜venturon｜https://venturon.itch.io/apple-tree（卖家自称 CC0，未打开）；CGTrader 免费低模苹果树（Royalty Free No AI） | — | CC0（Poly Haven）；苹果树：CC Attribution（摘要）/ 卖家自称 CC0 / CGTrader Royalty Free | 准确（草/灌/蕨）；**农作物（麦/玉米）无**（GAP-V14） | [F]（Poly Haven）/[S]（其余） | [ ] 已下载 |
+| V-NAT-005 | 岩石、悬崖、海崖 | M1 | Poly Haven `boulder_01`（约 124k 三角）、`coastal_cliff_01/02/04`（`coastal_cliff_01` 约 866k 三角）、`coast_rocks_01..05`、`coast_land_rocks_*`、`stone_01`；（`namaqualand_*` 为南非沙漠地貌，不贴合） | — | CC0 | 准确；高面数需减面 | [F] | [ ] 已下载 |
+| V-NAT-006 | 海滩沙/卵石/海草/潮线材质 | M4 | Poly Haven `coast_sand_01..05`、`damp_beach_sand`、`damp_beach_sand_02`、`damp_sand`、`dense_sand`、`sand_01..03`、`gravel_*`、`pebbles`；ambientCG 沙/卵石系列 | — | CC0 | 准确（材质）；海草/潮线专用无 | [F] | [ ] 已下载 |
+| V-NAT-007 | 地表材质（泥、车辙、积雪、犁沟、石板路、草地、碎石、混凝土、焦土） | M0 | Poly Haven `brown_mud*`、`muddy_tracks`、`farm_furrows`、`farm_soil`、`forest_floor`、`forest_ground_04..06`、`burned_ground_01`、`snow_*`、`cobblestone_*`、`gravel_*`、`concrete_*`、`grass_*`（870 张材质）；ambientCG Ground/Gravel/Snow（约 2042 张材质）；ShareTextures https://www.sharetextures.com/p/terms（手动下载）；cgbookcase https://cgtricks.com/free-textures-cgbookcase-dorian-zgraggen；3dtextures.me https://3dtextures.me/about | — | CC0（Poly Haven、ambientCG、cgbookcase、3dtextures.me）；ShareTextures 自称 "Custom CC0"（仅限直接下载） | 准确；**整个清单里免费覆盖最强的一项** | [F]（Poly Haven/ambientCG）/[S]（其余） | [ ] 已下载 |
+
+### 8.7 道具（V-PRP-001..010）
+
+**覆盖率 9/10**（准确 3、近似 2、仅 B 档 4；V-PRP-007 见 §9.1）。箱/桶/油桶/电台尚可；沙袋/铁丝网/障碍/战壕只有一个许可未写明的 itch 低模包。
+
+| 需求 ID | 需要什么 | 里程碑 | 免费候选（A 档：CC0 / 公共领域 / CC-BY / 平台免费商用许可）名称｜作者｜URL | B 档候选（标页面许可状态） | 页面标注的许可 | 吻合度与主要不足 | 证据 | 状态 |
+|---|---|---|---|---|---|---|---|---|
+| V-PRP-001 | 沙袋（墙、角、射击孔） | M1 | 无 A 档候选 | itch '3D trench warfare low poly'（含沙袋）｜nuclearwinter94｜https://nuclearwinter94.itch.io/tre｜许可未写明；PWYW；glb/fbx/obj/blend；低模，面数未写 | B 档：未写明 | 仅 B 档（Poly Haven 只有 `cement_bag`、`compost_bags` 等非军用） | [F] | [ ] 已下载 |
+| V-PRP-002 | 铁丝网（蛇腹、桩） | M1 | 无 A 档候选 | ① 同上 trench 包（含铁丝网元素）｜https://nuclearwinter94.itch.io/tre｜许可未写明<br>② Sketchfab 'Barbed Wire Fence WWII'｜KangaroOz｜https://sketchfab.com/3d-models/barbed-wire-fence-wwii-242e75d10a1f416fa8519f2d1a5d7c3c｜**许可未见**，未打开页面（清单所列约 1.1k 三角） | B 档：未写明 / 许可未见 | 仅 B 档 | [F]（①）/[S]（②） | [ ] 已下载 |
+| V-PRP-003 | 反坦克障碍（龙牙、刺猬） | M1 | 无 A 档候选 | 同上 trench 包内捷克刺猬｜https://nuclearwinter94.itch.io/tre｜许可未写明；龙牙无 | B 档：未写明 | 仅 B 档 | [F] | [ ] 已下载 |
+| V-PRP-004 | 弹药箱/补给箱（美式/德式） | M1 | ① 'Ammo Box'｜DanKit｜https://polyhaven.com/a/ammo_box（约 4,382 三角，4K，橄榄绿金属弹药箱）<br>② 'Old Military Crate'｜Jack Mava｜https://polyhaven.com/a/old_military_crate（约 10,476 三角，8K，开/合两态）<br>③ 'Wooden Military Crate'｜Prabhjinder Singh｜https://polyhaven.com/a/wooden_military_crate（约 22,986 三角，4K） | — | CC0 | 准确（通用军用箱）；美式 M2A1 风格需看实物；箱体手绘/模板文字需检查是否带现代标记或商标（D-MOD 例外允许遮盖） | [F] | [ ] 已下载 |
+| V-PRP-005 | 野战无线电（SCR-300/536/Torn.Fu.） | M2 | 近似：'Vintage Radio Transceiver'｜Mateusz Sadek｜https://polyhaven.com/a/vintage_radio_transceiver（约 42,350 三角，4K，军绿壳体、频率盘、天线、桌面话筒与电键） | — | CC0 | 近似：桌面电台，不是 SCR-300 背负式（GAP-V12） | [F] | [ ] 已下载 |
+| V-PRP-006 | 木箱、木桶、油桶、农用工具 | M1 | Poly Haven `wooden_crate_01/02`（https://polyhaven.com/a/wooden_crate_02）、`wooden_barrels_01`、`Barrel_01/02`、`barrel_03`、`metal_jerrycan`、`metal_jerrycan_green`、`wooden_bucket_01/02`、`wooden_ladder`、`trowel_01` | — | CC0 | 准确；jerrycan 为 20 L 型，德军 Wehrmacht-Einheitskanister 外形需看图 | [F] | [ ] 已下载 |
+| V-PRP-008 | 散兵坑/战壕（可挖掘模块） | M2 | 'Foxhole 101st Easy Company - Battle of the Bulge'｜davloots｜https://sketchfab.com/3d-models/foxhole-101st-easy-company-battle-of-the-bulge-1633d24339f843c08976706173837e1b（7.4M 三角/3.7M 顶点，RealityCapture 98 张照片，Bois Jacques 即 Foy 附近 Easy Company 阵地复原点，可下载） | itch '3D trench warfare low poly'（模块化战壕，"fully movable"）｜nuclearwinter94｜https://nuclearwinter94.itch.io/tre｜许可未写明 | A 档：CC BY 4.0（需署名）；B 档：未写明 | 准确（Foy 直接相关）；**需减面到约 5–20k + 烘焙**；一个散兵坑可作静态装饰，**不能当"可挖掘模块"**（需拆分） | [F] | [ ] 已下载 |
+| V-PRP-009 | 电线杆、电线、围栏 | M2 | 近似：Poly Haven `modular_electricity_poles`（约 200,610 三角，8K，现代城市风）、`modular_chainlink_fence`、`large_iron_gate`（asset 页格式 https://polyhaven.com/a/<asset_id>） | — | CC0 | 近似：欧式乡村木杆/木栅栏/石墙围栏无 | [F] | [ ] 已下载 |
+| V-PRP-010 | 残骸：被击毁坦克/卡车/滑翔机 | M2 | 无 A 档候选 | Sketchfab 'destroyed M4A1E9 sherman'｜作者调研未给｜https://sketchfab.com/3d-models/destroyed-m4a1e9-sherman-931f910486234ea683ce9fde5f9d008e｜许可未见，未打开；亦可用 V-VEH-US-003 + 烧毁材质（Poly Haven rust/burned，属 D-MOD 材质参数调整） | B 档：许可未见 | 仅 B 档 / 近似 | [S] | [ ] 已下载 |
+
+### 8.8 特效（V-FX-001..006）
+
+**覆盖率 5/6**（准确 0，全部为近似/仅可占位；V-FX-006 见 §9.1）。免费 2D 序列帧/贴花很多，但**风格化/像素风居多，写实度不足**。
+
+| 需求 ID | 需要什么 | 里程碑 | 免费候选（A 档：CC0 / 公共领域 / CC-BY / 平台免费商用许可）名称｜作者｜URL | B 档候选（标页面许可状态） | 页面标注的许可 | 吻合度与主要不足 | 证据 | 状态 |
+|---|---|---|---|---|---|---|---|---|
+| V-FX-001 | 枪口焰贴图 | M1 | ① 'muzzle flash particle sheet'｜作者调研未给｜https://opengameart.org/content/muzzle-flash-particle-sheet（小型单张）<br>② Reactorcore 像素风枪口焰｜https://opengameart.org/content/gun-muzzle-flash-effects-fire-and-ion-and-melee（页面写 CC0，建议回原页确认） | — | CC0（页面标注，②建议复核） | 仅可占位：像素风/小型单张，风格不匹配写实 | [S] | [ ] 已下载 |
+| V-FX-002 | 烟雾 flipbook | M1 | ① 'Free 2D VFX Pack'｜bigdamnhero6｜https://bigdamnhero6.itch.io/free-2d-vfx-pack（含 muzzle flash/explosion/poison smoke）<br>② TornadoGames CC0 魔法特效包（含烟迹；调研未给链接） | — | ①评论里作者答"CC0，在文件里"，需下载后核对 license 文件；② CC0 | 仅可占位：风格化，不适合写实 | [S] | [ ] 已下载 |
+| V-FX-003 | 爆炸/火球/尘土 flipbook | M1 | ① 'Explosion Spriteanim Sheet Minipack'（10 张，各 16 帧 4×4）｜Reactorcore｜https://reactorcore.itch.io/explosion-spriteanim-sheet-minipack<br>② '2D Explosion Animations 2'｜https://opengameart.org/content/2d-explosion-animations-2-frame-by-frame<br>③ 'more explosions'｜https://opengameart.org/content/more-explosions（作者要求署名可选） | — | CC0（①评论称 CC0；②③页面标注） | 近似：偏风格化，写实度不足 | [S] | [ ] 已下载 |
+| V-FX-004 | 弹孔贴花 | M1 | 'bullet decal'（512×512 PNG，下载约 9,000 次）｜https://opengameart.org/content/bullet-decal-bullethole0png（页面 403，内容未能读取）；ambientCG 贴花类前 100 项无弹孔 | Fab 免费 "5 PBR decals（含弹孔与污渍）"｜https://www.fab.com/listings/823bc036-df2a-4f6f-a644-bab8eac213b4｜许可/价格未读 | A 档：CC0（搜索摘要）；B 档：未读 | 近似：2D 低分辨率 | [S] | [ ] 已下载 |
+| V-FX-005 | 血迹/飞溅贴花 | M2 | ① 'Liquid Splatter Pixel Texture'（标 blood）｜https://opengameart.org/content/liquid-splatter-pixel-texture<br>② '100 grunge brushstrokes and splatters set'（标 blood）｜https://opengameart.org/content/100-grunge-brushstrokes-and-splatters-set<br>③ OGA 'Splatter Pack'（CC-BY 3.0，要求署名；调研未给链接） | — | ①② CC0；③ CC-BY 3.0（需署名） | 近似/仅可占位：像素风或笔刷类，写实度不足（GAP-V15） | [S] | [ ] 已下载 |
+
+### 8.9 天空（V-SKY-001..003）
+
+**覆盖率 3/3**（准确 2、近似 1）。HDRI 覆盖最好；体积云仍需程序化。
+
+| 需求 ID | 需要什么 | 里程碑 | 免费候选（A 档：CC0 / 公共领域 / CC-BY / 平台免费商用许可）名称｜作者｜URL | B 档候选（标页面许可状态） | 页面标注的许可 | 吻合度与主要不足 | 证据 | 状态 |
+|---|---|---|---|---|---|---|---|---|
+| V-SKY-001 | HDRI 天空（晴、多云、阴、黄昏、雾晨） | M0 | Poly Haven 997 张 HDRI：`kloofendal_overcast`、`kloofendal_misty_morning`、`kloofendal_48d_partly_cloudy`（及 `_puresky`）、`farmland_overcast`、`misty_farm_road`、`misty_dawn`、`belfast_farmhouse`、`belfast_open_field`、`farm_field`、`autumn_field`、`overcast_soil`、`rogland_overcast`、`qwantani_*`、`evening_meadow`、`sunset_meadow_path` 等；ambientCG 另有 439 张 HDRI | — | CC0 | 准确；皆南非/欧洲摄影，非诺曼底 | [F] | [ ] 已下载 |
+| V-SKY-002 | 冬季/雪天 HDRI | M4 | Poly Haven `snow_field`、`snow_field_2`、`snow_field_puresky`、`snowy_field`、`snowy_forest`、`snowy_forest_path_01/02`、`snowy_hillside`、`snowy_hillside_02`、`snowy_park_01`、`snowy_cemetery`、`passendorf_snow`、`horn-koppe_snow` | — | CC0 | 准确 | [F] | [ ] 已下载 |
+| V-SKY-003 | 云层/体积云贴图 | M3 | 近似：Poly Haven `cloud_layers`、`furry_clouds`、`wasteland_clouds`（HDRI，非体积云） | — | CC0 | 近似：体积云仍需程序化（不属本清单） | [F] | [ ] 已下载 |
+
+### 8.10 字体（V-FNT-001..004）
+
+**覆盖率 4/4**（准确 4，**全部凭记忆 [M]，未核实 OFL 文本**，须到字体仓库核实后登记）。无差距。
+
+| 需求 ID | 需要什么 | 里程碑 | 免费候选（A 档：CC0 / 公共领域 / CC-BY / 平台免费商用许可）名称｜作者｜URL | B 档候选（标页面许可状态） | 页面标注的许可 | 吻合度与主要不足 | 证据 | 状态 |
+|---|---|---|---|---|---|---|---|---|
+| V-FNT-001 | 标题字体（次要标题） | M0 | Black Ops One｜Sorkin Type｜https://www.fontsquirrel.com/fonts/black-ops-one | — | SIL OFL（凭记忆；保留字体名） | 准确；风格接近商业射击游戏常见字体，选用时避免与参考作品相同的视觉识别 | [M] | [ ] 已下载 |
+| V-FNT-002 | 模板风格标题 | M0 | Saira Stencil One｜Omnibus-Type｜https://fonts.google.com/specimen/Saira+Stencil+One | — | SIL OFL（凭记忆；license 子页 404 未能访问） | 准确 | [M] | [ ] 已下载 |
+| V-FNT-003 | 模板风格标题 | M0 | Allerta Stencil｜Matt McInerney｜https://fontsource.org/fonts/allerta-stencil/about（沿用 ASSET_SHOPPING_LIST §4.1.6） | — | SIL OFL（RFN "Allerta"；沿用清单，调研片段 [M]） | 准确 | [M] | [ ] 已下载 |
+| V-FNT-004 | 正文/等宽 + 简体中文方案 | M0 | Inter / Roboto Condensed / IBM Plex Sans Condensed；简体中文 Noto Sans SC / Source Han Sans（需子集化）（调研未给逐个链接） | — | SIL OFL（凭记忆，未核实） | 准确 | [M] | [ ] 已下载 |
+
+### 8.11 音频：枪械（A-WPN-001..017）
+
+**覆盖率 14/17**（准确 6、部分 8；A-WPN-010、-012、-013 无合格候选见 §9.2）。**每个 GDC 库在免费包里只有约 2–4 个文件**（"代表性样本"，不是整库）：同一型号能用的开火文件通常 1–3 个；只有 BAR、M1919A4、Thompson、M3 同时有"近 + 300 m 真实远场"。
+
+> 引用格式 `GDC{年}-p{分卷}` = Sonniss GameAudioGDC 第几年第几分卷（来源页 https://sonniss.com/gameaudiogdc ；文件名取自第三方索引，**未下载、未聆听**）；Freesound 条目为 `Freesound {编号}`，URL 为调研所给。**所有音频均未聆听，导入前必须试听。**
+
+| 需求 ID | 需要什么 | 里程碑 | 免费候选（A 档：CC0 / 公共领域 / CC-BY / 平台免费商用许可）名称｜作者｜URL | B 档候选（标页面许可状态） | 页面标注的许可 | 吻合度与主要不足 | 证据 | 状态 |
+|---|---|---|---|---|---|---|---|---|
+| A-WPN-001 | M1 Garand：开火近/中/远 + 弹夹 ping + 拉栓/换夹 | M0 | ① Freesound 725398 'An M1 Garand clip being ejected w/ ping'｜serøutōnin--deprivəd｜https://freesound.org/people/ser%C3%B8ut%C5%8Dnin--depriv%C9%99d/sounds/725398/（1.185 s，44.1 kHz/16-bit/mono，SM-57 自录）<br>② Freesound 725399 同作者（空仓换夹全序列，24 s）｜https://freesound.org/people/ser%C3%B8ut%C5%8Dnin--depriv%C9%99d/sounds/725399/<br>③ Freesound 385785 'Rifle Shot (M1 Garand)'｜Rijam｜https://freesound.org/people/Rijam/sounds/385785/（2.76 s，44.1 kHz/单声道/128 kbps MP3，无来源说明）<br>④ Freesound 386842 'M1 Garand Rifle'｜nioczkus｜https://freesound.org/people/nioczkus/sounds/386842/（70 s，无来源说明）<br>⑤ Freesound 505206 保险开关｜shelbyshark｜https://freesound.org/people/shelbyshark/sounds/505206/ | — | CC0（Freesound 页面标注） | 近似/部分：ping 与换夹有可信真实 CC0 实录（①②）；**开火声只有来源不明的③④**（MP3 128 kbps 不足以作近层），无近/中/远分层；GDC 无 Garand。M0 需负责人接受来源不明条目或以栓动枪声暂代 | [F] | [ ] 已下载 |
+| A-WPN-002 | M1 Carbine | M1 | ① Freesound 46655 'carbine single.wav'｜cognito perceptu｜https://freesound.org/people/cognito%20perceptu/sounds/46655/（单发 .30，林地射击场）<br>② Freesound 46656 'carbine.wav'｜同作者｜https://freesound.org/people/cognito%20perceptu/sounds/46656/（多发连射）<br>③ Freesound 46654 'carbine debris.wav'｜同作者｜https://freesound.org/people/cognito%20perceptu/sounds/46654/<br>④ Freesound 508246 'M1 30 Carbine Being Loaded'｜shelbyshark｜https://freesound.org/people/shelbyshark/sounds/508246/ | — | CC0（Freesound 页面标注） | 部分：真实 M1 卡宾枪实录，天然带森林尾音；仅 3 条开火素材，采样率/位深未取，无分层 | [F] | [ ] 已下载 |
+| A-WPN-003 | Thompson（M1928A1/M1A1） | M1 | ① GDC2016-p4 Pole Position 'M1928A1 Thompson Submachine Gun .45cal'：`0.3m_to_side_ORTF_Burst_of_four`、`300m_in_front_Burst_of_four`<br>② GDC2020-p8 Pole Position 'Thompson 1928A1 automatic submachine gun'：`Firing, t2, Burst, 1m, Right, Above, MKH8060`、`Handling, Dry Fire, MKH416`（来源页 https://sonniss.com/gameaudiogdc） | — | Sonniss GameAudioGDC 许可（Unlimited User License v2.0：免版税、无需署名；禁止作为音效再分发；禁止 AI/ML 训练） | 准确：真实 1928A1；含近（0.3 m）+ 真实远（300 m）两层；仅 4 个文件，无单发/全自动长序列 | [F 索引] | [ ] 已下载 |
+| A-WPN-004 | M3 Grease Gun | M1 | ① GDC2016-p4 Pole Position 'M3 Submachine Grease Gun .45cal'：`0.3m_to_side_Triple_shots`、`300m_in_front_Burst_of_thirteen`<br>② GDC2020-p13 Super Thump 'M3 Grease Gun Recorded Source'：`…Auto_Shot_X7_Attached`、`…Single_Shot_X10_Comp_Full`（来源页 https://sonniss.com/gameaudiogdc） | — | Sonniss GameAudioGDC 许可（Unlimited User License v2.0：免版税、无需署名；禁止作为音效再分发；禁止 AI/ML 训练） | 准确：免费包里最完整的单枪覆盖（近 + 远 300 m + 单发 ×10 + 连发 ×7） | [F 索引] | [ ] 已下载 |
+| A-WPN-005 | BAR（M1918） | M1 | GDC2016-p4 Pole Position 'M1918 Browning Automatic Rifle .30cal'：`0.1m_to_right_Double_shots_x_1`、`300m_in_front_Double_shots_x_1`（来源页 https://sonniss.com/gameaudiogdc） | — | Sonniss GameAudioGDC 许可（Unlimited User License v2.0：免版税、无需署名；禁止作为音效再分发；禁止 AI/ML 训练） | 部分：近 + 远 300 m 两层，**只有二连发，无长点射/全自动**（GAP-A02 仍在） | [F 索引] | [ ] 已下载 |
+| A-WPN-006 | M1919 Browning（点射/全自动） | M1 | ① GDC2016-p4 Pole Position 'M1919A4 Browning Machine Gun .30cal'：`200m_left_behind_blanks_Triple_shots`、`5m_behind_ORTF_blanks_Triple_shots`<br>② 同库 on turret：`on_turret_1m_left_blanks_Triple_shots_x_2`、`on_turret_300m_in_front_blanks_Triple_shots_x_2`<br>③ GDC2020-p13 Super Thump WoWW2 Designed：`STDSGN_WoWW2_Wep_MG_M1919_Machinegun_Auto-Burst_Shot_X6`（Designed 版，来源页 https://sonniss.com/gameaudiogdc） | — | Sonniss GameAudioGDC 许可（Unlimited User License v2.0：免版税、无需署名；禁止作为音效再分发；禁止 AI/ML 训练） | 准确：真实型号，1/5/200/300 m 多视角（空包弹录制）；仅三连发；全自动长序列仅③（经混音处理，非原始录音） | [F 索引] | [ ] 已下载 |
+| A-WPN-007 | M1903 Springfield | M1 | GDC2020-p8 Pole Position 'Springfield 1903A3 bolt-action rifle'：`Firing, t2, 1m, Right, Above, MKH8060`、`Handling, Cycling Bolt, MKH416`（来源页 https://sonniss.com/gameaudiogdc） | — | Sonniss GameAudioGDC 许可（Unlimited User License v2.0：免版税、无需署名；禁止作为音效再分发；禁止 AI/ML 训练） | 部分：1903A3（非 A4 狙击型，声学相同）；仅 1 个近场开火 + 拉栓 | [F 索引] | [ ] 已下载 |
+| A-WPN-008 | M1911 | M1 | ① GDC2020-p7 Pole Position 'Colt M1911A1 semi-automatic pistol'：`Firing, t2, 200m, Front, Target, M10`、`Handling, Dry Fire`<br>② GDC2016-p1 Audiobeast 'London Warehouse Firearms Library'：`Colt_M1911_.45_ACP_Pistol_10m_MKH8040_Pair_001_Single_Shot_x6`（仓库混响）<br>③ Freesound 112073 'kimber 1911 shooting.mp3'｜cheesepuff（Kimber 现代型，非军版；调研未给 URL）<br>④ Freesound 271453/271458 Springfield Armory GI 1911 装填/拉栓｜bdunis4（调研未给 URL）（GDC 来源页 https://sonniss.com/gameaudiogdc） | — | ①② Sonniss GameAudioGDC 许可（Unlimited User License v2.0：免版税、无需署名；禁止作为音效再分发；禁止 AI/ML 训练）；③④ CC0 | 准确：①为真实 GI 型 M1911A1，远场 200 m；③④补机械动作 | [F 索引]/[F 列表] | [ ] 已下载 |
+| A-WPN-009 | Kar98k：开火近/中/远 + 拉栓/装弹夹 | M0 | ① GDC2020-p7 Pole Position 'Mauser Karabiner 98 kurz K98k'：`Firing, t2, MKH416`、`Handling, Various, t2, 1m, Right, MKH8060`<br>② Freesound 802675 'Mauser 98k Shooting'｜Walking.With.Microphones｜https://freesound.org/people/Walking.With.Microphones/sounds/802675/（2.085 s，48 kHz/24-bit/立体声 ORTF，历史再现活动空包弹）<br>③ Freesound 802673 'Mauser 98k - bolt-action mechanism'｜同作者｜https://freesound.org/people/Walking.With.Microphones/sounds/802673/<br>④ Freesound 508747 'Bolt Action Rifle Reload'｜AugustSandberg｜https://freesound.org/people/AugustSandberg/sounds/508747/<br>⑤ Freesound 505198 'CzechVZ24 German K98 Load Stripper Clip'｜shelbyshark｜（捷克 VZ24，K98 同系；调研未给 URL）（GDC 来源页 https://sonniss.com/gameaudiogdc） | — | ① Sonniss GameAudioGDC 许可（Unlimited User License v2.0：免版税、无需署名；禁止作为音效再分发；禁止 AI/ML 训练）；②–⑤ CC0 | 准确：M0 可零成本启动；无近/中/远层，需后期距离处理 | [F] | [ ] 已下载 |
+| A-WPN-011 | MP40 | M1 | ① GDC2020-p7 Pole Position 'MP 40 submachine gun'：`Firing, t1, 250m, Holophone`（真实 250 m 远场）、`Handling, Cocking, MKH416`<br>② Freesound 187534 'mp40 Near and far.wav'｜rakurka｜https://freesound.org/people/rakurka/sounds/187534/（8 s，来源无说明，中低可信）（GDC 来源页 https://sonniss.com/gameaudiogdc） | — | ① Sonniss GameAudioGDC 许可（Unlimited User License v2.0：免版税、无需署名；禁止作为音效再分发；禁止 AI/ML 训练）；② CC0 | 部分：**只有 250 m 远场 + 上膛，缺近场开火**；需配合其它近场 SMG 声并 EQ（"替代"灰区，需负责人确认） | [F] | [ ] 已下载 |
+| A-WPN-014 | MG42：单发/全自动、近/中/远、长/短尾音 | M1 | GDC2020-p7 Pole Position 'MG 42 machine gun'：`MG 42, Firing, t1, Burst, Long, Mountain Top, D100`、`Handling, Top Cover Up, 1m, Right, MKH8060`（来源页 https://sonniss.com/gameaudiogdc） | Freesound 338242 'MG 42 (Solo) WW2.wav'｜Lubini｜（调研未给完整 URL）｜CC-BY；自述"made from real MG 42 + few additional layers"，来源未说明，非纯实录 | A 档：Sonniss GameAudioGDC 许可（Unlimited User License v2.0：免版税、无需署名；禁止作为音效再分发；禁止 AI/ML 训练）；B 档：CC-BY | 部分：有长点射但只有山顶远场一条，近距尾音与单发需另配（与付费清单推荐的 Pole Position MG42 同厂牌同条目的免费样本） | [F] | [ ] 已下载 |
+| A-WPN-015 | P38 / Luger P08 | M1 | ① GDC2020-p7 Pole Position 'Walther P38 semi automatic pistol'：`Firing, t1, 2m, Behind, LS5`、`Handling, Removing Magazine`<br>② GDC2020-p13 Super Thump WoWW2 Designed：`Pistol_Luger_Shot_X5`（设计版）（来源页 https://sonniss.com/gameaudiogdc） | — | Sonniss GameAudioGDC 许可（Unlimited User License v2.0：免版税、无需署名；禁止作为音效再分发；禁止 AI/ML 训练） | 准确：两种型号都有 | [F 索引] | [ ] 已下载 |
+| A-WPN-016 | 尾音/混响分层（室外开阔、城镇、森林） | M1 | ① GDC2018-p5 Pole Position 'The Outdoor Gun Acoustics Library'：`AK47_big_open_area_2m_above_behind_gun`、`AK5_valley_field_forest_50m_behind_gun_off_axis_behind_buildings`、`MP5_forest_road_10m_behind_gun_pointing_at_forest_off_axis`<br>② GDC2017-p6 Pole Position 'The Warfare Library'：`mg_firing_close_projectile_tail_large_field_Telinga`、`cannon_firing_forest_distant_MKH8060`<br>③ GDC2018-p5 / GDC2024-p6 Indoor Gun Acoustics 1/2（室内，现代枪）（来源页 https://sonniss.com/gameaudiogdc） | — | Sonniss GameAudioGDC 许可（Unlimited User License v2.0：免版税、无需署名；禁止作为音效再分发；禁止 AI/ML 训练） | 部分：环境声学样本，**枪型不是二战枪**；用作室外/森林/山谷反射参考或叠到二战枪近层（叠加他枪尾音属混音灰区，需负责人确认） | [F 索引] | [ ] 已下载 |
+| A-WPN-017 | 机械动作（拉栓/换弹/上膛/干击/保险） | M1 | ① GDC2020-p7/p8 Pole Position 各枪 `Handling` 文件（MG42 掀盖、MP40 上膛、K98k 多种操作、M1903A3 拉栓、Thompson 干击、M1911A1 干击、P38 卸弹匣）<br>② GDC2016-p4 Pole Position 'Various Gun Foley & Handling'（4 文件，均为现代枪）<br>③ Freesound：shelbyshark 505206/508243/508246；AnthonyChan0 Springfield Armory 1911 handling 487500（调研未给 URL）（GDC 来源页 https://sonniss.com/gameaudiogdc） | — | ①② Sonniss GameAudioGDC 许可（Unlimited User License v2.0：免版税、无需署名；禁止作为音效再分发；禁止 AI/ML 训练）；③ CC0 | 部分：二战型号机械声来自①；②为现代枪，仅作通用替代 | [F] | [ ] 已下载 |
+
+### 8.12 音频：爆炸与重武器（B-EXP / B-HVY / B-ART / B-AIR）
+
+**覆盖率 8/9**（准确 1、部分 7；B-AIR-001 航空炸弹见 §9.2）。
+
+| 需求 ID | 需要什么 | 里程碑 | 免费候选（A 档：CC0 / 公共领域 / CC-BY / 平台免费商用许可）名称｜作者｜URL | B 档候选（标页面许可状态） | 页面标注的许可 | 吻合度与主要不足 | 证据 | 状态 |
+|---|---|---|---|---|---|---|---|---|
+| B-EXP-001 | 手雷爆炸（近/中/远，室外/室内） | M1 | ① GDC2017-p4 Gamemaster Audio 'Explosion Sound Pack'：`explosion_far_distant_02`、`explosion_large_08`、`explosion_large_no_tail_03`、`explosion_med_long_tail_01`<br>② GDC2020-p12 Stefano Cremona 'Explosions'：`BigExplosion02`、`DeepExplosion02`、`FarExplosion03`<br>③ GDC2021-2023-p2 Bluezone 'Detonation – Explosion'：`explosion_mortar_002_01`、`explosion_urban_004_02`<br>④ Freesound 693421 'CTS 7290.wav'｜areniporgen｜https://freesound.org/people/areniporgen/sounds/693421/（真实震爆弹，半室外）<br>⑤ Freesound 516914 'Explosion, Medium Blast'｜Kinoton｜https://freesound.org/people/Kinoton/sounds/516914/（中距离长混响）（GDC 来源页 https://sonniss.com/gameaudiogdc） | — | ①②③ Sonniss GameAudioGDC 许可（Unlimited User License v2.0：免版税、无需署名；禁止作为音效再分发；禁止 AI/ML 训练）；④⑤ CC0 | 近似：**都不是二战手榴弹实录**；①②③为设计库（多距离），④为现代震爆弹（高频更尖）；通用爆炸近/中/远可行，史实匹配度低 | [F] | [ ] 已下载 |
+| B-EXP-002 | 地雷爆炸（人员/车辆/反坦克） | M3 | ① GDC2024-p6 Pole Position 'The Warfare 2 Library'：`Tank Mine - EXPLOSION - Mounted on Metal Beam - DISTANT - AMBEO BLD`（真实军演反坦克雷）<br>② GDC2017-p1 Bluezone 'War Zone (Designed Explosions)'：`beep-mine-explosion-002/007`（设计）（来源页 https://sonniss.com/gameaudiogdc） | — | Sonniss GameAudioGDC 许可（Unlimited User License v2.0：免版税、无需署名；禁止作为音效再分发；禁止 AI/ML 训练） | 部分：只有 1 个真实反坦克雷远录；近场/人员雷（跳雷）无 | [F 索引] | [ ] 已下载 |
+| B-EXP-003 | 炸药包（Satchel/C-4） | M3 | ① GDC2020-p2 Bluezone 'Tank – Explosion Sound Effects'：`explosion_outdoors_large_005`、`debris_falling_rock_dust_002`（设计）<br>② 同 B-EXP-001 的候选（来源页 https://sonniss.com/gameaudiogdc） | — | Sonniss GameAudioGDC 许可（Unlimited User License v2.0：免版税、无需署名；禁止作为音效再分发；禁止 AI/ML 训练） | 近似：无 satchel/C-4 专用实录；通用大爆炸 + 碎屑 | [F 索引] | [ ] 已下载 |
+| B-HVY-001 | Bazooka / Panzerschreck / Panzerfaust 发射与命中 | M3 | ① GDC2024-p6 Warfare 2：`RPG - FIRING AND IMPACT - Through Car Roof Hit Metal - XY - MKH8040`（真实军演 RPG，现代）<br>② Freesound 249298 'rpg launcher three shots.wav'｜klangfabrik｜https://freesound.org/people/klangfabrik/sounds/249298/（74 s，三次中距离户外发射，来源无说明）（GDC 来源页 https://sonniss.com/gameaudiogdc） | Freesound craigsmith 675581 'S19-34 Bazooka shot'｜craigsmith｜https://freesound.org/people/craigsmith/sounds/675581/｜CC0（上传者标注；48 kHz/24-bit/mono）；craigsmith 438531 'G33-25-Bazooka'；上传者称素材为数字化的好莱坞 1930s–60s 效果母带，**母带权属无从判断** | A 档：① Sonniss GameAudioGDC 许可（Unlimited User License v2.0：免版税、无需署名；禁止作为音效再分发；禁止 AI/ML 训练）；② CC0；B 档：craigsmith CC0（权属存疑） | 近似：**没有可确认的二战 Bazooka/Panzerfaust/Panzerschreck 实录**；①②为现代 RPG（发射声更尖，无 Bazooka 管内气流声） | [F] | [ ] 已下载 |
+| B-ART-001 | 105 mm 榴弹炮发射（近/中/远，0–150 m） | M3 | GDC2019-p1 Airborne Sound 'Battlefield Howitzers'：`Howitzer,M101,C1,105 mm,Distant,Right Side,Shot,Pound,Thick`、`…C3,105 mm,Distant,…Shot,Explode,Crack,Sweetener`、`…C3,105 mm,Medium Distant,…Shot,Firm,Heavy,EQ Version,Soft Attack`（来源页 https://sonniss.com/gameaudiogdc） | — | Sonniss GameAudioGDC 许可（Unlimited User License v2.0：免版税、无需署名；禁止作为音效再分发；禁止 AI/ML 训练） | 准确：文件名明写 M101 105 mm（美军二战主力榴弹炮），有远/中远层；"Sweetener/EQ Version"表明含设计处理，需听确认；**近场（0–50 m）缺** | [F 索引] | [ ] 已下载 |
+| B-ART-002 | 迫击炮发射/落弹 | M3 | ① Freesound 184382 'Mortar Shots.flac'｜qubodup｜https://freesound.org/people/qubodup/sounds/184382/（28 s，抽取自美国政府视频）<br>② Freesound 240567 'mortar line.wav'｜greenbastardd｜https://freesound.org/people/greenbastardd/sounds/240567/（五门迫击炮演习）<br>③ Freesound 529239 'Mortar'｜Mozfoo｜https://freesound.org/people/Mozfoo/sounds/529239/（真实训练 + 额外混响）<br>④ Freesound 854481 'Mortar Shell Loading Slide 3'｜qubodup｜https://freesound.org/people/qubodup/sounds/854481/（M120 装弹）<br>⑤ GDC2021-2023-p2 Bluezone Detonation：`explosion_mortar_002_01`（设计）（来源页 https://sonniss.com/gameaudiogdc） | — | ①–④ CC0；⑤ Sonniss GameAudioGDC 许可（Unlimited User License v2.0：免版税、无需署名；禁止作为音效再分发；禁止 AI/ML 训练） | 部分：发射声有真实实录（现代迫击炮）；落弹前"来袭哨声"无可信来源（Zagge28 'Incoming mortar' 条目来源不明，未列入） | [F] | [ ] 已下载 |
+| B-ART-003 | 远处炮击床（背景轰鸣） | M3 | ① Freesound 239137 'Artillery Gunfire'｜qubodup｜https://freesound.org/people/qubodup/sounds/239137/（54 s，美国政府视频）<br>② Freesound 182822 'Artillery Shots.flac'｜qubodup｜https://freesound.org/people/qubodup/sounds/182822/（16 s）<br>③ GDC2017-p6 Warfare Library：`cannon_firing_forest_distant_MKH8060`（真实远炮）<br>④ Freesound 702245 'GUNArtl_69thFieldArtilleryGun01_InMotionAudio_FREESampleSunday'｜InMotionAudio（18 s，商业厂牌的免费样本；调研未给 URL）（GDC 来源页 https://sonniss.com/gameaudiogdc） | Freesound 486039 'R30-11-Large Guns Heard from Inside Building'｜craigsmith｜CC0（权属存疑，好莱坞母带；调研未给 URL） | A 档：①②④ CC0；③ Sonniss GameAudioGDC 许可（Unlimited User License v2.0：免版税、无需署名；禁止作为音效再分发；禁止 AI/ML 训练）；B 档：CC0（权属存疑） | 部分：够做"远处炮声"层，循环床需自己拼接；①②音质受源视频压缩音轨限制 | [F] | [ ] 已下载 |
+| B-AIR-002 | 飞机俯冲、扫射（机炮） | M3 | ① Freesound 854186 'Autocannon Three Shot Burst'｜qubodup｜https://freesound.org/people/qubodup/sounds/854186/（4 s，美国海军陆战队实弹视频）<br>② GDC2018-p5 P-51D（`ext_startup_ramps_shutdown_distant_behind`）、GDC2019-p5 Spitfire IX（`ext_take_off_by_right_position`）、GDC2018-p5 Spitfire XIV（`ext_landing_passby`）、GDC2017-p6 Bearcat（`flybys_cockpit`）<br>③ GDC2019-p3 B-17G（`Ext Take Off By`）、GDC2017-p6 B-25（`ext_startup_idle`）（来源页 https://sonniss.com/gameaudiogdc） | — | ① CC0；②③ Sonniss GameAudioGDC 许可（Unlimited User License v2.0：免版税、无需署名；禁止作为音效再分发；禁止 AI/ML 训练） | 部分：扫射用 M1919/MG42 近层 + 多普勒（后期）；飞机掠过有真实二战机型；无 Stuka 俯冲警笛真实录音 | [F] | [ ] 已下载 |
+
+### 8.13 音频：子弹（C-BUL-001..005）
+
+**覆盖率 5/5**（准确 3、部分 2）。
+
+| 需求 ID | 需要什么 | 里程碑 | 免费候选（A 档：CC0 / 公共领域 / CC-BY / 平台免费商用许可）名称｜作者｜URL | B 档候选（标页面许可状态） | 页面标注的许可 | 吻合度与主要不足 | 证据 | 状态 |
+|---|---|---|---|---|---|---|---|---|
+| C-BUL-001 | 子弹掠过 whizz / 超音速 crack | M0 | ① GDC2017-p6 Pole Position 'The Warfare Library'：`warfare_t3_mg_whizzes_ricochets_bullet_cracks_M10`（99.7 MB，真实军演）<br>② GDC2020-p5 PMSFX 'Bullet Bys & Impacts'：`PM_BBI_Bullet_Passby_Whizzby_Airy_5`（66.9 MB）<br>③ GDC2017-p4 Gamemaster 'Bullet Impact Sounds'：`bullet_flyby_fast_05`；GDC2018-p3 Gamemaster 'Guns, Bullets and Explosions'：`bullet_flyby_fast_06`（设计库）（来源页 https://sonniss.com/gameaudiogdc） | ① Freesound 423301 'VisceralBulletImpacts.wav'｜u1769092｜CC0｜无来源说明，疑似视频/影视采样（调研未给 URL）<br>② Freesound 855248 'Real Bullet Flyby Sound'｜qubodup｜CC0｜抽取自 Natochannel b-roll（非美国政府视频），仅 0.079 s，作者页许可自相矛盾（调研未给 URL） | A 档：Sonniss GameAudioGDC 许可（Unlimited User License v2.0：免版税、无需署名；禁止作为音效再分发；禁止 AI/ML 训练）；B 档：CC0（来源存疑） | 准确：①一个 100 MB 长录音可剪出大量 whizz/crack/ricochet 变体；左右立体声需听确认 | [F 索引] | [ ] 已下载 |
+| C-BUL-002 | 各材质命中（泥、混凝土、金属、木、沙袋、水） | M1 | ① GDC2020-p5 PMSFX Bullet Bys & Impacts：`Bullet_Impact_Dirt_3`、`Bullet_Impact_Glass_1`、`Bullet_Impact_Hit_Body_Flesh_25`<br>② GDC2017-p4 Gamemaster Bullet Impact Sounds：`concrete_brick_01`、`metal_heavy_08`、`body_thump_02`<br>③ GDC2018-p4 Olivier Girardot 'Guns & Explosions'：`Bullet Impact 22`（来源页 https://sonniss.com/gameaudiogdc） | — | Sonniss GameAudioGDC 许可（Unlimited User License v2.0：免版税、无需署名；禁止作为音效再分发；禁止 AI/ML 训练） | 准确（泥/混凝土/金属/玻璃）：PMSFX/Gamemaster 为设计/Foley 型库，是否实弹录制未知；木、沙袋、水需另找 | [F 索引] | [ ] 已下载 |
+| C-BUL-003 | 跳弹（ricochet） | M1 | ① Warfare Library 的 `…ricochets…`（见 C-BUL-001，来源页 https://sonniss.com/gameaudiogdc）<br>② Freesound 148827 '.22 ricochet.mp3'｜cedarstudios｜https://freesound.org/people/cedarstudios/sounds/148827/（53 s，户外 30 m 外）<br>③ Freesound 148840 'ricochet.mp3'｜cedarstudios｜https://freesound.org/people/cedarstudios/sounds/148840/（106 s）<br>④ Freesound 523403 '22 caliber with ricochet.wav'｜C-V｜https://freesound.org/people/C-V/sounds/523403/（27 s，沙漠，Rode NTG-3 + Zoom H6） | — | ① Sonniss GameAudioGDC 许可（Unlimited User License v2.0：免版税、无需署名；禁止作为音效再分发；禁止 AI/ML 训练）；②–④ CC0 | 准确：①为军用机枪弹；②③④为 .22 小口径（音调偏高，需 EQ/变调） | [F] | [ ] 已下载 |
+| C-BUL-004 | 击中人体（友/敌，身体/头部） | M1 | ① GDC2020-p5 PMSFX `Bullet_Impact_Hit_Body_Flesh_25`<br>② GDC2017-p4 Gamemaster `bullet_impact_body_thump_02`（来源页 https://sonniss.com/gameaudiogdc） | Freesound 423301 'VisceralBulletImpacts.wav'｜u1769092｜CC0｜来源无说明，疑似视频/影视采样（调研未给 URL） | A 档：Sonniss GameAudioGDC 许可（Unlimited User License v2.0：免版税、无需署名；禁止作为音效再分发；禁止 AI/ML 训练）；B 档：CC0（来源存疑） | 近似：专业实录几乎不存在（GAP-A04）；PMSFX/Gamemaster 属设计库 Foley | [F 索引] | [ ] 已下载 |
+| C-BUL-005 | 压制感（近距多弹掠过 + 低频冲击 + 耳鸣） | M1 | 掠过用 C-BUL-001 的候选（来源页 https://sonniss.com/gameaudiogdc）；低频冲击与耳鸣：无合格免费候选（本次未专门搜索耳鸣高频声）；AudioWorklet 低通/高通属代码，不需素材 | — | Sonniss GameAudioGDC 许可（Unlimited User License v2.0：免版税、无需署名；禁止作为音效再分发；禁止 AI/ML 训练） | 部分：仅掠过部分有素材 | [F 索引] | [ ] 已下载 |
+
+### 8.14 音频：载具与飞机（D-TNK / D-VEH / D-AIR）
+
+**覆盖率 6/8**（准确 3、部分 3；D-TNK-004、-005 见 §9.2）。载具声音出乎意料地好（真实 Sherman、Panzer IV、Panther、Opel Blitz 样本），但**炮声缺**。
+
+| 需求 ID | 需要什么 | 里程碑 | 免费候选（A 档：CC0 / 公共领域 / CC-BY / 平台免费商用许可）名称｜作者｜URL | B 档候选（标页面许可状态） | 页面标注的许可 | 吻合度与主要不足 | 证据 | 状态 |
+|---|---|---|---|---|---|---|---|---|
+| D-TNK-001 | Sherman 发动机怠速/加速多转速循环 | M1 | ① GDC2018-p5 Pole Position 'Sherman M4A3 Medium Tank'（Ford GAA V8）：`sherman_m4a3_t3_onbrd_start_attempt_medium_drive_decelerate_slow_stop_off_engine_DPA4061`（81.5 MB）、`…t4_onbrd_medium_drive_steady_slow_short_tracks_right_RE50`（67.2 MB）、`…t9_onbrd_fast_drive_stop_off_interior_DPA4021`（70.6 MB）<br>② GDC2018-p5 'Sherman M4A1 Medium Tank'（Continental 星型）：`t3_onboard_medium_driving_turning_stopping_gearing_interior_left/right_DPA4021`、`t11_foley_siren_long_CMC6`（来源页 https://sonniss.com/gameaudiogdc） | Freesound craigsmith 438121 'G15-25-M-4 Tank Slow Drive By'｜craigsmith｜CC0（权属存疑，好莱坞母带；页面未确认 M4 是否 Sherman；调研未给 URL） | A 档：Sonniss GameAudioGDC 许可（Unlimited User License v2.0：免版税、无需署名；禁止作为音效再分发；禁止 AI/ML 训练）；B 档：CC0（权属存疑） | 准确（真实 Sherman，车载/车内）；**缺车外近/远麦的怠速/加速循环**；不要混用 M4A1 与 M4A3 发动机 | [F 索引] | [ ] 已下载 |
+| D-TNK-002 | 履带声（碾压/转向） | M1 | ① GDC2018-p5 M4A3 `t4_…tracks_right_RE50`（履带专用麦）<br>② GDC2020-p7 M10 `t12_onbrd_idle_various_tracks_1_left_E935`、`t5_…tracks_1_right_E935`<br>③ GDC2018-p5 Stuart `t10_onbrd_fast_drive_short_stop_tracks_RE50`<br>④ Freesound 329800 't26_moving_01.wav'｜greatmganga｜（苏制 T-26 森林行进；调研未给完整 URL）<br>⑤ Freesound 849062 'tracks moving'｜christerljung（调研未给 URL）（GDC 来源页 https://sonniss.com/gameaudiogdc） | — | ①–③ Sonniss GameAudioGDC 许可（Unlimited User License v2.0：免版税、无需署名；禁止作为音效再分发；禁止 AI/ML 训练）；④⑤ CC0 | 准确：M4A3/M10 履带麦为真实 WWII 载具（M10 为 Sherman 底盘车体） | [F 索引]/[F 列表] | [ ] 已下载 |
+| D-TNK-003 | 炮塔转动（电/液压） | M1 | ① GDC2018-p4 Chaffee M24：`t7_var_sfx_ext_hydraulic_traverse_XY_RSM191`（车外液压转塔）<br>② GDC2020-p8 Panther Ausf. A：`t10, Var SFX, Turret, Rotate, Off, Interior, Driver`<br>③ GDC2018-p5 M18 Hellcat `t9_foley_cannon_elevating_manually_slow_from_inside_CMC6`；GDC2016-p4 T-34-85 `foley_cannon_height_adjustment`<br>④ Freesound 418881 'Tank Turret Rotate'｜KieranKeegan｜https://freesound.org/people/KieranKeegan/sounds/418881/（37 s，Zoom H2n，车型不明）（GDC 来源页 https://sonniss.com/gameaudiogdc） | — | ①–③ Sonniss GameAudioGDC 许可（Unlimited User License v2.0：免版税、无需署名；禁止作为音效再分发；禁止 AI/ML 训练）；④ CC0 | 部分：Sherman 自己的转塔声没有；Chaffee/Hellcat/Panther 的真实转塔/俯仰声可作美/德替代 | [F] | [ ] 已下载 |
+| D-TNK-006 | Panzer IV / Panther 全套（发动机、履带） | M3 | ① GDC2019-p4 Pole Position 'Panzer IV Ausf. G'：`t10_ext_start_idle_steady_blips_main`（车外）、`t1_ext_start_slow_away_up_stop_off_main`、`t6_onbrd_start_medium_drive_various_stop_off_track…`<br>② GDC2020-p8 Panther Ausf. A：`t1, Onbrd, Start, Slow, Drive, Stop, Off, Engine`、`t10 Turret Rotate`、`t5, Ext, Start, Fast, Stop, Off, CSS5`<br>③ GDC2019-p4 Panzer III Ausf. M；④ GDC2019-p5 Tiger II；⑤ GDC2020-p7 Jagdpanzer 38(t) Hetzer（来源页 https://sonniss.com/gameaudiogdc） | — | Sonniss GameAudioGDC 许可（Unlimited User License v2.0：免版税、无需署名；禁止作为音效再分发；禁止 AI/ML 训练） | 准确：德军坦克有真实实录样本且带车外视角（Panzer IV G、Panther A 正是付费清单推荐的两款）；炮声缺；Tiger I 无（只有 Tiger II） | [F 索引] | [ ] 已下载 |
+| D-VEH-001 | 卡车/半履带/吉普 | M3 | ① GDC2019-p4 Pole Position 'Opel Blitz 3600 1939'：`t14_ext_fast_bys_horn_position_b_MKH416`、`t15_onbrd_start_idle_steady_blips_off_interior_DPA4021`<br>② GDC2018-p5 'M16 Halftrack'：`t4_onbrd_slow_drive_accelerate_to_fast_stop_reverse_brief_tracks_left_RE50`<br>③ GDC2020-p7 Mercedes L3750 1945<br>④ GDC2017-p6 M1 Corbitt Prime Mover Cargo Truck（`t11_ext_passby_DPA4011` 等）<br>⑤ GDC2019-p5 Volkswagen Kübelwagen 1943（`t12_Ext_Bys_Gearshifts_H6`）（来源页 https://sonniss.com/gameaudiogdc） | — | Sonniss GameAudioGDC 许可（Unlimited User License v2.0：免版税、无需署名；禁止作为音效再分发；禁止 AI/ML 训练） | 部分：Opel Blitz（德军标志卡车）、M16 半履带（M3 系列近似）、Kübelwagen 真实；**GMC CCKW / Willys 吉普没有**（GDC 中的 Jeep 都是现代车） | [F 索引] | [ ] 已下载 |
+| D-AIR-001 | P-47 / Ju 87 Stuka / C-47 | M3 | ① GDC2018-p5 P-51D Mustang、Spitfire Mk XIV；GDC2019-p5 Spitfire Mk IX 1943；GDC2017-p6 F8F Bearcat；GDC2020-p9 Corsair F4U-1A；GDC2021-23-p6 Zero A6M5<br>② GDC2017-p6 B-25 Mitchell、GDC2019-p3 B-17G 1945（来源页 https://sonniss.com/gameaudiogdc）<br>③ Freesound 818696 'Fly over' / 818695 'Prop areoplanes fly over (Three)'｜studioste（4 s / 7 s，航展 WW2 风格飞机；调研未给 URL） | ① Freesound 437771 'G04-07 WWII Stuka engine drone'｜craigsmith｜CC0（权属存疑，好莱坞母带；调研未给 URL）<br>② Freesound 758467 'War Airplane Stuka Siren Sound Effect'｜Mastersoundboy2005｜CC0｜来源无说明，该上传者同时上传游戏创作向 'Stuka Creature Screaming'（调研未给 URL） | A 档：①② Sonniss GameAudioGDC 许可（Unlimited User License v2.0：免版税、无需署名；禁止作为音效再分发；禁止 AI/ML 训练）；③ CC0；B 档：CC0（来源/权属存疑） | 部分：**P-47、C-47、Ju 87 无真实实录**；P-51D 作替代（P-47 星型发动机音色不同）；Stuka 俯冲警笛无可信免费实录 | [F] | [ ] 已下载 |
+
+### 8.15 音频：Foley（E-FTS / E-GER / E-ACT）
+
+**覆盖率 3/3**（准确 1、部分 2）。
+
+| 需求 ID | 需要什么 | 里程碑 | 免费候选（A 档：CC0 / 公共领域 / CC-BY / 平台免费商用许可）名称｜作者｜URL | B 档候选（标页面许可状态） | 页面标注的许可 | 吻合度与主要不足 | 证据 | 状态 |
+|---|---|---|---|---|---|---|---|---|
+| E-FTS-001 | 军靴脚步（泥、草、碎石、木地板、雪、沙、浅水） | M0 | ① Freesound BenDrain 'Footsteps_Mud_01…05 / Single_01/03'（488068、488069、487875、487874、488076、488077、488082 等，泥地）｜BenDrain｜https://freesound.org/people/BenDrain/sounds/488068/<br>② Freesound 548384 'Footsteps_Mountain_Boots_Mud_Mono'｜Nox_Sound｜https://freesound.org/people/Nox_Sound/sounds/548384/<br>③ Freesound 611278 'Footsteps on slush'｜xkeril｜https://freesound.org/people/xkeril/sounds/611278/（48 kHz/24-bit）<br>④ GDC2016-p2 Levan Nadashvili 'Soldier Footsteps'：`FS Concrete Soldier Crouch N02/N05`、`FS Metal Soldier Walk N01/N05`<br>⑤ GDC2019-p6 Studio 23 'Ultimate Footstep Collection'：`Gravel_Loafers_Loops_Walk_Normal`、`Metal_Boots_Loop_Jogging`、`Snow_Singles_Sequence`；GDC2020-p14 Wav Junction Footsteps；GDC2019-p3 PMSFX 'STEPS Dirt & Gravel'；GDC2020-p5 PMSFX 'STEPS Dry Grass & Shrubs'（来源页 https://sonniss.com/gameaudiogdc） | — | ①②③ CC0；④⑤ Sonniss GameAudioGDC 许可（Unlimited User License v2.0：免版税、无需署名；禁止作为音效再分发；禁止 AI/ML 训练） | 准确（泥地充裕，≥8 变体达标）；草、碎石、雪、石板、木地板、浅水：GDC 各 1–3 个样本，未达每表面 ≥8 变体，需分别补搜或从长序列剪切 | [F] | [ ] 已下载 |
+| E-GER-001 | 装备晃动/卧倒/翻越 | M1 | ① GDC2020-p14 Wav Junction 'Zippers, Buckles & Clothing'<br>② GDC2019-p1 Borg Sound 'Bag Foley'；GDC2017-p5 Joshua Reinhardt 'Ultimate Cloth and Prop Collection'<br>③ GDC2024-p1 Eiravaein Works 'Flask'（来源页 https://sonniss.com/gameaudiogdc） | — | Sonniss GameAudioGDC 许可（Unlimited User License v2.0：免版税、无需署名；禁止作为音效再分发；禁止 AI/ML 训练） | 部分：无军事装具专用库；通用布料/扣具/背包 Foley 勉强替代；匍匐/卧倒/翻越无（GAP-A08） | [F 索引] | [ ] 已下载 |
+| E-ACT-001 | 包扎、建造敲打、铲土 | M3 | ① Freesound 353907 'Shovel_dirt.wav'｜dr19｜https://freesound.org/people/dr19/sounds/353907/<br>② Freesound 574859 'Digging dirt shovel 05.flac'｜TRP（调研未给 URL）<br>③ Freesound 513866 'Digging v1.wav'｜wormletter（金属铲，泥+砾石；调研未给 URL） | — | CC0（Freesound 页面标注） | 部分：铲土可行；**包扎无**；建造敲打本次未专门搜 | [F] | [ ] 已下载 |
+
+### 8.16 音频：环境（F-AMB-001..006）
+
+**覆盖率 5/6**（准确 4、部分 1；F-AMB-005 成品床见 §9.2，可用远场文件自混）。**没有"诺曼底专用"环境**，只有欧洲乡村通用。
+
+| 需求 ID | 需要什么 | 里程碑 | 免费候选（A 档：CC0 / 公共领域 / CC-BY / 平台免费商用许可）名称｜作者｜URL | B 档候选（标页面许可状态） | 页面标注的许可 | 吻合度与主要不足 | 证据 | 状态 |
+|---|---|---|---|---|---|---|---|---|
+| F-AMB-001 | 诺曼底乡村日/夜 | M1 | ① GDC2018-p3 Fox Audio Post-Production 'Countryside – Nature & Field'：`Amb_Countryside_Day_Flying_Insects_Birds_LP`、`…Day_Rooster_Birds`、`…Evening_Birds_Cow_Rooster_Tractor_Far_LP01`、`…Night_Birds_Cow_Cricket`（LP = 可循环）<br>② GDC2020-p3 Coll Anderson 'AMBISONICS A Countryside Nature'；GDC2024-p8 Sonik Sound Library 'Spatial Countryside'<br>③ GDC2018-p1 Alexander Kopeikin 'Quad ambience of Crimea in summer'<br>④ Freesound 458113 'Countryside'｜brunoboselli｜https://freesound.org/people/brunoboselli/sounds/458113/（48 kHz/24-bit/立体声，黎明）<br>⑤ Freesound 514550 'Countryside Ambience Spring'｜Kinoton｜https://freesound.org/people/Kinoton/sounds/514550/（来源页 https://sonniss.com/gameaudiogdc） | — | ①②③ Sonniss GameAudioGDC 许可（Unlimited User License v2.0：免版税、无需署名；禁止作为音效再分发；禁止 AI/ML 训练）；④⑤ CC0 | 准确：日/夜均有，含农场动物与远处拖拉机；欧洲乡村感好，但不保证是"诺曼底"（GAP-A11） | [F] | [ ] 已下载 |
+| F-AMB-002 | 海滩海浪（Omaha） | M4 | ① Freesound 827530 'Ocean_coast_04_092025_0659AM'｜YevgVerh｜https://freesound.org/people/YevgVerh/sounds/827530/（132 s，轻浪沙滩）<br>② Freesound 623051 / 623052 'Ocean Waves, Rocky Beach'｜goochiano｜https://freesound.org/people/goochiano/sounds/623051/<br>③ Freesound 457149 'Binaural Beach Waves 4'｜Benbojangles｜（双耳，57 s；调研未给完整 URL） | — | CC0（Freesound 页面标注） | 准确：Omaha 滩头强浪/涌浪需试听，已有候选偏安静 | [F] | [ ] 已下载 |
+| F-AMB-003 | 风、雨 | M1 | ① GDC2015-p4/p5 Soundopolis 'Natures Fury_Rain_01 / Wind_01'<br>② GDC2017-p4 Hzandbits 'Wind In Trees'、'Urban Winds II'；GDC2017-p3 Double Trouble 'Rain and Thunder'；GDC2018-p2 Discover Oregon 'Wind and Storms'；GDC2018-p2 Borg Sound 'Rain Indoor Ambiences'<br>③ Freesound 637566 'forest light wind through bare trees winter'｜kyles｜https://freesound.org/people/kyles/sounds/637566/（来源页 https://sonniss.com/gameaudiogdc） | — | ①② Sonniss GameAudioGDC 许可（Unlimited User License v2.0：免版税、无需署名；禁止作为音效再分发；禁止 AI/ML 训练）；③ CC0 | 准确：充足 | [F] | [ ] 已下载 |
+| F-AMB-004 | 冬季森林（Foy） | M4 | ① Freesound 637566｜kyles｜https://freesound.org/people/kyles/sounds/637566/<br>② Freesound 673266 'Forest snow falling and birds'｜xkeril｜https://freesound.org/people/xkeril/sounds/673266/（瑞士森林）<br>③ Freesound 676801 '2023 leaves snow wind forest_MIXPRE-759'｜peterkotrha（调研未给 URL）<br>④ Freesound 846045｜Dakenber（冰冻傍晚枝条吱嘎；调研未给 URL）<br>⑤ GDC2018-p2 Discover Oregon 'Wind and Storms'（来源页 https://sonniss.com/gameaudiogdc） | — | ①–④ CC0；⑤ Sonniss GameAudioGDC 许可（Unlimited User License v2.0：免版税、无需署名；禁止作为音效再分发；禁止 AI/ML 训练） | 准确：够用 | [F] | [ ] 已下载 |
+| F-AMB-006 | 建筑内部房间音 | M1 | GDC2018-p4 Gladestock Studios 'Urban Decay'：`GS amb abandoned industrial site QUAD`、`GS amb empty domed hall QUAD`、`GS amb underground carpark QUAD`、`GS amb warehouse storage QUAD`（来源页 https://sonniss.com/gameaudiogdc） | — | Sonniss GameAudioGDC 许可（Unlimited User License v2.0：免版税、无需署名；禁止作为音效再分发；禁止 AI/ML 训练） | 部分：工业/厂房类；民居房间底噪本次未专门搜（Freesound 未查） | [F 索引] | [ ] 已下载 |
+
+### 8.17 音频：人声（G-VOX-001..004）
+
+**覆盖率 2/4**（准确 0、部分 2；G-VOX-002 德语、G-VOX-004 口令见 §9.2）。
+
+| 需求 ID | 需要什么 | 里程碑 | 免费候选（A 档：CC0 / 公共领域 / CC-BY / 平台免费商用许可）名称｜作者｜URL | B 档候选（标页面许可状态） | 页面标注的许可 | 吻合度与主要不足 | 证据 | 状态 |
+|---|---|---|---|---|---|---|---|---|
+| G-VOX-001 | 中枪/倒地/痛呼/死亡（英语男声） | M1 | ① GDC2021-23-p7 Pole Position 'The Grunts Library'：`Male 2 - Grunt - Battle Cry - Long - Ehrlund M1`、`Male 1 - Breathing - Gasping`、`Female 1 - Grunt - Getting Hit - Medium Intensity`<br>② GDC2019-p1 Articulated Sounds 'Fight Vocalizations'：`EMOTE Joshua, Man, Pain Hurt Grunt Big 03`<br>③ Freesound 166944 'Grunts of pain by military soldiers.flac'｜qubodup｜https://freesound.org/people/qubodup/sounds/166944/（19 s，抽取自美国政府视频）<br>④ Freesound 800870 'Soldier-DeathHit'｜TyrantTim｜（11 s；调研未给完整 URL）（来源页 https://sonniss.com/gameaudiogdc） | — | ①② Sonniss GameAudioGDC 许可（Unlimited User License v2.0：免版税、无需署名；禁止作为音效再分发；禁止 AI/ML 训练）；③④ CC0 | 部分：非语言痛呼/喘息/咆哮无口音问题，可零成本满足；带语句的台词仍缺（GAP-A12） | [F] | [ ] 已下载 |
+| G-VOX-003 | 战场人群 walla（远处喊叫/冲锋） | M2 | ① GDC2015-p1 Coll Anderson 'Battle Crowd'（12 文件）：`EFX EXT GROUP Battle Approach 01 A`、`Battle Cry 03 A`、`Battle Steady Fighting 03 A`、`Battle End Agony Moans 02 A`、`Marching Puddle Mud 01`、`Battle Movement Forrest 01 A` 等<br>② GDC2019-p2 Coll Anderson 'The Battle Crowd Collection Add on'（4 文件）<br>③ Freesound 563011 'People screaming in agony when charging into battle'｜florianreichelt｜CC0｜来源/真实性不明（调研未给 URL）（来源页 https://sonniss.com/gameaudiogdc） | — | ①② Sonniss GameAudioGDC 许可（Unlimited User License v2.0：免版税、无需署名；禁止作为音效再分发；禁止 AI/ML 训练）；③ CC0 | 部分：①为专业战斗群声库，语言构成需试听（吼叫为主，无清晰台词，对 FPS 反而合适） | [F 索引] | [ ] 已下载 |
+
+### 8.18 音频：无线电与 UI（H-RAD-001、H-UI-001/002）
+
+**覆盖率 3/3**（准确 2、部分 1）。
+
+| 需求 ID | 需要什么 | 里程碑 | 免费候选（A 档：CC0 / 公共领域 / CC-BY / 平台免费商用许可）名称｜作者｜URL | B 档候选（标页面许可状态） | 页面标注的许可 | 吻合度与主要不足 | 证据 | 状态 |
+|---|---|---|---|---|---|---|---|---|
+| H-RAD-001 | PTT 开/闭声、静电、对讲噪声（年代感） | M1 | ① GDC2016-p4 Sergey Eybog 'Handheld Tranceivers'：`Walkie Talkie, Cobra MicroTalk, … Noise Squelch, Beep, Series`、`Kenwood TK-3107 … Squelch Feedback`（现代对讲机）<br>② GDC2020-p2 Bluezone 'Interception – Radio Transmission'：`radio_transmission_interference_noise_transmitter`、`radio_beep_walkie_talkie`<br>③ GDC2015-p2 Detunized 'Newsreel Noises'：`Crackle_steady`、`Cadenced_buzz-hum`（老胶片噪声）<br>④ Freesound 524205 'Radio Sign Off / Squelch'｜JovianSounds；759967 / 760245｜LukaCafuka（ELBEX GT 410 + Zoom H1n）（来源页 https://sonniss.com/gameaudiogdc；④ 调研未给 URL） | — | ①②③ Sonniss GameAudioGDC 许可（Unlimited User License v2.0：免版税、无需署名；禁止作为音效再分发；禁止 AI/ML 训练）；④ CC0 | 部分：**都是现代无线电**；年代感靠 EQ（窄带、失真、噪声）+ ③ 的老噪声（允许的后期，GAP-A10 仍在） | [F] | [ ] 已下载 |
+| H-UI-001/002 | UI 点击/确认/拒绝/倒计时；占点 sting/复活提示 | M0 | ① Kenney Impact Sounds｜Kenney｜https://kenney.nl/assets/impact-sounds（130 文件）；Kenney Interface Sounds https://kenney.nl/assets/interface-sounds（其余音频包许可未逐个读，Kenney 惯例为 CC0）<br>② Freesound 包：benzix2 'Game Sounds'（packs/23566）、el_boss 'Hexa Puzzle Saga SFX'（packs/37861）、newlocknew 'UI_Misc'（packs/34385）、el_boss 'General SFX'（packs/32182）<br>③ GDC 多个 UI 库（Digital Rain Lab 'Bleeping Buttons' 等；来源页 https://sonniss.com/gameaudiogdc） | — | ① CC0（Impact Sounds 页面明示）；② CC0（过滤命中）；③ Sonniss GameAudioGDC 许可（Unlimited User License v2.0：免版税、无需署名；禁止作为音效再分发；禁止 AI/ML 训练） | 准确：充足；占点 sting/复活提示需从中挑，风格契合度需试听 | [F] | [ ] 已下载 |
+
+### 8.19 音频：音乐（I-MUS-001/002）
+
+**覆盖率 2/3**（准确 0、部分 2；I-PD-001 二战公共领域录音见 §9.2，调研不建议）。CC-BY 条目需在游戏内 Credits 署名。
+
+| 需求 ID | 需要什么 | 里程碑 | 免费候选（A 档：CC0 / 公共领域 / CC-BY / 平台免费商用许可）名称｜作者｜URL | B 档候选（标页面许可状态） | 页面标注的许可 | 吻合度与主要不足 | 证据 | 状态 |
+|---|---|---|---|---|---|---|---|---|
+| I-MUS-001 | 主菜单管弦主题（60–120 s 可循环） | M1 | ① 'War Theme'｜Spring Spring｜https://opengameart.org/content/war-theme（timpani、铜管、合唱）<br>② 'Call to War'｜Umplix｜https://opengameart.org/content/call-to-war（2023，号角与军鼓，页面标不要求署名）<br>③ 'Laments of the War'｜Cethiel（OGA，管弦+合唱）；'Battle Theme A'｜cynicmusic；'Qazijamjam Orchestral Battle Theme' https://opengameart.org/content/qazijamjam-orchestral-battle-theme<br>④ Incompetech（Kevin MacLeod）https://incompetech.com/music/royalty-free/faq.html（需试听 "Film / Epic / Military" 类，具体曲目未选）<br>⑤ 'After The War'｜Fatal Exit｜https://fatalexit.itch.io/after-the-war（奇幻向） | — | ①③ CC0（页面标注）；② 页面标不要求署名；④ CC BY 4.0（需署名）；⑤ CC-BY 4.0（需署名，沿用现有清单） | 部分：都需试听挑选；**零采购下偏奇幻/电影化管弦，缺"二战进行曲"感**；≥320 kbps/无损需看单曲（OGA 多为 MP3/OGG） | [S]（OGA、⑤）/[F]（④ 许可页） | [ ] 已下载 |
+| I-MUS-002 | 结算（胜/负）短曲 | M2 | 同 I-MUS-001；另有 'The Tread of War'（军事进行曲）｜Jonathan Shaw / Pixelsphere / Jobromedia｜https://opengameart.org/content/the-tread-of-war-jonathan-shaw-pixelsphere-jobromedia | — | 同 I-MUS-001；'The Tread of War'：CC-BY 3.0（需署名） | 部分：同上 | [S] | [ ] 已下载 |
+
+### 8.20 音频：IR（J-IR-001/002）
+
+**覆盖率 1/2**（准确 0、部分 1；J-IR-002 见 §9.2）。
+
+| 需求 ID | 需要什么 | 里程碑 | 免费候选（A 档：CC0 / 公共领域 / CC-BY / 平台免费商用许可）名称｜作者｜URL | B 档候选（标页面许可状态） | 页面标注的许可 | 吻合度与主要不足 | 证据 | 状态 |
+|---|---|---|---|---|---|---|---|---|
+| J-IR-001 | 卷积 IR（室内/车内/室外） | M1 | ① GDC2024-p6 Pole Position 'The Vehicle Impulse Response Library'：`MAN Lions Coach … Altiverb 2 … INTERIOR`、`Patria 6x6 … Passenger Compartment … Altiverb 3`、`Pontiac Firebird … Altiverb`（Altiverb 格式需确认可转 WAV）<br>② GDC2018-p4 Navi Retlav Studio 'Impulse Reverbism / Exploration 4 / Fractalism / Cabinetism 2'（创意 IR）<br>③ Freesound 648945 'IR_Cathedral_5m_Stereo'｜Nox_Sound｜https://freesound.org/people/Nox_Sound/sounds/648945/（96 kHz/24-bit 立体声）<br>④ Freesound 252847 'IR New Office 01'｜kijjaz｜https://freesound.org/people/kijjaz/sounds/252847/；382908 'Little Basement'｜Uzbazur；868385 'IR_Two_Car_Garage_HandClap_02'｜loganzsound（来源页 https://sonniss.com/gameaudiogdc） | — | ①② Sonniss GameAudioGDC 许可（Unlimited User License v2.0：免版税、无需署名；禁止作为音效再分发；禁止 AI/ML 训练）；③④ CC0 | 部分：**没有室外开阔/森林/城镇 IR**；坦克内部 IR 可用①（不同车辆但金属腔体特征类似）；OpenAIR 因 503 未能核实 | [F] | [ ] 已下载 |
+
+### 8.21 距离分层与混音的可行处理（音频，摘自调研）
+
+免费单层录音可用"允许的后期"做距离分层（D-MOD 已列：响度标准化、剪辑、EQ/压缩、距离分层混音、卷积混响）：近→中（高频衰减、低通、减弱瞬态、加早期反射 + 短混响）；中→远（更强低通、延迟 = 距离/声速、混响湿比增高）；真实远麦（BAR、M1919A4、Thompson、M3、MP40 250 m、M1911A1 200 m）可直接用。**灰区（需负责人在 NEEDS_HUMAN H-002 的 D-MOD 确认中一并明确）**：①把 M1919 全自动叠加/变调后冒充 BAR 或 MG34；②把 MP40 的 250 m 远场叠到近场 SMG 上；③用 .22 跳弹变调代替 .30；④把多个来源的爆炸叠成"手雷爆炸"。**不属允许**：用 DAW 合成器/噪声生成新声音素材、自己录音、AI 生成。另：统一响度（LUFS）与 EQ 配方会增加调音工作量（调研粗估 3–5 人日【待调参】）。
+
+### 8.22 搜到但已排除（不列为候选；排除项检查表）
+
+排除原则（总控保留的唯一排除项）：**从商业游戏/电影提取或翻录的素材、盗版合集、倒卖的盗版包（含闲鱼等二手平台转卖的模型包）、来源不明的网盘资源**。理由：这类素材即使页面标了免费或 CC，作者也无权授权，会让整个游戏的授权链失效，且违背不自制/不侵权的底线。下载前对每件素材核对：标题/描述/标签是否含游戏名或 "ripped / extracted / from game"；是否批量上传且无制作过程；贴图是否带游戏式命名；Freesound 条目是否含游戏名/商业库名/"inspired by 某影视"。
+
+| 已排除条目 | 原因 | 来源 |
+|---|---|---|
+| Sketchfab 'Mauser karabıner 98K'（Ekbercg，CC BY） | tag 含 "pubg"，疑似游戏提取 | 视觉 §2.2 |
+| Sketchfab 'MP40 (one for all textures) for free fire' | 标题含游戏名 | 视觉 §2.2 |
+| Sketchfab 'MP40 – Wolfenstein: Enemy Territory' | 页面自述为游戏原模型改尺寸 | 视觉 §2.2 |
+| Sketchfab 'Strike Fighters tanks pack'（CC BY-NC） | 名称含游戏，疑似游戏资产 | 视觉 §2.5 |
+| Sketchfab 'TF2 HD Lugermorph pack' | 《Team Fortress 2》游戏资产改造 | 视觉 §2.12 |
+| 聚合站 stlfinder / 3dcadbrowser / modelnet.cs.princeton.edu 转载的模型 | 来源不明（V-WPN-US-008 仅有聚合站链接者已降为 B 档并标"来源存疑"） | 视觉 §2.12 |
+| 网盘/论坛"WW2 资源合集"类链接 | 本次搜索未命中，也不查找 | 视觉 §2.12 |
+| Freesound 387508 morganpurkis 'MG42 SFX.wav' | 自述混合了从游戏取得的 MG42 声音 | 音频 §2.0 |
+| Freesound 704968 Artninja 'GUNMech_handling_and_movement_sounds' | 描述承认来源含商业库 Hollywoodedge | 音频 §2.0 |
+| Freesound 258198 wadaltmon 'Thompson SMG Shot' | 自述合成拼贴，不是实录 | 音频 §2.0 |
+| Freesound nioczkus '1911 Comedian Pistol / Perdition 1911 Pistol' | 明示以电影角色枪声为模板 | 音频 §2.0 |
+| Freesound 262436 The_Sound_Side 'Real explosions Real gunshots.wav' | 来源是别人拍摄的视频，来源不明 | 音频 §2.0 |
+| Freesound 840492 qubodup 'War Zone (Lo-Fi)' | 自述实为城市烟花录音 | 音频 §2.0 |
+| Freesound Zagge28 'Incoming mortar 1/3/4'（241840/241838/241837） | 描述仅为标签式，来源不明，未列入候选 | 音频 §2.2 |
+| BBC Sound Effects（RemArc） | 仅个人/教育/研究，商业游戏不可用 | 音频 §1 |
+| Scan the World / MyMiniFactory 3D 打印 STL | 非游戏可用 PBR 资产，且条款为个人使用/NC 居多 | 视觉 §1、§2.12 |
+| 78rpm / 二战时期商业唱片 | 录音与作曲各自版权，未进入 PD | 音频 §1 |
+
+
+## 9. 找不到免费素材的项目与购买渠道
+
+> 本节 = 两份调研里"**无合格免费候选**"的全部需求 ID（视觉 49 个 + 音频 11 个），再加上 §9.3"免费候选仅可占位、达不到可发布品质"的关键项。
+> "哪里可以买"**只取自 §4 现有付费候选**（商品名、商店、URL、价格、证据标签原样保留；价格**未重新核实**，下单前以结算页为准）；§4 也没有付费候选的写"暂无现成商品，见 ASSET_GAPS 的 GAP-xxx"。
+> 付费项一律为**备选**，需负责人逐项批准（勾选"[ ] 决定购买"）；购买前仍建议按 §2.3 排查游戏提取，必要时按 §1.2 向卖家确认浏览器分发（该流程仅在购买时作为建议，不再是硬性门槛）。
+> "不买的后果"遵循 ASSET_GAPS §3 的灰盒占位约定：视觉占位 = 程序生成基本几何体，音频占位 = 静音 `AudioBuffer`，里程碑验收时仍须在 ASSET_GAPS 里对该 GAP 有"决定"。
+
+### 9.1 视觉：无合格免费候选（49）
+
+#### 武器（12）
+
+| 需求 ID | 需要什么 | 里程碑 | 为什么免费的不行 | 哪里可以买（商店｜商品｜URL｜价格｜证据） | 不买的后果 | 决定 |
+|---|---|---|---|---|---|---|
+| V-WPN-US-002 | M1 Carbine | M2 | 搜索未见 M1 Carbine 的 CC 模型 | CGTrader 'weapon ww2 low poly'（含 M1 Carbine + Thompson M1）｜CGTrader｜https://www.cgtrader.com/3d-models/military/gun/weapon-ww2-low-poly｜价格需确认（未核实）；Fab 美军包未发现 M1 Carbine（偏 GAP） | 灰盒占位（ASSET_GAPS §3.2） | [ ] 决定购买 |
+| V-WPN-US-006 | M1919A6 | M3 | 免费搜索未见 | 暂无现成商品，见 ASSET_GAPS 的 GAP-V09 | 灰盒占位（ASSET_GAPS §3.2） | [ ] 决定购买 |
+| V-WPN-US-007 | M1903A4 Springfield（带 M73 镜） | M2 | 免费搜索未搜到 | Fab 'FPS World War Guns Pack – United States'｜Raouf Benoudina｜https://www.fab.com/listings/00a8235f-055a-4532-9916-fe060949b9eb｜$19.99【核实】；含 M1903 Springfield（3k 顶点，是否 A4/带镜待核；M0/M1 美军枪包，同时覆盖 US-003/005/008） | 灰盒占位（ASSET_GAPS §3.2）；或用同包 M1903（无镜）近似 | [ ] 决定购买 |
+| V-WPN-US-009 | M1A1 Bazooka | M3 | Sketchfab 搜索只见现代 Panzerfaust 3 等，未见 M1A1 | CGTrader 'Anti Tank Rocket Launcher Collection Low-poly PBR'（含 M1A1 Bazooka 约 5.5k 面 + Panzerschreck 约 6.2k 面，4096 PBR，Royalty Free）｜CGTrader｜https://www.cgtrader.com/3d-model-collections/anti-tank-rocket-launcher-collection-low-poly-pbr｜价格需人工确认（未核实） | 灰盒占位（ASSET_GAPS §3.2） | [ ] 决定购买 |
+| V-WPN-US-010 | Mk2 手雷 | M1 | 本次搜索免费包未见 Mk2 | 暂无现成商品，见 ASSET_GAPS 的 GAP-V09（小件，可顺带向任一卖家询价） | 灰盒占位（ASSET_GAPS §3.2） | [ ] 决定购买 |
+| V-WPN-US-012 | M1/M3 刺刀（近战） | M2 | 严格意义无；仅 victorcstr 包内 Ka-Bar（非刺刀，许可未写明） | 暂无现成商品，见 ASSET_GAPS 的 GAP-V09 | 灰盒占位（ASSET_GAPS §3.2） | [ ] 决定购买 |
+| V-WPN-GE-002 | Kar98k + ZF41 镜（狙击型） | M3 | 免费无合格候选 | 暂无现成商品，见 ASSET_GAPS 的 GAP-V09（可由第一人称高精度 Kar98k 卖家加购） | 灰盒占位（ASSET_GAPS §3.2）；或用 V-WPN-GE-001 的 Kar98k 去镜替代 | [ ] 决定购买 |
+| V-WPN-GE-003 | Gewehr 43（半自动，10 发弹匣） | M3 | 本次未搜到免费候选 | RenderHub Loss 'WW2 Gewehr 43 Walther G43 Rigged'｜Loss｜https://www.renderhub.com/loss/ww2-gewehr-43-walther-g43｜$15【核实，bundle 页】；4,368 多边形，已绑定；许可 "Extended Use (IP Restricted)"（含义未核实）；德军武器 bundle $70：https://www.renderhub.com/loss/world-war-2-german-weapons | 灰盒占位（ASSET_GAPS §3.2） | [ ] 决定购买 |
+| V-WPN-GE-006 | MG34（两脚架/弹鼓） | M3 | 免费无合格候选 | RenderHub Loss 'MG34 Maschinengewehr'｜Loss｜https://www.renderhub.com/loss/world-war-2-german-weapons｜$20【核实】；12,149 多边形，GLB/FBX 等；许可 "Extended Use (IP Restricted)" 含义未核实 | 灰盒占位（ASSET_GAPS §3.2）；或用 MG42 外形近似 | [ ] 决定购买 |
+| V-WPN-GE-009 | Panzerschreck（带防护板） | M3 | 免费无合格候选 | CGTrader 合集（同 V-WPN-US-009）；CGTrader 单品 Panzerschreck｜https://www.cgtrader.com/3d-models/military/gun/panzerschreck-german-anti-tank-rocket-launcher｜Royalty Free No AI，价格需确认（未核实） | 灰盒占位（ASSET_GAPS §3.2） | [ ] 决定购买 |
+| V-WPN-GE-012 | Nebelhandgranate 39（德军烟雾手雷） | M3 | 仅 3dmodelscc0 包内通用 'Smoke grenade'（非 Nebelhandgranate，可作占位） | 暂无现成商品，见 ASSET_GAPS 的 GAP-V09 | 灰盒占位（ASSET_GAPS §3.2）；或用通用烟雾手雷占位 | [ ] 决定购买 |
+| V-WPN-GE-014 | S-Mine（跳雷） | M3 | 免费无合格候选 | 暂无现成商品，见 ASSET_GAPS 的 GAP-V09 | 灰盒占位（ASSET_GAPS §3.2） | [ ] 决定购买 |
+
+#### 角色（9）——零采购档下最大且唯一无法用加工弥补的缺口
+
+| 需求 ID | 需要什么 | 里程碑 | 为什么免费的不行 | 哪里可以买（商店｜商品｜URL｜价格｜证据） | 不买的后果 | 决定 |
+|---|---|---|---|---|---|---|
+| V-CHR-US-001 | 美军步兵（夏季，25k–45k 面，带绑定） | M1 | 免费、带绑定的 WWII 士兵 A/B 档均无；D-MOD 不允许从零建模 | ① RenderHub 'SOLDIER WWII USA Paratrooper Rigged'｜albin｜https://www.renderhub.com/albin/soldier-wwii-usa-paratrooper｜$60【搜索摘要】<br>② RenderHub 'Alpenwolf WW2 US Soldier'｜https://www.renderhub.com/alpenwolf/ww2-us-soldier｜约 46.3k 多边形，PBR + rigged【搜索摘要】<br>③ TurboSquid 'WW2 US Soldier'｜https://www.turbosquid.com/3d-models/3d-army-man-model-1593497｜$59.99【搜索摘要】（TurboSquid 专有格式条款风险） | 灰盒占位（胶囊体）；或用 Mixamo 通用人形作 bot/占位（不是 WWII 兵） | [ ] 决定购买 |
+| V-CHR-US-002 | 美军空降兵 | M1 | 同上 | albin Paratrooper（同 V-CHR-US-001 ①）；CGTrader 'ww2 us paratrooper and thompson m1a1'（衣服类）https://www.cgtrader.com/3d-models/character/clothing/ww2-us-paratrooper-and-thompson-m1a1；RenderHub '101st Airborne Division Soldier'（未标 rigged，价格需确认） | 同上 | [ ] 决定购买 |
+| V-CHR-US-003 | 美军兵种变体（军官/医护/坦克兵/狙击手） | M2 | 缺基础身体，无法拼装 | 暂无现成商品，见 ASSET_GAPS 的 GAP-V18（需基础身体 + 配件拼装，依赖 D-MOD 确认） | 同上 | [ ] 决定购买 |
+| V-CHR-US-004 | 美军冬季（Foy） | M4 | 未发现冬季美军 | 暂无现成商品，见 ASSET_GAPS 的 GAP-V04（夏季角色 + 冬季服装模块，需确认 D-MOD） | 同上 | [ ] 决定购买 |
+| V-CHR-GE-001 | 德军国防军（夏季） | M1 | 免费无合格候选 | CGTrader 'German Soldier Rig – WW2 Scanned Asset Pack'｜https://www.cgtrader.com/3d-models/character/clothing/german-soldier-rig-ww2-scanned-asset-pack（亦见 https://skfb.ly/6UwUt）｜价格需确认（按 $40–80【估算】）；备选 CGTrader 'Wehrmacht Soldier - RIGGED ANIMATED' https://cgtrader.com/3d-models/military/military-character/wehrmacht-soldier-rigged-animated（价格需确认） | 同上 | [ ] 决定购买 |
+| V-CHR-GE-002 | 德军伞兵 FJR | M3 | 未发现 | 暂无现成商品，见 ASSET_GAPS 的 GAP-V05（国防军角色 + 贴图变体替代，需确认 D-MOD；Loss FG42 可作武器配套） | 同上 | [ ] 决定购买 |
+| V-CHR-GE-003 | 德军冬季 | M4 | 未发现 | 暂无现成商品，见 ASSET_GAPS 的 GAP-V04 | 同上 | [ ] 决定购买 |
+| V-CHR-GE-004 | 德军坦克兵/军官 | M3 | 缺基础身体 | 暂无现成商品，见 ASSET_GAPS 的 GAP-V18（'WW2 Axis Uniform German' 服装 https://www.cgtrader.com/3d-models/character/clothing/ww2-axis-uniform-german 可做底） | 同上 | [ ] 决定购买 |
+| V-CHR-FPA-001 | 第一人称手臂（美/德袖 + 手套） | M1 | 免费无 | 暂无现成商品，见 ASSET_GAPS 的 GAP-V19（Fab 现代 FPS 手臂 + 动画包为近似） | 灰盒占位；或现代手臂 + 重材质（需确认） | [ ] 决定购买 |
+
+#### 动画（3）
+
+| 需求 ID | 需要什么 | 里程碑 | 为什么免费的不行 | 哪里可以买（商店｜商品｜URL｜价格｜证据） | 不买的后果 | 决定 |
+|---|---|---|---|---|---|---|
+| V-ANM-006 | 救治/拖拽伤员/复活 | M2 | 免费无合格候选 | 暂无现成商品，见 ASSET_GAPS 的 GAP-V17 | 通用动作 + 手动对位；或灰盒占位 | [ ] 决定购买 |
+| V-ANM-008 | 载具进出/驾驶/炮手/乘员 | M1 | 免费无合格候选 | 暂无现成商品，见 ASSET_GAPS 的 GAP-V08（需自制或外包） | 通用动作 + 手动对位 | [ ] 决定购买 |
+| V-ANM-009 | 第一人称动画（含栓动全流程、换弹） | M1 | 免费动捕库没有第一人称武器动画 | 近似：Fab 'First Person Rifle Animations V2'（现代战术，UE5 骨架；无链接）；带栓动、检查枪膛的现代狙击包 https://www.fab.com/listings/3f24e5a1-8c3e-4bc3-8b59-b8191befd4eb 、https://www.fab.com/listings/57e4a0d3-d8fe-4d4c-ab55-6cae93f2ff53（均现代枪，价格/许可未核实）；见 ASSET_GAPS 的 GAP-V07 | 现代包 + 重定向（观感偏现代）；或灰盒占位 | [ ] 决定购买 |
+
+#### 载具（17）
+
+| 需求 ID | 需要什么 | 里程碑 | 为什么免费的不行 | 哪里可以买（商店｜商品｜URL｜价格｜证据） | 不买的后果 | 决定 |
+|---|---|---|---|---|---|---|
+| V-VEH-US-001 | M8 Greyhound | M3 | 免费无合格候选 | CGTrader 'm8 greyhound game ready'（85k tris）｜https://www.cgtrader.com/3d-models/vehicle/military-vehicle/m8-greyhound-game-ready｜价格需人工确认（未核实） | 灰盒占位（ASSET_GAPS §3.2） | [ ] 决定购买 |
+| V-VEH-US-002 | M5A1 Stuart | M3 | 免费无合格候选 | CGTrader 'low poly m5a1 stuart light tank'｜https://cgtrader.com/3d-models/military/vehicle/low-poly-m5a1-stuart-light-tank｜价格需确认（未核实） | 灰盒占位（ASSET_GAPS §3.2） | [ ] 决定购买 |
+| V-VEH-US-005 | GMC CCKW 2½ ton 卡车 | M3 | 免费无合格候选 | 暂无现成商品，见 ASSET_GAPS 的 GAP-V10（BuiltByBit 4 车包用途为 Minecraft 类平台，不建议） | 灰盒占位（ASSET_GAPS §3.2） | [ ] 决定购买 |
+| V-VEH-US-006 | M3 半履带 | M3 | 免费无合格候选（仅 CGTrader 付费） | CGTrader 'Low Poly M3A1 Half-track Personnel Carrier'（约 11.9k 多边形，PBR，Royalty Free）｜https://cgtrader.com/3d-models/military/vehicle/low-poly-m3-half-track-personal-carrier｜价格需确认（未核实） | 灰盒占位（ASSET_GAPS §3.2） | [ ] 决定购买 |
+| V-VEH-US-007 | Willys Jeep | M1 | 免费候选页无许可/无下载按钮 | CGTrader 'ww2 jeep usa'｜https://www.cgtrader.com/3d-models/military/military-vehicle/ww2-jeep-usa ；'ww2 american willys jeep' https://www.cgtrader.com/3d-models/vehicle/military-vehicle/ww2-american-willys-jeep｜价格需确认（按 $20–50【估算】） | 灰盒占位（ASSET_GAPS §3.2） | [ ] 决定购买 |
+| V-VEH-GE-001 | Sd.Kfz. 234 Puma | M3 | 免费无合格候选 | 暂无现成商品，见 ASSET_GAPS 的 GAP-V10 | 灰盒占位（ASSET_GAPS §3.2） | [ ] 决定购买 |
+| V-VEH-GE-002 | Panzer II Luchs | M3 | 免费无合格候选 | 暂无现成商品，见 ASSET_GAPS 的 GAP-V10（TurboSquid 仅见 PZII-G，非 Luchs） | 灰盒占位（ASSET_GAPS §3.2）；或用 Ausf. G 作最接近替代 | [ ] 决定购买 |
+| V-VEH-GE-006 | Opel Blitz | M3 | 免费无合格候选 | 暂无现成商品，见 ASSET_GAPS 的 GAP-V10（BuiltByBit 4 车包不建议） | 灰盒占位（ASSET_GAPS §3.2） | [ ] 决定购买 |
+| V-VEH-GE-007 | Sd.Kfz. 251 | M3 | 免费仅见 Free3D 条目，许可未显示 | Unity Asset Store 'WW2 Asset Pack'（含 Sd.Kfz. 251，2K PBR，约 6.4k 三角）｜https://assetstore.unity.com/packages/slug/182490 ；Flipped Normals 同款 https://flippednormals.com/product/ww2-asset-pack-1613｜价格需确认（未核实） | 灰盒占位（ASSET_GAPS §3.2） | [ ] 决定购买 |
+| V-VEH-ART-001 | M2A1 105mm 榴弹炮 | M3 | 免费无合格候选 | CGTrader 'military artillery weapon howitzer 105mm'｜https://cgtrader.com/3d-models/military/military-vehicle/military-artillery-weapon-howitzer-105mm｜型号需看图，价格需确认（未核实）；近似 GAP-V11 | 灰盒占位（ASSET_GAPS §3.2） | [ ] 决定购买 |
+| V-VEH-ART-002 | leFH 18 | M3 | 免费无合格候选 | ① CGTrader 'Low Poly 10.5 cm leichte Feldhaubitze'（约 6.7k 多边形，PBR，rigged）｜https://cgtrader.com/3d-models/military/gun/low-poly-10-5-cm-leichte-feldhaubitze-anti-tank-gun<br>② RenderHub Howitzer FH18｜https://www.renderhub.com/gemreer/howitzer-fh18-artillery-unit<br>③ Hum3D 10.5 cm leFH 18｜https://hum3d.com/3d-models/10-5-cm-lefh-18/｜$150【搜索摘要】（约 70.8 万面，需减面）；①② 价格需确认 | 灰盒占位（ASSET_GAPS §3.2） | [ ] 决定购买 |
+| V-VEH-ART-003 | 57mm M1 反坦克炮 | M3 | 免费无合格候选 | 暂无现成商品，见 ASSET_GAPS 的 GAP-V10（RenderHub Pak 36 37mm 可作外形近似，非同型号） | 灰盒占位（ASSET_GAPS §3.2） | [ ] 决定购买 |
+| V-VEH-ART-004 | Pak 40 | M3 | 免费条目（CGTrader / Free3D）的免费状态与许可均未核 | ① CGTrader 'Low Poly 7.5 cm Pak 40'｜https://cgtrader.com/3d-models/military/gun/low-poly-7-5-cm-panzerabwehrkanone-40-anti-tank-gun｜$20【搜索摘要】<br>② RenderHub Loss 'WW2 Pak 40 - Rigged'｜https://www.renderhub.com/loss/ww2-pak-40-rigged-panzerabwehrkanone｜约 16k 面，Extended Use，价格需确认 | 灰盒占位（ASSET_GAPS §3.2） | [ ] 决定购买 |
+| V-VEH-AIR-001 | P-47 | M3 | 免费无合格候选 | CGTrader 'United States fighter aircraft Republic P-47 Thunderbolt'（低模 PBR 约 1.2 万面，Royalty Free）｜https://cgtrader.com/3d-models/aircraft/military/united-states-fighter-aircraft-republic-p-47-thunderbolt｜$139【搜索摘要】 | 灰盒占位（十字形盒，仅过场/能力演出） | [ ] 决定购买 |
+| V-VEH-AIR-002 | Ju 87 | M3 | 免费无合格候选 | CGTrader 'ju87 b2 stuka 4k pbr game asset'｜https://www.cgtrader.com/3d-models/aircraft/military-aircraft/ju87-b2-stuka-4k-pbr-game-asset-for-unity-unreal｜价格需确认；GameDev Market 'WW2 German Dive Bomber Ju87 Stuka' https://gamedevmarket.net/asset/ww2-german-dive-bomber-ju87-stuka｜$26【搜索摘要】（买家留言称贴图缺失） | 同上 | [ ] 决定购买 |
+| V-VEH-AIR-003 | Bf 109 | M3 | 免费无合格候选 | RenderHub 'Bf-109 F'｜https://www.renderhub.com/game-ready-models/aircraft｜价格/面数需确认（未核实） | 同上 | [ ] 决定购买 |
+| V-VEH-AIR-004 | C-47（Airhead 过场） | M3 | 免费无合格候选 | CGTrader 合集 https://www.cgtrader.com/3d-model-packs/historic-air-superiority-and-logistics-collection-wwi-and-wwii（确认非 AI 制作）；Sketchfab 'WW2 US Military Transport Aircraft C-47 Skytrain' https://sketchfab.com/3d-models/ww2-us-military-transport-aircraft-c-47-skytrain-1aa07eceb48a48a091ce72a5580e8a28｜$29.99【搜索摘要】（Sketchfab Store 已关闭，价格来源存疑） | 同上 | [ ] 决定购买 |
+
+#### 建筑 / 自然 / 道具 / 特效（8）
+
+| 需求 ID | 需要什么 | 里程碑 | 为什么免费的不行 | 哪里可以买（商店｜商品｜URL｜价格｜证据） | 不买的后果 | 决定 |
+|---|---|---|---|---|---|---|
+| V-BLD-003 | 乡村教堂（可破坏钟楼） | M1 | Sketchfab 只见 CyArk 的 Normandy American Cemetery Chapel（页面标 premium）；Devon 废教堂扫描为 CC BY-NC-SA 且不在法国 | 暂无现成商品，见 ASSET_GAPS 的 GAP-V02 | 灰盒占位（ASSET_GAPS §3.2） | [ ] 决定购买 |
+| V-BLD-004 | 城镇街道模块 | M2 | Poly Haven `modular_urban_apartments_facade` 等风格非诺曼底，且 D-MOD 不允许改建筑本体 | 暂无现成商品，见 ASSET_GAPS 的 GAP-V02 | 灰盒占位（ASSET_GAPS §3.2） | [ ] 决定购买 |
+| V-BLD-005 | 阿登村舍（半木、石基、屋顶雪） | M4 | 免费无 | 暂无现成商品，见 ASSET_GAPS 的 GAP-V02 | 灰盒占位（ASSET_GAPS §3.2） | [ ] 决定购买 |
+| V-BLD-008 | 桥梁（石拱/木桥/桁架） | M2 | Poly Haven 仅 `modular_wooden_pier` 等，不适用 | 暂无现成商品，见 ASSET_GAPS 的 GAP-V13（本次未搜，建议补搜） | 灰盒占位（ASSET_GAPS §3.2）；或地形 + 通用结构件 | [ ] 决定购买 |
+| V-BLD-009 | 火车站（小站站房 + 站台） | M3 | 免费无 | 暂无现成商品，见 ASSET_GAPS 的 GAP-V13（本次未搜，建议补搜） | 灰盒占位（ASSET_GAPS §3.2） | [ ] 决定购买 |
+| V-NAT-008 | 水（河/池塘/海浪）材质与泡沫 | M4 | 需要着色器与泡沫贴图；ambientCG 无 | 暂无现成商品（ASSET_SHOPPING_LIST §4.5.1：视需求补搜；ASSET_GAPS 无专属 GAP 编号） | 纯色/引擎内置占位水面 | [ ] 决定购买 |
+| V-PRP-007 | 军用帐篷、伪装网 | M2 | 免费无 | CGTrader '3dt military base modular pack'｜https://www.cgtrader.com/3d-models/military/other/3dt-military-base-modular-pack｜风格需看图，价格需确认（未核实）；见 ASSET_GAPS 的 GAP-V12 | 灰盒占位（ASSET_GAPS §3.2） | [ ] 决定购买 |
+| V-FX-006 | 曳光/弹道线/弹壳 | M1 | 仅 victorcstr 包带弹壳（许可未写明，属 B 档） | 暂无现成商品；弹壳可能随武器包附带（Fab 美/德包为 FBX 单件，可能无弹壳，未核实） | 引擎内置粒子占位 | [ ] 决定购买 |
+
+### 9.2 音频：无合格免费候选（11）
+
+| 需求 ID | 需要什么 | 里程碑 | 为什么免费的不行 | 哪里可以买（商店｜商品｜URL｜价格｜证据） | 不买的后果 | 决定 |
+|---|---|---|---|---|---|---|
+| A-WPN-010 | G43/G41 | M1 | GDC 索引 `g43/gewehr` 命中 0；Freesound 未搜到 | Sonniss / A Sound Effect 'Weapons of World War II – Designed'｜https://sonniss.com/sound-effects/weapons-world-war-ii-designed/｜$38.50（原价 $55）[F]（含 G43；同时补 Garand 开火等 14 枪）；GCRadix 'Firearm Foley & Mechanics: WW2'（含 K43、G43）$119.40 [F]；BOOM 仅 Gewehr 41 | 静音占位；或用 Kar98k/M1 Carbine 声替代 | [ ] 决定购买 |
+| A-WPN-012 | StG 44 | M2 | GDC 索引 `stg/sturmgewehr` 命中 0；Freesound 无 | ① Diegetix 'WW2 Weapons: German & US'｜A Sound Effect｜https://www.asoundeffect.com/sound-library/ww2-weapons-german-us/｜$25–$40（页面区间）[F]（德包 54 条含 StG44；48 kHz/24-bit，无距离分层）<br>② BOOM 'World War II Firearms'｜https://www.boomlibrary.com/sound-effects/world-war-ii-firearms/｜$139–$269 [F]（Bundle 含 30 路麦克风做分层）；Sonniss 14 枪清单不含 StG44 | 静音占位；或用 MP40 / Kar98k 声替代（史实偏差） | [ ] 决定购买 |
+| A-WPN-013 | MG34 | M2 | GDC 与 Freesound 均无 | 暂无现成商品，见 ASSET_GAPS 的 GAP-A01（BOOM/Sonniss/Diegetix/GCRadix 清单均无 MG34） | MG42 声混音/变调替代（需负责人接受史实偏差） | [ ] 决定购买 |
+| B-AIR-001 | 航空炸弹落下 + 爆炸 | M3 | Freesound CC0 'aerial bomb falling whistle' 无结果；GDC 未检索到相关实录 | A Sound Effect 'Warfare 3 / Heavy Bombardment'｜https://www.asoundeffect.com/?p=760476（搜索所得，需核实）｜$199 [S]（未确认含航弹）；见 ASSET_GAPS 的 GAP-A15 | 静音占位；或用大爆炸 + 远炮合成（混音，需确认） | [ ] 决定购买 |
+| D-TNK-004 | 主炮发射（内/外视角）+ 装填 | M1 | 免费只有通用远炮（GDC Warfare Library `cannon_firing_forest_distant`）与现代坦克，无 75 mm Sherman 炮或 88 mm 实录 | Pole Position 'Sherman Cannon 75mm M4A1'｜A Sound Effect（测试环境域名链接，正式页未核实）https://int.test-env.asoundeffect.com/sound-library/sherman-cannon-75mm-m4a1｜$149 [S]（近/中/远 + wild foley，空包录制；Sonniss 另有 '75mm Sherman M4A1 Cannon' 疑为同一产品，PENDING）；BOOM WW2 Tanks / Panther 亦含炮声 | 通用远炮声替代（无近场） | [ ] 决定购买 |
+| D-TNK-005 | 坦克被击中/跳弹（内部回响） | M3 | 免费仅有枪打装甲板（GDC Warfare 2）等通用替代 | 暂无现成商品，见 ASSET_GAPS 的 GAP-A05（Warfare 2 金属板命中 $199 [F] 为替代） | 枪打装甲板 + 金属 Foley 替代 | [ ] 决定购买 |
+| F-AMB-005 | 远处战场交火/炮击床（成品） | M1 | Freesound CC0 'battlefield ambience' 仅合成/循环预设 | 暂无现成商品（用 B-ART-003、C-BUL-001、A-WPN-014 远场文件自己混成，属混音；Warfare 2/3 远层可复用） | 自混床 | [ ] 决定购买 |
+| G-VOX-002 | 德语战场喊话/痛呼 | M1 | Freesound 仅一条英语 'Germans!'；GDC 无德语军人喊话 | Shockwave-Sound 'SonicArchive Military Personnel German'｜https://shockwave-sound.com/sound-effects/12396/sonicarchive-military-personnel-german｜$30 [S]（46 条，16-bit/44.1 kHz，规格偏低，是否含 WW2 术语以试听为准） | 静音占位；仅用非语言痛呼 | [ ] 决定购买 |
+| G-VOX-004 | 指挥官口令（英、德短句） | M2 | GDC 'Military Radio Voices' 为现代美式无线电语音，年代不符 | 暂无现成商品，见 ASSET_GAPS 的 GAP-A09（可授权的系统化喊话库未找到；真人配音属"重新录音"，须负责人本人决定） | 静音占位；或现代无线电语音（人工试听后定） | [ ] 决定购买 |
+| I-PD-001 | 二战公共领域录音 | M4 | WW2 时期（1939–1945）录音在美国多数要到 2030s–2040s 才进 PD；NARA/Signal Corps 音轨多为事后配音 | 无（不建议；怀旧广播感用 H-RAD-001 后期处理）；需 NARA/LOC 或律师书面确认后才可考虑 | 静音占位 | [ ] 决定购买 |
+| J-IR-002 | 远距离炮声大空间 IR（3–6 s，户外） | M2 | 免费 IR 均为室内/大厅 | 暂无现成商品；可借 Pole Position 各库远距离麦直接取代部分需求（付费库见 ASSET_SHOPPING_LIST §4.2.6）；免费可用 Freesound 648945 大教堂 IR（非户外）作近似 | 用 GDC 真实远麦录音本身（已含环境反射） | [ ] 决定购买 |
+
+### 9.3 免费候选"仅可占位 / 达不到可发布品质"的关键项
+
+这些需求 ID **在 §8 里有免费候选**（不计入 §9.1/§9.2 的 60 项），但调研判断其精度、风格、型号或来源**不足以作为最终发布品质**；如果负责人想在零采购之外补强，这里是性价比线索。
+
+| 需求 ID | 需要什么 | 里程碑 | 为什么免费的不行 | 哪里可以买（商店｜商品｜URL｜价格｜证据） | 不买的后果 | 决定 |
+|---|---|---|---|---|---|---|
+| V-WPN-US-001 等全部第一人称武器 | 第一人称 25k–60k + 内部结构 + 可动部件 | M1 | A 档 3D 武器面数几乎全在 4.5k–20k（第三人称区间）；**没有第一人称级免费模型**；拆分枪机/弹匣需切分网格（D-MOD 待确认，GAP-V06） | CGTrader 'M1 Garand - Game and VR Ready'｜https://cgtrader.com/3d-models/military/gun/m1-garand-game-and-vr-ready｜$25【搜索摘要】；CGTrader 'M1 Garand With Complete Internals - Game Ready'（带内部结构）https://www.cgtrader.com/3d-models/military/gun/m1-garand-with-complete-internals-game-ready｜价格需人工确认 | M1 先用第三人称品质免费模型（GAP-V06 默认建议） | [ ] 决定购买 |
+| V-WPN-GE-001 | Kar98k（M0/M1） | M0 | 免费只有 Poly Haven 栓动步枪占位（19,985 三角，非 Kar98k） | Fab 'FPS World War Guns Pack – German'｜Raouf Benoudina｜https://www.fab.com/listings/13b4dea1-2849-480a-a3c7-b16fa5bd329a｜$19.99【核实】；含 Kar98k 2.6k 顶点、StG44、MP40、Luger P08（品质偏低，第三人称；许可证页未显示名称，待确认 Standard） | 用 Poly Haven 栓动步枪占位（不可冒充 Kar98k） | [ ] 决定购买 |
+| V-WPN-US-003/005/008 | Thompson、BAR、M1911A1（免费仅 Thompson 有 A 档；BAR/M1911 只有 B 档） | M1 | BAR 仅 CC-BY-SA/GPL；M1911 许可未写明 | Fab 'FPS World War Guns Pack – United States'｜https://www.fab.com/listings/00a8235f-055a-4532-9916-fe060949b9eb｜$19.99【核实】（Thompson 5.7k 顶点、M1911 2.5k、M1903 3k、BAR 4k；BAR 标注非 A2 版，需核对） | BAR/M1911 灰盒占位；或使用 B 档（负责人决定） | [ ] 决定购买 |
+| V-VEH-US-003 | M4 Sherman（M1 的 1 辆坦克） | M1 | 免费 Sherman 无贴图、未绑定、无内饰 | CGTrader 'Sherman M4 Gameready Rigged'｜https://www.cgtrader.com/3d-models/military/military-vehicle/sherman-m4-gameready-rigged｜$31【搜索摘要】（履带/轮随车体动，PBR 4K，Royalty Free；内饰未提） | 免费 Sherman + 单色材质 + 简化内饰盒（GAP-V01） | [ ] 决定购买 |
+| V-VEH-GE-004 | Panther | M3 | 免费版约 211.5k 三角，需大幅减面 | CGTrader 'Panzerkampfwagen V Panther G with texture pack GameReady'｜https://cgtrader.com/3d-models/vehicle/military-vehicle/panzerkampfwagen-v-panther-g-with-texture-pack-gameready｜$15【搜索摘要】（rigged，Royalty Free No AI）；'Panther G Tank' $5 https://cgtrader.com/3d-models/vehicle/military-vehicle/panther-g-tank-e909cd72-0ca7-456c-b390-b722e16d741f | 减面后使用免费版 | [ ] 决定购买 |
+| V-VEH-GE-005 | Tiger I | M3 | 免费只有 OGA Tiger（贴图许可存疑，B 档） | CGTrader 'Tiger 1 GameReady tank'（炮塔旋转/炮管俯仰/负重轮悬挂层级）｜https://cgtrader.com/3d-models/military/military-vehicle/tiger-1-gameready｜价格需确认；RenderHub max3ddd Tiger I｜https://www.renderhub.com/max3ddd/tiger-i-german-heavy-tank（65.5k 多边形，Extended Use；价格需确认）。含部分内饰的另一件 Tiger 被标注 AI 辅助制作，已排除 | 灰盒占位；或 B 档 OGA Tiger（负责人决定） | [ ] 决定购买 |
+| V-BLD-001/002 | 诺曼底石屋/农场（全套建筑） | M1 | 免费只有材质与非诺曼底扫描；D-MOD 不允许从零建模 | 暂无现成商品（CGTrader/Fab 只见中世纪/奇幻村庄套件，风格不符），见 ASSET_GAPS 的 GAP-V02 | 灰盒盒体 + Poly Haven 墙面材质（M1 画面不会出现像样的建筑） | [ ] 决定购买 |
+| V-BLD-006/007 | 大西洋壁垒碉堡与滩头障碍（A 档只有低模 M178；障碍只有 B 档包） | M4 | M178 仅 2.4k 三角；障碍/沙袋只有许可未写明的 itch 包 | CGTrader 'D-Day Atlantik Wall Collection'｜https://www.cgtrader.com/3d-model-packs/d-day-atlantik-wall-collection｜$89【搜索摘要】（21 件低模 PBR，含 6 种滩头障碍；Royalty Free）；CGTrader 'bunker m162'（Regelbau 带 3 LOD）https://www.cgtrader.com/3d-models/military/armor/bunker-m162；CGTrader 'WW2 Anti-tank Obstacle PBR Game ready' https://www.cgtrader.com/3d-models/military/other/ww2-anti-tank-obstacle-pbr-game-ready｜$5.99【搜索摘要】 | 免费 M178 低模 + B 档障碍包（负责人决定） | [ ] 决定购买 |
+| V-PRP-001/002/003 | 沙袋、铁丝网、反坦克障碍 | M1 | A 档无；只有一个许可未写明的 itch 包 | CGTrader 'sandbag pack 12 modular game ready assets with 4k pbr support'｜https://www.cgtrader.com/3d-models/military/other/sandbag-pack-12-modular-game-ready-assets-with-4k-pbr-support｜价格需确认；Flipped Normals 'Czech Hedgehog Obstacle WWII' https://flippednormals.com/product/czech-hedgehog-obstacle-wwii-2440（1,202 面，价格需确认） | B 档 itch 包（负责人决定）或灰盒盒体 | [ ] 决定购买 |
+| V-NAT-001 | 树篱 bocage（Carentan 战术核心） | M1 | 无扫描；Poly Haven 灌木 + 石墙材质只能拼装近似 | CGTrader/TurboSquid UK hedgerow 植物包｜https://www.cgtrader.com/3d-models/plant/leaf/uk-hedgerow-3d-collection｜$4–$40【搜索摘要】；**无真正的 bocage 土堤**，见 ASSET_GAPS 的 GAP-V03 | 灌木 + 土堤材质组合替代（碰撞/掩体判定按玩法数据） | [ ] 决定购买 |
+| V-NAT-004（农作物） | 麦/玉米农作物 | M2 | 免费无 | 暂无现成商品，见 ASSET_GAPS 的 GAP-V14 | 草 + 贴图平面 | [ ] 决定购买 |
+| V-ANM-001/002 | 第三人称步枪运动集、持枪匍匐 | M0/M1 | 免费只有 Mixamo/CMU 通用动作，无步枪专用 | MoCap Online 'Rifle Starter'｜https://mocaponline.itch.io/rifle-starter-anims｜$3.99【搜索摘要】（走/慢跑/蹲姿 + 瞄准）；MoCap Online Rifle Pro（Fab/官网，价格需确认）；kevdev 'Human Soldier Animations'｜https://kevdev.itch.io/human-soldier-animations｜$30【搜索摘要】（蹲走 8 向与匍匐） | Mixamo 通用动作 + 免费 MoCap Online 手枪包凑数 | [ ] 决定购买 |
+| V-FX-001..005 | 枪口焰、烟、爆炸、弹孔、血迹（写实） | M1 | 免费 2D 序列帧/贴花多为风格化或像素风 | RenderHub 'RC Art - Muzzle Effects'｜https://www.renderhub.com/reactorcore/rc-art-muzzle-effects｜CC-BY 4.0（需署名）；Fab '37 sprite sheet effects'｜https://fab.com/s/cc7e3fda26c2｜价格需确认；ducvu Gumroad '2D FX Explosion Pack' https://ducvu.gumroad.com/l/2d-fx-explosion-pack（风格偏风格化） | 免费 2D 序列帧（风格化）或引擎内置粒子 | [ ] 决定购买 |
+| A-WPN-001 | M1 Garand 开火声（M0） | M0 | 免费只有来源不明的 Freesound 条目（MP3 128 kbps） | Sonniss / A Sound Effect 'Weapons of World War II – Designed'｜https://sonniss.com/sound-effects/weapons-world-war-ii-designed/｜$38.50（原价 $55）[F]（96 kHz/24-bit，133 变体，含空仓 ping） | 接受来源不明的 Freesound 条目，或先用 M1903A3/Kar98k 近场声暂代 | [ ] 决定购买 |
+| A-WPN-005 | BAR 全自动 | M1 | 免费只有二连发 | 暂无现成商品，见 ASSET_GAPS 的 GAP-A02（BOOM 清单无 BAR；Designed 仅单发） | M1919 全自动 + EQ 替代 | [ ] 决定购买 |
+| A-WPN-011 / A-WPN-014 | MP40 近场、MG42 近/中/远与近距尾音 | M1 | MP40 只有 250 m 远场；MG42 只有山顶长点射 | Pole Position 'MG 42 Machine Gun'｜Sonniss｜https://sonniss.com/product/mg-42-machine-gun/｜$111.75（原价 $149）[F]（96 kHz/24-bit，183 文件，两地点长/短尾音，含操作声）；MP40 见 Sonniss Designed $38.50 [F] | MP40 用近场 SMG 声 + EQ 替代；MG42 用山顶样本 + 单层距离处理 | [ ] 决定购买 |
+| B-HVY-001 | Bazooka / Panzerschreck / Panzerfaust | M3 | 免费只有现代 RPG 与权属存疑的好莱坞母带 | The Warfare 2 Library｜Pole Position｜https://www.asoundeffect.com/sound-library/the-warfare-2-library｜$199 [F]（RPG、榴弹发射器、火炮，现代军演录制）；Sound Ideas 'Rockets & Missiles'｜$295 [S]；见 ASSET_GAPS 的 GAP-A03 | 现代 RPG + EQ 替代（史实偏差） | [ ] 决定购买 |
+| D-AIR-001 / B-AIR-002 | P-47 / Ju 87 Stuka / C-47 与扫射 | M3 | 免费无 P-47/C-47/Ju 87 真实实录 | A Sound Effect 'WW2 Aircraft'（约 $150，英国机场录制）[S]；Sound Ideas 'Sounds of War'｜https://sound-ideas.com/products/sounds-of-war-sound-effects-library｜$129 标价/约 $65 促销 [S]（含 Hurricane、Stukas、Flying Fortress）；A Sound Effect B-25 Mitchell 约 $125 [S]；Sound Ideas P-51 Mustang by BOOM $65 [S]；见 ASSET_GAPS 的 GAP-A06 | P-51D 替代（需接受音色偏差） | [ ] 决定购买 |
+| H-RAD-001 | WW2 年代无线电（PTT/静电） | M1 | 免费都是现代无线电 | A Sound Effect 'Squelch'（6 台电台/对讲机/CB 实录）[S，价格/URL 需核实]；MuseHub 老式电台静电 https://www.musehub.com/loops-and-audio/radios-and-tvs [S]（许可需读）；Sonniss 'Military Radio Voices' https://sonniss.com/product/military-radio-voices [S]；见 ASSET_GAPS 的 GAP-A10 | 现代对讲机声 + 带通/压缩（允许的后期） | [ ] 决定购买 |
+| I-MUS-001 / I-MUS-002 | "二战进行曲"风格配乐 | M1 | 免费 OGA/Incompetech 偏奇幻/电影化管弦 | Daniel Carl 'Top Secret WW2 Music Pack'｜https://danielcarlmusic.itch.io/top-secret-ww2-music-pack [S，许可需读]；Bobby Cole 'Warfare Soundtrack'｜https://bobbycolemusic.itch.io/warfare-spundtrack-25-tracks-vol-1 [S]；Redearth 'Battle Litany'｜https://redearthmusic.itch.io/battle-litany [S]；见 ASSET_GAPS 的 GAP-A13（价格调研未给出） | 接受奇幻/电影化管弦；或静音 | [ ] 决定购买 |
+| G-VOX-001 / G-VOX-003（台词类） | 英语士兵带语句台词、战场人群 | M1 | 免费只有非语言痛呼/咆哮与战斗群声 | Raketenfaust 'Army Voice Pack'｜https://raketenfaust.itch.io/army-voice-pack｜$4.49 起 [S]（155 条 WW2 士兵语音；许可需读）；A Sound Effect 'British Soldier Voices'（800+，英式）https://www.asoundeffect.com/sound-library/british-soldier-voices [S]；'Historical Battle Voices Vol. 1'（约 $33）[S]；见 ASSET_GAPS 的 GAP-A12 | 非语言痛呼/咆哮；台词暂缺 | [ ] 决定购买 |
+| C-BUL-004 / C-BUL-005 | 击中人体、压制感（低频冲击/耳鸣） | M1 | 免费只有设计/Foley 库；耳鸣未专门搜 | 暂无现成商品，见 ASSET_GAPS 的 GAP-A04；A Sound Effect 'Bullet Bys & Impacts'｜https://www.asoundeffect.com/?p=414565｜$29.99 [S]（先看文件清单确认是实枪录制） | 沙袋/泥土命中声叠加；AudioWorklet 滤波做压制 | [ ] 决定购买 |
+| D-TNK-001（车外循环） | Sherman 车外近/远发动机循环 | M1 | GDC 样本均为车载/车内 | Pole Position 'Sherman M4A3 Medium Tank'｜https://sonniss.com/product/sherman-m4a3-medium-tank｜$224.25 [F]（96 kHz/24-bit，183 文件/25.47 GB，16 车外 + 12 车内声道，Ford GAA V8） | 用车载样本 + 后期距离处理 | [ ] 决定购买 |
+| B-ART-001（近场） | 105 mm 榴弹炮近场（0–50 m） | M3 | GDC 样本只有远/中远 | Pole Position '105mm Howitzer Cannon'｜https://www.asoundeffect.com/sound-library/howitzer-cannon-105mm｜$149 [F]（27 声音，24/96，0–150 m 近/中/远；页面未写型号） | 用远/中远样本 + 后期 | [ ] 决定购买 |
+
+### 9.4 花最少的钱补最关键的缺口（"最小补缺"推荐清单）
+
+> 合并两份调研的建议：**视觉约 8 件、音频 3–5 个库**。**价格全部沿用现有清单（ASSET_SHOPPING_LIST §4 / §5.1）的原值，本次未重新核实**；【核实】= 清单读到商品页，【搜索摘要】= 摘要所见，【估算】= 无来源。这些仍受原 D-LIC 流程建议约束（CGTrader / RenderHub 的卖家确认），但按负责人 2026-11-17 指示可自行决定跳过。
+
+#### 9.4.1 视觉（8 件）
+
+| 序 | 需求 ID | 推荐商品 | 价格（未重新核实） | 理由 |
+|---|---|---|---|---|
+| 1 | V-CHR-US-001（含 -002 变体基础身体） | RenderHub albin 'SOLDIER WWII USA Paratrooper Rigged' 或 Alpenwolf 带绑定版 | 约 $60【搜索摘要】 | 免费完全没有；一个带绑定的美军士兵同时解决 M1 全部美军角色 |
+| 2 | V-CHR-GE-001 | CGTrader 'German Soldier Rig – WW2 Scanned Asset Pack' | 价格需确认；清单估 $40–80（按 $60 计）【估算】 | 德军侧同上 |
+| 3 | V-WPN-GE-001（含 -004、-005、-008） | Fab 'FPS World War Guns Pack – German' | $19.99【核实】 | 补 Kar98k 缺口；品质偏低（Kar98k 2.6k 顶点） |
+| 4 | V-WPN-US-003（含 -005、-008、-007） | Fab 'FPS World War Guns Pack – United States' | $19.99【核实】 | 补 BAR（A 档无）、M1903 与 Thompson 的统一风格 |
+| 5 | V-ANM-001 | MoCap Online 'Rifle Starter' | $3.99【搜索摘要】（Pro 价格需确认） | 免费库没有步枪专用动作 |
+| 6 | V-VEH-US-003 | CGTrader 'Sherman M4 Gameready Rigged' | $31【搜索摘要】 | 免费 Sherman 无贴图无绑定；M1 唯一一辆坦克 |
+| 7 | V-VEH-GE-004 / V-VEH-GE-003 | CGTrader Panther G（$15）/ Fab Panzer IV Production models（$25.99） | $15【搜索摘要】/ $25.99【核实】；合计 $40.99 | 对手坦克；免费 Panzer IV 已有，Panther 免费版高面数 |
+| 8 | V-BLD-006（含 -007） | CGTrader 'D-Day Atlantik Wall Collection'（21 件低模 PBR，含 6 种滩头障碍） | $89【搜索摘要】 | 一次补 BLD-006 与 BLD-007，让 Omaha（M4）有可用内容 |
+| | | **视觉小计** | **约 $325【估算】**（60 + 60 + 19.99 + 19.99 + 3.99 + 31 + 40.99 + 89 = 324.96；其中序 2 德军角色价格需确认，按 $60 计） | 调研原文同为"约 $325（估算）" |
+
+#### 9.4.2 音频（5 个库中先选 3–5 个）
+
+| 序 | 需求 ID | 推荐商品 | 价格（未重新核实） | 理由 |
+|---|---|---|---|---|
+| ① | A-WPN-001 / 002 / 010 / 008 / 015 … | Sonniss / A Sound Effect 'Weapons of World War II – Designed' | $38.50【核实】 | 一次补齐 Garand、Carbine、G43、M1911、Luger、BAR 单发、M1903、MG42、MP40、Thompson、M3 等 14 枪；填掉 G43 与 Garand 开火声两个免费缺口 |
+| ② | A-WPN-012（StG 44） | Diegetix 'WW2 Weapons: German & US' | $25–$40【核实，页面区间】 | 补免费完全空白的 StG 44（德包 54 条） |
+| ③ | D-TNK-004（主炮发射+装填） | Pole Position 'Sherman Cannon 75mm M4A1' | $149【搜索摘要】（产品页状态 PENDING） | 补 Sherman 炮近/中/远；预算紧可延后到 M3 |
+| ④ | G-VOX-002（德语喊话） | Shockwave-Sound 'SonicArchive Military Personnel German' | $30【搜索摘要】（规格偏低，需试听） | 补德语空白 |
+| ⑤ | A-WPN-014（MG42 近/中/远 + 长/短尾音） | Pole Position 'MG 42 Machine Gun' | $111.75【核实】 | 免费包里仅 1 个山顶长点射；MG42 是关键兵种声音，值得单买 |
+| | | **音频小计** | ①② = **$63.50–$78.50**（M0/M1 最关键）；①–④ = $242.50–$257.50；①–⑤ = **$354.25–$369.25** | 音频调研原文写"总计控制在约 $320 以内"，与五项相加不符（按其所列价格相加为 $354.25–$369.25），**本表按相加结果**；若只买到 ④ 则约 $243–$258；音频调研的整体上限提示为 ≤ US$300–$320 |
+
+#### 9.4.3 合计
+
+| 档 | 内容 | 合计（未重新核实） |
+|---|---|---|
+| 起步子集（M0 即可开工） | 序 3、4（两个 Fab 枪包 $39.98）+ 序 5（MoCap Online Rifle Starter $3.99）+ 音频 ①（$38.50） | **约 $82.47**（文档作者相加） |
+| 最小补缺（推荐） | 视觉 8 件 + 音频 ①–⑤ | **约 $680–$695【估算】**（≈ $325 + $354–$369） |
+
+> 注：未纳入的重要但无现成商品的缺口（诺曼底建筑、bocage、冬季角色、带内饰坦克、WW2 无线电/口令等）即使花这笔钱也**补不上**，见 §9.1 的"暂无现成商品"行与 ASSET_GAPS（外包价格见 ASSET_GAPS 各 GAP 的【估算】）。
+
+
+## 10. 覆盖率总览
+
+> 数字来自两份调研的计数（视觉 108 个需求 ID、音频 60 个需求 ID，共 168 个）；"准确可用"= 型号/用途对得上的 A 档候选数（**不等于品质达标**，也未下载验证）。视觉的"准确"归类是本节作者按调研原文的"近似/B 档"标注整理，已在 §8 逐行写明。
+
+### 10.1 类别 × 覆盖率
+
+| 类别 | 有免费候选数 | 总数 | 准确可用数 | 其余有候选者（近似/占位 · 仅 B 档） | 无候选（见 §9） |
+|---|---|---|---|---|---|
+| 武器（US 12 + GE 14） | 14 | 26 | 9 | 近似/占位 3 · 仅 B 档 2 | 12 |
+| 角色 | 0 | 9 | 0 | — | 9 |
+| 动画 | 7 | 10 | 0 | 近似（通用）7 | 3 |
+| 载具（US 7 + GE 7 + ART 4 + AIR 4） | 5 | 22 | 3 | 近似 1 · 仅 B 档 1 | 17 |
+| 建筑与掩体 | 5 | 10 | 1 | 近似 3 · 仅 B 档 1 | 5 |
+| 自然 | 7 | 8 | 5 | 近似 2 | 1 |
+| 道具 | 9 | 10 | 3 | 近似 2 · 仅 B 档 4 | 1 |
+| 特效 | 5 | 6 | 0 | 近似/仅可占位 5 | 1 |
+| 天空 | 3 | 3 | 2 | 近似 1 | 0 |
+| 字体 | 4 | 4 | 4（凭记忆 [M]） | — | 0 |
+| **视觉小计** | **59** | **108** | **27** | | **49** |
+| 音频：枪械 | 14 | 17 | 6 | 部分 8 | 3 |
+| 音频：爆炸与重武器 | 8 | 9 | 1 | 部分 7 | 1 |
+| 音频：子弹 | 5 | 5 | 3 | 部分 2 | 0 |
+| 音频：载具与飞机 | 6 | 8 | 3 | 部分 3 | 2 |
+| 音频：Foley | 3 | 3 | 1 | 部分 2 | 0 |
+| 音频：环境 | 5 | 6 | 4 | 部分 1 | 1 |
+| 音频：人声 | 2 | 4 | 0 | 部分 2 | 2 |
+| 音频：无线电与 UI | 3 | 3 | 2 | 部分 1 | 0 |
+| 音频：音乐 | 2 | 3 | 0 | 部分 2 | 1 |
+| 音频：IR | 1 | 2 | 0 | 部分 1 | 1 |
+| **音频小计** | **49** | **60** | **20** | | **11** |
+| **合计** | **108** | **168** | **47** | | **60** |
+
+读法：**环境层**（地表材质、天空、岩石、树、草、箱桶道具、字体）免费即可接近 AAA 水准（Poly Haven 与 ambientCG 是最强来源，V-NAT-007 地表是整个清单覆盖最强的一项）；**决定"像不像二战 FPS"的另一半——角色、载具、建筑、第一人称武器与动画——要么没有、要么只有第三人称/低模/无贴图品质**，D-MOD 约束下无法靠加工弥补。音频方面：Sonniss GDC 里有大量真实二战型号样本（Thompson、M3、BAR、M1919A4、MG42、MP40、K98k、M1903A3、M1911A1、P38、Sherman、Panzer IV/Panther、Opel Blitz、M101 榴弹炮等），但每个库仅 2–4 个文件。
+
+### 10.2 里程碑：只用免费素材时的状态
+
+| 里程碑 | 可达到可玩的部分（免费） | 停留在灰盒/静音占位的部分 | 结论 |
+|---|---|---|---|
+| **M0** 技术验证 | 地形材质、HDRI 天空、冷杉植被、岩石、步枪（Garand A 档，第三人称品质）、Mixamo 基础动画、枪口焰/爆炸 2D、字体；音频：Kar98k 开火 + 拉栓、Garand ping/换夹、子弹 whizz、泥地脚步、UI | bot 角色（Mixamo/Kenney/Quaternius 通用人形，不是 WWII 兵）；第一人称武器与手臂；步枪专用动画（用手枪/通用动作凑）；Garand 开火声（需接受来源不明的 Freesound 条目，或以栓动枪声暂代） | **M0 目标可达成，不依赖付费** |
+| **M1** 垂直切片 | Garand/Thompson/MP40/StG44/MG42（第三人称品质，需减面/贴图修整）；Sherman（25–30k，无贴图无绑定）；Panzer IV（有 PBR）；箱/桶/油桶/电台；冷杉与草灌；地表与天空；音频：Thompson、M3、M1919、M1911A1、M1903A3、K98k、MP40（仅远场）、P38/Luger、Sherman M4A3 车载引擎/履带、跳弹/远炮、乡村环境床、士兵痛呼、Battle Crowd | **全部 5 个兵种的美/德角色**；Kar98k（只有近似占位）；BAR（仅 SA/B 档；音频仅二连发）；M1 Carbine 模型；**诺曼底石屋/农场/教堂/街道**（灰盒盒体 + Poly Haven 墙面材质，GAP-V02）；树篱 bocage；第一人称手臂与动画；坦克内饰与炮塔可动件；载具乘员动画；水；音频：BAR 全自动、G43、Sherman 主炮、人体命中、无线电（现代对讲机 + 后期）、美式台词、室外 IR | **能出"能打、能玩的灰盒战场"，但画面里不会出现像样的士兵与建筑，不满足垂直切片的"展示画质"目的** |
+| **M2** 完整 Frontline | 同 M1；Battle Crowd walla；MP40/Thompson 额外样本 | 另缺：桥梁、火车站、帐篷、农作物、欧式电线杆/围栏、写实血迹/弹孔；音频：StG 44（无）、MG34（无，用 MG42 替代）、德语喊话、口令、户外长尾 IR | **100 人压测可做（占位模型足够）**，"完整 Carentan 的视觉"仍是灰盒 + 通用材质 |
+| **M3** 全兵种、全载具、Assault、指挥官能力、火炮 | Sherman/Panzer IV/Panther；105 mm（M101 远/中远）、迫击炮发射、各坦克与卡车引擎声、P-51D/Spitfire 掠过、转塔声 | M8、M5A1、M3 半履带、GMC CCKW、Willys、Puma、Luchs、Opel Blitz、Sd.Kfz.251、火炮 4 项、飞机 4 项全灰盒；Bazooka/Panzerschreck/M1919A6/手雷/地雷多为近似或缺；角色变体（军官/医护/坦克兵/狙击手）缺；动画缺救治、载具乘员、第一人称全套；音频：航空炸弹、Stuka 警笛、P-47/C-47、GMC/Willys、坦克被击中、来袭哨声 | 载具与重武器大面积灰盒/替代 |
+| **M4** Omaha、Foy、Skirmish、优化、公开测试 | 沙/卵石/海崖/岩石材质与模型；**Regelbau M178 低模** + 1–2 个扫描碉堡（B 档 NC-SA）；**Foy 的 Easy Company 散兵坑扫描（CC BY，直接相关）**、雪面材质、雪天 HDRI、冷杉；音频：海浪、冬林环境 | 滩头障碍（仅 B 档低模）；水/海浪（无）；登陆艇（仅 B 档包里一个）；冬季德/美军角色全缺；村舍/教堂全缺；二战 PD 录音（无） | 环境可用，人物与建筑仍灰盒 |
+
+### 10.3 调研局限（诚实声明）
+
+1. **Sketchfab 站内筛选未能使用**（调研没有站内搜索，无法用 `Downloadable` + 许可过滤器），只能经通用网页搜索逛 Sketchfab，**召回率偏低**；很多条目的许可只是搜索摘要（[S]）；WebFetch 对部分 Sketchfab 页面返回空。
+2. **"没搜到 ≠ 不存在"**：§9 里"无合格免费候选"只代表"本次搜索未见"，不代表平台上不存在。
+3. 视觉调研**没有打开任何素材文件**，无法评估实际质量、比例、UV、绑定、贴图分辨率、历史准确性；音频调研**没有下载或聆听任何文件**，GDC 条目仅凭第三方索引的文件名/大小，Freesound 条目仅凭页面描述（WebFetch 经小模型摘要，个别 URL、时长、描述可能有转写误差）。
+4. Megascans/Fab 免费内容只读到新闻层面，**没有逐个打开 Fab 商品页**，因此 Fab 里的具体免费资产未列入候选，只作为渠道。
+5. 版权细节：真实商标、纳粹符号需要按 D-MOD 例外处理；扫描类文物若含涂装/徽章同样适用。
+6. 凭记忆未核实：Mixamo 具体步枪动画、字体 OFL 文本、Mixamo/CMU 条款的官方原文。
+7. 对照总纲：调研的 B 档（NC/SA/未写明）与总纲 §7 R12 的原红线口径不同；按负责人 2026-11-17 指示，B 档由负责人逐项决定，不再自动排除。
+8. 音频 B 档中 **CC-BY-NC / CC-BY-SA / 个人使用的完整候选未系统检索**（把 Freesound 搜索过滤串换成 `license:"Attribution NonCommercial"` / `license:"Attribution ShareAlike"` 即可补搜，约 1–2 小时）。
+
+### 10.4 建议人工补搜的需求 ID
+
+**Sketchfab 用 `Downloadable` + `CC Attribution / CC0` 过滤器补搜**（优先级从高到低）：
+
+- 角色（最大缺口）：V-CHR-US-001、-002、-003、-004；V-CHR-GE-001、-002、-003、-004；V-CHR-FPA-001（带 "rigged" 的 CC-BY 军人模型可能存在）。
+- 武器：V-WPN-GE-001（Kar98k）、V-WPN-GE-002、V-WPN-GE-003（G43）、V-WPN-GE-006（MG34）、V-WPN-US-002（M1 Carbine）、V-WPN-US-006、V-WPN-US-007、V-WPN-US-009（Bazooka）、V-WPN-GE-009（Panzerschreck）、V-WPN-GE-012、V-WPN-GE-014；对已有线索的许可确认：V-WPN-US-005 的两个 Sketchfab 低模、V-WPN-US-003 的 'Thompson M1A1 Machine Gun'（24.8k）与 'm1-thompson'（23.8k）、V-WPN-US-001 的 'M1 Garand Rifle'（ikonane，约 10.9k）与 'low poly m1 garand'（3.9k）。
+- 载具：V-VEH-US-007（Jeep）、V-VEH-US-006（M3 半履带）、V-VEH-US-001/002/005、V-VEH-GE-001/002/006/007、V-VEH-ART-001..004（含 Pak 40 的 CGTrader/Free3D 免费状态确认）、V-VEH-AIR-001..004。
+- 建筑与场景：V-BLD-001..005（诺曼底民居）、V-BLD-008/009（桥梁、火车站，调研本次未搜）、V-BLD-007 与 V-PRP-001/002/003 的 Sketchfab 线索（Czech Hedgehog Seaweed、Panzerschokolade 的 Czech Hedgehog、Barbed Wire Fence WWII）、V-PRP-010（destroyed M4A1E9 sherman）、V-NAT-001（bocage）、V-NAT-008（水）。
+
+**音频补搜**（Freesound CC0 过滤，逐表面/逐用途）：E-FTS-001 的草、碎石、雪、石板、木地板、浅水（组合查询结果为 0，需分别搜）；E-ACT-001 的包扎与建造敲打；F-AMB-006 民居房间底噪；C-BUL-002 的木、沙袋、水命中；C-BUL-005 耳鸣高频声；D-TNK-004/005 的专用坦克炮/被击中；B-AIR-001 航空炸弹；J-IR-001/002 的室外/森林 IR（OpenAIR 站点当时 503，需重试）；B 档中 CC-BY-NC / CC-BY-SA 条目。
+
+**未逐站搜索**：Pixabay、Mixkit、Zapsplat、SoundBible、99Sounds、freeSFX 的具体军事音效；Wikimedia Commons 3D、Europeana、The Tank Museum、BlenderKit 登录后内容、textures.com、Fab 免费列表的 WWII 过滤结果（本次摘要只见一件 Cornwall 混凝土碉堡扫描，价格与许可未读）；A Sound Effect / BOOM 免费赠品清单。
+
+### 10.5 调研时未能访问的站点
+
+| 站点 | 状态 | 影响 |
+|---|---|---|
+| Smithsonian Open Access 3D（3d.si.edu、airandspace.si.edu） | 403 | 目录未能访问；搜索未见任何 WWII 实物扫描（仅一战法军头盔/水壶） |
+| OpenGameArt（FAQ 及部分条目页，如 bullet decal、War Theme） | 403 | 相关许可来自搜索摘要，需到原页复核 |
+| OpenAIR（约克大学 IR 库） | 503 | 户外/森林 IR 未能核实 |
+| Musopen | 403 | 仅搜索摘要 |
+| Zapsplat 官方许可页 | 403 | 条款来自搜索摘要 |
+| BBC Sound Effects 条款 | 拒绝抓取 | 沿用"仅个人/教育/研究" |
+| freeSFX 条款 | 仅见协议标题 | 未核实 |
+| Adobe Mixamo 官方 FAQ | 403 | 许可为社区转述 |
+| CMU Mocap 官方 FAQ | 503 | 许可为摘要转述 |
+| Sketchfab 部分模型页 | WebFetch 返回空 | 仅搜索摘要 |
+| Google Fonts 'Saira Stencil One' license 子页 | 404 | OFL 凭记忆 |
+| BlenderKit | 301，未再抓取 | 凭记忆，未核实 |
+| Fab 若干商品页（如 36 件 PBR 军械包） | 404 / 未打开 | 免费状态未核实 |

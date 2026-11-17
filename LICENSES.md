@@ -4,6 +4,8 @@
 > 采购流程见 `docs/ASSET_SHOPPING_LIST.md`；找不到现成素材的项目见 `docs/ASSET_GAPS.md`。
 > 本文不是法律意见。章节编号稳定，其它文档按 "LICENSES.md §3" 引用，请勿重排。
 
+> **注记（2026-11-17，负责人新指示，当前生效）**：素材（模型、音效）优先使用免费资源，**许可证不再深究**——每件素材只需登记 asset_id、需求 ID、名称、作者、来源 URL、页面标注的许可、下载日期、是否需要署名，**详见本文 §6"简化登记（当前生效）"**。下文 §1–§4 的详细规则（5 项核对、书面确认、`PENDING` 不得入库、证据存档等）与 §2 的详细字段**保留为可选**——仅在购买付费素材时作为建议。免费素材的清单与来源见 `docs/ASSET_SHOPPING_LIST.md` §8，找不到免费素材的项目见其 §9。
+
 ---
 
 ## 1. 登记规则
@@ -128,3 +130,62 @@
 - 需个案评估：LGPL、MPL-2.0 及其它弱 copyleft（由 `cargo-deny` 报出后，负责人逐案决定）。
 - 任何新增依赖都必须通过 CI 的许可证检查（`cargo deny` / `license-checker`），未知许可证一律阻断合并。
 - 服务器端依赖（不随游戏分发给玩家）可适度放宽，但仍须登记；公开测试前再复核一次。
+
+---
+
+## 6. 简化登记（当前生效）
+
+> 依据：负责人 2026-11-17 指示（总纲 R12 零采购基线）。**本节优先于 §1–§4 中与之冲突的表述**（"必须书面确认""`PENDING` 不得入库""5 项逐条核对""许可证全文/邮件存档"等对免费素材不再是硬性要求）。本文不是法律意见。
+
+### 6.1 每件素材只需登记这些
+
+在 §3 的台账表里追加一行（列名沿用 §2，管线按表头列名解析；§2 的其它列可省略或填 `—`）：
+
+| 列 | 填什么 |
+|---|---|
+| `asset_id` | `AST-{需求ID}-{NN}`（同 §2） |
+| `req_id` | 需求 ID（如 `V-WPN-GE-007`、`A-WPN-009`）；通用免费包（如 Sonniss GDC）填 `—` 并在 `notes` 写用途 |
+| `name` | 素材名称（来源页标题） |
+| `author_vendor` | 作者 / 厂牌 |
+| `url` | 来源页面 URL（`ASSET_SHOPPING_LIST.md` §8 已列出候选的链接） |
+| `license_name_version` | **页面标注的许可名称**，如 `CC0`、`CC BY 4.0`、`Fab Standard License`、`CGTrader Royalty Free License`、`Sonniss GameAudioGDC License`；页面没写就填 `未写明` |
+| `purchase_date` | 下载日期 `YYYY-MM-DD`（免费素材的"购买日期"） |
+| `chk_attribution` | `NONE` 或 `REQUIRED`：**CC-BY 一律 `REQUIRED`**；`REQUIRED` 时必须填 `credit_text`，条目自动进入游戏内 Credits（§4） |
+| `status` | 见 §6.2 |
+| `notes` | 一句话备注（如"来源页截图已存"、"B 档：页面标注 CC-BY-NC"、"已排查游戏提取"） |
+
+可选（想存证时再填）：`license_text_path`、`confirmation_path`、`raw_path`、`allowed_processing`、5 项核对列。**不再要求**卖家书面确认、`licenses/confirmations/`、发票存档。
+
+### 6.2 状态：枚举保留，免费素材默认 `OK` 或 `FLAGGED`
+
+| 状态 | 含义 | 何时用 |
+|---|---|---|
+| `OK` | 可以进入构建 | **来源页有明确许可**（CC0、公共领域、CC-BY、平台免费商用许可等，即 `ASSET_SHOPPING_LIST.md` §8 的 A 档）；免费素材登记时的默认值 |
+| `FLAGGED` | 登记在案，**等待负责人决定是否使用** | **B 档**：页面标注 CC-BY-NC / CC-BY-SA / CC-BY-NC-SA / CC-BY-NC-ND / 仅个人使用 / **许可未写明** / **来源存疑**（权属或出处无法判断）。负责人决定使用 → 改 `OK` 并在 `notes` 追加"owner-accepted YYYY-MM-DD 原因"；决定不用 → 改 `REJECTED`。 |
+| `PENDING` | 保留，仅用于**付费素材**等待卖家书面确认的情形（§1 规则 5） | 免费素材**不再因许可不确定而使用 `PENDING`** |
+| `REJECTED` | 已排除，保留台账行防止重复下载；文件必须从 `assets/incoming/` 删除 | 命中下面 §6.4 的排除项，或 B 档被负责人否决 |
+
+> 给 `asset-pipeline` / `ingest` 相关任务的备注：`FLAGGED` 是在原三值枚举上新增的第四个值，**构建校验默认把 `FLAGGED` 视同 `PENDING`（不进主分支、不上传对象存储）直到负责人改成 `OK`**；`OK` 的免费素材无需 `confirmation_path` 即可通过。若校验脚本只识别 `OK/PENDING/REJECTED`，需要兼容该值（不改动 §1–§3 的既有字段与枚举）。
+
+### 6.3 署名（CC-BY）
+
+- `chk_attribution = REQUIRED`（CC-BY 与要求署名的免费档，如 Zapsplat 免费账号须署名 "ZapSplat"）：必须填 `credit_text`（标题 + 作者 + 链接 + 许可名），由 `credits` 步骤自动汇总进游戏内 Credits（§4.3）；漏填会被 §4.4 的台账校验报出。
+- CC0 / Sonniss GameAudioGDC / Kenney 等不要求署名：填 `NONE`，作者"欢迎署名"的可在 `notes` 标 `voluntary`。
+- 当前零采购方案预计需署名条目很少（主要是 CC-BY 的模型与音乐，调研估计音频侧 3–10 条）。
+
+### 6.4 排除项（唯一保留的硬性排除）
+
+下列素材**不得登记为候选，也不得进入 `assets/incoming/`**；已发现的登记为 `REJECTED`：
+
+1. **从商业游戏或电影提取、拆包、翻录的素材**（含标题/标签/描述出现游戏名或 "ripped / extracted / from game" 的模型与音效，含 Freesound 上的游戏翻录）；
+2. **盗版合集**；
+3. **倒卖的盗版包**（**包括闲鱼等二手平台上转卖的模型包**）；
+4. **来源不明的网盘资源**（论坛/网盘"WW2 资源合集"类）。
+
+理由：这类素材的"作者"无权授权，页面标了免费或 CC 也一样；一旦混入，整个游戏的授权链失效，且违背"不自制、不 AI 生成、只用正规现成素材"的原则。识别方法见 `docs/ASSET_SHOPPING_LIST.md` §2.3 检查表与 §8.22 已排除清单；每件素材登记时在 `notes` 写"已排查提取"即可。
+
+### 6.5 其它仍然有效的约定
+
+- 仍不自制、不 AI 生成；`allowed_processing` 仍以 D-MOD 为准（可选填）。
+- 处理后素材仍只以 `.fpak` 分块容器交付（D-PAK）；源文件不进公开 CDN；未登记的素材管线仍应拒绝处理（§1 规则 1，登记成本已降到 §6.1 的几列）。
+- 免费平台素材可随时被替换：用同一需求 ID 的新素材替换时，把旧行状态改 `REJECTED` 或在 `notes` 追加"superseded by AST-…"。
