@@ -51,7 +51,7 @@ which references of an invalid fixture are resolved.
 | Layer | Tool | Checks |
 |---|---|---|
 | Full validation (CI `data-validate`, <2 min) | `node tools/data-validate/index.mjs [--root data] [--json]` | JSON Schema, unit suffixes, references, `_meta`/tunable, ranges. One error per line `path:jsonpointer: message`, exit 1 on any error. `--fixtures` runs the fixture suite. |
-| Build time | `crates/sim/build.rs` | Parses every weapon/role/loadout/vehicle file into `deny_unknown_fields` typed structs (`src/data_defs.rs`); a missing/unknown field fails `cargo build`. Computes `DATA_HASH`. |
+| Build time | `crates/sim/build.rs` | Parses every weapon/role/loadout/vehicle file and `rules/respawn.json` into `deny_unknown_fields` typed structs (`src/data_defs.rs`); a missing/unknown field fails `cargo build`. Computes `DATA_HASH`. |
 
 Tests: `pnpm data:test` (rules, fixtures, CLI per fixture), `cargo test -p frontline-sim data_`.
 
