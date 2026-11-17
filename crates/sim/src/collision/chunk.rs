@@ -20,7 +20,10 @@ pub const CHUNK_FILE_LEN: usize = HEADER_LEN + N_H * 2 + N_M;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CollisionError {
     /// Wrong byte length (truncated or oversized).
-    BadLength { expected: usize, got: usize },
+    BadLength {
+        expected: usize,
+        got: usize,
+    },
     BadMagic,
     BadVersion(u8),
     /// `samples` field is not 65.
@@ -64,7 +67,11 @@ impl CollisionChunk {
     /// untrusted input).
     pub fn new(bx: i32, bz: i32, heights_m: Vec<f32>, material_ids: Vec<u8>) -> Self {
         assert_eq!(heights_m.len(), N_H, "heights_m must hold 65*65 samples");
-        assert_eq!(material_ids.len(), N_M, "material_ids must hold 64*64 cells");
+        assert_eq!(
+            material_ids.len(),
+            N_M,
+            "material_ids must hold 64*64 cells"
+        );
         let min_h = heights_m.iter().copied().fold(f32::INFINITY, f32::min);
         let max_h = heights_m.iter().copied().fold(f32::NEG_INFINITY, f32::max);
         Self {

@@ -6,9 +6,7 @@
 
 use glam::Vec3;
 
-use super::{
-    CollisionChunk, CollisionData, CHUNK_CELLS, CHUNK_SIZE_M, MAX_WALK_SLOPE_DEG,
-};
+use super::{CollisionChunk, CollisionData, CHUNK_CELLS, CHUNK_SIZE_M, MAX_WALK_SLOPE_DEG};
 
 const RAD_TO_DEG: f32 = 57.295_78;
 const BARY_EPS: f32 = 1e-5;
@@ -185,7 +183,7 @@ impl CollisionData {
     /// metres. A ray starting below the surface hits at `t = 0`.
     pub fn raycast(&self, origin: Vec3, dir: Vec3, max_t: f32) -> Option<RayHit> {
         let len = dir.length();
-        if !(len > 1e-9) || !origin.is_finite() || !(max_t >= 0.0) {
+        if len.is_nan() || len <= 1e-9 || !origin.is_finite() || max_t.is_nan() || max_t < 0.0 {
             return None;
         }
         self.trace(origin, dir / len, max_t).hit
@@ -200,7 +198,9 @@ impl CollisionData {
             return false;
         }
         if len < 1e-6 {
-            return self.surface_at(from.x, from.z).is_some_and(|s| from.y >= s.0);
+            return self
+                .surface_at(from.x, from.z)
+                .is_some_and(|s| from.y >= s.0);
         }
         let t = self.trace(from, d / len, len);
         t.hit.is_none() && !t.missing
@@ -258,6 +258,20 @@ impl CollisionData {
         if t_in > 0.0 || t_out < max_t {
             out.missing = true;
         }
+        // Clip to the height band of the loaded terrain: nothing can be hit outside it.
+        let (ymin, ymax) = (self.height_range.0 - 1e-3, self.height_range.1 + 1e-3);
+        if d.y.abs() < 1e-12 {
+            if o.y > ymax || o.y < ymin {
+                return out;
+            }
+        } else {
+            let (mut ta, mut tb) = ((ymin - o.y) / d.y, (ymax - o.y) / d.y);
+            if ta > tb {
+                std::mem::swap(&mut ta, &mut tb);
+            }
+            t_in = t_in.max(ta);
+            t_out = t_out.min(tb);
+        }
         if t_in > t_out {
             return out;
         }
@@ -291,8 +305,16 @@ impl CollisionData {
         };
         let mut tmax_x = next_bound(cx, step_x, o.x, d.x);
         let mut tmax_z = next_bound(cz, step_z, o.z, d.z);
-        let tdx = if step_x != 0 { 1.0 / d.x.abs() } else { f32::INFINITY };
-        let tdz = if step_z != 0 { 1.0 / d.z.abs() } else { f32::INFINITY };
+        let tdx = if step_x != 0 {
+            1.0 / d.x.abs()
+        } else {
+            f32::INFINITY
+        };
+        let tdz = if step_z != 0 {
+            1.0 / d.z.abs()
+        } else {
+            f32::INFINITY
+        };
 
         let mut t_cur = t_in;
         let mut cache_key = (i32::MIN, i32::MIN);
@@ -382,7 +404,11 @@ fn cell_hit(
     if t > max_t {
         return None;
     }
-    let (e1, e2) = if tri2 { (dd - c, b - c) } else { (c - a, b - a) };
+    let (e1, e2) = if tri2 {
+        (dd - c, b - c)
+    } else {
+        (c - a, b - a)
+    };
     let mut n = e1.cross(e2).normalize();
     if n.y < 0.0 {
         n = -n;

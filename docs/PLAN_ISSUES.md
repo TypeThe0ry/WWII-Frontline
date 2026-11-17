@@ -194,3 +194,15 @@
 - **受影响任务**：M0-010/011/012/013（沿用 World 接口）、M0-014（sim-wasm 自带 wasm-bindgen，不受影响）、M0-029/M0-030（CI 命令）。
 - **临时处理**：按此实现。
 - **裁决（Fable 填写）**：
+
+### PI-013 M0-010：Rapier 0.36.1 精确锁定与特性取舍；查询自写、Rapier 仅作碰撞世界；若干接口细化
+
+- **状态**：open
+- **类别**：依赖 / 接口细化
+- **提出者 / 日期**：M0-010 / 2026-11-17
+- **问题**：①依赖：`rapier3d = "=0.36.1"`，`default-features=false`，features = `dim3, f32, std, enhanced-determinism`（不开 `simd-*`、`parallel`、`profiler`（会引入 web-time）、`serde-serialize`）。`enhanced-determinism` = `simba/libm_force + parry3d/enhanced-determinism`，在 wasm32-unknown-unknown 下可构建，`check-deps` 仍通过（传递依赖 nalgebra 0.35 / parry3d 0.31 / glamx 0.3 / simba / wide / spade 等，许可均为 Apache-2.0 或 MIT/Zlib 系，在 deny 白名单内；本机无 cargo-deny，未实跑）。注意：Rapier 0.36 的 API 已不同于任务书假定的旧版（`PhysicsWorld`、`QueryPipeline<'a>` 借用式、数学类型为 glamx），KCC 为 `rapier3d::control::KinematicCharacterController::move_shape`。②native 与 wasm32 的逐位一致性：本机只能验证 native；`CollisionData::state_hash()` 已纳入区块样本与碰撞体顺序，M0-014/M0-029 应在 wasm 与 native 上各算一次比对。③任务书写"射线可用 Rapier QueryPipeline 或自写 DDA"：采用自写 1 m 网格 DDA（两三角形/格，对角线与 Rapier 非 zigzag 高度场一致），`height_at` 取双线性（验收 3 的参考），法线/坡度/射线用三角形面。实测 Rapier 0.36.1 对个别跨多个高度场碰撞体的长射线会漏检（3000 条随机射线中 1 条，原点(219.72,27.71,241.73)、方向(0.254,-0.200,-0.946)；自写结果经暴力步进验证正确），故不以 Rapier 射线作为权威。④接口：`CollisionChunk::from_bytes(bx, bz, bytes)`（文件头不含 bx/bz，须调用方传入；与任务书 `from_bytes(&[u8])` 的差异）；`WorldView::height_at` 改为返回 `Option<f32>`（缺块为 None）；`los` 在线段进入未载入区块/起点在地下时返回 false；`World::collision()` 暴露 `&CollisionData`；`World::new` 内部 `clone()`（Clone 重建 Rapier 世界，按 (bz,bx) 升序）。⑤基准未用 criterion（保持与 `world_step_empty` 相同的 `Instant` 手写 harness，避免新增 dev 依赖）。⑥`state_hash()` 为 `CollisionData` 的独立摘要，未并入 `World::state_hash`（静态数据，且避免改动 determinism golden）。
+- **证据**：crates/sim/src/collision/*；tests/collision_*.rs；`cargo bench -p frontline-sim --bench collision`；tasks/STATUS.md M0-010 行。
+- **建议方案**：接受；M0-011 的 KCC 直接用 `CollisionData::physics().world().query_pipeline()`。
+- **受影响任务**：M0-011（KCC）、M0-012（弹道用 `raycast`）、M0-014/M0-029（wasm 构建与 native/wasm 一致性）、M0-022（缺块限制）。
+- **临时处理**：按此实现。
+- **裁决（Fable 填写）**：

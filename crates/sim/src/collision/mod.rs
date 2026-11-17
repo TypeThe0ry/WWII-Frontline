@@ -54,6 +54,8 @@ pub struct CollisionData {
     physics: TerrainPhysics,
     /// `[min_bx, max_bx, min_bz, max_bz]` of the loaded chunks.
     bounds: Option<[i32; 4]>,
+    /// `(min, max)` height over all loaded chunks; lets ray casts clip to the relief band.
+    height_range: (f32, f32),
 }
 
 impl std::fmt::Debug for CollisionData {
@@ -116,6 +118,12 @@ impl CollisionData {
     }
 
     fn recompute_bounds(&mut self) {
+        self.height_range = self
+            .chunks
+            .values()
+            .fold((f32::INFINITY, f32::NEG_INFINITY), |a, c| {
+                (a.0.min(c.min_height()), a.1.max(c.max_height()))
+            });
         self.bounds = self.chunks.keys().fold(None, |acc, &(bz, bx)| match acc {
             None => Some([bx, bx, bz, bz]),
             Some([a, b, c, d]) => Some([a.min(bx), b.max(bx), c.min(bz), d.max(bz)]),

@@ -53,17 +53,29 @@ fn main() {
     for _ in 0..10_000 {
         let (x, z) = (rng.range(0.0, 256.0), rng.range(0.0, 256.0));
         let y = d.height_at(x, z).unwrap() + rng.range(0.5, 30.0);
-        let dir = Vec3::new(rng.range(-1.0, 1.0), rng.range(-0.5, 0.5), rng.range(-1.0, 1.0)).normalize();
+        let dir = Vec3::new(
+            rng.range(-1.0, 1.0),
+            rng.range(-0.5, 0.5),
+            rng.range(-1.0, 1.0),
+        )
+        .normalize();
         rays.push((Vec3::new(x, y, z), dir, rng.range(1.0, 800.0)));
     }
-    // Worst case: eye-level, level rays that leave the map without hitting (full traversal).
+    // Worst case: level rays inside the relief band (1..11 m) that mostly leave the map (full traversal).
     let mut flat = Vec::with_capacity(10_000);
     for _ in 0..10_000 {
         let (x, z) = (rng.range(0.0, 256.0), rng.range(0.0, 256.0));
         let a = rng.range(0.0, std::f32::consts::TAU);
-        flat.push((Vec3::new(x, 30.0, z), Vec3::new(a.cos(), 0.0, a.sin()), 800.0));
+        flat.push((
+            Vec3::new(x, 6.0, z),
+            Vec3::new(a.cos(), 0.0, a.sin()),
+            800.0,
+        ));
     }
-    for (name, set) in [("collision_raycast", &rays), ("collision_raycast_worst_level_miss", &flat)] {
+    for (name, set) in [
+        ("collision_raycast", &rays),
+        ("collision_raycast_worst_level_in_relief", &flat),
+    ] {
         let mut times = Vec::new();
         let mut hits = 0;
         for run in 0..21 {
@@ -89,7 +101,13 @@ fn main() {
     }
     // ground_probe
     let pts: Vec<Vec3> = (0..10_000)
-        .map(|_| Vec3::new(rng.range(0.0, 256.0), rng.range(2.0, 14.0), rng.range(0.0, 256.0)))
+        .map(|_| {
+            Vec3::new(
+                rng.range(0.0, 256.0),
+                rng.range(2.0, 14.0),
+                rng.range(0.0, 256.0),
+            )
+        })
         .collect();
     let mut times = Vec::new();
     for run in 0..21 {
@@ -106,5 +124,8 @@ fn main() {
         }
     }
     let m = median(times);
-    println!("ground_probe: 10000 probes, median {m:.3} ms ({:.0} ns each)", m * 1e6 / 10_000.0);
+    println!(
+        "ground_probe: 10000 probes, median {m:.3} ms ({:.0} ns each)",
+        m * 1e6 / 10_000.0
+    );
 }

@@ -2,9 +2,7 @@
 
 use std::collections::BTreeMap;
 
-use rapier3d::prelude::{
-    Array2, ColliderBuilder, ColliderHandle, PhysicsWorld, Vector,
-};
+use rapier3d::prelude::{Array2, ColliderBuilder, ColliderHandle, PhysicsWorld, Vector};
 
 use super::{ChunkKey, CollisionChunk, CHUNK_CELLS, CHUNK_SAMPLES, CHUNK_SIZE_M};
 use crate::hash::HashWriter;
@@ -18,10 +16,11 @@ pub struct TerrainPhysics {
 
 impl Default for TerrainPhysics {
     fn default() -> Self {
-        let mut world = PhysicsWorld::default();
-        world.gravity = Vector::ZERO;
         Self {
-            world,
+            world: PhysicsWorld {
+                gravity: Vector::ZERO,
+                ..PhysicsWorld::default()
+            },
             handles: BTreeMap::new(),
         }
     }
@@ -49,16 +48,14 @@ impl TerrainPhysics {
         }
         let heights = Array2::new(n, n, data);
         // Height-field local origin is its centre; vertical scale 1 keeps metres.
-        let collider = ColliderBuilder::heightfield(
-            heights,
-            Vector::new(CHUNK_SIZE_M, 1.0, CHUNK_SIZE_M),
-        )
-        .translation(Vector::new(
-            chunk.bx as f32 * CHUNK_SIZE_M + CHUNK_SIZE_M * 0.5,
-            0.0,
-            chunk.bz as f32 * CHUNK_SIZE_M + CHUNK_SIZE_M * 0.5,
-        ))
-        .build();
+        let collider =
+            ColliderBuilder::heightfield(heights, Vector::new(CHUNK_SIZE_M, 1.0, CHUNK_SIZE_M))
+                .translation(Vector::new(
+                    chunk.bx as f32 * CHUNK_SIZE_M + CHUNK_SIZE_M * 0.5,
+                    0.0,
+                    chunk.bz as f32 * CHUNK_SIZE_M + CHUNK_SIZE_M * 0.5,
+                ))
+                .build();
         let handle = self.world.insert_collider(collider, None);
         self.handles.insert(key, handle);
     }

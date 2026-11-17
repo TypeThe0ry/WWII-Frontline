@@ -28,7 +28,14 @@ fn push(data: &CollisionData, start_xz: (f32, f32), dir: (f32, f32)) -> (f32, f3
     for _ in 0..150 {
         let want = Vector::new(dir.0 * SPEED * DT, vy * DT, dir.1 * SPEED * DT);
         let qp = world.query_pipeline();
-        let m = kcc.move_shape(DT, &qp, shape.as_ref(), &Pose::from_translation(pos), want, |_| {});
+        let m = kcc.move_shape(
+            DT,
+            &qp,
+            shape.as_ref(),
+            &Pose::from_translation(pos),
+            want,
+            |_| {},
+        );
         pos += m.translation;
         vy = if m.grounded { 0.0 } else { vy - 9.81 * DT };
     }
@@ -59,17 +66,25 @@ fn slope_limit_35deg() {
         let (_, y, z) = push(&d, (64.0, 30.0), (0.0, 1.0));
         let gain = y - 2.0;
         println!("{deg} deg ramp (rise {rise:.2} m): final z {z:.2}, height gain {gain:.3} m");
-        assert!(gain >= 0.9 * rise, "{deg} deg ramp not climbed: gain {gain} of {rise}");
+        assert!(
+            gain >= 0.9 * rise,
+            "{deg} deg ramp not climbed: gain {gain} of {rise}"
+        );
     }
 }
 
 #[test]
 fn slope_limit_35deg_on_m0_terrain() {
-    let Some(d) = real_terrain("slope_limit_35deg_on_m0_terrain") else { return };
+    let Some(d) = real_terrain("slope_limit_35deg_on_m0_terrain") else {
+        return;
+    };
     // The M0 embankment is a 38.7 degree, 8 m high ramp over z = 123..133.
     let (_, y, z) = push(&d, (128.0, 108.0), (0.0, 1.0));
     let base = d.height_at(128.0, 118.0).unwrap();
-    println!("M0 embankment (38.7 deg): final z {z:.2}, height above foot of slope {:.3} m", y - base);
+    println!(
+        "M0 embankment (38.7 deg): final z {z:.2}, height above foot of slope {:.3} m",
+        y - base
+    );
     assert!(y - base <= 0.5, "climbed the embankment: {}", y - base);
     // Its gentle side (rising along +x, <= 27 degrees) is climbable.
     let (x, y, z) = push(&d, (10.0, 128.0), (1.0, 0.0));

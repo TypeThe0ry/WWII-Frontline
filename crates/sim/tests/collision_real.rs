@@ -17,8 +17,12 @@ fn ref_bilinear(h: &[f64], x: f64, z: f64) -> f64 {
 
 #[test]
 fn dequantisation_matches_reference_bilinear() {
-    let Some(d) = real_terrain("dequantisation") else { return };
-    let Some(r) = reference_heightmap("dequantisation") else { return };
+    let Some(d) = real_terrain("dequantisation") else {
+        return;
+    };
+    let Some(r) = reference_heightmap("dequantisation") else {
+        return;
+    };
     let mut rng = Rng(0x9e3779b97f4a7c15);
     let mut worst = 0.0f64;
     for _ in 0..1000 {
@@ -36,8 +40,12 @@ fn dequantisation_matches_reference_bilinear() {
 
 #[test]
 fn seams_are_continuous_and_missing_chunks_are_none() {
-    let Some(mut d) = real_terrain("seams") else { return };
-    let Some(r) = reference_heightmap("seams") else { return };
+    let Some(mut d) = real_terrain("seams") else {
+        return;
+    };
+    let Some(r) = reference_heightmap("seams") else {
+        return;
+    };
     // Largest height step between adjacent samples bounds the gradient everywhere.
     let mut g = 0.0f64;
     for z in 0..257 {
@@ -51,7 +59,14 @@ fn seams_are_continuous_and_missing_chunks_are_none() {
         }
     }
     let mut rng = Rng(7);
-    let junctions = [(64.0f32, 64.0f32), (128.0, 128.0), (192.0, 64.0), (64.0, 192.0), (192.0, 192.0), (128.0, 64.0)];
+    let junctions = [
+        (64.0f32, 64.0f32),
+        (128.0, 128.0),
+        (192.0, 64.0),
+        (64.0, 192.0),
+        (192.0, 192.0),
+        (128.0, 64.0),
+    ];
     let mut n = 0;
     for &(jx, jz) in junctions.iter().cycle().take(1000) {
         let x = jx + rng.range(-2.0, 2.0);
@@ -59,7 +74,12 @@ fn seams_are_continuous_and_missing_chunks_are_none() {
         let h = d.height_at(x, z).unwrap() as f64;
         for (dx, dz) in [(0.01f32, 0.0f32), (0.0, 0.01)] {
             let h2 = d.height_at(x + dx, z + dz).unwrap() as f64;
-            assert!((h2 - h).abs() <= g * 0.01 + 1e-4, "seam jump at ({x},{z}): {} > {}", (h2 - h).abs(), g * 0.01);
+            assert!(
+                (h2 - h).abs() <= g * 0.01 + 1e-4,
+                "seam jump at ({x},{z}): {} > {}",
+                (h2 - h).abs(),
+                g * 0.01
+            );
         }
         n += 1;
     }
@@ -78,13 +98,24 @@ fn seams_are_continuous_and_missing_chunks_are_none() {
 
 #[test]
 fn raycast_agrees_with_rapier() {
-    let Some(d) = real_terrain("raycast_vs_rapier") else { return };
+    let Some(d) = real_terrain("raycast_vs_rapier") else {
+        return;
+    };
     let mut rng = Rng(0xfeed_beef);
     let (mut agree, mut total, mut hits, mut disagree) = (0, 0, 0, 0);
     for _ in 0..3000 {
         let o = Vec3::new(rng.range(1.0, 255.0), 0.0, rng.range(1.0, 255.0));
-        let o = Vec3::new(o.x, d.height_at(o.x, o.z).unwrap() + rng.range(0.3, 25.0), o.z);
-        let dir = Vec3::new(rng.range(-1.0, 1.0), rng.range(-0.6, 0.3), rng.range(-1.0, 1.0)).normalize();
+        let o = Vec3::new(
+            o.x,
+            d.height_at(o.x, o.z).unwrap() + rng.range(0.3, 25.0),
+            o.z,
+        );
+        let dir = Vec3::new(
+            rng.range(-1.0, 1.0),
+            rng.range(-0.6, 0.3),
+            rng.range(-1.0, 1.0),
+        )
+        .normalize();
         let max_t = 400.0;
         let ours = d.raycast(o, dir, max_t);
         let ray = Ray::new(Vector::new(o.x, o.y, o.z), Vector::new(dir.x, dir.y, dir.z));
@@ -118,7 +149,10 @@ fn raycast_agrees_with_rapier() {
                     (None, None) => true,
                     _ => false,
                 };
-                eprintln!("rapier disagrees: ours={:?} rapier={b:?} brute={brute:?} ok={ok}", a.map(|h| h.t));
+                eprintln!(
+                    "rapier disagrees: ours={:?} rapier={b:?} brute={brute:?} ok={ok}",
+                    a.map(|h| h.t)
+                );
                 assert!(ok, "our ray cast disagrees with the brute-force reference");
                 disagree += 1;
             }
@@ -131,7 +165,9 @@ fn raycast_agrees_with_rapier() {
 
 #[test]
 fn embankment_slope_and_los_on_m0() {
-    let Some(d) = real_terrain("embankment") else { return };
+    let Some(d) = real_terrain("embankment") else {
+        return;
+    };
     let s = d.slope_deg_at(128.0, 128.0).unwrap();
     assert!((s - 38.66).abs() < 0.5, "embankment slope {s}");
     assert!(!d.walkable(128.0, 128.0));
@@ -147,8 +183,12 @@ fn embankment_slope_and_los_on_m0() {
 
 #[test]
 fn build_twice_is_identical_and_memory_is_small() {
-    let Some(a) = real_terrain("determinism") else { return };
-    let Some(b) = real_terrain("determinism") else { return };
+    let Some(a) = real_terrain("determinism") else {
+        return;
+    };
+    let Some(b) = real_terrain("determinism") else {
+        return;
+    };
     assert_eq!(a.state_hash(), b.state_hash());
     assert_eq!(a.clone().state_hash(), a.state_hash());
     let ha: Vec<_> = a.physics().handles().collect();
@@ -156,7 +196,10 @@ fn build_twice_is_identical_and_memory_is_small() {
     assert_eq!(ha, hb);
     assert_eq!(a.chunk_count(), 16);
     let mb = a.memory_bytes() as f64 / 1e6;
-    println!("16 chunks resident collision memory: {} B = {mb:.3} MB", a.memory_bytes());
+    println!(
+        "16 chunks resident collision memory: {} B = {mb:.3} MB",
+        a.memory_bytes()
+    );
     assert!(mb < 5.0);
     let _ = CollisionData::empty();
 }

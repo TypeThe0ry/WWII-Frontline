@@ -34,26 +34,50 @@ fn collision_parse_valid_and_named_errors() {
     assert_eq!(c.heights_m[0], -3.5);
     assert_eq!(c.heights_m[1], 40.25);
 
-    assert!(matches!(CollisionChunk::from_bytes(0, 0, &ok[..LEN - 1]), Err(CollisionError::BadLength { .. })));
-    assert!(matches!(CollisionChunk::from_bytes(0, 0, &[]), Err(CollisionError::BadLength { .. })));
+    assert!(matches!(
+        CollisionChunk::from_bytes(0, 0, &ok[..LEN - 1]),
+        Err(CollisionError::BadLength { .. })
+    ));
+    assert!(matches!(
+        CollisionChunk::from_bytes(0, 0, &[]),
+        Err(CollisionError::BadLength { .. })
+    ));
     let mut long = ok.clone();
     long.push(0);
-    assert!(matches!(CollisionChunk::from_bytes(0, 0, &long), Err(CollisionError::BadLength { .. })));
+    assert!(matches!(
+        CollisionChunk::from_bytes(0, 0, &long),
+        Err(CollisionError::BadLength { .. })
+    ));
     let mut b = ok.clone();
     b[0] = b'X';
-    assert_eq!(CollisionChunk::from_bytes(0, 0, &b), Err(CollisionError::BadMagic));
+    assert_eq!(
+        CollisionChunk::from_bytes(0, 0, &b),
+        Err(CollisionError::BadMagic)
+    );
     let mut b = ok.clone();
     b[4] = 2;
-    assert_eq!(CollisionChunk::from_bytes(0, 0, &b), Err(CollisionError::BadVersion(2)));
+    assert_eq!(
+        CollisionChunk::from_bytes(0, 0, &b),
+        Err(CollisionError::BadVersion(2))
+    );
     let mut b = ok.clone();
     b[6..8].copy_from_slice(&0xffffu16.to_le_bytes());
-    assert_eq!(CollisionChunk::from_bytes(0, 0, &b), Err(CollisionError::BadSamples(0xffff)));
+    assert_eq!(
+        CollisionChunk::from_bytes(0, 0, &b),
+        Err(CollisionError::BadSamples(0xffff))
+    );
     let mut b = ok.clone();
     b[8..12].copy_from_slice(&f32::NAN.to_le_bytes());
-    assert_eq!(CollisionChunk::from_bytes(0, 0, &b), Err(CollisionError::BadRange));
+    assert_eq!(
+        CollisionChunk::from_bytes(0, 0, &b),
+        Err(CollisionError::BadRange)
+    );
     let mut b = ok.clone();
     b[8..12].copy_from_slice(&50.0f32.to_le_bytes());
-    assert_eq!(CollisionChunk::from_bytes(0, 0, &b), Err(CollisionError::BadRange));
+    assert_eq!(
+        CollisionChunk::from_bytes(0, 0, &b),
+        Err(CollisionError::BadRange)
+    );
 }
 
 /// 10^5 random inputs: truncations, header mutations, byte flips and pure noise must give `Ok`
@@ -84,7 +108,9 @@ fn collision_parse_fuzz() {
                 }
                 b
             }
-            _ => (0..(rng.next_u64() as usize) % 300).map(|_| (rng.next_u64() >> 11) as u8).collect(),
+            _ => (0..(rng.next_u64() as usize) % 300)
+                .map(|_| (rng.next_u64() >> 11) as u8)
+                .collect(),
         };
         if i % 4 == 3 && b.len() > 4 && i % 8 == 3 {
             b[..4].copy_from_slice(b"FCOL");

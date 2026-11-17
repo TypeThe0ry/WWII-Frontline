@@ -12,9 +12,20 @@ fn plane(sx: f32, sz: f32) -> impl Fn(f32, f32) -> f32 {
 fn bilinear_edges_and_corners() {
     let f = plane(0.5, 0.25);
     let d = synth_data(2, 2, &f);
-    for &(x, z) in &[(0.0, 0.0), (64.0, 0.0), (0.0, 64.0), (128.0, 128.0), (63.999, 64.0), (64.0, 63.5)] {
+    for &(x, z) in &[
+        (0.0, 0.0),
+        (64.0, 0.0),
+        (0.0, 64.0),
+        (128.0, 128.0),
+        (63.999, 64.0),
+        (64.0, 63.5),
+    ] {
         let got = d.height_at(x, z).unwrap();
-        assert!((got - f(x, z)).abs() < 1e-3, "({x},{z}) {got} vs {}", f(x, z));
+        assert!(
+            (got - f(x, z)).abs() < 1e-3,
+            "({x},{z}) {got} vs {}",
+            f(x, z)
+        );
     }
     // Interior of a cell: bilinear of a plane is exact.
     let got = d.height_at(10.3, 20.7).unwrap();
@@ -81,29 +92,47 @@ fn los_over_and_through_a_hill() {
 fn raycast_cases() {
     let d = synth_data(2, 2, &hill);
     // Straight down onto the summit.
-    let h = d.raycast(Vec3::new(64.0, 50.0, 64.0), -Vec3::Y, 100.0).unwrap();
+    let h = d
+        .raycast(Vec3::new(64.0, 50.0, 64.0), -Vec3::Y, 100.0)
+        .unwrap();
     let top = d.height_at(64.0, 64.0).unwrap();
     assert!((h.point.y - top).abs() < 0.05, "{h:?} vs {top}");
     assert!((h.t - (50.0 - h.point.y)).abs() < 1e-3);
     assert!(h.normal.y > 0.99);
     // Too short.
-    assert!(d.raycast(Vec3::new(64.0, 50.0, 64.0), -Vec3::Y, 10.0).is_none());
+    assert!(d
+        .raycast(Vec3::new(64.0, 50.0, 64.0), -Vec3::Y, 10.0)
+        .is_none());
     // From inside the terrain: hit at t = 0.
-    let h = d.raycast(Vec3::new(20.0, 0.5, 20.0), Vec3::X, 50.0).unwrap();
+    let h = d
+        .raycast(Vec3::new(20.0, 0.5, 20.0), Vec3::X, 50.0)
+        .unwrap();
     assert_eq!(h.t, 0.0);
     // Zero direction and negative range.
-    assert!(d.raycast(Vec3::new(1.0, 50.0, 1.0), Vec3::ZERO, 10.0).is_none());
+    assert!(d
+        .raycast(Vec3::new(1.0, 50.0, 1.0), Vec3::ZERO, 10.0)
+        .is_none());
     // Extremely far: terrain is only 128 m wide, the ray misses at 1e6 m without trouble.
-    assert!(d.raycast(Vec3::new(1.0, 30.0, 1.0), Vec3::new(1.0, 0.001, 1.0), 1.0e6).is_none());
+    assert!(d
+        .raycast(Vec3::new(1.0, 30.0, 1.0), Vec3::new(1.0, 0.001, 1.0), 1.0e6)
+        .is_none());
     // Sloping ray across the chunk seam (x = 64) hits the far side of the hill.
     let h = d
-        .raycast(Vec3::new(30.0, 25.0, 64.5), Vec3::new(1.0, -0.2, 0.0), 200.0)
+        .raycast(
+            Vec3::new(30.0, 25.0, 64.5),
+            Vec3::new(1.0, -0.2, 0.0),
+            200.0,
+        )
         .unwrap();
     assert!(h.point.x > 30.0 && h.point.x < 128.0, "{h:?}");
     assert!((h.point.y - d.height_at(h.point.x, h.point.z).unwrap()).abs() < 0.2);
     // Reverse direction ray hits the near side.
     let h2 = d
-        .raycast(Vec3::new(100.0, 25.0, 64.5), Vec3::new(-1.0, -0.2, 0.0), 200.0)
+        .raycast(
+            Vec3::new(100.0, 25.0, 64.5),
+            Vec3::new(-1.0, -0.2, 0.0),
+            200.0,
+        )
         .unwrap();
     assert!(h2.point.x < 100.0 && h2.point.x > h.point.x - 40.0);
 }
@@ -136,7 +165,10 @@ fn insert_remove_and_missing_chunks() {
     assert!(!d.remove_chunk(1, 0));
     assert_eq!(d.height_at(64.5, 1.0), None);
     assert!(!d.walkable(64.5, 1.0));
-    assert!((d.height_at(64.0, 1.0).unwrap() - 1.0).abs() < 1e-5, "exact border falls back to chunk 0");
+    assert!(
+        (d.height_at(64.0, 1.0).unwrap() - 1.0).abs() < 1e-5,
+        "exact border falls back to chunk 0"
+    );
     assert_eq!(d.memory_bytes(), 65 * 65 * 4 + 64 * 64);
 }
 
@@ -158,10 +190,18 @@ fn rebuilds_are_identical_and_order_independent() {
     let c = CollisionData::from_chunks(chunks(true));
     let cl = a.clone();
     assert_eq!(a.state_hash(), b.state_hash());
-    assert_eq!(a.state_hash(), c.state_hash(), "insertion order must not matter");
+    assert_eq!(
+        a.state_hash(),
+        c.state_hash(),
+        "insertion order must not matter"
+    );
     assert_eq!(a.state_hash(), cl.state_hash());
     let order: Vec<_> = a.physics().handles().map(|(k, _)| k).collect();
-    assert_eq!(order, vec![(0, 0), (0, 1), (1, 0), (1, 1)], "(bz, bx) ascending");
+    assert_eq!(
+        order,
+        vec![(0, 0), (0, 1), (1, 0), (1, 1)],
+        "(bz, bx) ascending"
+    );
     let order_b: Vec<_> = b.physics().handles().collect();
     let order_a: Vec<_> = a.physics().handles().collect();
     assert_eq!(order_a, order_b, "same collider handles");

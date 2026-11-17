@@ -30,7 +30,10 @@ pub fn real_terrain(test: &str) -> Option<CollisionData> {
                         "{test}: SKIPPED, {} missing. Regenerate with: {REGEN}",
                         p.display()
                     );
-                    assert!(std::env::var_os("FRONTLINE_REQUIRE_TERRAIN").is_none(), "{msg}");
+                    assert!(
+                        std::env::var_os("FRONTLINE_REQUIRE_TERRAIN").is_none(),
+                        "{msg}"
+                    );
                     eprintln!("{msg}");
                     return None;
                 }
@@ -44,7 +47,10 @@ pub fn real_terrain(test: &str) -> Option<CollisionData> {
 pub fn reference_heightmap(test: &str) -> Option<Vec<f64>> {
     let p = map_dir().join("heightmap_1m.r16");
     let Ok(bytes) = std::fs::read(&p) else {
-        eprintln!("{test}: SKIPPED, {} missing. Regenerate with: {REGEN}", p.display());
+        eprintln!(
+            "{test}: SKIPPED, {} missing. Regenerate with: {REGEN}",
+            p.display()
+        );
         return None;
     };
     assert_eq!(bytes.len(), 257 * 257 * 2);
@@ -66,7 +72,10 @@ pub fn synth_chunk(bx: i32, bz: i32, f: &dyn Fn(f32, f32) -> f32) -> CollisionCh
     let mut h = Vec::with_capacity(65 * 65);
     for iz in 0..65 {
         for ix in 0..65 {
-            h.push(f(bx as f32 * 64.0 + ix as f32, bz as f32 * 64.0 + iz as f32));
+            h.push(f(
+                bx as f32 * 64.0 + ix as f32,
+                bz as f32 * 64.0 + iz as f32,
+            ));
         }
     }
     CollisionChunk::new(bx, bz, h, vec![0; 64 * 64])
