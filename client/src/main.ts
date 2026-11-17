@@ -1,4 +1,5 @@
-import { FixedStepper } from './game';
+import { EventBus, FixedStepper } from './game';
+import type { NetGameHandle } from './game/net-game';
 import { createRenderer, parseRendererParam, DebugOverlay, buildPerfDump, installPerfApi } from './render';
 import type { PerfApi } from './render';
 import type { TerrainHandle } from './render/terrain/terrain-scene';
@@ -25,6 +26,8 @@ declare global {
     };
     /** `?scene=vegetation` (terrain + vegetation): vegetation diagnostics for e2e/M0-030. */
     __vegetation?: VegetationHandle;
+    /** `?server=`: networked play (M0-022); diagnostics and e2e. */
+    __netGame?: NetGameHandle;
   }
 }
 
@@ -60,6 +63,14 @@ async function boot(): Promise<void> {
     window.__vegetation = vegHandle;
   }
 
+  // M0-022: networked play (`?server=host:port`): prediction, reconciliation, interpolation (client/src/game).
+  let netGame: NetGameHandle | null = null;
+  if (params.has('server')) {
+    const { startNetGame } = await import('./game/net-game');
+    netGame = await startNetGame(canvas, new EventBus());
+    window.__netGame = netGame;
+  }
+
   const overlay = new DebugOverlay(params.get('debug') === '1');
   const stepper = new FixedStepper();
   const getDump = () =>
@@ -67,9 +78,9 @@ async function boot(): Promise<void> {
   installPerfApi(window, getDump);
 
   ctx.onFrame((dt) => {
-    const { steps } = stepper.advance(dt);
-    void steps; // game.update(steps) / render interpolation (alpha) are wired by later tasks.
-    overlay.update(performance.now(), getDump(), [...(terrainHandle?.overlayLines() ?? []), ...(vegHandle?.overlayLines() ?? [])]);
+    const { steps, alpha } = stepper.advance(dt);
+    netGame?.update(steps, alpha, dt);
+    overlay.update(performance.now(), getDump(), [...(terrainHandle?.overlayLines() ?? []), ...(vegHandle?.overlayLines() ?? []), ...(netGame?.overlayLines() ?? [])]);
   });
   // ?norender=1 skips the render loop (debug aid; also needed where WebGPU cannot present, e.g. SwiftShader).
   if (params.get('norender') !== '1') ctx.start();

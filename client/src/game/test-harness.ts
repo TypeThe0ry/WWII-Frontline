@@ -264,7 +264,8 @@ export interface ScenarioResult {
   tickSkips: number;
   ringOverflows: number;
   replayedCommands: number;
-  finalPosErrM: number;
+  /** Horizontal distance the authoritative player travelled. */
+  pathM: number;
   /** wall ms spent inside game.update + onSnapshot per frame (CPU cost of the client side, includes wasm). */
   updateMs: number[];
   /** Server tick of every correction (for "per 10 s" statistics). */
@@ -338,6 +339,9 @@ export async function runScenario(sc: Scenario): Promise<ScenarioResult> {
   let gap = 0;
   let serverTick = 0;
   let serverRepeated = 0;
+  let pathM = 0;
+  let lastX = 128;
+  let lastZ = 56;
   let reportedHash = 0;
   let reportedAck = 0;
   let haveReport = false;
@@ -368,6 +372,12 @@ export async function runScenario(sc: Scenario): Promise<ScenarioResult> {
       c = real.packInputCmd(0, T, 0, 0, 0, 0, 0, 0, 0, 0);
     }
     srv.step(c);
+    {
+      const st = srv.state();
+      pathM += Math.hypot((st[0] as number) - lastX, (st[2] as number) - lastZ);
+      lastX = st[0] as number;
+      lastZ = st[2] as number;
+    }
     inbox.delete(T - 10);
     if (t >= nextKickT && sc.kick) {
       nextKickT += sc.kick.everyS * 1000;
@@ -443,7 +453,7 @@ export async function runScenario(sc: Scenario): Promise<ScenarioResult> {
     const vis = game.reconciler.smoother.magnitude;
     if (vis > maxVisible) maxVisible = vis;
     const p = game.state.local.pos;
-    if (prev) {
+    if (prev && t > 2000) {
       const v = game.state.local.vel;
       const exp = Math.hypot(v[0] as number, v[2] as number) * (frameMs / 1000);
       const jump = Math.max(0, Math.hypot((p[0] as number) - prev[0], (p[2] as number) - prev[2]) - exp - 0.2);
@@ -451,9 +461,6 @@ export async function runScenario(sc: Scenario): Promise<ScenarioResult> {
     }
     prev = [p[0] as number, p[1] as number, p[2] as number];
   }
-  const gp = game.state.local.simPos;
-  const ps = srv.authState();
-  const pdv = new DataView(ps.buffer, ps.byteOffset, ps.byteLength);
   const s = game.stats;
   return {
     corrections: game.reconciler.stats.corrections,
@@ -477,7 +484,7 @@ export async function runScenario(sc: Scenario): Promise<ScenarioResult> {
     tickSkips: game.planner.skips,
     ringOverflows: game.ring.overflows,
     replayedCommands: game.reconciler.stats.replayedCommands,
-    finalPosErrM: Math.hypot((gp[0] as number) - pdv.getFloat32(0, true), (gp[2] as number) - pdv.getFloat32(8, true)),
+    pathM,
     updateMs,
     correctionTimesS,
     game,

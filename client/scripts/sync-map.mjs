@@ -15,6 +15,8 @@ const dst = join(here, '..', 'public', 'maps', mapId);
 
 /** Files the client fetches (M0-023 terrain; M0-022 appends the collision chunks it needs). */
 const FILES = ['meta.json', 'spawns.json', 'heightmap_1m.r16', 'heightmap_far_8m.r16']; // spawns.json: vegetation keep-out discs (M0-024)
+// M0-022: the whole M0 map (4 x 4 blocks of 64 m) is loaded into the prediction collision world at start-up (ARCHITECTURE 9.5).
+for (let bz = 0; bz < 4; bz++) for (let bx = 0; bx < 4; bx++) FILES.push(`chunks/c_${bx}_${bz}.bin`);
 
 if (FILES.some((f) => !existsSync(join(src, f)))) {
   console.log(`[sync-map] ${src} incomplete -> running the map pipeline (seed 1)`);
@@ -28,6 +30,19 @@ if (FILES.some((f) => !existsSync(join(src, f)))) {
     process.exit(1);
   }
 }
-mkdirSync(dst, { recursive: true });
+mkdirSync(join(dst, 'chunks'), { recursive: true });
 for (const f of FILES) copyFileSync(join(src, f), join(dst, f));
 console.log(`[sync-map] ${FILES.length} files -> ${dst}`);
+
+// M0-022: the sim-wasm package (git-ignored build output of `wasm-pack build crates/sim-wasm --target web --profile wasm-release`)
+// is served at /wasm/ so the client can load it at run time (client/src/game/net-game.ts). Missing package: warn, do not fail.
+const pkg = join(repo, 'crates', 'sim-wasm', 'pkg');
+const wasmDst = join(here, '..', 'public', 'wasm');
+const WASM_FILES = ['frontline_sim_wasm.js', 'frontline_sim_wasm_bg.wasm'];
+if (WASM_FILES.every((f) => existsSync(join(pkg, f)))) {
+  mkdirSync(wasmDst, { recursive: true });
+  for (const f of WASM_FILES) copyFileSync(join(pkg, f), join(wasmDst, f));
+  console.log(`[sync-map] sim-wasm package -> ${wasmDst}`);
+} else {
+  console.warn('[sync-map] crates/sim-wasm/pkg missing: networked play (?server=) needs `wasm-pack build crates/sim-wasm --target web --profile wasm-release`');
+}

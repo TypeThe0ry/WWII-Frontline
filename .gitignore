@@ -23,6 +23,7 @@ data/maps/m0/chunks/
 
 # M0-023: map binaries copied for the dev server / build by client/scripts/sync-map.mjs
 client/public/maps/
+client/public/wasm/
 # Playwright output
 client/test-results/
 client/playwright-report/

@@ -26,7 +26,7 @@ export class RenderTimeline {
   /** Hard-resync when further than this many ticks away. */
   resyncTicks = 6;
   /** Largest rate change (fraction of real time) used to slew towards the target. */
-  maxSlew = 0.1;
+  maxSlew = 0.03;
   resyncs = 0;
 
   constructor(readonly tickMs: number) {}
