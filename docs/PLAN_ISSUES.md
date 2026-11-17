@@ -713,3 +713,12 @@
 - **验证**：`crates/sim/tests/ballistics_pen.rs` 8 项；`cargo bench -p frontline-sim --bench projectile_step`（开发机 133 ns/段）。金样：sim-wasm 的 `native.json`（含 data hash）已重生；`GOLDEN_SEED1_18000` 与其余金哈希未变。
 - **受影响任务**：M1-014、M1-017、M1-023、M1-034/035、M1-047。
 - **裁决（Fable 填写）**：
+
+### PI-051 M1-013：拆为 a（射击/装填/后坐验证）与 b（近战/副武器切换），备弹按发数记
+
+- **状态**：resolved（实现者裁决，待 Fable 复核）
+- **类别**：sim
+- **提出者 / 日期**：M1 线程 / 2026-11-17
+- **做法**：①M0-012 的状态机已覆盖全自动/半自动/栓动、时间累加器和装填，013a 补验证与缺口：打断装填（冲刺或翻越，取消不耗弹，`reload_cancelled`）、`ShotSpawn.spread_seed`（`rng::spread_seed(match_seed, tick, entity)` 的 16 位，对应 `FireCmd.spread_seed`）、`ammo::mag_stack`、六把武器的速率/装填/后坐测试与 `fire_rate_probe` 示例、`weapon_step` 基准。②备弹仍按"发数"记（`reserve: u16`），不引入弹匣栈：战术装填是"补满枪内弹匣"，结果与"换入满弹匣、旧弹匣带余弹回包"在 mag+reserve 总数上完全一致；`mag_stack(reserve, cap)` 给出 (整弹匣数, 部分弹匣发数) 供 UI。这避免改动 33 字节的 `WeaponState` 线格式。③013b（近战、`swap_in_ms` 副武器切换）需要武器槽/loadout 状态与目标命中体，另开 PR。④切枪打断装填待 013b（目前无武器切换）。
+- **受影响任务**：M1-014、M1-016、M1-026/027、M1-040。
+- **裁决（Fable 填写）**：

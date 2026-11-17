@@ -141,6 +141,9 @@ pub struct ShotSpawn {
     pub muzzle: Vec3,
     /// Unit direction including recoil and spread.
     pub dir: Vec3,
+    /// Spread seed of the shot (`crate::rng::spread_seed`), the value `FireCmd.spread_seed` carries
+    /// so that the client can predict the same cone sample (ARCHITECTURE 6.8.2).
+    pub spread_seed: u16,
 }
 
 /// What happened in one weapon step (besides the state change).
@@ -151,6 +154,8 @@ pub struct WeaponOut {
     pub dry_fire: bool,
     pub reload_started: Option<ReloadKind>,
     pub reload_finished: bool,
+    /// A running reload was cancelled (sprint, vault); nothing was consumed.
+    pub reload_cancelled: bool,
 }
 
 /// Randomness context of a step.
@@ -222,6 +227,13 @@ pub fn step_weapon(
     }
 
     let sprinting = is_sprinting(cmd);
+    // Sprinting or vaulting interrupts a reload; the rounds are only moved when it completes,
+    // so cancelling costs nothing (GAMEDESIGN 6.3, M1-013).
+    if w.fsm.is_reloading() && (sprinting || auth.vault.is_some()) {
+        w.fsm = if w.mag == 0 { Fsm::Empty } else { Fsm::Ready };
+        w.timer_units = 0;
+        out.reload_cancelled = true;
+    }
     let reloading = matches!(w.fsm, Fsm::Reloading(_));
 
     // --- reload start ---
@@ -295,5 +307,9 @@ fn fire(
     w.fsm = p.cycling_state();
     // Carry the credit of the previous interval (<= 0) into this one.
     w.timer_units += p.interval_units;
-    ShotSpawn { muzzle, dir }
+    ShotSpawn {
+        muzzle,
+        dir,
+        spread_seed: crate::rng::spread_seed(ctx.match_seed, ctx.tick, ctx.entity),
+    }
 }

@@ -502,3 +502,7 @@ blocked / in-progress / todo：无。M0 的 33 个任务全部已提交（M0-033
 ### M1-012 弹道细化与穿透 — partial — 2026-11-17 — 提交见 git log
 - 新增 `crates/sim/src/ballistics/`（积分、材质、穿透、跳弹）、`data/materials/`（12 种）与 3 个弹药文件；`crates/sim/tests/ballistics_pen.rs`、`benches/projectile_step.rs`。
 - 实测见 `tasks/STATUS.md`；余项：接入命中结算（M1-014）、参考机基准、真实建筑层来源；见 PI-050。
+
+### M1-013a 武器：SMG/卡宾/手枪验证与装填打断 — partial — 2026-11-17 — 提交见 git log
+- `crates/sim/tests/weapon_m1_013.rs`（8 项）、`examples/fire_rate_probe.rs`、`benches/weapon_step.rs`；`ShotSpawn.spread_seed`、装填打断、`ammo::mag_stack`。
+- 余项 013b：近战与副武器切换；见 PI-051。

@@ -46,6 +46,15 @@ impl Rng {
     }
 }
 
+/// Spread seed of a shot (`FireCmd.spread_seed`, M1-013): 16 bits of the same mix that seeds the
+/// spread stream, so it differs shot to shot (the tick is part of it) and both sides compute it.
+pub fn spread_seed(match_seed: u64, tick: Tick, entity: EntityId) -> u16 {
+    let mut h = mix64(match_seed);
+    h = mix64(h ^ tick.0 as u64);
+    h = mix64(h ^ entity as u64);
+    (mix64(h ^ Purpose::Spread as u64) >> 48) as u16
+}
+
 /// Uniform `f32` in `[0, 1)` using the top 24 bits.
 #[inline]
 pub fn unit_f32(rng: &mut Pcg64Mcg) -> f32 {

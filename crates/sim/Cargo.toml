@@ -65,3 +65,7 @@ sha2 = "0.10"
 [[bench]]
 name = "projectile_step"
 harness = false
+
+[[bench]]
+name = "weapon_step"
+harness = false
