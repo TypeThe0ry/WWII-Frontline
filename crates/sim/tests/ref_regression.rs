@@ -14,7 +14,7 @@
 //! definition as the recording analysis) and requires it to lie within the 7.3 tolerance of
 //! `ref_median` (or `tol_abs`). The block is written by the B part of M0-032 once recordings exist
 //! (schema + `data_defs.rs` get the optional `_meta.ref` field in the same change, PLAN_ISSUES
-//! PI-025); until then no file carries it and the data-driven test passes with 0 locked entries.
+//! PI-027); until then no file carries it and the data-driven test passes with 0 locked entries.
 mod common;
 mod own_measure;
 

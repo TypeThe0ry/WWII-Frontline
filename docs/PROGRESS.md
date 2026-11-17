@@ -372,6 +372,12 @@ M0 共 21 个任务已提交（M0-021 待提交）；提交哈希取自 `git log
 - 遗留：`step_overhead` 的 debug 100 玩家 P99<1 ms 在共享负载下失败（非本任务，bots=0）；M0 无听觉/掩体/手雷/补给（弹药打光的 bot 退回巡逻）；盲射距离取 12 m 而非任务卡的 80 m（实测依据见 PI-026）；难度档仅 Regular 接线（三档数据已在表里）。
 - 影响：**DATA_HASH 改变**（新增 `data/rules/bots.json`；sim-wasm 已重建并同步 `client/public/wasm`）；`sim_thread` 新增 `build_loop_with_bots`/`spawn_with_bots`/`SimLoop::{bot_host,tally}`/`EventTally`（`SimThreadConfig` 签名不变）；`Sessions::reserve_bot`；M0-027 可直接 `--bots 10` 做 10 headless + 10 bot 联测；M1-036/038 替换 `grid_nav`/`SoldierBrain`，保持 `BotBrain`/`BotHost`；黄金哈希 `crates/bots/tests/golden.rs` 在任何 sim 规则/数据调参后需有意更新。
 
+### M0-032 对标测量：M0 批回填 — partial — 2026-11-17 — 提交 （待总控填）
+- 做了什么：A 部分全部完成——`tools/ref-analysis/`（ffprobe/抽帧、音频峰值法、火光帧法、网格/像素标定与跟踪、FOV 拟合、Laplacian 与光流压制曲线、统计与置信度、§7.3 容限、记录与 `summary.csv`、JSON spec 一键生成记录）、`docs/measurements/`（模板、25 列表头、README、一页录像清单 `CAPTURE_GUIDE_M0.md`）、我方同法复测 `crates/sim/tests/own_remeasure.rs`（导出 `own_m0.{json,md}`）与回归脚手架 `ref_regression.rs`。B 部分（录像分析与回填）因没有任何录像未做。
+- 关键实测：`pytest` 69/69；合成 600 rpm 音频测回 600.04 rpm（误差 0.006 %，验收 ≤1 %）、4.4 m/s 合成视频测回 4.4000 m/s（<0.001 %，验收 ±3 %）、78° FOV 测回 78.016°；我方 Garand 120 rpm/换弹 2.8–3.4 s/开镜 0.30 s、躯干 2 发致死，步兵 2.0/4.4/6.4 m/s（全部在 own_m0.md）。参考作品测量值全部仍为"待测"。
+- 遗留 / 需人工：缺批 M0 录像（H-011 / H-025 / H-026，汇总为 NEEDS_HUMAN H-104），录像到位后由 M0-032b 按 `docs/measurements/CAPTURE_GUIDE_M0.md` 回填；PI-027（`_meta.ref` 字段推迟、口径细化、sim 不可测项、docs/measurements 里有其它任务截图）。
+- 影响：M0-033 验收时对标值"待测"是预期状态；M1-011/013 实现匍匐/逐发装填后补测 own_m0 里的"不可测"项；M4-044 复用同一工具链。
+
 ## 8. 如何维护本文件
 
 - **执行者**：收工前，在"任务日志"末尾追加本任务条目（`### 任务 ID 标题 — 状态 — 日期 — 提交 abc1234`，3–6 行：做了什么、关键实测数字、遗留问题/需人工事项、对后续任务的影响）；写入前重新读取文件末尾（并行执行者可能同时追加），只追加、不改别人的条目。数字必须来自实测，查不到写"未记录"。同时更新 `tasks/STATUS.md` 自己那一行。

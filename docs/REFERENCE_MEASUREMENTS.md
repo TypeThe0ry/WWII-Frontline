@@ -904,6 +904,7 @@ ffmpeg -ss T0 -to T1 -i in.mkv -vsync 0 frames/%06d.png
 | 日期 | 版本 | 变更 |
 |---|---|---|
 | 2026-11-17 | 0.1 | 初稿：定义测量套件（§1–§9）；测量值全部为"待测" |
+| 2026-11-17 | 0.1.1 | M0-032：追加附录 C（工具与操作说明的引用）；章节编号与正文未改，测量值仍全部"待测" |
 
 ## 附录 B. 未核实项汇总
 
@@ -912,3 +913,12 @@ ffmpeg -ss T0 -to T1 -i in.mkv -vsync 0 frames/%06d.png
 - TM 9-2200 全文在线链接：未找到；仅确认目录条目（§6.2）。
 - 德军 HDv/Merkblatt、Hogg 书目版次、博物馆馆藏条目：未检索到具体链接（§6.2）。
 - 原始录像的存储体积：未核实（§9.2）。
+
+## 附录 C. 工具与操作说明（M0-032 追加，仅引用）
+
+- 分析工具链：`tools/ref-analysis/`（`README.md`；`python3 -m ref_analysis --help`）。覆盖 §3.2 M-FRM、§3.3 M-AUD、§3.4 M-CAL、§3.5 M-ANG、§3.6 M-TPL、§3.7 M-IMG/M-FLOW、§2.5/§4.0 统计与置信度、§7.3 容限、§8 记录与汇总；
+  每个工具都用自己合成的视频/音频做了测回测试（`pytest tools/ref-analysis/tests`）。
+- 记录目录与模板：`docs/measurements/`（`README.md`、`_TEMPLATE.md` = §8.1 原样、`summary.csv` = §8.2 的 25 列表头、`series/`）。
+- **给人类负责人的录像清单与"录像到位后怎么跑"**：`docs/measurements/CAPTURE_GUIDE_M0.md`（批 M0 共 78 行，H-01 按近/中/远带 `@50m/@150m/@300m` 后缀）。
+- 我方同法复测（§7.4）：`cargo test -p frontline-sim --test own_remeasure`，结果 `docs/measurements/own_m0.{json,md}`；回归（§7.5）：`crates/sim/tests/ref_regression.rs`。
+- 状态：参考作品的测量值**全部仍为"待测"**（缺 H-011 / H-025 / H-026）；§4 各表的"测量值/版本/置信度"列不在此处填写，由 `docs/measurements/` 的记录回填。
