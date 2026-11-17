@@ -514,3 +514,7 @@ blocked / in-progress / todo：无。M0 的 33 个任务全部已提交（M0-033
 ### M1-014a 命中区与伤害模型 — partial（余 Downed 接入）— 2026-11-17 — 提交见 git log
 
 `combat/{damage,credit,lagcomp_history}.rs`，投射物改用 `damage_amount`（头盔规则、友军伤害 ×0.5），`tests/damage_model.rs` 8 项 + TTK 快照，`benches/combat.rs`。`bots` golden 重定。决策见 PI-053。
+
+### M1-015 手雷与烟雾 — partial — 2026-11-17 — 提交见 git log
+
+`throwables/{grenade,explosion,smoke,system}.rs`：烹饪/投掷/反弹/引信/爆炸/烟雾云，`World::los` 计入烟雾；`tests/throwables.rs` 12 项，`benches/explosion.rs`。决策见 PI-054。

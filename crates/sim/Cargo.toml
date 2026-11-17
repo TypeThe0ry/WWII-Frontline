@@ -73,3 +73,7 @@ harness = false
 [[bench]]
 name = "combat"
 harness = false
+
+[[bench]]
+name = "explosion"
+harness = false
