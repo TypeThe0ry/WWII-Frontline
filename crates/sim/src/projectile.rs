@@ -22,6 +22,7 @@ use crate::data::defs::WeaponDef;
 use crate::health::{Health, HitLog, HitRec};
 use crate::ids::EntityId;
 use crate::step::SimEvent;
+use crate::suppression::detect::Grid;
 use crate::suppression::{system::pass_segment, SuppressSeen, SuppressionState};
 use crate::weapon::ballistics::{self, BallisticsParams, MIN_SPEED_MPS, SUBSTEPS};
 use crate::weapon::hitbox::{self, HitZone};
@@ -158,6 +159,11 @@ pub fn projectile_system(
             }
         }
     }
+    let mut cand: Vec<u16> = Vec::new();
+    let mut grid = Grid::default();
+    for (i, t) in targets.iter().enumerate() {
+        grid.insert(i as u16, t.foot);
+    }
     let max_sub = ballistics::max_substeps(cfg.hz);
     let h = 1.0 / (f32::from(cfg.hz) * SUBSTEPS as f32);
     let list = std::mem::take(&mut projs.list);
@@ -177,6 +183,8 @@ pub fn projectile_system(
             max_sub,
             &col.0,
             &mut targets,
+            &grid,
+            &mut cand,
             &mut q,
             &mut events.0,
             &mut hitlog.0,
@@ -205,6 +213,8 @@ fn advance(
     max_substeps: u32,
     col: &crate::collision::CollisionData,
     targets: &mut [Target],
+    grid: &Grid,
+    cand: &mut Vec<u16>,
     q: &mut Query<(&Transform, &Motion, &Team, &mut Health)>,
     events: &mut Vec<SimEvent>,
     hitlog: &mut Vec<HitRec>,
@@ -267,10 +277,13 @@ fn advance(
                 tick,
                 hz,
                 hit_id,
-                targets
-                    .iter()
-                    .filter(|t| t.alive)
-                    .map(|t| (t.id, t.entity, t.team, t.foot, t.blend)),
+                {
+                    grid.query(p0, p0 + seg * end, cand);
+                    cand.iter().filter_map(|&i| {
+                        let t = &targets[usize::from(i)];
+                        t.alive.then_some((t.id, t.entity, t.team, t.foot, t.blend))
+                    })
+                },
                 seen,
                 sq,
                 events,

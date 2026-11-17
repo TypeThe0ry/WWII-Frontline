@@ -10,7 +10,7 @@ pub mod effects;
 pub mod state;
 pub mod system;
 
-pub use effects::{effects, SuppressionEffects};
+pub use effects::{effects, shake, SuppressionEffects};
 pub use state::SuppressionState;
 pub use system::{suppression, suppression_assists, SuppressSeen};
 

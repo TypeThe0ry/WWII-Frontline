@@ -80,3 +80,39 @@ pub fn may_pass(p0: Vec3, p1: Vec3, foot: Vec3) -> bool {
         && foot.y + 2.1 >= lo.y
         && foot.y - 0.2 <= hi.y
 }
+
+/// Uniform grid of the players of one tick (cell 16 m on x / z) for the near-miss broad phase.
+#[derive(Debug, Default)]
+pub struct Grid {
+    cells: std::collections::HashMap<(i32, i32), Vec<u16>>,
+}
+
+const CELL_M: f32 = 16.0;
+
+fn cell(v: f32) -> i32 {
+    libm::floorf(v / CELL_M) as i32
+}
+
+impl Grid {
+    pub fn insert(&mut self, index: u16, foot: Vec3) {
+        self.cells
+            .entry((cell(foot.x), cell(foot.z)))
+            .or_default()
+            .push(index);
+    }
+
+    /// Indices of the players whose cell is touched by the segment's box grown by `d_max`,
+    /// in ascending (cell x, cell z, insertion) order (deterministic).
+    pub fn query(&self, p0: Vec3, p1: Vec3, out: &mut Vec<u16>) {
+        out.clear();
+        let lo = p0.min(p1) - Vec3::splat(super::D_MAX_M);
+        let hi = p0.max(p1) + Vec3::splat(super::D_MAX_M);
+        for cx in cell(lo.x)..=cell(hi.x) {
+            for cz in cell(lo.z)..=cell(hi.z) {
+                if let Some(v) = self.cells.get(&(cx, cz)) {
+                    out.extend_from_slice(v);
+                }
+            }
+        }
+    }
+}
