@@ -313,7 +313,7 @@ export async function runScenario(sc: Scenario): Promise<ScenarioResult> {
     sendInputBundle: (bytes) => {
       const a = sink.last;
       if (!a) throw new Error('bundle without recorded args');
-      if (real.inputBundleLen(bytes) !== a.cmds.length / 18) throw new Error('bundle length mismatch');
+      if ((real as unknown as { inputBundleLen(b: Uint8Array): number }).inputBundleLen(bytes) !== a.cmds.length / 18) throw new Error('bundle length mismatch');
       up.send(t, a);
     },
   };

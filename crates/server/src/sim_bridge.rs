@@ -37,6 +37,9 @@ pub struct SimBridge {
     cfg: ValidateCfg,
     resolved: Vec<(PlayerId, InputCmd)>,
     kicks: Vec<PlayerId>,
+    /// Bundles of players the sim has not joined yet (their `Join` command raced the first C1
+    /// by less than a tick): retried once on the next tick, then counted as `no_session`.
+    parked: Vec<Inbound>,
 }
 
 impl SimBridge {
@@ -54,6 +57,7 @@ impl SimBridge {
             cfg,
             resolved: Vec::new(),
             kicks: Vec::new(),
+            parked: Vec::new(),
         }
     }
 
@@ -171,12 +175,19 @@ impl SimBridge {
 
     /// Drains the network inbound queue (step 1 of the tick).
     pub fn drain_net(&mut self, now: u32) {
+        // Bundles that arrived a tick before their player's Join was processed.
+        for i in std::mem::take(&mut self.parked) {
+            self.ingest_bundle(i.player, &i.bundle, now);
+        }
         let Some(link) = &self.link else {
             return;
         };
         let rx = link.inbound.clone();
         for _ in 0..MAX_BUNDLES_PER_TICK {
             match rx.try_recv() {
+                Ok(i) if !self.table.contains_key(&i.player) && self.parked.len() < 256 => {
+                    self.parked.push(i)
+                }
                 Ok(i) => self.ingest_bundle(i.player, &i.bundle, now),
                 Err(_) => break,
             }

@@ -100,8 +100,14 @@ struct LoadResult {
     sent: u64,
 }
 
+/// The published tick (`logging::CURRENT_TICK`) is process-global: runs must not overlap and each
+/// starts it from zero, as a fresh server process would.
+static ONE_AT_A_TIME: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
+
 async fn run_load(n: usize, secs: f64) -> Option<LoadResult> {
     let map = terrain()?;
+    let _serial = ONE_AT_A_TIME.lock().await;
+    frontline_server::logging::CURRENT_TICK.store(0, Ordering::Relaxed);
     let metrics = Metrics::new();
     let sessions = Sessions::with_limits(metrics.clone(), 256, 128);
     let inbound = InboundQueue::new();
@@ -176,17 +182,16 @@ async fn run_load(n: usize, secs: f64) -> Option<LoadResult> {
         report.ticks, report.tick_ms.p50, report.tick_ms.p99, report.tick_ms.max,
         report.tick_interval_error_ms.p99, report.tick_overrun_total, report.input_queue_full_total
     );
+    let reasons: Vec<String> = Reject::LABELS
+        .iter()
+        .map(|l| (l, rej(l)))
+        .filter(|(_, n)| *n > 0)
+        .map(|(l, n)| format!("{l} {n}"))
+        .collect();
     eprintln!(
-        "  bundles sent {sent}, c1 delivered {}, cmds accepted {accepted}, duplicates {}, too_old {}, too_far {}, other rejects {}, missing player-ticks {}, stalls {}, kicks {}",
+        "  bundles sent {sent}, c1 delivered {}, cmds accepted {accepted}, rejected/clamped: [{}], missing player-ticks {}, stalls {}, kicks {}",
         metrics.net_c1_inbound_total.get(),
-        rej("duplicate"),
-        rej("too_old"),
-        rej("too_far"),
-        Reject::LABELS
-            .iter()
-            .filter(|l| !["duplicate", "too_old", "too_far"].contains(l))
-            .map(|l| rej(l))
-            .sum::<u64>(),
+        reasons.join(", "),
         metrics.input_missing_ticks_total.get(),
         metrics.session_stall_total.get(),
         metrics.session_kicked_total.get(),
