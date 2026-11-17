@@ -24,6 +24,7 @@ pub mod channel;
 pub mod codec;
 pub mod msg;
 pub mod quant;
+pub mod snapshot;
 
 pub use bitio::{BitReader, BitWriter};
 pub use channel::Channel;

@@ -64,6 +64,9 @@ pub struct PartMult {
     pub head: f64,
     pub neck: f64,
     pub torso: f64,
+    /// Optional pelvis / lower-abdomen multiplier (GAMEDESIGN 6.6: 0.9).
+    #[serde(default)]
+    pub pelvis: Option<f64>,
     pub limb: f64,
 }
 
@@ -144,6 +147,16 @@ pub struct WeaponGameplay {
     pub mag_reserve: u32,
 }
 
+/// Presentation hints (display only; never read by sim logic).
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct WeaponFx {
+    #[serde(default)]
+    pub muzzle_flash_ms: Option<f64>,
+    #[serde(default)]
+    pub tracer: Option<bool>,
+}
+
 #[derive(Debug, Clone, PartialEq, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct WeaponDef {
@@ -153,6 +166,8 @@ pub struct WeaponDef {
     pub class: String,
     pub historical: WeaponHistorical,
     pub gameplay: WeaponGameplay,
+    #[serde(default)]
+    pub fx: Option<WeaponFx>,
     #[serde(rename = "_meta")]
     pub meta: Meta,
 }

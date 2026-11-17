@@ -1,0 +1,98 @@
+{
+  "id": "ger_kar98k",
+  "name_key": "weapon.ger_kar98k.name",
+  "faction": "ger",
+  "class": "rifle_bolt",
+  "historical": {
+    "caliber": "7.92×57 mm",
+    "cartridge": "7.92×57 mm Mauser (s.S.)",
+    "magazine_capacity": 5,
+    "magazine_type": "stripper_clip_internal_box",
+    "muzzle_velocity_mps": 760,
+    "rate_of_fire_rpm_practical": 15,
+    "mass_kg": 3.9,
+    "_source": "待 M0-031 复核（初值取自 GAMEDESIGN §6.2）"
+  },
+  "gameplay": {
+    "damage_torso_hp": 100,
+    "part_mult": {
+      "head": 3.0,
+      "neck": 2.0,
+      "torso": 1.0,
+      "pelvis": 0.9,
+      "limb": 0.65
+    },
+    "falloff": [
+      {
+        "dist_m": 0,
+        "mult": 1.0
+      },
+      {
+        "dist_m": 200,
+        "mult": 1.0
+      },
+      {
+        "dist_m": 800,
+        "mult": 0.8
+      }
+    ],
+    "fire": {
+      "mode": "bolt",
+      "bolt_cycle_ms": 1500
+    },
+    "reload": {
+      "tactical_ms": 3000,
+      "empty_ms": 3000,
+      "per_round_ms": 650
+    },
+    "ads_ms": 300,
+    "spread": {
+      "hip_deg": 4.0,
+      "ads_deg": 0.08
+    },
+    "recoil": {
+      "vkick_deg": 3.2,
+      "hsigma_deg": 0.2,
+      "recover_deg_s": 10,
+      "bloom_per_shot_deg": 0,
+      "bloom_decay_deg_s": 0
+    },
+    "ballistics": {
+      "muzzle_velocity_mps": 760,
+      "drag_k_per_m": 0.00068,
+      "gravity_mps2": 9.81
+    },
+    "pen_power": 230,
+    "mag_reserve": 6
+  },
+  "fx": {
+    "muzzle_flash_ms": 50,
+    "tracer": false
+  },
+  "_meta": {
+    "status": "initial",
+    "tunable": [
+      "gameplay.damage_torso_hp",
+      "gameplay.part_mult.head",
+      "gameplay.part_mult.neck",
+      "gameplay.part_mult.torso",
+      "gameplay.part_mult.pelvis",
+      "gameplay.part_mult.limb",
+      "gameplay.falloff",
+      "gameplay.fire",
+      "gameplay.reload",
+      "gameplay.ads_ms",
+      "gameplay.spread.hip_deg",
+      "gameplay.spread.ads_deg",
+      "gameplay.recoil.vkick_deg",
+      "gameplay.recoil.hsigma_deg",
+      "gameplay.recoil.recover_deg_s",
+      "gameplay.recoil.bloom_per_shot_deg",
+      "gameplay.recoil.bloom_decay_deg_s",
+      "gameplay.ballistics.drag_k_per_m",
+      "gameplay.pen_power",
+      "gameplay.mag_reserve"
+    ],
+    "calibration_ref": "REFERENCE_MEASUREMENTS §4.1 W-01…W-37（射速 W-01/W-02/W-13、装填 W-03/W-04/W-05、开镜 W-07、后坐 W-15–W-18、扩散 W-19–W-21、初速/下坠 W-22–W-25、伤害 W-37）"
+  }
+}

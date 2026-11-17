@@ -1,6 +1,14 @@
 [project]
 name = "frontline-map-pipeline"
-version = "0.0.0"
-description = "Frontline map pipeline (skeleton; filled in by M0-009)"
+version = "0.1.0"
+description = "Frontline map pipeline (M0: procedural 256 m terrain block, DEM path, chunks, validate)"
 requires-python = ">=3.11"
-dependencies = []
+dependencies = ["numpy>=1.26"]
+
+[project.optional-dependencies]
+dem = []          # GDAL python bindings (osgeo) are installed from the system package manager
+test = ["pytest>=8"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

@@ -20,6 +20,11 @@ pub enum CodecError {
     InvalidValue,
     /// Non-padding bits left over after a complete message.
     Trailing,
+    /// A snapshot refers to a baseline (or a tick reference) the decoder does not have; the
+    /// caller simply keeps not acknowledging, which makes the server send keyframes.
+    MissingBaseline,
+    /// CRC-16 trailer mismatch.
+    BadCrc,
 }
 
 impl fmt::Display for CodecError {
@@ -31,6 +36,8 @@ impl fmt::Display for CodecError {
             CodecError::TooLong => "length exceeds limit",
             CodecError::InvalidValue => "value out of range",
             CodecError::Trailing => "trailing data after message",
+            CodecError::MissingBaseline => "snapshot baseline not available",
+            CodecError::BadCrc => "crc mismatch",
         })
     }
 }

@@ -1,0 +1,88 @@
+{
+  "_meta": {
+    "status": "initial",
+    "tunable": []
+  },
+  "chunks": {
+    "count": 4,
+    "samples": 65,
+    "size_m": 64
+  },
+  "crs": {
+    "epsg": 32630,
+    "origin_e": 0,
+    "origin_n": 0,
+    "size_m": 256
+  },
+  "date_setting": "1944-06",
+  "dequant": "h = hmin_m + u16 / 65535 * (hmax_m - hmin_m)",
+  "display_name": "M0 terrain block",
+  "far_ring": {
+    "extent_m": 8192,
+    "res_m": 8,
+    "samples": 1025
+  },
+  "generator": {
+    "kind": "procedural",
+    "params": {
+      "base_amp_m": 1.8,
+      "base_level_m": 2.2,
+      "gain_mult": 0.5,
+      "pads": [
+        {
+          "cx_m": 128.0,
+          "cz_m": 56.0,
+          "falloff_m": 24.0,
+          "half_m": 32.0,
+          "id": "us",
+          "level_m": 2.2
+        },
+        {
+          "cx_m": 128.0,
+          "cz_m": 200.0,
+          "falloff_m": 24.0,
+          "half_m": 32.0,
+          "id": "ger",
+          "level_m": 10.2
+        }
+      ],
+      "plateau_z_fade_m": [
+        400.0,
+        800.0
+      ],
+      "ramp_height_m": 8.0,
+      "ramp_width_m": 10.0,
+      "ramp_x_fade_m": [
+        16.0,
+        40.0,
+        216.0,
+        240.0
+      ],
+      "ramp_z0_m": 123.0,
+      "wavelengths_m": [
+        2048.0,
+        1024.0,
+        512.0,
+        256.0,
+        128.0,
+        64.0,
+        32.0,
+        16.0,
+        8.0
+      ]
+    },
+    "seed": 1,
+    "tool_version": "0.1.0"
+  },
+  "height": {
+    "datum": "procedural",
+    "hmax_m": 11.0,
+    "hmin_m": 1.0,
+    "res_m": 1,
+    "samples": 257
+  },
+  "layout": "row-major little-endian u16; row index = z (south to north), column = x (west to east); local metres, SW corner = (0,0); far ring is centred on the block (block SW corner at far sample 496,496)",
+  "map_id": "m0",
+  "schema": "frontline.map.meta/1",
+  "sources": []
+}

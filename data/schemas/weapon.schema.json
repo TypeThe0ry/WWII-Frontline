@@ -42,6 +42,7 @@
             "head": { "type": "number" },
             "neck": { "type": "number" },
             "torso": { "type": "number" },
+            "pelvis": { "type": "number" },
             "limb": { "type": "number" }
           }
         },
@@ -106,6 +107,14 @@
         },
         "pen_power": { "type": "number", "minimum": 0 },
         "mag_reserve": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "fx": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "muzzle_flash_ms": { "type": "number", "minimum": 0 },
+        "tracer": { "type": "boolean" }
       }
     },
     "_meta": { "$ref": "#/$defs/meta" }

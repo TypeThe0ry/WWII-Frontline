@@ -1,6 +1,6 @@
 [package]
 name = "frontline-sim"
-description = "Frontline sim (M0-001 skeleton)"
+description = "Frontline deterministic simulation core (M0-007)"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -15,6 +15,23 @@ frontline-protocol = { path = "../protocol" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 sha2 = "0.10"
+bevy_ecs = { version = "=0.20.1", default-features = false, features = ["std"] }
+glam = { version = "=0.34.3", default-features = false, features = ["libm"] }
+libm = "=0.2.16"
+rand_core = "=0.10.1"
+rand_pcg = "=0.10.2"
+
+[features]
+client-predict = []
+# Test-only system that draws RNG and jitters positions every tick (see world.rs).
+test-util = []
+
+[dev-dependencies]
+frontline-sim = { path = ".", features = ["test-util"] }
+
+[[bench]]
+name = "world_step_empty"
+harness = false
 
 [build-dependencies]
 serde = { version = "1", features = ["derive"] }

@@ -1,0 +1,97 @@
+{
+  "id": "us_m1_garand",
+  "name_key": "weapon.us_m1_garand.name",
+  "faction": "us",
+  "class": "rifle_semi",
+  "historical": {
+    "caliber": "7.62×63 mm",
+    "cartridge": ".30-06 Springfield",
+    "magazine_capacity": 8,
+    "magazine_type": "en_bloc_clip",
+    "muzzle_velocity_mps": 853,
+    "rate_of_fire_rpm_practical": 40,
+    "mass_kg": 4.3,
+    "_source": "待 M0-031 复核（初值取自 GAMEDESIGN §6.2）"
+  },
+  "gameplay": {
+    "damage_torso_hp": 70,
+    "part_mult": {
+      "head": 3.0,
+      "neck": 2.0,
+      "torso": 1.0,
+      "pelvis": 0.9,
+      "limb": 0.65
+    },
+    "falloff": [
+      {
+        "dist_m": 0,
+        "mult": 1.0
+      },
+      {
+        "dist_m": 100,
+        "mult": 1.0
+      },
+      {
+        "dist_m": 600,
+        "mult": 0.72
+      }
+    ],
+    "fire": {
+      "mode": "semi",
+      "cap_rpm": 120
+    },
+    "reload": {
+      "tactical_ms": 3400,
+      "empty_ms": 2800
+    },
+    "ads_ms": 300,
+    "spread": {
+      "hip_deg": 3.5,
+      "ads_deg": 0.15
+    },
+    "recoil": {
+      "vkick_deg": 1.6,
+      "hsigma_deg": 0.25,
+      "recover_deg_s": 12,
+      "bloom_per_shot_deg": 0.4,
+      "bloom_decay_deg_s": 3.0
+    },
+    "ballistics": {
+      "muzzle_velocity_mps": 853,
+      "drag_k_per_m": 0.00075,
+      "gravity_mps2": 9.81
+    },
+    "pen_power": 220,
+    "mag_reserve": 6
+  },
+  "fx": {
+    "muzzle_flash_ms": 50,
+    "tracer": false
+  },
+  "_meta": {
+    "status": "initial",
+    "tunable": [
+      "gameplay.damage_torso_hp",
+      "gameplay.part_mult.head",
+      "gameplay.part_mult.neck",
+      "gameplay.part_mult.torso",
+      "gameplay.part_mult.pelvis",
+      "gameplay.part_mult.limb",
+      "gameplay.falloff",
+      "gameplay.fire",
+      "gameplay.reload",
+      "gameplay.ads_ms",
+      "gameplay.spread.hip_deg",
+      "gameplay.spread.ads_deg",
+      "gameplay.recoil.vkick_deg",
+      "gameplay.recoil.hsigma_deg",
+      "gameplay.recoil.recover_deg_s",
+      "gameplay.recoil.bloom_per_shot_deg",
+      "gameplay.recoil.bloom_decay_deg_s",
+      "gameplay.ballistics.drag_k_per_m",
+      "gameplay.pen_power",
+      "gameplay.mag_reserve"
+    ],
+    "calibration_ref": "REFERENCE_MEASUREMENTS §4.1 W-01…W-37（射速 W-01/W-02/W-13、装填 W-03/W-04/W-05、开镜 W-07、后坐 W-15–W-18、扩散 W-19–W-21、初速/下坠 W-22–W-25、伤害 W-37）"
+  }
+}

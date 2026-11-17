@@ -16,7 +16,7 @@ export const DIMENSIONLESS = new Set([
   'count', 'ammo_mags', 'mag_reserve', 'magazine_capacity', 'pen_power', 'stamina_max',
   'max_per_squad', 'max_per_team', 'manpower_cost', 'squad_size_min', 'crew', 'rays_per_side',
   'manpower', 'munitions', 'fuel', 'friction_forward', 'friction_lateral',
-  'epsg', 'samples', 'origin_e', 'origin_n', 'e', 'n', 'dx', 'dy', 'design', 'pos', 'mult',
+  'epsg', 'samples', 'seed', 'origin_e', 'origin_n', 'e', 'n', 'dx', 'dy', 'design', 'pos', 'mult',
 ]);
 
 /** Container keys whose numeric children share the unit (part_mult.head, armor_mm.front). */

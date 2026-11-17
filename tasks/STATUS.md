@@ -43,7 +43,7 @@
 | M0-017 | server：WebTransport 传输 | todo | | | |
 | M0-018 | server：会话、输入缓冲与校验 | todo | | | |
 | M0-019 | server：AOI v0 与快照发送 | todo | | | |
-| M0-020 | client/render：引擎初始化与调试叠层 | todo | | | |
+| M0-020 | client/render：引擎初始化与调试叠层 | partial | 2026-11-17 无 GPU 环境（4 核 Xeon 2.3 GHz，Chromium 软件渲染）实测：①验收1 `pnpm -C client test:e2e` 5/5 通过：`?renderer=webgl2` 5 点（中心+4 角）与清屏色差>30 且 60 帧后变化≤6，无 console error/pageerror；WebGPU 真机项**未测**。②验收2 `__perf.dump()` 固定 16 字段 schema 已测（vitest+e2e）；WebGPU(SwiftShader)路径 `gpu_ms.source=timestamp-query` 有值，**数值为软件适配器耗时，真 GPU 未测**；WebGL2/SwiftShader 无可用计时则回退 `interval-estimate`（SwiftShader 上 EXT_disjoint_timer_query 可用但读数~0.0006 ms，不可信）。③验收3 compute 冒烟在 SwiftShader WebGPU 上 `__smoke.ok=true, mismatches=0, 782 ms`，Hi-Z/froxel(921600/921600)/TAAU 三试验均通过；真 GPU **未测**；结论见 reports/m0/compute-feasibility.md。④验收4 FixedStepper vitest 通过（100 ms→3 步；1000 ms→5 步且 clamped+1；1 h 随机 dt 偏差≤1）。⑤验收5 `navigator.gpu=undefined` auto→WebGL2，页面导航起 219 ms 内就绪（≤2 s），叠层显示 `fallback: navigator.gpu is undefined`。⑥验收6 1920×1080 空场景 60 s（600 帧窗口，WebGL2/SwiftShader）CPU 帧时间 P50 0.30 ms、**P99 0.60 ms**（≤4 ms）、60.0 fps；WebGPU(SwiftShader+shim) P99 0.50 ms；仅软件渲染，参考机未测。检查：`pnpm lint`/`typecheck`/`test`(18 项)/`build` 全绿。 | PI-005（compute 需自写薄封装；无头 WebGPU 无法 present，e2e 用 `client/e2e/webgpu-swiftshader-shim.js` 离屏）、PI-006（步长取 1000/30）；WebGPU 真机帧时间/像素/compute 需参考机复测（H-021）；WebGPU 路径无像素校验 | |
 | M0-021 | client/net：传输与时钟同步 | todo | | | |
 | M0-022 | client/game：输入、预测、对账与插值 | todo | | | |
 | M0-023 | client/render：CDLOD 地形 | todo | | | |

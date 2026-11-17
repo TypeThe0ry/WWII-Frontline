@@ -17,6 +17,19 @@
     "outpost_candidates": { "$ref": "#/$defs/candidates" },
     "airhead_candidates": { "$ref": "#/$defs/candidates" },
     "observation_posts": { "$ref": "#/$defs/candidates" },
+    "patrol_points": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "pos"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "pos": { "$ref": "#/$defs/pos2" },
+          "y_m": { "type": "number" }
+        }
+      }
+    },
     "kinds_supported": {
       "type": "array",
       "uniqueItems": true,
@@ -38,7 +51,11 @@
       "type": "object",
       "additionalProperties": false,
       "required": ["pos", "radius_m"],
-      "properties": { "pos": { "$ref": "#/$defs/pos2" }, "radius_m": { "type": "number", "exclusiveMinimum": 0 } }
+      "properties": {
+        "pos": { "$ref": "#/$defs/pos2" },
+        "y_m": { "type": "number" },
+        "radius_m": { "type": "number", "exclusiveMinimum": 0 }
+      }
     },
     "candidates": {
       "type": "array",

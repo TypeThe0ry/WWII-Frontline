@@ -43,6 +43,29 @@
         "extent_m": { "type": "number", "exclusiveMinimum": 0 }
       }
     },
+    "dequant": { "type": "string", "minLength": 1 },
+    "layout": { "type": "string", "minLength": 1 },
+    "chunks": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["size_m", "samples", "count"],
+      "properties": {
+        "size_m": { "type": "number", "exclusiveMinimum": 0 },
+        "samples": { "type": "integer", "minimum": 2 },
+        "count": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "generator": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "seed", "params", "tool_version"],
+      "properties": {
+        "kind": { "enum": ["procedural", "dem"] },
+        "seed": { "type": "integer" },
+        "params": { "type": "object" },
+        "tool_version": { "type": "string", "minLength": 1 }
+      }
+    },
     "anchors": {
       "type": "array",
       "items": {

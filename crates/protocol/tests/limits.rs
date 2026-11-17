@@ -57,8 +57,10 @@ fn quant_error_bounds_1m() {
     assert!(ey <= 1.0 / 64.0 + 2e-4, "y {ey}");
     assert!(eyaw10 <= 0.35, "yaw10 {eyaw10}");
     assert!(eyaw8 <= 1.41 / 2.0 + 0.01, "yaw8 {eyaw8}");
-    // 8-bit pitch half step is 0.3529 deg; 9 bit is 0.176 deg
+    // 8-bit pitch (0.3529 deg) is no longer used on the wire (PI-001 ruling); kept as a
+    // measurement. The aim-critical width PITCH_BITS_EVENT is 9 bit (0.176 deg) and must pass.
     assert!(deg(epitch8) <= 0.3529 + 0.005, "pitch8 {}", deg(epitch8));
+    assert_eq!(PITCH_BITS_EVENT, 9);
     assert!(deg(epitch9) <= 0.35, "pitch9 {}", deg(epitch9));
     assert!(deg(epitch16) <= 0.35, "pitch16 {}", deg(epitch16));
     assert!(deg(ei16) <= 0.35, "pitch_i16 {}", deg(ei16));

@@ -1,0 +1,143 @@
+{
+  "files": {
+    "chunks/b_0_0.bin": {
+      "bytes": 8450,
+      "sha256": "9c05f295154e5d30466b637897f425d0b3f648500242bcead0abc279a0c536d3"
+    },
+    "chunks/b_0_1.bin": {
+      "bytes": 8450,
+      "sha256": "283a69e06e92ffbfbd91f68477405914ef26f071b29844d1acb623a8d16c0eab"
+    },
+    "chunks/b_0_2.bin": {
+      "bytes": 8450,
+      "sha256": "4f84ce801464da14423664e9988dbbcd37ae039bae9c9a90ce4bf3cb5d288e43"
+    },
+    "chunks/b_0_3.bin": {
+      "bytes": 8450,
+      "sha256": "f5da10767552e13759b40a2530c67bf0a8d7a28aef5929e300dd16b63dc126cd"
+    },
+    "chunks/b_1_0.bin": {
+      "bytes": 8450,
+      "sha256": "4d045b4190901f846bebe5b83cb51d28748e2cb89661c4c5a7544a07bae97de6"
+    },
+    "chunks/b_1_1.bin": {
+      "bytes": 8450,
+      "sha256": "142c7fd2d7a9f35fea479d2af2c8c4114d41bd3fda582c8f7180bd0a9cf77964"
+    },
+    "chunks/b_1_2.bin": {
+      "bytes": 8450,
+      "sha256": "1b8fca4f1c05ab9fea45e9e5024bf3c6aa34734ece632dfd40435af168ac4558"
+    },
+    "chunks/b_1_3.bin": {
+      "bytes": 8450,
+      "sha256": "b1bb584a037d81aa5a537aaf60bd4dd554027dddde539e2aff9c79a4b54c8785"
+    },
+    "chunks/b_2_0.bin": {
+      "bytes": 8450,
+      "sha256": "ca832841b30f84f9f0b80eea06627802fb5bbdf6220098895b1070575b1c6dc4"
+    },
+    "chunks/b_2_1.bin": {
+      "bytes": 8450,
+      "sha256": "918d3652e2505b626cc258639b5598f25f8d448c3c0adcbd8a8ac28037ca4b8c"
+    },
+    "chunks/b_2_2.bin": {
+      "bytes": 8450,
+      "sha256": "6db9e137941599b828109debe45173a5dee4b8dd12b158c6d7242ec8664d0314"
+    },
+    "chunks/b_2_3.bin": {
+      "bytes": 8450,
+      "sha256": "23ba6e9dbebafce53f82c6497f8735ccba84f762af51f2335c3e0b1aa9c33bbf"
+    },
+    "chunks/b_3_0.bin": {
+      "bytes": 8450,
+      "sha256": "53a33d676d4d07d90438818b67b6dce4f09ddb1f3f7005e14be781c5deb1ed33"
+    },
+    "chunks/b_3_1.bin": {
+      "bytes": 8450,
+      "sha256": "6ac88115fa4af4e172cecd72678fe33eb4d1b27c6ec91d5748a07ced574003c7"
+    },
+    "chunks/b_3_2.bin": {
+      "bytes": 8450,
+      "sha256": "83affef3ed368ac7149babbd18603dd85108b3383347d58e6bfe8c4b187e8055"
+    },
+    "chunks/b_3_3.bin": {
+      "bytes": 8450,
+      "sha256": "8b1ecb7e2d501380e7663d0b80dc91ecc1059ab39834cb1ca3ec748216b933f0"
+    },
+    "chunks/c_0_0.bin": {
+      "bytes": 12562,
+      "sha256": "7775fc1e1aa1e2477f153c84cc574383f9b78e38865031258c272c2a8e85f055"
+    },
+    "chunks/c_0_1.bin": {
+      "bytes": 12562,
+      "sha256": "b42f6a9cc33570dcdbc273e2d7a883fa3d7f04199315c01093caee329b3176a2"
+    },
+    "chunks/c_0_2.bin": {
+      "bytes": 12562,
+      "sha256": "b48e16b8a5850770e1c8eb24fdf1c2e9d9c4fd49890643fc1bb4bfdea02290f7"
+    },
+    "chunks/c_0_3.bin": {
+      "bytes": 12562,
+      "sha256": "55ab1dc268b10d65bd0450615905006968c3e018682adc45fbec3e5b2e547440"
+    },
+    "chunks/c_1_0.bin": {
+      "bytes": 12562,
+      "sha256": "4d1c0e7d61275299e9dcc1a250dbbd6752c1f90f91a1961e704acb8b3ac18d7b"
+    },
+    "chunks/c_1_1.bin": {
+      "bytes": 12562,
+      "sha256": "1fc261de5563048876d83b952633d0ebee63fdec97dfa7137cceceaeaeb9ab95"
+    },
+    "chunks/c_1_2.bin": {
+      "bytes": 12562,
+      "sha256": "d07802b2d2106583eeefaabd8659d4cafa9c3590506091ef38474d89c89d6d0d"
+    },
+    "chunks/c_1_3.bin": {
+      "bytes": 12562,
+      "sha256": "9429ce9b2b6470ca6da6075be707199299501f3b31c97449f590ec4462892962"
+    },
+    "chunks/c_2_0.bin": {
+      "bytes": 12562,
+      "sha256": "ec128fe36aef65164c995611d9578dd6a199045367bbfce0e1fa999441b04b51"
+    },
+    "chunks/c_2_1.bin": {
+      "bytes": 12562,
+      "sha256": "af7db0f5a3ca2cc187562dea43db2fb8bbb9c131c916a16c7b78a5d086c8701e"
+    },
+    "chunks/c_2_2.bin": {
+      "bytes": 12562,
+      "sha256": "b3532e52e81fa1e2838b9a3d2126e64b6832e4c8859ac5353fdebbd41f89c3aa"
+    },
+    "chunks/c_2_3.bin": {
+      "bytes": 12562,
+      "sha256": "5ed97a22c696d971978c6a225dcca2b26f082d811d516c3872f340b09743d647"
+    },
+    "chunks/c_3_0.bin": {
+      "bytes": 12562,
+      "sha256": "2039fac0a7cda1681f7466cfda94d6121dbbb6cc47e0a69f01fbc3c0fe3a4189"
+    },
+    "chunks/c_3_1.bin": {
+      "bytes": 12562,
+      "sha256": "ccddaf7a2b6cfcdba3c6545ee4aa824e31a27e1e5cc820b3250040ceb97e93a1"
+    },
+    "chunks/c_3_2.bin": {
+      "bytes": 12562,
+      "sha256": "c5bc80c32930b42a384785fa82ada1bf03df8b3aa3ed9bf7356d34d7122135e4"
+    },
+    "chunks/c_3_3.bin": {
+      "bytes": 12562,
+      "sha256": "c02d9e4c1747d9a527816287cdf09973a31ff1a633949cc46fa68ec10f9aa6ed"
+    },
+    "heightmap_1m.r16": {
+      "bytes": 132098,
+      "sha256": "76fe2d58af3bc864c8cf7d2889d29ec8c5685cf968aa5b7e3554be6bddd44756"
+    },
+    "heightmap_far_8m.r16": {
+      "bytes": 2101250,
+      "sha256": "1c958f6f179088893cd10b260cc4de67c73425884977a54e717b936bf85b1d30"
+    }
+  },
+  "note": "SHA-256 of generated binaries; regenerate with the command in DEVELOPING.md",
+  "schema": "frontline.map.manifest/1",
+  "tool_version": "0.1.0"
+}
