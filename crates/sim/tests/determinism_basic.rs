@@ -88,7 +88,8 @@ fn run_hashes(seed: u64, ticks: u32) -> Vec<u64> {
 /// Re-pinned when `state_hash` began hashing weapons by id instead of index (0x44d1_6e86_af4c_cf27).
 /// M1-013a: re-pinned (0xce40_2769_4ae1_5175 before) because reload is now cancelled by sprint/vault
 /// and shots carry a spread seed; the random inputs sprint while reloading.
-const GOLDEN_FINAL_HASH: u64 = 0x8847_1eb1_d55d_f1d7;
+/// M1-013b: re-pinned again (0x8847_1eb1_d55d_f1d7 before): random MELEE presses now start strikes.
+const GOLDEN_FINAL_HASH: u64 = 0x6f5a_890b_29d9_4fa7;
 
 #[test]
 fn ten_thousand_ticks_identical_across_threads() {

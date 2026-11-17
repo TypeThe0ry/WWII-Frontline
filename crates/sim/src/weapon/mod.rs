@@ -36,6 +36,7 @@
 pub mod ammo;
 pub mod ballistics;
 pub mod hitbox;
+pub mod melee;
 pub mod recoil;
 pub mod spread;
 pub mod state;
@@ -49,6 +50,7 @@ use crate::movement::{decode_move, MoveParams, PlayerAuthState};
 use crate::rng::{Purpose, Rng};
 
 pub use hitbox::HitZone;
+pub use melee::{MeleeParams, MeleeState};
 pub use state::{Fsm, ReloadKind, WeaponState, TICK_UNITS};
 
 /// Per-tick constants derived from a [`WeaponDef`].

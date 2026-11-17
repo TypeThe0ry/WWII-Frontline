@@ -116,6 +116,7 @@ impl World {
             hz: cfg.tick_hz,
         });
         ecs.insert_resource(WeaponTable::new(cfg.data, cfg.tick_hz));
+        ecs.insert_resource(crate::components::MeleeTable::new(cfg.data, cfg.tick_hz));
         ecs.insert_resource(Projectiles::default());
         ecs.insert_resource(EventBuf::default());
         ecs.insert_resource(HitLog::default());
@@ -203,6 +204,7 @@ impl World {
                 Motion::from_auth(&PlayerAuthState::spawn(req.pos, req.yaw)),
                 Health::full(max_hp),
                 LifeState::Alive,
+                crate::weapon::MeleeState::default(),
                 Home {
                     pos: req.pos,
                     yaw: req.yaw,
@@ -421,6 +423,13 @@ impl World {
                 h.write_u16(killer.map_or(0xFFFF, u16::from));
                 h.write_u64(self.weapon_key(u16::from(*weapon)));
                 h.write_u32(respawn_tick.0);
+            }
+            // M1-013b: written only while a melee action runs.
+            if let Some(ms) = er.get::<crate::weapon::MeleeState>() {
+                if !ms.is_idle() {
+                    h.write_u8(0xE0 | ms.phase as u8 | (u8::from(ms.lunging) << 3));
+                    h.write_u16(ms.ticks_left);
+                }
             }
             if let Some(w) = er.get::<WeaponState>() {
                 // The weapon is hashed by id, not by its index in `GameData::weapons`, so adding or
