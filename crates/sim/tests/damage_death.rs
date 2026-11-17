@@ -534,7 +534,7 @@ fn skirmish(seed: u64, n: u8, ticks: u32) -> Skirmish {
             let mut c = idle(0);
             if let Some(e) = enemy {
                 let d = e.pos - me.pos;
-                c.yaw = quant_yaw(d.x.atan2(d.z), 16).code;
+                c.yaw = quant_yaw(libm::atan2f(d.x, d.z), 16).code;
                 c.pitch = rad_to_pitch_i16(0.01).code;
                 let mag = out.world.weapon_state(id).map_or(1, |s| s.mag);
                 c.buttons = if mag == 0 {
