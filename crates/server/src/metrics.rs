@@ -6,8 +6,8 @@ use std::sync::Arc;
 use std::time::Instant;
 
 use prometheus::{
-    Encoder, Gauge, Histogram, HistogramOpts, IntCounter, IntGauge, IntGaugeVec, Opts, Registry,
-    TextEncoder,
+    Encoder, Gauge, Histogram, HistogramOpts, IntCounter, IntCounterVec, IntGauge, IntGaugeVec,
+    Opts, Registry, TextEncoder,
 };
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpListener;
@@ -17,6 +17,17 @@ pub const TICK_MS_BUCKETS: &[f64] = &[
 ];
 pub const INTERVAL_ERR_MS_BUCKETS: &[f64] =
     &[0.05, 0.1, 0.2, 0.3, 0.5, 0.75, 1.0, 1.5, 2.0, 3.0, 5.0];
+
+/// Label values of `net_rejects_total{reason}`.
+pub const REJECT_REASONS: &[&str] = &[
+    "version",
+    "data_hash",
+    "server_full",
+    "ip_limit",
+    "conn_limit",
+    "rate_limit",
+    "slow_client",
+];
 
 pub struct Metrics {
     pub registry: Registry,
@@ -30,6 +41,15 @@ pub struct Metrics {
     pub players: IntGaugeVec,
     pub bots: IntGauge,
     pub uptime_seconds: Gauge,
+    // ---- net (M0-016) ----
+    pub net_connections: IntGauge,
+    pub net_rejects_total: IntCounterVec,
+    pub net_bytes_in_total: IntCounter,
+    pub net_bytes_out_total: IntCounter,
+    pub net_frames_malformed_total: IntCounter,
+    pub net_handshake_timeout_total: IntCounter,
+    pub net_snapshots_dropped_total: IntCounter,
+    pub net_c1_inbound_total: IntCounter,
     /// Latest published tick (for the report / smoke tests).
     pub ticks_run: AtomicU64,
     started: Instant,
@@ -79,6 +99,30 @@ impl Metrics {
                 .expect("players"),
             bots: gauge("server_bots", "Active bots"),
             uptime_seconds: Gauge::new("server_uptime_seconds", "Process uptime").expect("uptime"),
+            net_connections: gauge("net_connections", "Open client connections"),
+            net_rejects_total: IntCounterVec::new(
+                Opts::new("net_rejects_total", "Connections/handshakes rejected"),
+                &["reason"],
+            )
+            .expect("rejects"),
+            net_bytes_in_total: counter("net_bytes_in_total", "Bytes received from clients"),
+            net_bytes_out_total: counter("net_bytes_out_total", "Bytes sent to clients"),
+            net_frames_malformed_total: counter(
+                "net_frames_malformed_total",
+                "Inbound frames that were malformed, oversize or illegal (connection closed)",
+            ),
+            net_handshake_timeout_total: counter(
+                "net_handshake_timeout_total",
+                "Connections closed for not completing the handshake in time",
+            ),
+            net_snapshots_dropped_total: counter(
+                "net_snapshots_dropped_total",
+                "Unreliable (C2/C3) packets dropped in favour of newer ones",
+            ),
+            net_c1_inbound_total: counter(
+                "net_c1_inbound_total",
+                "Valid C1 input bundles received",
+            ),
             ticks_run: AtomicU64::new(0),
             started: Instant::now(),
             registry,
@@ -99,6 +143,21 @@ impl Metrics {
         r.register(Box::new(m.players.clone())).unwrap();
         r.register(Box::new(m.bots.clone())).unwrap();
         r.register(Box::new(m.uptime_seconds.clone())).unwrap();
+        for c in [
+            Box::new(m.net_connections.clone()) as Box<dyn prometheus::core::Collector>,
+            Box::new(m.net_rejects_total.clone()),
+            Box::new(m.net_bytes_in_total.clone()),
+            Box::new(m.net_bytes_out_total.clone()),
+            Box::new(m.net_frames_malformed_total.clone()),
+            Box::new(m.net_handshake_timeout_total.clone()),
+            Box::new(m.net_snapshots_dropped_total.clone()),
+            Box::new(m.net_c1_inbound_total.clone()),
+        ] {
+            r.register(c).unwrap();
+        }
+        for reason in REJECT_REASONS {
+            m.net_rejects_total.with_label_values(&[reason]);
+        }
         // Make both team series visible from the start.
         m.players.with_label_values(&["us"]).set(0);
         m.players.with_label_values(&["ger"]).set(0);
@@ -181,6 +240,11 @@ mod tests {
             "server_players{team=\"us\"}",
             "server_bots",
             "server_uptime_seconds",
+            "net_connections",
+            "net_rejects_total{reason=\"version\"}",
+            "net_frames_malformed_total",
+            "net_handshake_timeout_total",
+            "net_snapshots_dropped_total",
         ] {
             assert!(text.contains(name), "missing {name}");
         }

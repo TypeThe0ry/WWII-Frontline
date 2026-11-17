@@ -14,29 +14,19 @@
 ```
 Error: expect(received).toBeLessThanOrEqual(expected)
 
-Expected: <= 0.12
-Received:    3.934728254850401
+Expected: <= 0.1
+Received:    9.221654448369181
 ```
 
 # Test source
 
 ```ts
-  43  |     img.src = `data:image/png;base64,${b64}`;
-  44  |     await img.decode();
-  45  |     const c = document.createElement('canvas');
-  46  |     c.width = img.width;
-  47  |     c.height = img.height;
-  48  |     const g = c.getContext('2d')!;
-  49  |     g.drawImage(img, 0, 0);
-  50  |     const d = g.getImageData(0, 0, img.width, img.height).data;
-  51  |     let magenta = 0;
-  52  |     let nonBackground = 0;
   53  |     for (let i = 0; i < d.length; i += 4) {
   54  |       if (d[i]! > 200 && d[i + 1]! < 110 && d[i + 2]! > 200) magenta++;
   55  |       else nonBackground++;
   56  |     }
-  57  |     return { w: img.width, h: img.height, magenta, nonBackground, data: Array.from(d) };
-  58  |   }, png);
+  57  |     return { w: img.width, h: img.height, magenta, nonBackground, data: keep ? Array.from(d) : ([] as number[]) };
+  58  |   }, [png, withData] as [string, boolean]);
   59  | }
   60  | 
   61  | function rng(seed: number): () => number {
@@ -79,148 +69,158 @@ Received:    3.934728254850401
   98  |   const rand = rng(21);
   99  |   const hmin = 1;
   100 |   const hmax = 11;
-  101 |   const cases: { label: string; pos: Vec3; target: Vec3; pts: () => [number, number]; tol: number; slope: number }[] = [
-  102 |     { label: 'near block', pos: [128, 400, 128], target: [128, 0, 128.5], pts: () => [rand() * 256, rand() * 256], tol: 0.12, slope: 0.04 },
-  103 |     { label: 'far ring', pos: [128, 5000, 128], target: [128, 0, 128.5], pts: () => [-1500 + rand() * 3000, -700 + rand() * 1700], tol: 0.45, slope: 0.02 },
-  104 |   ];
-  105 |   for (const c of cases) {
-  106 |     await pose(page, c.pos, c.target);
-  107 |     await frames(page, 1);
-  108 |     const g = await grab(page);
-  109 |     // Candidate points on gentle ground only (1 px of projection error on a steep slope would dominate the comparison).
-  110 |     const cand = Array.from({ length: 600 }, () => c.pts());
-  111 |     const probes = await page.evaluate(
-  112 |       ([pts, maxSlope, label]) => {
-  113 |         const t = window.__terrain!;
-  114 |         const out: { x: number; z: number; sx: number; sy: number; h: number }[] = [];
-  115 |         for (const [x, z] of pts as [number, number][]) {
-  116 |           if (label === 'far ring' && x > -20 && x < 276 && z > -20 && z < 276) continue; // this case probes outside the block
-  117 |           const h = t.heightAt(x, z);
-  118 |           const gx = Math.abs(t.heightAt(x + 4, z) - t.heightAt(x - 4, z)) / 8;
-  119 |           const gz = Math.abs(t.heightAt(x, z + 4) - t.heightAt(x, z - 4)) / 8;
-  120 |           if (Math.max(gx, gz) > (maxSlope as number)) continue;
-  121 |           const s = t.project(x, z);
-  122 |           out.push({ x, z, sx: s.x, sy: s.y, h });
-  123 |         }
-  124 |         return out;
-  125 |       },
-  126 |       [cand, c.slope, c.label] as const,
-  127 |     );
-  128 |     let worst = 0;
-  129 |     let sum = 0;
-  130 |     let used = 0;
-  131 |     for (const q of probes) {
-  132 |       const px = Math.round(q.sx);
-  133 |       const py = Math.round(q.sy);
-  134 |       if (px < 2 || py < 2 || px >= g.w - 2 || py >= g.h - 2) continue;
-  135 |       const rendered = hmin + (g.data[(py * g.w + px) * 4]! / 255) * (hmax - hmin);
-  136 |       const err = Math.abs(rendered - q.h);
-  137 |       worst = Math.max(worst, err);
-  138 |       sum += err;
-  139 |       used++;
-  140 |     }
-  141 |     console.log(`${c.label}: ${used} probes on gentle ground, GPU-vs-CPU height error max ${worst.toFixed(3)} m, mean ${(sum / used).toFixed(3)} m (8-bit gray = ${((hmax - hmin) / 255).toFixed(3)} m/step)`);
-  142 |     expect(used).toBeGreaterThan(40);
-> 143 |     expect(worst).toBeLessThanOrEqual(c.tol);
+  101 |   // Poses chosen so the probed ground is in the finest LOD the data supports: the vertex grid then lies on the map
+  102 |   // texels and the comparison tests sampling/dequantisation/orientation rather than LOD approximation.
+  103 |   const cases: { label: string; poses: Vec3[]; half: [number, number]; tol: number; slope: number; outside: boolean }[] = [
+  104 |     {
+  105 |       label: 'near block (LOD0, 1 m grid)',
+  106 |       poses: [[50, 50, 50], [128, 50, 50], [206, 50, 50], [50, 50, 128], [206, 50, 128], [50, 50, 206], [128, 50, 206], [206, 50, 206], [128, 50, 150]],
+  107 |       half: [38, 20],
+  108 |       tol: 0.1,
+  109 |       slope: 0.12,
+  110 |       outside: false,
+  111 |     },
+  112 |     { label: 'far ring (LOD3, 8 m grid = far texels)', poses: [[1000, 700, 500], [-1200, 700, 300], [300, 700, -900]], half: [150, 120], tol: 0.2, slope: 0.1, outside: true },
+  113 |   ];
+  114 |   for (const c of cases) {
+  115 |     let worst = 0;
+  116 |     let sum = 0;
+  117 |     let used = 0;
+  118 |     for (const p of c.poses) {
+  119 |       await pose(page, p, [p[0], 0, p[2] + 0.4]);
+  120 |       await frames(page, 1);
+  121 |       const g = await grab(page, true);
+  122 |       const cand = Array.from({ length: 120 }, (): [number, number] => [p[0] + (rand() * 2 - 1) * c.half[0], p[2] + (rand() * 2 - 1) * c.half[1]]);
+  123 |       const probes = await page.evaluate(
+  124 |         ([pts, maxSlope, outside]) => {
+  125 |           const t = window.__terrain!;
+  126 |           const out: { sx: number; sy: number; h: number }[] = [];
+  127 |           for (const [x, z] of pts as [number, number][]) {
+  128 |             if (outside && x > -20 && x < 276 && z > -20 && z < 276) continue;
+  129 |             if (!outside && (x < 0 || x > 256 || z < 0 || z > 256)) continue;
+  130 |             const gx = Math.abs(t.heightAt(x + 1, z) - t.heightAt(x - 1, z)) / 2;
+  131 |             const gz = Math.abs(t.heightAt(x, z + 1) - t.heightAt(x, z - 1)) / 2;
+  132 |             if (Math.max(gx, gz) > (maxSlope as number)) continue;
+  133 |             const s = t.project(x, z);
+  134 |             out.push({ sx: s.x, sy: s.y, h: t.heightAt(x, z) });
+  135 |           }
+  136 |           return out;
+  137 |         },
+  138 |         [cand, c.slope, c.outside] as const,
+  139 |       );
+  140 |       for (const q of probes) {
+  141 |         const px = Math.round(q.sx);
+  142 |         const py = Math.round(q.sy);
+  143 |         if (px < 2 || py < 2 || px >= g.w - 2 || py >= g.h - 2) continue;
+  144 |         const rendered = hmin + (g.data[(py * g.w + px) * 4]! / 255) * (hmax - hmin);
+  145 |         const err = Math.abs(rendered - q.h);
+  146 |         worst = Math.max(worst, err);
+  147 |         sum += err;
+  148 |         used++;
+  149 |       }
+  150 |     }
+  151 |     console.log(`${c.label}: ${used} probes on gentle ground, GPU-vs-CPU height error max ${worst.toFixed(3)} m, mean ${(sum / used).toFixed(3)} m (8-bit gray = ${((hmax - hmin) / 255).toFixed(3)} m/step)`);
+  152 |     expect(used).toBeGreaterThan(40);
+> 153 |     expect(worst).toBeLessThanOrEqual(c.tol);
       |                   ^ Error: expect(received).toBeLessThanOrEqual(expected)
-  144 |   }
-  145 |   expect(errors).toEqual([]);
-  146 | });
-  147 | 
-  148 | test('no cracks: flat shading over a magenta clear colour, random poses; control without edge masks does crack', async ({ page }) => {
-  149 |   test.setTimeout(240_000);
-  150 |   const errors = watchErrors(page);
-  151 |   await page.goto('/?renderer=webgl2&scene=terrain&terrain_debug=flat');
-  152 |   await ready(page);
-  153 |   const rand = rng(77);
-  154 |   const poses: [Vec3, Vec3][] = [];
-  155 |   for (let i = 0; i < 14; i++) {
-  156 |     const x = rand() * 256;
-  157 |     const z = rand() * 256;
-  158 |     const yaw = rand() * Math.PI * 2;
-  159 |     const y = 2 + rand() * 25;
-  160 |     poses.push([[x, y, z], [x + Math.sin(yaw) * 200, 6, z + Math.cos(yaw) * 200]]);
-  161 |   }
-  162 |   // Low grazing views from outside the block toward the far field and uphill (the geometry where a crack is see-through).
-  163 |   for (let i = 0; i < 6; i++) {
-  164 |     const yaw = rand() * Math.PI * 2;
-  165 |     poses.push([[-300 + rand() * 900, 1.7 + rand() * 6, -300 + rand() * 900], [128 + Math.sin(yaw) * 900, 4, 128 + Math.cos(yaw) * 900]]);
-  166 |   }
-  167 |   let stitched = 0;
-  168 |   let control = 0;
-  169 |   for (const [p, t] of poses) {
-  170 |     await page.evaluate(() => window.__terrain!.setStitch(true));
-  171 |     await pose(page, p, t);
-  172 |     stitched += (await grab(page)).magenta;
-  173 |     await page.evaluate(() => window.__terrain!.setStitch(false));
-  174 |     await pose(page, p, t);
-  175 |     control += (await grab(page)).magenta;
+  154 |   }
+  155 |   expect(errors).toEqual([]);
+  156 | });
+  157 | 
+  158 | test('no cracks: flat shading over a magenta clear colour, random poses; control without edge masks does crack', async ({ page }) => {
+  159 |   test.setTimeout(240_000);
+  160 |   const errors = watchErrors(page);
+  161 |   await page.goto('/?renderer=webgl2&scene=terrain&terrain_debug=flat');
+  162 |   await ready(page);
+  163 |   const rand = rng(77);
+  164 |   const poses: [Vec3, Vec3][] = [];
+  165 |   for (let i = 0; i < 14; i++) {
+  166 |     const x = rand() * 256;
+  167 |     const z = rand() * 256;
+  168 |     const yaw = rand() * Math.PI * 2;
+  169 |     const y = 2 + rand() * 25;
+  170 |     poses.push([[x, y, z], [x + Math.sin(yaw) * 200, 6, z + Math.cos(yaw) * 200]]);
+  171 |   }
+  172 |   // Low grazing views from outside the block toward the far field and uphill (the geometry where a crack is see-through).
+  173 |   for (let i = 0; i < 6; i++) {
+  174 |     const yaw = rand() * Math.PI * 2;
+  175 |     poses.push([[-300 + rand() * 900, 1.7 + rand() * 6, -300 + rand() * 900], [128 + Math.sin(yaw) * 900, 4, 128 + Math.cos(yaw) * 900]]);
   176 |   }
-  177 |   console.log(`magenta (hole) pixels over ${poses.length} poses: stitched ${stitched}, control (no edge masks) ${control}`);
-  178 |   expect(stitched).toBe(0);
-  179 |   expect(control, 'detector sensitivity: the un-stitched control must show holes').toBeGreaterThan(0);
-  180 |   expect(errors).toEqual([]);
-  181 | });
-  182 | 
-  183 | test('far-ring edge is visible 4 km out and is a clean silhouette (acceptance 7, screenshot)', async ({ page }, info) => {
-  184 |   const errors = watchErrors(page);
-  185 |   await page.goto('/?renderer=webgl2&scene=terrain&terrain_debug=flat');
-  186 |   await ready(page);
-  187 |   await pose(page, [128, 12, 128], [-3000, 12, 128]);
-  188 |   const g = await grab(page);
-  189 |   // Scan the middle column from the bottom: terrain (white) must end at the horizon with background above it.
-  190 |   const x = g.w >> 1;
-  191 |   let edge = -1;
-  192 |   for (let y = g.h - 1; y > 0; y--) {
-  193 |     const i = (y * g.w + x) * 4;
-  194 |     if (g.data[i]! > 200 && g.data[i + 1]! < 110) {
-  195 |       edge = y;
-  196 |       break;
-  197 |     }
-  198 |   }
-  199 |   expect(edge, 'background (magenta) found above the terrain silhouette').toBeGreaterThan(0);
-  200 |   expect(edge).toBeLessThan(g.h * 0.75);
-  201 |   console.log(`far ring silhouette row ${edge}/${g.h}`);
-  202 |   await page.screenshot({ path: info.outputPath('far-edge-flat.png') });
-  203 |   expect(errors).toEqual([]);
-  204 | });
-  205 | 
-  206 | test('WebGPU path (SwiftShader): WGSL terrain compiles and draws without validation errors (pixels not checked)', async ({ page }) => {
-  207 |   const errors = watchErrors(page);
-  208 |   await page.addInitScript({ path: SHIM });
-  209 |   await page.goto('/?renderer=webgpu&scene=terrain&debug=1');
-  210 |   await page.waitForFunction(() => window.__caps !== undefined, undefined, { timeout: 15_000 });
-  211 |   const caps = await page.evaluate(() => window.__caps as { kind: string; fallbackReason: string | null });
-  212 |   test.skip(caps.kind !== 'webgpu', `no WebGPU adapter in this browser (${caps.fallbackReason})`);
-  213 |   await ready(page, 20);
-  214 |   const st = await page.evaluate(() => window.__terrain!.stats() as { nodes: number });
-  215 |   expect(st.nodes).toBeGreaterThan(5);
-  216 |   for (const mode of ['lod', 'morph', 'normal', 'none']) {
-  217 |     await page.evaluate((m) => window.__terrain!.setDebug(m), mode);
-  218 |     await frames(page, 5);
-  219 |   }
-  220 |   const d = await page.evaluate(() => window.__perf!.dump());
-  221 |   expect(d.draw_calls).toBe(1);
-  222 |   expect(errors).toEqual([]);
-  223 | });
-  224 | 
-  225 | test('reference screenshots: orbit around the block in lod/shaded modes (SAVE_SHOTS=1 writes docs/measurements/M0-023/)', async ({ page }) => {
-  226 |   test.skip(!SAVE_SHOTS, 'set SAVE_SHOTS=1 to refresh the reference screenshots');
-  227 |   test.setTimeout(240_000);
-  228 |   await page.setViewportSize({ width: 960, height: 540 });
-  229 |   mkdirSync(SHOT_DIR, { recursive: true });
-  230 |   const errors = watchErrors(page);
-  231 |   await page.goto('/?renderer=webgl2&scene=terrain&terrain_debug=lod');
-  232 |   await ready(page);
-  233 |   for (let i = 0; i < 8; i++) {
-  234 |     const a = (i / 8) * Math.PI * 2;
-  235 |     await pose(page, [128 + Math.sin(a) * 150, 45, 128 + Math.cos(a) * 150], [128, 4, 128]);
-  236 |     await page.screenshot({ path: `${SHOT_DIR}/orbit-lod-${i}.png` });
-  237 |   }
-  238 |   await page.evaluate(() => window.__terrain!.setDebug('none'));
-  239 |   await pose(page, [128, 12, 40], [128, 5, 200]);
-  240 |   await page.screenshot({ path: `${SHOT_DIR}/ground-shaded.png` });
-  241 |   await pose(page, [128, 14, 128], [-3000, 14, 128]);
-  242 |   await page.screenshot({ path: `${SHOT_DIR}/far-ring-edge.png` });
-  243 |   await page.evaluate(() => window.__terrain!.setDebug('normal'));
+  177 |   let stitched = 0;
+  178 |   let control = 0;
+  179 |   for (const [p, t] of poses) {
+  180 |     await page.evaluate(() => window.__terrain!.setStitch(true));
+  181 |     await pose(page, p, t);
+  182 |     stitched += (await grab(page)).magenta;
+  183 |     await page.evaluate(() => window.__terrain!.setStitch(false));
+  184 |     await pose(page, p, t);
+  185 |     control += (await grab(page)).magenta;
+  186 |   }
+  187 |   console.log(`magenta (hole) pixels over ${poses.length} poses: stitched ${stitched}, control (no edge masks) ${control}`);
+  188 |   expect(stitched).toBe(0);
+  189 |   expect(control, 'detector sensitivity: the un-stitched control must show holes').toBeGreaterThan(0);
+  190 |   expect(errors).toEqual([]);
+  191 | });
+  192 | 
+  193 | test('far-ring edge is visible 4 km out and is a clean silhouette (acceptance 7, screenshot)', async ({ page }, info) => {
+  194 |   const errors = watchErrors(page);
+  195 |   await page.goto('/?renderer=webgl2&scene=terrain&terrain_debug=flat');
+  196 |   await ready(page);
+  197 |   await pose(page, [128, 12, 128], [-3000, 12, 128]);
+  198 |   const g = await grab(page);
+  199 |   // Scan the middle column from the bottom: terrain (white) must end at the horizon with background above it.
+  200 |   const x = g.w >> 1;
+  201 |   let edge = -1;
+  202 |   for (let y = g.h - 1; y > 0; y--) {
+  203 |     const i = (y * g.w + x) * 4;
+  204 |     if (g.data[i]! > 200 && g.data[i + 1]! < 110) {
+  205 |       edge = y;
+  206 |       break;
+  207 |     }
+  208 |   }
+  209 |   expect(edge, 'background (magenta) found above the terrain silhouette').toBeGreaterThan(0);
+  210 |   expect(edge).toBeLessThan(g.h * 0.75);
+  211 |   console.log(`far ring silhouette row ${edge}/${g.h}`);
+  212 |   await page.screenshot({ path: info.outputPath('far-edge-flat.png') });
+  213 |   expect(errors).toEqual([]);
+  214 | });
+  215 | 
+  216 | test('WebGPU path (SwiftShader): WGSL terrain compiles and draws without validation errors (pixels not checked)', async ({ page }) => {
+  217 |   const errors = watchErrors(page);
+  218 |   await page.addInitScript({ path: SHIM });
+  219 |   await page.goto('/?renderer=webgpu&scene=terrain&debug=1');
+  220 |   await page.waitForFunction(() => window.__caps !== undefined, undefined, { timeout: 15_000 });
+  221 |   const caps = await page.evaluate(() => window.__caps as { kind: string; fallbackReason: string | null });
+  222 |   test.skip(caps.kind !== 'webgpu', `no WebGPU adapter in this browser (${caps.fallbackReason})`);
+  223 |   await ready(page, 20);
+  224 |   const st = await page.evaluate(() => window.__terrain!.stats() as { nodes: number });
+  225 |   expect(st.nodes).toBeGreaterThan(5);
+  226 |   for (const mode of ['lod', 'morph', 'normal', 'none']) {
+  227 |     await page.evaluate((m) => window.__terrain!.setDebug(m), mode);
+  228 |     await frames(page, 5);
+  229 |   }
+  230 |   const d = await page.evaluate(() => window.__perf!.dump());
+  231 |   expect(d.draw_calls).toBe(1);
+  232 |   expect(errors).toEqual([]);
+  233 | });
+  234 | 
+  235 | test('reference screenshots: orbit around the block in lod/shaded modes (SAVE_SHOTS=1 writes docs/measurements/M0-023/)', async ({ page }) => {
+  236 |   test.skip(!SAVE_SHOTS, 'set SAVE_SHOTS=1 to refresh the reference screenshots');
+  237 |   test.setTimeout(240_000);
+  238 |   await page.setViewportSize({ width: 960, height: 540 });
+  239 |   mkdirSync(SHOT_DIR, { recursive: true });
+  240 |   const errors = watchErrors(page);
+  241 |   await page.goto('/?renderer=webgl2&scene=terrain&terrain_debug=lod');
+  242 |   await ready(page);
+  243 |   for (let i = 0; i < 8; i++) {
+  244 |     const a = (i / 8) * Math.PI * 2;
+  245 |     await pose(page, [128 + Math.sin(a) * 150, 45, 128 + Math.cos(a) * 150], [128, 4, 128]);
+  246 |     await page.screenshot({ path: `${SHOT_DIR}/orbit-lod-${i}.png` });
+  247 |   }
+  248 |   await page.evaluate(() => window.__terrain!.setDebug('none'));
+  249 |   await pose(page, [128, 12, 40], [128, 5, 200]);
+  250 |   await page.screenshot({ path: `${SHOT_DIR}/ground-shaded.png` });
+  251 |   await pose(page, [128, 14, 128], [-3000, 14, 128]);
+  252 |   await page.screenshot({ path: `${SHOT_DIR}/far-ring-edge.png` });
+  253 |   await page.evaluate(() => window.__terrain!.setDebug('normal'));
 ```

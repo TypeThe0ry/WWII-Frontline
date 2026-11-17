@@ -1,5 +1,11 @@
-//! Transport seam. M0-016 (WebSocket) and M0-017 (WebTransport) implement [`Transport`];
-//! M0-015 only fixes the trait and a no-op implementation.
+//! Networking: transport seam and the WebSocket front end (M0-016). WebTransport (M0-017)
+//! plugs in through [`transport::ClientTransport`] and reuses [`conn::run_connection`].
+
+pub mod conn;
+pub mod handshake;
+pub mod limits;
+pub mod transport;
+pub mod ws;
 
 /// A network front end that feeds the sim thread through [`crate::sim_thread::SimThreadHandle`].
 pub trait Transport: Send {

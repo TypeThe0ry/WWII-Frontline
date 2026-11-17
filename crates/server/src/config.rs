@@ -28,7 +28,7 @@ pub struct Config {
     /// Number of bots to run (bot subsystem arrives with M0-026).
     #[arg(long, env = "FRONTLINE_BOTS", default_value_t = 0)]
     pub bots: u16,
-    /// WebSocket port (bound by M0-016). 0 = ephemeral.
+    /// WebSocket port. 0 = ephemeral.
     #[arg(long, env = "FRONTLINE_WS_PORT", default_value_t = 7000)]
     pub ws_port: u16,
     /// WebTransport port (bound by M0-017). 0 = ephemeral.
@@ -164,6 +164,14 @@ impl Config {
             None => self.match_id = Some(random_uuid()),
         }
         Ok(self)
+    }
+
+    /// Numeric mode id used in `Welcome.mode`.
+    pub fn mode_id(&self) -> u8 {
+        KNOWN_MODES
+            .iter()
+            .position(|m| *m == self.mode)
+            .unwrap_or(0) as u8
     }
 
     pub fn match_id(&self) -> &str {

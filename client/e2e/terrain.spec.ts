@@ -36,9 +36,9 @@ async function pose(page: Page, pos: Vec3, target: Vec3): Promise<void> {
 }
 
 /** Decode the page screenshot into RGB pixels once; return a sampler plus a magenta counter. */
-async function grab(page: Page) {
+async function grab(page: Page, withData = false) {
   const png = (await page.screenshot()).toString('base64');
-  return page.evaluate(async (b64) => {
+  return page.evaluate(async ([b64, keep]) => {
     const img = new Image();
     img.src = `data:image/png;base64,${b64}`;
     await img.decode();
@@ -54,8 +54,8 @@ async function grab(page: Page) {
       if (d[i]! > 200 && d[i + 1]! < 110 && d[i + 2]! > 200) magenta++;
       else nonBackground++;
     }
-    return { w: img.width, h: img.height, magenta, nonBackground, data: Array.from(d) };
-  }, png);
+    return { w: img.width, h: img.height, magenta, nonBackground, data: keep ? Array.from(d) : ([] as number[]) };
+  }, [png, withData] as [string, boolean]);
 }
 
 function rng(seed: number): () => number {
@@ -98,45 +98,55 @@ test('GPU-sampled heights match the CPU surface (height debug mode, top-down, ne
   const rand = rng(21);
   const hmin = 1;
   const hmax = 11;
-  const cases: { label: string; pos: Vec3; target: Vec3; pts: () => [number, number]; tol: number; slope: number }[] = [
-    { label: 'near block', pos: [128, 400, 128], target: [128, 0, 128.5], pts: () => [rand() * 256, rand() * 256], tol: 0.12, slope: 0.04 },
-    { label: 'far ring', pos: [128, 5000, 128], target: [128, 0, 128.5], pts: () => [-1500 + rand() * 3000, -700 + rand() * 1700], tol: 0.45, slope: 0.02 },
+  // Poses chosen so the probed ground is in the finest LOD the data supports: the vertex grid then lies on the map
+  // texels and the comparison tests sampling/dequantisation/orientation rather than LOD approximation.
+  const cases: { label: string; poses: Vec3[]; half: [number, number]; tol: number; slope: number; outside: boolean }[] = [
+    {
+      label: 'near block (LOD0, 1 m grid)',
+      poses: [[50, 50, 50], [128, 50, 50], [206, 50, 50], [50, 50, 128], [206, 50, 128], [50, 50, 206], [128, 50, 206], [206, 50, 206], [128, 50, 150]],
+      half: [38, 20],
+      tol: 0.1,
+      slope: 0.12,
+      outside: false,
+    },
+    { label: 'far ring (LOD3, 8 m grid = far texels)', poses: [[1000, 700, 500], [-1200, 700, 300], [300, 700, -900]], half: [150, 120], tol: 0.2, slope: 0.1, outside: true },
   ];
   for (const c of cases) {
-    await pose(page, c.pos, c.target);
-    await frames(page, 1);
-    const g = await grab(page);
-    // Candidate points on gentle ground only (1 px of projection error on a steep slope would dominate the comparison).
-    const cand = Array.from({ length: 600 }, () => c.pts());
-    const probes = await page.evaluate(
-      ([pts, maxSlope, label]) => {
-        const t = window.__terrain!;
-        const out: { x: number; z: number; sx: number; sy: number; h: number }[] = [];
-        for (const [x, z] of pts as [number, number][]) {
-          if (label === 'far ring' && x > -20 && x < 276 && z > -20 && z < 276) continue; // this case probes outside the block
-          const h = t.heightAt(x, z);
-          const gx = Math.abs(t.heightAt(x + 4, z) - t.heightAt(x - 4, z)) / 8;
-          const gz = Math.abs(t.heightAt(x, z + 4) - t.heightAt(x, z - 4)) / 8;
-          if (Math.max(gx, gz) > (maxSlope as number)) continue;
-          const s = t.project(x, z);
-          out.push({ x, z, sx: s.x, sy: s.y, h });
-        }
-        return out;
-      },
-      [cand, c.slope, c.label] as const,
-    );
     let worst = 0;
     let sum = 0;
     let used = 0;
-    for (const q of probes) {
-      const px = Math.round(q.sx);
-      const py = Math.round(q.sy);
-      if (px < 2 || py < 2 || px >= g.w - 2 || py >= g.h - 2) continue;
-      const rendered = hmin + (g.data[(py * g.w + px) * 4]! / 255) * (hmax - hmin);
-      const err = Math.abs(rendered - q.h);
-      worst = Math.max(worst, err);
-      sum += err;
-      used++;
+    for (const p of c.poses) {
+      await pose(page, p, [p[0], 0, p[2] + 0.4]);
+      await frames(page, 1);
+      const g = await grab(page, true);
+      const cand = Array.from({ length: 120 }, (): [number, number] => [p[0] + (rand() * 2 - 1) * c.half[0], p[2] + (rand() * 2 - 1) * c.half[1]]);
+      const probes = await page.evaluate(
+        ([pts, maxSlope, outside]) => {
+          const t = window.__terrain!;
+          const out: { sx: number; sy: number; h: number }[] = [];
+          for (const [x, z] of pts as [number, number][]) {
+            if (outside && x > -20 && x < 276 && z > -20 && z < 276) continue;
+            if (!outside && (x < 0 || x > 256 || z < 0 || z > 256)) continue;
+            const gx = Math.abs(t.heightAt(x + 1, z) - t.heightAt(x - 1, z)) / 2;
+            const gz = Math.abs(t.heightAt(x, z + 1) - t.heightAt(x, z - 1)) / 2;
+            if (Math.max(gx, gz) > (maxSlope as number)) continue;
+            const s = t.project(x, z);
+            out.push({ sx: s.x, sy: s.y, h: t.heightAt(x, z) });
+          }
+          return out;
+        },
+        [cand, c.slope, c.outside] as const,
+      );
+      for (const q of probes) {
+        const px = Math.round(q.sx);
+        const py = Math.round(q.sy);
+        if (px < 12 || py < 12 || px >= g.w - 12 || py >= g.h - 12) continue; // inside the canvas (it sits in the 8 px body margin)
+        const rendered = hmin + (g.data[(py * g.w + px) * 4]! / 255) * (hmax - hmin);
+        const err = Math.abs(rendered - q.h);
+        worst = Math.max(worst, err);
+        sum += err;
+        used++;
+      }
     }
     console.log(`${c.label}: ${used} probes on gentle ground, GPU-vs-CPU height error max ${worst.toFixed(3)} m, mean ${(sum / used).toFixed(3)} m (8-bit gray = ${((hmax - hmin) / 255).toFixed(3)} m/step)`);
     expect(used).toBeGreaterThan(40);

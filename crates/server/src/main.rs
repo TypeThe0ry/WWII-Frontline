@@ -57,10 +57,9 @@ fn run(cfg: Config) -> Result<(), String> {
         );
     }
     tracing::info!(
-        event = "transports_pending",
-        ws_port = cfg.ws_port as u64,
+        event = "wt_pending",
         wt_port = cfg.wt_port as u64,
-        "WS/WT transports arrive with M0-016/017; ports not bound"
+        "WebTransport arrives with M0-017; port not bound"
     );
 
     let rt = tokio::runtime::Builder::new_multi_thread()
@@ -96,6 +95,34 @@ fn run(cfg: Config) -> Result<(), String> {
     )
     .map_err(|e| format!("cannot start sim thread: {e}"))?;
 
+    let game_data = frontline_sim::GameData::embedded();
+    let inbound = frontline_server::net::conn::InboundQueue::new();
+    let net_ctx = std::sync::Arc::new(frontline_server::net::conn::NetCtx {
+        metrics: metrics.clone(),
+        sessions: frontline_server::net::conn::Sessions::new(metrics.clone()),
+        inbound: inbound.tx.clone(),
+        commands: handle.commands_tx.clone(),
+        data_hash: game_data.hash,
+        match_seed: seed,
+        tick_hz: 30,
+        map_id: 0,
+        mode: cfg.mode_id(),
+        server_tick: &logging::CURRENT_TICK,
+        started: std::time::Instant::now(),
+        handshake_timeout: frontline_server::net::limits::HANDSHAKE_TIMEOUT,
+    });
+    let ws = rt
+        .block_on(frontline_server::net::ws::WsListener::bind(
+            ("0.0.0.0", cfg.ws_port),
+            net_ctx,
+        ))
+        .map_err(|e| format!("cannot bind ws port {}: {e}", cfg.ws_port))?;
+    tracing::info!(
+        event = "ws_listening",
+        port = ws.local_addr().port() as u64,
+        "serving WebSocket"
+    );
+
     let (sd_tx, sd_rx) = tokio::sync::watch::channel(false);
     let listener = rt
         .block_on(tokio::net::TcpListener::bind(("0.0.0.0", cfg.metrics_port)))
@@ -119,6 +146,8 @@ fn run(cfg: Config) -> Result<(), String> {
     });
     tracing::info!(event = "shutdown", reason, "stopping");
     stop.stop();
+    rt.block_on(ws.shutdown());
+    drop(inbound);
     let report = handle.join();
     let _ = sd_tx.send(true);
     let _ = rt.block_on(server);

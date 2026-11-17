@@ -34,8 +34,12 @@ pub struct InputEnvelope {
 
 #[derive(Debug, Clone, Copy)]
 pub enum Command {
-    SpawnPlayer { req: SpawnReq },
+    SpawnPlayer {
+        req: SpawnReq,
+    },
     RemovePlayer(PlayerId),
+    /// The client's connection closed (published by the net layer; M0-018 handles the session).
+    ClientGone(PlayerId),
 }
 
 /// Network-side sender for inputs. Drops the new input when the channel is full and counts it.
@@ -305,7 +309,7 @@ impl<C: Clock> SimLoop<C> {
                         "spawn_player rejected"
                     ),
                 },
-                Command::RemovePlayer(p) => {
+                Command::RemovePlayer(p) | Command::ClientGone(p) => {
                     self.world.remove_player(p);
                     self.team_of.remove(&p);
                     self.update_player_gauges();

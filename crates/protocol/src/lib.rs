@@ -22,6 +22,7 @@ extern crate alloc;
 pub mod bitio;
 pub mod channel;
 pub mod codec;
+pub mod framing;
 pub mod msg;
 pub mod quant;
 pub mod snapshot;

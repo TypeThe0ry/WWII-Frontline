@@ -9,7 +9,7 @@ export interface TerrainHandle {
   terrain: Terrain;
   /** Move the fly camera (world metres). */
   setPose(pos: [number, number, number], target: [number, number, number]): void;
-  /** Screen position (CSS px of the canvas) of the terrain surface point above world (x,z); for e2e probes. */
+  /** Screen position (CSS px of the page, i.e. screenshot pixels) of the terrain surface point above world (x,z); for e2e probes. */
   project(x: number, z: number): { x: number; y: number; depth: number };
   loadMs: number;
   /** Overlay lines (nodes per LOD, select time, upload size). */
@@ -67,7 +67,8 @@ export async function attachTerrain(ctx: RenderContext, params: URLSearchParams)
       const eng = ctx.engine;
       const vp = cam.viewport.toGlobal(eng.getRenderWidth(), eng.getRenderHeight());
       const v = Vector3.Project(new Vector3(x, terrain.heightAt(x, z), z), Matrix.IdentityReadOnly, cam.getTransformationMatrix(), vp);
-      return { x: (v.x * ctx.canvas.clientWidth) / eng.getRenderWidth(), y: (v.y * ctx.canvas.clientHeight) / eng.getRenderHeight(), depth: v.z };
+      const r = ctx.canvas.getBoundingClientRect(); // the canvas sits inside the body margin
+      return { x: r.left + (v.x * r.width) / eng.getRenderWidth(), y: r.top + (v.y * r.height) / eng.getRenderHeight(), depth: v.z };
     },
     loadMs: performance.now() - t0,
     overlayLines() {
