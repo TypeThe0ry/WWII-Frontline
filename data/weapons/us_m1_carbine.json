@@ -1,0 +1,97 @@
+{
+  "id": "us_m1_carbine",
+  "name_key": "weapon.us_m1_carbine.name",
+  "faction": "us",
+  "class": "carbine",
+  "historical": {
+    "caliber": "7.62×33 mm",
+    "cartridge": ".30 Carbine",
+    "magazine_capacity": 15,
+    "magazine_type": "detachable_box",
+    "muzzle_velocity_mps": 580,
+    "rate_of_fire_rpm_practical": 40,
+    "mass_kg": 2.4,
+    "_source": "待 M1-070 按 REF §6 复核"
+  },
+  "gameplay": {
+    "damage_torso_hp": 48,
+    "part_mult": {
+      "head": 3.0,
+      "neck": 2.0,
+      "torso": 1.0,
+      "pelvis": 0.9,
+      "limb": 0.65
+    },
+    "falloff": [
+      {
+        "dist_m": 0,
+        "mult": 1.0
+      },
+      {
+        "dist_m": 50,
+        "mult": 1.0
+      },
+      {
+        "dist_m": 250,
+        "mult": 0.55
+      }
+    ],
+    "fire": {
+      "mode": "semi",
+      "cap_rpm": 200
+    },
+    "reload": {
+      "tactical_ms": 2000,
+      "empty_ms": 2400
+    },
+    "ads_ms": 240,
+    "spread": {
+      "hip_deg": 3.0,
+      "ads_deg": 0.2
+    },
+    "recoil": {
+      "vkick_deg": 0.9,
+      "hsigma_deg": 0.2,
+      "recover_deg_s": 14,
+      "bloom_per_shot_deg": 0.3,
+      "bloom_decay_deg_s": 4.0
+    },
+    "ballistics": {
+      "muzzle_velocity_mps": 580,
+      "drag_k_per_m": 0.0015,
+      "gravity_mps2": 9.81
+    },
+    "pen_power": 90,
+    "mag_reserve": 8
+  },
+  "fx": {
+    "muzzle_flash_ms": 50,
+    "tracer": false
+  },
+  "_meta": {
+    "status": "initial",
+    "tunable": [
+      "gameplay.damage_torso_hp",
+      "gameplay.part_mult.head",
+      "gameplay.part_mult.neck",
+      "gameplay.part_mult.torso",
+      "gameplay.part_mult.pelvis",
+      "gameplay.part_mult.limb",
+      "gameplay.falloff",
+      "gameplay.fire",
+      "gameplay.reload",
+      "gameplay.ads_ms",
+      "gameplay.spread.hip_deg",
+      "gameplay.spread.ads_deg",
+      "gameplay.recoil.vkick_deg",
+      "gameplay.recoil.hsigma_deg",
+      "gameplay.recoil.recover_deg_s",
+      "gameplay.recoil.bloom_per_shot_deg",
+      "gameplay.recoil.bloom_decay_deg_s",
+      "gameplay.ballistics.drag_k_per_m",
+      "gameplay.pen_power",
+      "gameplay.mag_reserve"
+    ],
+    "calibration_ref": "REFERENCE_MEASUREMENTS §4.1 射速 / 后坐 / 散布（待 M1-071）"
+  }
+}

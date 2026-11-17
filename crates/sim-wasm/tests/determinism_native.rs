@@ -7,7 +7,7 @@ use frontline_protocol::msg::input::InputCmd;
 
 /// Final `Predictor.stateHash()`-equivalent after seed 1 / 18 000 ticks (native, rustc 1.97.0,
 /// x86_64-linux). Re-pin only for a deliberate sim/data change.
-const GOLDEN_SEED1_18000: u64 = 0xb170_3824_1d9e_4c55;
+const GOLDEN_SEED1_18000: u64 = 0xa9a1_b218_b112_f339;
 
 #[test]
 fn inputs_round_trip_and_are_stable() {

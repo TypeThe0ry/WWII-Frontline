@@ -452,6 +452,11 @@ blocked / in-progress / todo：无。M0 的 33 个任务全部已提交（M0-033
 - 新增 `entry-decode.ts`、`decode-worker.ts`、`worker-decoder.ts`（Worker 池封装 + 同线程回退），client 依赖 `meshoptimizer@1.3.0`；网格条目往返测试（位置/UV/索引/材质/纹理引用）通过，client vitest 共 24 项。
 - 遗留：BasisU 转码（M1-006c，需先定 transcoder 来源与许可证）、Playwright 指标（需参考机与 100 MB 样例）。PI-038 待 Fable 确认。
 
+### M1-008 数据：M1 武器（枪械部分） — partial — 2026-11-17 — 提交见 git log
+- 新增 6 个枪械 JSON；重打 sim 2 处、sim-wasm 1 处金标并重生成 `native.json`（DATA_HASH 16618067817150479949）；全工作区测试连跑两次稳定。
+- 遗留：手雷/火箭/近战/弹药表 → M1-008b（PI-040）；`historical` 复核 → M1-070。
+- 影响：M1-007 可引用这 6 个枪械；后续改 `/data` 须用 `gen_golden` 重生成 `native.json` 并重打金标。
+
 ## 8. 如何维护本文件
 
 - **执行者**：收工前，在"任务日志"末尾追加本任务条目（`### 任务 ID 标题 — 状态 — 日期 — 提交 abc1234`，3–6 行：做了什么、关键实测数字、遗留问题/需人工事项、对后续任务的影响）；写入前重新读取文件末尾（并行执行者可能同时追加），只追加、不改别人的条目。数字必须来自实测，查不到写"未记录"。同时更新 `tasks/STATUS.md` 自己那一行。
