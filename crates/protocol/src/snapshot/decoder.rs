@@ -8,7 +8,8 @@ use crate::quant::{dequant_pitch, dequant_pos_xz, dequant_pos_y, dequant_yaw};
 use crate::snapshot::baseline::DecoderRing;
 use crate::snapshot::crc::crc16_ccitt;
 use crate::snapshot::entity::{
-    read_record, EntityKind, EntityState, QPos, Record, MIN_RECORD_BITS, PITCH_BITS, YAW_BITS_NEAR,
+    read_record, EntityKind, EntityState, QPos, QVel, Record, VehicleExtra, MIN_RECORD_BITS,
+    PITCH_BITS, YAW_BITS_NEAR,
 };
 use crate::snapshot::events::EventEntry;
 use crate::snapshot::header::{Header, FLAG_CRC, FLAG_HAS_SELF};
@@ -36,6 +37,12 @@ pub struct EntitiesSoA {
     pub weapon: Vec<u8>,
     pub flags: Vec<u8>,
     pub health_q: Vec<u8>,
+    /// Entity kind per row.
+    pub kind: Vec<EntityKind>,
+    /// Vehicle velocity codes, 3 per row (zero for players).
+    pub vel_q: Vec<i16>,
+    /// Vehicle extras per row (default for players).
+    pub veh: Vec<VehicleExtra>,
 }
 
 impl EntitiesSoA {
@@ -65,13 +72,17 @@ impl EntitiesSoA {
         self.weapon.push(s.weapon);
         self.flags.push(s.flags);
         self.health_q.push(s.health_q);
+        self.kind.push(s.kind);
+        let v = s.vel.unwrap_or_default();
+        self.vel_q.extend_from_slice(&[v.x, v.y, v.z]);
+        self.veh.push(s.vehicle.unwrap_or_default());
     }
 
     /// Re-assemble row `i` as an [`EntityState`].
     pub fn state(&self, i: usize) -> Option<EntityState> {
         Some(EntityState {
             id: *self.ids.get(i)?,
-            kind: EntityKind::Player,
+            kind: *self.kind.get(i)?,
             pos: QPos {
                 x: *self.pos_q.get(3 * i)?,
                 y: *self.pos_q.get(3 * i + 1)?,
@@ -79,13 +90,23 @@ impl EntitiesSoA {
             },
             yaw: *self.yaw_q.get(i)?,
             pitch: *self.pitch_q.get(i)?,
-            vel: None,
+            vel: match self.kind.get(i)? {
+                EntityKind::Vehicle => Some(QVel {
+                    x: *self.vel_q.get(3 * i)?,
+                    y: *self.vel_q.get(3 * i + 1)?,
+                    z: *self.vel_q.get(3 * i + 2)?,
+                }),
+                EntityKind::Player => None,
+            },
             anim: *self.anim.get(i)?,
             stance: *self.stance.get(i)?,
             weapon: *self.weapon.get(i)?,
             flags: *self.flags.get(i)?,
             health_q: *self.health_q.get(i)?,
-            vehicle: None,
+            vehicle: match self.kind.get(i)? {
+                EntityKind::Vehicle => Some(*self.veh.get(i)?),
+                EntityKind::Player => None,
+            },
         })
     }
 

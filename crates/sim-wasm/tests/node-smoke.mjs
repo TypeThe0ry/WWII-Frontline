@@ -29,7 +29,7 @@ const ok = (name) => {
 
 // --- version / data hash agree with the native build (meta.json comes from the native example).
 {
-  assert.equal(wasm.protocolVersion(), 2);
+  assert.equal(wasm.protocolVersion(), 3);
   // The data hash changes with every /data edit, so compare against the native build's own value
   // (`cargo run --example trace` writes it) and fall back to the committed file only without a trace.
   const traceMeta = join(root, 'target/wasm-trace/meta.json');
@@ -62,7 +62,7 @@ const ok = (name) => {
 {
   assert.deepEqual([...wasm.encodePing(1234)], [...hex('ping.hex')]);
   // Parameters of protocol/tests/limits.rs `sample_messages` (Hello is bit packed: no byte offsets).
-  const out = wasm.encodeHello(2, 0x0123456789abcdefn, new Uint8Array(40).fill(7), 42, 3);
+  const out = wasm.encodeHello(3, 0x0123456789abcdefn, new Uint8Array(40).fill(7), 42, 3);
   assert.deepEqual([...out], [...hex('hello.hex')]);
   const pong = wasm.decodeServerC0(hex('pong.hex'));
   assert.equal(pong.kind, 5);

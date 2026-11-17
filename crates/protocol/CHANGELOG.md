@@ -3,6 +3,28 @@
 `PROTOCOL_VERSION` must match exactly at handshake. Fields are only appended at the end of a
 message; any other change bumps the version.
 
+## 3 — M1-010b (vehicles, team channel)
+
+Breaking vs 2: the entity record tag changed (remove is now `id:8 000`, 11 bit) to make room for
+vehicle keyframes; `EntityKind::Vehicle`, `QVel`, `VehicleExtra` are now on the wire.
+
+### Snapshot entity records
+
+| tag after `id:8` | record |
+|---|---|
+| `1` | delta (`field_mask:8`, interpreted by the baseline entity's kind) |
+| `01` | player keyframe (unchanged, 100 bit) |
+| `001` | **vehicle keyframe**, 180 bit: pos 16/13/16, quat 32 (smallest-three: index 2 + 3x i10), vel 3x i11 (1/64 m/s), turret_yaw 12, gun_pitch 12, track_flags 8, seats 3 (bitmap), damage_flags 8, flags 8, health_q 8 |
+| `000` | remove |
+
+Vehicle delta mask: 1 pos, 2 quat, 4 vel, 8 turret (yaw12+pitch12), 16 crew (track_flags 8 + seats 3), 32 health_q, 64 damage_flags, 128 flags. Position delta uses the player size classes. Measured: avg 15.8 B, max 20 B over 10^4 snapshots (budget 24 / 28).
+Accuracy: quaternion <= 0.35 deg, turret yaw / gun pitch <= 0.35 deg (12 bit).
+
+### Team channel (C3) and world state (`msg::team`)
+
+* `TeamState`: `tick:16, n:6 (<=49), n x {x:11 z:11 role:4 state:3 facing:3}`; 49 members = 199 B. No ids on the wire: entry i is the i-th team member by ascending player_id (roster from C4); `state == 0` = absent/dead.
+* `WorldState` (1 Hz): `timer:16, 5 x {owner:2 capture:7}, manpower 16, munitions 16, fuel 16, front_line_pos 16` = 16 B.
+
 ## 2 — M1-010 (phase A: C0 + C4 + extra events)
 
 Breaking: version bumped 1 -> 2 (new `msg_type`s and event types; `hello.hex` golden changed).

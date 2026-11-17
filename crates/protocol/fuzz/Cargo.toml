@@ -27,3 +27,27 @@ name = "input_bundle_decode"
 path = "fuzz_targets/input_bundle_decode.rs"
 test = false
 doc = false
+
+[[bin]]
+name = "c0"
+path = "fuzz_targets/c0.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "c4"
+path = "fuzz_targets/c4.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "events"
+path = "fuzz_targets/events.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "snapshot_vehicle"
+path = "fuzz_targets/snapshot_vehicle.rs"
+test = false
+doc = false
