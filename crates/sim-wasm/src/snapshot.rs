@@ -53,7 +53,9 @@ pub fn layout_table() -> &'static [(&'static str, u32)] {
 /// Event record: `id:u16le, type:u8, payload (13 bytes, u16 fields little endian, zero padded)`.
 /// Types and payloads follow `protocol::snapshot::events` (1 Shot: shooter u8, weapon u8,
 /// muzzle 3xu16, dir_yaw u16, dir_pitch u16; 2 Impact: pos 3xu16, normal u16, material u8;
-/// 3 HitConfirm: target u8, zone u8, damage_q u8; 4 DamageDir: angle u8, dmg_q u8).
+/// 3 HitConfirm: target u8, zone u8, damage_q u8; 4 DamageDir: angle u8, dmg_q u8;
+/// 5 Explosion: pos 3xu16, kind u8, radius_q u8; 6 Suppress: source_dir u8, intensity u8;
+/// 7 Marker: kind u8, pos 2xu16, ttl u8).
 pub fn pack_event(e: &EventEntry, out: &mut Vec<u8>) {
     let mut rec = [0u8; EVENT_RECORD_BYTES];
     rec[0..2].copy_from_slice(&e.id.to_le_bytes());
@@ -106,6 +108,38 @@ pub fn pack_event(e: &EventEntry, out: &mut Vec<u8>) {
             rec[2] = 4;
             put8(&mut rec, angle);
             put8(&mut rec, dmg_q);
+        }
+        Event::Explosion {
+            pos,
+            kind,
+            radius_q,
+        } => {
+            rec[2] = 5;
+            for v in pos {
+                for b in v.to_le_bytes() {
+                    put8(&mut rec, b);
+                }
+            }
+            put8(&mut rec, kind);
+            put8(&mut rec, radius_q);
+        }
+        Event::Suppress {
+            source_dir,
+            intensity,
+        } => {
+            rec[2] = 6;
+            put8(&mut rec, source_dir);
+            put8(&mut rec, intensity);
+        }
+        Event::Marker { kind, pos, ttl } => {
+            rec[2] = 7;
+            put8(&mut rec, kind);
+            for v in pos {
+                for b in v.to_le_bytes() {
+                    put8(&mut rec, b);
+                }
+            }
+            put8(&mut rec, ttl);
         }
     }
     out.extend_from_slice(&rec);

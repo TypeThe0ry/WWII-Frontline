@@ -662,3 +662,14 @@
 - **未做**：Rust 侧 `weapons`/`spawn` 暂为松散 `serde_json::Value`，由 M1-022/M1-023 在消费时定型；`GOLDEN`（sim/bots）未受影响（`weapons` 表未动）。
 - **受影响任务**：M1-022、M1-023、M1-048、M1-064。
 - **裁决（Fable 填写）**：
+
+### PI-046 M1-010：协议任务拆为 A（C0/C4/事件）与 b（载具/团队通道/fuzz/bench），并补充若干字段
+
+- **状态**：resolved（实现者裁决，待 Fable 复核）
+- **类别**：任务范围/协议
+- **提出者 / 日期**：M1 线程 / 2026-11-17
+- **做法**：M1-010 卡为 L 规模，拆两个 PR：**A**（本次）= C0 新消息、C4 全部事件、事件段 5–7（Explosion/Suppress/Marker）、`PROTOCOL_VERSION` 1→2、`CHANGELOG.md`、往返/错误用例；**b** = 载具记录与 delta（≤24 B 均值）、`TeamState/WorldState`（49 人 ≤200 B）、fuzz 靶 `c0,c4,events,snapshot_vehicle`、criterion 基准。验收 3/4/7 与性能基准归 b。
+- **补充/细化**：①`SquadOp` 加 `lock/unlock/invite`（9 种，数值 1–9）。②`Chat` 末尾加 `sender:u8`（S→C 才有意义，C→S 忽略）；C→S 与 S→C 共用 type 0x13。③`Settings` 定为 `view_dist_m:u16, flags:u8`。④`PlayerRoster.flags` 位：倒地/Commander/队长/离场/Bot；昵称 ≤24 字节。⑤`Kill.dist_q` 为 12 位原始码（0.25 m/步），不在协议层转米。⑥`SpawnPointState.pos` 为 2×16 位原始码，度量含义由消费方（M1-040/Map）定义，与 `MarkerPlace` 一致。⑦C4 `msg_type` 编号 0x01–0x09，C0 新增 0x10–0x16，事件类型 5/6/7。⑧字符串上限按**字节**计（chat 200 字节 ≈ 66 个汉字）。
+- **下游处理**：服务器 C0 收到新客户端消息先接受并丢弃（M1-026 实现）；sim-wasm `pack_event` 增加三种事件的 13 字节记录，JS 暴露归 M1-040。`hello.hex` 与 `native.json` 金样已重定标。
+- **受影响任务**：M1-024/025/026/040。
+- **裁决（Fable 填写）**：

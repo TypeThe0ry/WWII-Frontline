@@ -42,6 +42,27 @@ pub mod c0_type {
     pub const PING: u8 = 0x04;
     pub const PONG: u8 = 0x05;
     pub const DISCONNECT: u8 = 0x06;
+    // M1 additions (PROTOCOL_VERSION 2). Chat is bidirectional and shares one number.
+    pub const DEPLOY_REQUEST: u8 = 0x10;
+    pub const DEPLOY_RESULT: u8 = 0x11;
+    pub const SQUAD_OP: u8 = 0x12;
+    pub const CHAT: u8 = 0x13;
+    pub const MARKER_PLACE: u8 = 0x14;
+    pub const SETTINGS: u8 = 0x15;
+    pub const REPORT: u8 = 0x16;
+}
+
+/// C4 (reliable server events) `msg_type` values.
+pub mod c4_type {
+    pub const KILL: u8 = 0x01;
+    pub const DEATH: u8 = 0x02;
+    pub const REVIVE: u8 = 0x03;
+    pub const SCORE_DELTA: u8 = 0x04;
+    pub const OBJECTIVE_CHANGE: u8 = 0x05;
+    pub const SPAWN_POINT_STATE: u8 = 0x06;
+    pub const PLAYER_ROSTER: u8 = 0x07;
+    pub const NOTICE: u8 = 0x08;
+    pub const MATCH_PHASE: u8 = 0x09;
 }
 
 /// C1 `msg_type` values. Not written on the wire (the channel identifies the message, to keep

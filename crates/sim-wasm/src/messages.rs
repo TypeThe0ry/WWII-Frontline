@@ -324,6 +324,12 @@ pub(crate) fn decode_server_core(bytes: &[u8]) -> Result<ServerC0, String> {
             o.server_time_ms = p.server_time_ms;
         }
         ServerMsgC0::Disconnect(d) => o.reason = d.reason,
+        // Exposed to JS in M1-040.
+        ServerMsgC0::DeployResult(d) => {
+            o.reason = d.reason;
+            o.server_tick = d.spawn_tick;
+        }
+        ServerMsgC0::Chat(_) => {}
     }
     Ok(o)
 }

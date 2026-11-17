@@ -10,6 +10,9 @@
 //! | 2    | `Impact`     | pos 3x14, normal (octahedral) 12, material 8 |
 //! | 3    | `HitConfirm` | target 8, zone 8, damage_q 8 |
 //! | 4    | `DamageDir`  | angle 8, dmg_q 8 |
+//! | 5    | `Explosion`  | pos 3x14, kind 8, radius_q 8 |
+//! | 6    | `Suppress`   | source_dir 8, intensity 8 |
+//! | 7    | `Marker`     | kind 8, pos 2x14 (x,z), ttl 8 |
 
 use crate::bitio::{BitReader, BitWriter};
 use crate::codec::CodecError;
@@ -41,6 +44,21 @@ pub enum Event {
     DamageDir {
         angle: u8,
         dmg_q: u8,
+    },
+    Explosion {
+        pos: [u16; 3],
+        kind: u8,
+        radius_q: u8,
+    },
+    Suppress {
+        source_dir: u8,
+        intensity: u8,
+    },
+    /// Enemy marker; `pos` is quantised to 5 m and refreshed at most 1 Hz by the server (R3).
+    Marker {
+        kind: u8,
+        pos: [u16; 2],
+        ttl: u8,
     },
 }
 
@@ -97,6 +115,33 @@ impl EventEntry {
                 w.write_bits(angle as u64, 8)?;
                 w.write_bits(dmg_q as u64, 8)
             }
+            Event::Explosion {
+                pos,
+                kind,
+                radius_q,
+            } => {
+                w.write_bits(5, 5)?;
+                for p in pos {
+                    w.write_bits(p as u64, 14)?;
+                }
+                w.write_bits(kind as u64, 8)?;
+                w.write_bits(radius_q as u64, 8)
+            }
+            Event::Suppress {
+                source_dir,
+                intensity,
+            } => {
+                w.write_bits(6, 5)?;
+                w.write_bits(source_dir as u64, 8)?;
+                w.write_bits(intensity as u64, 8)
+            }
+            Event::Marker { kind, pos, ttl } => {
+                w.write_bits(7, 5)?;
+                w.write_bits(kind as u64, 8)?;
+                w.write_bits(pos[0] as u64, 14)?;
+                w.write_bits(pos[1] as u64, 14)?;
+                w.write_bits(ttl as u64, 8)
+            }
         }
     }
 
@@ -131,6 +176,24 @@ impl EventEntry {
             4 => Event::DamageDir {
                 angle: r.read_bits(8)? as u8,
                 dmg_q: r.read_bits(8)? as u8,
+            },
+            5 => Event::Explosion {
+                pos: [
+                    r.read_bits(14)? as u16,
+                    r.read_bits(14)? as u16,
+                    r.read_bits(14)? as u16,
+                ],
+                kind: r.read_bits(8)? as u8,
+                radius_q: r.read_bits(8)? as u8,
+            },
+            6 => Event::Suppress {
+                source_dir: r.read_bits(8)? as u8,
+                intensity: r.read_bits(8)? as u8,
+            },
+            7 => Event::Marker {
+                kind: r.read_bits(8)? as u8,
+                pos: [r.read_bits(14)? as u16, r.read_bits(14)? as u16],
+                ttl: r.read_bits(8)? as u8,
             },
             _ => return Err(CodecError::InvalidTag),
         };

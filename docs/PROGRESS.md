@@ -481,3 +481,7 @@ blocked / in-progress / todo：无。M0 的 33 个任务全部已提交（M0-033
 ### M1-009 数据：M4A1 Sherman — done — 2026-11-17 — 提交见 git log
 
 - `us_m4a1_75`（装甲 9 区、9 个模块、4 个武器含内联炮弹、物理/刷新含 M1 覆盖）；车辆 schema 向后兼容扩展，校验器新增座位/装甲区/模块/速度换算规则（PI-045）。
+
+### M1-010 协议（阶段 A） — partial — 2026-11-17 — 提交见 git log
+
+- C0 新增 DeployRequest/DeployResult/SquadOp/Chat/MarkerPlace/Settings/Report，C4 九种事件，事件段新增 Explosion/Suppress/Marker；协议版本 2，见 `crates/protocol/CHANGELOG.md`（PI-046）。
