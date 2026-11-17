@@ -5,7 +5,7 @@
 //! the mixed fields changes every golden hash and must be done deliberately.
 
 use crate::ids::{EntityId, Tick};
-pub use rand_core::RngCore;
+pub use rand_core::Rng as RngCore;
 pub use rand_pcg::Pcg64Mcg;
 
 /// Why a random number is drawn; part of the stream key.
@@ -81,7 +81,7 @@ mod tests {
             GOLDEN_STREAM
         );
     }
-    const GOLDEN_STREAM: [u32; 4] = [0, 0, 0, 0];
+    const GOLDEN_STREAM: [u32; 4] = [1245919636, 787409520, 993946965, 2789436446];
 
     #[test]
     fn unit_in_range() {

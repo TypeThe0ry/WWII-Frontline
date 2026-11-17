@@ -2,7 +2,7 @@
 //! `ingest_inputs -> (slot for later tasks: movement, weapons, ...) -> bookkeeping`.
 
 use bevy_ecs::prelude::*;
-use bevy_ecs::schedule::ExecutorKind;
+use bevy_ecs::schedule::SingleThreadedExecutor;
 use frontline_protocol::quant::{dequant_yaw, pitch_i16_to_rad};
 
 use crate::components::{EntityTable, InputQueue, LastInput, PlayerIndex, Transform};
@@ -52,7 +52,7 @@ pub fn test_jitter(
 
 pub fn build_schedule() -> Schedule {
     let mut s = Schedule::default();
-    s.set_executor_kind(ExecutorKind::SingleThreaded);
+    s.set_executor(SingleThreadedExecutor::new());
     #[cfg(feature = "test-util")]
     s.add_systems((ingest_inputs, test_jitter, bookkeeping).chain());
     #[cfg(not(feature = "test-util"))]

@@ -16,3 +16,7 @@ docs/measurements/raw/
 *.log
 __pycache__/
 .venv/
+
+# M0-009: generated map binaries (deterministic; regenerate with the command in DEVELOPING.md)
+data/maps/m0/*.r16
+data/maps/m0/chunks/
