@@ -9,6 +9,10 @@ use crate::weapon::HitZone;
 #[derive(Debug, Clone, PartialEq)]
 #[non_exhaustive]
 pub enum SimEvent {
+    /// An enemy entered a HQ protection zone: it takes damage after the warning (M1-019).
+    HqWarning {
+        player: PlayerId,
+    },
     PlayerSpawned {
         player: PlayerId,
         entity: EntityId,

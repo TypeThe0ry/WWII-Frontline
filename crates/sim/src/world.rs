@@ -126,6 +126,7 @@ impl World {
         ecs.insert_resource(crate::throwables::Smokes::default());
         ecs.insert_resource(Projectiles::default());
         ecs.insert_resource(crate::suppression::SuppressSeen::default());
+        ecs.insert_resource(crate::spawn::SpawnRules::default());
         ecs.insert_resource(crate::rules::Objectives::default());
         ecs.insert_resource(crate::rules::MatchState::default());
         ecs.insert_resource(crate::rules::MatchCfg::from_data(cfg.data, cfg.tick_hz));
@@ -171,6 +172,7 @@ impl World {
             q.0.clear();
             q.0.extend_from_slice(&inputs);
         }
+        self.apply_warmup_wait();
         self.schedule.run(&mut self.ecs);
         self.refresh_views();
         let produced = std::mem::take(&mut self.ecs.resource_mut::<EventBuf>().0);
@@ -181,6 +183,40 @@ impl World {
                 &mut self.ecs.resource_mut::<crate::rules::RuleChangeBuf>().0,
             ),
         }
+    }
+
+    /// Warm-up halves the HQ base wait (GAMEDESIGN 10.6); only with HQ rules active.
+    fn apply_warmup_wait(&mut self) {
+        let warm = self.ecs.resource::<crate::rules::MatchState>().phase
+            == crate::rules::MatchPhaseKind::Warmup;
+        if !self.ecs.resource::<crate::spawn::SpawnRules>().active() {
+            return;
+        }
+        let base = {
+            let cur = self.ecs.resource::<RespawnPolicyRes>().0.base_wait_ms;
+            let mut r = self.ecs.resource_mut::<crate::spawn::SpawnRules>();
+            *r.base_wait_ms.get_or_insert(cur)
+        };
+        self.ecs.resource_mut::<RespawnPolicyRes>().0.base_wait_ms =
+            if warm { base / 2 } else { base };
+    }
+
+    /// Registers the HQ of `team` (M1-019): switches the spawn rules (timing penalties, spawn
+    /// protection, placement, HQ protection zone) on for the match.
+    pub fn set_hq(&mut self, team: Team, pos: Vec3) {
+        self.ecs.resource_mut::<crate::spawn::SpawnRules>().hq[team as usize] = Some(pos);
+    }
+
+    /// Ticks of spawn protection `id` has left (0 = none).
+    pub fn spawn_protection_left(&self, id: PlayerId) -> u32 {
+        let Some(&(_, e)) = self.ecs.resource::<PlayerIndex>().map.get(&id) else {
+            return 0;
+        };
+        let now = self.ecs.resource::<CurrentTick>().0 .0;
+        self.ecs
+            .entity(e)
+            .get::<crate::spawn::SpawnProtection>()
+            .map_or(0, |p| p.until.saturating_sub(now))
     }
 
     pub fn spawn_player(&mut self, req: SpawnReq) -> Result<EntityId, SpawnError> {
@@ -235,6 +271,7 @@ impl World {
             crate::medical::Vitals::default(),
             crate::medical::FallTracker::default(),
             crate::suppression::SuppressionState::default(),
+            crate::spawn::SpawnProtection::default(),
         ));
         if let Some(w) = weapon {
             self.ecs.entity_mut(e).insert(w);
@@ -432,6 +469,31 @@ impl World {
                 h.hp = hp;
             }
         }
+    }
+
+    /// Test-only (feature `test-util`): kills a player outright at the next rules stage (an
+    /// unattributed lethal hit, as the HQ zone or a fall would deal).
+    #[cfg(feature = "test-util")]
+    pub fn debug_kill(&mut self, id: PlayerId) {
+        let Some(&(eid, e)) = self.ecs.resource::<PlayerIndex>().map.get(&id) else {
+            return;
+        };
+        if let Some(mut h) = self.ecs.entity_mut(e).get_mut::<Health>() {
+            h.hp = 0.0;
+        }
+        self.ecs
+            .resource_mut::<crate::health::HitLog>()
+            .0
+            .push(crate::health::HitRec {
+                target: eid,
+                shooter: eid,
+                weapon: crate::throwables::EXPLOSIVE_WEAPON_IDX,
+                zone: crate::weapon::HitZone::Torso,
+                dist_m: 0.0,
+                damage: 1.0,
+                kind: crate::combat::DamageKind::Explosion,
+                direct_kia: true,
+            });
     }
 
     /// Test-only (feature `test-util`): puts a player into the downed state (40 hp, bleeding).
@@ -696,6 +758,30 @@ impl World {
                 h.write_u8(o.owner.map_or(2, |t| t as u8));
                 h.write_u8(o.last_owner.map_or(2, |t| t as u8));
                 h.write_u8(u8::from(o.locked));
+            }
+        }
+        // M1-019: written only once a HQ exists.
+        let sr = self.ecs.resource::<crate::spawn::SpawnRules>();
+        if sr.active() {
+            h.write_u8(0xD1);
+            for hq in &sr.hq {
+                match hq {
+                    Some(p) => {
+                        h.write_u8(1);
+                        h.write_f32(p.x);
+                        h.write_f32(p.y);
+                        h.write_f32(p.z);
+                    }
+                    None => h.write_u8(0),
+                }
+            }
+            for (p, t) in &sr.last_spawn {
+                h.write_u8(*p);
+                h.write_u32(*t);
+            }
+            for (p, t) in &sr.zone_since {
+                h.write_u8(*p);
+                h.write_u32(*t);
             }
         }
         let ms = self.ecs.resource::<crate::rules::MatchState>();

@@ -22,6 +22,7 @@ pub mod respawn;
 pub mod rng;
 pub mod rules;
 pub mod schedule;
+pub mod spawn;
 pub mod step;
 pub mod suppression;
 pub mod throwables;

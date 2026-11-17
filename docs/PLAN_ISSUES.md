@@ -795,3 +795,12 @@
 - **做法**：①占领进度 p：美军为正、德军为负；有效人数 `min(d,4)+0.5·max(0,min(d,10)−4)`，速率 0.2 %/s×有效人数，僵持不动，无人时以 0.15 %/s 回归上一任主人（中立点不回归）。②对局阶段 Idle→Warmup→Live→Ended，M1 简化胜负：全占=FullControl，否则限时比点数、再比 p 之和，仍平=Draw（无延时/加时，Overtime 仅占位）。③新增 API `begin_warmup`、`set_human_players`（真人≥2 提前开始）、`configure_match`，阶段映射到线协议 `Phase` 留待 M1-019/网络任务。④常量进 `/data/rules/match_m1.json`（schema `rule_match`，字段 `early_start_players` 带单位后缀）与既有 `capture.json`；状态按需入哈希，既有 golden 不变。⑤推迟：预热期复活 ×0.5、`zones.json` 载入（M1-034）、载具乘员计入（M2）。
 - **受影响任务**：M1-019、M1-034、M1-038、网络层 Phase 映射。
 - **裁决（Fable 填写）**：
+
+### PI-060 M1-019：拆为 a（HQ）与 b（Garrison）；HQ 出生规则按需开启，常量进代码
+
+- **状态**：resolved（实现者裁决，待 Fable 复核）
+- **类别**：sim
+- **提出者 / 日期**：M1 线程 / 2026-11-17
+- **做法**：①M1-019 工作量大，拆 019a（HQ 出生计时/保护/选点/保护区）与 019b（Garrison、槽位、吞吐、`SupplyProvider`）。②规则仅在 `World::set_hq` 后启用，未设 HQ 的世界走 M0 老路径，既有 golden 不变；状态按需入哈希（0xD1）。③惩罚在出生到期时判定：到期时若自杀/洪水惩罚使应出生 tick 更晚则重新入队（效果等价于死亡时加 base_wait，且无需改 `deaths` 签名）；洪水只统计该队 HQ 近 10 s 的出生。④热身 ×0.5 通过 `World::step` 每 tick 调整 `RespawnPolicy.base_wait_ms`（仅 HQ 规则开启时）。⑤出生保护实现为“撤销本 tick 对受保护玩家的伤害”（恢复满血并删去其 `HitLog` 记录），所有伤害源无需改动；移动/FIRE 位取消。⑥HQ 区伤害走 `HitRec(shooter=target, kind=Explosion, direct_kia)`，无击杀归属，会引发流血（约 1 HP/s）。⑦常量（40 m 出生区、150 m 区、3 s 警告、40 HP/s、20 s/5 s 自杀、10 s/8 人/2 s 洪水、8 m 抖动、10 m 防杀半径）写在 `spawn/mod.rs`，`spawn.json` 现有字段留待 019b 读取；出生点位置抖动 8 m（任务写“出生区 40 m、点周围 8 m”，取点周围 8 m）。⑧推迟：`SpawnPointState` 事件与 `DeployResult`（随 M1-010/M1-026）、主动重新部署（随 M1-021）。
+- **受影响任务**：M1-019b、M1-021、M1-026、M1-060。
+- **裁决（Fable 填写）**：
