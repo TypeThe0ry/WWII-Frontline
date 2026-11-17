@@ -33,10 +33,11 @@ export const DEFAULT_RULES = [
   { match: '^client\\.cam\\d\\.js_heap_mb$', dir: 'up', rel: 0.25, abs: 5, why: 'GC timing' },
   { match: '^client\\.cam\\d\\.(cpu_p50_ms|stage\\.[a-z_]+\\.p50_ms)$', dir: 'up', rel: 1.0, abs: 1.0, why: 'shared VM, 0.1 ms timer resolution; catches order-of-magnitude regressions' },
   { match: '^bundle\\.', dir: 'up', rel: 0.05, abs: 2048, why: 'build output size' },
+  { match: '^rust\\.(world_step_20_players_firing_median_ms|bots_think_60_median_ms|aoi_encode_10_clients_us_per_client_packet)$', dir: 'up', rel: 0.6, abs: 0.002, why: 'sub-0.1 ms benchmarks: scheduler noise on a shared VM is relatively larger' },
   { match: '^rust\\.', dir: 'up', rel: 0.25, abs: 0.002, why: 'shared VM micro-benchmark noise (this machine is not the reference machine)' },
   { match: '^server\\.(tick_p50_ms|tick_p99_ms|aoi_encode_p99_ms)$', dir: 'up', rel: 1.0, abs: 0.5, why: 'shared VM, same-host clients' },
   { match: '^server\\.down_kbps_p50$', dir: 'both', rel: 0.15, abs: 1, why: 'bandwidth model' },
-  { match: '^server\\.rss_slope_kb_per_s', dir: 'up', rel: 0, abs: 1.0, why: 'M0-030: a leak shows as KB/s; 0 +- 1 KB/s allowed' },
+  { match: '^server\\.rss_slope_kb_per_s', dir: 'up', rel: 0, abs: 2.0, why: 'M0-030: the leak was ~5.5 KB/s at 40 clients (13.7 at 100); start-up steps make a 75-120 s window read ~2-2.8 KB/s on a healthy server' },
 ];
 
 export function ruleFor(key, rules = DEFAULT_RULES) {
@@ -173,7 +174,7 @@ export function measureRust({ quick }) {
 export function measureServer({ quick }) {
   const out = path.join(os.tmpdir(), `fl-loadtest-${process.pid}.json`);
   // 40 headless clients on WebTransport for 120 s: the per-client leak of M0-030 (125 B/s per client) shows as ~5 KB/s.
-  run('scripts/loadtest-m0.sh', ['--transport', 'wt', '--count', quick ? '20' : '40', '--bots', '10', '--duration', quick ? '60' : '120', '--warmup', '5', '--sample-interval', '5', '--out', out, '--no-build'], { env: { ...process.env } });
+  run('scripts/loadtest-m0.sh', ['--transport', 'wt', '--count', '40', '--bots', '10', '--duration', quick ? '75' : '120', '--warmup', '5', '--sample-interval', '5', '--out', out, '--no-build'], { env: { ...process.env } });
   const j = JSON.parse(readFileSync(out, 'utf8'));
   rmSync(out, { force: true });
   const samples = (j.rss_samples ?? []).filter((s) => s.server_kb != null && s.t >= 30);
@@ -193,7 +194,7 @@ export function measureServer({ quick }) {
       'server.tick_p99_ms': j.server?.tick_ms?.p99,
       'server.aoi_encode_p99_ms': j.server?.aoi_encode_ms?.p99,
       'server.down_kbps_p50': j.clients?.down_kbps?.p50,
-      [`server.rss_slope_kb_per_s_c${quick ? 20 : 40}`]: slope,
+      'server.rss_slope_kb_per_s_c40': slope,
     }).filter(([, v]) => Number.isFinite(v)),
   );
 }

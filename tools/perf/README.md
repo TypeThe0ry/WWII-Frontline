@@ -24,7 +24,7 @@ node tools/perf/capture.mjs --gpu --renderer webgpu --viewport 1920x1080 --machi
 node tools/perf/capture.mjs --gpu --renderer webgl2 --viewport 1280x720 --quality low --machine irisxe
 # 其它机型（如 GTX 1650 Medium）同法记录但不判定
 node tools/perf/capture.mjs --gpu --renderer webgl2 --viewport 1920x1080 --machine gtx1650
-# 无 GPU 的开发机（软件渲染，只看计数与 CPU 阶段）：默认参数即可，约 8 分钟
+# 无 GPU 的开发机（软件渲染，只看计数与 CPU 阶段）：默认参数即可，约 7 分钟
 node tools/perf/capture.mjs
 node tools/perf/report.mjs            # 聚合成 reports/m0/perf/summary.{md,json}
 ```
@@ -57,8 +57,8 @@ node tools/perf/report.mjs            # 聚合成 reports/m0/perf/summary.{md,js
 `scripts/perf-regress.mjs`：测量 → 与 `reports/baselines/perf-m0.json` 比较 → 超容差即失败。见该文件头与 `reports/m0/perf-baseline.md`。
 
 ```
-node scripts/perf-regress.mjs check --quick     # 约 6 分钟（含 cargo bench、客户端采集、40 秒级服务器压测）
-node scripts/perf-regress.mjs check             # 完整（约 20 分钟）
+node scripts/perf-regress.mjs check --quick     # 约 3 分钟（实测 167 s）
+node scripts/perf-regress.mjs check             # 完整（实测约 10 分钟）
 node scripts/perf-regress.mjs update-baseline   # 有意改变性能后，人工采纳新基线
 node --test "tools/perf/*.test.mjs" "scripts/perf-regress.test.mjs"
 ```

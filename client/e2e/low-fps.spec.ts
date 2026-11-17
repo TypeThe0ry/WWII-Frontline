@@ -101,3 +101,32 @@ test(`a client at <= 5 fps is not kicked for ${SECONDS} s`, async ({ page }) => 
   if (BLOCK_MS > 0) expect(fps).toBeLessThanOrEqual(5);
   expect(last.snapshots).toBeGreaterThan(SECONDS * 5);
 });
+
+// The server side of the same fix, deterministically: a client whose tick estimate runs 25 ticks ahead (beyond the server's
+// now + 10 window) had every command refused as `too_far`, and 30 in a row used to kick it (the demo-server incident).
+// Now such commands are dropped without a strike; only ticks absurdly far ahead (> 300) or other malformed values count.
+test('commands stamped beyond the server window are dropped, not punished', async ({ page }) => {
+  test.setTimeout(90_000);
+  const srv = server as ServerProc;
+  const kicksBefore = srv.lines.filter((l) => l.event === 'session_kicked').length;
+  await page.goto(`${base}?renderer=webgl2&empty=1&transport=ws&server=127.0.0.1:${srv.wsPort}`);
+  await page.waitForFunction(() => window.__netGame !== undefined, undefined, { timeout: 30_000 });
+  await page.evaluate(() => {
+    const g = window.__netGame!;
+    g.sampler.press('KeyW');
+    const w = window as unknown as { __disconnect?: string };
+    g.session.onDisconnect((r) => (w.__disconnect = r));
+    const clock = g.session.clock;
+    const real = clock.inputTargetTick.bind(clock);
+    clock.inputTargetTick = (at?: number) => real(at) + 25; // 25 ticks ahead: every command lands outside the window
+  });
+  await page.waitForTimeout(12_000); // 30 commands per second: 360 refused commands, 12x the kick threshold
+  const r = await page.evaluate(() => ({ disconnect: (window as unknown as { __disconnect?: string }).__disconnect, steps: window.__netGame!.game.stats.steps }));
+  const mport = srv.lines.find((l) => l.event === 'metrics_listening')?.port;
+  const txt = await (await fetch(`http://127.0.0.1:${String(mport)}/metrics`)).text();
+  const tooFar = Number(/input_rejected_total\{reason="too_far"\} (\d+)/.exec(txt)?.[1] ?? 0);
+  console.log(`[low-fps] skewed clock: ${JSON.stringify({ ...r, tooFar })}`);
+  expect(srv.lines.filter((l) => l.event === 'session_kicked').length).toBe(kicksBefore);
+  expect(r.disconnect).toBeUndefined();
+  expect(tooFar).toBeGreaterThan(100);
+});

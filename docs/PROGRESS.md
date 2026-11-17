@@ -384,6 +384,12 @@ M0 共 21 个任务已提交（M0-021 待提交）；提交哈希取自 `git log
 - 遗留：服务器 RSS 在 WT 30 min 最后 10 min 增长 7.8 %（验收 <2 %，WS 无此现象，绝对量 1.2 MB，原因未查，PI-028 第 5 点）；`loadtest_smoke`（60 s×3，`--ignored`）已写未长跑；初始同步量化偏移使约 30–50 % 快照仍带容差内 `pos_corr`（+≈1 kbps，PI-028 第 3 点）；演示服务器曾被我误用 `pkill` 按名杀掉，之后只按自己的 PID 结束。
 - 影响：M1-068/M2-049 复用 `scripts/loadtest-m0.sh`；M0-030/033 以 `reports/m0/loadtest-wt.json` 为对照基线；浏览器客户端须同样做死亡冻结预测（PI-028）；`target/release/frontline-server` 被我的 release 构建覆盖过（含 `Report.events`）。
 
+### M0-030 测试：M0 性能基线与报告（含三项总控交办修正） — partial — 2026-11-17 — 提交 （待总控填）
+- 做了什么：`tools/perf/{capture,report,lib}.mjs` + README（参考机流程）、客户端帧阶段 CPU 计时（`__perf.dump().stages`，schema 2）与固定机位 `render/perf-cameras.ts`、`scripts/perf-regress.mjs`（测量 + 与 `reports/baselines/perf-m0.json` 比较，超容差退出码 1）、`.github/workflows/bench.yml`（手动 + nightly）、`reports/m0/perf-baseline.md`；三项交办修正：①低帧率客户端被误踢（服务器 `too_far` 不再计入 30 连踢，> now+300 的伪造 tick 新增 `far_future` 计入；客户端输入提前量封顶 9 tick）；②WT 服务器 RSS 线性增长（根因：调度器诊断样本向量 + 退出报告样本向量无人读取地累积，已关闭/改为定容蓄水池）；③浏览器客户端死亡冻结预测、重生按全新一命重放（与 headless 一致）。
+- 关键实测（非参考机，软件渲染）：draw call 50/33/13、三角形 450 341/9 884/318 492、植被实例 8 130/4 942/3 197（三次逐次一致）；整帧 CPU P50 1.1–1.3 ms；kcc_step 19.22 µs、100 人 tick 2.24 ms；包体积 JS brotli 470 KB、wasm brotli 245 KB。RSS：100 个 WT 客户端斜率 13.7 → 0.6 KB/s，10+10 bot 10 min 增长 7.8 % → 1.6 %（验收线 2 %）。浏览器死亡/重生：死亡期间本地多走 33.7 m、53 次纠正 → 0 m、6 次。60 s 低帧率（≈3 fps）客户端不被踢。
+- 遗留 / 需人工：RTX 3060 / Iris Xe 的帧时间与 E0-5 全部未测（H-021，复测命令见 `tools/perf/README.md`）；cam2 的 P50 极差 7.9 %（共享虚机）；RSS 残留约 0.8 KB/s（存活堆已平，未归因，建议 M0-033 做 30 min 复测）；`snapshot_decode` 基准不存在；演示事故的直接触发条件属推断（见 PI-029）。
+- 影响：`__perf.dump()` schema 1 → 2（新增 `stages`，`__perf.reset()`）；`input_rejected_total` 新增 `far_future` 标签；服务器退出报告的 tick 分位数改为蓄水池估计（最大值精确）；M1-068/M2-049 可复用 `client/e2e/low-fps.spec.ts` 与 `perf-regress.mjs`；4 个 Rust 基准支持 `FRONTLINE_BASELINE_DIR`；演示服务器仍是旧二进制，需重启才有修正。
+
 ## 8. 如何维护本文件
 
 - **执行者**：收工前，在"任务日志"末尾追加本任务条目（`### 任务 ID 标题 — 状态 — 日期 — 提交 abc1234`，3–6 行：做了什么、关键实测数字、遗留问题/需人工事项、对后续任务的影响）；写入前重新读取文件末尾（并行执行者可能同时追加），只追加、不改别人的条目。数字必须来自实测，查不到写"未记录"。同时更新 `tasks/STATUS.md` 自己那一行。

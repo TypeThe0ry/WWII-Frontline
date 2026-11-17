@@ -1,0 +1,308 @@
+{
+  "schema": 1,
+  "meta": {
+    "machine": "vm",
+    "cpu": "Intel(R) Xeon(R) Processor @ 2.30GHz",
+    "cores": 4,
+    "mem_gb": 15.7,
+    "os": "Linux 6.18.44-fc-v553",
+    "node": "v22.23.4",
+    "commit": "86dc174",
+    "dirty": false,
+    "date": "2026-11-17T11:36:50.996Z",
+    "quick": false,
+    "skipped": [],
+    "measure_s": 598
+  },
+  "gpu_unmeasured": {
+    "RTX 3060 / 1080p / WebGPU": "\u672a\u6d4b\uff08\u9700\u53c2\u8003\u673a\uff0cH-021\uff09",
+    "Iris Xe / 720p / WebGL2 (Low)": "\u672a\u6d4b\uff08\u9700\u53c2\u8003\u673a\uff0cH-021\uff09"
+  },
+  "rules": [
+    {
+      "match": "^client\\.cam\\d\\.(draw_calls|active_meshes|veg_draw_calls)$",
+      "dir": "both",
+      "rel": 0.02,
+      "abs": 2,
+      "why": "deterministic given fixed camera + vegetation seed"
+    },
+    {
+      "match": "^client\\.cam\\d\\.(triangles|veg_instances|veg_tris)$",
+      "dir": "both",
+      "rel": 0.02,
+      "abs": 100,
+      "why": "deterministic given fixed camera + vegetation seed"
+    },
+    {
+      "match": "^client\\.cam\\d\\.js_heap_mb$",
+      "dir": "up",
+      "rel": 0.25,
+      "abs": 5,
+      "why": "GC timing"
+    },
+    {
+      "match": "^client\\.cam\\d\\.(cpu_p50_ms|stage\\.[a-z_]+\\.p50_ms)$",
+      "dir": "up",
+      "rel": 1,
+      "abs": 1,
+      "why": "shared VM, 0.1 ms timer resolution; catches order-of-magnitude regressions"
+    },
+    {
+      "match": "^bundle\\.",
+      "dir": "up",
+      "rel": 0.05,
+      "abs": 2048,
+      "why": "build output size"
+    },
+    {
+      "match": "^rust\\.(world_step_20_players_firing_median_ms|bots_think_60_median_ms|aoi_encode_10_clients_us_per_client_packet)$",
+      "dir": "up",
+      "rel": 0.6,
+      "abs": 0.002,
+      "why": "sub-0.1 ms benchmarks: scheduler noise on a shared VM is relatively larger"
+    },
+    {
+      "match": "^rust\\.",
+      "dir": "up",
+      "rel": 0.25,
+      "abs": 0.002,
+      "why": "shared VM micro-benchmark noise (this machine is not the reference machine)"
+    },
+    {
+      "match": "^server\\.(tick_p50_ms|tick_p99_ms|aoi_encode_p99_ms)$",
+      "dir": "up",
+      "rel": 1,
+      "abs": 0.5,
+      "why": "shared VM, same-host clients"
+    },
+    {
+      "match": "^server\\.down_kbps_p50$",
+      "dir": "both",
+      "rel": 0.15,
+      "abs": 1,
+      "why": "bandwidth model"
+    },
+    {
+      "match": "^server\\.rss_slope_kb_per_s",
+      "dir": "up",
+      "rel": 0,
+      "abs": 2.0,
+      "why": "M0-030: the leak was ~5.5 KB/s at 40 clients (13.7 at 100); start-up steps make a 75-120 s window read ~2-2.8 KB/s on a healthy server"
+    }
+  ],
+  "metrics": {
+    "bundle.js_raw_bytes": {
+      "value": 2132940
+    },
+    "bundle.js_gzip_bytes": {
+      "value": 543158
+    },
+    "bundle.js_brotli_bytes": {
+      "value": 470431
+    },
+    "bundle.css_raw_bytes": {
+      "value": 0
+    },
+    "bundle.css_gzip_bytes": {
+      "value": 0
+    },
+    "bundle.css_brotli_bytes": {
+      "value": 0
+    },
+    "bundle.wasm_raw_bytes": {
+      "value": 766470
+    },
+    "bundle.wasm_gzip_bytes": {
+      "value": 313546
+    },
+    "bundle.wasm_brotli_bytes": {
+      "value": 244676
+    },
+    "bundle.html_raw_bytes": {
+      "value": 3012
+    },
+    "bundle.html_gzip_bytes": {
+      "value": 774
+    },
+    "bundle.html_brotli_bytes": {
+      "value": 613
+    },
+    "bundle.map_assets_raw_bytes": {
+      "value": 2437322
+    },
+    "client.cam0.draw_calls": {
+      "value": 50
+    },
+    "client.cam0.active_meshes": {
+      "value": 50
+    },
+    "client.cam0.triangles": {
+      "value": 450341
+    },
+    "client.cam0.veg_draw_calls": {
+      "value": 49
+    },
+    "client.cam0.veg_instances": {
+      "value": 8130
+    },
+    "client.cam0.veg_tris": {
+      "value": 450341
+    },
+    "client.cam0.js_heap_mb": {
+      "value": 58.075140953063965
+    },
+    "client.cam0.cpu_p50_ms": {
+      "value": 1.2999999970197678
+    },
+    "client.cam0.stage.babylon_active_meshes_eval.p50_ms": {
+      "value": 0.19999999925494194
+    },
+    "client.cam0.stage.babylon_render_pass.p50_ms": {
+      "value": 0.3999999985098839
+    },
+    "client.cam0.stage.game_update.p50_ms": {
+      "value": 0
+    },
+    "client.cam0.stage.overlay.p50_ms": {
+      "value": 0.19999999925494194
+    },
+    "client.cam0.stage.scene_render.p50_ms": {
+      "value": 0.6999999992549419
+    },
+    "client.cam0.stage.terrain_update.p50_ms": {
+      "value": 0.29999999701976776
+    },
+    "client.cam0.stage.vegetation_update.p50_ms": {
+      "value": 0.09999999776482582
+    },
+    "client.cam1.draw_calls": {
+      "value": 33
+    },
+    "client.cam1.active_meshes": {
+      "value": 33
+    },
+    "client.cam1.triangles": {
+      "value": 9884
+    },
+    "client.cam1.veg_draw_calls": {
+      "value": 32
+    },
+    "client.cam1.veg_instances": {
+      "value": 4942
+    },
+    "client.cam1.veg_tris": {
+      "value": 9884
+    },
+    "client.cam1.js_heap_mb": {
+      "value": 58.50887966156006
+    },
+    "client.cam1.cpu_p50_ms": {
+      "value": 1.2000000029802322
+    },
+    "client.cam1.stage.babylon_active_meshes_eval.p50_ms": {
+      "value": 0.19999999925494194
+    },
+    "client.cam1.stage.babylon_render_pass.p50_ms": {
+      "value": 0.30000000074505806
+    },
+    "client.cam1.stage.game_update.p50_ms": {
+      "value": 0
+    },
+    "client.cam1.stage.overlay.p50_ms": {
+      "value": 0.19999999925494194
+    },
+    "client.cam1.stage.scene_render.p50_ms": {
+      "value": 0.6000000014901161
+    },
+    "client.cam1.stage.terrain_update.p50_ms": {
+      "value": 0.30000000074505806
+    },
+    "client.cam1.stage.vegetation_update.p50_ms": {
+      "value": 0.09999999776482582
+    },
+    "client.cam2.draw_calls": {
+      "value": 13
+    },
+    "client.cam2.active_meshes": {
+      "value": 13
+    },
+    "client.cam2.triangles": {
+      "value": 318492
+    },
+    "client.cam2.veg_draw_calls": {
+      "value": 12
+    },
+    "client.cam2.veg_instances": {
+      "value": 3197
+    },
+    "client.cam2.veg_tris": {
+      "value": 318492
+    },
+    "client.cam2.js_heap_mb": {
+      "value": 58.33325672149658
+    },
+    "client.cam2.cpu_p50_ms": {
+      "value": 1.0999999977648258
+    },
+    "client.cam2.stage.babylon_active_meshes_eval.p50_ms": {
+      "value": 0.19999999925494194
+    },
+    "client.cam2.stage.babylon_render_pass.p50_ms": {
+      "value": 0.19999999925494194
+    },
+    "client.cam2.stage.game_update.p50_ms": {
+      "value": 0
+    },
+    "client.cam2.stage.overlay.p50_ms": {
+      "value": 0.19999999925494194
+    },
+    "client.cam2.stage.scene_render.p50_ms": {
+      "value": 0.5
+    },
+    "client.cam2.stage.terrain_update.p50_ms": {
+      "value": 0.20000000298023224
+    },
+    "client.cam2.stage.vegetation_update.p50_ms": {
+      "value": 0.09999999776482582
+    },
+    "rust.kcc_step_median_us": {
+      "value": 19.218
+    },
+    "rust.kcc_100_players_tick_median_ms": {
+      "value": 2.2379
+    },
+    "rust.ballistics_400_projectiles_stage_median_ms": {
+      "value": 0.312
+    },
+    "rust.world_step_20_players_firing_median_ms": {
+      "value": 0.0923
+    },
+    "rust.aoi_encode_100_clients_p50_ms": {
+      "value": 0.803565
+    },
+    "rust.aoi_encode_100_clients_us_per_client_packet": {
+      "value": 12.9425665625
+    },
+    "rust.aoi_encode_10_clients_us_per_client_packet": {
+      "value": 3.070480416666662
+    },
+    "rust.bots_think_60_median_ms": {
+      "value": 0.068889
+    },
+    "server.tick_p50_ms": {
+      "value": 1.959
+    },
+    "server.tick_p99_ms": {
+      "value": 3.522
+    },
+    "server.aoi_encode_p99_ms": {
+      "value": 1
+    },
+    "server.down_kbps_p50": {
+      "value": 38.392
+    },
+    "server.rss_slope_kb_per_s_c40": {
+      "value": 1.9777443609022556
+    }
+  }
+}
