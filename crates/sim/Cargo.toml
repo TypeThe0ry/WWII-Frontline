@@ -20,6 +20,8 @@ glam = { version = "=0.34.3", default-features = false, features = ["libm"] }
 libm = "=0.2.16"
 rand_core = "=0.10.1"
 rand_pcg = "=0.10.2"
+# Rapier: exact pin; enhanced-determinism excludes simd*/parallel (PI-013).
+rapier3d = { version = "=0.36.1", default-features = false, features = ["dim3", "f32", "std", "enhanced-determinism"] }
 
 [features]
 client-predict = []
@@ -32,6 +34,10 @@ required-features = ["test-util"]
 
 [[bench]]
 name = "world_step_empty"
+harness = false
+
+[[bench]]
+name = "collision"
 harness = false
 
 [build-dependencies]

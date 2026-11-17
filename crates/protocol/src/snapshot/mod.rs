@@ -12,7 +12,7 @@
 //!
 //! Limits: packet <= 1200 B ([`MAX_PACKET`]); default encoder budget 1150 B
 //! ([`DEFAULT_BUDGET`]); <= 127 entity records, <= 63 events. All field widths are documented in
-//! the submodules (these are the "refinements" recorded in PLAN_ISSUES PI-002).
+//! the submodules (these are the "refinements" recorded in PLAN_ISSUES PI-010).
 //!
 //! # Baselines
 //!
