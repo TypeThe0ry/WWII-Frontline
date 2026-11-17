@@ -1,8 +1,9 @@
 # PR gate (M0-029, ARCHITECTURE §17.1/§17.5, target < 6 min): sim determinism and native-vs-wasm drift.
 #  - blocking: native x2 and wasm x2 per-tick state_hash equal (3 seeds x 18 000 ticks), 10-player World x2,
 #    fault-injection test, golden hash, client heightAt vs sim height_at.
-#  - native vs wasm: R5 says warn-only. Strict mode (repo variable DETERMINISM_STRICT=1, or the
-#    workflow_dispatch input) makes any native/wasm difference fail the job.
+#  - native vs wasm: strict by default (PI-019: measured bit-identical in M0-029 and again in M0-033). Set the repo
+#    variable DETERMINISM_STRICT=0 to fall back to the R5 warn-only mode if a legitimate platform difference appears
+#    (then watch drift.cm_per_s in reports/m0/determinism/summary.json).
 name: determinism
 on:
   pull_request:
@@ -11,9 +12,9 @@ on:
   workflow_dispatch:
     inputs:
       strict:
-        description: "Fail when native and wasm differ (R5 default: warn only)"
+        description: "Fail when native and wasm differ (default on, PI-019)"
         type: boolean
-        default: false
+        default: true
 concurrency:
   group: determinism-${{ github.ref }}
   cancel-in-progress: true
@@ -23,7 +24,7 @@ env:
   CARGO_TERM_COLOR: always
   CARGO_INCREMENTAL: "0"
   FRONTLINE_REQUIRE_TERRAIN: "1"
-  FRONTLINE_DETERMINISM_STRICT: ${{ (inputs.strict == true || vars.DETERMINISM_STRICT == '1') && '1' || '0' }}
+  FRONTLINE_DETERMINISM_STRICT: ${{ ((github.event_name == 'workflow_dispatch' && inputs.strict == false) || vars.DETERMINISM_STRICT == '0') && '0' || '1' }}
 jobs:
   determinism:
     runs-on: ubuntu-latest

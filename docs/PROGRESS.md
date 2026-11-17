@@ -1,29 +1,29 @@
 # 进度总览与任务日志（PROGRESS.md）
 
-> 最后更新：2026-11-17　｜　当前里程碑：**M0 技术验证**
+> 最后更新：2026-11-17　｜　当前里程碑：**M0 技术验证（已验收，partial，等 Fable 审阅）→ 下一个 M1-001**
 > 用途：负责人看进度的单一入口。执行者收工时在"任务日志"末尾追加条目；总控每波任务后更新顶部表格与"退出标准对照"。
 > 逐任务的完整实测数字在 `tasks/STATUS.md`，计划/架构问题在 `docs/PLAN_ISSUES.md`，需要人处理的事项在 `docs/NEEDS_HUMAN.md`。
 > 测量环境说明：除非另注，所有数字来自**本机——4 核共享虚机（Xeon 2.3 GHz）、无 GPU、Chromium 软件渲染（SwiftShader）**，均**不是参考机**；其它执行者并行编译/测试时负载均值常在 4–8。
 
 ## 1. 里程碑进度
 
-任务总数 263（与 `tasks/INDEX.md` 一致），统计自 `tasks/STATUS.md`（M0-018、M0-024 为总控已知的并行任务，STATUS 行仍为 todo，待执行者更新；M0-021 在 STATUS 已标 done，提交哈希待填）。
+任务总数 263（与 `tasks/INDEX.md` 一致），统计自 `tasks/STATUS.md`（2026-11-17，M0-033 验收后）。
 
 | 里程碑 | 任务总数 | done | partial | blocked | in-progress | todo |
 |---|---|---|---|---|---|---|
-| M0 技术验证 | 33 | 16 | 6 | 0 | 2 | 9 |
+| M0 技术验证 | 33 | 19 | 14 | 0 | 0 | 0 |
 | M1 垂直切片 | 72 | 0 | 0 | 0 | 0 | 72 |
 | M2 完整 Frontline | 55 | 0 | 0 | 0 | 0 | 55 |
 | M3 全兵种/载具/Assault | 57 | 0 | 0 | 0 | 0 | 57 |
 | M4 三图/公开测试 | 46 | 0 | 0 | 0 | 0 | 46 |
 
+**M0 验收结论（M0-033）：`partial`，可带条件关闭**——退出标准通过 5 / 部分 5 / 需参考机或人工 2 / 未通过 0；等 Fable 审阅检查点 0（H-038）。下一个任务：M1-001。详见 `reports/m0/ACCEPTANCE.md`。
+
 ## 2. M0 概况
 
-done：M0-001、003、005、006、007、008、009、010、012、013、014、016、017、021、029、031（16 个；M0-021 已在 STATUS 标 done，尚无提交哈希）。
-partial：M0-002、004、011、015、020、023（6 个）。
-in-progress：M0-018、024。
-todo：M0-019、022、025、026、027、028、030、032、033。
-M0 共 21 个任务已提交（M0-021 待提交）；提交哈希取自 `git log`（提交信息以任务 ID 开头）。
+done：M0-001、003、005、006、007、008、009、010、012、013、014、016、017、018、019、021、026、029、031（19 个）。
+partial：M0-002、004、011、015、020、022、023、024、025、027、028、030、032、033（14 个，含 M0-033 自身）。
+blocked / in-progress / todo：无。M0 的 33 个任务全部已提交（M0-033 由总控提交）；提交哈希取自 `git log`（提交信息以任务 ID 开头）。验收报告：`reports/m0/ACCEPTANCE.md`。
 
 | ID | 标题 | 状态 | 提交 | 一句话结果 |
 |---|---|---|---|---|
@@ -44,41 +44,41 @@ M0 共 21 个任务已提交（M0-021 待提交）；提交哈希取自 `git log
 | M0-015 | server：进程骨架与 30 Hz 主循环 | partial | aee3f6c | 10 min 空载 tick_ms P99 0.017 ms、overrun 0；tick 间隔抖动 P99 2.83 ms 未达 <1 ms（共享虚机，需参考机） |
 | M0-016 | server：WebSocket 传输与握手 | done | ca977df | 10 客户端×10 min 6010 次回显 0 断开；10 059 个畸形帧全部关闭连接；握手往返 P50 0.07 ms |
 | M0-017 | server：WebTransport 传输 | done | 8819f08 | 100 客户端×120 s 上下行 240 100/240 100 = 100%；RTT P50 1.35 / P99 5.50 ms；单核 11.3% |
-| M0-018 | server：会话、输入缓冲与校验 | in-progress | — | 执行中（STATUS 行待执行者更新） |
-| M0-019 | server：AOI v0 与快照发送 | todo | — | 依赖 M0-018 |
+| M0-018 | server：会话、输入缓冲与校验 | done | cfaf153 | 20 客户端×60 s tick P99 0.94 ms、100 客户端×60 s P99 4.0 ms；输入窗口/去重/校验逐项计数；真 World 逐字节对拍 |
+| M0-019 | server：AOI v0 与快照发送 | done | 69ba174 | 10 客户端线路 P50 16 kbps、100 客户端 P50 59.7 / P99 91.6 kbps；AOI+编码 100 客户端 P99 1.44 ms（预算 2.6） |
 | M0-020 | client/render：引擎初始化与调试叠层 | partial | 09e58e0 | WebGL2 路径 e2e 5/5；1080p 空场景 CPU 帧时间 P99 0.60 ms；WebGPU 真机项与 compute 真 GPU 未测 |
-| M0-021 | client/net：传输与时钟同步 | done | 待填 | 时钟同步 5 种子 551/551 采样误差 ≤1 tick；WT 不可用时 3 s 回退 WS（真浏览器回退后 WS 握手 3014 ms）；每帧 net 处理 1.9 µs；e2e 11 例全绿 |
-| M0-022 | client/game：输入、预测、对账与插值 | todo | — | 依赖 M0-018/021 |
+| M0-021 | client/net：传输与时钟同步 | done | 2b8b853 | 时钟同步 5 种子 551/551 采样误差 ≤1 tick；WT 不可用时 3 s 回退 WS（真浏览器回退后 WS 握手 3014 ms）；每帧 net 处理 1.9 µs；e2e 11 例全绿 |
+| M0-022 | client/game：输入、预测、对账与插值 | partial | 70ebb4b | 进程内等价模型 RTT 100 ms + 丢 2 %：稳态纠正 0；真实 tc netem 未测（H-022） |
 | M0-023 | client/render：CDLOD 地形 | partial | c020a7e | 近地形裂缝最差 9.8e-15 m；heightAt 对 sim 最大误差 6.7e-6 m；GPU 帧时间未测；可见节点数验收口径已改（PI-014） |
-| M0-024 | client/render：植被实例化与 impostor | in-progress | — | 执行中（STATUS 行待执行者更新） |
-| M0-025 | client/render：灰盒角色、第一人称枪与射击反馈 | todo | — | |
-| M0-026 | bots：M0 基础 bot | todo | — | |
-| M0-027 | headless-client v0 与 10 客户端联测 | todo | — | |
-| M0-028 | 测试：浏览器 WT/WS 互通矩阵 | todo | — | |
+| M0-024 | client/render：植被实例化与 impostor | partial | 034b00e | draw call ≤ 50（≤400）；impostor 与 LOD1 面积差 ≤ 17.7 %；重分桶 P99 0.3 ms；帧率需 GPU（H-021） |
+| M0-025 | client/render：灰盒角色、第一人称枪与射击反馈 | partial | d16ddea | 开火与枪口焰同帧 30/30；100 士兵 draw call +16（≤40）；插值二阶差分 RMS 1e-5 m；GPU 帧时间需参考机 |
+| M0-026 | bots：M0 基础 bot | done | b0dd1ec | 100 bot think P99 0.67 ms（预算 3）；真实服务器 `--bots 100` tick P50 1.86 / P99 3.56 ms；bot 无全知 |
+| M0-027 | headless-client v0 与 10 客户端联测 | partial | 6c470e2 | WT 30 min 10+10：tick P99 1.2 ms、下行 P50 21.7 kbps、0 断线；100 客户端+10 bot P99 8.3 ms |
+| M0-028 | 测试：浏览器 WT/WS 互通矩阵 | partial | 6cb03c9 | Chromium WT/WS/两种回退全部通过；Firefox/WebKit 如实"未验证"；验收时复跑（真实快照） |
 | M0-029 | 测试：确定性与 WASM 漂移 | done | 58b880d | 3 种子×18 000 tick：native×2、wasm×2 各 54 000/54 000 一致；native vs wasm 漂移 0 cm/s |
-| M0-030 | 测试：M0 性能基线与报告 | todo | — | |
+| M0-030 | 测试：M0 性能基线与报告 | partial | a9d1dc4 | 三机位 draw call 50/33/13；RSS 斜率 13.7→0.6 KB/s；低帧率客户端不被踢；真 GPU 帧时间未测 |
 | M0-031 | 史实参数复核：Kar98k 与 M1 Garand（R8） | done | 847c704 | 15 个 historical 字段：13 已核实、2 登记未核实；M1 实用射速 40→24 |
-| M0-032 | 对标测量：M0 批回填 | todo | — | 需录像（见 §6） |
-| M0-033 | M0 里程碑验收与 STATUS 汇总 | todo | — | |
+| M0-032 | 对标测量：M0 批回填 | partial | cf2b431 | pytest 69/69，合成数据测回误差远小于容限；我方复测 own_m0 出数；参考作品一侧全部"待测"（缺录像） |
+| M0-033 | M0 里程碑验收与 STATUS 汇总 | partial | （总控填） | 退出标准 通过 5 / 部分 5 / 需参考机或人工 2；干净复验全绿；30 min RSS +1.95 %；M0 partial，等 Fable 审阅 |
 
 ## 3. M0 退出标准对照
 
-依据 `docs/MILESTONES.md` §1.3。E0-1 ~ E0-6 任一不通过 → M0 记 `partial` 并由 Fable 裁决；E0-7 ~ E0-12 可带条件通过但须登记为 M1 前置待办。
+依据 `docs/MILESTONES.md` §1.3；逐项证据见 `reports/m0/ACCEPTANCE.md` §2（M0-033，2026-11-17，本机非参考机）。E0-1 ~ E0-6 任一不通过 → M0 记 `partial` 并由 Fable 裁决；E0-7 ~ E0-12 可带条件通过但须登记为 M1 前置待办。**统计：通过 5 / 部分 5 / 需参考机或人工 2 / 未通过 0 → M0 partial。**
 
-| # | 退出标准 | 状态 | 当前证据 / 缺口 |
+| # | 退出标准 | 状态 | 证据 / 缺口 |
 |---|---|---|---|
-| E0-1 | 10 headless + 10 bot 跑 30 min，`tick_ms` P99 ≤ 28 ms，无连续 2 tick 超 33 ms | 尚无数据 | 依赖 M0-018/019/026/027/030。间接数字：空载 10 min tick_ms P99 0.017 ms（M0-015）；100 个 WT 回显客户端 120 s 窗口 tick_ms P99 0.050 ms（M0-017，sim 内无玩家，不含 sim 开销） |
-| E0-2 | 下行 P50 ≤ 128 kbps / 上行 ≤ 32 kbps | 尚无数据（协议层有估算） | 端到端需 M0-018/019/027。协议层：40 实体快照均值 282 B × 20 Hz ≈ 45 kbps 载荷，未含 58 B/包传输开销（M0-006）；典型 InputBundle 29 B（M0-005） |
-| E0-3 | KCC 单次 ≤ 20 µs；100 个 KCC 一 tick ≤ 3 ms | 部分（需参考机） | M0-011：KCC 中位 18.6 µs，100 人 step 中位 2.14 ms；后续任务复测 KCC 19.3–19.9 µs（M0-012）、19.75 µs（M0-013），余量仅约 1%。本机非参考机，M0-011 记 partial |
-| E0-4 | native/native、wasm/wasm 逐 tick 哈希一致；native vs wasm 漂移 < 2 cm/s（信息性） | 已满足（本机） | M0-029：3 种子×18 000 tick，native×2、wasm×2 各 54 000/54 000 一致，漂移 rms/max/cm_per_s 均为 0。CI 上的实跑与墙钟未取得 |
-| E0-5 | RTX 3060/1080p ≥ 60 fps；Iris Xe/WebGL2/720p ≥ 30 fps | 需参考机 | M0-020/023 的 GPU 帧时间均未测（H-021）；植被（M0-024）进行中。仅有软件渲染下的 CPU 帧时间数字，不能顶替 |
-| E0-6 | WebGPU compute 冒烟通过，给出 Hi-Z/froxel/TAAU 结论 | 部分 | M0-020：SwiftShader 上 `__smoke.ok=true, mismatches=0, 782 ms`，Hi-Z/froxel(921600/921600)/TAAU 三试验通过；结论见 `reports/m0/compute-feasibility.md`（需自写薄封装，PI-005）。真 GPU 未测（H-021） |
-| E0-7 | Chromium WT/WS 通过；Firefox/WebKit 如实登记；WT 禁用时 ≤ 5 s 回退 WS | 部分 | 服务器侧 WS（M0-016）、WT（M0-017）通过，无头 Chromium 153 连 WT 收发正常。M0-021：WT 不可用/证书未固定/端口关闭 <40 ms 回退 WS，ready 永不 resolve 时 3 s 回退，真浏览器（UDP 黑洞）回退后 WS 握手 3014 ms（≤5 s）；仅 Chromium 验证，Firefox/WebKit 待 M0-028；受信任证书 H-017 |
-| E0-8 | 100 ms 延迟 + 2% 丢包下静止校正 ≤ 1 次/10 s；本地开火与枪口焰同帧 | 尚无数据 | 依赖 M0-022/025/027。参考：native 与 wasm 预测 18 000 tick 内对账阈值 0.05 m 零次触发（M0-029，无网络） |
-| E0-9 | `sim-wasm` ≤ 1.2 MB（br ≤ 400 KB） | 已满足 | M0-014：优化后 746 965 B，gzip-9 308 281 B，brotli-11 240 627 B（`reports/m0/M0-014-wasm-size.json`） |
-| E0-10 | lint/test-rust/test-ts/wasm-build 全绿；依赖方向违规 PR 被拒 | 部分 | workflow 已写；本地逐 step 通过，沙盒副本加 sim→tokio、gateway→sim 均 check-deps exit 1。**GitHub 上从未实跑**（无 main 分支、无法开 PR，H-102），Actions 墙钟与真实红绿 PR 未取得 |
-| E0-11 | /data 校验通过；两把枪 historical 100% 有出处或"未核实" | 已满足 | M0-031：15 字段中 13 已核实、2 登记 `_meta.unverified`；`node tools/data-validate/index.mjs` 退出 0；`pnpm -C tools/data-validate test` 47/47（后续任务增至 49/49） |
-| E0-12 | 对标测量批 M0 有记录，复测误差在 REF §7.3 容限 | 需人工 | M0-032 未开始；需录像与 EULA 判断（H-011、H-025、H-026）。无录像则按判定规则 `blocked` 并登记为 M1 前置 |
+| E0-1 | 10 headless + 10 bot 跑 30 min，`tick_ms` P99 ≤ 28 ms，无连续 2 tick 超 33 ms | **通过** | 验收重跑 30 min（release）：tick P50 0.745 / P99 1.349 / max 9.93 ms，overrun 0，0 断线；`reports/m0/acceptance/loadtest-wt-30min.json` |
+| E0-2 | 下行 P50 ≤ 128 kbps / 上行 ≤ 32 kbps | **通过** | 下行 P50 21.9（最差客户端 22.5）、上行 P50 20.5 kbps；100 客户端全员 P50 59.7 / P99 91.6（M0-019） |
+| E0-3 | KCC 单次 ≤ 20 µs；100 个 KCC 一 tick ≤ 3 ms | **部分** | 单次 19.27 / 20.18 / 19.94 µs（零余量，落在噪声内，PI-030）；100 人 step 2.24–2.29 ms 达标。参考机复测（H-021）或 Fable 调整判据 |
+| E0-4 | native/native、wasm/wasm 逐 tick 哈希一致；native vs wasm 漂移 < 2 cm/s | **通过** | 验收干净重建后 `tools/determinism/run.sh --strict`：3 种子 × 18 000 tick 全一致，漂移 0 cm/s；CI 实跑待 H-102 |
+| E0-5 | RTX 3060/1080p ≥ 60 fps；Iris Xe/WebGL2/720p ≥ 30 fps | **需参考机** | GPU 帧时间全部未测（H-021）；CPU 侧：整帧 P50 1.1–1.3 ms、draw call ≤ 50，`perf-regress --quick` 0 项超容差 |
+| E0-6 | WebGPU compute 冒烟通过，给出 Hi-Z/froxel/TAAU 结论 | **部分** | SwiftShader 上冒烟与三试验通过，结论"可行，Hi-Z 需自写薄封装"（PI-005）；真 GPU 未测（H-021） |
+| E0-7 | Chromium WT/WS 通过；Firefox/WebKit 如实登记；WT 禁用 ≤ 5 s 回退 WS | **部分** | Chromium WT / WS / 两种回退全过（验收复跑，真实快照）；删除 WebTransport 回退 10 ms、UDP 黑洞 3.2 s；Firefox/WebKit/Safari 未验证（H-103）、受信任证书（H-017） |
+| E0-8 | 100 ms + 2 % 丢包下静止校正 ≤ 1 次/10 s；本地开火与枪口焰同帧 | **部分** | 进程内等价模型稳态纠正 0、静止 120 s 1 次；开火同帧 30/30；**真实 `tc netem` 未做**（本机无 tc，H-022） |
+| E0-9 | `sim-wasm` ≤ 1.2 MB（br ≤ 400 KB） | **通过** | wasm-opt 后 766 470 B；brotli-11 244 676 B |
+| E0-10 | lint/test-rust/test-ts/wasm-build 全绿；依赖违规 PR 被拒 | **部分** | 本地等价全绿（fmt/clippy/434 测试/238 vitest/e2e/check-deps/purity）；GitHub 从未实跑（H-102） |
+| E0-11 | /data 校验通过；两把枪 historical 100 % 有出处或"未核实" | **通过** | `data:validate` 0 错误、`data:test` 51/51；15 个字段 13 已核实 + 2 登记未核实 |
+| E0-12 | 对标测量批 M0 有记录，复测误差在容限 | **需人工（blocked）** | 工具链就绪（pytest 69/69）、我方复测出数；参考作品一侧全部"待测"，缺录像（H-011/H-025/H-026，H-104） |
 
 ## 4. 关键实测数字
 
@@ -151,6 +151,16 @@ M0 共 21 个任务已提交（M0-021 待提交）；提交哈希取自 `git log
 | DATA_HASH | 随数据变化（M0-004 空集 0x141cfc9842c4b0e3；M0-008 后 0x8e4ea0ee2af4bf8f；M0-029 时 0xeb4ef8d3b81fc45c），客户端不得写死字面量 | M0-004/008/029 |
 | 客户端包 | 脚手架阶段 dist 0.75 kB js（无实质意义）；真实首包体积未测 | M0-001 |
 
+### 4.7 验收复测（M0-033，干净重建后，release，本机非参考机）
+
+| 项 | 数字 | 来源 |
+|---|---|---|
+| 30 min WT，10 headless + 10 bot | tick P50 0.745 / P99 1.349 / max 9.93 ms；下行 P50 21.9 / 上行 P50 20.5 kbps；0 断线；击杀 564 / 重生 563 | `reports/m0/acceptance/loadtest-wt-30min.json` |
+| 服务器 RSS（同一次运行） | 12.1 → 14.6 MB；最后 10 min **+1.951 %**（验收线 2 %）；斜率 1.29 → 0.71 → 0.48 KB/s 递减 | 同上 `rss_samples` |
+| KCC 单次 / 100 人 step | 19.27 / 20.18 / 19.94 µs；2.24–2.29 ms | `cargo bench -p frontline-sim --bench kcc` ×3 |
+| 确定性（干净重建 wasm） | 3 种子 × 18 000 tick native/wasm 全一致，漂移 0 | `tools/determinism/run.sh --strict` |
+| 测试规模 | Rust 434 通过 / 0 失败 / 10 忽略；vitest 238；Playwright 主 44 + net 11 + game 6 + interop 4；pytest 21 + 69 | `reports/m0/ACCEPTANCE.md` §3 |
+
 ## 5. 已生效裁定摘要
 
 总控已做出的裁定（原文暂存于总控的执行者守则，此处为仓库内的正式记录；PI 条目的"裁决"栏已同步）。
@@ -193,6 +203,8 @@ M0 共 21 个任务已提交（M0-021 待提交）；提交哈希取自 `git log
 | 3 | **对标录像**（批 M0：步枪与基础移动） | M0-032、E0-12；GAMEDESIGN §21 的"待测"项校准 | H-011（EULA 判断）、H-025（录制设备）、H-026（批 M0 录制） |
 | 4 | **受信任 TLS 证书与域名** | 跨浏览器 WT 互通与受限网络测试（M0-028）；本地开发证书仅 13 天且仅限 `serverCertificateHashes` | H-017 |
 | 5 | **素材**：当前全部为灰盒占位 | 不影响 M0；M1 素材接入任务依赖 | H-098、H-099、H-100、H-101（免费优先方案下的补搜/下载/购买决定） |
+| 6 | **Fable 的 M0 审阅**（M0 验收结论 partial，PI-030 待裁决） | M0 关闭 | H-038 |
+| 7 | **Firefox / Safari 手工互通、受限网络 / `tc netem` 测试台** | E0-7 的非 Chromium 格、E0-8 的真实网络注入 | H-103、H-022 |
 
 ### 参考机复测入口
 
@@ -389,6 +401,13 @@ M0 共 21 个任务已提交（M0-021 待提交）；提交哈希取自 `git log
 - 关键实测（非参考机，软件渲染）：draw call 50/33/13、三角形 450 341/9 884/318 492、植被实例 8 130/4 942/3 197（三次逐次一致）；整帧 CPU P50 1.1–1.3 ms；kcc_step 19.22 µs、100 人 tick 2.24 ms；包体积 JS brotli 470 KB、wasm brotli 245 KB。RSS：100 个 WT 客户端斜率 13.7 → 0.6 KB/s，10+10 bot 10 min 增长 7.8 % → 1.6 %（验收线 2 %）。浏览器死亡/重生：死亡期间本地多走 33.7 m、53 次纠正 → 0 m、6 次。60 s 低帧率（≈3 fps）客户端不被踢。
 - 遗留 / 需人工：RTX 3060 / Iris Xe 的帧时间与 E0-5 全部未测（H-021，复测命令见 `tools/perf/README.md`）；cam2 的 P50 极差 7.9 %（共享虚机）；RSS 残留约 0.8 KB/s（存活堆已平，未归因，建议 M0-033 做 30 min 复测）；`snapshot_decode` 基准不存在；演示事故的直接触发条件属推断（见 PI-029）。
 - 影响：`__perf.dump()` schema 1 → 2（新增 `stages`，`__perf.reset()`）；`input_rejected_total` 新增 `far_future` 标签；服务器退出报告的 tick 分位数改为蓄水池估计（最大值精确）；M1-068/M2-049 可复用 `client/e2e/low-fps.spec.ts` 与 `perf-regress.mjs`；4 个 Rust 基准支持 `FRONTLINE_BASELINE_DIR`；演示服务器仍是旧二进制，需重启才有修正。
+
+### M0-033 M0 里程碑验收与 STATUS 汇总 — partial — 2026-11-17 — 提交 （待总控填）
+- 做了什么：不写功能代码。`cargo clean` + 地形重生成（md5 与之前一致）+ wasm-release 重建后，全量重跑 fmt / clippy / `cargo test --workspace` / release 性能测试 / check-deps·purity·layout / data 校验 / client lint·typecheck·vitest·build / 各 Playwright 套件 / 确定性 `--strict` / wasm 体积 / `perf-regress --quick` / 两套 pytest；重跑 30 min WT 压测（M0-030 交接的 RSS 复测）；用真浏览器 + 真服务器走完演示脚本（`reports/m0/acceptance/` 截图与日志）；逐条判定 E0-1…E0-12，写 `reports/m0/ACCEPTANCE.md`。
+- 关键实测：退出标准 通过 5 / 部分 5 / 需参考机或人工 2 / 未通过 0；Rust 434 通过 0 失败；30 min WT tick P99 1.349 ms、下行 P50 21.9 kbps、0 断线；**RSS 最后 10 min +1.951 %（险过 2 % 线），斜率 1.29→0.71→0.48 KB/s 递减**；KCC 三次 19.27/20.18/19.94 µs（零余量，PI-030）；确定性 native/wasm 逐位一致。
+- 验收内最小修补（PI-031）：`conn.rs` rustfmt 差异；Playwright 主配置误把 vitest 文件 `e2e/interop/fixtures.test.ts` 当用例（自 M0-028 起 `pnpm -C client test:e2e` 整体失败，已 `testIgnore`）；`determinism.yml` 默认严格（PI-019）；DEVELOPING 示例 URL。重生成的跟踪产物：browser-matrix、M0-021-net-e2e.json、determinism/summary.json；STATUS 的 M0-028 行表格数字同步。
+- 遗留 / 需人工：H-038（Fable 审阅）、H-021（参考机：E0-3/5/6 真 GPU）、H-102（CI 实跑）、H-011/025/026（录像，H-104）、H-017、H-103、H-022（`tc netem`：本机无 tc，演示步 3 无法执行）；PI-030 待 Fable 裁决；浏览器内未手工复现"被击杀后重生"（headless 564 击杀/563 重生与单测覆盖）。任务卡写的 `pytest tools/map-pipeline tools/ref-analysis` 单次调用不可用，须分目录运行。
+- 影响：M1-001 可开工；M1 渲染任务（M1-043/044/049）前必须拿到参考机数据；M1-068 的 RSS 判据建议改为斜率口径并跑 ≥ 1 h；对 M1 的 10 条建议见 `reports/m0/ACCEPTANCE.md` §9。
 
 ## 8. 如何维护本文件
 

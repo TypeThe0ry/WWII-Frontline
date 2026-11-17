@@ -286,7 +286,7 @@ pnpm -C client dev --host 0.0.0.0 --port 5173                                   
 ```
 
 Recommended URLs: `/?server=same&scene=vegetation&debug=1` (terrain + vegetation; software rendering is slow, 1-4 fps) and the
-light `/?server=same&scene=empty&debug=1`. Add `&renderer=webgl2` to force WebGL2.
+light `/?server=same&empty=1&debug=1`. Add `&renderer=webgl2` to force WebGL2.
 
 Keys (defaults from `client/src/input/keymap.ts`; click the canvas for pointer lock): W/A/S/D move, mouse look, Left Shift
 sprint (hold), C crouch, Space jump, left mouse fire, right mouse aim, R reload. Walk is unbound by default (debug: hold CapsLock).

@@ -443,3 +443,27 @@
 - **临时处理**：已按此实现。
 - **裁决（Fable 填写）**：总控交办项（EXECUTOR 守则"已观察到的问题"与 PI-028 的浏览器交接），按此实现；待总控确认。
 
+
+### PI-030 M0-033：KCC 单次 ≤ 20 µs 在本机零余量（19.3–20.8 µs，约一半的运行越线）；E0-3 保持 partial，M1 开工前需参考机复测并决定是否启用 §5.3 降级
+
+- **状态**：open
+- **类别**：渲染/性能
+- **提出者 / 日期**：M0-033 / 2026-11-17
+- **问题**：E0-3（ARCH §20.1-2、MILESTONES §1.3）要求 KCC 单次 ≤ 20 µs。M0-011 起历次实测 18.6–19.9 µs，验收时复测同一基准（`cargo bench -p frontline-sim --bench kcc`，release，干净构建，机器空闲）三次：19.27 / 20.18（基准自身判 FAIL）/ 19.94 µs；M0-033 的 `perf-regress check --quick` 里一次 20.81 µs（与 M0-030 基线 19.22 µs 相比 +8.3 %，仍在回归容差 +25 % 内，但已越过 20 µs 预算）。100 个 KCC 一 tick 的 `World::step` 中位 2.24–2.29 ms（预算 3 ms，余量 24 %）无问题，p99 3.2–3.9 ms 偶超 3 ms。结论：单次耗时的 20 µs 判据在共享云虚机上处于测量噪声之内，既不能判通过也不能判失败；服务器预算（100 人 tick P99 实测 1.2–8.3 ms ≪ 28 ms）远未受威胁，所以这是"判据过紧"而非"服务器预算失守"。
+- **证据**：`reports/baselines/sim-m0.json`（M0-011 基线）、`reports/m0/perf-baseline.md` §3、本任务三次 bench 输出（见 `reports/m0/ACCEPTANCE.md` §3）、`/tmp` 日志不入库。
+- **建议方案**：①（推荐）在参考机（H-021）上用同一命令复测 5 次取中位数，若 ≤ 20 µs 则 E0-3 转 done；②若参考机仍 > 20 µs 或无参考机：把判据改为"100 个 KCC 一 tick ≤ 3 ms（World::step 中位）且单次中位 ≤ 25 µs"（需 Fable 回写 MILESTONES §1.3 E0-3 与 ARCH §20.1-2，写变更说明），因为服务器预算由前者而非后者约束；③不推荐立即启用 ARCH §5.3 降级（降级会牺牲移动手感，且数据不支持其必要性）。M1 可顺带做低风险优化（静止玩家跳过 KCC 的 ground probe、复用上一 tick 的接触缓存）以换取余量，但须通过 determinism 黄金哈希。
+- **受影响任务**：M0-011（partial，已有）、M0-033；M1-068（压测门禁沿用 tick P99 判据而非 KCC µs）。
+- **临时处理**：E0-3 在验收报告中记"部分"；不改代码、不放宽判据。
+- **裁决（Fable 填写）**：
+
+### PI-031 M0-033：验收中发现并修正的三处小缺陷（Playwright 主配置误收 vitest 文件、conn.rs 格式、determinism workflow 未默认严格）
+
+- **状态**：resolved
+- **类别**：测试/运维
+- **提出者 / 日期**：M0-033 / 2026-11-17
+- **问题 / 做法**：①`pnpm -C client test:e2e`（主 Playwright 配置，`testDir: 'e2e'`）自 M0-028 起会把 `e2e/interop/fixtures.test.ts`（vitest 文件）当作 Playwright 用例载入并整体报错退出码 1，所有主配置 e2e 因此无法运行——`client/playwright.config.ts` 增加 `testIgnore: ['**/*.test.ts']`，之后主配置 44 通过 / 8 跳过 / 0 失败；②`crates/server/src/net/conn.rs` 一处遗留 rustfmt 差异（M0-030 报告），已 `rustfmt` 修正，`cargo fmt --check` 退出 0；③PI-019 裁定"CI 默认严格模式"尚未落到 `.github/workflows/determinism.yml`，已改为默认严格（`DETERMINISM_STRICT=0` 或手动触发时取消勾选才降为警告），本机 `tools/determinism/run.sh --strict` 3 种子 × 18 000 tick native/wasm 逐位一致。另：任务卡写的 `pytest tools/map-pipeline tools/ref-analysis` 单次调用会因同名 `tests/` 目录与包路径失败，须分目录运行（见 `reports/m0/ACCEPTANCE.md` §3）；DEVELOPING.md 里 `scene=empty` 的示例 URL 应为 `empty=1`，已更正。
+- **证据**：`reports/m0/ACCEPTANCE.md` §3。
+- **建议方案**：按上；M1 的 CI 作业（H-102 后）把 `pnpm -C client test:e2e` 与各专用配置分别列为作业。
+- **受影响任务**：M0-002（CI）、M0-028、M0-029、M0-030。
+- **临时处理**：已修正。
+- **裁决（Fable 填写）**：验收内的最小修补，待总控确认。

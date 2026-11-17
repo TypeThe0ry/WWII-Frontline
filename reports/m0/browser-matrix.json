@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-17T08:23:56.569Z",
+  "generatedAt": "2026-11-17T12:42:15.073Z",
   "note": "Playwright-provided browser builds, headless, loopback. WebKit build != Safari release. Untested = not run on this machine, not a failure.",
   "probes": [
     {
@@ -13,7 +13,7 @@
       "snapshotSource": "server",
       "disconnects": 0,
       "usedTransport": "wt",
-      "rttMsMedian": 0.816170645802021
+      "rttMsMedian": 1.1436184443003006
     },
     {
       "browser": "chromium",
@@ -22,11 +22,11 @@
       "supported": true,
       "serverCertificateHashesWorked": false,
       "connected": true,
-      "snapshotsReceived": 150,
+      "snapshotsReceived": 151,
       "snapshotSource": "server",
       "disconnects": 0,
       "usedTransport": "ws",
-      "rttMsMedian": 0.858661899754718
+      "rttMsMedian": 1.0710230987536367
     }
   ],
   "fallbackNoWebTransport": [
@@ -35,7 +35,7 @@
       "version": "153.0.8010.12",
       "connected": true,
       "transport": "ws",
-      "connectMs": 6.4,
+      "connectMs": 10,
       "fallbackReason": "WebTransport undefined"
     }
   ],
@@ -45,7 +45,7 @@
       "version": "153.0.8010.12",
       "connected": true,
       "transport": "ws",
-      "connectMs": 15.1,
+      "connectMs": 12,
       "fallbackReason": "wt connection failed: Opening handshake failed."
     }
   ],

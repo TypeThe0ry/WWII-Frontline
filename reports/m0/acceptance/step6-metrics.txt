@@ -1,0 +1,252 @@
+# HELP aoi_encode_ms AOI selection + snapshot encoding per tick (ms)
+# TYPE aoi_encode_ms histogram
+aoi_encode_ms_bucket{le="0.1"} 1666
+aoi_encode_ms_bucket{le="0.25"} 1672
+aoi_encode_ms_bucket{le="0.5"} 1677
+aoi_encode_ms_bucket{le="1"} 1678
+aoi_encode_ms_bucket{le="1.5"} 1679
+aoi_encode_ms_bucket{le="2"} 1679
+aoi_encode_ms_bucket{le="2.6"} 1679
+aoi_encode_ms_bucket{le="4"} 1679
+aoi_encode_ms_bucket{le="8"} 1679
+aoi_encode_ms_bucket{le="16"} 1679
+aoi_encode_ms_bucket{le="+Inf"} 1679
+aoi_encode_ms_sum 43.613705000000024
+aoi_encode_ms_count 1679
+# HELP aoi_starved_total Candidate entities that did not fit into a snapshot packet
+# TYPE aoi_starved_total counter
+aoi_starved_total 0
+# HELP bot_path_ms Path-query time per tick inside the bot step (ms)
+# TYPE bot_path_ms histogram
+bot_path_ms_bucket{le="0.02"} 1645
+bot_path_ms_bucket{le="0.05"} 1667
+bot_path_ms_bucket{le="0.1"} 1675
+bot_path_ms_bucket{le="0.2"} 1678
+bot_path_ms_bucket{le="0.5"} 1679
+bot_path_ms_bucket{le="1"} 1679
+bot_path_ms_bucket{le="2"} 1679
+bot_path_ms_bucket{le="3"} 1679
+bot_path_ms_bucket{le="5"} 1679
+bot_path_ms_bucket{le="10"} 1679
+bot_path_ms_bucket{le="+Inf"} 1679
+bot_path_ms_sum 2.858849
+bot_path_ms_count 1679
+# HELP bot_think_ms Bot step wall time per tick: think + input ingestion (ms)
+# TYPE bot_think_ms histogram
+bot_think_ms_bucket{le="0.02"} 702
+bot_think_ms_bucket{le="0.05"} 1631
+bot_think_ms_bucket{le="0.1"} 1661
+bot_think_ms_bucket{le="0.2"} 1671
+bot_think_ms_bucket{le="0.5"} 1675
+bot_think_ms_bucket{le="1"} 1678
+bot_think_ms_bucket{le="2"} 1679
+bot_think_ms_bucket{le="3"} 1679
+bot_think_ms_bucket{le="5"} 1679
+bot_think_ms_bucket{le="10"} 1679
+bot_think_ms_bucket{le="+Inf"} 1679
+bot_think_ms_sum 45.44722400000001
+bot_think_ms_count 1679
+# HELP input_accepted_total Input commands accepted into a player's buffer
+# TYPE input_accepted_total counter
+input_accepted_total 17590
+# HELP input_missing_ticks_total Player-ticks resolved without an input of their own
+# TYPE input_missing_ticks_total counter
+input_missing_ticks_total 1195
+# HELP input_rejected_total Inputs rejected, clamped or dropped by validation
+# TYPE input_rejected_total counter
+input_rejected_total{reason="bad_move"} 0
+input_rejected_total{reason="c0_rate"} 0
+input_rejected_total{reason="duplicate"} 1121
+input_rejected_total{reason="far_future"} 0
+input_rejected_total{reason="move_clamped"} 0
+input_rejected_total{reason="no_session"} 0
+input_rejected_total{reason="pitch_rate"} 0
+input_rejected_total{reason="reserved_bits"} 0
+input_rejected_total{reason="ring_overwrite"} 0
+input_rejected_total{reason="tick_regress"} 0
+input_rejected_total{reason="too_far"} 0
+input_rejected_total{reason="too_old"} 134
+input_rejected_total{reason="weapon_slot"} 0
+input_rejected_total{reason="yaw_rate"} 0
+# HELP net_bytes_in_total Bytes received from clients
+# TYPE net_bytes_in_total counter
+net_bytes_in_total 22421
+# HELP net_bytes_out_per_client_kbps Per-client downstream rate over 1 s windows (kbps)
+# TYPE net_bytes_out_per_client_kbps histogram
+net_bytes_out_per_client_kbps_bucket{kind="payload",le="8"} 43
+net_bytes_out_per_client_kbps_bucket{kind="payload",le="16"} 63
+net_bytes_out_per_client_kbps_bucket{kind="payload",le="32"} 63
+net_bytes_out_per_client_kbps_bucket{kind="payload",le="54"} 63
+net_bytes_out_per_client_kbps_bucket{kind="payload",le="64"} 63
+net_bytes_out_per_client_kbps_bucket{kind="payload",le="96"} 63
+net_bytes_out_per_client_kbps_bucket{kind="payload",le="128"} 63
+net_bytes_out_per_client_kbps_bucket{kind="payload",le="192"} 63
+net_bytes_out_per_client_kbps_bucket{kind="payload",le="256"} 63
+net_bytes_out_per_client_kbps_bucket{kind="payload",le="400"} 63
+net_bytes_out_per_client_kbps_bucket{kind="payload",le="512"} 63
+net_bytes_out_per_client_kbps_bucket{kind="payload",le="+Inf"} 63
+net_bytes_out_per_client_kbps_sum{kind="payload"} 438.5679999999999
+net_bytes_out_per_client_kbps_count{kind="payload"} 63
+net_bytes_out_per_client_kbps_bucket{kind="wire",le="8"} 0
+net_bytes_out_per_client_kbps_bucket{kind="wire",le="16"} 30
+net_bytes_out_per_client_kbps_bucket{kind="wire",le="32"} 63
+net_bytes_out_per_client_kbps_bucket{kind="wire",le="54"} 63
+net_bytes_out_per_client_kbps_bucket{kind="wire",le="64"} 63
+net_bytes_out_per_client_kbps_bucket{kind="wire",le="96"} 63
+net_bytes_out_per_client_kbps_bucket{kind="wire",le="128"} 63
+net_bytes_out_per_client_kbps_bucket{kind="wire",le="192"} 63
+net_bytes_out_per_client_kbps_bucket{kind="wire",le="256"} 63
+net_bytes_out_per_client_kbps_bucket{kind="wire",le="400"} 63
+net_bytes_out_per_client_kbps_bucket{kind="wire",le="512"} 63
+net_bytes_out_per_client_kbps_bucket{kind="wire",le="+Inf"} 63
+net_bytes_out_per_client_kbps_sum{kind="wire"} 1016.248
+net_bytes_out_per_client_kbps_count{kind="wire"} 63
+# HELP net_bytes_out_total Bytes sent to clients
+# TYPE net_bytes_out_total counter
+net_bytes_out_total 58401
+# HELP net_c1_inbound_total Valid C1 input bundles received
+# TYPE net_c1_inbound_total counter
+net_c1_inbound_total 839
+# HELP net_connections Open client connections
+# TYPE net_connections gauge
+net_connections 1
+# HELP net_datagram_oversize_total Outbound datagrams dropped for exceeding max_datagram_size
+# TYPE net_datagram_oversize_total counter
+net_datagram_oversize_total 0
+# HELP net_datagrams_in_total Datagrams received
+# TYPE net_datagrams_in_total counter
+net_datagrams_in_total 738
+# HELP net_datagrams_out_total Datagrams sent
+# TYPE net_datagrams_out_total counter
+net_datagrams_out_total 1225
+# HELP net_frames_malformed_total Inbound frames that were malformed, oversize or illegal (connection closed)
+# TYPE net_frames_malformed_total counter
+net_frames_malformed_total 0
+# HELP net_handshake_timeout_total Connections closed for not completing the handshake in time
+# TYPE net_handshake_timeout_total counter
+net_handshake_timeout_total 0
+# HELP net_rejects_total Connections/handshakes rejected
+# TYPE net_rejects_total counter
+net_rejects_total{reason="conn_limit"} 0
+net_rejects_total{reason="data_hash"} 0
+net_rejects_total{reason="ip_limit"} 0
+net_rejects_total{reason="rate_limit"} 0
+net_rejects_total{reason="server_full"} 0
+net_rejects_total{reason="slow_client"} 0
+net_rejects_total{reason="version"} 0
+# HELP net_snapshots_dropped_total Unreliable (C2/C3) packets dropped in favour of newer ones
+# TYPE net_snapshots_dropped_total counter
+net_snapshots_dropped_total 0
+# HELP net_transport_connections Open client connections by transport
+# TYPE net_transport_connections gauge
+net_transport_connections{transport="ws"} 0
+net_transport_connections{transport="wt"} 1
+# HELP server_bots Active bots
+# TYPE server_bots gauge
+server_bots 10
+# HELP server_input_queue_full_total Inputs dropped because the input channel was full
+# TYPE server_input_queue_full_total counter
+server_input_queue_full_total 0
+# HELP server_players Connected players
+# TYPE server_players gauge
+server_players{team="ger"} 1
+server_players{team="us"} 0
+# HELP server_tick_interval_error_ms Actual wake time minus scheduled deadline (ms)
+# TYPE server_tick_interval_error_ms histogram
+server_tick_interval_error_ms_bucket{le="0.05"} 1581
+server_tick_interval_error_ms_bucket{le="0.1"} 1596
+server_tick_interval_error_ms_bucket{le="0.2"} 1611
+server_tick_interval_error_ms_bucket{le="0.3"} 1619
+server_tick_interval_error_ms_bucket{le="0.5"} 1631
+server_tick_interval_error_ms_bucket{le="0.75"} 1647
+server_tick_interval_error_ms_bucket{le="1"} 1656
+server_tick_interval_error_ms_bucket{le="1.5"} 1664
+server_tick_interval_error_ms_bucket{le="2"} 1668
+server_tick_interval_error_ms_bucket{le="3"} 1673
+server_tick_interval_error_ms_bucket{le="5"} 1677
+server_tick_interval_error_ms_bucket{le="+Inf"} 1679
+server_tick_interval_error_ms_sum 86.75632100000014
+server_tick_interval_error_ms_count 1679
+# HELP server_tick_ms Wall time of one server tick's work (ms)
+# TYPE server_tick_ms histogram
+server_tick_ms_bucket{le="0.5"} 1105
+server_tick_ms_bucket{le="1"} 1577
+server_tick_ms_bucket{le="2"} 1656
+server_tick_ms_bucket{le="4"} 1675
+server_tick_ms_bucket{le="8"} 1678
+server_tick_ms_bucket{le="12"} 1678
+server_tick_ms_bucket{le="16"} 1679
+server_tick_ms_bucket{le="20"} 1679
+server_tick_ms_bucket{le="24"} 1679
+server_tick_ms_bucket{le="28"} 1679
+server_tick_ms_bucket{le="33.3"} 1679
+server_tick_ms_bucket{le="50"} 1679
+server_tick_ms_bucket{le="100"} 1679
+server_tick_ms_bucket{le="+Inf"} 1679
+server_tick_ms_sum 885.6097639999987
+server_tick_ms_count 1679
+# HELP server_tick_overrun_consecutive Current run of consecutive overrunning ticks
+# TYPE server_tick_overrun_consecutive gauge
+server_tick_overrun_consecutive 0
+# HELP server_tick_overrun_consecutive_max Longest run of consecutive overrunning ticks this match
+# TYPE server_tick_overrun_consecutive_max gauge
+server_tick_overrun_consecutive_max 0
+# HELP server_tick_overrun_total Ticks whose work exceeded the tick period
+# TYPE server_tick_overrun_total counter
+server_tick_overrun_total 0
+# HELP server_tick_skipped_slots_total Schedule slots skipped (never caught up) after overruns
+# TYPE server_tick_skipped_slots_total counter
+server_tick_skipped_slots_total 0
+# HELP server_uptime_seconds Process uptime
+# TYPE server_uptime_seconds gauge
+server_uptime_seconds 56.004135047
+# HELP session_kicked_total Connections closed after 30 consecutive input violations
+# TYPE session_kicked_total counter
+session_kicked_total 0
+# HELP session_stall_total Input stalls (>= 9 ticks without input)
+# TYPE session_stall_total counter
+session_stall_total 40
+# HELP snapshot_budget_utilization Snapshot payload divided by the packet budget
+# TYPE snapshot_budget_utilization histogram
+snapshot_budget_utilization_bucket{le="0.05"} 937
+snapshot_budget_utilization_bucket{le="0.1"} 1269
+snapshot_budget_utilization_bucket{le="0.2"} 1278
+snapshot_budget_utilization_bucket{le="0.3"} 1278
+snapshot_budget_utilization_bucket{le="0.4"} 1278
+snapshot_budget_utilization_bucket{le="0.5"} 1278
+snapshot_budget_utilization_bucket{le="0.6"} 1278
+snapshot_budget_utilization_bucket{le="0.7"} 1278
+snapshot_budget_utilization_bucket{le="0.8"} 1278
+snapshot_budget_utilization_bucket{le="0.9"} 1278
+snapshot_budget_utilization_bucket{le="1"} 1278
+snapshot_budget_utilization_bucket{le="+Inf"} 1278
+snapshot_budget_utilization_sum 48.698260869565246
+snapshot_budget_utilization_count 1278
+# HELP snapshot_bytes Size of each snapshot payload (bytes)
+# TYPE snapshot_bytes histogram
+snapshot_bytes_bucket{le="50"} 844
+snapshot_bytes_bucket{le="100"} 1244
+snapshot_bytes_bucket{le="150"} 1276
+snapshot_bytes_bucket{le="200"} 1278
+snapshot_bytes_bucket{le="300"} 1278
+snapshot_bytes_bucket{le="400"} 1278
+snapshot_bytes_bucket{le="600"} 1278
+snapshot_bytes_bucket{le="800"} 1278
+snapshot_bytes_bucket{le="1000"} 1278
+snapshot_bytes_bucket{le="1150"} 1278
+snapshot_bytes_bucket{le="1200"} 1278
+snapshot_bytes_bucket{le="+Inf"} 1278
+snapshot_bytes_sum 56003
+snapshot_bytes_count 1278
+# HELP snapshot_degraded_ticks_total Ticks in which the snapshot rate was reduced to 15 Hz
+# TYPE snapshot_degraded_ticks_total counter
+snapshot_degraded_ticks_total 0
+# HELP snapshot_delta_records_total Entity records sent as deltas
+# TYPE snapshot_delta_records_total counter
+snapshot_delta_records_total 317
+# HELP snapshot_keyframe_records_total Entity records sent as keyframes
+# TYPE snapshot_keyframe_records_total counter
+snapshot_keyframe_records_total 2342
+# HELP snapshots_sent_total Snapshot packets produced
+# TYPE snapshots_sent_total counter
+snapshots_sent_total 1278

@@ -6,6 +6,8 @@ const PORT = 5199;
 // (see e2e/webgpu-swiftshader-shim.js for why presenting is stubbed).
 export default defineConfig({
   testDir: 'e2e',
+  // *.test.ts under e2e/ are vitest files (e2e/interop/fixtures.test.ts), not Playwright specs.
+  testIgnore: ['**/*.test.ts'],
   timeout: 60_000,
   workers: 1,
   reporter: [['list']],

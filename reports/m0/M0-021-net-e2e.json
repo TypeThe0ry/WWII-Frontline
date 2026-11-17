@@ -1,38 +1,38 @@
 {
   "wt": {
-    "connect_ms": 9.9,
-    "handshake_rtt_ms": 1.3,
-    "loopback_rtt_ewma_ms": 1.089,
-    "jitter_ms": 0.201,
-    "c2_received": 69,
+    "connect_ms": 13.7,
+    "handshake_rtt_ms": 0.9,
+    "loopback_rtt_ewma_ms": 1.227,
+    "jitter_ms": 0.464,
+    "c2_received": 71,
     "stats": {
-      "bytesIn": 1944,
+      "bytesIn": 1996,
       "bytesOut": 2491,
-      "pktsIn": 78,
+      "pktsIn": 80,
       "pktsOut": 114,
-      "rttMs": 1.089143156418891,
-      "jitterMs": 0.20061633497767234,
+      "rttMs": 1.2266741726934427,
+      "jitterMs": 0.46374748344591615,
       "transport": "wt"
     }
   },
   "ws": {
-    "connect_ms": 7.7,
-    "handshake_rtt_ms": 2.1,
-    "loopback_rtt_ewma_ms": 1.735,
-    "jitter_ms": 0.815,
+    "connect_ms": 11,
+    "handshake_rtt_ms": 1.4,
+    "loopback_rtt_ewma_ms": 1.282,
+    "jitter_ms": 0.194,
     "c2_received": 54,
     "stats": {
       "bytesIn": 1563,
       "bytesOut": 2710,
       "pktsIn": 63,
       "pktsOut": 114,
-      "rttMs": 1.7345862711459934,
-      "jitterMs": 0.8148316489646225,
+      "rttMs": 1.2821279429846455,
+      "jitterMs": 0.19436506300533887,
       "transport": "ws"
     }
   },
   "fallback_ready_rejected": {
-    "connect_ms": 13.7,
+    "connect_ms": 14,
     "reason": "wt connection failed: Opening handshake failed."
   },
   "fallback_wt_blackhole": {
@@ -40,7 +40,7 @@
     "reason": "wt connection not ready after 3000 ms"
   },
   "fallback_wt_port_closed": {
-    "connect_ms": 8,
+    "connect_ms": 13.5,
     "reason": "wt connection failed: Opening handshake failed."
   }
 }

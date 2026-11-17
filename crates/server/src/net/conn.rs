@@ -582,7 +582,11 @@ mod tests {
         while let Some(id) = s.alloc_player(&h) {
             ids.push(id);
         }
-        assert_eq!(ids, (0..118).collect::<Vec<u8>>(), "humans must fill 0..=117 only");
+        assert_eq!(
+            ids,
+            (0..118).collect::<Vec<u8>>(),
+            "humans must fill 0..=117 only"
+        );
         // A human leaving does not free a bot's id.
         s.release_player(3);
         assert_eq!(s.alloc_player(&h), Some(3));
