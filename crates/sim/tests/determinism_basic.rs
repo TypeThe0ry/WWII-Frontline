@@ -39,12 +39,17 @@ fn new_world(seed: u64) -> World {
 fn inputs_for(tick: u32, flip: Option<(u32, u8)>) -> Vec<(PlayerId, InputCmd)> {
     (0..PLAYERS)
         .map(|p| {
-            let mut r = Rng::for_(0xfeed, Tick(tick), p as u16, frontline_sim::rng::Purpose::Bot);
+            let mut r = Rng::for_(
+                0xfeed,
+                Tick(tick),
+                p as u16,
+                frontline_sim::rng::Purpose::Bot,
+            );
             let mut cmd = InputCmd {
                 seq: tick as u16,
                 tick,
-                move_x: (r.next_u32() % 255) as i32 as i8 - 127,
-                move_z: (r.next_u32() % 255) as i32 as i8 - 127,
+                move_x: ((r.next_u32() % 255) as i32 - 127) as i8,
+                move_z: ((r.next_u32() % 255) as i32 - 127) as i8,
                 yaw: r.next_u32() as u16,
                 pitch: r.next_u32() as u16 as i16,
                 buttons: r.next_u32() as u16,
@@ -74,14 +79,18 @@ fn run_hashes(seed: u64, ticks: u32) -> Vec<u64> {
 
 /// Regression pin of the 10 000-tick final hash. Update only on a deliberate change of the
 /// hash/RNG algorithm or of the hashed state layout, and say why in the commit.
-const GOLDEN_FINAL_HASH: u64 = 0;
+const GOLDEN_FINAL_HASH: u64 = 0x700d_c1b8_25c9_ae38;
 
 #[test]
 fn ten_thousand_ticks_identical_across_threads() {
-    let a = std::thread::spawn(|| run_hashes(42, 10_000)).join().unwrap();
+    let a = std::thread::spawn(|| run_hashes(42, 10_000))
+        .join()
+        .unwrap();
     // Perturb the allocator between runs.
     let _junk: Vec<Vec<u8>> = (0..64).map(|i| vec![i as u8; 1000 + i * 37]).collect();
-    let b = std::thread::spawn(|| run_hashes(42, 10_000)).join().unwrap();
+    let b = std::thread::spawn(|| run_hashes(42, 10_000))
+        .join()
+        .unwrap();
     assert_eq!(a.len(), 10_000);
     let equal = a.iter().zip(&b).filter(|(x, y)| x == y).count();
     assert_eq!(equal, 10_000, "{equal}/10000 ticks equal");
@@ -113,7 +122,10 @@ fn perturbation_diverges_within_two_ticks() {
             diverged += 1;
         }
     }
-    assert_eq!(diverged, 100, "{diverged}/100 perturbations diverged within 2 ticks");
+    assert_eq!(
+        diverged, 100,
+        "{diverged}/100 perturbations diverged within 2 ticks"
+    );
 }
 
 #[cfg(debug_assertions)]

@@ -24,7 +24,9 @@
 
 use crate::bitio::{BitReader, BitWriter};
 use crate::codec::CodecError;
-use crate::quant::{dequant_pitch, dequant_pos_xz, dequant_pos_y, dequant_yaw, quant_pos_xz, quant_pos_y};
+use crate::quant::{
+    dequant_pitch, dequant_pos_xz, dequant_pos_y, dequant_yaw, quant_pos_xz, quant_pos_y,
+};
 
 pub const MASK_POS: u8 = 1;
 pub const MASK_ROT: u8 = 2;
@@ -445,7 +447,11 @@ mod tests {
             let s = st((1000 + d) as u16, 1000);
             let (bits, got) = roundtrip_delta(&base, &s);
             assert_eq!(got, s, "d={d}");
-            let expect = if w == 0 { 8 + 1 + 8 + 1 + 2 + 32 + 1 } else { 8 + 1 + 8 + 1 + 2 + 2 * w + 1 };
+            let expect = if w == 0 {
+                8 + 1 + 8 + 1 + 2 + 32 + 1
+            } else {
+                8 + 1 + 8 + 1 + 2 + 2 * w + 1
+            };
             assert_eq!(bits, expect, "d={d}");
         }
     }
@@ -467,7 +473,11 @@ mod tests {
         let full = EntityState {
             id: 5,
             kind: EntityKind::Player,
-            pos: QPos { x: 9000, y: 8000, z: 1 },
+            pos: QPos {
+                x: 9000,
+                y: 8000,
+                z: 1,
+            },
             yaw: 1023,
             pitch: 63,
             vel: None,

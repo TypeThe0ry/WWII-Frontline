@@ -8,8 +8,7 @@ use crate::quant::{dequant_pitch, dequant_pos_xz, dequant_pos_y, dequant_yaw};
 use crate::snapshot::baseline::DecoderRing;
 use crate::snapshot::crc::crc16_ccitt;
 use crate::snapshot::entity::{
-    read_record, EntityKind, EntityState, QPos, Record, MIN_RECORD_BITS, PITCH_BITS,
-    YAW_BITS_NEAR,
+    read_record, EntityKind, EntityState, QPos, Record, MIN_RECORD_BITS, PITCH_BITS, YAW_BITS_NEAR,
 };
 use crate::snapshot::events::EventEntry;
 use crate::snapshot::header::{Header, FLAG_CRC, FLAG_HAS_SELF};

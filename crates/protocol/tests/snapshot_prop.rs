@@ -21,7 +21,11 @@ impl Rng {
     }
 }
 
-const ITER: usize = if cfg!(debug_assertions) { 10_000 } else { 100_000 };
+const ITER: usize = if cfg!(debug_assertions) {
+    10_000
+} else {
+    100_000
+};
 
 fn rand_state(rng: &mut Rng, id: u8) -> EntityState {
     EntityState {
@@ -215,23 +219,30 @@ fn baseline_ring_lag_gives_keyframes() {
     let mut enc = SnapshotEncoder::new();
     let mut dec = SnapshotDecoder::new();
     let set = walkers(20, &mut rng);
-    let send = |enc: &mut SnapshotEncoder, dec: &mut SnapshotDecoder, tick: u32, set: &[EntityState]| {
-        let mut b = enc.begin(1, tick, DEFAULT_BUDGET);
-        for s in set {
-            assert!(b.add_entity(s, true).unwrap());
-        }
-        dec.decode(&b.finish()).unwrap()
-    };
+    let send =
+        |enc: &mut SnapshotEncoder, dec: &mut SnapshotDecoder, tick: u32, set: &[EntityState]| {
+            let mut b = enc.begin(1, tick, DEFAULT_BUDGET);
+            for s in set {
+                assert!(b.add_entity(s, true).unwrap());
+            }
+            dec.decode(&b.finish()).unwrap()
+        };
     let d = send(&mut enc, &mut dec, 100, &set);
     assert!(d.entities.keyframe.iter().all(|&k| k));
     enc.on_ack(1, 100);
     // lag 32: still deltas
     let d = send(&mut enc, &mut dec, 132, &set);
-    assert!(d.entities.keyframe.iter().all(|&k| !k), "lag 32 must be delta");
+    assert!(
+        d.entities.keyframe.iter().all(|&k| !k),
+        "lag 32 must be delta"
+    );
     // lag 33: all keyframes
     let d = send(&mut enc, &mut dec, 133, &set);
     assert_eq!(d.entities.len(), 20);
-    assert!(d.entities.keyframe.iter().all(|&k| k), "lag 33 must be keyframes");
+    assert!(
+        d.entities.keyframe.iter().all(|&k| k),
+        "lag 33 must be keyframes"
+    );
     // acknowledging the keyframe packet restores deltas
     enc.on_ack(1, 133);
     let d = send(&mut enc, &mut dec, 134, &set);
@@ -255,7 +266,10 @@ fn missing_baseline_and_bad_input() {
     }
     let p1 = b.finish();
     // a decoder that never saw p0 cannot decode the 16-bit-tick delta packet
-    assert_eq!(SnapshotDecoder::new().decode(&p1), Err(CodecError::MissingBaseline));
+    assert_eq!(
+        SnapshotDecoder::new().decode(&p1),
+        Err(CodecError::MissingBaseline)
+    );
     // ... nor can one that saw a different packet
     let mut other = SnapshotDecoder::new();
     let mut e2 = SnapshotEncoder::new();
@@ -270,7 +284,10 @@ fn missing_baseline_and_bad_input() {
     let mut bad = p0.clone();
     bad[5] ^= 1;
     assert_eq!(SnapshotDecoder::new().decode(&bad), Err(CodecError::BadCrc));
-    assert_eq!(SnapshotDecoder::new().decode(&vec![0u8; 1201]), Err(CodecError::TooLong));
+    assert_eq!(
+        SnapshotDecoder::new().decode(&vec![0u8; 1201]),
+        Err(CodecError::TooLong)
+    );
     assert!(SnapshotDecoder::new().decode(&[]).is_err());
 }
 
@@ -323,7 +340,10 @@ fn convergence_under_30_percent_loss() {
         }
     }
     println!("60 s, 30% loss: {decoded} decoded, {lost} lost, {missing} MissingBaseline");
-    assert_eq!(missing, 0, "decoder must never lack the baseline the server uses");
+    assert_eq!(
+        missing, 0,
+        "decoder must never lack the baseline the server uses"
+    );
     assert!(decoded > 700);
     assert!(last_decoded_tick + 60 > tick);
     let _ = last_sent;
@@ -354,11 +374,21 @@ fn budget_never_writes_half_a_record() {
     let many: Vec<EntityState> = (0..=200u8).map(|i| rand_state(&mut rng, i)).collect();
     let mut enc = SnapshotEncoder::new();
     let mut b = enc.begin(1, 50, 1200);
-    let ok = many.iter().filter(|s| b.add_entity(s, true).unwrap()).count();
+    let ok = many
+        .iter()
+        .filter(|s| b.add_entity(s, true).unwrap())
+        .count();
     assert!(ok <= 127);
     let bytes = b.finish();
     assert!(bytes.len() <= 1200);
-    assert_eq!(SnapshotDecoder::new().decode(&bytes).unwrap().entities.len(), ok);
+    assert_eq!(
+        SnapshotDecoder::new()
+            .decode(&bytes)
+            .unwrap()
+            .entities
+            .len(),
+        ok
+    );
 }
 
 #[test]
@@ -366,7 +396,11 @@ fn self_state_events_and_validation() {
     let mut enc = SnapshotEncoder::new();
     let mut b = enc.begin(1, 77, DEFAULT_BUDGET).with_crc(false);
     let s = SelfState {
-        pos_corr: Some(QPos { x: 65535, y: 8191, z: 3 }),
+        pos_corr: Some(QPos {
+            x: 65535,
+            y: 8191,
+            z: 3,
+        }),
         ammo_in_mag: 30,
         ammo_reserve: 4095,
         health: 200,
@@ -379,14 +413,50 @@ fn self_state_events_and_validation() {
     assert!(b.add_self(&s).unwrap());
     assert_eq!(b.add_self(&s), Err(CodecError::InvalidValue));
     let evs = [
-        EventEntry { id: 1, event: Event::Shot { shooter: 3, weapon: 4, muzzle: [1, 16383, 77], dir_yaw: 1023, dir_pitch: 511 } },
-        EventEntry { id: 2, event: Event::Impact { pos: [5, 6, 7], normal: 4095, material: 9 } },
-        EventEntry { id: 3, event: Event::HitConfirm { target: 1, zone: 2, damage_q: 3 } },
-        EventEntry { id: 65535, event: Event::DamageDir { angle: 250, dmg_q: 9 } },
+        EventEntry {
+            id: 1,
+            event: Event::Shot {
+                shooter: 3,
+                weapon: 4,
+                muzzle: [1, 16383, 77],
+                dir_yaw: 1023,
+                dir_pitch: 511,
+            },
+        },
+        EventEntry {
+            id: 2,
+            event: Event::Impact {
+                pos: [5, 6, 7],
+                normal: 4095,
+                material: 9,
+            },
+        },
+        EventEntry {
+            id: 3,
+            event: Event::HitConfirm {
+                target: 1,
+                zone: 2,
+                damage_q: 3,
+            },
+        },
+        EventEntry {
+            id: 65535,
+            event: Event::DamageDir {
+                angle: 250,
+                dmg_q: 9,
+            },
+        },
     ];
     assert_eq!(b.add_events(&evs).unwrap(), 4);
     assert_eq!(
-        b.add_events(&[EventEntry { id: 9, event: Event::Impact { pos: [16384, 0, 0], normal: 0, material: 0 } }]),
+        b.add_events(&[EventEntry {
+            id: 9,
+            event: Event::Impact {
+                pos: [16384, 0, 0],
+                normal: 0,
+                material: 0
+            }
+        }]),
         Err(CodecError::Overflow)
     );
     // invalid entity values are errors, duplicates too

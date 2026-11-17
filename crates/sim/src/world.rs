@@ -134,7 +134,12 @@ impl World {
         if req.player > MAX_PLAYER_ID {
             return Err(SpawnError::InvalidPlayerId);
         }
-        if self.ecs.resource::<PlayerIndex>().map.contains_key(&req.player) {
+        if self
+            .ecs
+            .resource::<PlayerIndex>()
+            .map
+            .contains_key(&req.player)
+        {
             return Err(SpawnError::PlayerExists);
         }
         let id = self.alloc.alloc().ok_or(SpawnError::NoFreeSlot)?;

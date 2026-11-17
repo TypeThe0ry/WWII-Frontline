@@ -2,9 +2,7 @@
 use std::time::Instant; // benches are outside the purity scan (src only)
 
 use frontline_protocol::msg::input::InputCmd;
-use frontline_sim::{
-    CollisionData, GameData, GameMode, MapId, SimConfig, SpawnReq, Team, World,
-};
+use frontline_sim::{CollisionData, GameData, GameMode, MapId, SimConfig, SpawnReq, Team, World};
 
 fn run(n: u8) {
     let cfg = SimConfig {
@@ -46,7 +44,11 @@ fn run(n: u8) {
         w.step(&inputs);
     }
     let ns = t0.elapsed().as_nanos() as f64 / iters as f64;
-    println!("world_step_empty players={n}: {:.0} ns/step ({:.2} us)", ns, ns / 1000.0);
+    println!(
+        "world_step_empty players={n}: {:.0} ns/step ({:.2} us)",
+        ns,
+        ns / 1000.0
+    );
 }
 
 fn glam_vec(p: u8) -> frontline_sim::Vec3 {
