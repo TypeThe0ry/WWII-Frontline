@@ -16,7 +16,9 @@ use std::collections::VecDeque;
 
 use frontline_protocol::msg::input::InputCmd;
 use frontline_protocol::snapshot::pred_hash::pred_hash;
-use frontline_sim::{CollisionData, GameData, GameMode, MapId, PlayerAuthState, SimConfig, Tick, Vec3};
+use frontline_sim::{
+    CollisionData, GameData, GameMode, MapId, PlayerAuthState, SimConfig, Tick, Vec3,
+};
 
 use crate::report::Corrections;
 
@@ -58,11 +60,11 @@ impl Predictor {
         let cfg = SimConfig {
             tick_hz: 30,
             match_seed,
-            map: MapId(map),
+            map: MapId(u16::from(map)),
             mode: GameMode::Sandbox,
             data: GameData::embedded(),
         };
-        let mut sim = frontline_sim::predict::PredictSim::new(cfg, collision, player);
+        let sim = frontline_sim::predict::PredictSim::new(cfg, collision, player);
         Predictor {
             sim,
             base_seq: first_seq.wrapping_sub(1),
@@ -95,7 +97,7 @@ impl Predictor {
         if self.ring.len() > RING_CAPACITY {
             if let Some(e) = self.ring.pop_front() {
                 self.base_seq = e.cmd.seq;
-                self.base = Some(e.state).filter(|_| self.spawned);
+                self.base = self.spawned.then_some(e.state);
             }
             self.overflows += 1;
         }
@@ -123,7 +125,7 @@ impl Predictor {
         }) {
             if let Some(e) = self.ring.pop_front() {
                 self.base_seq = e.cmd.seq;
-                reference = Some(e.state).filter(|_| self.spawned);
+                reference = self.spawned.then_some(e.state);
             }
         }
         self.base = reference;

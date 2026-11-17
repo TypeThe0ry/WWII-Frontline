@@ -174,8 +174,8 @@ impl SynthInput {
         if d > std::f32::consts::PI {
             d -= std::f32::consts::TAU;
         }
-        self.yaw = (self.yaw + d.clamp(-TURN_PER_TICK, TURN_PER_TICK))
-            .rem_euclid(std::f32::consts::TAU);
+        self.yaw =
+            (self.yaw + d.clamp(-TURN_PER_TICK, TURN_PER_TICK)).rem_euclid(std::f32::consts::TAU);
         self.pitch = (self.pitch + (self.rng.f32() - 0.5) * 0.01).clamp(-0.12, 0.12);
         cmd.yaw = yaw_code(self.yaw);
         cmd.pitch = pitch_code(self.pitch);
@@ -183,7 +183,9 @@ impl SynthInput {
         // lateral wiggle
         if self.strafe_left > 0 {
             self.strafe_left -= 1;
+            // keep hypot(x, z) <= 127: the server clamps (and counts) longer move vectors
             cmd.move_x = 64 * self.strafe_dir;
+            cmd.move_z = 100;
         } else if self.rng.range(0, 299) == 0 {
             self.strafe_left = self.rng.range(15, 45);
             self.strafe_dir = if self.rng.range(0, 1) == 0 { 1 } else { -1 };
@@ -391,6 +393,12 @@ mod tests {
                 },
             );
             assert!(c.move_x > i8::MIN && c.move_z > i8::MIN);
+            assert!(
+                f32::from(c.move_x).hypot(f32::from(c.move_z)) <= 128.0,
+                "move vector too long: {} {}",
+                c.move_x,
+                c.move_z
+            );
             assert!(c.pitch.unsigned_abs() <= 32767);
             assert_eq!(c.buttons & !0x3FFF, 0);
         }

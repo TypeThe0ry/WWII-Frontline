@@ -18,7 +18,9 @@ pub async fn connect(t: &Target) -> Result<Link, String> {
         .ok_or_else(|| "WebTransport needs --cert-hash".to_string())?;
     let bind: SocketAddr = match t.bind_ip {
         Some(ip) => SocketAddr::new(ip, 0),
-        None => "0.0.0.0:0".parse().map_err(|_| "bind address".to_string())?,
+        None => "0.0.0.0:0"
+            .parse()
+            .map_err(|_| "bind address".to_string())?,
     };
     let cfg = ClientConfig::builder()
         .with_bind_address(bind)
@@ -28,7 +30,10 @@ pub async fn connect(t: &Target) -> Result<Link, String> {
     let endpoint = Endpoint::client(cfg).map_err(|e| format!("endpoint: {e}"))?;
     let url = format!("https://{}/wt", t.addr);
     let work = async {
-        let conn = endpoint.connect(&url).await.map_err(|e| format!("connect: {e}"))?;
+        let conn = endpoint
+            .connect(&url)
+            .await
+            .map_err(|e| format!("connect: {e}"))?;
         let (c0_tx, c0_rx) = conn
             .open_bi()
             .await

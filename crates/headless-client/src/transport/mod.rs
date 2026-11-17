@@ -93,7 +93,8 @@ pub fn parse_cert_hash(s: &str) -> Result<[u8; 32], String> {
             .map(|i| u8::from_str_radix(&s[2 * i..2 * i + 2], 16).map_err(|e| e.to_string()))
             .collect::<Result<_, _>>()?
     } else {
-        base64_decode(s).ok_or_else(|| "cert hash is neither 64 hex chars nor base64".to_string())?
+        base64_decode(s)
+            .ok_or_else(|| "cert hash is neither 64 hex chars nor base64".to_string())?
     };
     bytes
         .try_into()
@@ -136,7 +137,10 @@ mod tests {
         // base64 of the same 32 bytes
         let b64 = "ABEiM0RVZneImaq7zN3u/wARIjNEVWZ3iJmqu8zd7v8=";
         assert_eq!(parse_cert_hash(b64).unwrap(), h);
-        assert_eq!(parse_cert_hash("ABEiM0RVZneImaq7zN3u_wARIjNEVWZ3iJmqu8zd7v8").unwrap(), h);
+        assert_eq!(
+            parse_cert_hash("ABEiM0RVZneImaq7zN3u_wARIjNEVWZ3iJmqu8zd7v8").unwrap(),
+            h
+        );
         assert!(parse_cert_hash("zz").is_err());
         assert!(parse_cert_hash("AAAA").is_err());
     }

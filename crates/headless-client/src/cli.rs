@@ -89,7 +89,10 @@ impl Args {
 
     /// Whether the target host is on loopback (where binding distinct sources is possible).
     pub fn host_is_loopback(&self) -> bool {
-        let host = self.url.rsplit_once(':').map_or(self.url.as_str(), |(h, _)| h);
+        let host = self
+            .url
+            .rsplit_once(':')
+            .map_or(self.url.as_str(), |(h, _)| h);
         host == "localhost" || host.starts_with("127.")
     }
 }
@@ -115,8 +118,20 @@ mod tests {
     #[test]
     fn defaults_and_task_cli_shape() {
         let a = parse(&[
-            "--url", "127.0.0.1:7001", "--transport", "wt", "--count", "10", "--duration",
-            "1800", "--seed", "1", "--report", "out.json", "--cert-hash", "ab",
+            "--url",
+            "127.0.0.1:7001",
+            "--transport",
+            "wt",
+            "--count",
+            "10",
+            "--duration",
+            "1800",
+            "--seed",
+            "1",
+            "--report",
+            "out.json",
+            "--cert-hash",
+            "ab",
         ]);
         assert_eq!(a.count, 10);
         assert_eq!(a.transport, TransportArg::Wt);

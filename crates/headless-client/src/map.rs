@@ -40,7 +40,10 @@ pub fn locate_data_dir(explicit: Option<&Path>, map: &str) -> Result<PathBuf, St
     if let Ok(c) = std::env::current_dir() {
         starts.push(c);
     }
-    if let Some(p) = std::env::current_exe().ok().and_then(|e| e.parent().map(Path::to_path_buf)) {
+    if let Some(p) = std::env::current_exe()
+        .ok()
+        .and_then(|e| e.parent().map(Path::to_path_buf))
+    {
         starts.push(p);
     }
     for s in starts {
@@ -74,7 +77,10 @@ pub fn load(data_dir: &Path, map: &str) -> Result<MapData, String> {
         })
         .collect();
     if names.is_empty() {
-        return Err(format!("no collision chunks in {}; {REGEN_COMMAND}", dir.display()));
+        return Err(format!(
+            "no collision chunks in {}; {REGEN_COMMAND}",
+            dir.display()
+        ));
     }
     names.sort();
     let mut chunks = Vec::with_capacity(names.len());

@@ -98,7 +98,11 @@ impl Clock {
         let best = self
             .samples
             .iter()
-            .min_by(|a, b| a.rtt_ms.partial_cmp(&b.rtt_ms).unwrap_or(std::cmp::Ordering::Equal))
+            .min_by(|a, b| {
+                a.rtt_ms
+                    .partial_cmp(&b.rtt_ms)
+                    .unwrap_or(std::cmp::Ordering::Equal)
+            })
             .copied()
             .unwrap_or(Sample {
                 tick: 0,
@@ -162,8 +166,10 @@ mod tests {
     #[test]
     fn lead_follows_rtt() {
         let t0 = Instant::now();
-        let c = Clock::new(0, t0, Duration::from_millis(1));
+        let c = Clock::new(0, t0, Duration::ZERO);
         assert_eq!(c.lead_ticks(), 1);
+        let c = Clock::new(0, t0, Duration::from_millis(1));
+        assert_eq!(c.lead_ticks(), 2); // any positive RTT rounds the half-RTT term up to one tick
         let c = Clock::new(0, t0, Duration::from_millis(100));
         assert_eq!(c.lead_ticks(), 3); // ceil(50 / 33.3) + 1
     }

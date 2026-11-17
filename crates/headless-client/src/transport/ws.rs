@@ -25,9 +25,13 @@ pub async fn connect(t: &Target) -> Result<Link, String> {
         }
         .map_err(|e| e.to_string())?;
         if let Some(ip) = t.bind_ip {
-            sock.bind(SocketAddr::new(ip, 0)).map_err(|e| format!("bind {ip}: {e}"))?;
+            sock.bind(SocketAddr::new(ip, 0))
+                .map_err(|e| format!("bind {ip}: {e}"))?;
         }
-        let stream = sock.connect(addr).await.map_err(|e| format!("tcp connect: {e}"))?;
+        let stream = sock
+            .connect(addr)
+            .await
+            .map_err(|e| format!("tcp connect: {e}"))?;
         let _ = stream.set_nodelay(true);
         let (ws, _) = tokio_tungstenite::client_async(format!("ws://{}", t.addr), stream)
             .await

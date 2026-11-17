@@ -8,7 +8,7 @@ use crate::stats::Dist;
 pub const REPORT_VERSION: u32 = 1;
 
 /// Position-correction accounting of one client (the reconciler of ARCHITECTURE §6.4).
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Serialize, Deserialize)]
 pub struct Corrections {
     /// Rollbacks after the initial placement (error above 5 cm).
     pub total: u64,
@@ -165,7 +165,11 @@ pub fn aggregate(
         t.unknown_acks += k.unknown_acks;
         t.max_err_m = t.max_err_m.max(k.max_err_m);
     }
-    a.keyframe_ratio = if rec == 0 { 0.0 } else { kf as f64 / rec as f64 };
+    a.keyframe_ratio = if rec == 0 {
+        0.0
+    } else {
+        kf as f64 / rec as f64
+    };
     a
 }
 
@@ -187,14 +191,14 @@ mod tests {
     /// Field names and nesting of the JSON consumers (summarize-loadtest.mjs, STATUS) rely on.
     #[test]
     fn report_schema() {
-        let mut c = ClientReport {
+        let c = ClientReport {
             id: 3,
+            down_kbps: Dist {
+                p50: 20.0,
+                p99: 30.0,
+                max: 40.0,
+            },
             ..ClientReport::default()
-        };
-        c.down_kbps = Dist {
-            p50: 20.0,
-            p99: 30.0,
-            max: 40.0,
         };
         let r = Report {
             report_version: REPORT_VERSION,
@@ -246,14 +250,24 @@ mod tests {
 
     #[test]
     fn aggregate_sums_and_counts_failures() {
-        let mut a = ClientReport::default();
-        a.decode_errors = 2;
-        a.disconnects = 1;
-        a.down_kbps.p50 = 10.0;
-        let mut b = ClientReport::default();
-        b.join_error = Some("reject".into());
-        b.decode_errors = 1;
-        b.down_kbps.p50 = 30.0;
+        let a = ClientReport {
+            decode_errors: 2,
+            disconnects: 1,
+            down_kbps: Dist {
+                p50: 10.0,
+                ..Dist::default()
+            },
+            ..ClientReport::default()
+        };
+        let b = ClientReport {
+            join_error: Some("reject".into()),
+            decode_errors: 1,
+            down_kbps: Dist {
+                p50: 30.0,
+                ..Dist::default()
+            },
+            ..ClientReport::default()
+        };
         let g = aggregate(&[a, b], &[], &[], &[]);
         assert_eq!(g.decode_errors, 3);
         assert_eq!(g.disconnects, 1);

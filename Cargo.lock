@@ -723,6 +723,7 @@ dependencies = [
 name = "frontline-headless-client"
 version = "0.0.0"
 dependencies = [
+ "arrayvec",
  "bytes",
  "clap",
  "frontline-protocol",
