@@ -518,3 +518,7 @@ blocked / in-progress / todo：无。M0 的 33 个任务全部已提交（M0-033
 ### M1-015 手雷与烟雾 — partial — 2026-11-17 — 提交见 git log
 
 `throwables/{grenade,explosion,smoke,system}.rs`：烹饪/投掷/反弹/引信/爆炸/烟雾云，`World::los` 计入烟雾；`tests/throwables.rs` 12 项，`benches/explosion.rs`。决策见 PI-054。
+
+### M1-016a 倒地、救起与击杀归属 — partial（余 016b）— 2026-11-17 — 提交见 git log
+
+`medical.rs`（状态转移、流血、放弃、救起、疲劳、归属）、`LifeState::Downed`、`SimEvent::{Downed,KillCredit,Revive}`、`World::set_medic`；`tests/health_m1.rs` 9 项；M0 的击杀发数/skirmish/duel 测试按"先倒地"调整并重定 golden。决策见 PI-055。

@@ -184,7 +184,7 @@ fn explode(
         let Ok((t, vteam, life, mut hp)) = q.get_mut(e) else {
             continue;
         };
-        if !life.is_alive() || hp.hp <= 0.0 {
+        if life.is_dead() || hp.hp <= 0.0 {
             continue;
         }
         let chest = t.pos + Vec3::Y * CHEST_HEIGHT_M;
@@ -218,6 +218,9 @@ fn explode(
             weapon: EXPLOSIVE_WEAPON_IDX,
             zone: HitZone::Torso,
             dist_m: r,
+            damage: d,
+            kind: crate::combat::DamageKind::Explosion,
+            direct_kia: false,
         });
     }
 }

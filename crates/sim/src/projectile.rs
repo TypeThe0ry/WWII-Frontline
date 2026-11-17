@@ -273,6 +273,9 @@ fn advance(
                     weapon: pr.weapon,
                     zone,
                     dist_m: dist,
+                    damage: dmg,
+                    kind: DamageKind::Bullet,
+                    direct_kia: false,
                 });
                 return Fate::Gone;
             }

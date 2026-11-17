@@ -27,6 +27,18 @@ impl Health {
 pub enum LifeState {
     #[default]
     Alive,
+    /// Down but not out (M1-016, GAMEDESIGN 7.1): `Health.hp` is the downed hit points and falls by
+    /// bleeding; any damage takes more. A medic can revive, running out of hp means KIA.
+    Downed {
+        t_down: Tick,
+        /// Who downed them (`None` when that player has left).
+        killer: Option<PlayerId>,
+        weapon: u8,
+        /// Revives within the fatigue window when they went down (shortens the bleed time).
+        fatigue: u8,
+        /// Ticks the give-up button has been held.
+        give_up_ticks: u16,
+    },
     Dead {
         /// Tick at which the lethal hit landed.
         t_kia: Tick,
@@ -44,6 +56,13 @@ impl LifeState {
     pub fn is_alive(&self) -> bool {
         matches!(self, LifeState::Alive)
     }
+    pub fn is_downed(&self) -> bool {
+        matches!(self, LifeState::Downed { .. })
+    }
+    /// KIA (waiting to respawn); a downed player is not dead.
+    pub fn is_dead(&self) -> bool {
+        matches!(self, LifeState::Dead { .. })
+    }
 }
 
 /// Public name used by `World::player_life`.
@@ -58,6 +77,11 @@ pub struct HitRec {
     pub weapon: u16,
     pub zone: HitZone,
     pub dist_m: f32,
+    /// Hit points the hit took off.
+    pub damage: f32,
+    pub kind: crate::combat::DamageKind,
+    /// Kills outright (a melee backstab) instead of downing.
+    pub direct_kia: bool,
 }
 
 #[derive(Resource, Debug, Default)]

@@ -51,6 +51,28 @@ pub enum SimEvent {
         headshot: bool,
         dist_m: f32,
     },
+    /// A player went down (M1-016); `Hit` / `Kill` events cover the damage and the KIA.
+    Downed {
+        victim: PlayerId,
+        killer: Option<PlayerId>,
+        weapon: u8,
+        headshot: bool,
+    },
+    /// Who gets what for a down or a KIA (GAMEDESIGN 7.5); `team_kill` = the killer was a
+    /// teammate (no kill awarded).
+    KillCredit {
+        victim: PlayerId,
+        killer: Option<PlayerId>,
+        assists: Vec<PlayerId>,
+        kind: crate::medical::CreditKind,
+        team_kill: bool,
+    },
+    /// A medic got a teammate back on their feet.
+    Revive {
+        medic: EntityId,
+        target: EntityId,
+        target_player: PlayerId,
+    },
     /// A grenade left a hand (M1-015).
     Thrown {
         thrower: EntityId,

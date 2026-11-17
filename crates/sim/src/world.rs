@@ -212,6 +212,10 @@ impl World {
                 LifeState::Alive,
                 crate::weapon::MeleeState::default(),
                 crate::throwables::Gadgets::default(),
+                crate::combat::credit::RecentDamage::default(),
+                crate::medical::ReviveHistory::default(),
+                crate::medical::ReviveAction::default(),
+                crate::medical::FireLock::default(),
                 Home {
                     pos: req.pos,
                     yaw: req.yaw,
@@ -266,6 +270,19 @@ impl World {
     pub fn health(&self, id: PlayerId) -> Option<f32> {
         let (_, e) = *self.ecs.resource::<PlayerIndex>().map.get(&id)?;
         self.ecs.entity(e).get::<Health>().map(|h| h.hp)
+    }
+
+    /// Marks (or unmarks) a player as a medic, who can revive downed teammates (M1-016).
+    pub fn set_medic(&mut self, id: PlayerId, medic: bool) {
+        let Some(&(_, e)) = self.ecs.resource::<PlayerIndex>().map.get(&id) else {
+            return;
+        };
+        let mut er = self.ecs.entity_mut(e);
+        if medic {
+            er.insert(crate::medical::Medic);
+        } else {
+            er.remove::<crate::medical::Medic>();
+        }
     }
 
     /// Alive / dead state of a player (M0-013); `None` for an unknown player.
@@ -417,6 +434,28 @@ impl World {
                 h.write_f32(hp.hp);
             }
             // M0-013: written only while dead, so scenarios without deaths keep their hashes.
+            if let Some(LifeState::Downed {
+                t_down,
+                killer,
+                weapon,
+                fatigue,
+                give_up_ticks,
+            }) = er.get::<LifeState>()
+            {
+                h.write_u8(0xD4);
+                h.write_u32(t_down.0);
+                h.write_u16(killer.map_or(0xFFFF, u16::from));
+                h.write_u64(self.weapon_key(u16::from(*weapon)));
+                h.write_u8(*fatigue);
+                h.write_u16(*give_up_ticks);
+            }
+            if let Some(ra) = er.get::<crate::medical::ReviveAction>() {
+                if let Some(a) = ra.0 {
+                    h.write_u8(0xD6);
+                    h.write_u16(a.target);
+                    h.write_u16(a.ticks);
+                }
+            }
             if let Some(LifeState::Dead {
                 t_kia,
                 killer,

@@ -13,6 +13,7 @@ pub mod data;
 pub mod hash;
 pub mod health;
 pub mod ids;
+pub mod medical;
 pub mod movement;
 #[cfg(feature = "client-predict")]
 pub mod predict;
