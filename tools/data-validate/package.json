@@ -7,7 +7,7 @@
   "scripts": {
     "validate": "node index.mjs --root ../../data",
     "fixtures": "node index.mjs --fixtures",
-    "test": "node --test test/"
+    "test": "node --test \"test/*.test.mjs\""
   },
   "dependencies": {
     "ajv": "8.20.0"

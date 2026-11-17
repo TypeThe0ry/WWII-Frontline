@@ -35,7 +35,8 @@ async function boot(): Promise<void> {
     void steps; // game.update(steps) / render interpolation (alpha) are wired by later tasks.
     overlay.update(performance.now(), getDump());
   });
-  ctx.start();
+  // ?norender=1 skips the render loop (debug aid; also needed where WebGPU cannot present, e.g. SwiftShader).
+  if (params.get('norender') !== '1') ctx.start();
 
   if (params.get('smoke') === 'compute') {
     const { runComputeSmoke } = await import('./render/compute-smoke');
