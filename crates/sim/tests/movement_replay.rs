@@ -80,7 +80,9 @@ fn fold(states: &[PlayerAuthState]) -> u64 {
 /// M0-012: re-pinned (0x0427_5f5f_f85f_ebd8 before) because ground movement now ramps linearly
 /// (accel 0.25 s / decel 0.20 s from data/roles/rifleman.json), and the script holds each command
 /// 30 ticks instead of 7 so that the player still travels.
-const GOLDEN: u64 = 0x3f59_d71b_c403_5a2e;
+/// M1-011b: re-pinned (0x3f59_d71b_c403_5a2e before): the state grew to 80 bytes and the script's
+/// jumps next to steep terrain now start vaults (PI-049).
+const GOLDEN: u64 = 0x316a_b4c9_e34a_022e;
 
 #[test]
 fn movement_replay_10k() {

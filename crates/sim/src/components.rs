@@ -123,6 +123,8 @@ pub struct Motion {
     pub sprint_locked: bool,
     pub grounded: bool,
     pub blocked: bool,
+    pub lean: f32,
+    pub vault: Option<crate::movement::Vault>,
 }
 
 impl Motion {
@@ -138,6 +140,8 @@ impl Motion {
             sprint_locked: a.sprint_locked,
             grounded: a.grounded,
             blocked: a.blocked,
+            lean: a.lean,
+            vault: a.vault,
         }
     }
 
@@ -156,6 +160,8 @@ impl Motion {
             sprint_locked: self.sprint_locked,
             grounded: self.grounded,
             blocked: self.blocked,
+            lean: self.lean,
+            vault: self.vault,
         }
     }
 }

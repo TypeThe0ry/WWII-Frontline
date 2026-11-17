@@ -389,6 +389,20 @@ impl World {
             h.write_u8(mo.stamina_delay);
             h.write_u8(u8::from(mo.sprint_locked));
             h.write_u8(u8::from(mo.grounded) | (u8::from(mo.blocked) << 1));
+            // M1-011b: written only while leaning / vaulting, so other scenarios keep their hashes.
+            if mo.lean != 0.0 || mo.vault.is_some() {
+                h.write_f32(mo.lean);
+                if let Some(v) = &mo.vault {
+                    h.write_u8(v.ticks_left);
+                    h.write_u8(v.total);
+                    h.write_u8(u8::from(v.climb));
+                    for f in [
+                        v.start.x, v.start.y, v.start.z, v.target.x, v.target.y, v.target.z, v.top,
+                    ] {
+                        h.write_f32(f);
+                    }
+                }
+            }
             // M0-012: health and weapon state.
             if let Some(hp) = er.get::<Health>() {
                 h.write_f32(hp.hp);

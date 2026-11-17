@@ -9,7 +9,7 @@
  */
 export const RING_CAPACITY = 128;
 export const CMD_BYTES = 18;
-export const AUTH_BYTES = 45;
+export const AUTH_BYTES = 80;
 export const WEAPON_BYTES = 33;
 
 /** Signed distance `a - b` of two u16 sequence numbers. */

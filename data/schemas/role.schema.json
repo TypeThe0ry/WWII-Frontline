@@ -82,7 +82,22 @@
         "hitbox_height_crouch_m": { "type": "number", "minimum": 0 },
         "hitbox_height_prone_m": { "type": "number", "minimum": 0 },
         "move_spread_walk_mult": { "type": "number", "minimum": 0 },
-        "move_spread_run_mult": { "type": "number", "minimum": 0 }
+        "move_spread_run_mult": { "type": "number", "minimum": 0 },
+        "vault_max_m": { "type": "number", "exclusiveMinimum": 0 },
+        "climb_max_m": { "type": "number", "exclusiveMinimum": 0 },
+        "vault_ms": { "type": "number", "exclusiveMinimum": 0 },
+        "climb_ms": { "type": "number", "exclusiveMinimum": 0 },
+        "vault_cost_points": { "type": "number", "exclusiveMinimum": 0 },
+        "climb_cost_points": { "type": "number", "exclusiveMinimum": 0 },
+        "climb_headroom_m": { "type": "number", "exclusiveMinimum": 0 },
+        "vault_reach_m": { "type": "number", "exclusiveMinimum": 0 },
+        "vault_top_width_m": { "type": "number", "exclusiveMinimum": 0 },
+        "vault_time_mult": { "type": "number", "exclusiveMinimum": 0 },
+        "lean_deg": { "type": "number", "exclusiveMinimum": 0 },
+        "lean_head_offset_m": { "type": "number", "exclusiveMinimum": 0 },
+        "lean_ms": { "type": "number", "exclusiveMinimum": 0 },
+        "lean_spread_mult": { "type": "number", "exclusiveMinimum": 0 },
+        "prone_peek_m": { "type": "number", "exclusiveMinimum": 0 }
       }
     },
     "capsule": {

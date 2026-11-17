@@ -347,7 +347,7 @@ impl Predictor {
         self.sim.collision_mut().remove_chunk(bx, bz)
     }
 
-    /// Reconciliation reset to an authoritative `PlayerAuthState` (45 bytes, see
+    /// Reconciliation reset to an authoritative `PlayerAuthState` (80 bytes, see
     /// `PlayerAuthState::to_bytes`) at `tick`; `weapon` (33 bytes, `WeaponState::to_bytes`)
     /// optionally resets the weapon state too.
     pub fn reset(
@@ -404,7 +404,7 @@ impl Predictor {
         self.weapon_bytes()
     }
 
-    /// Copy of the predicted `PlayerAuthState` bytes (45).
+    /// Copy of the predicted `PlayerAuthState` bytes (80).
     #[wasm_bindgen(js_name = authState)]
     pub fn auth_state(&self) -> Vec<u8> {
         self.auth_bytes().to_vec()

@@ -492,6 +492,36 @@ pub struct Movement {
     pub move_spread_walk_mult: Option<f64>,
     #[serde(default)]
     pub move_spread_run_mult: Option<f64>,
+    #[serde(default)]
+    pub vault_max_m: Option<f64>,
+    #[serde(default)]
+    pub climb_max_m: Option<f64>,
+    #[serde(default)]
+    pub vault_ms: Option<f64>,
+    #[serde(default)]
+    pub climb_ms: Option<f64>,
+    #[serde(default)]
+    pub vault_cost_points: Option<f64>,
+    #[serde(default)]
+    pub climb_cost_points: Option<f64>,
+    #[serde(default)]
+    pub climb_headroom_m: Option<f64>,
+    #[serde(default)]
+    pub vault_reach_m: Option<f64>,
+    #[serde(default)]
+    pub vault_top_width_m: Option<f64>,
+    #[serde(default)]
+    pub vault_time_mult: Option<f64>,
+    #[serde(default)]
+    pub lean_deg: Option<f64>,
+    #[serde(default)]
+    pub lean_head_offset_m: Option<f64>,
+    #[serde(default)]
+    pub lean_ms: Option<f64>,
+    #[serde(default)]
+    pub lean_spread_mult: Option<f64>,
+    #[serde(default)]
+    pub prone_peek_m: Option<f64>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize)]

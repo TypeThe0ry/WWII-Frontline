@@ -26,12 +26,14 @@
 //! height, gravity, slope limit and capsule come from `data/roles/*.json`.
 
 mod kcc;
+pub mod lean;
 pub mod modifiers;
 mod params;
 pub mod stamina;
 mod stance;
 mod state;
 pub mod validate;
+pub mod vault;
 
 pub use kcc::{move_capsule, KccMove};
 pub use params::{MoveParams, ParamsError};
@@ -39,6 +41,7 @@ pub use stamina::quantised as stamina_quantised;
 pub use stance::{capsule_height, duration_ticks, eye_height, stance_height, Stance};
 pub use state::PlayerAuthState;
 pub use validate::{check_displacement, max_speed_for, MoveBound, Violation};
+pub use vault::{Probe, Vault};
 
 use frontline_protocol::msg::input::{buttons, InputCmd};
 use frontline_protocol::quant::{dequant_yaw, pitch_i16_to_rad};
@@ -160,6 +163,28 @@ fn headroom(col: &CollisionData, pos: Vec3, p: &MoveParams) -> f32 {
     }
 }
 
+/// One tick of an active vault: scripted motion, regeneration, no lean, no weapon.
+fn run_vault(mut s: PlayerAuthState, p: &MoveParams) -> PlayerAuthState {
+    let Some(mut v) = s.vault else {
+        return s;
+    };
+    let (pos, done) = vault::advance(&mut v);
+    s.pos = pos;
+    s.vel = Vec3::ZERO;
+    s.blocked = false;
+    lean::advance(&mut s, 0.0, p);
+    // The cost was paid on entry; only the regeneration delay runs.
+    stamina::update(&mut s, stamina::Spend::default(), Stance::Stand, p);
+    if done {
+        s.vault = None;
+        s.grounded = true;
+    } else {
+        s.vault = Some(v);
+        s.grounded = false;
+    }
+    s
+}
+
 /// Advances one player by one tick with the default context (no reload, reference load).
 pub fn step_player(
     state: &PlayerAuthState,
@@ -184,6 +209,9 @@ pub fn step_player_ex(
     s.yaw = dequant_yaw(cmd.yaw, 16);
     s.pitch = pitch_i16_to_rad(cmd.pitch);
     s.stamina = s.stamina.clamp(0.0, p.stamina_max);
+    if s.vault.is_some() {
+        return run_vault(s, p);
+    }
 
     let mut want = if cmd.buttons & buttons::PRONE != 0 {
         Stance::Prone
@@ -220,8 +248,42 @@ pub fn step_player_ex(
 
     // Wish velocity.
     let (mx, mz) = decode_move(cmd);
-    let exert = stamina::can_exert(&s);
+
+    // Vault / climb entry: standing still-settled on the ground, moving forward.
+    if s.grounded
+        && cmd.buttons & (buttons::JUMP | buttons::USE) != 0
+        && mz > 0.0
+        && want == Stance::Stand
+        && s.stance_blend == 0.0
+        && s.stance_timer == 0
+        && col.walkable(s.pos.x, s.pos.z)
+    {
+        let probe = vault::detect(s.pos, s.yaw, p, &|x, z| col.height_at(x, z), &|x, z| {
+            col.walkable(x, z)
+        });
+        if let Probe::Go(v) = probe {
+            let cost = if v.climb { p.climb_cost } else { p.vault_cost };
+            if stamina::can_afford(&s, cost) {
+                stamina::update(
+                    &mut s,
+                    stamina::Spend {
+                        extra: cost,
+                        ..Default::default()
+                    },
+                    Stance::Stand,
+                    p,
+                );
+                s.vault = Some(v);
+                return run_vault(s, p);
+            }
+        }
+    }
+
+    let lean_cmd = lean::command(cmd);
+    let lean_btn = cmd.buttons & (buttons::LEAN_L | buttons::LEAN_R) != 0;
+    let exert = stamina::can_exert(&s) && !lean_btn;
     let sel = select_speed(cmd, mz, want, exert, p);
+    lean::advance(&mut s, lean_cmd, p);
     let mut speed = sel.mps;
     if cmd.buttons & buttons::AIM != 0 && !sel.sprint && !ctx.reloading {
         speed *= p.ads_mult[want as usize];

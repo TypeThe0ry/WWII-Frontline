@@ -172,7 +172,7 @@ pub fn is_sprinting(cmd: &InputCmd) -> bool {
 
 fn eye_position(auth: &PlayerAuthState, mp: &MoveParams) -> Vec3 {
     let h = crate::movement::eye_height(auth.stance_blend, mp);
-    auth.pos + Vec3::new(0.0, h, 0.0)
+    auth.pos + Vec3::new(0.0, h, 0.0) + crate::movement::lean::head_offset(auth, mp)
 }
 
 /// Advances `w` by one tick. `auth` is the player's state **after** this tick's movement.
@@ -252,7 +252,7 @@ pub fn step_weapon(
         fire_down
     };
     w.trigger_held = fire_down;
-    let blocked = sprinting || auth.stance_timer > 0;
+    let blocked = sprinting || auth.stance_timer > 0 || auth.vault.is_some();
     if pulled && !blocked {
         match w.fsm {
             Fsm::Ready if w.mag > 0 => {
@@ -276,7 +276,8 @@ fn fire(
     let mut rng = Rng::for_(ctx.match_seed, ctx.tick, ctx.entity, Purpose::Spread);
     let speed_h = libm::sqrtf(auth.vel.x * auth.vel.x + auth.vel.z * auth.vel.z);
     let base = if ads_active { p.ads_deg } else { p.hip_deg };
-    let half_deg = spread::spread_deg(base, auth.stance, speed_h, w.bloom_deg);
+    let half_deg = spread::spread_deg(base, auth.stance, speed_h, w.bloom_deg)
+        * crate::movement::lean::spread_mult(auth, mp);
     let yaw = auth.yaw + w.recoil_yaw_deg.to_radians();
     let pitch = (auth.pitch + w.recoil_pitch_deg.to_radians())
         .clamp(-core::f32::consts::FRAC_PI_2, core::f32::consts::FRAC_PI_2);
