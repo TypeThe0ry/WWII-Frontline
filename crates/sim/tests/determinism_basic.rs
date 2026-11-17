@@ -5,7 +5,7 @@ use frontline_sim::ids::{entity_gen, entity_slot};
 use frontline_sim::rng::{Rng, RngCore};
 use frontline_sim::{
     CollisionData, GameData, GameMode, MapId, PlayerId, SimConfig, SpawnError, SpawnReq, Team,
-    Tick, Vec3, World, WorldView,
+    Tick, Vec3, World,
 };
 
 const PLAYERS: u8 = 10;

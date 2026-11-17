@@ -67,11 +67,12 @@ pub(crate) fn normalize_inputs(inputs: &[(PlayerId, InputCmd)]) -> Cow<'_, [(Pla
     if ascending {
         return Cow::Borrowed(inputs);
     }
-    assert!(
-        !cfg!(debug_assertions),
-        "World::step inputs must be strictly ascending by PlayerId (got {:?})",
-        inputs.iter().map(|(p, _)| *p).collect::<Vec<_>>()
-    );
+    if cfg!(debug_assertions) {
+        panic!(
+            "World::step inputs must be strictly ascending by PlayerId (got {:?})",
+            inputs.iter().map(|(p, _)| *p).collect::<Vec<_>>()
+        );
+    }
     let mut v = inputs.to_vec();
     v.sort_by_key(|(p, _)| *p); // stable
     let mut out: Vec<(PlayerId, InputCmd)> = Vec::with_capacity(v.len());
@@ -317,5 +318,46 @@ impl WorldView for World {
     fn nav_hint(&self) -> &NavData {
         static NAV: NavData = NavData {};
         &NAV
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn world() -> World {
+        let cfg = SimConfig {
+            tick_hz: 30,
+            match_seed: 5,
+            map: MapId(0),
+            mode: GameMode::Sandbox,
+            data: GameData::embedded(),
+        };
+        let mut w = World::new(cfg, &CollisionData::empty());
+        w.spawn_player(SpawnReq {
+            player: 3,
+            team: Team::Ger,
+            pos: Vec3::new(1.0, 2.0, 3.0),
+            yaw: 0.0,
+        })
+        .unwrap();
+        w
+    }
+
+    #[test]
+    fn step_advances_tick_and_applies_view_angles() {
+        let mut w = world();
+        let mut cmd = neutral_input();
+        cmd.yaw = 16384; // quarter turn
+        cmd.pitch = i16::MAX;
+        let out = w.step(&[(3, cmd)]);
+        assert_eq!(w.tick(), Tick(1));
+        assert_eq!(out.events.len(), 1, "spawn event delivered on next step");
+        let p = w.view().players()[0];
+        assert!((p.yaw - core::f32::consts::FRAC_PI_2).abs() < 1e-4);
+        assert!(p.pitch > 1.5);
+        let before = w.state_hash();
+        w.step(&[(3, cmd)]);
+        assert_ne!(before, w.state_hash(), "tick is part of the hash");
     }
 }

@@ -1,6 +1,7 @@
 //! M0-008: the two M0 rifles parse into `GameData`, values equal GAMEDESIGN 6.2-6.6,
 //! and the torso shots-to-down (STK) table keeps the "2 hits down" principle (6.6).
 
+use frontline_sim::data::defs::{Hist, HistSource};
 use frontline_sim::data::{DataStatus, Faction, GameData, WeaponDef};
 
 fn falloff_mult(w: &WeaponDef, d: f64) -> f64 {
@@ -39,8 +40,30 @@ fn data_weapons_m0_load() {
     assert_eq!(k.faction, Faction::Ger);
     assert_eq!(g.class, "rifle_semi");
     assert_eq!(k.class, "rifle_bolt");
-    assert_eq!(g.meta.status, DataStatus::Initial);
-    assert_eq!(k.meta.status, DataStatus::Initial);
+    // M0-031: historical blocks reviewed (gameplay stays tunable / uncalibrated).
+    assert_eq!(g.meta.status, DataStatus::Reviewed);
+    assert_eq!(k.meta.status, DataStatus::Reviewed);
+    assert_eq!(g.historical.magazine_capacity, Hist::Known(8));
+    assert_eq!(g.historical.muzzle_velocity_mps, Hist::Known(853.0));
+    assert_eq!(g.historical.rate_of_fire_rpm_practical, Hist::Known(24.0));
+    assert_eq!(g.historical.mass_kg, Hist::Known(4.3));
+    assert_eq!(g.historical.effective_range_m, Some(Hist::Known(460.0)));
+    assert_eq!(k.historical.magazine_capacity, Hist::Known(5));
+    assert_eq!(k.historical.mass_kg, Hist::Known(3.9));
+    for w in [g, k] {
+        let HistSource::Records(recs) = &w.historical.source else {
+            panic!("reviewed weapon needs structured _source");
+        };
+        assert!(recs.iter().all(|r| !r.locator.is_empty()));
+    }
+    assert!(g.meta.unverified.is_empty());
+    assert_eq!(
+        k.meta.unverified,
+        [
+            "historical.muzzle_velocity_mps",
+            "historical.rate_of_fire_rpm_practical"
+        ]
+    );
 
     let (gg, kg) = (&g.gameplay, &k.gameplay);
     assert_eq!(gg.damage_torso_hp, 70.0);

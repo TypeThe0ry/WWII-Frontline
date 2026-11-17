@@ -38,6 +38,37 @@ pub struct Meta {
     pub tunable: Vec<String>,
     #[serde(default)]
     pub calibration_ref: Option<String>,
+    /// Historical fields explicitly registered as unverified (M0-031, `hist-source-required`).
+    #[serde(default)]
+    pub unverified: Vec<String>,
+    /// Gameplay value path -> why it deviates from the historical value (REFERENCE_MEASUREMENTS 6.1).
+    #[serde(default)]
+    pub deviation_reason: std::collections::BTreeMap<String, String>,
+}
+
+/// One structured provenance record of a historical value (M0-031).
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct SourceRecord {
+    pub field: String,
+    pub value: serde_json::Value,
+    pub unit: String,
+    pub source_id: String,
+    pub title: String,
+    pub locator: String,
+    #[serde(default)]
+    pub url: Option<String>,
+    pub accessed: String,
+    #[serde(default)]
+    pub note: Option<String>,
+}
+
+/// `historical._source`: free text (initial data) or structured records (reviewed data).
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(untagged)]
+pub enum HistSource {
+    Text(String),
+    Records(Vec<SourceRecord>),
 }
 
 // ---- weapon ----
@@ -55,7 +86,7 @@ pub struct WeaponHistorical {
     #[serde(default)]
     pub effective_range_m: Option<Hist<f64>>,
     #[serde(rename = "_source")]
-    pub source: String,
+    pub source: HistSource,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize)]
