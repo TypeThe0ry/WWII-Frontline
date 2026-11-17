@@ -58,6 +58,7 @@ pub struct World {
     alloc: EntityAllocator,
     players: Vec<PlayerView>,
     pending_events: Vec<SimEvent>,
+    collision: CollisionData,
 }
 
 /// Debug: panics unless ids are strictly ascending. Release: returns a sorted (stable, last
@@ -86,7 +87,7 @@ pub(crate) fn normalize_inputs(inputs: &[(PlayerId, InputCmd)]) -> Cow<'_, [(Pla
 }
 
 impl World {
-    pub fn new(cfg: SimConfig, _collision: &CollisionData) -> Self {
+    pub fn new(cfg: SimConfig, collision: &CollisionData) -> Self {
         let mut ecs = EcsWorld::new();
         ecs.insert_resource(CurrentTick(Tick(0)));
         ecs.insert_resource(InputQueue::default());
@@ -104,7 +105,12 @@ impl World {
             alloc: EntityAllocator::new(),
             players: Vec::new(),
             pending_events: Vec::new(),
+            collision: collision.clone(),
         }
+    }
+
+    pub fn collision(&self) -> &CollisionData {
+        &self.collision
     }
 
     pub fn config(&self) -> &SimConfig {
@@ -303,11 +309,11 @@ impl WorldView for World {
             pitch: t.pitch,
         })
     }
-    fn los(&self, _from: Vec3, _to: Vec3) -> bool {
-        true // TODO(M0-010)
+    fn los(&self, from: Vec3, to: Vec3) -> bool {
+        self.collision.los(from, to)
     }
-    fn height_at(&self, _x: f32, _z: f32) -> f32 {
-        0.0 // TODO(M0-010)
+    fn height_at(&self, x: f32, z: f32) -> Option<f32> {
+        self.collision.height_at(x, z)
     }
     fn team_resources(&self, _team: Team) -> Resources {
         Resources::default() // TODO(M0-013)

@@ -16,7 +16,7 @@ pub mod step;
 pub mod view;
 pub mod world;
 
-pub use collision::CollisionData;
+pub use collision::{CollisionChunk, CollisionData, CollisionError};
 pub use components::Team;
 pub use data::GameData;
 pub use glam::Vec3;

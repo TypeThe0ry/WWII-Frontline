@@ -7,6 +7,8 @@ license.workspace = true
 rust-version.workspace = true
 publish.workspace = true
 
+build = "build.rs"
+
 [lints]
 workspace = true
 
@@ -14,3 +16,15 @@ workspace = true
 frontline-sim = { path = "../sim" }
 frontline-protocol = { path = "../protocol" }
 frontline-bots = { path = "../bots" }
+tokio = { version = "1", default-features = false, features = ["rt-multi-thread", "net", "io-util", "signal", "macros", "time", "sync"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", default-features = false, features = ["std", "registry"] }
+prometheus = { version = "0.14", default-features = false }
+clap = { version = "4", features = ["derive", "env"] }
+crossbeam-channel = "0.5"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[[bin]]
+name = "frontline-server"
+path = "src/main.rs"

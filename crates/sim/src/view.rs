@@ -55,10 +55,10 @@ pub trait WorldView {
     fn vehicles(&self) -> &[VehicleView];
     /// `None` for stale or unknown ids.
     fn entity_state(&self, id: EntityId) -> Option<EntityStateView>;
-    /// Placeholder until M0-010 (collision): everything is visible.
+    /// Clear terrain line of sight; `false` when blocked or outside the loaded collision.
     fn los(&self, from: Vec3, to: Vec3) -> bool;
-    /// Placeholder until M0-010: flat ground at y = 0.
-    fn height_at(&self, x: f32, z: f32) -> f32;
+    /// Bilinear terrain height; `None` where no collision chunk is loaded.
+    fn height_at(&self, x: f32, z: f32) -> Option<f32>;
     /// Placeholder until M0-013: zero resources.
     fn team_resources(&self, team: Team) -> Resources;
     fn objectives(&self) -> &[ObjectiveView];

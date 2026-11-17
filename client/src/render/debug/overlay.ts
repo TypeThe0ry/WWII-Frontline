@@ -43,7 +43,7 @@ export class DebugOverlay {
   }
 
   /** Refresh text at most ~4 Hz. */
-  update(now: number, d: PerfDump): void {
+  update(now: number, d: PerfDump, extra: readonly string[] = []): void {
     if (!this.visible || now - this.lastUpdate < 250) return;
     this.lastUpdate = now;
     const f = (v: number) => v.toFixed(2);
@@ -57,6 +57,7 @@ export class DebugOverlay {
       `res       ${d.resolution.width}x${d.resolution.height}  render_scale ${d.render_scale.toFixed(2)}`,
       `sim       steps ${d.sim.steps_total}  clamped ${d.sim.stepper_clamped}`,
       `RTT ${d.slots.rtt}   transport ${d.slots.transport}   corrections ${d.slots.corrections}`,
+      ...extra,
     ];
     this.el.textContent = lines.join('\n');
   }

@@ -24,7 +24,7 @@ export default defineConfig({
     },
   },
   webServer: {
-    command: `pnpm exec vite --port ${PORT} --strictPort`,
+    command: `node scripts/sync-map.mjs && pnpm exec vite --port ${PORT} --strictPort`,
     url: `http://localhost:${PORT}/`,
     reuseExistingServer: false,
     timeout: 60_000,

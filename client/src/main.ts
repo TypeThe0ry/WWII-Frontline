@@ -1,12 +1,20 @@
 import { FixedStepper } from './game';
 import { createRenderer, parseRendererParam, DebugOverlay, buildPerfDump, installPerfApi } from './render';
 import type { PerfApi } from './render';
+import type { TerrainHandle } from './render/terrain/terrain-scene';
 
 declare global {
   interface Window {
     __perf?: PerfApi;
     __smoke?: unknown;
     __caps?: unknown;
+    /** `?scene=terrain`: terrain diagnostics for e2e/M0-030 (stats, CPU height query, last node selection). */
+    __terrain?: {
+      stats: () => unknown;
+      heightAt: (x: number, z: number) => number;
+      nodes: () => number[][];
+      loadMs: number;
+    };
   }
 }
 
@@ -20,11 +28,19 @@ async function boot(): Promise<void> {
   canvas.style.cssText = 'display:block;width:100vw;height:100vh;outline:none;touch-action:none';
   app.appendChild(canvas);
 
+  const terrainScene = params.get('scene') === 'terrain';
   const ctx = await createRenderer(canvas, {
     renderer: parseRendererParam(params.get('renderer')),
-    fly: params.get('fly') === '1',
-    empty: params.get('empty') === '1',
+    fly: params.get('fly') === '1' || terrainScene,
+    empty: params.get('empty') === '1' || terrainScene,
   });
+  let terrainHandle: TerrainHandle | null = null;
+  if (terrainScene) {
+    const { attachTerrain } = await import('./render/terrain/terrain-scene');
+    terrainHandle = await attachTerrain(ctx, params);
+    const t = terrainHandle.terrain;
+    window.__terrain = { stats: () => JSON.parse(JSON.stringify(t.stats)) as unknown, heightAt: (x, z) => t.heightAt(x, z), nodes: () => t.debugNodes(), loadMs: terrainHandle.loadMs };
+  }
 
   const overlay = new DebugOverlay(params.get('debug') === '1');
   const stepper = new FixedStepper();
@@ -35,7 +51,7 @@ async function boot(): Promise<void> {
   ctx.onFrame((dt) => {
     const { steps } = stepper.advance(dt);
     void steps; // game.update(steps) / render interpolation (alpha) are wired by later tasks.
-    overlay.update(performance.now(), getDump());
+    overlay.update(performance.now(), getDump(), terrainHandle?.overlayLines());
   });
   // ?norender=1 skips the render loop (debug aid; also needed where WebGPU cannot present, e.g. SwiftShader).
   if (params.get('norender') !== '1') ctx.start();

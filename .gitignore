@@ -20,3 +20,6 @@ __pycache__/
 # M0-009: generated map binaries (deterministic; regenerate with the command in DEVELOPING.md)
 data/maps/m0/*.r16
 data/maps/m0/chunks/
+
+# M0-023: map binaries copied for the dev server / build by client/scripts/sync-map.mjs
+client/public/maps/

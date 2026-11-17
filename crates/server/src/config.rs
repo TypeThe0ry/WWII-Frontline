@@ -1,0 +1,245 @@
+//! CLI + `FRONTLINE_*` environment configuration (M0-015). Parsing and validation only: map
+//! data is loaded by M0-018, transports are bound by M0-016/017.
+
+use clap::Parser;
+
+pub const KNOWN_MAPS: &[&str] = &["m0"];
+pub const KNOWN_MODES: &[&str] = &["sandbox", "frontline", "assault", "skirmish"];
+pub const LOG_LEVELS: &[&str] = &["error", "warn", "info", "debug", "trace"];
+/// Players + bots upper bound (PlayerId 0..=127, ARCHITECTURE §8.1).
+pub const MAX_BOTS: u16 = 128;
+
+#[derive(Parser, Debug, Clone)]
+#[command(
+    name = "frontline-server",
+    version,
+    about = "Frontline match server (one process = one match)"
+)]
+pub struct Config {
+    /// Map id (only parsed/validated here).
+    #[arg(long, env = "FRONTLINE_MAP", default_value = "m0")]
+    pub map: String,
+    /// Game mode.
+    #[arg(long, env = "FRONTLINE_MODE", default_value = "sandbox")]
+    pub mode: String,
+    /// Match id (UUID); random when omitted.
+    #[arg(long, env = "FRONTLINE_MATCH_ID")]
+    pub match_id: Option<String>,
+    /// Number of bots to run (bot subsystem arrives with M0-026).
+    #[arg(long, env = "FRONTLINE_BOTS", default_value_t = 0)]
+    pub bots: u16,
+    /// WebSocket port (bound by M0-016). 0 = ephemeral.
+    #[arg(long, env = "FRONTLINE_WS_PORT", default_value_t = 7000)]
+    pub ws_port: u16,
+    /// WebTransport port (bound by M0-017). 0 = ephemeral.
+    #[arg(long, env = "FRONTLINE_WT_PORT", default_value_t = 7001)]
+    pub wt_port: u16,
+    /// Prometheus `/metrics` port. 0 = ephemeral (actual port is logged).
+    #[arg(long, env = "FRONTLINE_METRICS_PORT", default_value_t = 9100)]
+    pub metrics_port: u16,
+    /// Log level: error|warn|info|debug|trace.
+    #[arg(long, env = "FRONTLINE_LOG_LEVEL", default_value = "info")]
+    pub log_level: String,
+    /// Max log lines per second per call site.
+    #[arg(long, env = "FRONTLINE_LOG_RATE_LIMIT", default_value_t = 50)]
+    pub log_rate_limit: u32,
+    /// Exit gracefully after this many seconds (load tests).
+    #[arg(long, env = "FRONTLINE_DURATION")]
+    pub duration: Option<f64>,
+    /// Write a metrics summary JSON here on exit.
+    #[arg(long, env = "FRONTLINE_REPORT")]
+    pub report: Option<std::path::PathBuf>,
+    /// Pin the sim thread to this CPU core (deployment item M1-067; accepted, not applied).
+    #[arg(long, env = "FRONTLINE_PIN_SIM_CORE")]
+    pub pin_sim_core: Option<usize>,
+}
+
+fn is_uuid(s: &str) -> bool {
+    let parts: Vec<&str> = s.split('-').collect();
+    let lens = [8, 4, 4, 4, 12];
+    parts.len() == 5
+        && parts
+            .iter()
+            .zip(lens)
+            .all(|(p, l)| p.len() == l && p.bytes().all(|b| b.is_ascii_hexdigit()))
+}
+
+/// Pseudo-random v4-shaped UUID without a RNG dependency (match ids only need uniqueness).
+fn random_uuid() -> String {
+    use std::collections::hash_map::RandomState;
+    use std::hash::{BuildHasher, Hasher};
+    let mut bytes = [0u8; 16];
+    for chunk in bytes.chunks_mut(8) {
+        let mut h = RandomState::new().build_hasher();
+        h.write_u128(
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|d| d.as_nanos())
+                .unwrap_or(0),
+        );
+        h.write_u32(std::process::id());
+        chunk.copy_from_slice(&h.finish().to_le_bytes()[..chunk.len()]);
+    }
+    bytes[6] = (bytes[6] & 0x0f) | 0x40;
+    bytes[8] = (bytes[8] & 0x3f) | 0x80;
+    let h: String = bytes.iter().map(|b| format!("{b:02x}")).collect();
+    format!(
+        "{}-{}-{}-{}-{}",
+        &h[0..8],
+        &h[8..12],
+        &h[12..16],
+        &h[16..20],
+        &h[20..32]
+    )
+}
+
+impl Config {
+    /// Validates and normalises (lower-cases enums, fills `match_id`).
+    pub fn validate(mut self) -> Result<Config, String> {
+        self.map = self.map.to_ascii_lowercase();
+        self.mode = self.mode.to_ascii_lowercase();
+        self.log_level = self.log_level.to_ascii_lowercase();
+        if !KNOWN_MAPS.contains(&self.map.as_str()) {
+            return Err(format!(
+                "unknown --map '{}' (known: {})",
+                self.map,
+                KNOWN_MAPS.join(", ")
+            ));
+        }
+        if !KNOWN_MODES.contains(&self.mode.as_str()) {
+            return Err(format!(
+                "unknown --mode '{}' (known: {})",
+                self.mode,
+                KNOWN_MODES.join(", ")
+            ));
+        }
+        if self.mode != "sandbox" && self.map == "m0" {
+            return Err(format!(
+                "--mode {} is not playable on map m0 (m0 is the sandbox map)",
+                self.mode
+            ));
+        }
+        if !LOG_LEVELS.contains(&self.log_level.as_str()) {
+            return Err(format!(
+                "unknown --log-level '{}' (known: {})",
+                self.log_level,
+                LOG_LEVELS.join(", ")
+            ));
+        }
+        if self.bots > MAX_BOTS {
+            return Err(format!(
+                "--bots {} exceeds the maximum of {MAX_BOTS}",
+                self.bots
+            ));
+        }
+        if self.log_rate_limit == 0 {
+            return Err("--log-rate-limit must be >= 1".into());
+        }
+        let ports = [
+            ("--ws-port", self.ws_port),
+            ("--wt-port", self.wt_port),
+            ("--metrics-port", self.metrics_port),
+        ];
+        for (i, (na, pa)) in ports.iter().enumerate() {
+            for (nb, pb) in &ports[i + 1..] {
+                if *pa != 0 && pa == pb {
+                    return Err(format!("{na} and {nb} must differ (both {pa})"));
+                }
+            }
+        }
+        if let Some(d) = self.duration {
+            if !d.is_finite() || d <= 0.0 {
+                return Err(format!(
+                    "--duration must be a positive number of seconds (got {d})"
+                ));
+            }
+        }
+        match &self.match_id {
+            Some(id) if !is_uuid(id) => {
+                return Err(format!(
+                    "--match-id '{id}' is not a UUID (expected 8-4-4-4-12 hex)"
+                ))
+            }
+            Some(id) => self.match_id = Some(id.to_ascii_lowercase()),
+            None => self.match_id = Some(random_uuid()),
+        }
+        Ok(self)
+    }
+
+    pub fn match_id(&self) -> &str {
+        self.match_id.as_deref().unwrap_or("")
+    }
+
+    /// Parses from an argv-style iterator (env vars still apply) and validates.
+    pub fn try_parse_validated<I, T>(args: I) -> Result<Config, String>
+    where
+        I: IntoIterator<Item = T>,
+        T: Into<std::ffi::OsString> + Clone,
+    {
+        Config::try_parse_from(args)
+            .map_err(|e| e.to_string())
+            .and_then(Config::validate)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn parse(args: &[&str]) -> Result<Config, String> {
+        let mut v = vec!["frontline-server"];
+        v.extend_from_slice(args);
+        Config::try_parse_validated(v)
+    }
+
+    #[test]
+    fn defaults_are_valid() {
+        let c = parse(&[]).unwrap();
+        assert_eq!((c.map.as_str(), c.mode.as_str()), ("m0", "sandbox"));
+        assert!(is_uuid(c.match_id()));
+    }
+
+    #[test]
+    fn rejects_illegal_combinations() {
+        assert!(parse(&["--map", "nope"]).unwrap_err().contains("--map"));
+        assert!(parse(&["--mode", "chess"]).unwrap_err().contains("--mode"));
+        assert!(parse(&["--mode", "frontline"])
+            .unwrap_err()
+            .contains("not playable"));
+        assert!(parse(&["--log-level", "loud"])
+            .unwrap_err()
+            .contains("--log-level"));
+        assert!(parse(&["--bots", "500"]).unwrap_err().contains("--bots"));
+        assert!(parse(&["--ws-port", "9100"])
+            .unwrap_err()
+            .contains("must differ"));
+        assert!(parse(&["--duration", "0"])
+            .unwrap_err()
+            .contains("--duration"));
+        assert!(parse(&["--match-id", "abc"]).unwrap_err().contains("UUID"));
+        assert!(parse(&["--log-rate-limit", "0"]).is_err());
+        assert!(parse(&["--bogus"]).is_err());
+    }
+
+    #[test]
+    fn accepts_explicit_values() {
+        let c = parse(&[
+            "--match-id",
+            "123E4567-e89b-42d3-a456-426614174000",
+            "--bots",
+            "8",
+            "--metrics-port",
+            "0",
+            "--ws-port",
+            "0",
+            "--wt-port",
+            "0",
+            "--duration",
+            "2.5",
+        ])
+        .unwrap();
+        assert_eq!(c.match_id(), "123e4567-e89b-42d3-a456-426614174000");
+        assert_eq!(c.bots, 8);
+        assert_eq!(c.duration, Some(2.5));
+    }
+}
