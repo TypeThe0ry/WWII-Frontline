@@ -13,3 +13,5 @@ export * from './mesh-compress.ts';
 export * from './collision.ts';
 export * from './stats.ts';
 export * from './process.ts';
+export * from './fpak/index.ts';
+export * from './pack.ts';

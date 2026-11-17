@@ -506,3 +506,21 @@
 - **受影响任务**：M1-003（读取 `lodN{_fp,_tp}.glb`、`collision.glb`、`stats.json`）、M1-005（`stats.chains[].lods[]`）、M1-006（RRRG 法线与 KTX2 转码）、M1-064。
 - **临时处理**：已按上实现。
 - **裁决（Fable 填写）**：
+
+### PI-034 M1-003：`.fpak` 的几处格式取舍（条目命名、header/footer 字段、网格/贴图条目内容、分包）
+
+- **状态**：open
+- **类别**：素材/管线（格式）
+- **提出者 / 日期**：M1-003 / 2026-11-17
+- **问题 / 做法**：
+  1. **条目命名**：任务卡用 `wpn_us_m1_garand@lod0`，ARCHITECTURE §11.3 的 manifest 示例用 `veh_us_m4a1_sherman/lod0`。实现按任务卡用 `@`（`^[a-z][a-z0-9_]*(@[a-z0-9_]+)?$`），M1-005 写 manifest 的 `entry` 字段时用同一写法；§11.3 的斜杠写法视为示意。
+  2. **header/footer**：header 32 B（magic、version、flags、entry_count、index_offset，其余保留），条目起点 32、16 B 对齐；footer 32 B，`version` 放在 footer（打开时不必读 header），CRC32 校验索引。任务卡写"fnv/crc32"，取 CRC32。
+  3. **条目布局 v1**：网格条目 = 自有头 + 每图元 `meshopt` 压缩的交错顶点缓冲 + 索引缓冲 + 4×4 矩阵（带 `quantize` 的反量化变换）+ 材质表（含贴图条目的逻辑 ID）；贴图条目 = KTX2 去掉标准头后按"最小 mip 在前"重排，保留 DFD 与 ETC1S 全局数据。**当前不支持蒙皮/动画网格**（M1-045 在新 `layout_version` 里扩展）。运行期解码属 M1-006。
+  4. **分包**：默认按类别（逻辑 ID 前缀）分组，单包超过 16 MiB 在资产之间切分；64 m 地图区块的分组通过 `pack({group})` 回调由地图任务传入（M1-049/M1-035），本任务不生成区块。
+  5. **`pack` 的权限**：对每个资产先调用 `assertAllowed(id, 'CONVERT')`（台账行必须存在且 OK；normalize 已要求过 CONVERT）；打包本身没有独立的 D-MOD 处理码。
+  6. **meta 条目**：每个资产一个 `@meta` JSON 条目（逻辑 ID、各 LOD 三角/顶点数、碰撞与贴图摘要），不含台账 ID、源文件名或渠道名；已核对产物中不含这些字符串（e2e 断言）。
+  7. **不透明性**：`assert-opaque` 检查魔数、GLB/glTF JSON 解析、`ktx-parse`、`file(1)`；对照组（真实 KTX2）会被识别，保证检查有效。这只说明"不是标准文件"，不是保护，SPEC.md 与代码注释均已写明。
+- **证据**：`tools/asset-pipeline/src/fpak/`、`src/pack.ts`、`tools/asset-pipeline/src/fpak/SPEC.md`；`pnpm -C tools/asset-pipeline test` 123 项、`test:e2e` 7 项通过。
+- **受影响任务**：M1-005（`packs.json` → manifest）、M1-006（读取器与解码 Worker）、M1-004（音频条目 `kind:'audio'`、codec 3）、M1-045（蒙皮网格布局）。
+- **临时处理**：已按上实现。
+- **裁决（Fable 填写）**：
