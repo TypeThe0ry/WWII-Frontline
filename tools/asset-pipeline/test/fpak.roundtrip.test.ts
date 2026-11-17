@@ -114,7 +114,7 @@ describe('fpak writer / reader (acceptance 1)', () => {
     const t1 = performance.now();
     for (let i = 0; i < 1000; i++) await r.read(entries[Math.floor(rand() * entries.length)]!.id);
     const readMs = performance.now() - t1;
-    writeFileSync('/tmp/claude/fpak-perf.txt', `write ${writeMs.toFixed(0)} ms (${(b.bytes.length / 1048576).toFixed(1)} MiB), 1000 reads ${readMs.toFixed(0)} ms\n`);
+    writeFileSync(join(tmpdir(), 'fpak-perf.txt'), `write ${writeMs.toFixed(0)} ms (${(b.bytes.length / 1048576).toFixed(1)} MiB), 1000 reads ${readMs.toFixed(0)} ms\n`);
     expect(writeMs).toBeLessThan(1000);
     expect(readMs).toBeLessThan(5000);
   });
