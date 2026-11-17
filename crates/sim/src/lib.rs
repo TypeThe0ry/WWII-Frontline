@@ -22,6 +22,7 @@ pub mod respawn;
 pub mod rng;
 pub mod schedule;
 pub mod step;
+pub mod suppression;
 pub mod throwables;
 pub mod view;
 pub mod weapon;

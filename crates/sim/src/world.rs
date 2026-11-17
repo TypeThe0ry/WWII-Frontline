@@ -124,6 +124,7 @@ impl World {
         ecs.insert_resource(crate::throwables::Throwables::default());
         ecs.insert_resource(crate::throwables::Smokes::default());
         ecs.insert_resource(Projectiles::default());
+        ecs.insert_resource(crate::suppression::SuppressSeen::default());
         ecs.insert_resource(EventBuf::default());
         ecs.insert_resource(HitLog::default());
         ecs.insert_resource(RespawnQueue::default());
@@ -225,6 +226,7 @@ impl World {
             crate::medical::FireLock::default(),
             crate::medical::Vitals::default(),
             crate::medical::FallTracker::default(),
+            crate::suppression::SuppressionState::default(),
         ));
         if let Some(w) = weapon {
             self.ecs.entity_mut(e).insert(w);
@@ -274,6 +276,15 @@ impl World {
     pub fn health(&self, id: PlayerId) -> Option<f32> {
         let (_, e) = *self.ecs.resource::<PlayerIndex>().map.get(&id)?;
         self.ecs.entity(e).get::<Health>().map(|h| h.hp)
+    }
+
+    /// Suppression `S in [0, 100]` of a player (M1-017).
+    pub fn suppression(&self, id: PlayerId) -> Option<f32> {
+        let (_, e) = *self.ecs.resource::<PlayerIndex>().map.get(&id)?;
+        self.ecs
+            .entity(e)
+            .get::<crate::suppression::SuppressionState>()
+            .map(|s| s.s)
     }
 
     /// Marks (or unmarks) a player as a medic, who can revive downed teammates (M1-016).
@@ -528,6 +539,19 @@ impl World {
                     if let Some(c) = g.cook {
                         h.write_u8(c.kind as u8);
                         h.write_u16(c.ticks);
+                    }
+                }
+            }
+            // M1-017: written only while suppressed.
+            if let Some(sp) = er.get::<crate::suppression::SuppressionState>() {
+                if sp.is_active() {
+                    h.write_u8(0xD5);
+                    h.write_f32(sp.s);
+                    h.write_u32(sp.window_until);
+                    h.write_u32(sp.pinned_until);
+                    for s in &sp.sources {
+                        h.write_u16(s.who);
+                        h.write_u32(s.tick);
                     }
                 }
             }

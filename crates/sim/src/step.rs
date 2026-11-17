@@ -51,6 +51,20 @@ pub enum SimEvent {
         headshot: bool,
         dist_m: f32,
     },
+    /// A player was suppressed (M1-017); sent to that player only, at most 10 Hz. `source_dir` is
+    /// the world bearing to the source (256 steps, 0 = +z, clockwise to +x), `intensity` is
+    /// `S x 2.55`.
+    Suppress {
+        target: EntityId,
+        source_dir: u8,
+        intensity: u8,
+    },
+    /// `suppressor` suppressed `victim` in the last 5 s and a teammate killed them (M1-017;
+    /// scoring is M2).
+    SuppressionAssist {
+        suppressor: EntityId,
+        victim: PlayerId,
+    },
     /// A player went down (M1-016); `Hit` / `Kill` events cover the damage and the KIA.
     Downed {
         victim: PlayerId,

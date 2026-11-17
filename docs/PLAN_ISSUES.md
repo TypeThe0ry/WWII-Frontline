@@ -768,3 +768,12 @@
 - **受影响任务**：M1-017、M1-020、M1-025、M1-038、M1-040。
 - **裁决（Fable 填写）**：
 
+### PI-057 M1-017：拆为 a（检测/累积/衰减/事件/反刷分）与 b（对移速、ADS、散布、晃动的作用；`/data/combat/suppression.json`；bench）
+
+- **状态**：resolved（实现者裁决，待 Fable 复核）
+- **类别**：sim
+- **提出者 / 日期**：M1 线程 / 2026-11-17
+- **做法**：①检测在弹丸每个子步内完成：该子步实际飞过的线段（被命中截断）到每名敌方玩家胶囊轴线（脚下 0.2 m ~ 头上 0.2 m，随姿态）的最近距离 ≤5 m，`s = 权重 × (1−d/5)^1.2 × min(1,v/500)`；同一发子弹对同一玩家只记一次（`SuppressSeen` 集合，弹丸消失即清理）；被命中的玩家和友军不受影响；每玩家每 tick 最多处理 12 发。②权重按武器 `class`：pistol/smg 0.8、carbine 1.5、rifle_* 2.2、mg 2.8、hmg 6.0（M1 数据里只有前几类）。③衰减：窗口（每次受压重置，15 tick）内不降，之后每 tick `(6+0.12S)×mult/hz`；`mult` 取姿态（站 1.0/蹲 ≥0.5 为 1.15/趴 ≥1.5 为 1.3）与掩体（上一个压制源到胸口地形不通视）1.4 中的较大者，不相乘。④**GAMEDESIGN 示例与公式不符**：MG42 d=2 m 1200 rpm 持续 1.5 s 示例写"≈35"，但每发都会重置 0.5 s 窗口，爆发期间无衰减，结果为 30×1.52≈45.5（4 s 钳到 100）；以公式为准，测试按 40–50 断言。⑤爆炸压制读本 tick 的 `Explosion`（kind 0）事件，`40(1−r/15)²`，r 从脚到爆心，地形挡住胸口则 ×0.5，友军爆炸同样压制；爆炸没有来源玩家，故不产生反刷分记录。⑥事件：`SimEvent::Suppress{target, source_dir, intensity}`，≤10 Hz 节流，`source_dir` = 世界方位 256 级（0=+z，顺时针向 +x），`intensity = S×2.55`；`SuppressionAssist{suppressor, victim}`：victim 被**压制者的队友**（非压制者本人）在 5 s 内击杀时，每个压制者一次（记录最多 8 条）。⑦`self_state.suppression` = `quantise4(S)`，服务器组包仍待 M0-019 之后的网络任务，这里提供 `World::suppression(id)`。⑧阶段顺序：projectiles → suppression → deaths → suppression_assists；死亡玩家在 `LifeState::Dead` 后清零（致命击当 tick 仍保留供反刷分）。⑨数值暂在代码常量，`/data` 管线与 schema 在 017b 做。⑩golden 重定：`damage_death` skirmish、`weapon_duel`（多了 Suppress 事件）；`determinism_basic`、bots 未变（状态仅在受压时进哈希）。
+- **受影响任务**：M1-013（散布读 `supp_spread`）、M1-038、M1-057/063、M2 计分。
+- **裁决（Fable 填写）**：
+

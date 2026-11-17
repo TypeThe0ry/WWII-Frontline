@@ -15,12 +15,14 @@ use glam::Vec3;
 
 use crate::combat::damage::{damage_amount, DamageKind, HitInfo, TargetCtx};
 use crate::components::{
-    CollisionRes, EntityTable, EventBuf, Motion, SimCfgRes, Team, Transform, WeaponTable,
+    CollisionRes, CurrentTick, EntityTable, EventBuf, Motion, SimCfgRes, Team, Transform,
+    WeaponTable,
 };
 use crate::data::defs::WeaponDef;
 use crate::health::{Health, HitLog, HitRec};
 use crate::ids::EntityId;
 use crate::step::SimEvent;
+use crate::suppression::{system::pass_segment, SuppressSeen, SuppressionState};
 use crate::weapon::ballistics::{self, BallisticsParams, MIN_SPEED_MPS, SUBSTEPS};
 use crate::weapon::hitbox::{self, HitZone};
 
@@ -133,6 +135,9 @@ pub fn projectile_system(
     mut projs: ResMut<Projectiles>,
     mut events: ResMut<EventBuf>,
     mut hitlog: ResMut<HitLog>,
+    tick: Res<CurrentTick>,
+    mut seen: ResMut<SuppressSeen>,
+    mut sq: Query<&mut SuppressionState>,
     mut q: Query<(&Transform, &Motion, &Team, &mut Health)>,
 ) {
     if projs.list.is_empty() {
@@ -175,10 +180,18 @@ pub fn projectile_system(
             &mut q,
             &mut events.0,
             &mut hitlog.0,
+            (tick.0 .0, cfg.hz),
+            &mut seen,
+            &mut sq,
         );
         if matches!(fate, Fate::Alive) {
             keep.push(pr);
         }
+    }
+    if !seen.0.is_empty() {
+        let mut live: Vec<u32> = keep.iter().map(|p| p.id).collect();
+        live.sort_unstable();
+        seen.0.retain(|(id, _)| live.binary_search(id).is_ok());
     }
     projs.list = keep;
 }
@@ -195,6 +208,9 @@ fn advance(
     q: &mut Query<(&Transform, &Motion, &Team, &mut Health)>,
     events: &mut Vec<SimEvent>,
     hitlog: &mut Vec<HitRec>,
+    (tick, hz): (u32, u8),
+    seen: &mut SuppressSeen,
+    sq: &mut Query<&mut SuppressionState>,
 ) -> Fate {
     for _ in 0..SUBSTEPS {
         let p0 = pr.pos;
@@ -232,6 +248,34 @@ fn advance(
             None
         };
         let ground_t = ground.map(|g| g.t / len);
+        // Near misses along the part of the segment flown (M1-017).
+        {
+            let (end, hit_id) = match (body, ground_t) {
+                (Some((tb, _, i)), gt) if gt.is_none_or(|g| tb < g) => (tb, Some(targets[i].id)),
+                (_, Some(g)) => (g, None),
+                _ => (1.0, None),
+            };
+            let speed = pr.vel.length();
+            pass_segment(
+                p0,
+                p0 + seg * end,
+                speed,
+                pr.id,
+                pr.owner,
+                pr.team,
+                &def.class,
+                tick,
+                hz,
+                hit_id,
+                targets
+                    .iter()
+                    .filter(|t| t.alive)
+                    .map(|t| (t.id, t.entity, t.team, t.foot, t.blend)),
+                seen,
+                sq,
+                events,
+            );
+        }
         match (body, ground, ground_t) {
             (Some((tb, zone, i)), _, gt) if gt.is_none_or(|g| tb < g) => {
                 let hit_pos = p0 + seg * tb;
