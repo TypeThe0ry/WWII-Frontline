@@ -34,20 +34,34 @@ fn speed_matches_data() {
         ("run", m.run_mps, 0, 0),
         ("sprint", m.sprint_mps, BTN_SPRINT, 0),
         ("crouch_run", m.crouch_mps, BTN_CROUCH, 0),
-        ("crouch_walk", m.crouch_walk_mps.unwrap(), BTN_CROUCH, AUX_WALK),
+        (
+            "crouch_walk",
+            m.crouch_walk_mps.unwrap(),
+            BTN_CROUCH,
+            AUX_WALK,
+        ),
     ];
     for (name, want, btn, aux) in cases {
         let got = horizontal_speed(&col, &|| fwd(btn, aux), 10) as f64;
         let err = (got - want).abs() / want;
-        println!("speed {name}: measured {got:.4} m/s, data {want} m/s, error {:.4} %", err * 100.0);
+        println!(
+            "speed {name}: measured {got:.4} m/s, data {want} m/s, error {:.4} %",
+            err * 100.0
+        );
         assert!(err < 0.02, "{name}: {got} vs {want}");
     }
     // Strafing and diagonals are not faster than straight running.
     let diag = horizontal_speed(&col, &|| cmd(127, 127, 0, 0, 0), 10) as f64;
-    assert!((diag - m.run_mps).abs() / m.run_mps < 0.02, "diagonal {diag}");
+    assert!(
+        (diag - m.run_mps).abs() / m.run_mps < 0.02,
+        "diagonal {diag}"
+    );
     // Sprint needs a forward component: backwards + sprint runs at run speed.
     let back = horizontal_speed(&col, &|| cmd(0, -127, 0, BTN_SPRINT, 0), 10) as f64;
-    assert!((back - m.run_mps).abs() / m.run_mps < 0.02, "backwards sprint {back}");
+    assert!(
+        (back - m.run_mps).abs() / m.run_mps < 0.02,
+        "backwards sprint {back}"
+    );
 }
 
 #[test]
@@ -55,14 +69,21 @@ fn heading_follows_yaw() {
     let col = flat(2, 5.0);
     let p = move_params();
     // yaw 0 faces +z, a quarter turn (16384) faces +x.
-    for (yaw, dx, dz) in [(0u16, 0.0f32, 1.0f32), (16384, 1.0, 0.0), (32768, 0.0, -1.0)] {
+    for (yaw, dx, dz) in [
+        (0u16, 0.0f32, 1.0f32),
+        (16384, 1.0, 0.0),
+        (32768, 0.0, -1.0),
+    ] {
         let mut s = settle(&col, &p, 60.0, 60.0);
         let start = s.pos;
         for _ in 0..30 {
             s = step_player(&s, &cmd(0, 127, yaw, 0, 0), &p, &col);
         }
         let d = s.pos - start;
-        assert!((d.x - dx * 4.4).abs() < 0.05 && (d.z - dz * 4.4).abs() < 0.05, "{yaw}: {d:?}");
+        assert!(
+            (d.x - dx * 4.4).abs() < 0.05 && (d.z - dz * 4.4).abs() < 0.05,
+            "{yaw}: {d:?}"
+        );
     }
     // +x is to the right of a player facing +z.
     let mut s = settle(&col, &p, 60.0, 60.0);
@@ -100,7 +121,11 @@ fn stance_transition_takes_eight_ticks() {
         }
         // Linear blend: capsule height never jumps by more than 1/7.5 of the delta.
     }
-    assert_eq!(done_at, Some(8), "250 ms at 30 Hz = 7.5 ticks -> completes on tick 8");
+    assert_eq!(
+        done_at,
+        Some(8),
+        "250 ms at 30 Hz = 7.5 ticks -> completes on tick 8"
+    );
     assert_eq!(s.stance, Stance::Crouch);
     assert_eq!(s.stance_blend, 1.0);
     assert_eq!(capsule_height(s.stance_blend, &p), 1.2);
@@ -110,7 +135,11 @@ fn stance_transition_takes_eight_ticks() {
     for _ in 0..3 {
         s2 = step_player(&s2, &stand, &p, &col);
     }
-    assert!(s2.stance_blend > 0.5 && s2.stance_blend < 0.7, "{}", s2.stance_blend);
+    assert!(
+        s2.stance_blend > 0.5 && s2.stance_blend < 0.7,
+        "{}",
+        s2.stance_blend
+    );
     let mid = s2.stance_blend;
     s2 = step_player(&s2, &crouch, &p, &col);
     assert!(s2.stance_blend > mid, "reversal is continuous");
@@ -123,7 +152,11 @@ fn stance_transition_takes_eight_ticks() {
     assert_eq!((s.stance_timer, s.stance_blend), (0, 0.0));
     // Foot stays on the ground while the capsule changes height.
     let y = col.height_at(s.pos.x, s.pos.z).unwrap();
-    assert!((s.pos.y - y).abs() < 0.03, "foot {} vs ground {y}", s.pos.y);
+    assert!(
+        (0.0..0.05).contains(&(s.pos.y - y)),
+        "foot {} vs ground {y}",
+        s.pos.y
+    );
 }
 
 #[test]
@@ -135,7 +168,11 @@ fn unloaded_terrain_blocks() {
         s = step_player(&s, &fwd(0, 0), &p, &col);
     }
     assert!(s.blocked, "ran off the loaded area: {s:?}");
-    assert!(s.pos.z <= 64.0 && s.pos.z > 63.0 - 0.01 - 4.4 / 30.0, "{:?}", s.pos);
+    assert!(
+        s.pos.z <= 64.0 && s.pos.z > 63.0 - 0.01 - 4.4 / 30.0,
+        "{:?}",
+        s.pos
+    );
     let before = s.pos;
     let again = step_player(&s, &fwd(0, 0), &p, &col);
     assert_eq!(again.pos, before, "blocked state keeps its position");

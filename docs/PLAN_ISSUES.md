@@ -224,3 +224,15 @@
 - **受影响任务**：M1-049/050（区块槽位/材质沿用实例属性与掩码约定）、M0-030（地形三个机位的节点数/三角形数口径）、M0-024/025（用 `Terrain.heightAt`）。
 - **临时处理**：按此实现。
 - **裁决（Fable 填写）**：
+
+### PI-015 M0-011：移动/KCC 的数据字段、Rapier 自带 snap 超预算改为解析 snap、aux 约定、速度偏序校验、加减速模型
+
+- **状态**：open
+- **类别**：接口细化 / 性能 / 数据
+- **提出者 / 日期**：M0-011 / 2026-11-17
+- **问题**：①**数据字段**：任务要求的移动数值在 role schema 里没有位置。已按"先 schema 可选字段、再 `data_defs.rs`"追加 `movement.{crouch_walk_mps, jump_height_m, stance_transition_ms, air_control_mult, gravity_mps2, max_slope_deg, autostep_max_m, autostep_min_width_m, snap_to_ground_m}`（全部可选，`MoveParams::from_role` 要求齐备）。重力 9.81（GAMEDESIGN §0.5 全局常量）暂放在 role 里，因 `/data/rules/` 尚无 schema 与载入；后续有规则文件时迁移。`faction_overrides.*.loadout_ids` 的 `minItems` 由 1 放宽为 0（任务要求 `rifleman` 暂填 `[]`，M0-012 填充）。②**KCC 耗时**：Rapier KCC 默认 `snap_to_ground` 多一次 shape cast，单次 move 中位数 ≈ 41 µs（>20 µs，`kcc_100_players_tick` ≈ 4.2 ms >3 ms）。关闭 Rapier 的 snap 后改用 `CollisionData::ground_probe` 的解析 snap（胶囊停靠平面的接触高度公式见 `movement/kcc.rs`），单次 ≈ 18–19 µs、100 人一 tick ≈ 2.2 ms（本机、非参考机、测量时负载均值 ≈ 6.7/4 核）。余量仅约 5–10 %：参考机复测前不视为稳；若超标再启用 §5.3 的完全自写 KCC。③**`aux` 约定**：bit0 = 走路修饰键（Shift；站 2.0 / 蹲 1.5 m/s），其余位保留（ARCHITECTURE §6.3 只写"开火模式切换/标记"，开火模式位由 M0-012 在 bit1 起分配）。冲刺需前向分量 > 0 且目标姿态为站；蹲着不能冲刺、不能起跳；`PRONE` 键 M0 忽略。④**速度偏序校验**：`tools/data-validate/rules/ranges.mjs` 原要求 `prone < crouch < walk < run < sprint`，与 GAMEDESIGN §9.1（蹲姿跑 2.4 > 站立走 2.0）矛盾，改为偏序 `prone < crouch_walk < crouch < run < sprint` 且 `prone < walk < run`；无效夹具 `role.speed_order` 改为 walk ≥ run。⑤**加减速**：M0 取"即时到目标速度 + 即时停止"（首 tick 即达稳态速度，停止 1 tick），空中保持水平速度并按 `air_control_mult`（0.3/tick）逼近愿望速度；平滑加速待 REF M-24–M-26。⑥姿态过渡 250 ms @30 Hz = 7.5 tick：线性混合每 tick 前进 1/7.5，clamp 后第 8 tick 完成（`stance_timer` 为剩余 tick 数）。⑦无输入的 tick 重复上一条指令（输入缓冲/校验是 M0-018）。⑧空碰撞（`CollisionData::empty()`）或区块外一律 `blocked=true` 且不动（任务 §6；`server` 用空碰撞时玩家不会移动）。⑨`state_hash` 折入 `Motion`（速度/姿态/标志），`determinism_basic` golden 重钉为 0x63ac47f15c2331d8。⑩`test-util` feature 现在蕴含 `client-predict`（使 `PredictSim` 对拍测试在 `--features test-util` 下运行）。
+- **证据**：crates/sim/src/movement/*；crates/sim/tests/movement_*.rs；`cargo bench -p frontline-sim --bench kcc`；reports/baselines/sim-m0.json；tasks/STATUS.md M0-011 行。
+- **建议方案**：接受；M0-014/M0-022 按 `PlayerAuthState::to_bytes`（39 B，布局见源码注释）对接；M0-012 在 `aux` bit1 起分配开火模式位；参考机上重测 KCC。
+- **受影响任务**：M0-012、M0-014、M0-015（空碰撞下不移动）、M0-018、M0-022、M0-030（基线 JSON）、M1-011（趴姿/体力扩展 `Stance`/状态）。
+- **临时处理**：按此实现。
+- **裁决（Fable 填写）**：

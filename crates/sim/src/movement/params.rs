@@ -59,7 +59,10 @@ impl MoveParams {
             return Err(ParamsError::Invalid("tick_hz"));
         }
         let m = &role.movement;
-        let cap = role.capsule.as_ref().ok_or(ParamsError::Missing("capsule"))?;
+        let cap = role
+            .capsule
+            .as_ref()
+            .ok_or(ParamsError::Missing("capsule"))?;
         let need = |v: Option<f64>, k: &'static str| v.ok_or(ParamsError::Missing(k));
         let pos = |v: f64, k: &'static str| {
             if v.is_finite() && v > 0.0 {

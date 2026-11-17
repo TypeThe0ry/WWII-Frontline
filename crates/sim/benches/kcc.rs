@@ -146,7 +146,11 @@ fn bench_100_players(col: &CollisionData) -> (f64, f64, f64) {
                 *c = random_cmd(&mut r);
             }
         }
-        let inputs: Vec<_> = cmds.iter().enumerate().map(|(i, c)| (i as u8, *c)).collect();
+        let inputs: Vec<_> = cmds
+            .iter()
+            .enumerate()
+            .map(|(i, c)| (i as u8, *c))
+            .collect();
         let t0 = Instant::now();
         black_box(w.step(black_box(&inputs)));
         let dt = t0.elapsed().as_nanos() as f64 / 1e6;

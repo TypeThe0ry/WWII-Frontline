@@ -13,7 +13,9 @@ fn tri(v: f32, period: f32) -> f32 {
 
 /// Hilly synthetic terrain, gentle enough to walk everywhere, with a few steep ridges.
 fn hills() -> CollisionData {
-    synth_data(3, 3, &|x, z| 4.0 + 3.0 * tri(x, 37.0) + 2.0 * tri(z, 29.0) + 1.5 * tri(x + z, 11.0))
+    synth_data(3, 3, &|x, z| {
+        4.0 + 3.0 * tri(x, 37.0) + 2.0 * tri(z, 29.0) + 1.5 * tri(x + z, 11.0)
+    })
 }
 
 fn script(n: usize, seed: u64) -> Vec<frontline_protocol::msg::input::InputCmd> {
@@ -47,8 +49,15 @@ fn script(n: usize, seed: u64) -> Vec<frontline_protocol::msg::input::InputCmd> 
     out
 }
 
-fn run(col: &CollisionData, p: &MoveParams, cmds: &[frontline_protocol::msg::input::InputCmd]) -> Vec<PlayerAuthState> {
-    let mut s = PlayerAuthState::spawn(Vec3::new(96.0, col.height_at(96.0, 96.0).unwrap() + 0.5, 96.0), 0.0);
+fn run(
+    col: &CollisionData,
+    p: &MoveParams,
+    cmds: &[frontline_protocol::msg::input::InputCmd],
+) -> Vec<PlayerAuthState> {
+    let mut s = PlayerAuthState::spawn(
+        Vec3::new(96.0, col.height_at(96.0, 96.0).unwrap() + 0.5, 96.0),
+        0.0,
+    );
     cmds.iter()
         .map(|c| {
             s = step_player(&s, c, p, col);
@@ -68,7 +77,7 @@ fn fold(states: &[PlayerAuthState]) -> u64 {
 }
 
 /// Regression pin; update only when movement rules or data change on purpose (and say why).
-const GOLDEN: u64 = 0xa24b_a7da_3075_f93e;
+const GOLDEN: u64 = 0x0427_5f5f_f85f_ebd8;
 
 #[test]
 fn movement_replay_10k() {
@@ -86,12 +95,17 @@ fn movement_replay_10k() {
     let blocked = a.iter().filter(|s| s.blocked).count();
     let airborne = a.iter().filter(|s| !s.grounded).count();
     let crouched = a.iter().filter(|s| s.stance_blend > 0.0).count();
-    let (minx, maxx) = a.iter().fold((f32::MAX, f32::MIN), |m, s| (m.0.min(s.pos.x), m.1.max(s.pos.x)));
+    let (minx, maxx) = a.iter().fold((f32::MAX, f32::MIN), |m, s| {
+        (m.0.min(s.pos.x), m.1.max(s.pos.x))
+    });
     println!(
         "10k replay: hash {:#018x}, blocked {blocked}, airborne {airborne}, crouching {crouched}, x range {minx:.1}..{maxx:.1}",
         fold(&a)
     );
-    assert!(airborne > 500 && crouched > 500, "script must exercise jumps and crouching");
+    assert!(
+        airborne > 500 && crouched > 500,
+        "script must exercise jumps and crouching"
+    );
     assert!(maxx - minx > 20.0, "player must travel");
     assert!(a.iter().all(|s| s.pos.is_finite()));
     assert_eq!(fold(&a), GOLDEN, "golden movement trajectory changed");

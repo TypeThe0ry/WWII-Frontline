@@ -104,7 +104,10 @@ fn slope_limit_35deg_step_player() {
         let col = ramp(deg, 3.0);
         let (s, _) = run_dir(&col, (32.0, 30.0), 0, 150);
         let gain = s.pos.y - 2.0;
-        println!("run into {deg} deg ramp for 5 s: height gain {gain:.3} m, z {:.2}", s.pos.z);
+        println!(
+            "run into {deg} deg ramp for 5 s: height gain {gain:.3} m, z {:.2}",
+            s.pos.z
+        );
         assert!(gain <= 0.5, "{deg} deg climbed: {gain}");
     }
     for deg in [10.0f32, 20.0, 25.0, 30.0, 34.0] {
@@ -145,13 +148,20 @@ fn slope_limit_on_m0_terrain() {
     // The 38.7 degree, 8 m embankment over z = 123..133.
     let (s, _) = run_dir(&col, (128.0, 108.0), 0, 150);
     let base = col.height_at(128.0, 118.0).unwrap();
-    println!("M0 embankment 38.7 deg, 5 s run: height above slope foot {:.3} m, z {:.2}", s.pos.y - base, s.pos.z);
+    println!(
+        "M0 embankment 38.7 deg, 5 s run: height above slope foot {:.3} m, z {:.2}",
+        s.pos.y - base,
+        s.pos.z
+    );
     assert!(s.pos.y - base <= 0.5);
     // Gentle side along +x (<= 27 degrees): climbs, foot follows terrain.
     let (s, v) = run_dir(&col, (10.0, 128.0), 16384, 150);
     let start = col.height_at(10.0, 128.0).unwrap();
     let end = col.height_at(s.pos.x, s.pos.z).unwrap();
-    println!("M0 gentle side: climbed {:.2} m, mean ground speed {v:.2} m/s", s.pos.y - start);
+    println!(
+        "M0 gentle side: climbed {:.2} m, mean ground speed {v:.2} m/s",
+        s.pos.y - start
+    );
     assert!(end - start > 2.0);
     assert!(v >= 0.7 * 4.4);
     assert!((s.pos.y - end).abs() < 0.2);

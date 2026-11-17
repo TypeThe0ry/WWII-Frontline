@@ -43,7 +43,13 @@ pub const AUX_WALK: u8 = 1;
 
 /// Normalised movement intent in `[-1, 1]^2`, length <= 1. Non-finite axes count as 0.
 pub fn normalize_move(x: f32, z: f32) -> (f32, f32) {
-    let fix = |v: f32| if v.is_finite() { v.clamp(-1.0, 1.0) } else { 0.0 };
+    let fix = |v: f32| {
+        if v.is_finite() {
+            v.clamp(-1.0, 1.0)
+        } else {
+            0.0
+        }
+    };
     let (x, z) = (fix(x), fix(z));
     let len = libm::sqrtf(x * x + z * z);
     if len > 1.0 {
@@ -147,7 +153,7 @@ pub fn step_player(
     let desired = Vec3::new(vel.x * p.dt, dy, vel.z * p.dt);
 
     let height = capsule_height(s.stance_blend, p);
-    let m = move_capsule(col, p, s.pos, height, desired);
+    let m = move_capsule(col, p, s.pos, height, desired, state.grounded);
     let new_pos = s.pos + m.translation;
     if !new_pos.is_finite() || col.height_at(new_pos.x, new_pos.z).is_none() {
         s.vel = Vec3::ZERO;

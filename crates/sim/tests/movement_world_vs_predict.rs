@@ -52,8 +52,13 @@ fn inputs(n: usize) -> Vec<InputCmd> {
 
 fn compare(col: &CollisionData, start: Vec3) {
     let mut w = World::new(cfg(), col);
-    w.spawn_player(SpawnReq { player: 7, team: Team::Us, pos: start, yaw: 0.0 })
-        .unwrap();
+    w.spawn_player(SpawnReq {
+        player: 7,
+        team: Team::Us,
+        pos: start,
+        yaw: 0.0,
+    })
+    .unwrap();
     let mut pr = PredictSim::new(cfg(), col, 7);
     pr.reset_to(&PlayerAuthState::spawn(start, 0.0), Tick(0));
     assert!(w.player_state(7).unwrap().bit_eq(&pr.state()));
@@ -72,7 +77,9 @@ fn compare(col: &CollisionData, start: Vec3) {
 
 #[test]
 fn world_vs_predict_synthetic() {
-    let col = synth_data(3, 3, &|x, z| 4.0 + 0.02 * x + 0.015 * z + 0.5 * ((x * 0.37) % 1.0));
+    let col = synth_data(3, 3, &|x, z| {
+        4.0 + 0.02 * x + 0.015 * z + 0.5 * ((x * 0.37) % 1.0)
+    });
     compare(&col, Vec3::new(96.0, 8.0, 96.0));
 }
 
@@ -99,11 +106,19 @@ fn world_moves_players_in_id_order_and_independently() {
         .unwrap();
     }
     for _ in 0..60 {
-        w.step(&[(2, fwd(0, 0)), (5, fwd(BTN_SPRINT, 0)), (9, cmd(0, 0, 0, 0, 0))]);
+        w.step(&[
+            (2, fwd(0, 0)),
+            (5, fwd(BTN_SPRINT, 0)),
+            (9, cmd(0, 0, 0, 0, 0)),
+        ]);
     }
     let z = |w: &World, p| w.player_state(p).unwrap().pos.z;
     assert!((z(&w, 2) - 20.0 - 8.8).abs() < 0.4, "run 2 s: {}", z(&w, 2));
-    assert!((z(&w, 5) - 20.0 - 12.8).abs() < 0.4, "sprint 2 s: {}", z(&w, 5));
+    assert!(
+        (z(&w, 5) - 20.0 - 12.8).abs() < 0.4,
+        "sprint 2 s: {}",
+        z(&w, 5)
+    );
     assert!((z(&w, 9) - 20.0).abs() < 1e-3, "idle");
     // Missing input repeats the last command.
     w.step(&[(2, fwd(0, 0))]);
