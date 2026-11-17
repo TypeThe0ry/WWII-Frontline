@@ -1,0 +1,24 @@
+{
+  "_expect_error": "must be >= 0",
+  "id": "ger_bad",
+  "name_key": "ammo.ger_9x19.name",
+  "historical": {
+    "caliber": "9×19 mm",
+    "mass_kg": 0.008,
+    "_source": "待 M1-070 按 REF §6 复核"
+  },
+  "gameplay": {
+    "drag_k_per_m": -1,
+    "pen_power": 60,
+    "suppression_mult": 0.8
+  },
+  "_meta": {
+    "status": "initial",
+    "tunable": [
+      "gameplay.drag_k_per_m",
+      "gameplay.pen_power",
+      "gameplay.suppression_mult"
+    ],
+    "calibration_ref": "GAMEDESIGN §6.4 阻力表 / §8.1 压制（待 M1-071）"
+  }
+}

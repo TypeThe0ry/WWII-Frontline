@@ -11,8 +11,8 @@ import { checkRefs } from './rules/refs.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 export const REPO_ROOT = resolve(here, '..', '..');
-export const KINDS = ['weapon', 'role', 'loadout', 'vehicle', 'map_meta', 'spawns', 'rules', 'bots'];
-const DIR_KIND = { weapons: 'weapon', roles: 'role', loadouts: 'loadout', vehicles: 'vehicle' };
+export const KINDS = ['weapon', 'explosive', 'melee', 'ammo', 'role', 'loadout', 'vehicle', 'map_meta', 'spawns', 'rules', 'bots'];
+const DIR_KIND = { weapons: 'weapon', explosives: 'explosive', melee: 'melee', ammo: 'ammo', roles: 'role', loadouts: 'loadout', vehicles: 'vehicle' };
 const MAP_FILE_KIND = { 'meta.json': 'map_meta', 'spawns.json': 'spawns' };
 const SLUG = /^[a-z][a-z0-9]*(_[a-z0-9]+)*$/;
 

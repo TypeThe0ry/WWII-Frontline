@@ -1,0 +1,162 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://frontline.invalid/schemas/melee.schema.json",
+  "title": "Melee weapon (GAMEDESIGN 6.8; M1-008b)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "name_key",
+    "faction",
+    "class",
+    "gameplay",
+    "_meta"
+  ],
+  "properties": {
+    "id": {
+      "$ref": "#/$defs/slug"
+    },
+    "name_key": {
+      "$ref": "#/$defs/i18n_key"
+    },
+    "faction": {
+      "enum": [
+        "us",
+        "ger",
+        "any"
+      ]
+    },
+    "class": {
+      "enum": [
+        "bayonet",
+        "knife",
+        "butt"
+      ]
+    },
+    "gameplay": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "damage_hp",
+        "windup_s",
+        "cooldown_s",
+        "range_m",
+        "backstab_angle_deg",
+        "backstab_kill",
+        "ff_mult"
+      ],
+      "properties": {
+        "damage_hp": {
+          "$ref": "#/$defs/pos"
+        },
+        "windup_s": {
+          "$ref": "#/$defs/pos"
+        },
+        "cooldown_s": {
+          "$ref": "#/$defs/pos"
+        },
+        "range_m": {
+          "$ref": "#/$defs/pos"
+        },
+        "backstab_angle_deg": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 180
+        },
+        "backstab_kill": {
+          "type": "boolean"
+        },
+        "ff_mult": {
+          "$ref": "#/$defs/nonneg"
+        }
+      }
+    },
+    "_meta": {
+      "$ref": "#/$defs/meta"
+    }
+  },
+  "$defs": {
+    "slug": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*$"
+    },
+    "i18n_key": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*(\\.[a-z0-9_]+)+$"
+    },
+    "pos": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "nonneg": {
+      "type": "number",
+      "minimum": 0
+    },
+    "unit01": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "meta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "tunable"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "initial",
+            "reviewed",
+            "measured"
+          ]
+        },
+        "tunable": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "calibration_ref": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "unverified": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "deviation_reason": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "source": {
+      "oneOf": [
+        {
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object"
+          }
+        }
+      ]
+    }
+  }
+}

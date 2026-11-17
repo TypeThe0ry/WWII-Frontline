@@ -1,0 +1,33 @@
+{
+  "id": "us_fixture_mk2",
+  "name_key": "weapon.us_mk2.name",
+  "faction": "us",
+  "class": "frag_grenade",
+  "historical": {
+    "mass_kg": 0.595,
+    "_source": "待 M1-070 按 REF §6 复核"
+  },
+  "gameplay": {
+    "fuse_s": 4,
+    "throw_speed_mps": 18,
+    "can_cook": true,
+    "bounce_mult": 0.4,
+    "friction_mult": 0.6,
+    "damage_max_hp": 220,
+    "damage_radius_m": 8,
+    "lethal_radius_m": 3.2
+  },
+  "_meta": {
+    "status": "initial",
+    "tunable": [
+      "gameplay.fuse_s",
+      "gameplay.throw_speed_mps",
+      "gameplay.bounce_mult",
+      "gameplay.friction_mult",
+      "gameplay.damage_max_hp",
+      "gameplay.damage_radius_m",
+      "gameplay.lethal_radius_m"
+    ],
+    "calibration_ref": "GAMEDESIGN §6.9.1 手雷（待 M1-071）"
+  }
+}

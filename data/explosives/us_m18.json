@@ -1,0 +1,29 @@
+{
+  "id": "us_m18",
+  "name_key": "weapon.us_m18.name",
+  "faction": "us",
+  "class": "smoke_grenade",
+  "historical": {
+    "mass_kg": 0.54,
+    "_source": "待 M1-070 按 REF §6 复核"
+  },
+  "gameplay": {
+    "fuse_s": 2,
+    "throw_speed_mps": 18,
+    "cloud_radius_m": 7,
+    "expand_s": 3,
+    "duration_s": 45,
+    "decay_s": 8
+  },
+  "_meta": {
+    "status": "initial",
+    "tunable": [
+      "gameplay.fuse_s",
+      "gameplay.cloud_radius_m",
+      "gameplay.expand_s",
+      "gameplay.duration_s",
+      "gameplay.decay_s"
+    ],
+    "calibration_ref": "GAMEDESIGN §6.9.2 烟雾弹（待 M1-071）"
+  }
+}

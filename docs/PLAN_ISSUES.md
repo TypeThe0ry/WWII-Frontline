@@ -617,3 +617,14 @@
 - **仍然会变的**：`DATA_HASH`（按设计随 /data 变，现在测试里按当次值比对）、与武器数值有关的行为型金哈希（bots、skirmish 等，改数值就是行为变了，需按注释说明重新定标）。
 - **受影响任务**：M1 数据任务（武器/角色数据）。
 - **裁决（Fable 填写）**：
+
+### PI-042 M1-008b：手雷/烟雾/火箭/近战/弹药各成独立 kind 与目录，不塞进 `weapons`
+
+- **状态**：resolved（实现者裁决，待 Fable 复核）
+- **类别**：数据/架构
+- **提出者 / 日期**：M1 线程 / 2026-11-17
+- **问题**：M1-008 卡要求把 `us_mk2`、`ger_m24`、`us_m18`、`ger_nb39`、`ger_panzerfaust_60`、6 个近战、`data/ammo/` 放进 `data/weapons`，但 `weapon.schema.json` 的 `gameplay` 必填 `damage_torso_hp/recoil/spread/mag_reserve…`（枪械专属），且 `GameData::weapons` 被 sim/bots/sim-wasm 以下标消费（`WeaponParams::from_def` 等），把无后坐/无弹匣的投掷物塞进去要么放松全部必填、要么让每个消费方判 class。
+- **做法**：新增三个数据 kind：`explosive`（`data/explosives/`，class `frag_grenade|smoke_grenade|at_rocket`，按 class 的 `if/then` 约束 `gameplay`）、`melee`（`data/melee/`）、`ammo`（`data/ammo/`），各有 JSON Schema、Rust 类型（`ExplosiveDef/MeleeDef/AmmoDef`，`GameData::{explosives,melee,ammo}`）与 build.rs 类型化解析。`weapons/` 与 `GameData::weapons` 不变，因此武器下标与金哈希行为不受影响（只有 `DATA_HASH` 随 /data 变）。引用完整性：`data-validate` 的 `weapon` id 空间 = weapons ∪ explosives ∪ melee，loadout 引用手雷/近战 id 照常解析，且跨目录 id 唯一。单位：弹重用 `mass_kg`（`_g` 在白名单外），压制系数用 `suppression_mult`，弹性/摩擦用 `*_mult`。近战 `faction` 允许 `any`（枪托）。
+- **与卡的偏差**：目录名；`rate_of_fire_rpm_cap/rpm_cyclic` 对手雷/近战无意义，未加。
+- **受影响任务**：M1-007（loadout 引用）、M1-015（投掷物行为）、M1-013（近战）、M1-012（弹药阻力）。
+- **裁决（Fable 填写）**：

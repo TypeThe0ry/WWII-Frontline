@@ -1,0 +1,25 @@
+{
+  "id": "melee_rifle_butt",
+  "name_key": "weapon.melee_rifle_butt.name",
+  "faction": "any",
+  "class": "butt",
+  "gameplay": {
+    "damage_hp": 40,
+    "windup_s": 0.45,
+    "cooldown_s": 0.9,
+    "range_m": 1.3,
+    "backstab_angle_deg": 120,
+    "backstab_kill": true,
+    "ff_mult": 0
+  },
+  "_meta": {
+    "status": "initial",
+    "tunable": [
+      "gameplay.damage_hp",
+      "gameplay.windup_s",
+      "gameplay.cooldown_s",
+      "gameplay.range_m"
+    ],
+    "calibration_ref": "GAMEDESIGN §6.8 近战（待 M1-071）"
+  }
+}

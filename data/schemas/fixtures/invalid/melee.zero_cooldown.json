@@ -1,0 +1,26 @@
+{
+  "_expect_error": "must be > 0",
+  "id": "us_bad",
+  "name_key": "weapon.us_m3_knife.name",
+  "faction": "us",
+  "class": "knife",
+  "gameplay": {
+    "damage_hp": 70,
+    "windup_s": 0.25,
+    "cooldown_s": 0,
+    "range_m": 1.2,
+    "backstab_angle_deg": 120,
+    "backstab_kill": true,
+    "ff_mult": 0
+  },
+  "_meta": {
+    "status": "initial",
+    "tunable": [
+      "gameplay.damage_hp",
+      "gameplay.windup_s",
+      "gameplay.cooldown_s",
+      "gameplay.range_m"
+    ],
+    "calibration_ref": "GAMEDESIGN §6.8 近战（待 M1-071）"
+  }
+}

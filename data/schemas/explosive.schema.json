@@ -1,0 +1,323 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://frontline.invalid/schemas/explosive.schema.json",
+  "title": "Thrown / launched explosive (GAMEDESIGN 6.9; M1-008b)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "name_key",
+    "faction",
+    "class",
+    "historical",
+    "gameplay",
+    "_meta"
+  ],
+  "properties": {
+    "id": {
+      "$ref": "#/$defs/slug"
+    },
+    "name_key": {
+      "$ref": "#/$defs/i18n_key"
+    },
+    "faction": {
+      "enum": [
+        "us",
+        "ger"
+      ]
+    },
+    "class": {
+      "enum": [
+        "frag_grenade",
+        "smoke_grenade",
+        "at_rocket"
+      ]
+    },
+    "historical": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mass_kg",
+        "_source"
+      ],
+      "properties": {
+        "mass_kg": {
+          "$ref": "#/$defs/pos"
+        },
+        "_source": {
+          "$ref": "#/$defs/source"
+        }
+      }
+    },
+    "gameplay": {
+      "type": "object"
+    },
+    "_meta": {
+      "$ref": "#/$defs/meta"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "type": "object",
+        "properties": {
+          "class": {
+            "const": "frag_grenade"
+          }
+        },
+        "required": [
+          "class"
+        ]
+      },
+      "then": {
+        "type": "object",
+        "properties": {
+          "gameplay": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "fuse_s",
+              "throw_speed_mps",
+              "can_cook",
+              "bounce_mult",
+              "friction_mult",
+              "damage_max_hp",
+              "damage_radius_m",
+              "lethal_radius_m"
+            ],
+            "properties": {
+              "fuse_s": {
+                "$ref": "#/$defs/pos"
+              },
+              "throw_speed_mps": {
+                "$ref": "#/$defs/pos"
+              },
+              "damage_max_hp": {
+                "$ref": "#/$defs/pos"
+              },
+              "damage_radius_m": {
+                "$ref": "#/$defs/pos"
+              },
+              "lethal_radius_m": {
+                "$ref": "#/$defs/pos"
+              },
+              "can_cook": {
+                "type": "boolean"
+              },
+              "bounce_mult": {
+                "$ref": "#/$defs/unit01"
+              },
+              "friction_mult": {
+                "$ref": "#/$defs/unit01"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "type": "object",
+        "properties": {
+          "class": {
+            "const": "smoke_grenade"
+          }
+        },
+        "required": [
+          "class"
+        ]
+      },
+      "then": {
+        "type": "object",
+        "properties": {
+          "gameplay": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "fuse_s",
+              "throw_speed_mps",
+              "cloud_radius_m",
+              "expand_s",
+              "duration_s",
+              "decay_s"
+            ],
+            "properties": {
+              "fuse_s": {
+                "$ref": "#/$defs/pos"
+              },
+              "throw_speed_mps": {
+                "$ref": "#/$defs/pos"
+              },
+              "cloud_radius_m": {
+                "$ref": "#/$defs/pos"
+              },
+              "expand_s": {
+                "$ref": "#/$defs/pos"
+              },
+              "duration_s": {
+                "$ref": "#/$defs/pos"
+              },
+              "decay_s": {
+                "$ref": "#/$defs/pos"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "type": "object",
+        "properties": {
+          "class": {
+            "const": "at_rocket"
+          }
+        },
+        "required": [
+          "class"
+        ]
+      },
+      "then": {
+        "type": "object",
+        "properties": {
+          "gameplay": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "muzzle_velocity_mps",
+              "gravity_mps2",
+              "effective_range_m",
+              "max_range_m",
+              "heat_pen_mm",
+              "structure_damage_hp",
+              "damage_max_hp",
+              "damage_radius_m",
+              "backblast_length_m",
+              "backblast_damage_hp",
+              "single_use"
+            ],
+            "properties": {
+              "muzzle_velocity_mps": {
+                "$ref": "#/$defs/pos"
+              },
+              "effective_range_m": {
+                "$ref": "#/$defs/pos"
+              },
+              "max_range_m": {
+                "$ref": "#/$defs/pos"
+              },
+              "heat_pen_mm": {
+                "$ref": "#/$defs/pos"
+              },
+              "structure_damage_hp": {
+                "$ref": "#/$defs/pos"
+              },
+              "damage_max_hp": {
+                "$ref": "#/$defs/pos"
+              },
+              "damage_radius_m": {
+                "$ref": "#/$defs/pos"
+              },
+              "gravity_mps2": {
+                "$ref": "#/$defs/nonneg"
+              },
+              "backblast_length_m": {
+                "$ref": "#/$defs/nonneg"
+              },
+              "backblast_damage_hp": {
+                "$ref": "#/$defs/nonneg"
+              },
+              "single_use": {
+                "type": "boolean"
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "slug": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*$"
+    },
+    "i18n_key": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*(\\.[a-z0-9_]+)+$"
+    },
+    "pos": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "nonneg": {
+      "type": "number",
+      "minimum": 0
+    },
+    "unit01": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "meta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "tunable"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "initial",
+            "reviewed",
+            "measured"
+          ]
+        },
+        "tunable": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "calibration_ref": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "unverified": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "deviation_reason": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "source": {
+      "oneOf": [
+        {
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object"
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "id": "ger_panzerfaust_60",
+  "name_key": "weapon.ger_panzerfaust_60.name",
+  "faction": "ger",
+  "class": "at_rocket",
+  "historical": {
+    "mass_kg": 6.25,
+    "_source": "待 M1-070 按 REF §6 复核"
+  },
+  "gameplay": {
+    "muzzle_velocity_mps": 45,
+    "gravity_mps2": 9.81,
+    "effective_range_m": 60,
+    "max_range_m": 80,
+    "heat_pen_mm": 200,
+    "structure_damage_hp": 1000,
+    "damage_max_hp": 150,
+    "damage_radius_m": 5,
+    "backblast_length_m": 5,
+    "backblast_damage_hp": 30,
+    "single_use": true
+  },
+  "_meta": {
+    "status": "initial",
+    "tunable": [
+      "gameplay.muzzle_velocity_mps",
+      "gameplay.effective_range_m",
+      "gameplay.max_range_m",
+      "gameplay.heat_pen_mm",
+      "gameplay.structure_damage_hp",
+      "gameplay.damage_max_hp",
+      "gameplay.damage_radius_m",
+      "gameplay.backblast_length_m",
+      "gameplay.backblast_damage_hp"
+    ],
+    "calibration_ref": "GAMEDESIGN §6.9.4 Panzerfaust（待 M1-071）"
+  }
+}
