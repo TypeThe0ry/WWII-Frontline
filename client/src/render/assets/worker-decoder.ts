@@ -1,6 +1,6 @@
 /** Main-thread `Decoder` backed by real Workers (browser only; tests use `inlineDecoder`). */
 import type { Decoder, Decoded } from './index';
-import { handleDecode, transferables, type DecodeRequest, type DecodeResponse } from './decode-worker';
+import { handleDecode, transferables, type DecodeInit, type DecodeRequest, type DecodeResponse, type TextureTranscoder } from './decode-worker';
 
 /** Decodes on the calling thread; same code path as the Worker, used in tests and as a no-Worker fallback. */
 export const inlineDecoder: Decoder = {
@@ -11,9 +11,24 @@ export const inlineDecoder: Decoder = {
   },
 };
 
+/** Same as `inlineDecoder` but transcoding textures with `transcode` (tests, no-Worker fallback). */
+export function inlineDecoderWith(transcode: TextureTranscoder): Decoder {
+  return {
+    async decode(entryId, kind, bytes): Promise<Decoded> {
+      const r = await handleDecode({ id: 0, entryId, kind, bytes }, transcode);
+      if (!r.ok) throw new Error(r.error);
+      return { entryId, kind, bytes, data: r.result };
+    },
+  };
+}
+
 /** One Worker per pool slot; the pool (`WorkerPool`) guarantees at most one in-flight request per Worker instance it owns. */
-export function workerDecoder(size: number, create: () => Worker = () => new Worker(new URL('./decode-worker.ts', import.meta.url), { type: 'module' })): Decoder & { terminate(): void } {
-  const workers = Array.from({ length: size }, () => ({ w: create(), busy: false }));
+export function workerDecoder(size: number, create: () => Worker = () => new Worker(new URL('./decode-worker.ts', import.meta.url), { type: 'module' }), init?: DecodeInit): Decoder & { terminate(): void } {
+  const workers = Array.from({ length: size }, () => {
+    const w = create();
+    if (init) w.postMessage({ init }); // GPU caps + transcoder location; textures are then returned transcoded
+    return { w, busy: false };
+  });
   const waiting: (() => void)[] = [];
   let seq = 0;
   const acquire = async () => {

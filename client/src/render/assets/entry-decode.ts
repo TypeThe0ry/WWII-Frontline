@@ -122,6 +122,10 @@ export interface DecodedTexture {
   vkFormat: number;
   width: number;
   height: number;
+  typeSize: number;
+  depth: number;
+  layerCount: number;
+  faceCount: number;
   supercompressionScheme: number;
   channels: number;
   /** `fl_layout` key/value from the encoder: '' | 'RRRG' (normal maps keep X in R and Y in G). */
@@ -151,7 +155,8 @@ export function decodeTexture(b: Uint8Array): DecodedTexture {
     levels.push({ data: b.slice(dataAt + at, dataAt + at + len), uncompressedByteLength: dv.getUint32(head + i * 12 + 8, true) });
   }
   return {
-    vkFormat: dv.getUint32(4, true), width: dv.getUint32(12, true), height: dv.getUint32(16, true), supercompressionScheme: dv.getUint8(1),
+    vkFormat: dv.getUint32(4, true), width: dv.getUint32(12, true), height: dv.getUint32(16, true),
+    typeSize: dv.getUint32(8, true), depth: dv.getUint32(20, true), layerCount: dv.getUint32(24, true), faceCount: dv.getUint32(28, true), supercompressionScheme: dv.getUint8(1),
     channels: dv.getUint8(3), layout, dfd: b.slice(dfdAt, dfdAt + dfdLen), sgd: b.slice(sgdAt, sgdAt + sgdLen), levels,
   };
 }

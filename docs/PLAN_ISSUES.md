@@ -639,3 +639,15 @@
 - **未决/假设**：Crewman 的 `unlock` 省略（无小队编制，全队上限 8）；Officer 的近战取匕首（GD 未给，待 M1-070）；`ger_rifleman_pf60` 的步枪取 Kar98k ×12、另带 M24 ×1（卡只说"加 Panzerfaust 60"）；望远镜无数值。
 - **受影响任务**：M1-016..021（规则消费）、M1-014（弹药/换弹）、M1-064。
 - **裁决（Fable 填写）**：
+
+### PI-044 M1-006c：自带 Basis Universal 转码器（Apache-2.0），不用 Babylon 的 CDN 转码器
+
+- **状态**：resolved（实现者裁决，待 Fable 复核；回应 PI-038 第 2 点）
+- **类别**：客户端/许可证
+- **提出者 / 日期**：M1 线程 / 2026-11-17
+- **做法**：选"自带 transcoder"。把 Binomial 的 `basis_transcoder.{js,wasm}`（Apache-2.0，527 KB wasm + 57 KB js）原样放进 `client/public/basis/`，取自 `three@0.187.0` 的预编译产物（上游 Emscripten 构建，无需本仓库编译 C++），登记 LICENSES.md §5（含 SHA-256）。Babylon 默认从 `cdn.babylonjs.com` 拉 WASM，与自托管/离线策略冲突，不用。`babylonjs-ktx2decoder`（Apache-2.0）包内不含 wasm，也不适用。
+- **实现**：`ktx2-rebuild.ts` 把纹理条目（layout v1，不含容器头、最小 mip 在前）重新拼回标准 KTX2；`transcode.ts` 按 GPU 能力选 BC7 > ASTC 4×4 > ETC2 > BC3 > RGBA8 并转码全部 mip；`decode-worker.ts` 收到 `{init:{caps,basisBase}}` 后首次用到才加载模块（模块 Worker 无 `importScripts`，用 fetch 文本 + `new Function` 求值），之后纹理条目直接返回 `TranscodedTexture`（大 mip 在前，Transferable）；未配置时仍返回 `DecodedTexture`。`DecodedTexture` 补了 `typeSize/depth/layerCount/faceCount`。
+- **测试**：真实编码器产出的 16×16 UASTC 与 ETC1S fixtures（`fixtures/*.entry|*.ktx2`），两种源 × 五种目标格式的尺寸与完整 mip 链、RGBA8 梯度还原误差 ≤ 24/255、损坏数据抛错、模块只加载一次。
+- **体积**：不计入 `core`（按需加载，不在首包）；`manifest-budget` 的 `core` 由外部 size-report 提供（PI-036），应只统计首包。
+- **未做**：法线图 `RRRG` 布局的 BC5 路径（目前走 RGBA 格式，法线重建由材质着色器处理，M1-042）；Playwright 真机 GPU 上传与耗时（H-021）。
+- **裁决（Fable 填写）**：

@@ -84,3 +84,31 @@ describe('entry decoders', () => {
     expect(align4(5)).toBe(8);
   });
 });
+
+describe('texture transcoding in the decode path (M1-006c)', () => {
+  it('returns transcoded GPU data when a transcoder is configured, parsed data otherwise', async () => {
+    const { readFileSync } = await import('node:fs');
+    const { createRequire } = await import('node:module');
+    const { fileURLToPath } = await import('node:url');
+    const { instantiateBasis } = await import('./transcode');
+    const { basisTranscoder } = await import('./decode-worker');
+    const { inlineDecoderWith, inlineDecoder } = await import('./worker-decoder');
+    const dir = new URL('../../../public/basis/', import.meta.url);
+    const load = async () => {
+      const wasm = readFileSync(fileURLToPath(new URL('basis_transcoder.wasm', dir)));
+      return instantiateBasis(readFileSync(fileURLToPath(new URL('basis_transcoder.js', dir)), 'utf8'), wasm.buffer.slice(wasm.byteOffset, wasm.byteOffset + wasm.byteLength) as ArrayBuffer, {
+        require: createRequire(import.meta.url), __dirname: fileURLToPath(dir), __filename: fileURLToPath(new URL('basis_transcoder.js', dir)),
+      });
+    };
+    const bytes = new Uint8Array(readFileSync(fileURLToPath(new URL('./fixtures/tex_etc1s_16.entry', import.meta.url))));
+    const plain = await inlineDecoder.decode('t', 'texture', bytes);
+    expect((plain.data as { vkFormat?: number }).vkFormat).toBeDefined();
+    let loads = 0;
+    const dec = inlineDecoderWith(basisTranscoder({ caps: { astc: true }, basisBase: '/basis' }, (b) => { loads++; expect(b).toBe('/basis'); return load(); }));
+    for (let i = 0; i < 2; i++) {
+      const out = await dec.decode('t', 'texture', bytes);
+      expect(out.data).toMatchObject({ format: 'astc4x4', width: 16, height: 16 });
+    }
+    expect(loads).toBe(1); // module is loaded once per worker
+  });
+});
