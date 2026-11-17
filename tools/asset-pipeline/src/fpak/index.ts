@@ -4,5 +4,6 @@ export * from './reader.ts';
 export * from './sources.ts';
 export * from './entry-mesh.ts';
 export * from './entry-texture.ts';
+export * from './entry-audio.ts';
 export * from './opaque.ts';
 export * from './standalone.ts';

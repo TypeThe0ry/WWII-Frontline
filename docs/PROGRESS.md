@@ -429,6 +429,13 @@ blocked / in-progress / todo：无。M0 的 33 个任务全部已提交（M0-033
 - 遗留 / 需人工：PI-034 待 Fable 确认；蒙皮网格条目、浏览器端读取分别属 M1-045、M1-006；CI 墙钟 H-102。
 - 影响：M1-005 读 `assets/processed/packs.json`；M1-004 用 `kind:'audio'`、codec 3 槽位；条目 id 用 `@` 命名。
 
+### M1-004 素材管线：音频处理与打包 — partial — 2026-11-17 — 提交见 git log
+
+- 做了什么：`src/audio/`（ffmpeg 子进程封装、两遍 loudnorm、Opus-in-WebM + AAC-LC 编码、元数据剔除与自检、探测样本与 `chooseCodec`、`packAudio`）、`fpak/entry-audio.ts`（音频条目头）、`PROBE.md`、`audio-pack` 子命令（写 `audio-report.json`、`probe.json`）。
+- 关键实测：往返时长误差 ≤ 20 ms、相关系数 ≥ 0.95；归一后偏差 ≤ ±1 LU、TP ≤ -1 dBTP；1 s Opus 条目 ≤ 9 KB；30 x 5 s clips packed in 7.3 s (4 parallel ffmpeg jobs)。
+- 遗留 / 需人工：PI-035 待 Fable 确认；ffmpeg 许可证未核实；探测与取包由 M1-006/M1-062 实现。
+- 影响：M1-005 读 `work/audio-report.json` 与 `packs.json`；音频条目 id 用 `@opus`/`@aac`。
+
 ## 8. 如何维护本文件
 
 - **执行者**：收工前，在"任务日志"末尾追加本任务条目（`### 任务 ID 标题 — 状态 — 日期 — 提交 abc1234`，3–6 行：做了什么、关键实测数字、遗留问题/需人工事项、对后续任务的影响）；写入前重新读取文件末尾（并行执行者可能同时追加），只追加、不改别人的条目。数字必须来自实测，查不到写"未记录"。同时更新 `tasks/STATUS.md` 自己那一行。

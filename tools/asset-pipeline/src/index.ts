@@ -15,3 +15,4 @@ export * from './stats.ts';
 export * from './process.ts';
 export * from './fpak/index.ts';
 export * from './pack.ts';
+export * from './audio/index.ts';
