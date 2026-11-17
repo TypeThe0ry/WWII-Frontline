@@ -10,10 +10,14 @@ use crate::collision::CollisionData;
 use crate::components::*;
 use crate::data::GameData;
 use crate::hash::HashWriter;
+use crate::movement::{MoveParams, PlayerAuthState};
 use crate::ids::{EntityAllocator, EntityId, PlayerId, Tick, MAX_PLAYER_ID};
 use crate::schedule::build_schedule;
 use crate::step::{SimEvent, StepOutput};
 use crate::view::*;
+
+/// Role whose movement parameters every player uses until loadouts/roles are chosen (M0-012).
+pub const DEFAULT_ROLE: &str = "rifleman";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct MapId(pub u16);
@@ -58,7 +62,6 @@ pub struct World {
     alloc: EntityAllocator,
     players: Vec<PlayerView>,
     pending_events: Vec<SimEvent>,
-    collision: CollisionData,
 }
 
 /// Debug: panics unless ids are strictly ascending. Release: returns a sorted (stable, last
@@ -98,6 +101,12 @@ impl World {
             draws: 0,
         });
         ecs.insert_resource(TestJitter::default());
+        ecs.insert_resource(MoveParamsRes(
+            cfg.data
+                .role(DEFAULT_ROLE)
+                .and_then(|r| MoveParams::from_role(r, cfg.tick_hz).ok()),
+        ));
+        ecs.insert_resource(CollisionRes(collision.clone()));
         World {
             cfg,
             ecs,
@@ -105,12 +114,11 @@ impl World {
             alloc: EntityAllocator::new(),
             players: Vec::new(),
             pending_events: Vec::new(),
-            collision: collision.clone(),
         }
     }
 
     pub fn collision(&self) -> &CollisionData {
-        &self.collision
+        &self.ecs.resource::<CollisionRes>().0
     }
 
     pub fn config(&self) -> &SimConfig {
@@ -164,6 +172,7 @@ impl World {
                 LastInput {
                     cmd: neutral_input(),
                 },
+                Motion::from_auth(&PlayerAuthState::spawn(req.pos, req.yaw)),
             ))
             .id();
         self.ecs.resource_mut::<EntityTable>().insert(id, e);
@@ -191,6 +200,13 @@ impl World {
             entity: eid,
         });
         self.refresh_views();
+    }
+
+    /// Movement state of a player (what `self_state` / `Predictor.reset` carry).
+    pub fn player_state(&self, id: PlayerId) -> Option<PlayerAuthState> {
+        let (_, e) = *self.ecs.resource::<PlayerIndex>().map.get(&id)?;
+        let er = self.ecs.entity(e);
+        Some(er.get::<Motion>()?.to_auth(er.get::<Transform>()?))
     }
 
     pub fn view(&self) -> &dyn WorldView {
@@ -223,11 +239,12 @@ impl World {
         for (id, e) in table.sorted() {
             let er = self.ecs.entity(e);
             h.write_u16(id);
-            let (Some(p), Some(team), Some(t), Some(li)) = (
+            let (Some(p), Some(team), Some(t), Some(li), Some(mo)) = (
                 er.get::<Player>(),
                 er.get::<Team>(),
                 er.get::<Transform>(),
                 er.get::<LastInput>(),
+                er.get::<Motion>(),
             ) else {
                 continue;
             };
@@ -249,6 +266,13 @@ impl World {
             h.write_u8(c.weapon_slot);
             h.write_u8(c.aux);
             h.write_u16(c.view_tick);
+            h.write_f32(mo.vel.x);
+            h.write_f32(mo.vel.y);
+            h.write_f32(mo.vel.z);
+            h.write_u8(mo.stance as u8);
+            h.write_f32(mo.stance_blend);
+            h.write_u8(mo.stance_timer);
+            h.write_u8(u8::from(mo.grounded) | (u8::from(mo.blocked) << 1));
         }
         h.finish()
     }
@@ -310,10 +334,10 @@ impl WorldView for World {
         })
     }
     fn los(&self, from: Vec3, to: Vec3) -> bool {
-        self.collision.los(from, to)
+        self.collision().los(from, to)
     }
     fn height_at(&self, x: f32, z: f32) -> Option<f32> {
-        self.collision.height_at(x, z)
+        self.collision().height_at(x, z)
     }
     fn team_resources(&self, _team: Team) -> Resources {
         Resources::default() // TODO(M0-013)

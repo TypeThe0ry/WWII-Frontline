@@ -11,7 +11,9 @@ use bevy_ecs::prelude::*;
 use frontline_protocol::msg::input::InputCmd;
 use glam::Vec3;
 
+use crate::collision::CollisionData;
 use crate::ids::{EntityId, PlayerId, Tick};
+use crate::movement::{MoveParams, PlayerAuthState, Stance};
 
 #[derive(Component, Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Player {
@@ -103,3 +105,49 @@ impl SimRng {
 /// Test-only switch (feature `test-util`): enables the RNG jitter system.
 #[derive(Resource, Debug, Default)]
 pub struct TestJitter(pub bool);
+
+/// Movement state besides the pose (`Transform`): together they form a [`PlayerAuthState`].
+#[derive(Component, Debug, Clone, Copy, PartialEq)]
+pub struct Motion {
+    pub vel: Vec3,
+    pub stance: Stance,
+    pub stance_blend: f32,
+    pub stance_timer: u8,
+    pub grounded: bool,
+    pub blocked: bool,
+}
+
+impl Motion {
+    pub fn from_auth(a: &PlayerAuthState) -> Self {
+        Self {
+            vel: a.vel,
+            stance: a.stance,
+            stance_blend: a.stance_blend,
+            stance_timer: a.stance_timer,
+            grounded: a.grounded,
+            blocked: a.blocked,
+        }
+    }
+
+    pub fn to_auth(&self, t: &Transform) -> PlayerAuthState {
+        PlayerAuthState {
+            pos: t.pos,
+            vel: self.vel,
+            yaw: t.yaw,
+            pitch: t.pitch,
+            stance: self.stance,
+            stance_blend: self.stance_blend,
+            stance_timer: self.stance_timer,
+            grounded: self.grounded,
+            blocked: self.blocked,
+        }
+    }
+}
+
+/// Movement parameters of the (single, M0) role every player uses; `None` disables movement.
+#[derive(Resource, Debug, Clone, Copy)]
+pub struct MoveParamsRes(pub Option<MoveParams>);
+
+/// Terrain collision (owned here so that systems can query it).
+#[derive(Resource)]
+pub struct CollisionRes(pub CollisionData);

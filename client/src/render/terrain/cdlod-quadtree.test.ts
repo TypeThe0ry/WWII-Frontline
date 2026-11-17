@@ -331,7 +331,7 @@ describe('terrain_morph_seam: no cracks along shared node edges (acceptance 3)',
   });
 });
 
-describe('selection statistics (acceptance 2; timing is reported by cdlod-quadtree.bench.ts)', () => {
+describe('selection statistics (acceptance 2; timing test below)', () => {
   it('1000 random camera poses: visible node count median <= 450 (see note on the 150 lower bound)', () => {
     const qt = new CdlodQuadtree(layout, buildNodeBounds(layout, () => [1, 11]));
     const sel = makeSelection();

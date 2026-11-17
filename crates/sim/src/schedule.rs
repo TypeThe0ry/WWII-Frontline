@@ -1,11 +1,14 @@
 //! The single-threaded system schedule. Order is fixed with `.chain()`:
-//! `ingest_inputs -> (slot for later tasks: movement, weapons, ...) -> bookkeeping`.
+//! `ingest_inputs -> movement -> (slot for later tasks: weapons, ...) -> bookkeeping`.
 
 use bevy_ecs::prelude::*;
 use bevy_ecs::schedule::ExecutorKind;
 use frontline_protocol::quant::{dequant_yaw, pitch_i16_to_rad};
 
-use crate::components::{EntityTable, InputQueue, LastInput, PlayerIndex, Transform};
+use crate::components::{
+    CollisionRes, EntityTable, InputQueue, LastInput, Motion, MoveParamsRes, PlayerIndex, Transform,
+};
+use crate::movement::step_player;
 
 pub fn ingest_inputs(
     inputs: Res<InputQueue>,
@@ -20,6 +23,28 @@ pub fn ingest_inputs(
             t.yaw = dequant_yaw(cmd.yaw, 16);
             t.pitch = pitch_i16_to_rad(cmd.pitch);
             last.cmd = *cmd;
+        }
+    }
+}
+
+/// Moves every player with [`step_player`], ascending `EntityId` (ARCHITECTURE 6.10 stage 2).
+/// A player without a command this tick repeats its last one (input buffering is M0-018).
+pub fn movement(
+    params: Res<MoveParamsRes>,
+    collision: Res<CollisionRes>,
+    table: Res<EntityTable>,
+    mut q: Query<(&mut Transform, &mut Motion, &LastInput)>,
+) {
+    let Some(p) = params.0 else {
+        return;
+    };
+    for (_, e) in table.sorted() {
+        if let Ok((mut t, mut m, last)) = q.get_mut(e) {
+            let next = step_player(&m.to_auth(&t), &last.cmd, &p, &collision.0);
+            t.pos = next.pos;
+            t.yaw = next.yaw;
+            t.pitch = next.pitch;
+            *m = Motion::from_auth(&next);
         }
     }
 }
@@ -54,8 +79,8 @@ pub fn build_schedule() -> Schedule {
     let mut s = Schedule::default();
     s.set_executor_kind(ExecutorKind::SingleThreaded);
     #[cfg(feature = "test-util")]
-    s.add_systems((ingest_inputs, test_jitter, bookkeeping).chain());
+    s.add_systems((ingest_inputs, test_jitter, movement, bookkeeping).chain());
     #[cfg(not(feature = "test-util"))]
-    s.add_systems((ingest_inputs, bookkeeping).chain());
+    s.add_systems((ingest_inputs, movement, bookkeeping).chain());
     s
 }

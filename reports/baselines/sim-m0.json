@@ -1,0 +1,11 @@
+{
+  "kcc_step_median_us": 40.480,
+  "kcc_step_mean_us": 41.602,
+  "kcc_step_p99_us": 102.235,
+  "kcc_100_players_tick_median_ms": 4.1369,
+  "kcc_100_players_tick_mean_ms": 4.3962,
+  "kcc_100_players_tick_p99_ms": 5.0564,
+  "budget_kcc_step_us": 20.0,
+  "budget_kcc_100_players_tick_ms": 3.0,
+  "note": "M0-011, this machine (not the reference machine), release, enhanced-determinism, plain Instant harness"
+}

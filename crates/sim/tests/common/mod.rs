@@ -110,3 +110,53 @@ impl Rng {
         a + (b - a) * self.f32()
     }
 }
+
+// ---- movement helpers (M0-011) ----
+
+use frontline_protocol::msg::input::{buttons, InputCmd};
+use frontline_sim::{step_player, GameData, MoveParams, PlayerAuthState, Vec3};
+
+pub fn move_params() -> MoveParams {
+    MoveParams::from_role(GameData::embedded().role("rifleman").unwrap(), 30).unwrap()
+}
+
+/// Command with the given move axes (-127..127), yaw code (0 = facing +z) and button mask.
+pub fn cmd(move_x: i8, move_z: i8, yaw: u16, buttons: u16, aux: u8) -> InputCmd {
+    InputCmd {
+        seq: 0,
+        tick: 0,
+        move_x,
+        move_z,
+        yaw,
+        pitch: 0,
+        buttons,
+        weapon_slot: 0,
+        aux,
+        view_tick: 0,
+    }
+}
+
+pub fn fwd(buttons: u16, aux: u8) -> InputCmd {
+    cmd(0, 127, 0, buttons, aux)
+}
+
+pub const BTN_SPRINT: u16 = buttons::SPRINT;
+pub const BTN_CROUCH: u16 = buttons::CROUCH;
+pub const BTN_JUMP: u16 = buttons::JUMP;
+
+/// Spawns a player 0.3 m above the terrain and idles until grounded.
+pub fn settle(col: &CollisionData, p: &MoveParams, x: f32, z: f32) -> PlayerAuthState {
+    let y = col.height_at(x, z).unwrap() + 0.3;
+    let mut s = PlayerAuthState::spawn(Vec3::new(x, y, z), 0.0);
+    let idle = cmd(0, 0, 0, 0, 0);
+    for _ in 0..30 {
+        s = step_player(&s, &idle, p, col);
+    }
+    assert!(s.grounded, "player did not settle: {s:?}");
+    s
+}
+
+/// Flat terrain of `n` x `n` chunks at height `h`.
+pub fn flat(n: i32, h: f32) -> CollisionData {
+    synth_data(n, n, &move |_, _| h)
+}

@@ -25,12 +25,21 @@ rapier3d = { version = "=0.36.1", default-features = false, features = ["dim3", 
 
 [features]
 client-predict = []
-# Test-only system that draws RNG and jitters positions every tick (see world.rs).
-test-util = []
+# Test-only system that draws RNG and jitters positions every tick (see world.rs). Also turns on
+# `client-predict` so that the World-vs-PredictSim tests run under `--features test-util`.
+test-util = ["client-predict"]
 
 [[test]]
 name = "determinism_basic"
 required-features = ["test-util"]
+
+[[test]]
+name = "movement_world_vs_predict"
+required-features = ["client-predict"]
+
+[[bench]]
+name = "kcc"
+harness = false
 
 [[bench]]
 name = "world_step_empty"

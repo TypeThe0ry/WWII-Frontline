@@ -57,6 +57,32 @@ PYTHONPATH=tools/map-pipeline python3 -m map_pipeline validate data/maps/m0     
 (cd tools/map-pipeline && pip install pytest numpy && python3 -m pytest -q)
 ```
 
+## Terrain in the client (M0-023)
+
+The client fetches `/maps/m0/{meta.json,heightmap_1m.r16,heightmap_far_8m.r16}`. The binaries are git-ignored
+(see above), so they are copied into the git-ignored `client/public/maps/m0/` by one repeatable command, which
+first runs the map pipeline if `data/maps/m0` has no height maps (needs python3 + numpy):
+
+```sh
+pnpm -C client sync-map        # = node client/scripts/sync-map.mjs [mapId]; idempotent
+```
+
+`pnpm -C client dev`, `pnpm -C client build` and the Playwright `webServer` call it automatically. Vitest reads
+`data/maps/m0/*.r16` directly (the real-data tests skip with the regeneration command if they are missing).
+After regenerating the map with a different seed/tool version, refresh the numpy reference used by
+`terrain-data.test.ts` with `python3 client/scripts/gen-height-ref.py`.
+
+Open the terrain scene (software or real GPU):
+
+```sh
+pnpm -C client dev    # then   http://localhost:5173/?scene=terrain&debug=1
+#   &renderer=webgpu|webgl2   &terrain_debug=lod|morph|normal|height|flat   &cam=0|1|2
+#   &pos=x,y,z&target=x,y,z   &speed=m_per_frame   (WASD + mouse; click to lock the pointer)
+# window.__terrain = { stats(), heightAt(x,z), nodes(), project(x,z), setPose(), setStitch(), setDebug() }
+pnpm -C client test:e2e -- terrain.spec.ts            # software WebGL2 pixel checks + WebGPU compile check
+SAVE_SHOTS=1 pnpm -C client test:e2e -- terrain.spec.ts   # also refresh docs/measurements/M0-023/*.png
+```
+
 ## Directories
 
 See `README.md`. `assets/incoming/` is created manually and never committed; `assets/processed/`

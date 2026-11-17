@@ -1,5 +1,5 @@
 {
-  "_expect_error": "movement speeds must satisfy prone < crouch < walk < run < sprint",
+  "_expect_error": "movement speeds must satisfy",
   "id": "fixture_rifleman",
   "name_key": "role.fixture_rifleman.name",
   "faction_overrides": {
@@ -16,7 +16,7 @@
     "requires_squad_leader": false
   },
   "movement": {
-    "walk_mps": 1.8,
+    "walk_mps": 4.5,
     "run_mps": 4.2,
     "sprint_mps": 6,
     "crouch_mps": 2.5,

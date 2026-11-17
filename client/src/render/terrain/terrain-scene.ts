@@ -7,6 +7,8 @@ import { loadTerrainData } from './terrain-data';
 
 export interface TerrainHandle {
   terrain: Terrain;
+  /** Move the fly camera (world metres). */
+  setPose(pos: [number, number, number], target: [number, number, number]): void;
   /** Screen position (CSS px of the canvas) of the terrain surface point above world (x,z); for e2e probes. */
   project(x: number, z: number): { x: number; y: number; depth: number };
   loadMs: number;
@@ -57,6 +59,10 @@ export async function attachTerrain(ctx: RenderContext, params: URLSearchParams)
 
   const handle: TerrainHandle = {
     terrain,
+    setPose(p, t) {
+      cam.position = new Vector3(p[0], p[1], p[2]);
+      cam.setTarget(new Vector3(t[0], t[1], t[2]));
+    },
     project(x, z) {
       const eng = ctx.engine;
       const vp = cam.viewport.toGlobal(eng.getRenderWidth(), eng.getRenderHeight());

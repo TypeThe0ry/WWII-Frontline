@@ -10,6 +10,9 @@ pub mod components;
 pub mod data;
 pub mod hash;
 pub mod ids;
+pub mod movement;
+#[cfg(feature = "client-predict")]
+pub mod predict;
 pub mod rng;
 pub mod schedule;
 pub mod step;
@@ -20,6 +23,7 @@ pub use collision::{CollisionChunk, CollisionData, CollisionError};
 pub use components::Team;
 pub use data::GameData;
 pub use glam::Vec3;
+pub use movement::{step_player, MoveParams, PlayerAuthState, Stance};
 pub use ids::{EntityId, PlayerId, Tick};
 pub use step::{RuleChange, SimEvent, StepOutput};
 pub use view::WorldView;

@@ -78,7 +78,7 @@ export class Terrain {
   private readonly vp = new Matrix();
   private readonly t0 = performance.now();
   private debug: TerrainDebugMode;
-  private readonly stitch: boolean;
+  private stitch: boolean;
 
   constructor(scene: Scene, data: TerrainData, opts: TerrainOptions) {
     this.data = data;
@@ -154,9 +154,14 @@ export class Terrain {
     void GRID_CELLS;
   }
 
-  setDebug(mode: TerrainDebugMode): void {
-    this.debug = mode;
-    this.material.setFloat('uDebug', DEBUG_CODE[mode]);
+  /** Debug/control switch: false disables the edge masks so LOD seams show cracks. */
+  setStitch(on: boolean): void {
+    this.stitch = on;
+  }
+
+  setDebug(mode: TerrainDebugMode | string): void {
+    this.debug = parseTerrainDebug(mode);
+    this.material.setFloat('uDebug', DEBUG_CODE[this.debug]);
   }
 
   /** CPU surface height (same function as the vertex shader; inside the near block it equals sim `height_at`). */

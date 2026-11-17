@@ -79,7 +79,10 @@ fn run_hashes(seed: u64, ticks: u32) -> Vec<u64> {
 
 /// Regression pin of the 10 000-tick final hash. Update only on a deliberate change of the
 /// hash/RNG algorithm or of the hashed state layout, and say why in the commit.
-const GOLDEN_FINAL_HASH: u64 = 0x700d_c1b8_25c9_ae38;
+/// M0-011: re-pinned because `state_hash` now also folds the movement state (`Motion`:
+/// velocity, stance, blend/timer, grounded/blocked flags). With the empty collision used here
+/// every player is `blocked` and does not move, so only the new hashed fields changed.
+const GOLDEN_FINAL_HASH: u64 = 0x63ac_47f1_5c23_31d8;
 
 #[test]
 fn ten_thousand_ticks_identical_across_threads() {

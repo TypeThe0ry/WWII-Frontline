@@ -227,6 +227,26 @@ pub struct Movement {
     pub crouch_mps: f64,
     pub prone_mps: f64,
     pub stamina_max: f64,
+    // Optional fields added by M0-011 (PLAN_ISSUES PI-014); `MoveParams::from_role` requires
+    // the ones the movement code uses.
+    #[serde(default)]
+    pub crouch_walk_mps: Option<f64>,
+    #[serde(default)]
+    pub jump_height_m: Option<f64>,
+    #[serde(default)]
+    pub stance_transition_ms: Option<f64>,
+    #[serde(default)]
+    pub air_control_mult: Option<f64>,
+    #[serde(default)]
+    pub gravity_mps2: Option<f64>,
+    #[serde(default)]
+    pub max_slope_deg: Option<f64>,
+    #[serde(default)]
+    pub autostep_max_m: Option<f64>,
+    #[serde(default)]
+    pub autostep_min_width_m: Option<f64>,
+    #[serde(default)]
+    pub snap_to_ground_m: Option<f64>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize)]

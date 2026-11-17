@@ -68,19 +68,29 @@ function checkWeapon(doc, errors) {
 function checkRole(doc, errors) {
   const m = doc.movement;
   if (!m || typeof m !== 'object') return;
-  const order = ['prone_mps', 'crouch_mps', 'walk_mps', 'run_mps', 'sprint_mps'];
-  for (const k of order) {
+  for (const k of ['prone_mps', 'crouch_walk_mps', 'crouch_mps', 'walk_mps', 'run_mps', 'sprint_mps']) {
     if (num(m[k]) && (m[k] <= 0 || m[k] > 15)) {
       errors.push({ pointer: `/movement/${k}`, message: `${k} out of range (0,15]: ${m[k]}` });
     }
   }
-  for (let i = 1; i < order.length; i++) {
-    const a = m[order[i - 1]];
-    const b = m[order[i]];
+  // GAMEDESIGN 9.1: crouch run (2.4) is faster than standing walk (2.0), so the order is a
+  // partial one: prone < crouch_walk < crouch < run < sprint and prone < walk < run.
+  const pairs = [
+    ['prone_mps', 'crouch_walk_mps'],
+    ['crouch_walk_mps', 'crouch_mps'],
+    ['prone_mps', 'crouch_mps'],
+    ['crouch_mps', 'run_mps'],
+    ['prone_mps', 'walk_mps'],
+    ['walk_mps', 'run_mps'],
+    ['run_mps', 'sprint_mps'],
+  ];
+  for (const [lo, hi] of pairs) {
+    const a = m[lo];
+    const b = m[hi];
     if (num(a) && num(b) && !(a < b)) {
       errors.push({
-        pointer: `/movement/${order[i]}`,
-        message: `movement speeds must satisfy prone < crouch < walk < run < sprint (${order[i - 1]}=${a} >= ${order[i]}=${b})`,
+        pointer: `/movement/${hi}`,
+        message: `movement speeds must satisfy prone < crouch_walk < crouch < run < sprint and prone < walk < run (${lo}=${a} >= ${hi}=${b})`,
       });
     }
   }
