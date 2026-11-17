@@ -506,3 +506,7 @@ blocked / in-progress / todo：无。M0 的 33 个任务全部已提交（M0-033
 ### M1-013a 武器：SMG/卡宾/手枪验证与装填打断 — partial — 2026-11-17 — 提交见 git log
 - `crates/sim/tests/weapon_m1_013.rs`（8 项）、`examples/fire_rate_probe.rs`、`benches/weapon_step.rs`；`ShotSpawn.spread_seed`、装填打断、`ammo::mag_stack`。
 - 余项 013b：近战与副武器切换；见 PI-051。
+
+### M1-013b 近战：状态机与命中判定 — partial（余 013c 副武器切换）— 2026-11-17 — 提交见 git log
+
+`weapon/melee.rs`（状态机、`melee_trace`、背刺）、`MeleeTable`、`melee` 系统、`SimEvent::MeleeHit`；测试 `tests/weapon_melee.rs` 10 项（1.7/1.8 m、±35°/±36°、120°/119° 背刺、友军 0、windup/冷却、归属击杀、挡开火、冲刺、确定性）。决策见 PI-052。

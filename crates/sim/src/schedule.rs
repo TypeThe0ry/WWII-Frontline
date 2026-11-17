@@ -7,18 +7,21 @@ use frontline_protocol::quant::{dequant_yaw, pitch_i16_to_rad, quant_yaw};
 use glam::Vec3;
 
 use crate::components::{
-    CollisionRes, CurrentTick, EntityTable, EventBuf, Home, InputQueue, LastInput, Motion,
-    MoveParamsRes, Player, PlayerIndex, RespawnPolicyRes, SimCfgRes, SimRng, Team, Transform,
-    WeaponTable,
+    CollisionRes, CurrentTick, EntityTable, EventBuf, Home, InputQueue, LastInput, MeleeTable,
+    Motion, MoveParamsRes, Player, PlayerIndex, RespawnPolicyRes, SimCfgRes, SimRng, Team,
+    Transform, WeaponTable,
 };
+use crate::health::HitRec;
 use crate::health::{Health, HitLog, LifeState};
 use crate::movement::{step_player_ex, MoveCtx};
 use crate::projectile::{projectile_system as projectiles_system, Projectiles};
 use crate::respawn::{respawn_time, RespawnQueue, SpawnPoints};
 use crate::rng::{unit_f32, Purpose};
 use crate::step::SimEvent;
-use crate::weapon::{step_weapon, ShotCtx, WeaponState};
+use crate::weapon::melee::{melee_damage, melee_trace, step_melee, MELEE_WEAPON_IDX};
+use crate::weapon::{is_sprinting, step_weapon, MeleeState, ShotCtx, WeaponState};
 use crate::world::{neutral_input, DEFAULT_ROLE};
+use frontline_protocol::msg::input::buttons;
 
 pub fn ingest_inputs(
     inputs: Res<InputQueue>,
@@ -93,13 +96,14 @@ pub fn weapons(
         &Team,
         &mut WeaponState,
         &LifeState,
+        &MeleeState,
     )>,
 ) {
     let Some(mp) = params.0 else {
         return;
     };
     for (id, e) in table.sorted() {
-        let Ok((t, m, last, team, mut w, life)) = q.get_mut(e) else {
+        let Ok((t, m, last, team, mut w, life, melee)) = q.get_mut(e) else {
             continue;
         };
         if !life.is_alive() {
@@ -113,7 +117,12 @@ pub fn weapons(
             tick: tick.0,
             entity: id,
         };
-        let out = step_weapon(&mut w, wp, &last.cmd, &m.to_auth(t), &mp, ctx);
+        let mut cmd = last.cmd;
+        if !melee.is_idle() {
+            // A running melee action blocks the trigger (M1-013b).
+            cmd.buttons &= !buttons::FIRE;
+        }
+        let out = step_weapon(&mut w, wp, &cmd, &m.to_auth(t), &mp, ctx);
         if let Some(shot) = out.shot {
             let weapon = w.def_id;
             let v = wt.ballistics(weapon).map_or(0.0, |b| b.muzzle_velocity_mps);
@@ -127,6 +136,104 @@ pub fn weapons(
         }
         if out.dry_fire {
             events.0.push(SimEvent::DryFire { shooter: id });
+        }
+    }
+}
+
+/// Melee stage (M1-013b): advances every attacker's windup/cooldown and resolves strikes against
+/// the post-movement poses, ascending `EntityId`; kills are attributed through the [`HitLog`].
+#[allow(clippy::type_complexity)]
+pub fn melee(
+    mt: Res<MeleeTable>,
+    table: Res<EntityTable>,
+    mut log: ResMut<HitLog>,
+    mut events: ResMut<EventBuf>,
+    mut q: Query<(
+        &Transform,
+        &Motion,
+        &LastInput,
+        &Team,
+        &LifeState,
+        &mut MeleeState,
+        &mut Health,
+    )>,
+) {
+    struct Snap {
+        id: crate::ids::EntityId,
+        pos: Vec3,
+        yaw: f32,
+        team: Team,
+    }
+    let mut strikes: Vec<(crate::ids::EntityId, bool)> = Vec::new();
+    for (id, e) in table.sorted() {
+        let Ok((_, m, last, team, life, mut ms, _)) = q.get_mut(e) else {
+            continue;
+        };
+        let Some(p) = mt.params(*team) else {
+            continue;
+        };
+        if !life.is_alive() {
+            *ms = MeleeState::default();
+            continue;
+        }
+        let want = last.cmd.buttons & buttons::MELEE != 0;
+        let sprinting = is_sprinting(&last.cmd);
+        let out = step_melee(&mut ms, p, want, m.vault.is_none(), sprinting);
+        if out.strike {
+            strikes.push((id, ms.lunging));
+        }
+    }
+    if strikes.is_empty() {
+        return;
+    }
+    // Snapshot of the living players at strike time (poses do not change inside this stage).
+    let snaps: Vec<Snap> = table
+        .sorted()
+        .filter_map(|(id, e)| {
+            let (t, _, _, team, life, _, h) = q.get(e).ok()?;
+            (life.is_alive() && h.hp > 0.0).then_some(Snap {
+                id,
+                pos: t.pos,
+                yaw: t.yaw,
+                team: *team,
+            })
+        })
+        .collect();
+    for (aid, lunging) in strikes {
+        let Some(a) = snaps.iter().find(|s| s.id == aid) else {
+            continue;
+        };
+        let Some(p) = mt.params(a.team) else {
+            continue;
+        };
+        for tg in snaps.iter().filter(|s| s.id != aid && s.team != a.team) {
+            let Some(hit) = melee_trace(p, lunging, a.pos, a.yaw, tg.pos, tg.yaw) else {
+                continue;
+            };
+            let Some(e) = table.get(tg.id) else {
+                continue;
+            };
+            let Ok((_, _, _, _, _, _, mut hp)) = q.get_mut(e) else {
+                continue;
+            };
+            if hp.hp <= 0.0 {
+                continue; // already killed by an earlier strike this tick
+            }
+            let dmg = melee_damage(p, &hit, hp.hp);
+            hp.hp -= dmg;
+            events.0.push(SimEvent::MeleeHit {
+                attacker: aid,
+                target: tg.id,
+                damage_hp: dmg,
+                backstab: hit.backstab,
+            });
+            log.0.push(HitRec {
+                target: tg.id,
+                shooter: aid,
+                weapon: MELEE_WEAPON_IDX,
+                zone: crate::weapon::HitZone::Torso,
+                dist_m: hit.dist_m,
+            });
         }
     }
 }
@@ -295,6 +402,7 @@ pub fn build_schedule() -> Schedule {
             ingest_inputs,
             test_jitter,
             movement,
+            melee,
             weapons,
             projectiles_system,
             deaths,
@@ -308,6 +416,7 @@ pub fn build_schedule() -> Schedule {
         (
             ingest_inputs,
             movement,
+            melee,
             weapons,
             projectiles_system,
             deaths,

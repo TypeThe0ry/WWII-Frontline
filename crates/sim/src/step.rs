@@ -51,6 +51,13 @@ pub enum SimEvent {
         headshot: bool,
         dist_m: f32,
     },
+    /// A melee strike landed (M1-013b); `damage_hp` has been subtracted, `backstab` = rear kill.
+    MeleeHit {
+        attacker: EntityId,
+        target: EntityId,
+        damage_hp: f32,
+        backstab: bool,
+    },
     /// A dead player re-entered the world at `pos` (M0-013).
     Spawn {
         player: PlayerId,

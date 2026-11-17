@@ -205,6 +205,35 @@ pub struct WeaponTable {
     ballistics: Vec<BallisticsParams>,
 }
 
+/// Melee parameters per team (the bayonet of that faction; GAMEDESIGN 6.8, PI-052).
+#[derive(Resource, Debug, Clone, Copy, Default)]
+pub struct MeleeTable {
+    us: Option<crate::weapon::MeleeParams>,
+    ger: Option<crate::weapon::MeleeParams>,
+}
+
+impl MeleeTable {
+    pub fn new(data: &GameData, hz: u8) -> Self {
+        use crate::data::defs::{MeleeClass, MeleeFaction};
+        let pick = |f: MeleeFaction| {
+            data.melee
+                .iter()
+                .find(|m| m.class == MeleeClass::Bayonet && m.faction == f)
+                .map(|m| crate::weapon::MeleeParams::from_def(m, hz))
+        };
+        Self {
+            us: pick(MeleeFaction::Us),
+            ger: pick(MeleeFaction::Ger),
+        }
+    }
+    pub fn params(&self, team: Team) -> Option<&crate::weapon::MeleeParams> {
+        match team {
+            Team::Us => self.us.as_ref(),
+            Team::Ger => self.ger.as_ref(),
+        }
+    }
+}
+
 impl WeaponTable {
     pub fn new(data: &GameData, hz: u8) -> Self {
         Self {
