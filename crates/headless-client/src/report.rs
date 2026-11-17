@@ -24,6 +24,8 @@ pub struct Corrections {
     pub unknown_acks: u64,
     /// Largest rollback error in metres.
     pub max_err_m: f64,
+    /// Largest `pos_corr` error that stayed within the 5 cm tolerance.
+    pub tolerance_max_err_m: f64,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -164,6 +166,7 @@ pub fn aggregate(
         t.initial_syncs += k.initial_syncs;
         t.unknown_acks += k.unknown_acks;
         t.max_err_m = t.max_err_m.max(k.max_err_m);
+        t.tolerance_max_err_m = t.tolerance_max_err_m.max(k.tolerance_max_err_m);
     }
     a.keyframe_ratio = if rec == 0 {
         0.0

@@ -40,6 +40,7 @@ pub fn build_ctx(args: &Args) -> Result<Ctx, String> {
         map: loaded,
         empty_collision: frontline_sim::CollisionData::empty(),
         waypoints,
+        trace: std::env::var("HEADLESS_TRACE").is_ok_and(|v| v == "1"),
     })
 }
 
@@ -60,6 +61,7 @@ pub async fn run(args: &Args, ctx: Ctx) -> Report {
             map: ctx.map.clone(),
             empty_collision: frontline_sim::CollisionData::empty(),
             waypoints: ctx.waypoints.clone(),
+            trace: ctx.trace,
         };
         if spread {
             c.target.bind_ip = Some(spread_ip(i));

@@ -103,6 +103,9 @@ pub struct Report {
     pub tick_skipped_slots_total: u64,
     pub input_queue_full_total: u64,
     pub elapsed_s: f64,
+    /// Gameplay events seen by the sim during the run (shots, hits, kills, spawns; M0-027 load
+    /// reports).
+    pub events: EventTally,
 }
 
 fn quantiles(samples_ns: &mut [u32]) -> Quantiles {
@@ -581,6 +584,7 @@ impl<C: Clock> SimLoop<C> {
             tick_skipped_slots_total: self.metrics.tick_skipped_slots_total.get(),
             input_queue_full_total: self.metrics.input_queue_full_total.get(),
             elapsed_s: elapsed.as_secs_f64(),
+            events: self.tally,
         }
     }
 }

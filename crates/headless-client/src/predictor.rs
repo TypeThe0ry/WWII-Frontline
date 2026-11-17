@@ -39,9 +39,13 @@ pub struct Predictor {
     base: Option<PlayerAuthState>,
     ring: VecDeque<Entry>,
     spawned: bool,
+    /// The server says the player is dead: its inputs are ignored there, so nothing is predicted.
+    frozen: bool,
     pub stats: Corrections,
     pub overflows: u64,
     pub replayed: u64,
+    /// Error of the most recent rollback (diagnostics, `HEADLESS_TRACE=1`).
+    pub last_err_m: f32,
 }
 
 fn dist(a: Vec3, b: Vec3) -> f32 {
@@ -71,9 +75,11 @@ impl Predictor {
             base: None,
             ring: VecDeque::with_capacity(RING_CAPACITY + 1),
             spawned: false,
+            frozen: false,
             stats: Corrections::default(),
             overflows: 0,
             replayed: 0,
+            last_err_m: 0.0,
         }
     }
 
@@ -88,7 +94,9 @@ impl Predictor {
 
     /// Simulates `cmd` and remembers it until the server acknowledges it.
     pub fn push(&mut self, cmd: &InputCmd) {
-        let state = if self.spawned {
+        let state = if self.spawned && self.frozen {
+            self.sim.state()
+        } else if self.spawned {
             self.sim.step_player(cmd)
         } else {
             PlayerAuthState::spawn(Vec3::ZERO, 0.0)
@@ -106,7 +114,14 @@ impl Predictor {
     /// Processes the `self_state` of one snapshot. `corr` is the metric `pos_corr`; `death_window`
     /// says whether a rollback now is explained by a death/respawn teleport. Returns the
     /// `pred_hash` to report together with this snapshot's ack.
-    pub fn on_self(&mut self, ack_seq: u16, corr: Option<[f32; 3]>, death_window: bool) -> u8 {
+    pub fn on_self(
+        &mut self,
+        ack_seq: u16,
+        corr: Option<[f32; 3]>,
+        alive: bool,
+        death_window: bool,
+    ) -> u8 {
+        self.frozen = !alive;
         let newest = self.ring.back().map_or(self.base_seq, |e| e.cmd.seq);
         let behind = ack_seq.wrapping_sub(self.base_seq) as i16;
         let ahead = ack_seq.wrapping_sub(newest) as i16;
@@ -138,6 +153,8 @@ impl Predictor {
                     let err0 = dist(r.pos, auth);
                     if err0 <= RECONCILE_THRESHOLD_M {
                         self.stats.tolerance_kept += 1;
+                        self.stats.tolerance_max_err_m =
+                            self.stats.tolerance_max_err_m.max(f64::from(err0));
                     } else {
                         self.rollback(r, auth, death_window);
                     }
@@ -157,10 +174,16 @@ impl Predictor {
 
     fn rollback(&mut self, mut r: PlayerAuthState, auth: Vec3, death_window: bool) {
         let old = self.sim.state().pos;
+        if dist(r.pos, auth) >= SNAP_DISTANCE_M && !self.frozen {
+            // A teleport (respawn): the server starts the new life from a fresh state, so the
+            // old velocity / stance must not leak into the replay.
+            r = PlayerAuthState::spawn(auth, r.yaw);
+        }
         r.pos = auth;
         self.base = Some(r);
         self.replay_from(r);
         let err = dist(old, self.sim.state().pos);
+        self.last_err_m = err;
         let s = &mut self.stats;
         s.total += 1;
         if err >= SNAP_DISTANCE_M {
@@ -176,7 +199,11 @@ impl Predictor {
     fn replay_from(&mut self, base: PlayerAuthState) {
         self.sim.reset_to(&base, Tick(0));
         for e in self.ring.iter_mut() {
-            e.state = self.sim.step_player(&e.cmd);
+            e.state = if self.frozen {
+                base
+            } else {
+                self.sim.step_player(&e.cmd)
+            };
         }
         self.replayed += self.ring.len() as u64;
     }
@@ -219,7 +246,7 @@ mod tests {
             p.push(&cmd(s, 0));
         }
         assert!(p.pos().is_none());
-        let h = p.on_self(0, Some([100.0, 5.0, 50.0]), false);
+        let h = p.on_self(0, Some([100.0, 5.0, 50.0]), true, false);
         assert!(p.spawned());
         assert_eq!(p.stats.initial_syncs, 1);
         assert_eq!(p.stats.total, 0);
@@ -231,12 +258,12 @@ mod tests {
     #[test]
     fn matching_corr_within_tolerance_keeps_prediction() {
         let mut p = p();
-        p.on_self(0, Some([10.0, 2.0, 10.0]), false);
+        p.on_self(0, Some([10.0, 2.0, 10.0]), true, false);
         for s in 1..=4 {
             p.push(&cmd(s, 0));
         }
         let at2 = p.ring[1].state.pos;
-        p.on_self(2, Some([at2.x + 0.01, at2.y, at2.z]), false);
+        p.on_self(2, Some([at2.x + 0.01, at2.y, at2.z]), true, false);
         assert_eq!(p.stats.tolerance_kept, 1);
         assert_eq!(p.stats.total, 0);
         assert_eq!(p.ring.len(), 2); // 3 and 4 remain
@@ -245,11 +272,11 @@ mod tests {
     #[test]
     fn far_corr_rolls_back_counts_and_snaps() {
         let mut p = p();
-        p.on_self(0, Some([10.0, 2.0, 10.0]), false);
+        p.on_self(0, Some([10.0, 2.0, 10.0]), true, false);
         for s in 1..=4 {
             p.push(&cmd(s, 0));
         }
-        let h = p.on_self(2, Some([20.0, 2.0, 10.0]), true);
+        let h = p.on_self(2, Some([20.0, 2.0, 10.0]), true, true);
         assert_eq!(p.stats.total, 1);
         assert_eq!(p.stats.snaps, 1);
         assert_eq!(p.stats.around_death, 1);
@@ -262,48 +289,68 @@ mod tests {
     #[test]
     fn small_rollback_is_not_a_snap() {
         let mut p = p();
-        p.on_self(0, Some([10.0, 2.0, 10.0]), false);
+        p.on_self(0, Some([10.0, 2.0, 10.0]), true, false);
         p.push(&cmd(1, 0));
         let r = p.ring[0].state.pos;
-        p.on_self(1, Some([r.x + 0.3, r.y, r.z]), false);
+        p.on_self(1, Some([r.x + 0.3, r.y, r.z]), true, false);
         assert_eq!((p.stats.total, p.stats.snaps), (1, 0));
     }
 
     #[test]
     fn unknown_future_and_stale_acks() {
         let mut p = p();
-        p.on_self(0, Some([10.0, 2.0, 10.0]), false);
+        p.on_self(0, Some([10.0, 2.0, 10.0]), true, false);
         p.push(&cmd(1, 0));
         p.push(&cmd(2, 0));
-        p.on_self(9, None, false); // never sent
+        p.on_self(9, None, true, false); // never sent
         assert_eq!(p.stats.unknown_acks, 1);
-        p.on_self(2, None, false);
+        p.on_self(2, None, true, false);
         assert_eq!(p.ring.len(), 0);
-        p.on_self(1, Some([500.0, 2.0, 10.0]), false); // older than base: ignored
+        p.on_self(1, Some([500.0, 2.0, 10.0]), true, false); // older than base: ignored
         assert_eq!(p.stats.total, 0);
     }
 
     #[test]
     fn ring_overflow_advances_base() {
         let mut p = p();
-        p.on_self(0, Some([10.0, 2.0, 10.0]), false);
+        p.on_self(0, Some([10.0, 2.0, 10.0]), true, false);
         for s in 1..=(RING_CAPACITY as u16 + 10) {
             p.push(&cmd(s, 0));
         }
         assert_eq!(p.ring.len(), RING_CAPACITY);
         assert_eq!(p.overflows, 10);
         // acking a seq that fell off the ring's tail is "stale", not a crash
-        p.on_self(5, None, false);
+        p.on_self(5, None, true, false);
+    }
+
+    #[test]
+    fn dead_player_is_frozen_after_one_rollback() {
+        let mut p = p();
+        p.on_self(0, Some([10.0, 2.0, 10.0]), true, false);
+        for s in 1..=3 {
+            p.push(&cmd(s, 127));
+        }
+        // the server says: dead, standing where it died (differs from the prediction)
+        p.on_self(1, Some([10.0, 2.0, 10.0]), false, true);
+        let after = p.pos().unwrap();
+        for s in 4..=8 {
+            p.push(&cmd(s, 127)); // neutral on a real client; even full forward must not move it
+        }
+        assert_eq!(p.pos().unwrap(), after);
+        // the same authoritative position again: within tolerance, no second rollback
+        p.on_self(5, Some([after.x, after.y, after.z]), false, true);
+        assert!(p.stats.total <= 1, "{:?}", p.stats);
+        assert_eq!(p.stats.tolerance_kept + p.stats.total, 2);
     }
 
     #[test]
     fn seq_wraparound() {
         let mut p = Predictor::new(1, 0, 3, &CollisionData::empty(), 65534);
-        p.on_self(65533, Some([10.0, 2.0, 10.0]), false);
+        p.on_self(65533, Some([10.0, 2.0, 10.0]), true, false);
         for s in [65534u16, 65535, 0, 1] {
             p.push(&cmd(s, 0));
         }
-        p.on_self(0, None, false);
+        p.on_self(0, None, true, false);
         assert_eq!(p.ring.len(), 1);
         assert_eq!(p.stats.unknown_acks, 0);
     }

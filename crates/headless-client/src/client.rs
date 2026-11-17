@@ -33,6 +33,8 @@ pub struct Ctx {
     pub map: Option<Arc<MapData>>,
     pub empty_collision: frontline_sim::CollisionData,
     pub waypoints: Vec<[f32; 2]>,
+    /// Print every rollback to stderr (`HEADLESS_TRACE=1`).
+    pub trace: bool,
 }
 
 /// Raw per-second series of one client, for pooling in the aggregate.
@@ -232,7 +234,16 @@ pub async fn run_client(ctx: Arc<Ctx>, id: u32) -> (ClientReport, Series) {
                                     life.alive = alive_now;
                                     corr = ss.pos_corr.map(|q| q.to_meters());
                                 }
-                                report_hash = pred.on_self(s.ack_input_seq, corr, life.death_window(now));
+                                let before = pred.stats.total;
+                                report_hash = pred.on_self(s.ack_input_seq, corr, life.alive, life.death_window(now));
+                                if ctx.trace && pred.stats.total != before {
+                                    eprintln!(
+                                        "[client {id} +{:.2}s] rollback #{}: err {:.3} m, snapshot tick {}, ack_seq {}, health {:?}, alive {}, corr {:?}",
+                                        now.saturating_duration_since(t_start).as_secs_f64(),
+                                        pred.stats.total, pred.last_err_m, s.tick, s.ack_input_seq,
+                                        last_health, life.alive, corr,
+                                    );
+                                }
                                 ack_tick_low = s.tick as u16;
                             }
                             Err(CodecError::MissingBaseline) => rep.missing_baseline += 1,
