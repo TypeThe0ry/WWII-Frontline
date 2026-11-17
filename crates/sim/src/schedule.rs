@@ -8,14 +8,14 @@ use glam::Vec3;
 
 use crate::components::{
     CollisionRes, CurrentTick, EntityTable, EventBuf, Home, InputQueue, LastInput, MeleeTable,
-    Motion, MoveParamsRes, Player, PlayerIndex, RespawnPolicyRes, SimCfgRes, SimRng, Team,
-    Transform, WeaponTable,
+    Motion, MoveParamsRes, PlayerIndex, RespawnPolicyRes, SimCfgRes, SimRng, Team, Transform,
+    WeaponTable,
 };
 use crate::health::HitRec;
 use crate::health::{Health, HitLog, LifeState};
 use crate::movement::{step_player_ex, MoveCtx};
 use crate::projectile::{projectile_system as projectiles_system, Projectiles};
-use crate::respawn::{respawn_time, RespawnQueue, SpawnPoints};
+use crate::respawn::{RespawnQueue, SpawnPoints};
 use crate::rng::{unit_f32, Purpose};
 use crate::step::SimEvent;
 use crate::weapon::melee::{melee_damage, melee_trace, step_melee, MELEE_WEAPON_IDX};
@@ -33,8 +33,8 @@ pub fn ingest_inputs(
             continue; // input for an unknown player is ignored
         };
         if let Ok((mut t, mut last, life)) = q.get_mut(*e) {
-            if !life.is_alive() {
-                continue; // dead players take no input (M0-013)
+            if life.is_dead() {
+                continue; // dead players take no input (M0-013); downed ones keep theirs (M1-016)
             }
             t.yaw = dequant_yaw(cmd.yaw, 16);
             t.pitch = pitch_i16_to_rad(cmd.pitch);
@@ -80,7 +80,7 @@ pub fn movement(
 
 /// Weapon stage (ARCHITECTURE 6.10 stage 4a): fire state machine, reload, recoil; spawns the
 /// projectiles of this tick's shots. Uses the post-movement pose, ascending `EntityId`.
-#[allow(clippy::too_many_arguments)]
+#[allow(clippy::too_many_arguments, clippy::type_complexity)]
 pub fn weapons(
     wt: Res<WeaponTable>,
     params: Res<MoveParamsRes>,
@@ -97,13 +97,14 @@ pub fn weapons(
         &mut WeaponState,
         &LifeState,
         &MeleeState,
+        &crate::medical::FireLock,
     )>,
 ) {
     let Some(mp) = params.0 else {
         return;
     };
     for (id, e) in table.sorted() {
-        let Ok((t, m, last, team, mut w, life, melee)) = q.get_mut(e) else {
+        let Ok((t, m, last, team, mut w, life, melee, lock)) = q.get_mut(e) else {
             continue;
         };
         if !life.is_alive() {
@@ -118,7 +119,7 @@ pub fn weapons(
             entity: id,
         };
         let mut cmd = last.cmd;
-        if !melee.is_idle() {
+        if !melee.is_idle() || tick.0 .0 < lock.0 .0 {
             // A running melee action blocks the trigger (M1-013b).
             cmd.buttons &= !buttons::FIRE;
         }
@@ -191,7 +192,7 @@ pub fn melee(
         .sorted()
         .filter_map(|(id, e)| {
             let (t, _, _, team, life, _, h) = q.get(e).ok()?;
-            (life.is_alive() && h.hp > 0.0).then_some(Snap {
+            (!life.is_dead() && h.hp > 0.0).then_some(Snap {
                 id,
                 pos: t.pos,
                 yaw: t.yaw,
@@ -233,65 +234,15 @@ pub fn melee(
                 weapon: MELEE_WEAPON_IDX,
                 zone: crate::weapon::HitZone::Torso,
                 dist_m: hit.dist_m,
+                damage: dmg,
+                kind: crate::combat::DamageKind::Melee,
+                direct_kia: hit.backstab,
             });
         }
     }
 }
 
-/// Rules stage, deaths (ARCHITECTURE 6.10 stage 5): turns the lethal hits of this tick into
-/// [`LifeState::Dead`] + [`SimEvent::Kill`] and schedules the respawn. Attribution is the last
-/// damager (the one whose hit took `hp` to 0 or below); GAMEDESIGN 7.5 assists are M1-016.
-#[allow(clippy::too_many_arguments)]
-pub fn deaths(
-    tick: Res<CurrentTick>,
-    cfg: Res<SimCfgRes>,
-    policy: Res<RespawnPolicyRes>,
-    table: Res<EntityTable>,
-    mut log: ResMut<HitLog>,
-    mut queue: ResMut<RespawnQueue>,
-    mut events: ResMut<EventBuf>,
-    mut q: Query<(&Player, &mut Health, &mut LifeState)>,
-) {
-    if log.0.is_empty() {
-        return;
-    }
-    for rec in std::mem::take(&mut log.0) {
-        let Some(victim_e) = table.get(rec.target) else {
-            continue;
-        };
-        let killer = table
-            .get(rec.shooter)
-            .and_then(|e| q.get(e).ok())
-            .map(|(p, _, _)| p.id);
-        let Ok((vp, mut hp, mut life)) = q.get_mut(victim_e) else {
-            continue;
-        };
-        if !life.is_alive() || hp.hp > 0.0 {
-            continue;
-        }
-        hp.hp = 0.0;
-        let t_kia = tick.0;
-        let respawn_tick =
-            respawn_time(t_kia, policy.0.pick_tick(t_kia, cfg.hz), &policy.0, cfg.hz);
-        let weapon = rec.weapon as u8;
-        let headshot = rec.zone == crate::weapon::HitZone::Head;
-        *life = LifeState::Dead {
-            t_kia,
-            killer,
-            weapon,
-            headshot,
-            respawn_tick,
-        };
-        queue.schedule(vp.id, respawn_tick);
-        events.0.push(SimEvent::Kill {
-            victim: vp.id,
-            killer,
-            weapon,
-            headshot,
-            dist_m: rec.dist_m,
-        });
-    }
-}
+pub use crate::medical::{deaths, medical};
 
 /// Rules stage, respawns: players whose spawn tick has come re-enter at their team's spawn point
 /// (plus a deterministic offset of at most `spawn_jitter_m`), full health and weapon, facing the
@@ -329,7 +280,7 @@ pub fn respawns(
         else {
             continue;
         };
-        if life.is_alive() {
+        if !life.is_dead() {
             continue;
         }
         let base = points.team(*team).unwrap_or(home.pos);
@@ -409,6 +360,7 @@ pub fn build_schedule() -> Schedule {
             throwables,
             projectiles_system,
             deaths,
+            medical,
             respawns,
             bookkeeping,
         )
@@ -424,6 +376,7 @@ pub fn build_schedule() -> Schedule {
             throwables,
             projectiles_system,
             deaths,
+            medical,
             respawns,
             bookkeeping,
         )

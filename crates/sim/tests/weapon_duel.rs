@@ -199,7 +199,8 @@ fn duel_is_deterministic_and_golden() {
 /// M0-013 re-pin (was 0x2ced_8d49_9901_efde): the duel now ends in a kill and the victim
 /// respawns, so the 600-tick sequence contains `Kill` / `Spawn` events and the duel goes on after
 /// the respawn (before, the loser stayed at hp <= 0 and the winner stopped shooting).
-const GOLDEN_DUEL_EVENTS: u64 = 0x3849_3e76_201d_9cd5;
+/// M1-016: re-pinned (0x3849_3e76_201d_9cd5 before): lethal hits now down first, adding events.
+const GOLDEN_DUEL_EVENTS: u64 = 0xff00_043d_6c81_f8cf;
 
 fn script(n: usize, seed: u64) -> Vec<InputCmd> {
     let mut r = Rng(seed);

@@ -126,7 +126,14 @@ fn torso_damage_matches_falloff_at_50_300_600_m() {
                 * frontline_sim::weapon::ballistics::falloff(&def.gameplay.falloff, d)
                 * mult;
             assert!((dmg - want).abs() < 0.01, "{dmg} vs {want}");
-            assert!((o.hp - (100.0 - dmg)).abs() < 1e-3, "health conserved");
+            // A hit that takes the 100 hp to 0 downs the target with 40 downed hp (M1-016).
+            let want_hp = if 100.0 - dmg < 1e-3 {
+                40.0
+            } else {
+                100.0 - dmg
+            };
+            // (a downed target has already bled one tick when the test reads it)
+            assert!((o.hp - want_hp).abs() < 0.05, "health conserved");
         }
     }
 }

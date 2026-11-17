@@ -73,7 +73,8 @@ fn shots_to_kill(team: Team, weapon: &str, dist: f32, aim_y: f32) -> (u32, HitZo
                     hits += 1;
                     zone = Some(z);
                 }
-                SimEvent::Kill { victim, killer, .. } => {
+                // The hit that takes a victim down (or kills outright) ends the count (M1-016).
+                SimEvent::Downed { victim, killer, .. } | SimEvent::Kill { victim, killer, .. } => {
                     assert_eq!((victim, killer), (VICTIM, Some(SHOOTER)));
                     return (hits, zone.unwrap());
                 }
@@ -550,7 +551,7 @@ fn skirmish(seed: u64, n: u8, ticks: u32) -> Skirmish {
         }
         let ev = out.world.step(&inputs).events;
         for id in 0..2 * n {
-            let alive = matches!(out.world.player_life(id), Some(LifeState::Alive));
+            let alive = !matches!(out.world.player_life(id), Some(LifeState::Dead { .. }));
             if was_alive[usize::from(id)] && !alive {
                 out.deaths_seen += 1;
             }
@@ -577,7 +578,9 @@ fn twenty_players_fight_without_panic_and_counts_balance() {
         .count() as u32;
     let pending = s.world.respawn_pending() as u32;
     println!("20 players, 3000 ticks: {kills} kills, {} deaths observed, {spawns} spawns, {pending} pending", s.deaths_seen);
-    assert!(kills >= 10, "a real fight: {kills}");
+    // Downed players bleed for 80 s before they count as KIA (M1-016), so fewer deaths land inside
+    // the 3000 ticks than in M0.
+    assert!(kills >= 5, "a real fight: {kills}");
     assert_eq!(kills, s.deaths_seen, "kills == deaths");
     assert!(spawns + pending >= kills);
     assert_eq!(
@@ -592,7 +595,8 @@ fn twenty_players_fight_without_panic_and_counts_balance() {
     assert_eq!(dead, pending);
 }
 
-const GOLDEN_SKIRMISH_FINAL: u64 = 0x90cd_4193_862c_a94c;
+/// M1-016: re-pinned (0x90cd_4193_862c_a94c before): lethal hits now down players first.
+const GOLDEN_SKIRMISH_FINAL: u64 = 0x5eeb_1d5c_73c0_7f81;
 
 #[test]
 fn deaths_and_respawns_are_deterministic_5000_ticks() {

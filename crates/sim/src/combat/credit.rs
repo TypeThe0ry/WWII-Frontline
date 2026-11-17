@@ -1,6 +1,8 @@
 //! Recent-damage record per victim for kill attribution (GAMEDESIGN 7.5, input of M1-016):
 //! who hurt the victim in the last 15 s and for how much, plus the last hit.
 
+use bevy_ecs::prelude::Component;
+
 use crate::ids::{EntityId, Tick};
 
 /// Attribution window, seconds.
@@ -13,7 +15,7 @@ pub struct DamageEntry {
     pub tick: Tick,
 }
 
-#[derive(Debug, Clone, Default, PartialEq)]
+#[derive(Component, Debug, Clone, Default, PartialEq)]
 pub struct RecentDamage {
     entries: Vec<DamageEntry>,
 }
