@@ -17,6 +17,7 @@ impl Server {
     fn start(extra: &[&str]) -> Server {
         let mut child = Command::new(env!("CARGO_BIN_EXE_frontline-server"))
             .args(["--metrics-port", "0", "--ws-port", "0", "--wt-port", "0"])
+            .arg("--empty-world") // these tests do not need terrain (M0-018 loads it at startup)
             .args(extra)
             .stdout(Stdio::piped())
             .stderr(Stdio::inherit())
@@ -187,4 +188,52 @@ fn invalid_configuration_exits_nonzero_with_readable_error() {
     assert_eq!(out.status.code(), Some(2));
     let err = String::from_utf8_lossy(&out.stderr);
     assert!(err.contains("--map"), "{err}");
+}
+
+/// M0-018: a missing map is a startup error that names the regeneration command.
+#[test]
+fn missing_map_fails_at_startup_and_names_the_regeneration_command() {
+    let dir = std::env::temp_dir().join(format!("frontline-no-map-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let out = Command::new(env!("CARGO_BIN_EXE_frontline-server"))
+        .args(["--metrics-port", "0", "--ws-port", "0", "--wt-port", "0"])
+        .arg("--data-dir")
+        .arg(&dir)
+        .output()
+        .unwrap();
+    let _ = std::fs::remove_dir_all(&dir);
+    assert_eq!(out.status.code(), Some(1), "fatal startup error");
+    let text = format!(
+        "{}{}",
+        String::from_utf8_lossy(&out.stdout),
+        String::from_utf8_lossy(&out.stderr)
+    );
+    assert!(text.contains("map_pipeline m0 --seed 1"), "{text}");
+    assert!(text.contains("DEVELOPING.md"), "{text}");
+}
+
+/// M0-018: with the terrain present the binary loads it and says so (skipped without it).
+#[test]
+fn real_map_is_loaded_at_startup() {
+    if frontline_server::world_loader::locate_data_dir(None, "m0").is_err() {
+        eprintln!("SKIPPED: terrain not generated (see DEVELOPING.md, Map data)");
+        assert!(std::env::var_os("FRONTLINE_REQUIRE_TERRAIN").is_none());
+        return;
+    }
+    let mut child = Command::new(env!("CARGO_BIN_EXE_frontline-server"))
+        .args(["--metrics-port", "0", "--ws-port", "0", "--wt-port", "0"])
+        .args(["--duration", "0.5"])
+        .stdout(Stdio::piped())
+        .stderr(Stdio::inherit())
+        .spawn()
+        .unwrap();
+    let mut out = String::new();
+    child.stdout.take().unwrap().read_to_string(&mut out).unwrap();
+    assert!(child.wait().unwrap().success());
+    let line = out
+        .lines()
+        .find(|l| l.contains("\"map_loaded\""))
+        .unwrap_or_else(|| panic!("no map_loaded event in {out}"));
+    let v: serde_json::Value = serde_json::from_str(line).unwrap();
+    assert_eq!(v["chunks"].as_u64(), Some(16));
 }

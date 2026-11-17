@@ -42,6 +42,7 @@ impl Server {
             "0",
             "--dev-cert",
             "--dev-echo",
+            "--empty-world",
         ])
         .stdout(Stdio::piped())
         .stderr(Stdio::inherit());

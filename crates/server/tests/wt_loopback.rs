@@ -146,14 +146,15 @@ async fn c0_and_c4_one_thousand_messages_in_order() {
     }
     assert_eq!((n0, n4), (1000, 1000));
 
-    // Client -> server -> client: 1000 pings (paced below the 150 frames/s limit), 1000 pongs.
+    // Client -> server -> client: 12 pings paced below the C0 Ping limit (5/s, M0-018), in order.
+    const PINGS: u32 = 12;
     let t0 = Instant::now();
-    let mut tick = tokio::time::interval(Duration::from_millis(8));
+    let mut tick = tokio::time::interval(Duration::from_millis(220));
     let mut next = 0u32;
     let mut back = 0u32;
-    while back < 1000 {
+    while back < PINGS {
         tokio::select! {
-            _ = tick.tick(), if next < 1000 => {
+            _ = tick.tick(), if next < PINGS => {
                 assert!(c.send_c0(&ping_msg(next)).await);
                 next += 1;
             }
@@ -171,7 +172,7 @@ async fn c0_and_c4_one_thousand_messages_in_order() {
         }
     }
     eprintln!(
-        "C0/C4: 1000+1000 server->client in order; 1000 ping/pong round trips in order ({:.1} s)",
+        "C0/C4: 1000+1000 server->client in order; {PINGS} ping/pong round trips in order ({:.1} s)",
         t0.elapsed().as_secs_f64()
     );
     assert_eq!(h.metrics.net_frames_malformed_total.get(), 0);
