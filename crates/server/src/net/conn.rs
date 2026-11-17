@@ -444,6 +444,16 @@ fn handle_frame(
                 handle.close_graceful();
                 false
             }
+            // M1 gameplay messages: decoded and validated by the protocol crate; handling is
+            // M1-026. Until then they are accepted and dropped.
+            Ok(
+                ClientMsgC0::DeployRequest(_)
+                | ClientMsgC0::SquadOp(_)
+                | ClientMsgC0::Chat(_)
+                | ClientMsgC0::MarkerPlace(_)
+                | ClientMsgC0::Settings(_)
+                | ClientMsgC0::Report(_),
+            ) => true,
             // A second Hello, or anything undecodable, is a protocol violation.
             Ok(ClientMsgC0::Hello(_)) | Err(_) => {
                 malformed(ctx, handle, "bad C0 message", ip);

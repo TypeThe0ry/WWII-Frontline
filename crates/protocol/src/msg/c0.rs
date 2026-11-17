@@ -3,6 +3,7 @@
 //! Wire form of a C0 message: `msg_type: u8` followed by the fields in declaration order,
 //! the whole thing zero padded to a byte boundary. Fields may only be appended at the end.
 
+use alloc::string::String;
 use alloc::vec::Vec;
 
 use crate::bitio::{BitReader, BitWriter};
@@ -196,21 +197,230 @@ impl Codec for Disconnect {
     }
 }
 
-/// Client -> server C0 messages (M0 subset).
+/// String limits (ARCHITECTURE §19.1). Length prefix is 8 bits, in bytes.
+pub const MAX_NICK_LEN: usize = 24;
+pub const MAX_CHAT_LEN: usize = 200;
+pub const MAX_REPORT_NOTE_LEN: usize = 120;
+pub const MAX_NAME_KEY_LEN: usize = 32;
+
+/// Write `s` as `len:8 | UTF-8 bytes`, rejecting more than `max` bytes.
+pub fn write_str(w: &mut BitWriter, s: &str, max: usize) -> Result<(), CodecError> {
+    if s.len() > max {
+        return Err(CodecError::TooLong);
+    }
+    w.write_bytes_len_prefixed(s.as_bytes(), 8)
+}
+
+/// Read a string written by [`write_str`]; invalid UTF-8 is [`CodecError::InvalidValue`].
+pub fn read_str(r: &mut BitReader<'_>, max: usize) -> Result<String, CodecError> {
+    let b = r.read_bytes_len_prefixed(8, max)?;
+    String::from_utf8(b).map_err(|_| CodecError::InvalidValue)
+}
+
+macro_rules! u8_enum {
+    ($(#[$m:meta])* $name:ident { $($var:ident = $val:expr),+ $(,)? }) => {
+        $(#[$m])*
+        #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+        #[repr(u8)]
+        pub enum $name { $($var = $val),+ }
+        impl $name {
+            pub fn from_u8(v: u8) -> Option<Self> {
+                match v { $($val => Some(Self::$var),)+ _ => None }
+            }
+        }
+    };
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct DeployRequest {
+    pub spawn_point: u16,
+    pub role: u8,
+    pub loadout: u8,
+    pub squad: u8,
+}
+impl Codec for DeployRequest {
+    fn encode(&self, w: &mut BitWriter) -> Result<(), CodecError> {
+        w.write_bits(self.spawn_point as u64, 16)?;
+        w8(w, self.role)?;
+        w8(w, self.loadout)?;
+        w8(w, self.squad)
+    }
+    fn decode(r: &mut BitReader<'_>) -> Result<Self, CodecError> {
+        Ok(Self {
+            spawn_point: r.read_bits(16)? as u16,
+            role: r8(r)?,
+            loadout: r8(r)?,
+            squad: r8(r)?,
+        })
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct DeployResult {
+    pub ok: bool,
+    pub spawn_tick: u32,
+    pub reason: u8,
+}
+impl Codec for DeployResult {
+    fn encode(&self, w: &mut BitWriter) -> Result<(), CodecError> {
+        w.write_bool(self.ok)?;
+        w.write_bits(self.spawn_tick as u64, 32)?;
+        w8(w, self.reason)
+    }
+    fn decode(r: &mut BitReader<'_>) -> Result<Self, CodecError> {
+        Ok(Self {
+            ok: r.read_bool()?,
+            spawn_tick: r.read_bits(32)? as u32,
+            reason: r8(r)?,
+        })
+    }
+}
+
+u8_enum!(
+    /// `lock`/`unlock`/`invite` are M1 additions (GD §4.3).
+    SquadOpKind {
+        Create = 1, Join = 2, Leave = 3, Kick = 4, Promote = 5, Rename = 6,
+        Lock = 7, Unlock = 8, Invite = 9,
+    }
+);
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SquadOp {
+    pub op: SquadOpKind,
+    pub squad: u8,
+    pub target: u8,
+    pub name_key: String,
+}
+impl Codec for SquadOp {
+    fn encode(&self, w: &mut BitWriter) -> Result<(), CodecError> {
+        w8(w, self.op as u8)?;
+        w8(w, self.squad)?;
+        w8(w, self.target)?;
+        write_str(w, &self.name_key, MAX_NAME_KEY_LEN)
+    }
+    fn decode(r: &mut BitReader<'_>) -> Result<Self, CodecError> {
+        Ok(Self {
+            op: SquadOpKind::from_u8(r8(r)?).ok_or(CodecError::InvalidTag)?,
+            squad: r8(r)?,
+            target: r8(r)?,
+            name_key: read_str(r, MAX_NAME_KEY_LEN)?,
+        })
+    }
+}
+
+u8_enum!(ChatChannel { All = 0, Team = 1, Squad = 2, Command = 3 });
+
+/// Bidirectional. C->S: `sender` is ignored by the server (it uses the connection's player).
+/// S->C: `sender` is the originating `player_id`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Chat {
+    pub channel: ChatChannel,
+    pub text: String,
+    pub sender: u8,
+}
+impl Codec for Chat {
+    fn encode(&self, w: &mut BitWriter) -> Result<(), CodecError> {
+        w8(w, self.channel as u8)?;
+        write_str(w, &self.text, MAX_CHAT_LEN)?;
+        w8(w, self.sender)
+    }
+    fn decode(r: &mut BitReader<'_>) -> Result<Self, CodecError> {
+        Ok(Self {
+            channel: ChatChannel::from_u8(r8(r)?).ok_or(CodecError::InvalidTag)?,
+            text: read_str(r, MAX_CHAT_LEN)?,
+            sender: r8(r)?,
+        })
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct MarkerPlace {
+    pub kind: u8,
+    /// 16-bit quantised x/z codes.
+    pub pos: [u16; 2],
+    pub ttl: u8,
+}
+impl Codec for MarkerPlace {
+    fn encode(&self, w: &mut BitWriter) -> Result<(), CodecError> {
+        w8(w, self.kind)?;
+        w.write_bits(self.pos[0] as u64, 16)?;
+        w.write_bits(self.pos[1] as u64, 16)?;
+        w8(w, self.ttl)
+    }
+    fn decode(r: &mut BitReader<'_>) -> Result<Self, CodecError> {
+        Ok(Self {
+            kind: r8(r)?,
+            pos: [r.read_bits(16)? as u16, r.read_bits(16)? as u16],
+            ttl: r8(r)?,
+        })
+    }
+}
+
+/// Client preferences that never affect the simulation.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Settings {
+    /// Requested view distance in metres (server clamps).
+    pub view_dist_m: u16,
+    /// bit0: mute proximity voice.
+    pub flags: u8,
+}
+impl Codec for Settings {
+    fn encode(&self, w: &mut BitWriter) -> Result<(), CodecError> {
+        w.write_bits(self.view_dist_m as u64, 16)?;
+        w8(w, self.flags)
+    }
+    fn decode(r: &mut BitReader<'_>) -> Result<Self, CodecError> {
+        Ok(Self {
+            view_dist_m: r.read_bits(16)? as u16,
+            flags: r8(r)?,
+        })
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Report {
+    pub target: u8,
+    pub reason: u8,
+    pub note: String,
+}
+impl Codec for Report {
+    fn encode(&self, w: &mut BitWriter) -> Result<(), CodecError> {
+        w8(w, self.target)?;
+        w8(w, self.reason)?;
+        write_str(w, &self.note, MAX_REPORT_NOTE_LEN)
+    }
+    fn decode(r: &mut BitReader<'_>) -> Result<Self, CodecError> {
+        Ok(Self {
+            target: r8(r)?,
+            reason: r8(r)?,
+            note: read_str(r, MAX_REPORT_NOTE_LEN)?,
+        })
+    }
+}
+
+/// Client -> server C0 messages.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ClientMsgC0 {
     Hello(Hello),
     Ping(Ping),
     Disconnect(Disconnect),
+    DeployRequest(DeployRequest),
+    SquadOp(SquadOp),
+    Chat(Chat),
+    MarkerPlace(MarkerPlace),
+    Settings(Settings),
+    Report(Report),
 }
 
-/// Server -> client C0 messages (M0 subset).
+/// Server -> client C0 messages.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ServerMsgC0 {
     Welcome(Welcome),
     Reject(Reject),
     Pong(Pong),
     Disconnect(Disconnect),
+    DeployResult(DeployResult),
+    Chat(Chat),
 }
 
 impl ClientMsgC0 {
@@ -220,6 +430,12 @@ impl ClientMsgC0 {
             Self::Hello(_) => c0_type::HELLO,
             Self::Ping(_) => c0_type::PING,
             Self::Disconnect(_) => c0_type::DISCONNECT,
+            Self::DeployRequest(_) => c0_type::DEPLOY_REQUEST,
+            Self::SquadOp(_) => c0_type::SQUAD_OP,
+            Self::Chat(_) => c0_type::CHAT,
+            Self::MarkerPlace(_) => c0_type::MARKER_PLACE,
+            Self::Settings(_) => c0_type::SETTINGS,
+            Self::Report(_) => c0_type::REPORT,
         }
     }
 }
@@ -232,6 +448,8 @@ impl ServerMsgC0 {
             Self::Reject(_) => c0_type::REJECT,
             Self::Pong(_) => c0_type::PONG,
             Self::Disconnect(_) => c0_type::DISCONNECT,
+            Self::DeployResult(_) => c0_type::DEPLOY_RESULT,
+            Self::Chat(_) => c0_type::CHAT,
         }
     }
 }
@@ -243,6 +461,12 @@ impl Codec for ClientMsgC0 {
             Self::Hello(m) => m.encode(w),
             Self::Ping(m) => m.encode(w),
             Self::Disconnect(m) => m.encode(w),
+            Self::DeployRequest(m) => m.encode(w),
+            Self::SquadOp(m) => m.encode(w),
+            Self::Chat(m) => m.encode(w),
+            Self::MarkerPlace(m) => m.encode(w),
+            Self::Settings(m) => m.encode(w),
+            Self::Report(m) => m.encode(w),
         }
     }
     fn decode(r: &mut BitReader<'_>) -> Result<Self, CodecError> {
@@ -250,6 +474,12 @@ impl Codec for ClientMsgC0 {
             c0_type::HELLO => Self::Hello(Hello::decode(r)?),
             c0_type::PING => Self::Ping(Ping::decode(r)?),
             c0_type::DISCONNECT => Self::Disconnect(Disconnect::decode(r)?),
+            c0_type::DEPLOY_REQUEST => Self::DeployRequest(DeployRequest::decode(r)?),
+            c0_type::SQUAD_OP => Self::SquadOp(SquadOp::decode(r)?),
+            c0_type::CHAT => Self::Chat(Chat::decode(r)?),
+            c0_type::MARKER_PLACE => Self::MarkerPlace(MarkerPlace::decode(r)?),
+            c0_type::SETTINGS => Self::Settings(Settings::decode(r)?),
+            c0_type::REPORT => Self::Report(Report::decode(r)?),
             _ => return Err(CodecError::InvalidTag),
         })
     }
@@ -263,6 +493,8 @@ impl Codec for ServerMsgC0 {
             Self::Reject(m) => m.encode(w),
             Self::Pong(m) => m.encode(w),
             Self::Disconnect(m) => m.encode(w),
+            Self::DeployResult(m) => m.encode(w),
+            Self::Chat(m) => m.encode(w),
         }
     }
     fn decode(r: &mut BitReader<'_>) -> Result<Self, CodecError> {
@@ -271,18 +503,20 @@ impl Codec for ServerMsgC0 {
             c0_type::REJECT => Self::Reject(Reject::decode(r)?),
             c0_type::PONG => Self::Pong(Pong::decode(r)?),
             c0_type::DISCONNECT => Self::Disconnect(Disconnect::decode(r)?),
+            c0_type::DEPLOY_RESULT => Self::DeployResult(DeployResult::decode(r)?),
+            c0_type::CHAT => Self::Chat(Chat::decode(r)?),
             _ => return Err(CodecError::InvalidTag),
         })
     }
 }
 
-fn encode_whole<T: Codec>(m: &T) -> Result<Vec<u8>, CodecError> {
+pub(crate) fn encode_whole<T: Codec>(m: &T) -> Result<Vec<u8>, CodecError> {
     let mut w = BitWriter::new();
     m.encode(&mut w)?;
     Ok(w.finish())
 }
 
-fn decode_whole<T: Codec>(bytes: &[u8]) -> Result<T, CodecError> {
+pub(crate) fn decode_whole<T: Codec>(bytes: &[u8]) -> Result<T, CodecError> {
     let mut r = BitReader::new(bytes);
     let m = T::decode(&mut r)?;
     r.finish()?;
