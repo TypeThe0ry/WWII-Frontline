@@ -9,9 +9,99 @@
     "magazine_capacity": 8,
     "magazine_type": "en_bloc_clip",
     "muzzle_velocity_mps": 853,
-    "rate_of_fire_rpm_practical": 40,
+    "rate_of_fire_rpm_practical": 24,
     "mass_kg": 4.3,
-    "_source": "待 M0-031 复核（初值取自 GAMEDESIGN §6.2）"
+    "effective_range_m": 460,
+    "_source": [
+      {
+        "field": "caliber",
+        "value": "7.62×63 mm",
+        "unit": "mm",
+        "source_id": "TM9-1275",
+        "title": "TM 9-1275 U.S. Rifle, Cal. .30, M1 (transcription, Section 1 Introduction)",
+        "locator": "Sec. 1, par. 1-5 (par. 5a: cartridge Cal. .30, M2); no printed page numbers on the transcription",
+        "url": "https://biggerhammer.net/manuals/garand/tm-intro.htm",
+        "accessed": "2026-11-17",
+        "note": "The manual states only caliber .30 (0.30 in = 7.62 mm); the metric designation 7.62×63 mm for the .30-06 case is a conversion/convention and was not read in the manual itself."
+      },
+      {
+        "field": "cartridge",
+        "value": ".30-06 Springfield",
+        "unit": "",
+        "source_id": "TM9-1275",
+        "title": "TM 9-1275 U.S. Rifle, Cal. .30, M1 (transcription, Section 1 Introduction)",
+        "locator": "Sec. 1, par. 5a (Cartridge, ball type: Cal. .30, M2)",
+        "url": "https://biggerhammer.net/manuals/garand/tm-intro.htm",
+        "accessed": "2026-11-17",
+        "note": "Military nomenclature is Cartridge, Ball, Cal. .30, M2; the commercial name .30-06 Springfield is not used in the page text read."
+      },
+      {
+        "field": "magazine_capacity",
+        "value": 8,
+        "unit": "rounds",
+        "source_id": "FM23-5",
+        "title": "FM 23-5 U.S. Rifle, Caliber .30, M1 (transcription, Chapter 1; post-war edition, edition date not shown on the page)",
+        "locator": "Ch. 1, par. 3 (clip holds a maximum of eight rounds)",
+        "url": "https://biggerhammer.net/manuals/garand/intro.htm",
+        "accessed": "2026-11-17",
+        "note": "Post-war manual; magazine design is unchanged from wartime. Secondary agreement: Lone Sentry M1 Garand page (8 rounds)."
+      },
+      {
+        "field": "magazine_type",
+        "value": "en_bloc_clip",
+        "unit": "",
+        "source_id": "FM23-5",
+        "title": "FM 23-5 U.S. Rifle, Caliber .30, M1 (transcription, Chapter 1)",
+        "locator": "Ch. 1, par. 4 (loading device: en-block clip)",
+        "url": "https://biggerhammer.net/manuals/garand/intro.htm",
+        "accessed": "2026-11-17",
+        "note": "TM 9-1275 par. 5a lists the loading device only as 'Clip'."
+      },
+      {
+        "field": "muzzle_velocity_mps",
+        "value": 853,
+        "unit": "m/s",
+        "source_id": "FM23-5",
+        "title": "FM 23-5 U.S. Rifle, Caliber .30, M1 (transcription, Chapter 1; post-war edition)",
+        "locator": "Ch. 1, par. 4 (muzzle velocity, M2 ammunition: 853 m/s = 2,800 ft/s)",
+        "url": "https://biggerhammer.net/manuals/garand/intro.htm",
+        "accessed": "2026-11-17",
+        "note": "Matches the previous value. TM 9-1275 (wartime) does not list muzzle velocity."
+      },
+      {
+        "field": "rate_of_fire_rpm_practical",
+        "value": 24,
+        "unit": "rpm",
+        "source_id": "FM23-5",
+        "title": "FM 23-5 U.S. Rifle, Caliber .30, M1 (transcription, Chapter 1; post-war edition)",
+        "locator": "Ch. 1, par. 4 (maximum effective rate of fire 16 to 24 aimed rounds per minute)",
+        "url": "https://biggerhammer.net/manuals/garand/intro.htm",
+        "accessed": "2026-11-17",
+        "note": "Previous value 40 (GAMEDESIGN 6.2, from memory; 40-50 is a commonly quoted unaimed semi-auto rate in secondary literature, not verified here). Upper end of the manual's aimed-fire range is used; the manual states no prescribed maximum."
+      },
+      {
+        "field": "mass_kg",
+        "value": 4.3,
+        "unit": "kg",
+        "source_id": "TM9-1275",
+        "title": "TM 9-1275 U.S. Rifle, Cal. .30, M1 (transcription, Section 1 Introduction)",
+        "locator": "Sec. 1, par. 5a (weight 9.5 lb, rifle only, unloaded)",
+        "url": "https://biggerhammer.net/manuals/garand/tm-intro.htm",
+        "accessed": "2026-11-17",
+        "note": "9.5 lb = 4.309 kg, rounded to 4.3. With bayonet M1 and sling M1907: 11.2 lb. Same figure in FM 23-5 Ch. 1 par. 4."
+      },
+      {
+        "field": "effective_range_m",
+        "value": 460,
+        "unit": "m",
+        "source_id": "FM23-5",
+        "title": "FM 23-5 U.S. Rifle, Caliber .30, M1 (transcription, Chapter 1; post-war edition)",
+        "locator": "Ch. 1, par. 4 (maximum effective range 460 meters)",
+        "url": "https://biggerhammer.net/manuals/garand/intro.htm",
+        "accessed": "2026-11-17",
+        "note": "Field newly added by M0-031. Lone Sentry M1 Garand page gives 440 yd (about 402 m), a secondary source with different definition; FM 23-5 preferred."
+      }
+    ]
   },
   "gameplay": {
     "damage_torso_hp": 70,
@@ -69,7 +159,11 @@
     "tracer": false
   },
   "_meta": {
-    "status": "initial",
+    "status": "reviewed",
+    "unverified": [],
+    "deviation_reason": {
+      "gameplay.fire.cap_rpm": "Semi-auto pacing cap 120 rpm vs historical practical 16-24 aimed rpm: gameplay cap, not a historical rate (GAMEDESIGN 6.3); unchanged by M0-031."
+    },
     "tunable": [
       "gameplay.damage_torso_hp",
       "gameplay.part_mult.head",

@@ -87,3 +87,29 @@ test('refs: unknown weapon / role / loadout / duplicate / mismatch', () => {
   s = base(); s[2].doc.faction = 'ger';
   assert.match(msgs(checkRefs(s))[0], /is declared for role/);
 });
+
+// ---- hist-source-required (M0-031) ----
+import { checkHistorical } from '../rules/historical.mjs';
+const rec = (field, locator = 'par. 4') => ({ field, value: 1, unit: 'x', source_id: 'T', title: 't', locator, accessed: '2026-11-17' });
+const hdoc = (status, hist, unverified) => ({ historical: hist, _meta: { status, tunable: [], unverified } });
+test('hist-source-required: initial is not enforced', () => {
+  assert.deepEqual(checkHistorical(hdoc('initial', { mass_kg: 4, _source: 'x' }), 'weapon'), []);
+});
+test('hist-source-required: reviewed with records and unverified passes', () => {
+  const d = hdoc('reviewed', { mass_kg: 4, muzzle_velocity_mps: 800, _source: [rec('mass_kg')] }, ['historical.muzzle_velocity_mps']);
+  assert.deepEqual(checkHistorical(d, 'weapon'), []);
+});
+test('hist-source-required: reviewed field without source is rejected', () => {
+  const d = hdoc('reviewed', { mass_kg: 4, muzzle_velocity_mps: 800, _source: [rec('mass_kg')] }, []);
+  assert.match(msgs(checkHistorical(d, 'weapon'))[0], /historical\.muzzle_velocity_mps has no _source record/);
+});
+test('hist-source-required: record without locator does not count; text _source rejected', () => {
+  const d = hdoc('measured', { mass_kg: 4, _source: [rec('mass_kg', '')] }, []);
+  const m = msgs(checkHistorical(d, 'weapon'));
+  assert.ok(m.some((x) => /no locator/.test(x)) && m.some((x) => /has no _source record/.test(x)));
+  assert.match(msgs(checkHistorical(hdoc('reviewed', { mass_kg: 4, _source: 'text' }, ['historical.mass_kg']), 'weapon'))[0], /structured _source array/);
+});
+test('hist-source-required: bogus unverified entry rejected; 未核实 value accepted', () => {
+  assert.match(msgs(checkHistorical(hdoc('reviewed', { mass_kg: 4, _source: [rec('mass_kg')] }, ['historical.nope']), 'weapon'))[0], /does not name a historical field/);
+  assert.deepEqual(checkHistorical(hdoc('reviewed', { mass_kg: '未核实', _source: [rec('x')] }, []), 'weapon'), []);
+});

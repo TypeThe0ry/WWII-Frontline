@@ -11,7 +11,63 @@
     "muzzle_velocity_mps": 760,
     "rate_of_fire_rpm_practical": 15,
     "mass_kg": 3.9,
-    "_source": "待 M0-031 复核（初值取自 GAMEDESIGN §6.2）"
+    "_source": [
+      {
+        "field": "caliber",
+        "value": "7.92×57 mm",
+        "unit": "mm",
+        "source_id": "TME30-451",
+        "title": "TM-E 30-451 Handbook on German Military Forces, 15 Mar 1945 (Lone Sentry transcription), Ch. VII Sec. II 'Rifles and Automatic Rifles'",
+        "locator": "Ch. VII, Sec. II, par. 5a(2) Characteristics: caliber 7.92 mm (0.312 in)",
+        "url": "https://lonesentry.com/manuals/tme30/ch7sec2sub5.html",
+        "accessed": "2026-11-17",
+        "note": "Wartime intelligence handbook; the case length (57 mm) is not stated on that page and rests on the standard cartridge designation."
+      },
+      {
+        "field": "cartridge",
+        "value": "7.92×57 mm Mauser (s.S.)",
+        "unit": "",
+        "source_id": "TME30-451",
+        "title": "TM-E 30-451 Handbook on German Military Forces, 15 Mar 1945 (Lone Sentry transcription), Ch. VII Sec. II",
+        "locator": "Ch. VII, Sec. II, par. 5a(3): standard German 7.92-mm rimless small-arms ammunition",
+        "url": "https://lonesentry.com/manuals/tme30/ch7sec2sub5.html",
+        "accessed": "2026-11-17",
+        "note": "The s.S. (schweres Spitzgeschoss) ball load designation is from secondary sources only (not verified in a primary document)."
+      },
+      {
+        "field": "magazine_capacity",
+        "value": 5,
+        "unit": "rounds",
+        "source_id": "TME30-451",
+        "title": "TM-E 30-451 Handbook on German Military Forces, 15 Mar 1945 (Lone Sentry transcription), Ch. VII Sec. II",
+        "locator": "Ch. VII, Sec. II, par. 5a(2): feed, 5-round clip",
+        "url": "https://lonesentry.com/manuals/tme30/ch7sec2sub5.html",
+        "accessed": "2026-11-17",
+        "note": "Secondary agreement: Wikipedia Karabiner 98k (5 rounds, internal magazine, stripper clip)."
+      },
+      {
+        "field": "magazine_type",
+        "value": "stripper_clip_internal_box",
+        "unit": "",
+        "source_id": "TME30-451",
+        "title": "TM-E 30-451 Handbook on German Military Forces, 15 Mar 1945 (Lone Sentry transcription), Ch. VII Sec. II",
+        "locator": "Ch. VII, Sec. II, par. 5a(2): 5-round clip feed",
+        "url": "https://lonesentry.com/manuals/tme30/ch7sec2sub5.html",
+        "accessed": "2026-11-17",
+        "note": "The handbook says only 'clip'; internal box magazine loaded by stripper clip is from secondary sources (Wikipedia Karabiner 98k, accessed 2026-11-17)."
+      },
+      {
+        "field": "mass_kg",
+        "value": 3.9,
+        "unit": "kg",
+        "source_id": "TME30-451",
+        "title": "TM-E 30-451 Handbook on German Military Forces, 15 Mar 1945 (Lone Sentry transcription), Ch. VII Sec. II",
+        "locator": "Ch. VII, Sec. II, par. 5a(2): weight (each type) approx. 9 lb (about 4.08 kg)",
+        "url": "https://lonesentry.com/manuals/tme30/ch7sec2sub5.html",
+        "accessed": "2026-11-17",
+        "note": "Handbook figure is approximate and covers all three 98 types; 3.9 kg is 4.4% lower (below the 5% update threshold) and is kept. Secondary sources: Wikipedia Karabiner 98k 3.7-4.1 kg; dday-overlord.com 3.92 kg (unattributed). Museum record not found."
+      }
+    ]
   },
   "gameplay": {
     "damage_torso_hp": 100,
@@ -70,7 +126,12 @@
     "tracer": false
   },
   "_meta": {
-    "status": "initial",
+    "status": "reviewed",
+    "unverified": [
+      "historical.muzzle_velocity_mps",
+      "historical.rate_of_fire_rpm_practical"
+    ],
+    "deviation_reason": {},
     "tunable": [
       "gameplay.damage_torso_hp",
       "gameplay.part_mult.head",

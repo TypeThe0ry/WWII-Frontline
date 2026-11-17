@@ -36,8 +36,11 @@ which references of an invalid fixture are resolved.
   of a unit-suffixed container inherit it (`armor_mm.front`, `part_mult.head`). Non-SI suffixes
   (`_kph`, `_ft`, `_lb`, ...) are rejected with a specific message.
 - `historical` blocks hold public-record parameters and need `_source` (or mark a single value
-  `"未核实"`); `gameplay` blocks hold tunable game values. Enforcement for `status = reviewed`
-  is M0-031's job.
+  `"未核实"`); `gameplay` blocks hold tunable game values. Once `status` is `reviewed`/`measured`,
+  rule `hist-source-required` (M0-031) demands a structured `_source` array of
+  `{field, value, unit, source_id, title, locator, url, accessed, note}` records, one per
+  `historical` field, or an entry in `_meta.unverified[]` (`"historical.<field>"`).
+  `_meta.deviation_reason{path: text}` explains gameplay values that deviate from history.
 - `_meta.status ∈ {initial, reviewed, measured}` (R8: `initial` until reviewed);
   `_meta.tunable` lists dotted paths of `【待调参】` fields; every path must exist.
 - Adding a field: **edit the schema first** (optional fields only), then the typed struct in

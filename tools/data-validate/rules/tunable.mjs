@@ -47,7 +47,8 @@ export function checkTunable(doc, kind) {
   // Enforcement of status=reviewed is M0-031's job.
   if (doc.historical && typeof doc.historical === 'object') {
     const src = doc.historical._source;
-    if (typeof src !== 'string' || src.trim() === '') {
+    const ok = Array.isArray(src) ? src.length > 0 : typeof src === 'string' && src.trim() !== '';
+    if (!ok) {
       errors.push({ pointer: '/historical', message: 'missing: historical._source' });
     }
   }

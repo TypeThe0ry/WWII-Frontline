@@ -25,7 +25,12 @@
         "rate_of_fire_rpm_practical": { "$ref": "#/$defs/hist_num" },
         "mass_kg": { "$ref": "#/$defs/hist_num" },
         "effective_range_m": { "$ref": "#/$defs/hist_num" },
-        "_source": { "type": "string", "minLength": 1 }
+        "_source": {
+          "oneOf": [
+            { "type": "string", "minLength": 1 },
+            { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/source_record" } }
+          ]
+        }
       }
     },
     "gameplay": {
@@ -125,6 +130,22 @@
     "unverified": { "const": "未核实" },
     "hist_num": { "anyOf": [{ "type": "number", "minimum": 0 }, { "$ref": "#/$defs/unverified" }] },
     "hist_int": { "anyOf": [{ "type": "integer", "minimum": 0 }, { "$ref": "#/$defs/unverified" }] },
+    "source_record": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["field", "value", "unit", "source_id", "title", "locator", "accessed"],
+      "properties": {
+        "field": { "type": "string", "minLength": 1 },
+        "value": { "anyOf": [{ "type": "number" }, { "type": "string" }] },
+        "unit": { "type": "string" },
+        "source_id": { "type": "string", "minLength": 1 },
+        "title": { "type": "string", "minLength": 1 },
+        "locator": { "type": "string", "minLength": 1 },
+        "url": { "type": "string" },
+        "accessed": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
+        "note": { "type": "string" }
+      }
+    },
     "meta": {
       "type": "object",
       "additionalProperties": false,
@@ -132,7 +153,9 @@
       "properties": {
         "status": { "enum": ["initial", "reviewed", "measured"] },
         "tunable": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
-        "calibration_ref": { "type": ["string", "null"] }
+        "calibration_ref": { "type": ["string", "null"] },
+        "unverified": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+        "deviation_reason": { "type": "object", "additionalProperties": { "type": "string", "minLength": 1 } }
       }
     }
   }

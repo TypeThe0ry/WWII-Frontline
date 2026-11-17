@@ -6,6 +6,7 @@ import Ajv2020 from 'ajv/dist/2020.js';
 import { checkUnits } from './rules/units.mjs';
 import { checkTunable } from './rules/tunable.mjs';
 import { checkRanges } from './rules/ranges.mjs';
+import { checkHistorical } from './rules/historical.mjs';
 import { checkRefs } from './rules/refs.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -59,6 +60,7 @@ export function checkFile(kind, doc, validators) {
     errs.push(...checkUnits(doc));
     errs.push(...checkTunable(doc, kind));
     errs.push(...checkRanges(doc, kind));
+    errs.push(...checkHistorical(doc, kind));
   }
   return errs;
 }
