@@ -23,6 +23,8 @@ export interface ProbeResult {
   /** Transport the session actually used (a WT cell must not pass over a silent WS fallback). */
   usedTransport?: string;
   snapshotsReceived: number;
+  /** Where the counted C2 packets come from: `dev-echo` (one per C1 bundle, M0-017 scaffold) or `server` (real snapshots, M0-019). */
+  snapshotSource: 'dev-echo' | 'server';
   disconnects: number;
   rttMsMedian?: number;
   error?: string;
@@ -60,7 +62,7 @@ export function median(xs: readonly number[]): number | undefined {
   if (xs.length === 0) return undefined;
   const s = [...xs].sort((a, b) => a - b);
   const m = s.length >> 1;
-  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+  return s.length % 2 ? s[m] : ((s[m - 1] ?? 0) + (s[m] ?? 0)) / 2;
 }
 
 export function probePassed(p: ProbeResult): boolean {
@@ -104,7 +106,9 @@ export function renderTable(m: Matrix): string {
       fallbackCell(m.fallbackNoWebTransport.find((f) => f.browser === b), untested),
       b === 'chromium' ? fallbackCell(m.fallbackWtPortClosed.find((f) => f.browser === b), untested) : '未设计（任务仅要求 Chromium）',
     ];
-    const note = b === 'webkit' ? 'WebKit 构建 ≠ Safari 正式版' : b === 'firefox' ? 'Playwright 打补丁的 Firefox 构建' : 'headless Chromium';
+    const sources = [...new Set(m.probes.filter((p) => p.browser === b).map((p) => p.snapshotSource))];
+    const src = sources.length > 0 ? `；C2 来源 ${sources.join('/')}` : '';
+    const note = (b === 'webkit' ? 'WebKit 构建 ≠ Safari 正式版' : b === 'firefox' ? 'Playwright 打补丁的 Firefox 构建' : 'headless Chromium') + src;
     rows.push(`| ${b} ${version} | ${cells.join(' | ')} | ${note} |`);
   }
   return rows.join('\n');

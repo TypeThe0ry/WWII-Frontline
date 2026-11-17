@@ -297,3 +297,33 @@
 - **受影响任务**：M0-030（入口与 perf 字段）、M1-035（实例表布局）、M1-051（真素材替换占位，接口以实例表字节为界不变）、M1-052。
 - **临时处理**：按此实现。
 - **裁决（Fable 填写）**：
+
+### PI-021 M0-028：ARCHITECTURE §5.0 浏览器支持表的实测核对（只写实测事实）与互通测试的前提
+
+- **状态**：resolved
+- **类别**：测试 / 事实核对
+- **提出者 / 日期**：M0-028 / 2026-11-17
+- **问题**：§5.0 的 WebTransport 行（Chrome/Edge 2021 末起；Firefox 114 起；Safari 26.4 起）与 §5.5/§18.2 的"`serverCertificateHashes` 各浏览器支持未核实"需要实测。本机只有 Playwright 预装的 Chromium 153.0.8010.12，没有 Firefox / WebKit 构建，且不允许运行 `playwright install`。
+- **证据**（reports/m0/browser-matrix.json，`scripts/run-interop.sh`）：
+  - **已被实测证实**：Chromium 153.0.8010.12（headless，Linux）可用 `WebTransport` 连接 `wtransport =0.7.2` 服务器；`serverCertificateHashes`（sha-256、13 天 ECDSA P-256 自签名证书）被接受；datagram（C1 上行 / C2 回显下行）与可靠流（C0/C4）互通；10 s 内 199/199 个 C2 包（WT 与 WS 各一次），0 断线，握手后 RTT 中位约 1.0 ms（loopback）。WS 兜底同样通过。
+  - **已被实测证实**：`delete window.WebTransport` 与"服务器不监听 WT 端口"两种情况下，`auto` 在 Chromium 上都回退到 WS，耗时约 10–14 ms（多次运行；≤ 5000 ms）；UDP 黑洞（QUIC 握手无响应）情形见 M0-021（3.2 s 回退）。
+  - **未验证（本机无该浏览器构建，不是失败）**：Firefox（WT 自 114、`serverCertificateHashes` 支持）、WebKit/Safari 26.4（WT、`serverCertificateHashes`、datagram 细节）。表格中这些格子写"未验证"及原因；复测步骤见 DEVELOPING.md "Browser interop matrix"，人工项 H-103。
+  - **未推翻任何 §5.0 条目**；§5.0 中 WebGPU 与覆盖率条目不在本任务范围。
+  - 注意：当前服务器尚无 AOI/快照（M0-019），探针数到的"快照"是 `--dev-echo` 的 C1→C2 回显（JSON 中 `snapshotSource: "dev-echo"`）；M0-019 完成后复跑 `scripts/run-interop.sh` 即得到真实快照的计数（`--dev-echo` 被移除时探针自动记为 `server`）。
+- **建议方案**：①§5.0 暂不改文字，待 H-103 或 CI 矩阵（`.github/workflows/interop.yml`，nightly）给出 Firefox/WebKit 数据后，由总控把"未核实"改成实测结果；②M0-019 完成后复跑一次矩阵。
+- **受影响任务**：M0-019（复跑）、M4-042（矩阵起点）、M0-018（若移除 `--dev-echo`）。
+- **临时处理**：Firefox / WebKit 格记"未验证"，不记失败。
+- **裁决（Fable 填写）**：按建议方案执行；本条在 H-103 / CI 矩阵出数前保持 resolved（事实已登记），§5.0 的"未核实"字样由总控在拿到数据后更新。
+
+### PI-022 M0-018：8000°/s 转速上限在 30 Hz 下无法触发；缺失输入时清除边沿位（§6.3 细化）；减速与"第 6 tick 速度为 0"；Hello 无昵称
+
+- **状态**：open
+- **类别**：数值 / 接口细化
+- **提出者 / 日期**：M0-018 / 2026-11-17
+- **问题**：①任务与 ARCHITECTURE §15.1 的"yaw/pitch 角速度上限 8000°/s"折算到 1 tick 是 266.7°，但 yaw 是 16 位环绕码、pitch 是 16 位覆盖 180°，两个相邻 tick 间**可表达的最大变化只有 180°**（yaw 取最短弧；pitch 全量程 180°）。所以默认上限在 tick 间隔 1 时永远不会触发，验收 3 "yaw 在 1 tick 内变化 > 266° → 被钳制"在线格式下不可构造。校验器已按 `max_turn_dps * Δtick / 30` 实现并有测试（把上限降到 2000–3000°/s 即触发并计数 `yaw_rate`/`pitch_rate`），但默认值在 M0 等于不设防。②§6.3 原文只说"重复上一条移动输入"。实现为：重复时**清除边沿位**（FIRE/RELOAD/JUMP/USE/MELEE/GADGET/SWAP/VEHICLE_SEAT 与 `aux` 的非走路位），保留电平位（AIM、姿态、冲刺、探头、走路修饰），gap>5 起清零移动并去掉 SPRINT，保持视角（防止一次性动作被无限重放）。③验收 2 写"第 6 tick 起速度为 0"：输入侧确实从第 6 tick 起是零移动（已断言），但 sim 按 PI-015 的 `decel_time_s`（0.20 s）减速，实测速度 4.4 m/s 在第 6 tick 起线性降到 0.73，**第 11 tick 才精确为 0**，此后位移为 0。④`Hello` 没有昵称字段，`Join` 命令只带 `player/team`（任务接口写了 nick）。⑤新增服务器参数：`--data-dir`（默认自动向上查找 `data/maps/<map>`）、隐藏的 `--empty-world`（仅测试）；`--dev-echo` 保留为隐藏的测试脚手架，改为"C1 回显取代会话层"并隐含 `--empty-world`。
+- **证据**：crates/server/src/validate.rs（`rate_limit_with_default_cfg_is_unreachable_for_one_tick`、`turn_rate_over_the_limit_is_clamped_and_counted_with_a_lower_cap`）；tests/input_buffer.rs（`ten_silent_ticks_repeat_five_then_hold_still_and_never_replay_fire` 打印速度序列、`each_rejection_reason_has_its_own_counter`）。
+- **建议方案**：①M1 实测鼠标后改用"滑动窗口累计转角"（如 1 s 内 |Δ| 总和 ≤ 8000°→ 允许 26 圈/s 以上才拦），或把单 tick 上限降到 ≤ 150°（4500°/s）使其真正生效；M0 保持不收紧（任务备注）。②把"边沿位清除"写进 ARCHITECTURE §6.3 变更说明。③验收 2 改成"输入从第 6 tick 起为零移动，速度在 decel_time_s 内降为 0"。④若要昵称需在协议加字段（M1-040 前）。
+- **受影响任务**：M0-019（读取 `PlayerInputState.last_ack_snapshot_tick`）、M0-026（bot 走同一入口 `validate_input`）、M0-027、M1-025、M1-027（反作弊）。
+- **临时处理**：按此实现。
+- **裁决（Fable 填写）**：
+

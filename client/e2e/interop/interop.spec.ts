@@ -79,7 +79,7 @@ test.afterAll(async () => {
 
 function installed(name: BrowserName): string | undefined {
   const path = pw[name].executablePath();
-  return existsSync(path) ? undefined : `browser binary not installed (${path}); run \`npx playwright install ${name}\` on a machine that can`;
+  return existsSync(path) ? undefined : `browser binary not installed (npx playwright install ${name})`;
 }
 
 interface Settled {
@@ -136,7 +136,7 @@ for (const name of wanted) {
         const page = await newPage();
         const r: ProbeResult = {
           browser: name, version, transport, supported: false, serverCertificateHashesWorked: false,
-          connected: false, snapshotsReceived: 0, disconnects: 0,
+          connected: false, snapshotsReceived: 0, snapshotSource: srv.echo ? 'dev-echo' : 'server', disconnects: 0,
         };
         try {
           await page.goto(`${harness.url}${harnessQuery(srv, transport === 'wt' ? { certhash: cert.hashHex, transport: 'wt' } : { transport: 'ws' })}`);
@@ -157,7 +157,7 @@ for (const name of wanted) {
                   last = performance.now();
                   rtts.push(window.__net.session!.clock.rtt());
                 }
-                await new Promise((res) => setTimeout(res, 33));
+                await new Promise((res) => setTimeout(res, 50)); // 20 Hz: the C1 rate of ARCHITECTURE §5.2
               }
               return { snapshots: window.__net.snapshots - start, rtts, status: window.__net.status, events: [...window.__net.events] };
             }, PROBE_SECONDS * 1000);

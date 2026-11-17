@@ -1,0 +1,62 @@
+{
+  "generatedAt": "2026-11-17T07:52:17.482Z",
+  "note": "Playwright-provided browser builds, headless, loopback. WebKit build != Safari release. Untested = not run on this machine, not a failure.",
+  "probes": [
+    {
+      "browser": "chromium",
+      "version": "153.0.8010.12",
+      "transport": "wt",
+      "supported": true,
+      "serverCertificateHashesWorked": true,
+      "connected": true,
+      "snapshotsReceived": 199,
+      "snapshotSource": "dev-echo",
+      "disconnects": 0,
+      "usedTransport": "wt",
+      "rttMsMedian": 1.1285057845093507
+    },
+    {
+      "browser": "chromium",
+      "version": "153.0.8010.12",
+      "transport": "ws",
+      "supported": true,
+      "serverCertificateHashesWorked": false,
+      "connected": true,
+      "snapshotsReceived": 199,
+      "snapshotSource": "dev-echo",
+      "disconnects": 0,
+      "usedTransport": "ws",
+      "rttMsMedian": 0.9114038082711489
+    }
+  ],
+  "fallbackNoWebTransport": [
+    {
+      "browser": "chromium",
+      "version": "153.0.8010.12",
+      "connected": true,
+      "transport": "ws",
+      "connectMs": 10.2,
+      "fallbackReason": "WebTransport undefined"
+    }
+  ],
+  "fallbackWtPortClosed": [
+    {
+      "browser": "chromium",
+      "version": "153.0.8010.12",
+      "connected": true,
+      "transport": "ws",
+      "connectMs": 12.8,
+      "fallbackReason": "wt connection failed: Opening handshake failed."
+    }
+  ],
+  "untested": [
+    {
+      "browser": "firefox",
+      "reason": "browser binary not installed (npx playwright install firefox)"
+    },
+    {
+      "browser": "webkit",
+      "reason": "browser binary not installed (npx playwright install webkit)"
+    }
+  ]
+}

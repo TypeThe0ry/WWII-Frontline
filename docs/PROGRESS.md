@@ -332,6 +332,12 @@ M0 共 21 个任务已提交（M0-021 待提交）；提交哈希取自 `git log
 - 遗留：Firefox/Safari 互通与受信任证书未做（M0-028、H-017）；`--dev-echo` 脚手架待 M0-018 移除或限定测试；C5 bulk 流无测试。
 - 影响：新增依赖 wtransport =0.7.2（未跑 `cargo deny`）；`ClientHandle::max_datagram_size()` 供 M0-019；无头 Chromium 页面须由真实 localhost HTTP 托管。
 
+### M0-028 测试：浏览器 WT/WS 互通矩阵 — partial — 2026-11-17 — 提交 （总控填）
+- 做了什么：在 M0-021 的联调基础设施上新增 `client/e2e/interop/`（矩阵汇总 fixtures + vitest、server 包装、interop.spec.ts：每浏览器 × WT/WS 的 10 s 探针与回退用例）、`scripts/run-interop.sh`、`scripts/check-interop-table.mjs`（JSON 与 STATUS 表比对）、`.github/workflows/interop.yml`（手动 + nightly）；Firefox/WebKit 未安装时记"未验证"。
+- 关键实测：Chromium 153.0.8010.12 WT 与 WS 各 199 包/10 s、0 断线、RTT 中位约 1 ms（loopback，C2 来源为 --dev-echo）；删除 WebTransport 回退 WS 约 10 ms，WT 端口关闭回退约 13 ms（≤5000 ms）；M0-021 的 net.spec 11/11 重跑通过。
+- 遗留：Firefox / WebKit / Safari 无法在本机验证（H-103，复测步骤见 DEVELOPING.md）；快照数来自 dev-echo，M0-019 后须复跑；PI-021 登记了对 §5.0 的实测核对。
+- 影响：`net-support.ts` 的 `startServer` 增加可选 `echo`；vitest include 增加 `e2e/interop/*.test.ts`；若 M0-018/019 移除 `--dev-echo`，探针自动改记 `snapshotSource: server`，须有真实 C2 快照才能通过。
+
 <!-- 执行者在此之后追加（只追加；写入前重新读取文件末尾；格式同上；不改别人的条目） -->
 
 ## 8. 如何维护本文件

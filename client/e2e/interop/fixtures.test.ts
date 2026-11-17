@@ -3,7 +3,7 @@ import { fallbackPassed, type FallbackResult, type Matrix, median, probePassed, 
 
 const ok = (o: Partial<ProbeResult> = {}): ProbeResult => ({
   browser: 'chromium', version: '1', transport: 'wt', supported: true, serverCertificateHashesWorked: true, connected: true,
-  usedTransport: 'wt', snapshotsReceived: 200, disconnects: 0, rttMsMedian: 1.5, ...o,
+  usedTransport: 'wt', snapshotsReceived: 200, snapshotSource: 'dev-echo', disconnects: 0, rttMsMedian: 1.5, ...o,
 });
 
 describe('interop matrix', () => {

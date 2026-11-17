@@ -179,3 +179,55 @@ pnpm -C client exec vitest run src/render/terrain/terrain-vs-sim.test.ts   # cli
 Native x2 / wasm x2 differences always fail. Native vs wasm differences are a warning by default (R5) and fail with
 `--strict` / `FRONTLINE_DETERMINISM_STRICT=1` (CI: repository variable `DETERMINISM_STRICT=1`). Raw traces go to
 the git-ignored `target/determinism/`; only `summary.json` is tracked.
+
+## Browser interop matrix (M0-028)
+
+`scripts/run-interop.sh` runs 10 s probes (handshake, `InputBundle` at 20 Hz, count of C2 packets, RTT median) for WT and WS in every
+Playwright browser that is installed, the "delete `WebTransport` -> `auto` falls back to WS <= 5 s" case in each of them, and (Chromium)
+the "server has no WT port" fallback. It reuses the M0-021 harness page (`client/e2e/net-harness`) and process helpers
+(`client/e2e/net-support.ts`); the spec is `client/e2e/interop/interop.spec.ts`. Output: `reports/m0/browser-matrix.{json,md}`.
+A browser whose binary is missing is recorded as "未验证 (browser binary not installed)", never as passed or failed. Only Chromium asserts.
+
+```sh
+scripts/run-interop.sh                              # installed browsers; FRONTLINE_INTEROP_BROWSERS=chromium,firefox restricts
+INSTALL_BROWSERS=1 scripts/run-interop.sh           # CI / a machine with network: playwright install --with-deps first
+node --experimental-strip-types scripts/check-interop-table.mjs   # JSON == .md == the table cells in the tasks/STATUS.md M0-028 row
+pnpm -C client exec vitest run e2e/interop          # unit tests of the summary functions
+```
+
+Not verifiable on the dev VM (only Chromium 153 is installed): Firefox, WebKit (a WebKit build is not Safari), Safari proper.
+Manual check on a real Firefox / Safari (H-103), no Playwright needed:
+
+1. `cargo build -p frontline-server && tools/dev/gen-dev-cert.sh`, then
+   `target/debug/frontline-server --cert dev-cert/dev-cert.pem --key dev-cert/dev-key.pem --dev-echo` (note the `ws_listening` / `wt_listening` ports).
+2. `pnpm -C client dev`, open `http://localhost:5173/e2e/net-harness/index.html?server=127.0.0.1:7000&wtport=7001&wasm=<url of frontline_sim_wasm.js>&transport=wt&certhash=<hex from dev-cert/dev-cert.sha256>`
+   (the harness needs the built `crates/sim-wasm/pkg`; `/@fs/<abs path>/crates/sim-wasm/pkg/frontline_sim_wasm.js` works with the dev server).
+   Expected: the page shows `status=connected`, `transport=wt`, `fallback_reason=none`. Anything else: copy the page text (the error is
+   shown verbatim) into the matrix. `transport=ws` must show `transport=ws`; `transport=auto` on a browser without `serverCertificateHashes`
+   shows `transport=ws` with the fallback reason (record it as "WT 无法测试：缺受信任证书，见 H-017", not as a failure).
+3. In the console, `__net.sendInput()` in a loop (every 50 ms for 10 s) and read `__net.snapshots` (expect >= 150 with `--dev-echo`) and
+   `__net.session.clock.rtt()`.
+
+The manual URL above is untested on the dev server (the e2e starts its own Vite server for the harness page, which is what is verified).
+
+## Server sessions and input (M0-018)
+
+The server loads the map at startup (`--map m0`, directory `data/maps/m0` found by walking up from the working directory
+and the executable, or `--data-dir <dir containing maps/>`): 16 collision chunks `chunks/c_{bx}_{bz}.bin` plus the HQ points of
+`spawns.json` (`set_team_spawn` per team, `set_map_center`). A missing or damaged map is a fatal startup error that prints the
+regeneration command (`PYTHONPATH=tools/map-pipeline python3 -m map_pipeline m0 --seed 1 --out data/maps/m0`). Hidden test-only flags:
+`--empty-world` (no terrain, players cannot move) and `--dev-echo` (C1 -> C2 echo instead of the session layer; implies `--empty-world`).
+
+Input path (all on the sim thread): `InboundQueue` (C1 bundles) -> `SimBridge::ingest_bundle` -> per command `PlayerInput::ingest` =
+window check (`now-2 ..= now+10`) -> `validate_input` (the one entry point, also for bots) -> 8-slot ring buffer; each tick
+`SimBridge::resolve(tick)` yields one command per joined player, ascending `PlayerId` (missing input: repeat movement <= 5 ticks with
+edge bits cleared, then zero movement keeping the view; >= 9 silent ticks = `session_stall_total`). Teams are assigned at the handshake
+(fewer players first, US on a tie), `PlayerId`s are not reused for 1 s, C0 `Ping` is limited to 5/s (excess dropped, `input_rejected_total{reason="c0_rate"}`),
+30 violating commands in a row close the connection. Metrics: `input_rejected_total{reason}`, `input_accepted_total`, `input_missing_ticks_total`,
+`session_stall_total`, `session_kicked_total`.
+
+```sh
+cargo test -p frontline-server --test input_buffer --test session_flow --test session_load   # needs the terrain (see "Map data")
+cargo test --release -p frontline-server --test session_load -- --ignored --nocapture        # 20 and 100 clients x 60 s (FRONTLINE_LOAD_SECS)
+```
+
