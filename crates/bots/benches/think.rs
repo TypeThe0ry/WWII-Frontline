@@ -50,9 +50,14 @@ fn think_bench(
     });
     println!(
         "think_{n}: per-tick all-bot think  median {:.4} ms  P99 {:.4} ms  max {:.4} ms | path queries/tick median {:.4} P99 {:.4} max {:.4} ms ({} kills, {} shots in window)",
-        q(&mut think, 0.5), q(&mut think, 0.99), think.last().unwrap(),
-        q(&mut path, 0.5), q(&mut path, 0.99), path.last().unwrap(),
-        a.kills - k0, a.shots - s0
+        q(&mut think, 0.5),
+        q(&mut think, 0.99),
+        think.last().unwrap(),
+        q(&mut path, 0.5),
+        q(&mut path, 0.99),
+        path.last().unwrap(),
+        a.kills - k0,
+        a.shots - s0
     );
     r
 }
@@ -89,7 +94,10 @@ fn path_bench(col: &frontline_sim::CollisionData) -> serde_json::Value {
     });
     println!(
         "path_query: patrol-point pairs on the 64x64 grid: median {:.1} us  P99 {:.1} us  max {:.1} us  (worst case {} nodes expanded)",
-        q(&mut us, 0.5), q(&mut us, 0.99), us.last().unwrap(), expanded
+        q(&mut us, 0.5),
+        q(&mut us, 0.99),
+        us.last().unwrap(),
+        expanded
     );
     r
 }
@@ -107,7 +115,9 @@ fn main() {
     });
     let dir = std::env::var_os("FRONTLINE_BASELINE_DIR")
         .map(std::path::PathBuf::from)
-        .unwrap_or_else(|| std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../reports/baselines"));
+        .unwrap_or_else(|| {
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../reports/baselines")
+        });
     if std::fs::create_dir_all(&dir).is_ok() {
         let f = dir.join("bots-m0.json");
         if std::fs::write(&f, serde_json::to_string_pretty(&report).unwrap() + "\n").is_ok() {

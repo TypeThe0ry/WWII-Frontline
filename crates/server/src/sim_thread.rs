@@ -28,8 +28,62 @@ pub const INPUT_CHANNEL_CAP: usize = 1024;
 pub const COMMAND_CHANNEL_CAP: usize = 256;
 /// 1/30 s in nanoseconds (PI-006: fixed step 1000/30 ms).
 pub const TICK_PERIOD: Duration = Duration::from_nanos(33_333_333);
-/// Cap on stored per-tick samples for the exit report (≈ 37 h at 30 Hz).
-const MAX_SAMPLES: usize = 4_000_000;
+/// Per-tick samples kept for the exit report. Beyond this many, [`Samples`] keeps a uniform random subset (reservoir) so a
+/// long-running server holds a constant 2 x 128 KB instead of growing 240 B/s for ever (M0-030, PI-029).
+const SAMPLE_CAP: usize = 32_768;
+
+/// Bounded sample store: all samples up to [`SAMPLE_CAP`], then Algorithm R (uniform reservoir, fixed xorshift seed so the
+/// report of a deterministic run is reproducible). The exact maximum is tracked separately.
+#[derive(Debug)]
+struct Samples {
+    v: Vec<u32>,
+    seen: u64,
+    max: u32,
+    rng: u64,
+}
+
+impl Samples {
+    fn new() -> Self {
+        Samples {
+            v: Vec::with_capacity(SAMPLE_CAP),
+            seen: 0,
+            max: 0,
+            rng: 0x9E37_79B9_7F4A_7C15,
+        }
+    }
+
+    fn push(&mut self, x: u32) {
+        self.seen += 1;
+        self.max = self.max.max(x);
+        if self.v.len() < SAMPLE_CAP {
+            self.v.push(x);
+            return;
+        }
+        let mut r = self.rng;
+        r ^= r << 13;
+        r ^= r >> 7;
+        r ^= r << 17;
+        self.rng = r;
+        let j = r % self.seen;
+        if (j as usize) < SAMPLE_CAP {
+            self.v[j as usize] = x;
+        }
+    }
+
+    fn clear(&mut self) {
+        self.v.clear();
+        self.seen = 0;
+        self.max = 0;
+    }
+
+    fn quantiles(&mut self) -> Quantiles {
+        let mut q = quantiles(&mut self.v);
+        if !self.v.is_empty() {
+            q.max = f64::from(self.max) / 1e6; // exact even when the reservoir dropped the extreme
+        }
+        q
+    }
+}
 
 #[derive(Debug, Clone, Copy)]
 pub struct InputEnvelope {
@@ -164,8 +218,8 @@ pub struct SimLoop<C: Clock> {
     bridge: SimBridge,
     consecutive: i64,
     ticks: u64,
-    tick_ns: Vec<u32>,
-    err_ns: Vec<u32>,
+    tick_ns: Samples,
+    err_ns: Samples,
     started: std::time::Instant,
     /// Snapshot / AOI scheduler (M0-019) and its per-tick scratch.
     snap: SnapshotScheduler,
@@ -271,8 +325,8 @@ pub fn build_loop_with_bots<C: Clock>(
         bridge,
         consecutive: 0,
         ticks: 0,
-        tick_ns: Vec::new(),
-        err_ns: Vec::new(),
+        tick_ns: Samples::new(),
+        err_ns: Samples::new(),
         snap: SnapshotScheduler::new(Some(metrics.clone())),
         step_events: Vec::new(),
         clients_in: Vec::new(),
@@ -299,8 +353,7 @@ pub fn spawn_with_bots(
     metrics: Arc<Metrics>,
     stop: StopFlag,
 ) -> std::io::Result<SimThreadHandle> {
-    let (lp, inputs_tx, commands_tx) =
-        build_loop_with_bots(SystemClock, &cfg, bots, metrics, stop);
+    let (lp, inputs_tx, commands_tx) = build_loop_with_bots(SystemClock, &cfg, bots, metrics, stop);
     let pin = cfg.pin_core;
     let join = std::thread::Builder::new()
         .name("sim".into())
@@ -374,12 +427,10 @@ impl<C: Clock> SimLoop<C> {
         let t1 = self.clock.now();
         let dur = t1.saturating_duration_since(t0);
         self.metrics.tick_ms.observe(dur.as_secs_f64() * 1e3);
-        if self.tick_ns.len() < MAX_SAMPLES {
-            self.tick_ns
-                .push(dur.as_nanos().min(u32::MAX as u128) as u32);
-            self.err_ns
-                .push(err.as_nanos().min(u32::MAX as u128) as u32);
-        }
+        self.tick_ns
+            .push(dur.as_nanos().min(u32::MAX as u128) as u32);
+        self.err_ns
+            .push(err.as_nanos().min(u32::MAX as u128) as u32);
         self.ticks += 1;
         self.metrics.ticks_run.store(self.ticks, Ordering::Relaxed);
 
@@ -474,14 +525,16 @@ impl<C: Clock> SimLoop<C> {
     fn update_player_gauges(&self) {
         // `server_players` counts connected humans; bots have their own gauge (`server_bots`).
         let bots = |t: Team| self.bot_host.as_ref().map_or(0, |b| b.count_team(t));
-        self.metrics
-            .players
-            .with_label_values(&["us"])
-            .set(self.bridge.count_team(Team::Us).saturating_sub(bots(Team::Us)) as i64);
-        self.metrics
-            .players
-            .with_label_values(&["ger"])
-            .set(self.bridge.count_team(Team::Ger).saturating_sub(bots(Team::Ger)) as i64);
+        self.metrics.players.with_label_values(&["us"]).set(
+            self.bridge
+                .count_team(Team::Us)
+                .saturating_sub(bots(Team::Us)) as i64,
+        );
+        self.metrics.players.with_label_values(&["ger"]).set(
+            self.bridge
+                .count_team(Team::Ger)
+                .saturating_sub(bots(Team::Ger)) as i64,
+        );
     }
 
     /// Step 1: drain the network->sim channels (bounded by their capacity) into the per-player
@@ -581,8 +634,8 @@ impl<C: Clock> SimLoop<C> {
         let elapsed = self.clock.now().saturating_duration_since(self.started);
         Report {
             ticks: self.ticks,
-            tick_ms: quantiles(&mut self.tick_ns),
-            tick_interval_error_ms: quantiles(&mut self.err_ns),
+            tick_ms: self.tick_ns.quantiles(),
+            tick_interval_error_ms: self.err_ns.quantiles(),
             tick_overrun_total: self.metrics.tick_overrun_total.get(),
             tick_overrun_consecutive_max: self.metrics.tick_overrun_consecutive_max.get() as u64,
             tick_skipped_slots_total: self.metrics.tick_skipped_slots_total.get(),
@@ -692,6 +745,24 @@ mod tests {
         assert!(!tx.try_send(e));
         assert!(!tx.try_send(e));
         assert_eq!(m.input_queue_full_total.get(), 2);
+    }
+
+    #[test]
+    fn samples_are_bounded_and_keep_the_exact_maximum() {
+        let mut s = Samples::new();
+        for i in 1..=(SAMPLE_CAP as u32 * 4) {
+            s.push(i);
+        }
+        assert_eq!(s.v.len(), SAMPLE_CAP, "memory is constant");
+        assert!(s.v.capacity() <= SAMPLE_CAP * 2);
+        let q = s.quantiles();
+        assert_eq!(q.max, f64::from(SAMPLE_CAP as u32 * 4) / 1e6, "exact max");
+        // uniform reservoir: the median / p99 of 4 x CAP uniform values stay within 2 % of the true ones
+        let n = f64::from(SAMPLE_CAP as u32 * 4);
+        assert!((q.p50 * 1e6 - n * 0.5).abs() < n * 0.02, "p50 {}", q.p50);
+        assert!((q.p99 * 1e6 - n * 0.99).abs() < n * 0.02, "p99 {}", q.p99);
+        s.clear();
+        assert_eq!(s.quantiles().max, 0.0);
     }
 
     #[test]

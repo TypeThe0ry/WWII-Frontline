@@ -1,0 +1,40 @@
+# M0-030: performance regression check (NOT part of the PR gate): manual + nightly.
+# Runs the Rust micro-benchmarks against reports/baselines/perf-m0.json; the client capture, the bundle sizes (need the wasm
+# build) and the server load test need a quiet machine / a browser / a full build, so they are run locally and on the reference
+# machines (tools/perf/README.md, scripts/perf-regress.mjs).
+# A metric over its tolerance fails the job; the measurement is uploaded as an artifact either way.
+name: bench
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 3 * * *"
+permissions:
+  contents: read
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: "0"
+jobs:
+  bench:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust toolchain (pinned by rust-toolchain.toml)
+        run: rustup show active-toolchain || rustup toolchain install
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Map data (terrain is git-ignored)
+        run: PYTHONPATH=tools/map-pipeline python3 -m map_pipeline m0 --seed 1 --out data/maps/m0
+      - name: Unit tests of the perf tooling
+        run: node --test "tools/perf/*.test.mjs" "scripts/perf-regress.test.mjs"
+      - name: Regression check (Rust micro-benchmarks) against reports/baselines/perf-m0.json
+        # The baseline numbers come from a 4-core cloud VM, not from this runner: a failure here is a prompt to look
+        # (re-run on the same machine class), not proof of a regression.
+        run: node scripts/perf-regress.mjs check --skip client,server,bundle
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: perf-current
+          path: target/perf-current.json

@@ -1,0 +1,197 @@
+[
+  {
+    "machine": "xeon4-swiftshader",
+    "renderer": "webgl2",
+    "cam": 0,
+    "viewport": "640x360",
+    "gpu_mode": "swiftshader (software)",
+    "runs": 3,
+    "fps_mean": 1.4515744398477173,
+    "fps_range_pct": 5.551184382521512,
+    "interval_p50_ms": 588.3000000007451,
+    "interval_p50_range_pct": 2.8896821343282646,
+    "cpu_p50_ms": 1.300000000745058,
+    "cpu_p99_ms": 3.600000001490116,
+    "draw_calls": 50,
+    "triangles": 450341,
+    "veg_instances": 8130,
+    "heap_mb": 58.387423515319824,
+    "stages": {
+      "babylon_active_meshes_eval": {
+        "p50": 0.19999999925494194,
+        "p99": 0.4000000022351742
+      },
+      "babylon_render_pass": {
+        "p50": 0.3999999985098839,
+        "p99": 2.199999999254942
+      },
+      "game_update": {
+        "p50": 0,
+        "p99": 0.10000000149011612
+      },
+      "overlay": {
+        "p50": 0.19999999925494194,
+        "p99": 0.5
+      },
+      "scene_render": {
+        "p50": 0.7000000029802322,
+        "p99": 3.100000001490116
+      },
+      "terrain_update": {
+        "p50": 0.30000000074505806,
+        "p99": 0.6000000014901161
+      },
+      "vegetation_update": {
+        "p50": 0.09999999776482582,
+        "p99": 0.20000000298023224
+      }
+    },
+    "meta": {
+      "machine": "xeon4-swiftshader",
+      "cpu": "Intel(R) Xeon(R) Processor @ 2.30GHz",
+      "cores": 4,
+      "mem_gb": 15.7,
+      "os": "Linux 6.18.44-fc-v553",
+      "node": "v22.23.4",
+      "chromium": "153.0.8010.12",
+      "gpu_mode": "swiftshader (software)",
+      "renderer_requested": "webgl2",
+      "viewport": "640x360",
+      "quality": "high",
+      "commit": "453e3b4",
+      "dirty": true,
+      "date": "2026-11-17T11:19:45.296Z",
+      "command": "node tools/perf/capture.mjs --machine xeon4-swiftshader"
+    }
+  },
+  {
+    "machine": "xeon4-swiftshader",
+    "renderer": "webgl2",
+    "cam": 1,
+    "viewport": "640x360",
+    "gpu_mode": "swiftshader (software)",
+    "runs": 3,
+    "fps_mean": 3.055280203141877,
+    "fps_range_pct": 0.6797379806816094,
+    "interval_p50_ms": 311.69999999925494,
+    "interval_p50_range_pct": 2.4703240280872816,
+    "cpu_p50_ms": 1.199999999254942,
+    "cpu_p99_ms": 4.200000002980232,
+    "draw_calls": 33,
+    "triangles": 9884,
+    "veg_instances": 4942,
+    "heap_mb": 58.44781017303467,
+    "stages": {
+      "babylon_active_meshes_eval": {
+        "p50": 0.19999999925494194,
+        "p99": 1.300000000745058
+      },
+      "babylon_render_pass": {
+        "p50": 0.30000000074505806,
+        "p99": 3.199999999254942
+      },
+      "game_update": {
+        "p50": 0,
+        "p99": 0.10000000149011612
+      },
+      "overlay": {
+        "p50": 0.19999999925494194,
+        "p99": 1.4000000022351742
+      },
+      "scene_render": {
+        "p50": 0.6000000014901161,
+        "p99": 3.5
+      },
+      "terrain_update": {
+        "p50": 0.30000000074505806,
+        "p99": 1.1000000014901161
+      },
+      "vegetation_update": {
+        "p50": 0.09999999776482582,
+        "p99": 1.1000000014901161
+      }
+    },
+    "meta": {
+      "machine": "xeon4-swiftshader",
+      "cpu": "Intel(R) Xeon(R) Processor @ 2.30GHz",
+      "cores": 4,
+      "mem_gb": 15.7,
+      "os": "Linux 6.18.44-fc-v553",
+      "node": "v22.23.4",
+      "chromium": "153.0.8010.12",
+      "gpu_mode": "swiftshader (software)",
+      "renderer_requested": "webgl2",
+      "viewport": "640x360",
+      "quality": "high",
+      "commit": "453e3b4",
+      "dirty": true,
+      "date": "2026-11-17T11:19:45.296Z",
+      "command": "node tools/perf/capture.mjs --machine xeon4-swiftshader"
+    }
+  },
+  {
+    "machine": "xeon4-swiftshader",
+    "renderer": "webgl2",
+    "cam": 2,
+    "viewport": "640x360",
+    "gpu_mode": "swiftshader (software)",
+    "runs": 3,
+    "fps_mean": 3.800286534878369,
+    "fps_range_pct": 11.108364056321866,
+    "interval_p50_ms": 271.0999999977648,
+    "interval_p50_range_pct": 7.856879379267939,
+    "cpu_p50_ms": 1.1000000014901161,
+    "cpu_p99_ms": 3.699999999254942,
+    "draw_calls": 13,
+    "triangles": 318492,
+    "veg_instances": 3197,
+    "heap_mb": 58.540825843811035,
+    "stages": {
+      "babylon_active_meshes_eval": {
+        "p50": 0.19999999925494194,
+        "p99": 0.3999999985098839
+      },
+      "babylon_render_pass": {
+        "p50": 0.19999999925494194,
+        "p99": 1.5
+      },
+      "game_update": {
+        "p50": 0,
+        "p99": 0.10000000149011612
+      },
+      "overlay": {
+        "p50": 0.19999999925494194,
+        "p99": 0.6999999992549419
+      },
+      "scene_render": {
+        "p50": 0.5,
+        "p99": 2
+      },
+      "terrain_update": {
+        "p50": 0.29999999701976776,
+        "p99": 1
+      },
+      "vegetation_update": {
+        "p50": 0.09999999776482582,
+        "p99": 2.5
+      }
+    },
+    "meta": {
+      "machine": "xeon4-swiftshader",
+      "cpu": "Intel(R) Xeon(R) Processor @ 2.30GHz",
+      "cores": 4,
+      "mem_gb": 15.7,
+      "os": "Linux 6.18.44-fc-v553",
+      "node": "v22.23.4",
+      "chromium": "153.0.8010.12",
+      "gpu_mode": "swiftshader (software)",
+      "renderer_requested": "webgl2",
+      "viewport": "640x360",
+      "quality": "high",
+      "commit": "453e3b4",
+      "dirty": true,
+      "date": "2026-11-17T11:19:45.296Z",
+      "command": "node tools/perf/capture.mjs --machine xeon4-swiftshader"
+    }
+  }
+]

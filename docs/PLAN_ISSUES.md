@@ -427,3 +427,19 @@
 - **受影响任务**：M0-025/M1-040（死亡/重生时的预测处理）、M1-068、M2-049、M0-030/033（对照基线）。
 - **临时处理**：按此实现。
 - **裁决（Fable 填写）**：
+
+### PI-029 M0-030：低帧率浏览器客户端被误踢（输入 tick 窗口的 `too_far` 不应计入踢出连击）、服务器 RSS 增长的根因（统计样本向量）、浏览器死亡/重生预测
+
+- **状态**：resolved（总控交办的三项问题已在 M0-030 内修正；基线与回归脚本见 reports/m0/perf-baseline.md）
+- **类别**：缺陷修正 / 接口细化
+- **提出者 / 日期**：M0-030 / 2026-11-17
+- **问题 / 做法**：
+  1. **误踢（演示服务器 tick 5987，`input_violation_streak`）**。服务器把"连续 30 条违规"定义为 `TooFar | ReservedBits | WeaponSlot | BadMove | MoveClamped | YawRate | PitchRate`。逐类排除：该客户端的输出不可能产生 `YawRate/PitchRate`（`validate_input` 的转速上限 8000°/s ÷ 30 Hz = 266°/tick，而一条指令最多改变偏航 180°、俯仰 180°）、`MoveClamped`（斜向已按 127/√2 取整，长度 125.9 < 128）、`BadMove/ReservedBits/WeaponSlot`（客户端常量）——**只剩 `TooFar`（tick 超过 now+10 的窗口）**。根因在**两端**：客户端 `ClockSync.inputLeadTicks()` 按 RTT 的 EWMA 取提前量，而 1–5 fps 的软件渲染页面主线程被阻塞，Pong 晚一帧才处理，RTT 被测成 300–1000 ms（本机复现：700 ms 帧阻塞下 RTT 1060 ms、提前量 16 tick），提前量超过服务器窗口（10 tick）后整帧的 3–5 条指令（同一时刻连发，tick 连续递增）都落在窗口外，没有任何一条被接受 → input_slack 反馈也停了 → 提前量降不下来，连击 30 次即被踢。服务器侧的问题是：窗口外的 tick 本来就被丢弃、不产生任何效果，却被当作"滥用"计数。**修正**：①服务器 `TooFar` 不再计入连击（仍丢弃、仍计入 `input_rejected_total{reason="too_far"}`）；超过 `now + FAR_FUTURE_TICKS`（300 tick = 10 s）才算伪造 tick，新增 `far_future` 原因并计入连击；`ReservedBits/WeaponSlot/BadMove/MoveClamped/YawRate/PitchRate` 不变。②客户端 `inputLeadTicks()` 封顶 `MAX_INPUT_LEAD_TICKS = 9`（窗口 10 减 1），超出窗口的提前量只会丢输入。恶意输入的防护没有放松：窗口外的输入依然一律丢弃，伪造的远未来 tick 与其它畸形值依然 30 连击踢出。
+  2. **WT 路径服务器 RSS 线性增长**。用 `valgrind --tool=massif` 跑 20 个 WT 客户端 150 s：存活堆从 6.89 MB 涨到 7.36 MB（≈3.6 KB/s），增长点是 `SnapshotScheduler::tick` 里的 `Vec<f32>`（budget_util，262 144 B）与 `Vec<u16>`（sizes，131 072 B）——`SchedStats` 的**诊断样本**（每包 6 B，每客户端每秒另有两个 f32，每 tick 一个 u32）默认 `collect: true`，而生产二进制里调度器在 `sim` 线程内，样本从未被读取（只有 `Report` 出线程）。上限 400 000 个样本/向量，所以 10 客户端要约 33 min 才停止增长，100 客户端约 3 min——这就是 "30 min 线性增长"。WS 路径同样累积（15 Hz，每包 6 B），M0-027 的 WS 10 min 窗口内增长未超 2 %，未单独复核。**修正**：`sim_thread::spawn_with_bots` 关闭 `snap.collect`（测试与基准直接用 `SimLoop`，不受影响）；`tick_ns/err_ns`（退出报告用，原先每 tick 8 B、上限 400 万）改为 32 768 样本的均匀蓄水池 + 精确最大值（`Samples`），内存恒定。实测见 reports/m0/perf-baseline.md。
+  3. **浏览器客户端的死亡/重生**（PI-028 交接）：此前没有处理——死后继续预测（harness 里死亡 5 s 内本地模拟多走 33.7 m，整段 53 次纠正）。现与 `crates/headless-client` 一致：自身 `health == 0` 时 `LocalPredictor.frozen`（`step/replay` 不动，不产生射击事件）；解冻后 ≥1 m 的纠正是重生传送，回滚从全新的站立状态（`freshLife`：清零速度/姿态、保留 yaw、重新装备起始武器）重放。
+- **证据**：client/e2e/low-fps.spec.ts（真服务器 + Chromium，主线程每帧阻塞 280/330/700 ms，60 s 不被踢）、crates/server/src/session.rs 的 `clock_skew_is_not_a_violation_but_forged_ticks_are` 与 `low_fps_burst_pattern_is_never_kicked_for_60_s`、client/src/net/clock.test.ts、client/src/game/death-respawn.test.ts、massif 报告摘要见 PI 正文。
+- **建议方案**：按上；M1-040（自动重连）与 M1-068（netem）沿用 `low-fps.spec.ts` 作低帧率回归；M1 若把验证改成滑动窗口（PI-022）保持"窗口外丢弃但不计违规"的语义。
+- **受影响任务**：M0-033（验收）、M1-040、M1-068、M2-049。
+- **临时处理**：已按此实现。
+- **裁决（Fable 填写）**：总控交办项（EXECUTOR 守则"已观察到的问题"与 PI-028 的浏览器交接），按此实现；待总控确认。
+

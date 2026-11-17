@@ -7,7 +7,7 @@
 - 入口 `?scene=vegetation&cam=0|1|2&debug=1`（PI-020：地形 + 植被；`?scene=terrain` 只有地形）。机位在 `client/src/render/perf-cameras.ts`（单元测试钉死坐标）：
   `0` 地面朝北（开阔地形 + 近处植被）、`1` 俯瞰整块（实例最多）、`2` 块边缘朝西（山脊/远景环）。
 - 植被种子 `veg_seed=1`（默认）、场景里没有依赖墙钟的动画；`quality=high|low`（Iris Xe / WebGL2 档用 `--quality low`）。
-- `?perfcam=` / `?perfclock=fixed`（任务卡原稿）不实现：机位用 `cam`，场景无时间依赖，固定步长由 `?scene=` 下无模拟步进保证。
+- 任务卡原稿的 `?perfcam=N` / `?perfclock=fixed` 不另做：机位沿用已有的 `?cam=0|1|2`（PI-020 / 总控裁定），而 `?scene=vegetation` 不连服务器、不跑模拟步进，植被布局由固定种子决定；唯一随时间变化的是植被的风摆（顶点着色器里的固定算式，不改变 draw call / 三角形 / 实例计数），所以没有做“固定时钟”开关；关闭动态分辨率：M0 没有动态分辨率（`render_scale` 恒为 1）。
 
 ## 准备（参考机）
 

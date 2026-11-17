@@ -175,7 +175,9 @@ fn main() {
     if std::env::var_os("FRONTLINE_NO_BASELINE").is_none() {
         let dir = std::env::var_os("FRONTLINE_BASELINE_DIR")
             .map(PathBuf::from)
-            .unwrap_or_else(|| PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../reports/baselines"));
+            .unwrap_or_else(|| {
+                PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../reports/baselines")
+            });
         let _ = std::fs::create_dir_all(&dir);
         let _ = std::fs::write(dir.join("sim-m0-weapon.json"), json);
     }

@@ -133,9 +133,7 @@ impl PlayerInput {
         if let Err(r) = self.buf.classify(cmd.tick, now) {
             // A tick a little beyond the window is clock skew (dropped, no strike); one absurdly
             // far ahead is forged and counts like any other malformed value.
-            if r == PushResult::TooFar
-                && cmd.tick as u64 > now as u64 + FAR_FUTURE_TICKS as u64
-            {
+            if r == PushResult::TooFar && cmd.tick as u64 > now as u64 + FAR_FUTURE_TICKS as u64 {
                 self.state.note(Reject::FarFuture);
                 return Ingest {
                     result: PushResult::Invalid(Reject::FarFuture),

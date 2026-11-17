@@ -171,7 +171,19 @@ fn main() {
         let r = run(n, ticks, &map, dense);
         eprintln!(
             "aoi_encode {:>3} clients{}: AOI+encode per tick P50 {:.3} / P99 {:.3} / max {:.3} ms (mean {:.3}), {:.1} us per client packet, mean packet {:.0} B, {:.1} entity records per packet",
-            r.n, if dense { " (one team, no R3 trimming)" } else { "" }, r.p50, r.p99, r.max, r.mean, r.per_client_us, r.bytes, r.records
+            r.n,
+            if dense {
+                " (one team, no R3 trimming)"
+            } else {
+                ""
+            },
+            r.p50,
+            r.p99,
+            r.max,
+            r.mean,
+            r.per_client_us,
+            r.bytes,
+            r.records
         );
         json.push((
             if dense {
@@ -186,7 +198,9 @@ fn main() {
     // `FRONTLINE_BASELINE_DIR` redirects the output (the perf regression check must not overwrite the baseline).
     let path = std::env::var_os("FRONTLINE_BASELINE_DIR")
         .map(PathBuf::from)
-        .unwrap_or_else(|| PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../reports/baselines"))
+        .unwrap_or_else(|| {
+            PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../reports/baselines")
+        })
         .join("server-m0.json");
     let mut root: serde_json::Value = std::fs::read_to_string(&path)
         .ok()
@@ -203,7 +217,9 @@ fn main() {
         );
     }
     root["aoi_encode"] = serde_json::Value::Object(obj);
-    root["aoi_encode"]["_note"] = serde_json::json!("AOI selection + snapshot encoding wall time per tick (sim thread, serial), moving+firing players on the M0 terrain; budget ARCHITECTURE 6.10 stages 8+9 = 2.0 + 0.6 ms at ~67 packets per tick");
+    root["aoi_encode"]["_note"] = serde_json::json!(
+        "AOI selection + snapshot encoding wall time per tick (sim thread, serial), moving+firing players on the M0 terrain; budget ARCHITECTURE 6.10 stages 8+9 = 2.0 + 0.6 ms at ~67 packets per tick"
+    );
     std::fs::create_dir_all(path.parent().unwrap()).ok();
     std::fs::write(&path, serde_json::to_string_pretty(&root).unwrap() + "\n")
         .expect("write baseline");
