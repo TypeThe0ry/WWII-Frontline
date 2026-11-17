@@ -1,0 +1,7 @@
+{
+  "name": "@frontline/asset-pipeline",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Asset pipeline (skeleton; filled in by M1-001 and later)."
+}

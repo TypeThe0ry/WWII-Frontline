@@ -1,0 +1,6 @@
+[project]
+name = "frontline-map-pipeline"
+version = "0.0.0"
+description = "Frontline map pipeline (skeleton; filled in by M0-009)"
+requires-python = ">=3.11"
+dependencies = []

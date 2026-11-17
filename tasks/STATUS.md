@@ -24,7 +24,7 @@
 
 | ID | 标题 | 状态 | 实测结果 | 遗留问题 | 完成提交 |
 |---|---|---|---|---|---|
-| M0-001 | 仓库脚手架与工具链 | todo | | | |
+| M0-001 | 仓库脚手架与工具链 | done | 1) `RUSTFLAGS="-D warnings" cargo build --workspace` 退出 0、警告 0；2) `cargo clippy --workspace --all-targets -- -D warnings` 退出 0；`cargo fmt --check`、`cargo test --workspace` 通过（8 个 smoke 测试）；3) `pnpm -C client build` 退出 0 无 warning（dist 0.75 kB js），`tsc --noEmit` 0，`pnpm lint` 0；4) `cargo metadata` 内部依赖边 14 条，与 ARCHITECTURE §4.5 允许集合逐条比对完全相等（sim→protocol；sim-wasm→sim,protocol；bots→sim,protocol；server→sim,protocol,bots；gateway→protocol；headless-client→sim,protocol；balance-sim→sim,protocol,bots；protocol 无）；5) `node tools/ci/check-layout.mjs` 退出 0（24 目录+4 文件）；6) `git check-ignore` 三路径均被忽略；7) 两 lockfile 已生成待入库，`@babylonjs/core` 精确 8.56.2。版本：Rust 1.97.0、Node 22.23.4、pnpm 10.28.0、vite 8.3.8、TS 6.0.3、vitest 5.1.0、eslint 10.15.0、preact 11.2.0、@preact/signals 2.11.4。 | BRIEF 文档不存在，目录清单按 ARCHITECTURE §4.1；check-layout 不要求 gitignore 的 assets/incoming、processed（新增 assets/.gitkeep）；TS 取 6.0.3（typescript-eslint 8.73 要求 <6.1，故未用 7.x）；Babylon 取 8.x 最新（最新大版本已是 9.x） | |
 | M0-002 | GitHub Actions 基线与依赖图检查 | todo | | | |
 | M0-003 | 字体许可证核实与登记（R10） | todo | | | |
 | M0-004 | /data schema 与校验工具 | todo | | | |

@@ -1,0 +1,14 @@
+{
+  "name": "frontline",
+  "private": true,
+  "version": "0.0.0",
+  "packageManager": "pnpm@10.28.0",
+  "engines": { "node": ">=22.12.0" },
+  "scripts": {
+    "build": "pnpm -C client build",
+    "lint": "pnpm -C client lint",
+    "typecheck": "pnpm -C client typecheck",
+    "test": "pnpm -C client test",
+    "check-layout": "node tools/ci/check-layout.mjs"
+  }
+}

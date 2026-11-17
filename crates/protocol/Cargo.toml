@@ -1,0 +1,13 @@
+[package]
+name = "frontline-protocol"
+description = "Frontline protocol (M0-001 skeleton)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
