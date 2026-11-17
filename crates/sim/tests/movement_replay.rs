@@ -23,8 +23,8 @@ fn script(n: usize, seed: u64) -> Vec<frontline_protocol::msg::input::InputCmd> 
     let mut cur = cmd(0, 0, 0, 0, 0);
     let mut out = Vec::with_capacity(n);
     for i in 0..n {
-        // Hold each random command for a few ticks, like a player would.
-        if i % 7 == 0 {
+        // Hold each random command for 1 s (> the 0.25 s ramp), like a player would.
+        if i % 30 == 0 {
             let b = r.next_u64();
             let mut buttons = 0;
             if b & 3 == 0 {
@@ -77,7 +77,10 @@ fn fold(states: &[PlayerAuthState]) -> u64 {
 }
 
 /// Regression pin; update only when movement rules or data change on purpose (and say why).
-const GOLDEN: u64 = 0x0427_5f5f_f85f_ebd8;
+/// M0-012: re-pinned (0x0427_5f5f_f85f_ebd8 before) because ground movement now ramps linearly
+/// (accel 0.25 s / decel 0.20 s from data/roles/rifleman.json), and the script holds each command
+/// 30 ticks instead of 7 so that the player still travels.
+const GOLDEN: u64 = 0x1fe0_0bf7_4d6b_9efa;
 
 #[test]
 fn movement_replay_10k() {

@@ -20,12 +20,16 @@
     "sprint_mps": 6,
     "crouch_mps": 1.2,
     "prone_mps": 0.6,
-    "stamina_max": 100
+    "stamina_max": 100,
+    "accel_time_s": 0.25,
+    "decel_time_s": 0.2
   },
   "capsule": {
     "radius_m": 0.35,
     "height_stand_m": 1.8,
-    "height_crouch_m": 1.2
+    "height_crouch_m": 1.2,
+    "eye_height_stand_m": 1.65,
+    "eye_height_crouch_m": 1.05
   },
   "health_hp": 100,
   "abilities": [

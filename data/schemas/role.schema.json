@@ -47,7 +47,9 @@
         "max_slope_deg": { "type": "number", "exclusiveMinimum": 0, "exclusiveMaximum": 90 },
         "autostep_max_m": { "type": "number", "minimum": 0 },
         "autostep_min_width_m": { "type": "number", "minimum": 0 },
-        "snap_to_ground_m": { "type": "number", "minimum": 0 }
+        "snap_to_ground_m": { "type": "number", "minimum": 0 },
+        "accel_time_s": { "type": "number", "minimum": 0 },
+        "decel_time_s": { "type": "number", "minimum": 0 }
       }
     },
     "capsule": {
@@ -57,7 +59,9 @@
       "properties": {
         "radius_m": { "type": "number", "exclusiveMinimum": 0 },
         "height_stand_m": { "type": "number", "exclusiveMinimum": 0 },
-        "height_crouch_m": { "type": "number", "exclusiveMinimum": 0 }
+        "height_crouch_m": { "type": "number", "exclusiveMinimum": 0 },
+        "eye_height_stand_m": { "type": "number", "exclusiveMinimum": 0 },
+        "eye_height_crouch_m": { "type": "number", "exclusiveMinimum": 0 }
       }
     },
     "health_hp": { "type": "number", "exclusiveMinimum": 0 },

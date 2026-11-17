@@ -1,10 +1,10 @@
 {
-  "kcc_step_median_us": 18.622,
-  "kcc_step_mean_us": 22.760,
-  "kcc_step_p99_us": 96.269,
-  "kcc_100_players_tick_median_ms": 2.1388,
-  "kcc_100_players_tick_mean_ms": 2.1426,
-  "kcc_100_players_tick_p99_ms": 2.6297,
+  "kcc_step_median_us": 19.615,
+  "kcc_step_mean_us": 23.803,
+  "kcc_step_p99_us": 100.752,
+  "kcc_100_players_tick_median_ms": 2.2362,
+  "kcc_100_players_tick_mean_ms": 2.2484,
+  "kcc_100_players_tick_p99_ms": 2.8008,
   "budget_kcc_step_us": 20.0,
   "budget_kcc_100_players_tick_ms": 3.0,
   "note": "M0-011, this machine (not the reference machine), release, enhanced-determinism, plain Instant harness"

@@ -12,7 +12,8 @@ use super::stance::Stance;
 pub struct PlayerAuthState {
     /// Foot position (capsule bottom), metres.
     pub pos: Vec3,
-    /// Velocity, m/s. Horizontal part is the achieved velocity of the last tick.
+    /// Velocity, m/s. Horizontal part: achieved velocity of the last tick in the air; on the ground the
+    /// ramped (commanded) velocity unless the move was obstructed by more than half (see `step_player`).
     pub vel: Vec3,
     /// Radians `[0, 2pi)`.
     pub yaw: f32,

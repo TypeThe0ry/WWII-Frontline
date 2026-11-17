@@ -2,8 +2,8 @@
   "id": "rifleman",
   "name_key": "role.rifleman.name",
   "faction_overrides": {
-    "us": { "loadout_ids": [] },
-    "ger": { "loadout_ids": [] }
+    "us": { "loadout_ids": ["us_rifleman_1"] },
+    "ger": { "loadout_ids": ["ger_rifleman_1"] }
   },
   "movement": {
     "walk_mps": 2.0,
@@ -20,12 +20,16 @@
     "max_slope_deg": 35,
     "autostep_max_m": 0.3,
     "autostep_min_width_m": 0.2,
-    "snap_to_ground_m": 0.3
+    "snap_to_ground_m": 0.3,
+    "accel_time_s": 0.25,
+    "decel_time_s": 0.20
   },
   "capsule": {
     "radius_m": 0.35,
     "height_stand_m": 1.8,
-    "height_crouch_m": 1.2
+    "height_crouch_m": 1.2,
+    "eye_height_stand_m": 1.65,
+    "eye_height_crouch_m": 1.05
   },
   "health_hp": 100,
   "_meta": {
@@ -43,7 +47,11 @@
       "movement.max_slope_deg",
       "movement.autostep_max_m",
       "movement.autostep_min_width_m",
-      "movement.snap_to_ground_m"
+      "movement.snap_to_ground_m",
+      "movement.accel_time_s",
+      "movement.decel_time_s",
+      "capsule.eye_height_stand_m",
+      "capsule.eye_height_crouch_m"
     ]
   }
 }

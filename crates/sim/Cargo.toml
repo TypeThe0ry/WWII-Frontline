@@ -37,6 +37,10 @@ required-features = ["test-util"]
 name = "movement_world_vs_predict"
 required-features = ["client-predict"]
 
+[[test]]
+name = "weapon_duel"
+required-features = ["client-predict"]
+
 [[bench]]
 name = "kcc"
 harness = false
@@ -47,6 +51,10 @@ harness = false
 
 [[bench]]
 name = "collision"
+harness = false
+
+[[bench]]
+name = "ballistics"
 harness = false
 
 [build-dependencies]

@@ -1,0 +1,10 @@
+{
+  "ballistics_400_projectiles_stage_median_ms": 0.3047,
+  "ballistics_400_projectiles_stage_p99_ms": 0.4100,
+  "world_step_20_players_with_400_projectiles_median_ms": 0.4824,
+  "world_step_20_players_no_projectiles_median_ms": 0.1821,
+  "world_step_20_players_firing_median_ms": 0.1171,
+  "world_step_20_players_firing_p99_ms": 0.1875,
+  "budget_ballistics_stage_ms": 2.5,
+  "note": "M0-012, this machine (not the reference machine), release, enhanced-determinism, plain Instant harness"
+}

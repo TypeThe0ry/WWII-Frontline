@@ -12,8 +12,12 @@ use frontline_protocol::msg::input::InputCmd;
 use glam::Vec3;
 
 use crate::collision::CollisionData;
+use crate::data::GameData;
 use crate::ids::{EntityId, PlayerId, Tick};
 use crate::movement::{MoveParams, PlayerAuthState, Stance};
+use crate::step::SimEvent;
+use crate::weapon::ballistics::BallisticsParams;
+use crate::weapon::{WeaponParams, WeaponState};
 
 #[derive(Component, Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Player {
@@ -151,3 +155,72 @@ pub struct MoveParamsRes(pub Option<MoveParams>);
 /// Terrain collision (owned here so that systems can query it).
 #[derive(Resource)]
 pub struct CollisionRes(pub CollisionData);
+
+/// Hit points (M0-012 subtracts damage; death / downed handling is M0-013).
+#[derive(Component, Debug, Clone, Copy, PartialEq)]
+pub struct Health(pub f32);
+
+/// Events produced by systems during a step; drained into `StepOutput` by `World::step`.
+#[derive(Resource, Debug, Default)]
+pub struct EventBuf(pub Vec<SimEvent>);
+
+/// Game data and tick rate for the systems.
+#[derive(Resource, Clone, Copy)]
+pub struct SimCfgRes {
+    pub data: &'static GameData,
+    pub hz: u8,
+}
+
+/// Per-weapon derived constants, indexed like `GameData::weapons`.
+#[derive(Resource, Debug, Clone)]
+pub struct WeaponTable {
+    params: Vec<Option<WeaponParams>>,
+    ballistics: Vec<BallisticsParams>,
+}
+
+impl WeaponTable {
+    pub fn new(data: &GameData, hz: u8) -> Self {
+        Self {
+            params: data
+                .weapons
+                .iter()
+                .map(|w| WeaponParams::from_def(w, hz).ok())
+                .collect(),
+            ballistics: data
+                .weapons
+                .iter()
+                .map(BallisticsParams::from_def)
+                .collect(),
+        }
+    }
+    pub fn params(&self, weapon: u16) -> Option<&WeaponParams> {
+        self.params.get(usize::from(weapon))?.as_ref()
+    }
+    pub fn ballistics(&self, weapon: u16) -> Option<BallisticsParams> {
+        self.ballistics.get(usize::from(weapon)).copied()
+    }
+}
+
+/// Spawns the player's starting weapon from the role's loadout of its team (M0: the single
+/// default role, first loadout id; reserve = `ammo_mags` clips).
+pub fn starting_weapon(data: &GameData, role: &str, team: Team, hz: u8) -> Option<WeaponState> {
+    let key = match team {
+        Team::Us => "us",
+        Team::Ger => "ger",
+    };
+    let lid = data
+        .role(role)?
+        .faction_overrides
+        .get(key)?
+        .loadout_ids
+        .first()?;
+    let lo = data.loadout(lid)?;
+    let idx = data.weapons.iter().position(|w| w.id == lo.primary)?;
+    let p = WeaponParams::from_def(&data.weapons[idx], hz).ok()?;
+    let reserve = u32::from(p.mag_capacity) * lo.ammo_mags;
+    Some(WeaponState::new(
+        idx as u16,
+        p.mag_capacity,
+        reserve.min(u32::from(u16::MAX)) as u16,
+    ))
+}

@@ -1115,6 +1115,8 @@ Medic 等 Support 不提供解压；Rally 效果见 §13.8（累积 ×0.7）
 
 **装备重量修正**：`move_mult = clamp(1 − 0.012 × (load_kg − 10), 0.85, 1.0)`，`load_kg` = 主武器 + 副武器 + 弹药（每 kg 约 20 发 7.92/.30-06）+ 手雷等。结果例：MG42（11.6 kg + 弹）≈ 0.93；MP40（4.0 kg + 弹）≈ 0.99；Panzerschreck 全装 ≈ 0.92；上限下限适用于所有速度（含冲刺）。
 
+**地面加减速**：水平速度向目标速度线性逼近，数据字段 `/data/roles/*.json` 的 `movement.accel_time_s`（从静止到目标速度的加速时间，初值 0.25 s）与 `movement.decel_time_s`（松开输入到停止的减速时间，初值 0.20 s），均为【待调参】【待测 → REFERENCE_MEASUREMENTS §movement】；字段缺省按瞬时处理；空中不受此约束（见 `air_control_mult`）。
+
 ### 9.2 姿态切换时间
 
 | 切换 | 时间 |

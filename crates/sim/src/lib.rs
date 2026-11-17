@@ -13,10 +13,12 @@ pub mod ids;
 pub mod movement;
 #[cfg(feature = "client-predict")]
 pub mod predict;
+pub mod projectile;
 pub mod rng;
 pub mod schedule;
 pub mod step;
 pub mod view;
+pub mod weapon;
 pub mod world;
 
 pub use collision::{CollisionChunk, CollisionData, CollisionError};
@@ -27,4 +29,5 @@ pub use ids::{EntityId, PlayerId, Tick};
 pub use movement::{step_player, MoveParams, PlayerAuthState, Stance};
 pub use step::{RuleChange, SimEvent, StepOutput};
 pub use view::WorldView;
+pub use weapon::{HitZone, WeaponState};
 pub use world::{GameMode, MapId, SimConfig, SpawnError, SpawnReq, World};

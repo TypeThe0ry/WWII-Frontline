@@ -89,9 +89,13 @@ fn run_dir(col: &CollisionData, start: (f32, f32), yaw: u16, ticks: u32) -> (Pla
     let mut acc = 0.0;
     let mut n = 0;
     for t in 0..ticks {
+        let before = s.pos;
         s = step_player(&s, &cmd(0, 127, yaw, 0, 0), &p, col);
         if t >= ticks / 2 && s.grounded {
-            acc += libm::sqrtf(s.vel.x * s.vel.x + s.vel.z * s.vel.z);
+            // Achieved ground speed from the displacement (`vel` is the commanded velocity on
+            // the ground since M0-012).
+            let (dx, dz) = (s.pos.x - before.x, s.pos.z - before.z);
+            acc += libm::sqrtf(dx * dx + dz * dz) * p.hz;
             n += 1;
         }
     }
@@ -119,9 +123,11 @@ fn slope_limit_35deg_step_player() {
         let mut acc = 0.0;
         let mut n = 0;
         for _ in 0..150 {
+            let before = s.pos;
             s = step_player(&s, &cmd(0, 127, 0, 0, 0), &p, &col);
             if s.pos.z > 41.0 && s.pos.z < 40.0 + rise / deg.to_radians().tan() - 1.0 {
-                acc += libm::sqrtf(s.vel.x * s.vel.x + s.vel.z * s.vel.z);
+                let (dx, dz) = (s.pos.x - before.x, s.pos.z - before.z);
+                acc += libm::sqrtf(dx * dx + dz * dz) * p.hz;
                 n += 1;
             }
         }

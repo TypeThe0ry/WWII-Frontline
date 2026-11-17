@@ -160,3 +160,297 @@ pub fn settle(col: &CollisionData, p: &MoveParams, x: f32, z: f32) -> PlayerAuth
 pub fn flat(n: i32, h: f32) -> CollisionData {
     synth_data(n, n, &move |_, _| h)
 }
+
+// ---- weapon helpers (M0-012) ----
+
+use frontline_sim::weapon::{step_weapon, ShotCtx, WeaponOut, WeaponParams, WeaponState};
+use frontline_sim::Tick;
+
+pub const BTN_FIRE: u16 = buttons::FIRE;
+pub const BTN_AIM: u16 = buttons::AIM;
+pub const BTN_RELOAD: u16 = buttons::RELOAD;
+
+pub fn weapon_index(id: &str) -> u16 {
+    GameData::embedded()
+        .weapons
+        .iter()
+        .position(|w| w.id == id)
+        .unwrap_or_else(|| panic!("weapon {id}")) as u16
+}
+
+pub fn weapon_params(id: &str) -> WeaponParams {
+    let def = &GameData::embedded().weapons[weapon_index(id) as usize];
+    WeaponParams::from_def(def, 30).unwrap()
+}
+
+/// One standing player with a weapon, stepped directly through `step_weapon`.
+pub struct Rig {
+    pub w: WeaponState,
+    pub wp: WeaponParams,
+    pub mp: MoveParams,
+    pub auth: PlayerAuthState,
+    pub tick: u32,
+    pub seed: u64,
+    pub entity: u16,
+}
+
+impl Rig {
+    /// Full magazine and `mags` spare clips.
+    pub fn new(weapon: &str, mags: u32) -> Self {
+        let wp = weapon_params(weapon);
+        let reserve = (u32::from(wp.mag_capacity) * mags) as u16;
+        let mut auth = PlayerAuthState::spawn(Vec3::new(10.0, 5.0, 10.0), 0.0);
+        auth.grounded = true;
+        Rig {
+            w: WeaponState::new(weapon_index(weapon), wp.mag_capacity, reserve),
+            wp,
+            mp: move_params(),
+            auth,
+            tick: 0,
+            seed: 99,
+            entity: 3,
+        }
+    }
+
+    /// Steps one tick with `buttons` and the given move axes.
+    pub fn step_cmd(&mut self, c: frontline_protocol::msg::input::InputCmd) -> WeaponOut {
+        self.tick += 1;
+        let ctx = ShotCtx {
+            match_seed: self.seed,
+            tick: Tick(self.tick),
+            entity: self.entity,
+        };
+        step_weapon(&mut self.w, &self.wp, &c, &self.auth, &self.mp, ctx)
+    }
+
+    pub fn step(&mut self, buttons: u16) -> WeaponOut {
+        self.step_cmd(cmd(0, 0, 0, buttons, 0))
+    }
+
+    pub fn idle(&mut self, ticks: u32) {
+        for _ in 0..ticks {
+            self.step(0);
+        }
+    }
+
+    /// Input of the fastest possible clicker (hold the trigger, release it for exactly one tick
+    /// right before the weapon is ready, press again): the rate cap is reached, not exceeded.
+    pub fn max_rate_input(&self) -> u16 {
+        let t = self.w.timer_units;
+        let cooling = matches!(
+            self.w.fsm,
+            frontline_sim::weapon::Fsm::Cooldown | frontline_sim::weapon::Fsm::BoltCycle
+        );
+        if cooling
+            && t > frontline_sim::weapon::TICK_UNITS
+            && t <= 2 * frontline_sim::weapon::TICK_UNITS
+        {
+            0
+        } else {
+            BTN_FIRE
+        }
+    }
+
+    /// Runs the max-rate clicker for `ticks`, topping the magazine up when it is empty (rate
+    /// tests only); returns the 1-based ticks of the shots.
+    pub fn max_rate(&mut self, ticks: u32) -> Vec<u32> {
+        let mut shots = Vec::new();
+        for _ in 0..ticks {
+            if self.w.mag == 0 {
+                self.w.mag = self.wp.mag_capacity;
+                if self.w.fsm == frontline_sim::weapon::Fsm::Empty {
+                    self.w.fsm = frontline_sim::weapon::Fsm::Ready;
+                }
+            }
+            let b = self.max_rate_input();
+            if self.step(b).shot.is_some() {
+                shots.push(self.tick);
+            }
+        }
+        shots
+    }
+
+    /// Presses fire on every other tick (press, release, press, ...) for `ticks` ticks; returns
+    /// the ticks (1-based) at which a shot left the barrel.
+    pub fn mash(&mut self, ticks: u32) -> Vec<u32> {
+        let mut shots = Vec::new();
+        for i in 0..ticks {
+            let out = self.step(if i % 2 == 0 { BTN_FIRE } else { 0 });
+            if out.shot.is_some() {
+                shots.push(self.tick);
+            }
+        }
+        shots
+    }
+}
+
+// ---- world-level weapon helpers (M0-012) ----
+
+use frontline_protocol::quant::rad_to_pitch_i16;
+use frontline_sim::data::defs::WeaponDef;
+use frontline_sim::weapon::ballistics::{substep, BallisticsParams, MUZZLE_OFFSET_M};
+use frontline_sim::{GameMode, MapId, SimConfig, SimEvent, SpawnReq, Team, World};
+
+/// `GameData::embedded()` with every weapon edited by `f` (e.g. zero spread for exact hits).
+pub fn data_with(f: impl Fn(&mut WeaponDef)) -> &'static GameData {
+    let e = GameData::embedded();
+    let weapons: Vec<WeaponDef> = e
+        .weapons
+        .iter()
+        .cloned()
+        .map(|mut w| {
+            f(&mut w);
+            w
+        })
+        .collect();
+    Box::leak(Box::new(GameData {
+        weapons: Box::leak(weapons.into_boxed_slice()),
+        roles: e.roles,
+        loadouts: e.loadouts,
+        vehicles: e.vehicles,
+        hash: e.hash,
+    }))
+}
+
+pub fn no_spread() -> &'static GameData {
+    data_with(|w| {
+        w.gameplay.spread.hip_deg = 0.0;
+        w.gameplay.spread.ads_deg = 0.0;
+    })
+}
+
+pub fn sim_cfg(data: &'static GameData, seed: u64) -> SimConfig {
+    SimConfig {
+        tick_hz: 30,
+        match_seed: seed,
+        map: MapId(0),
+        mode: GameMode::Sandbox,
+        data,
+    }
+}
+
+/// World with the given players `(id, team, x, z, yaw code)` on flat terrain at y = 5 and
+/// already settled on the ground.
+pub fn duel_world(
+    data: &'static GameData,
+    col: &CollisionData,
+    seed: u64,
+    players: &[(u8, Team, f32, f32, u16)],
+) -> World {
+    let mut w = World::new(sim_cfg(data, seed), col);
+    for &(id, team, x, z, _) in players {
+        w.spawn_player(SpawnReq {
+            player: id,
+            team,
+            pos: Vec3::new(x, 5.02, z),
+            yaw: 0.0,
+        })
+        .unwrap();
+    }
+    for _ in 0..10 {
+        let inputs: Vec<_> = players
+            .iter()
+            .map(|p| (p.0, cmd(0, 0, p.4, 0, 0)))
+            .collect();
+        w.step(&inputs);
+    }
+    for p in players {
+        assert!(w.player_state(p.0).unwrap().grounded);
+    }
+    w
+}
+
+/// Pitch (radians) that makes a shot fired by a standing player at the origin pass `target_y`
+/// metres above the shooter's feet at a horizontal distance `dist`, with the sim integrator.
+pub fn solve_pitch(bp: &BallisticsParams, eye_h: f32, dist: f32, target_y: f32) -> f32 {
+    let height_at = |pitch: f32| {
+        let dir = Vec3::new(libm::cosf(pitch), libm::sinf(pitch), 0.0);
+        let (mut p, mut v) = (
+            Vec3::new(0.0, eye_h, 0.0) + dir * MUZZLE_OFFSET_M,
+            dir * bp.muzzle_velocity_mps,
+        );
+        let h = 1.0 / 120.0;
+        loop {
+            let (p0, _) = (p, v);
+            substep(&mut p, &mut v, bp.drag_k_per_m, bp.gravity_mps2, h);
+            if p.x >= dist {
+                let f = (dist - p0.x) / (p.x - p0.x);
+                return p0.y + f * (p.y - p0.y);
+            }
+        }
+    };
+    let (mut lo, mut hi) = (-0.2f32, 0.3f32);
+    for _ in 0..60 {
+        let mid = 0.5 * (lo + hi);
+        if height_at(mid) < target_y {
+            lo = mid;
+        } else {
+            hi = mid;
+        }
+    }
+    0.5 * (lo + hi)
+}
+
+/// Command that fires along +x (yaw code 16384) with the given pitch (radians).
+pub fn fire_cmd(pitch: f32, buttons: u16) -> frontline_protocol::msg::input::InputCmd {
+    let mut c = cmd(0, 0, 16384, buttons, 0);
+    c.pitch = rad_to_pitch_i16(pitch).code;
+    c
+}
+
+/// Folds events into an order-sensitive hash (floats by bit pattern).
+pub fn event_hash(events: &[SimEvent]) -> u64 {
+    let mut h = 0xcbf2_9ce4_8422_2325u64;
+    let mut put = |b: &[u8]| {
+        for &x in b {
+            h = (h ^ u64::from(x)).wrapping_mul(0x0100_0000_01b3);
+        }
+    };
+    for e in events {
+        match e {
+            SimEvent::Shot {
+                shooter,
+                weapon,
+                muzzle,
+                dir,
+            } => {
+                put(&[1]);
+                put(&shooter.to_le_bytes());
+                put(&weapon.to_le_bytes());
+                for v in [muzzle.x, muzzle.y, muzzle.z, dir.x, dir.y, dir.z] {
+                    put(&v.to_bits().to_le_bytes());
+                }
+            }
+            SimEvent::Hit {
+                shooter,
+                target,
+                zone,
+                damage_hp,
+                dist_m,
+            } => {
+                put(&[2]);
+                put(&shooter.to_le_bytes());
+                put(&target.to_le_bytes());
+                put(&[*zone as u8]);
+                put(&damage_hp.to_bits().to_le_bytes());
+                put(&dist_m.to_bits().to_le_bytes());
+            }
+            SimEvent::Impact {
+                pos,
+                normal,
+                material,
+            } => {
+                put(&[3, *material]);
+                for v in [pos.x, pos.y, pos.z, normal.x, normal.y, normal.z] {
+                    put(&v.to_bits().to_le_bytes());
+                }
+            }
+            SimEvent::DryFire { shooter } => {
+                put(&[4]);
+                put(&shooter.to_le_bytes());
+            }
+            _ => put(&[9]),
+        }
+    }
+    h
+}

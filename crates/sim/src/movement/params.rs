@@ -50,6 +50,13 @@ pub struct MoveParams {
     pub autostep_max_m: f32,
     pub autostep_min_width_m: f32,
     pub snap_to_ground_m: f32,
+    /// Ground acceleration time (s): rest -> target speed, linear. `0` = instantaneous.
+    pub accel_time_s: f32,
+    /// Ground deceleration time (s): reference speed -> stop, linear. `0` = instantaneous.
+    pub decel_time_s: f32,
+    /// Eye height above the feet when standing / crouched (muzzle origin, M0-012).
+    pub eye_height_stand_m: f32,
+    pub eye_height_crouch_m: f32,
 }
 
 impl MoveParams {
@@ -110,6 +117,22 @@ impl MoveParams {
         if hc < 2.0 * r || hs < hc {
             return Err(ParamsError::Invalid("capsule"));
         }
+        let eye_s = pos(
+            need(cap.eye_height_stand_m, "capsule.eye_height_stand_m")?,
+            "capsule.eye_height_stand_m",
+        )?;
+        let eye_c = pos(
+            need(cap.eye_height_crouch_m, "capsule.eye_height_crouch_m")?,
+            "capsule.eye_height_crouch_m",
+        )?;
+        if eye_s > hs || eye_c > hc {
+            return Err(ParamsError::Invalid("capsule.eye_height"));
+        }
+        // Absent ramp times keep the pre-M0-012 behaviour (instantaneous), so older data works.
+        let ramp = |v: Option<f64>, k: &'static str| match v {
+            Some(v) => nonneg(v, k),
+            None => Ok(0.0),
+        };
         Ok(Self {
             dt: 1.0 / hz,
             hz,
@@ -141,6 +164,10 @@ impl MoveParams {
                 need(m.snap_to_ground_m, "movement.snap_to_ground_m")?,
                 "movement.snap_to_ground_m",
             )?,
+            accel_time_s: ramp(m.accel_time_s, "movement.accel_time_s")?,
+            decel_time_s: ramp(m.decel_time_s, "movement.decel_time_s")?,
+            eye_height_stand_m: eye_s,
+            eye_height_crouch_m: eye_c,
         })
     }
 }

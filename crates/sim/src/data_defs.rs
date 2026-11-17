@@ -247,6 +247,13 @@ pub struct Movement {
     pub autostep_min_width_m: Option<f64>,
     #[serde(default)]
     pub snap_to_ground_m: Option<f64>,
+    /// Linear ground acceleration time from rest to the target speed, seconds (M0-012,
+    /// PLAN_ISSUES PI-015). Absent = instantaneous.
+    #[serde(default)]
+    pub accel_time_s: Option<f64>,
+    /// Linear ground deceleration time from the reference speed to a stop, seconds. Absent = instant.
+    #[serde(default)]
+    pub decel_time_s: Option<f64>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize)]
@@ -255,6 +262,11 @@ pub struct Capsule {
     pub radius_m: f64,
     pub height_stand_m: f64,
     pub height_crouch_m: f64,
+    /// Eye (muzzle origin) height above the feet, standing / crouched (M0-012).
+    #[serde(default)]
+    pub eye_height_stand_m: Option<f64>,
+    #[serde(default)]
+    pub eye_height_crouch_m: Option<f64>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize)]

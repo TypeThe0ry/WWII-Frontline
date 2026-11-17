@@ -82,7 +82,10 @@ fn run_hashes(seed: u64, ticks: u32) -> Vec<u64> {
 /// M0-011: re-pinned because `state_hash` now also folds the movement state (`Motion`:
 /// velocity, stance, blend/timer, grounded/blocked flags). With the empty collision used here
 /// every player is `blocked` and does not move, so only the new hashed fields changed.
-const GOLDEN_FINAL_HASH: u64 = 0x63ac_47f1_5c23_31d8;
+/// M0-012: re-pinned (0x63ac_47f1_5c23_31d8 before) because `state_hash` now also folds health, the
+/// weapon state (ammo, state machine, recoil, bloom, ADS), the projectile list and its id counter;
+/// the random inputs press fire / reload, so weapon state and projectiles differ from before.
+const GOLDEN_FINAL_HASH: u64 = 0x44d1_6e86_af4c_cf27;
 
 #[test]
 fn ten_thousand_ticks_identical_across_threads() {

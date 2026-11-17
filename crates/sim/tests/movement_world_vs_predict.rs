@@ -113,9 +113,15 @@ fn world_moves_players_in_id_order_and_independently() {
         ]);
     }
     let z = |w: &World, p| w.player_state(p).unwrap().pos.z;
-    assert!((z(&w, 2) - 20.0 - 8.8).abs() < 0.4, "run 2 s: {}", z(&w, 2));
+    // 2 s at steady speed minus the distance lost to the linear ramp (v * accel_time / 2).
+    let ramp = |v: f32| 0.5 * v * 0.25;
     assert!(
-        (z(&w, 5) - 20.0 - 12.8).abs() < 0.4,
+        (z(&w, 2) - 20.0 - (8.8 - ramp(4.4))).abs() < 0.4,
+        "run 2 s: {}",
+        z(&w, 2)
+    );
+    assert!(
+        (z(&w, 5) - 20.0 - (12.8 - ramp(6.4))).abs() < 0.4,
         "sprint 2 s: {}",
         z(&w, 5)
     );

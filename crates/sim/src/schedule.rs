@@ -1,14 +1,18 @@
 //! The single-threaded system schedule. Order is fixed with `.chain()`:
-//! `ingest_inputs -> movement -> (slot for later tasks: weapons, ...) -> bookkeeping`.
+//! `ingest_inputs -> movement -> weapons -> projectiles -> bookkeeping`.
 
 use bevy_ecs::prelude::*;
 use bevy_ecs::schedule::ExecutorKind;
 use frontline_protocol::quant::{dequant_yaw, pitch_i16_to_rad};
 
 use crate::components::{
-    CollisionRes, EntityTable, InputQueue, LastInput, Motion, MoveParamsRes, PlayerIndex, Transform,
+    CollisionRes, CurrentTick, EntityTable, EventBuf, InputQueue, LastInput, Motion, MoveParamsRes,
+    PlayerIndex, SimRng, Team, Transform, WeaponTable,
 };
 use crate::movement::step_player;
+use crate::projectile::{projectile_system as projectiles_system, Projectiles};
+use crate::step::SimEvent;
+use crate::weapon::{step_weapon, ShotCtx, WeaponState};
 
 pub fn ingest_inputs(
     inputs: Res<InputQueue>,
@@ -49,6 +53,52 @@ pub fn movement(
     }
 }
 
+/// Weapon stage (ARCHITECTURE 6.10 stage 4a): fire state machine, reload, recoil; spawns the
+/// projectiles of this tick's shots. Uses the post-movement pose, ascending `EntityId`.
+#[allow(clippy::too_many_arguments)]
+pub fn weapons(
+    wt: Res<WeaponTable>,
+    params: Res<MoveParamsRes>,
+    tick: Res<CurrentTick>,
+    rng: Res<SimRng>,
+    table: Res<EntityTable>,
+    mut projs: ResMut<Projectiles>,
+    mut events: ResMut<EventBuf>,
+    mut q: Query<(&Transform, &Motion, &LastInput, &Team, &mut WeaponState)>,
+) {
+    let Some(mp) = params.0 else {
+        return;
+    };
+    for (id, e) in table.sorted() {
+        let Ok((t, m, last, team, mut w)) = q.get_mut(e) else {
+            continue;
+        };
+        let Some(wp) = wt.params(w.def_id) else {
+            continue;
+        };
+        let ctx = ShotCtx {
+            match_seed: rng.match_seed,
+            tick: tick.0,
+            entity: id,
+        };
+        let out = step_weapon(&mut w, wp, &last.cmd, &m.to_auth(t), &mp, ctx);
+        if let Some(shot) = out.shot {
+            let weapon = w.def_id;
+            let v = wt.ballistics(weapon).map_or(0.0, |b| b.muzzle_velocity_mps);
+            projs.spawn(id, *team, weapon, shot.muzzle, shot.dir * v);
+            events.0.push(SimEvent::Shot {
+                shooter: id,
+                weapon,
+                muzzle: shot.muzzle,
+                dir: shot.dir,
+            });
+        }
+        if out.dry_fire {
+            events.0.push(SimEvent::DryFire { shooter: id });
+        }
+    }
+}
+
 /// End-of-tick housekeeping. Currently a no-op slot (the view cache is refreshed by `World`).
 pub fn bookkeeping(_table: Res<EntityTable>) {}
 
@@ -79,8 +129,27 @@ pub fn build_schedule() -> Schedule {
     let mut s = Schedule::default();
     s.set_executor_kind(ExecutorKind::SingleThreaded);
     #[cfg(feature = "test-util")]
-    s.add_systems((ingest_inputs, test_jitter, movement, bookkeeping).chain());
+    s.add_systems(
+        (
+            ingest_inputs,
+            test_jitter,
+            movement,
+            weapons,
+            projectiles_system,
+            bookkeeping,
+        )
+            .chain(),
+    );
     #[cfg(not(feature = "test-util"))]
-    s.add_systems((ingest_inputs, movement, bookkeeping).chain());
+    s.add_systems(
+        (
+            ingest_inputs,
+            movement,
+            weapons,
+            projectiles_system,
+            bookkeeping,
+        )
+            .chain(),
+    );
     s
 }

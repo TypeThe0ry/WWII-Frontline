@@ -16,8 +16,11 @@
 //!   1.5 m/s crouched). Other `aux` bits are reserved (PLAN_ISSUES PI-014).
 //!
 //! # Model
-//! Ground: horizontal velocity jumps to the wish velocity (instant acceleration, ground
-//! friction stops at once; smoother ramps wait for REF M-24..M-26). Air: horizontal velocity
+//! Ground: horizontal velocity moves toward the wish velocity by at most `ref_speed / accel_time_s * dt`
+//! per tick (linear ramp; `ref_speed` = the speed of the selected move mode, so rest -> target
+//! takes `accel_time_s`), and when slowing down (including releasing the keys) by
+//! `ref_speed / decel_time_s * dt`; a time of 0 / absent in the data means instantaneous
+//! (GAMEDESIGN 9.1, PLAN_ISSUES PI-015: 0.25 s / 0.20 s, to be tuned, REF M-24..M-26). Air: horizontal velocity
 //! is kept; while a direction is held it closes `air_control_mult` of the gap to the wish
 //! velocity per tick. Vertical: exact constant-gravity integration per tick. Speeds, jump
 //! height, gravity, slope limit and capsule come from `data/roles/*.json`.
@@ -87,6 +90,35 @@ fn select_speed(cmd: &InputCmd, forward: f32, want: Stance, p: &MoveParams) -> f
     }
 }
 
+/// Moves the horizontal velocity `cur` toward `wish` with the linear ramps of `p`.
+fn ramp_horizontal(
+    cur: (f32, f32),
+    wish: (f32, f32),
+    ref_speed: f32,
+    p: &MoveParams,
+) -> (f32, f32) {
+    let (dx, dz) = (wish.0 - cur.0, wish.1 - cur.1);
+    let dist = libm::sqrtf(dx * dx + dz * dz);
+    let cur_len = libm::sqrtf(cur.0 * cur.0 + cur.1 * cur.1);
+    let wish_len = libm::sqrtf(wish.0 * wish.0 + wish.1 * wish.1);
+    // Slowing down (also: releasing the keys) uses the deceleration time, otherwise acceleration.
+    let time = if wish_len < cur_len {
+        p.decel_time_s
+    } else {
+        p.accel_time_s
+    };
+    if time <= 0.0 || dist == 0.0 {
+        return wish;
+    }
+    let max_step = ref_speed * p.dt / time;
+    if dist <= max_step {
+        wish
+    } else {
+        let k = max_step / dist;
+        (cur.0 + dx * k, cur.1 + dz * k)
+    }
+}
+
 /// Advances one player by one tick. Pure: the result depends only on the arguments.
 ///
 /// Out of loaded collision (or a non-finite state) the position is kept and `blocked` is set.
@@ -127,9 +159,22 @@ pub fn step_player(
 
     let mut vel = s.vel;
     let mut grounded = s.grounded;
+    let ramped = grounded;
     if grounded {
-        vel.x = wish_x;
-        vel.z = wish_z;
+        let (hx, hz) = ramp_horizontal(
+            (vel.x, vel.z),
+            (wish_x, wish_z),
+            // Reference speed: the mode's full-deflection speed (for released keys: the mode the
+            // held buttons would select going forward).
+            if has_input {
+                speed
+            } else {
+                select_speed(cmd, 1.0, want, p)
+            },
+            p,
+        );
+        vel.x = hx;
+        vel.z = hz;
         vel.y = 0.0;
         if cmd.buttons & buttons::JUMP != 0 && want == Stance::Stand {
             vel.y = p.jump_speed_mps;
@@ -163,9 +208,17 @@ pub fn step_player(
 
     s.pos = new_pos;
     s.blocked = false;
-    // Achieved horizontal velocity (sliding, slopes and blocking reduce it).
-    vel.x = m.translation.x * p.hz;
-    vel.z = m.translation.z * p.hz;
+    // Stored horizontal velocity. In the air it is the achieved one. After a ground ramp it is the
+    // ramped (commanded) velocity, so that slopes (achieved ~ cos^2 of the slope angle) do not feed
+    // back into the next tick's ramp; but a move obstructed below half of what was asked (walls,
+    // too-steep slopes) stores the achieved velocity, so there is no phantom momentum.
+    let (ach_x, ach_z) = (m.translation.x * p.hz, m.translation.z * p.hz);
+    let want_h = libm::sqrtf(vel.x * vel.x + vel.z * vel.z);
+    let got_h = libm::sqrtf(ach_x * ach_x + ach_z * ach_z);
+    if !ramped || got_h < 0.5 * want_h {
+        vel.x = ach_x;
+        vel.z = ach_z;
+    }
     if dy > 0.0 && m.translation.y < dy - 1e-4 && vel.y > 0.0 {
         vel.y = 0.0; // bumped a ceiling
     }

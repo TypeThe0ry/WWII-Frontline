@@ -12,9 +12,11 @@ use crate::data::GameData;
 use crate::hash::HashWriter;
 use crate::ids::{EntityAllocator, EntityId, PlayerId, Tick, MAX_PLAYER_ID};
 use crate::movement::{MoveParams, PlayerAuthState};
+use crate::projectile::{Projectile, Projectiles};
 use crate::schedule::build_schedule;
 use crate::step::{SimEvent, StepOutput};
 use crate::view::*;
+use crate::weapon::WeaponState;
 
 /// Role whose movement parameters every player uses until loadouts/roles are chosen (M0-012).
 pub const DEFAULT_ROLE: &str = "rifleman";
@@ -107,6 +109,13 @@ impl World {
                 .and_then(|r| MoveParams::from_role(r, cfg.tick_hz).ok()),
         ));
         ecs.insert_resource(CollisionRes(collision.clone()));
+        ecs.insert_resource(SimCfgRes {
+            data: cfg.data,
+            hz: cfg.tick_hz,
+        });
+        ecs.insert_resource(WeaponTable::new(cfg.data, cfg.tick_hz));
+        ecs.insert_resource(Projectiles::default());
+        ecs.insert_resource(EventBuf::default());
         World {
             cfg,
             ecs,
@@ -139,6 +148,8 @@ impl World {
         }
         self.schedule.run(&mut self.ecs);
         self.refresh_views();
+        let produced = std::mem::take(&mut self.ecs.resource_mut::<EventBuf>().0);
+        self.pending_events.extend(produced);
         StepOutput {
             events: std::mem::take(&mut self.pending_events),
             rule_changes: Vec::new(),
@@ -158,6 +169,12 @@ impl World {
             return Err(SpawnError::PlayerExists);
         }
         let id = self.alloc.alloc().ok_or(SpawnError::NoFreeSlot)?;
+        let health = self
+            .cfg
+            .data
+            .role(DEFAULT_ROLE)
+            .map_or(100.0, |r| r.health_hp as f32);
+        let weapon = starting_weapon(self.cfg.data, DEFAULT_ROLE, req.team, self.cfg.tick_hz);
         let e = self
             .ecs
             .spawn((
@@ -173,8 +190,12 @@ impl World {
                     cmd: neutral_input(),
                 },
                 Motion::from_auth(&PlayerAuthState::spawn(req.pos, req.yaw)),
+                Health(health),
             ))
             .id();
+        if let Some(w) = weapon {
+            self.ecs.entity_mut(e).insert(w);
+        }
         self.ecs.resource_mut::<EntityTable>().insert(id, e);
         self.ecs
             .resource_mut::<PlayerIndex>()
@@ -207,6 +228,45 @@ impl World {
         let (_, e) = *self.ecs.resource::<PlayerIndex>().map.get(&id)?;
         let er = self.ecs.entity(e);
         Some(er.get::<Motion>()?.to_auth(er.get::<Transform>()?))
+    }
+
+    /// Weapon state of a player (what `self_state` carries: ammo, fsm, recoil).
+    pub fn weapon_state(&self, id: PlayerId) -> Option<WeaponState> {
+        let (_, e) = *self.ecs.resource::<PlayerIndex>().map.get(&id)?;
+        self.ecs.entity(e).get::<WeaponState>().copied()
+    }
+
+    /// Current hit points of a player.
+    pub fn health(&self, id: PlayerId) -> Option<f32> {
+        let (_, e) = *self.ecs.resource::<PlayerIndex>().map.get(&id)?;
+        self.ecs.entity(e).get::<Health>().map(|h| h.0)
+    }
+
+    /// Injects a projectile owned by `owner` (a player), flown by the rules of weapon `weapon`
+    /// (index into `GameData::weapons`; drag, damage and falloff come from it). For benches,
+    /// tests and later scripted fire (bots, artillery); normal shots come from the weapon stage.
+    pub fn spawn_projectile(
+        &mut self,
+        owner: PlayerId,
+        weapon: u16,
+        origin: Vec3,
+        vel: Vec3,
+    ) -> Option<u32> {
+        let (eid, e) = *self.ecs.resource::<PlayerIndex>().map.get(&owner)?;
+        let team = *self.ecs.entity(e).get::<Team>()?;
+        if usize::from(weapon) >= self.cfg.data.weapons.len() {
+            return None;
+        }
+        Some(
+            self.ecs
+                .resource_mut::<Projectiles>()
+                .spawn(eid, team, weapon, origin, vel),
+        )
+    }
+
+    /// Projectiles in flight, in spawn order (for snapshots / debug draw).
+    pub fn projectiles(&self) -> &[Projectile] {
+        self.ecs.resource::<Projectiles>().as_slice()
     }
 
     pub fn view(&self) -> &dyn WorldView {
@@ -273,6 +333,27 @@ impl World {
             h.write_f32(mo.stance_blend);
             h.write_u8(mo.stance_timer);
             h.write_u8(u8::from(mo.grounded) | (u8::from(mo.blocked) << 1));
+            // M0-012: health and weapon state.
+            if let Some(hp) = er.get::<Health>() {
+                h.write_f32(hp.0);
+            }
+            if let Some(w) = er.get::<WeaponState>() {
+                h.write_bytes(&w.to_bytes());
+            }
+        }
+        let projs = self.ecs.resource::<Projectiles>();
+        h.write_u32(projs.next_id());
+        h.write_u32(projs.len() as u32);
+        for p in projs.as_slice() {
+            h.write_u32(p.id);
+            h.write_u16(p.owner);
+            h.write_u16(p.weapon);
+            for v in [p.origin, p.pos, p.vel] {
+                h.write_f32(v.x);
+                h.write_f32(v.y);
+                h.write_f32(v.z);
+            }
+            h.write_u32(p.substeps);
         }
         h.finish()
     }
