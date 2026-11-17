@@ -356,6 +356,12 @@ impl<C: Clock> SimLoop<C> {
     /// Step 7. TODO(M0-019): hand packets to the network thread.
     fn send(&mut self) {}
 
+    /// Drops collected samples (used to exclude warm-up from a measurement window).
+    pub fn discard_samples(&mut self) {
+        self.tick_ns.clear();
+        self.err_ns.clear();
+    }
+
     pub fn report(&mut self) -> Report {
         let elapsed = self.clock.now().saturating_duration_since(self.started);
         Report {

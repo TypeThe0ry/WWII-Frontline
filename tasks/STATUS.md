@@ -38,7 +38,7 @@
 | M0-012 | sim：步枪射击、弹道与装填 | todo | | | |
 | M0-013 | sim：生命、死亡与简易重生 | todo | | | |
 | M0-014 | sim-wasm：WASM 封装 | todo | | | |
-| M0-015 | server：进程骨架与 30 Hz 主循环 | todo | | | |
+| M0-015 | server：进程骨架与 30 Hz 主循环 | partial | 验收 2-6 通过，验收 1 抖动项未达标。10 min 空载（release，4 核 Firecracker 虚机，Xeon 2.3GHz，内核 6.18.44，期间 load avg 4-8，其它执行者并行编译/测试）：17995 tick，server_tick_ms P50 0.006 / P99 0.017 / max 5.34 ms，tick_overrun_total=0，consecutive_max=0；tick_interval_error P50 0.0003 / P99 2.83 / max 64 ms（跳过 6 个时间槽）。100 玩家空世界 step P99<1 ms（debug 构建，集成测试 step_overhead）；SIGTERM 退出码 0 且 <100 ms；日志 JSON + 限速、假时钟（50 ms tick 后无追赶/无漂移，连续 3 次超限 max=3）单测通过；/metrics 桶数 13。 | 抖动 P99 < 1 ms 未达标：共享虚机负载所致，需在参考机/独占物理机复测（H-021），故 partial。--pin-sim-core 仅接受参数（M1-067）；--bots 仅告警、server_bots 恒 0（M0-026）；WS/WT 端口未绑定（M0-016/017）；apply_inputs 仅用本 tick 新到输入（M0-018）；无新增 PLAN_ISSUES。 | |
 | M0-016 | server：WebSocket 传输与握手 | todo | | | |
 | M0-017 | server：WebTransport 传输 | todo | | | |
 | M0-018 | server：会话、输入缓冲与校验 | todo | | | |
