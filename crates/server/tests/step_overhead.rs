@@ -11,12 +11,7 @@ use frontline_sim::{GameMode, MapId, SpawnReq, Team, Vec3};
 
 fn attempt() -> (f64, f64, u64) {
     let metrics = Metrics::new();
-    let cfg = SimThreadConfig {
-        match_seed: 1,
-        map: MapId(0),
-        mode: GameMode::Sandbox,
-        pin_core: None,
-    };
+    let cfg = SimThreadConfig::bare(1, MapId(0), GameMode::Sandbox);
     let (mut lp, _inputs, cmds) = build_loop(SystemClock, &cfg, metrics, StopFlag::new());
     for i in 0..100u8 {
         cmds.send(Command::SpawnPlayer {

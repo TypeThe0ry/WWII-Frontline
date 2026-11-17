@@ -6,7 +6,7 @@ use std::time::Duration;
 use frontline_server::config::Config;
 use frontline_server::shutdown::{wait_for_signal, StopFlag};
 use frontline_server::sim_thread::{self, SimThreadConfig};
-use frontline_server::{logging, metrics, GIT_SHA};
+use frontline_server::{logging, metrics, world_loader, GIT_SHA};
 use frontline_sim::{GameMode, MapId};
 
 fn main() -> ExitCode {
@@ -77,23 +77,52 @@ fn run(cfg: Config) -> Result<(), String> {
         "skirmish" => GameMode::Skirmish,
         _ => GameMode::Sandbox,
     };
+    // Terrain + spawn points. A missing map is a startup error that names the regeneration
+    // command; only the hidden --empty-world (tests) skips it.
+    let map_data = if cfg.empty_world {
+        tracing::warn!(
+            event = "empty_world",
+            "--empty-world: no terrain loaded (test scaffolding; players cannot move)"
+        );
+        None
+    } else {
+        let dir = world_loader::locate_data_dir(cfg.data_dir.as_deref(), &cfg.map)
+            .map_err(|e| e.to_string())?;
+        let m = world_loader::load_map(&dir, &cfg.map).map_err(|e| e.to_string())?;
+        tracing::info!(
+            event = "map_loaded",
+            map = %cfg.map,
+            chunks = m.chunk_count as u64,
+            dir = %dir.display(),
+            "terrain collision loaded"
+        );
+        Some(std::sync::Arc::new(m))
+    };
+
+    let game_data = frontline_sim::GameData::embedded();
+    let inbound = frontline_server::net::conn::InboundQueue::new();
+    let sessions = frontline_server::net::conn::Sessions::new(metrics.clone());
     let handle = sim_thread::spawn(
         SimThreadConfig {
             match_seed: seed,
             map: MapId(0),
             mode,
             pin_core: cfg.pin_sim_core,
+            map_data,
+            // --dev-echo hands the inbound queue to the echo scaffold instead.
+            net: (!cfg.dev_echo).then(|| frontline_server::sim_bridge::NetLink {
+                inbound: inbound.rx.clone(),
+                sessions: sessions.clone(),
+            }),
         },
         metrics.clone(),
         stop.clone(),
     )
     .map_err(|e| format!("cannot start sim thread: {e}"))?;
 
-    let game_data = frontline_sim::GameData::embedded();
-    let inbound = frontline_server::net::conn::InboundQueue::new();
     let net_ctx = std::sync::Arc::new(frontline_server::net::conn::NetCtx {
         metrics: metrics.clone(),
-        sessions: frontline_server::net::conn::Sessions::new(metrics.clone()),
+        sessions: sessions.clone(),
         inbound: inbound.tx.clone(),
         commands: handle.commands_tx.clone(),
         data_hash: game_data.hash,

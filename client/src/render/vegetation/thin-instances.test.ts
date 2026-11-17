@@ -121,6 +121,41 @@ describe('LodBuckets', () => {
   });
 });
 
+describe('partial upload runs', () => {
+  it('uploading only dirtyRuns() keeps a mirror identical to the used range, over a long random camera walk', () => {
+    const { inst, box } = ring(600, 150);
+    const b = new LodBuckets(inst, 3, box);
+    const mirror = b.buffers.map((x) => new Float32Array(x.length));
+    const thr = sq([25, 80, 700]);
+    let seed = 7;
+    const rnd = () => ((seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0) / 4294967296);
+    let cx = 0;
+    let cz = -160;
+    let partial = 0;
+    let full = 0;
+    for (let f = 0; f < 400; f++) {
+      cx += (rnd() - 0.5) * 3;
+      cz += 0.9 + (rnd() - 0.5);
+      b.update(cx, 1.7, cz, thr, 1, 256);
+      for (let l = 0; l < b.lodCount; l++) {
+        if (!b.dirty[l]) continue;
+        const runs = b.dirtyRuns(l);
+        if (runs === null) {
+          mirror[l]!.set(b.buffers[l]!.subarray(0, b.counts[l]! * 16));
+          full++;
+        } else {
+          for (let r = 0; r < runs.length; r += 2) mirror[l]!.set(b.buffers[l]!.subarray(runs[r]! * 16, (runs[r]! + runs[r + 1]!) * 16), runs[r]! * 16);
+          partial++;
+        }
+        b.clearDirty(l);
+        expect(Array.from(mirror[l]!.subarray(0, b.counts[l]! * 16))).toEqual(Array.from(b.buffers[l]!.subarray(0, b.counts[l]! * 16)));
+      }
+    }
+    expect(partial).toBeGreaterThan(50);
+    expect(full).toBeGreaterThanOrEqual(1); // the first assignment
+  });
+});
+
 describe('LOD re-bucketing cost over a 30 s radial traverse at 6.4 m/s (acceptance 6, CPU part)', () => {
   it('P99 of the per-frame cost over all buckets is below 0.5 ms', () => {
     // 16 chunks like the M0 block: 2000 grass / 150 shrubs / 70 trees each, all buckets updated every frame (unbounded budget)

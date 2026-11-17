@@ -80,10 +80,13 @@ impl Harness {
         let tick: &'static AtomicU32 = Box::leak(Box::new(AtomicU32::new(0)));
         let ctx = Arc::new(NetCtx {
             metrics: metrics.clone(),
-            sessions: Sessions::with_limits(
+            // Zero reuse delay: these tests expect the smallest free PlayerId straight away
+            // (the 1 s delay has its own test in session_flow).
+            sessions: Sessions::with_reuse_delay(
                 metrics.clone(),
                 per_ip,
                 frontline_server::net::limits::MAX_CONNECTIONS,
+                Duration::ZERO,
             ),
             inbound: inbound.tx.clone(),
             commands: ctx_tx,

@@ -16,7 +16,9 @@ import { Mesh } from '@babylonjs/core/Meshes/mesh';
 import { VertexData } from '@babylonjs/core/Meshes/mesh.vertexData';
 import { ShaderMaterial } from '@babylonjs/core/Materials/shaderMaterial';
 import { ShaderLanguage } from '@babylonjs/core/Materials/shaderLanguage';
+import { Color4 } from '@babylonjs/core/Maths/math.color';
 import { Vector2, Vector3, Vector4 } from '@babylonjs/core/Maths/math.vector';
+import { RenderTargetTexture } from '@babylonjs/core/Materials/Textures/renderTargetTexture';
 import type { Camera } from '@babylonjs/core/Cameras/camera';
 import type { Scene } from '@babylonjs/core/scene';
 import { QUALITY_M0, type QualityM0, type QualityTier } from '../quality-m0';
@@ -64,7 +66,12 @@ export interface VegetationStats {
   drawn: { instances: number; drawCalls: number; tris: number };
   /** Bucket classification time of the last `update`, ms, and its window statistics. */
   rebucketMs: number;
+  /** Part of `rebucketMs` spent uploading changed matrices (WebGL/WebGPU buffer writes) and the pure CPU classification part. */
+  uploadMs: number;
+  classifyMs: number;
   rebucket: WindowStats;
+  /** Window statistics of the classification-only time (the "CPU bucketing cost" of M0-024 acceptance 6). */
+  classify: WindowStats;
   /** Buckets postponed by the budget in the last update. */
   deferred: number;
   /** Instances moved between LODs in the last update. */
@@ -173,6 +180,7 @@ export class Vegetation {
   private readonly windVec = new Vector4();
   private readonly camVec = new Vector3();
   private readonly rebucketStats = new RingStats(2048);
+  private readonly classifyStats = new RingStats(2048);
   private quality: QualityM0;
   private thr2: number[][] = [];
   private thrVersion = 0;
@@ -195,6 +203,9 @@ export class Vegetation {
       perLod: { grass: [0, 0], shrub: [0, 0, 0], tree: [0, 0, 0] },
       drawn: { instances: 0, drawCalls: 0, tris: 0 },
       rebucketMs: 0,
+      uploadMs: 0,
+      classifyMs: 0,
+      classify: { count: 0, mean: 0, p50: 0, p99: 0, max: 0 },
       rebucket: { count: 0, mean: 0, p50: 0, p99: 0, max: 0 },
       deferred: 0,
       moved: 0,
@@ -243,7 +254,9 @@ export class Vegetation {
       const tris = meshes.map((d) => d.triangles);
       this.materials.push(mat);
       if (withImpostor) {
-        const imat = impostorMaterial(scene, `${matName}_impostor`, wgsl, bounds, wgsl);
+        // flipV = false on both backends: Babylon renders into render targets with GL-consistent orientation on WebGPU too
+        // (measured: flipV = true gave a vertically mirrored impostor, IoU 0.3 vs the mesh, see vegetation.spec.ts).
+        const imat = impostorMaterial(scene, `${matName}_impostor`, wgsl, bounds, false);
         const qm = quadMesh(scene, `PH_${info.reqId}__master_${info.key}_impostor`);
         qm.material = imat;
         masters.push(qm);
@@ -356,6 +369,14 @@ export class Vegetation {
     return [s.lod0, s.lod1, s.far];
   }
 
+  /** Like `update`, but without the CPU budget: use after a camera jump (spawn, teleport) or in tests and screenshots. */
+  settle(camera: Camera, dtSec = 0): void {
+    const b = this.budgetMs;
+    this.budgetMs = Infinity;
+    this.update(camera, dtSec);
+    this.budgetMs = b;
+  }
+
   private refreshThresholds(): void {
     this.thr2 = [0, 1, 2].map((sp) => this.thresholds(sp).map((t) => t * t));
     this.thrVersion++;
@@ -397,6 +418,7 @@ export class Vegetation {
     const n = this.buckets.length;
     let moved = 0;
     let deferred = 0;
+    let upload = 0;
     const start = n > 0 ? this.rotate % n : 0;
     for (let k = 0; k < n; k++) {
       const b = this.buckets[(start + k) % n]!;
@@ -409,10 +431,14 @@ export class Vegetation {
       const lb = b.buckets;
       for (let l = 0; l < lb.lodCount; l++) {
         if (!lb.dirty[l]) continue;
-        lb.dirty[l] = false;
         const m = b.meshes[l]!;
         m.thinInstanceCount = lb.counts[l]!;
-        m.thinInstanceBufferUpdated('matrix');
+        const runs = lb.dirtyRuns(l);
+        const tu = performance.now();
+        if (runs === null) m.thinInstanceBufferUpdated('matrix');
+        else for (let r = 0; r < runs.length; r += 2) m.thinInstancePartialBufferUpdate('matrix', lb.buffers[l]!.subarray(runs[r]! * 16, (runs[r]! + runs[r + 1]!) * 16), runs[r]! * 16);
+        upload += performance.now() - tu;
+        lb.clearDirty(l);
         m.setEnabled(!this.isolated && lb.counts[l]! > 0);
       }
     }
@@ -420,6 +446,9 @@ export class Vegetation {
     const dt = performance.now() - t0;
     this.rebucketStats.push(dt);
     this.stats.rebucketMs = dt;
+    this.stats.uploadMs = upload;
+    this.stats.classifyMs = dt - upload;
+    this.classifyStats.push(dt - upload);
     this.stats.deferred = deferred;
     this.stats.moved = moved;
     this.refreshCounts();
@@ -461,6 +490,7 @@ export class Vegetation {
 
   /** Window statistics of the per-frame re-bucketing time (sorts the window: call at most a few times per second). */
   refreshRebucketStats(): WindowStats {
+    this.stats.classify = this.classifyStats.stats();
     this.stats.rebucket = this.rebucketStats.stats();
     return this.stats.rebucket;
   }
@@ -477,7 +507,7 @@ export class Vegetation {
     return [
       `veg       inst grass ${s.total.grass} shrub ${s.total.shrub} tree ${s.total.tree}   quality ${this.quality.name}`,
       `  per LOD grass ${f(s.perLod.grass)}  shrub ${f(s.perLod.shrub)}  tree ${f(s.perLod.tree)}  (L0/L1/impostor)`,
-      `  drawn ${p.instances} inst  ${p.drawCalls} draws  ${p.tris} tris   rebucket ${s.rebucketMs.toFixed(3)} ms (p99 ${s.rebucket.p99.toFixed(3)}, defer ${s.deferred})`,
+      `  drawn ${p.instances} inst  ${p.drawCalls} draws  ${p.tris} tris   rebucket ${s.rebucketMs.toFixed(3)} ms (classify p99 ${s.classify.p99.toFixed(3)}, total p99 ${s.rebucket.p99.toFixed(3)}, defer ${s.deferred})`,
     ];
   }
 
@@ -487,8 +517,8 @@ export class Vegetation {
    * Show a single instance of `species` in the given LOD at (x, y, z) (e2e coverage test) and optionally hide everything
    * else. LOD index: 0, 1 = meshes, 2 = impostor (shrub/tree only).
    */
-  probe(species: 'shrub' | 'tree', lod: number, x: number, y: number, z: number, yaw = 0, scale = 1): Mesh {
-    const g = this.gfx[species === 'tree' ? SPECIES_TREE : SPECIES_SHRUB]!;
+  probe(species: 'grass' | 'shrub' | 'tree', lod: number, x: number, y: number, z: number, yaw = 0, scale = 1): Mesh {
+    const g = this.gfx[species === 'tree' ? SPECIES_TREE : species === 'grass' ? SPECIES_GRASS : SPECIES_SHRUB]!;
     const m = g.masters[lod]!.clone(`PH_${g.info.reqId}__probe_${species}_${lod}`, null, true);
     m.makeGeometryUnique();
     m.material = g.materials[lod]!;
@@ -505,6 +535,28 @@ export class Vegetation {
     m.setEnabled(true);
     this.probes.push(m);
     return m;
+  }
+
+  /**
+   * Render only the current probe meshes through the active camera into a square offscreen target and return the alpha
+   * channel (255 where something was drawn). Backend-independent coverage check for e2e (also on WebGPU, where the
+   * canvas cannot be read back under the SwiftShader shim): LOD1 mesh and impostor go through the same capture path.
+   */
+  async captureProbes(size = 256): Promise<{ size: number; alpha: Uint8Array }> {
+    const scene = this.scene;
+    const rtt = new RenderTargetTexture('PH_V-NAT-000_probe_capture', size, scene, false);
+    rtt.clearColor = new Color4(0, 0, 0, 0);
+    rtt.activeCamera = scene.activeCamera;
+    rtt.renderList = this.probes.slice();
+    rtt.refreshRate = RenderTargetTexture.REFRESHRATE_RENDER_ONCE;
+    scene.customRenderTargets.push(rtt);
+    scene.render();
+    scene.customRenderTargets.splice(scene.customRenderTargets.indexOf(rtt), 1);
+    const px = (await rtt.readPixels()) as Uint8Array;
+    rtt.dispose();
+    const alpha = new Uint8Array(size * size);
+    for (let i = 0; i < alpha.length; i++) alpha[i] = px[i * 4 + 3]!;
+    return { size, alpha };
   }
 
   clearProbes(): void {

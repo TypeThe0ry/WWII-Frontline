@@ -1,5 +1,5 @@
 //! CLI + `FRONTLINE_*` environment configuration (M0-015). Parsing and validation only: map
-//! data is loaded by M0-018, transports are bound by M0-016/017.
+//! data is loaded by `world_loader` (M0-018), transports are bound by M0-016/017.
 
 use clap::Parser;
 
@@ -44,9 +44,19 @@ pub struct Config {
     /// SHA-256 for `serverCertificateHashes`. Development only.
     #[arg(long, env = "FRONTLINE_DEV_CERT", default_value_t = false)]
     pub dev_cert: bool,
-    /// Test scaffolding: answer every valid C1 bundle with a C2 datagram (replaces M0-018).
+    /// Test scaffolding only: answer every valid C1 bundle with a C2 datagram **instead of**
+    /// feeding it to the session layer (players then never move). Used by the transport stress
+    /// tests that need a downlink before snapshots exist (M0-019).
     #[arg(long, hide = true, env = "FRONTLINE_DEV_ECHO", default_value_t = false)]
     pub dev_echo: bool,
+    /// Directory holding `maps/<map>/` (the repository's `data/`). Default: searched upwards
+    /// from the working directory and the executable.
+    #[arg(long, env = "FRONTLINE_DATA_DIR")]
+    pub data_dir: Option<std::path::PathBuf>,
+    /// Test scaffolding only: start with an empty collision world instead of loading the map
+    /// (players cannot move). Never use in a real match.
+    #[arg(long, hide = true, env = "FRONTLINE_EMPTY_WORLD", default_value_t = false)]
+    pub empty_world: bool,
     /// Prometheus `/metrics` port. 0 = ephemeral (actual port is logged).
     #[arg(long, env = "FRONTLINE_METRICS_PORT", default_value_t = 9100)]
     pub metrics_port: u16,

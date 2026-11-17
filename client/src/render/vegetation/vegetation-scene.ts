@@ -37,7 +37,7 @@ async function loadSpawnPoints(baseUrl: string): Promise<ScatterPoint[]> {
 
 /**
  * Scatter + bake + attach vegetation to a render context that already has a terrain (`?scene=terrain`).
- * Query: `veg=0` off, `quality=high|low`, `impostor=lowres` (64 px views), `veg_seed=n`, `veg_budget=ms` (re-bucket budget, `inf` = unbounded).
+ * Entry: `?scene=vegetation` (terrain + vegetation; `?scene=terrain` stays terrain only). Query: `quality=high|low`, `impostor=lowres` (64 px views), `veg_seed=n`, `veg_budget=ms` (re-bucket budget, `inf` = unbounded).
  */
 export async function attachVegetation(
   ctx: RenderContext,

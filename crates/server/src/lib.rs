@@ -5,8 +5,13 @@ pub mod config;
 pub mod logging;
 pub mod metrics;
 pub mod net;
+pub mod input_buffer;
+pub mod session;
 pub mod shutdown;
+pub mod sim_bridge;
 pub mod sim_thread;
+pub mod validate;
+pub mod world_loader;
 
 /// Build-time facts printed at startup.
 pub const GIT_SHA: &str = env!("FRONTLINE_GIT_SHA");

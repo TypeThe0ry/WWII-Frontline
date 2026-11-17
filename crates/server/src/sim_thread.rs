@@ -1,7 +1,6 @@
 //! The 30 Hz simulation thread (ARCHITECTURE §6.1, §6.10). Runs on a dedicated OS thread,
 //! never on a tokio worker. Input/command channels are bounded `crossbeam` channels.
 
-use std::collections::BTreeMap;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use std::thread::JoinHandle;
@@ -12,6 +11,10 @@ use frontline_protocol::msg::input::InputCmd;
 use frontline_sim::{
     CollisionData, GameData, GameMode, MapId, PlayerId, SimConfig, SpawnReq, Team, World,
 };
+
+use crate::sim_bridge::{NetLink, SimBridge};
+use crate::validate::ValidateCfg;
+use crate::world_loader::LoadedMap;
 use serde::Serialize;
 
 use crate::clock::{Clock, SystemClock, TickSchedule};
@@ -34,11 +37,20 @@ pub struct InputEnvelope {
 
 #[derive(Debug, Clone, Copy)]
 pub enum Command {
+    /// Handshake finished: put the player into the world and open its input session. The team
+    /// was chosen by the net layer (it is already in `Welcome`); the join position comes from the
+    /// map's HQ point. (`Hello` carries no nickname in M0.)
+    Join {
+        player: PlayerId,
+        team: Team,
+    },
+    /// Spawn at an explicit place (tests, benches, bots); also opens a session.
     SpawnPlayer {
         req: SpawnReq,
     },
+    /// Remove a player now (no session bookkeeping beyond that).
     RemovePlayer(PlayerId),
-    /// The client's connection closed (published by the net layer; M0-018 handles the session).
+    /// The client's connection closed (published by the net layer). Idempotent.
     ClientGone(PlayerId),
 }
 
@@ -114,12 +126,31 @@ fn quantiles(samples_ns: &mut [u32]) -> Quantiles {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct SimThreadConfig {
     pub match_seed: u64,
     pub map: MapId,
     pub mode: GameMode,
     pub pin_core: Option<usize>,
+    /// Loaded terrain and spawn points; `None` = empty collision world (tests only: players
+    /// cannot move without terrain).
+    pub map_data: Option<Arc<LoadedMap>>,
+    /// The network side (inbound C1 queue, connection handles); `None` in pure-sim tests.
+    pub net: Option<NetLink>,
+}
+
+impl SimThreadConfig {
+    /// A config without terrain or network (tests, benches).
+    pub fn bare(match_seed: u64, map: MapId, mode: GameMode) -> Self {
+        SimThreadConfig {
+            match_seed,
+            map,
+            mode,
+            pin_core: None,
+            map_data: None,
+            net: None,
+        }
+    }
 }
 
 pub struct SimLoop<C: Clock> {
@@ -130,9 +161,7 @@ pub struct SimLoop<C: Clock> {
     inputs_rx: Receiver<InputEnvelope>,
     commands_rx: Receiver<Command>,
     stop: StopFlag,
-    /// Inputs drained this tick, keyed (and therefore ordered) by player.
-    fresh: BTreeMap<PlayerId, InputCmd>,
-    team_of: BTreeMap<PlayerId, Team>,
+    bridge: SimBridge,
     consecutive: i64,
     ticks: u64,
     tick_ns: Vec<u32>,
@@ -156,7 +185,20 @@ pub fn build_loop<C: Clock>(
         mode: cfg.mode,
         data: GameData::embedded(),
     };
-    let world = World::new(sim_cfg, &CollisionData::empty());
+    let empty = CollisionData::empty();
+    let mut world = World::new(
+        sim_cfg,
+        cfg.map_data.as_ref().map_or(&empty, |m| &m.collision),
+    );
+    if let Some(m) = &cfg.map_data {
+        m.apply_to(&mut world);
+    }
+    let bridge = SimBridge::new(
+        metrics.clone(),
+        cfg.net.clone(),
+        cfg.map_data.clone(),
+        ValidateCfg::default(),
+    );
     let now = clock.now();
     let lp = SimLoop {
         schedule: TickSchedule::new(now + TICK_PERIOD, TICK_PERIOD),
@@ -167,8 +209,7 @@ pub fn build_loop<C: Clock>(
         inputs_rx: irx,
         commands_rx: crx,
         stop,
-        fresh: BTreeMap::new(),
-        team_of: BTreeMap::new(),
+        bridge,
         consecutive: 0,
         ticks: 0,
         tick_ns: Vec::new(),
@@ -284,9 +325,15 @@ impl<C: Clock> SimLoop<C> {
 
     fn tick_body(&mut self) {
         self.handle_commands();
-        self.drain_inputs();
-        let inputs = self.apply_inputs();
-        self.world.step(&inputs);
+        // `now` is the tick this step will simulate; input windows are relative to it.
+        let now = self.world.tick().0 + 1;
+        self.drain_inputs(now);
+        let kicked = self.bridge.process_kicks(&mut self.world);
+        if !kicked.is_empty() {
+            self.update_player_gauges();
+        }
+        let inputs = self.bridge.resolve(now);
+        self.world.step(inputs);
         CURRENT_TICK.store(self.world.tick().0, Ordering::Relaxed);
         self.record_lag_comp();
         self.bots_think();
@@ -297,11 +344,19 @@ impl<C: Clock> SimLoop<C> {
     fn handle_commands(&mut self) {
         while let Ok(c) = self.commands_rx.try_recv() {
             match c {
-                Command::SpawnPlayer { req } => match self.world.spawn_player(req) {
-                    Ok(_) => {
-                        self.team_of.insert(req.player, req.team);
-                        self.update_player_gauges();
+                Command::Join { player, team } => {
+                    match self.bridge.join(&mut self.world, player, team) {
+                        Ok(()) => self.update_player_gauges(),
+                        Err(e) => tracing::warn!(
+                            event = "join_failed",
+                            player_id = player as u64,
+                            error = ?e,
+                            "spawn_player rejected a join"
+                        ),
                     }
+                }
+                Command::SpawnPlayer { req } => match self.bridge.spawn(&mut self.world, req) {
+                    Ok(()) => self.update_player_gauges(),
                     Err(e) => tracing::warn!(
                         event = "spawn_failed",
                         player_id = req.player as u64,
@@ -310,8 +365,7 @@ impl<C: Clock> SimLoop<C> {
                     ),
                 },
                 Command::RemovePlayer(p) | Command::ClientGone(p) => {
-                    self.world.remove_player(p);
-                    self.team_of.remove(&p);
+                    self.bridge.leave(&mut self.world, p);
                     self.update_player_gauges();
                 }
             }
@@ -319,33 +373,29 @@ impl<C: Clock> SimLoop<C> {
     }
 
     fn update_player_gauges(&self) {
-        let count = |t: Team| self.team_of.values().filter(|&&x| x == t).count() as i64;
         self.metrics
             .players
             .with_label_values(&["us"])
-            .set(count(Team::Us));
+            .set(self.bridge.count_team(Team::Us) as i64);
         self.metrics
             .players
             .with_label_values(&["ger"])
-            .set(count(Team::Ger));
+            .set(self.bridge.count_team(Team::Ger) as i64);
     }
 
-    /// Step 1: drain the network->sim channel (bounded by its capacity).
-    fn drain_inputs(&mut self) {
+    /// Step 1: drain the network->sim channels (bounded by their capacity) into the per-player
+    /// input buffers: C1 bundles from the connection layer, then single commands from the
+    /// in-process channel (bots / tests). Both go through the same validation.
+    fn drain_inputs(&mut self, now: u32) {
+        self.bridge.drain_net(now);
         for _ in 0..INPUT_CHANNEL_CAP {
             match self.inputs_rx.try_recv() {
                 Ok(e) => {
-                    self.fresh.insert(e.player, e.cmd);
+                    self.bridge.ingest_cmd(e.player, &e.cmd, now);
                 }
                 Err(_) => break,
             }
         }
-    }
-
-    /// Step 2: this tick's inputs, ascending by player.
-    /// TODO(M0-018): per-player tick matching, repeat-last <= 5 ticks, validation.
-    fn apply_inputs(&mut self) -> Vec<(PlayerId, InputCmd)> {
-        std::mem::take(&mut self.fresh).into_iter().collect()
     }
 
     /// Step 4. TODO(M0-020): lag-compensation history.
@@ -387,12 +437,7 @@ mod tests {
     use crate::clock::fake::FakeClock;
 
     fn cfg() -> SimThreadConfig {
-        SimThreadConfig {
-            match_seed: 1,
-            map: MapId(0),
-            mode: GameMode::Sandbox,
-            pin_core: None,
-        }
+        SimThreadConfig::bare(1, MapId(0), GameMode::Sandbox)
     }
 
     fn mk(c: &FakeClock) -> (SimLoop<&FakeClock>, Arc<Metrics>) {

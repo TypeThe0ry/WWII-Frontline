@@ -23,7 +23,7 @@ declare global {
       setYScale: (v: number) => void;
       setDebug: (mode: string) => void;
     };
-    /** `?scene=terrain` (unless `veg=0`): vegetation diagnostics for e2e/M0-030. */
+    /** `?scene=vegetation` (terrain + vegetation): vegetation diagnostics for e2e/M0-030. */
     __vegetation?: VegetationHandle;
   }
 }
@@ -38,7 +38,8 @@ async function boot(): Promise<void> {
   canvas.style.cssText = 'display:block;width:100vw;height:100vh;outline:none;touch-action:none';
   app.appendChild(canvas);
 
-  const terrainScene = params.get('scene') === 'terrain';
+  const sceneParam = params.get('scene');
+  const terrainScene = sceneParam === 'terrain' || sceneParam === 'vegetation'; // 'vegetation' = terrain + vegetation (M0-024)
   const ctx = await createRenderer(canvas, {
     renderer: parseRendererParam(params.get('renderer')),
     fly: params.get('fly') === '1' || terrainScene,
@@ -53,7 +54,7 @@ async function boot(): Promise<void> {
   }
 
   let vegHandle: VegetationHandle | null = null;
-  if (terrainHandle && params.get('veg') !== '0') {
+  if (terrainHandle && sceneParam === 'vegetation') {
     const { attachVegetation } = await import('./render/vegetation/vegetation-scene');
     vegHandle = await attachVegetation(ctx, terrainHandle.terrain, params);
     window.__vegetation = vegHandle;

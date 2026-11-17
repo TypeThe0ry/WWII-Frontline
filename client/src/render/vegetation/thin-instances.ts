@@ -65,6 +65,8 @@ export interface Box {
   maxZ: number;
 }
 
+/** Slots remembered per LOD for partial uploads; beyond it the whole used range is uploaded. */
+export const DIRTY_CAP = 96;
 const UNASSIGNED = -2;
 const HIDDEN = -1;
 /** A bucket is re-evaluated only after the camera moved this far since its last evaluation (m). */
@@ -75,8 +77,10 @@ export class LodBuckets {
   /** One matrix buffer per visible LOD; capacity = instance count (any LOD can hold all of them). */
   readonly buffers: Float32Array[];
   readonly counts: Int32Array;
-  /** LODs whose buffer changed since the caller last cleared the flag. */
+  /** LODs whose count or contents changed since the caller last called `clearDirty`. */
   readonly dirty: boolean[];
+  private readonly dirtySlots: Int32Array[];
+  private readonly dirtyCount: Int32Array;
   private readonly lodOf: Int8Array;
   private readonly slot: Int32Array;
   private readonly idAt: Int32Array[];
@@ -97,6 +101,8 @@ export class LodBuckets {
     this.buffers = Array.from({ length: lodCount }, () => new Float32Array(n * 16));
     this.counts = new Int32Array(lodCount);
     this.dirty = new Array<boolean>(lodCount).fill(false);
+    this.dirtySlots = Array.from({ length: lodCount }, () => new Int32Array(DIRTY_CAP));
+    this.dirtyCount = new Int32Array(lodCount);
     this.lodOf = new Int8Array(n).fill(UNASSIGNED);
     this.slot = new Int32Array(n);
     this.idAt = Array.from({ length: lodCount }, () => new Int32Array(n));
@@ -127,6 +133,7 @@ export class LodBuckets {
       this.buffers[l]!.copyWithin(s * 16, last * 16, last * 16 + 16);
       this.idAt[l]![s] = j;
       this.slot[j] = s;
+      this.markDirty(l, s);
     }
     this.counts[l] = last;
     this.dirty[l] = true;
@@ -140,7 +147,38 @@ export class LodBuckets {
     this.idAt[l]![s] = i;
     this.slot[i] = s;
     this.counts[l] = s + 1;
+    this.markDirty(l, s);
     this.dirty[l] = true;
+  }
+
+  private markDirty(l: number, s: number): void {
+    const n = this.dirtyCount[l]!;
+    if (n < DIRTY_CAP) this.dirtySlots[l]![n] = s;
+    this.dirtyCount[l] = n + 1;
+  }
+
+  /**
+   * Contiguous slot runs `[start, length, start, length, ...]` of LOD `l` whose matrices changed (clipped to the
+   * current count), or null when too many slots changed and the whole used range should be uploaded.
+   */
+  dirtyRuns(l: number): number[] | null {
+    const n = this.dirtyCount[l]!;
+    if (n > DIRTY_CAP) return null;
+    const slots = Array.from(this.dirtySlots[l]!.subarray(0, n)).filter((s) => s < this.counts[l]!);
+    slots.sort((a, b) => a - b);
+    const runs: number[] = [];
+    for (const s of slots) {
+      const k = runs.length;
+      if (k > 0 && s < runs[k - 2]! + runs[k - 1]!) continue; // duplicate
+      if (k > 0 && s === runs[k - 2]! + runs[k - 1]!) runs[k - 1] = runs[k - 1]! + 1;
+      else runs.push(s, 1);
+    }
+    return runs;
+  }
+
+  clearDirty(l: number): void {
+    this.dirty[l] = false;
+    this.dirtyCount[l] = 0;
   }
 
   /**

@@ -22,6 +22,11 @@ pub const RATE_FRAMES_PER_SEC: f64 = 150.0;
 /// Burst allowance of the inbound frame bucket.
 pub const RATE_BURST_FRAMES: f64 = 300.0;
 
+/// Sustained C0 `Ping` messages per second per connection (M0-018). Excess pings are dropped.
+pub const PING_PER_SEC: f64 = 5.0;
+/// Sustained other C0 messages per second per connection (deploy/chat arrive in M1).
+pub const C0_OTHER_PER_SEC: f64 = 10.0;
+
 /// Token bucket over inbound frames.
 #[derive(Debug)]
 pub struct RateLimiter {

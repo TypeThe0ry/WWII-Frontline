@@ -405,11 +405,11 @@ async fn malformed_frames_never_panic_and_close_the_connection() {
     // Server still healthy afterwards.
     let (_c, w) = Client::handshake(&h.url).await;
     assert!(w.player_id < 128);
-    // The sim command channel only ever sees ClientGone events (no spawn without M0-018).
+    // The sim command channel only ever sees Join / ClientGone events from the net layer.
     assert!(h
         .commands
         .try_iter()
-        .all(|c| matches!(c, Command::ClientGone(_))));
+        .all(|c| matches!(c, Command::ClientGone(_) | Command::Join { .. })));
     eprintln!("ClientGone events seen: {}", gone.load(Ordering::Relaxed));
     let h = std::sync::Arc::try_unwrap(h).ok().expect("sole owner");
     h.stop().await;

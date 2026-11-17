@@ -15,7 +15,7 @@ use frontline_protocol::msg::c0::{
 };
 use frontline_protocol::msg::input::{decode_input_bundle, InputBundle};
 use frontline_protocol::Channel;
-use frontline_sim::PlayerId;
+use frontline_sim::{PlayerId, Team};
 use tokio::time::timeout_at;
 
 use super::handshake::{check_hello, reject_label};
@@ -68,10 +68,20 @@ pub struct NetCtx {
     pub handshake_timeout: Duration,
 }
 
+/// A released `PlayerId` is not handed out again for this long, so a client that is still
+/// processing the old player's last snapshot cannot confuse it with a new one (M0-018).
+pub const ID_REUSE_DELAY: Duration = Duration::from_secs(1);
+
 struct SessionsInner {
     per_ip: HashMap<IpAddr, usize>,
     total: usize,
     players: [Option<ClientHandle>; 128],
+    /// Team of each occupied slot.
+    team_of: [Team; 128],
+    /// Players per team (`Team as usize`), counting occupied slots.
+    team_count: [usize; 2],
+    /// Slot is unavailable until this instant (released recently).
+    cooling_until: [Option<Instant>; 128],
 }
 
 /// Connection admission (per IP / total) and `PlayerId` allocation.
@@ -80,6 +90,7 @@ pub struct Sessions {
     metrics: Arc<Metrics>,
     max_per_ip: usize,
     max_total: usize,
+    reuse_delay: Duration,
 }
 
 /// RAII admission ticket: releases the IP/total slot and the connections gauge on drop.
@@ -104,15 +115,29 @@ impl Sessions {
         max_per_ip: usize,
         max_total: usize,
     ) -> Arc<Sessions> {
+        Self::with_reuse_delay(metrics, max_per_ip, max_total, ID_REUSE_DELAY)
+    }
+
+    /// Like [`Self::with_limits`] with an explicit `PlayerId` reuse delay (tests use zero).
+    pub fn with_reuse_delay(
+        metrics: Arc<Metrics>,
+        max_per_ip: usize,
+        max_total: usize,
+        reuse_delay: Duration,
+    ) -> Arc<Sessions> {
         Arc::new(Sessions {
             inner: Mutex::new(SessionsInner {
                 per_ip: HashMap::new(),
                 total: 0,
                 players: std::array::from_fn(|_| None),
+                team_of: [Team::Us; 128],
+                team_count: [0; 2],
+                cooling_until: [None; 128],
             }),
             metrics,
             max_per_ip,
             max_total,
+            reuse_delay,
         })
     }
 
@@ -138,18 +163,46 @@ impl Sessions {
         })
     }
 
-    /// Smallest free `PlayerId` (0..=127), registering `handle` for it.
-    pub fn alloc_player(&self, handle: &ClientHandle) -> Option<PlayerId> {
+    /// Smallest free `PlayerId` (0..=127) that is not cooling down, registering `handle` for it,
+    /// and the team it joins: the team with fewer players, US on a tie (so joins alternate
+    /// US, GER, US, ...).
+    pub fn alloc_player_team(&self, handle: &ClientHandle) -> Option<(PlayerId, Team)> {
+        let now = Instant::now();
         let mut g = self.lock();
-        let id = g.players.iter().position(Option::is_none)?;
+        let id = (0..128usize).find(|&i| {
+            g.players[i].is_none() && g.cooling_until[i].is_none_or(|t| t <= now)
+        })?;
+        let team = if g.team_count[Team::Ger as usize] < g.team_count[Team::Us as usize] {
+            Team::Ger
+        } else {
+            Team::Us
+        };
         g.players[id] = Some(handle.clone());
-        Some(id as PlayerId)
+        g.cooling_until[id] = None;
+        g.team_of[id] = team;
+        g.team_count[team as usize] += 1;
+        Some((id as PlayerId, team))
     }
 
+    /// [`Self::alloc_player_team`] without the team.
+    pub fn alloc_player(&self, handle: &ClientHandle) -> Option<PlayerId> {
+        self.alloc_player_team(handle).map(|(id, _)| id)
+    }
+
+    /// Frees the slot (it becomes allocatable again after the reuse delay) and the team seat.
     pub fn release_player(&self, id: PlayerId) {
-        if let Some(slot) = self.lock().players.get_mut(id as usize) {
-            *slot = None;
+        let mut g = self.lock();
+        let i = id as usize;
+        if i < 128 && g.players[i].take().is_some() {
+            let t = g.team_of[i] as usize;
+            g.team_count[t] = g.team_count[t].saturating_sub(1);
+            g.cooling_until[i] = (!self.reuse_delay.is_zero()).then(|| Instant::now() + self.reuse_delay);
         }
+    }
+
+    /// Connected players per team `[us, ger]`.
+    pub fn team_counts(&self) -> [usize; 2] {
+        self.lock().team_count
     }
 
     /// Sending handle of a connected player (used by the snapshot sender, M0-019).
@@ -204,6 +257,7 @@ pub async fn run_connection<T: ClientTransport>(
     let kind = t.kind();
     let _conn_gauge = TransportGauge::new(&ctx.metrics, kind);
     let mut rate = RateLimiter::new(RATE_FRAMES_PER_SEC, RATE_BURST_FRAMES, Instant::now());
+    let mut c0 = C0Limits::new(Instant::now());
 
     // ---- handshake ----
     #[allow(clippy::never_loop)]
@@ -236,11 +290,19 @@ pub async fn run_connection<T: ClientTransport>(
         send_reject(&handle, reason);
         return;
     }
-    let Some(player) = ctx.sessions.alloc_player(&handle) else {
+    let Some((player, team)) = ctx.sessions.alloc_player_team(&handle) else {
         reject_label_count(&ctx, "server_full");
         send_reject(&handle, RejectReason::ServerFull);
         return;
     };
+    // The sim learns about the player before the client can send its first C1 (it only starts
+    // after Welcome), so `Join` is always ordered ahead of that player's inputs.
+    if ctx.commands.try_send(Command::Join { player, team }).is_err() {
+        ctx.sessions.release_player(player);
+        reject_label_count(&ctx, "server_full");
+        send_reject(&handle, RejectReason::ServerFull);
+        return;
+    }
     let welcome = ServerMsgC0::Welcome(Welcome {
         player_id: player,
         server_tick: ctx.server_tick.load(Ordering::Relaxed),
@@ -249,8 +311,7 @@ pub async fn run_connection<T: ClientTransport>(
         data_hash: ctx.data_hash,
         map_id: ctx.map_id,
         mode: ctx.mode,
-        // Placeholder: M0-018 assigns teams when the player enters the world.
-        team: player & 1,
+        team: team as u8,
         client_tick_offset: 0,
     });
     if !send_c0(&handle, &welcome) {
@@ -273,7 +334,7 @@ pub async fn run_connection<T: ClientTransport>(
                     handle.close_now();
                     break;
                 }
-                if !handle_frame(&ctx, &handle, player, ch, payload, ip) {
+                if !handle_frame(&ctx, &handle, &mut c0, player, ch, payload, ip) {
                     break;
                 }
             }
@@ -316,10 +377,26 @@ fn send_reject(handle: &ClientHandle, reason: RejectReason) {
     handle.close_graceful();
 }
 
+/// C0 message budgets of one connection: pings 5/s (excess is dropped and counted, the
+/// connection stays up). The other-message budget (`C0_OTHER_PER_SEC`, 10/s) is applied when
+/// M1 adds deploy/chat messages; M0 has none besides `Hello`/`Disconnect`.
+struct C0Limits {
+    ping: RateLimiter,
+}
+
+impl C0Limits {
+    fn new(now: Instant) -> Self {
+        C0Limits {
+            ping: RateLimiter::new(PING_PER_SEC, PING_PER_SEC, now),
+        }
+    }
+}
+
 /// Returns `false` when the connection must end.
 fn handle_frame(
     ctx: &NetCtx,
     handle: &ClientHandle,
+    c0: &mut C0Limits,
     player: PlayerId,
     ch: Channel,
     payload: Bytes,
@@ -332,6 +409,13 @@ fn handle_frame(
     match ch {
         Channel::C0 => match decode_c0_client(&payload) {
             Ok(ClientMsgC0::Ping(p)) => {
+                if !c0.ping.allow(Instant::now()) {
+                    ctx.metrics
+                        .input_rejected_total
+                        .with_label_values(&["c0_rate"])
+                        .inc();
+                    return true;
+                }
                 let pong = ServerMsgC0::Pong(Pong {
                     client_time: p.client_time,
                     server_tick: ctx.server_tick.load(Ordering::Relaxed),
@@ -413,7 +497,7 @@ mod tests {
     #[test]
     fn player_ids_are_smallest_free_and_recycled() {
         let m = Metrics::new();
-        let s = Sessions::new(m.clone());
+        let s = Sessions::with_reuse_delay(m.clone(), 4, 128, Duration::ZERO);
         let hs: Vec<_> = (0..128).map(|_| ClientHandle::new(m.clone())).collect();
         for (i, h) in hs.iter().enumerate() {
             assert_eq!(s.alloc_player(h), Some(i as u8));
@@ -426,5 +510,43 @@ mod tests {
         assert!(s.handle_of(5).is_some());
         s.release_player(5);
         assert!(s.handle_of(5).is_none());
+    }
+
+    #[test]
+    fn teams_alternate_and_stay_balanced_through_leaves() {
+        let m = Metrics::new();
+        let s = Sessions::with_reuse_delay(m.clone(), 4, 128, Duration::ZERO);
+        let h = ClientHandle::new(m);
+        let mut teams = vec![];
+        for _ in 0..6 {
+            teams.push(s.alloc_player_team(&h).unwrap().1);
+        }
+        use Team::*;
+        assert_eq!(teams, vec![Us, Ger, Us, Ger, Us, Ger]);
+        assert_eq!(s.team_counts(), [3, 3]);
+        // Both US players leave: the next two joins go to US, then it alternates again.
+        s.release_player(0);
+        s.release_player(4);
+        assert_eq!(s.team_counts(), [1, 3]);
+        assert_eq!(s.alloc_player_team(&h).unwrap().1, Us);
+        assert_eq!(s.alloc_player_team(&h).unwrap().1, Us);
+        assert_eq!(s.alloc_player_team(&h).unwrap().1, Us);
+        assert_eq!(s.team_counts(), [4, 3]);
+        assert_eq!(s.alloc_player_team(&h).unwrap().1, Ger);
+    }
+
+    #[test]
+    fn released_player_id_is_not_reused_for_one_second() {
+        let m = Metrics::new();
+        let s = Sessions::new(m.clone()); // default 1 s delay
+        let h = ClientHandle::new(m);
+        assert_eq!(s.alloc_player(&h), Some(0));
+        assert_eq!(s.alloc_player(&h), Some(1));
+        s.release_player(0);
+        // 0 is cooling: the next allocation skips it.
+        assert_eq!(s.alloc_player(&h), Some(2));
+        assert!(s.handle_of(0).is_none(), "released at once for sending");
+        std::thread::sleep(ID_REUSE_DELAY + Duration::from_millis(50));
+        assert_eq!(s.alloc_player(&h), Some(0));
     }
 }

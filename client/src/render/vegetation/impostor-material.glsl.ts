@@ -9,8 +9,9 @@
  * The WebGPU twins are in impostor-material.wgsl.ts. The basis (right = cross(d, up), camUp = cross(right, d)) must be
  * identical in IMPOSTOR_VERTEX and BAKE_VERTEX.
  *
- * uImp = (radius R, centre height cy, cells per side, flipV): flipV = 1 on WebGPU, where NDC y-up lands on texture
- * row 0 (v = 0) while WebGL has it at v = 1.
+ * uImp = (radius R, centre height cy, cells per side, flipV): flipV mirrors the atlas v axis. Measured: 0 on both WebGL2
+ * and WebGPU (Babylon renders into render targets with GL-consistent orientation on WebGPU as well); kept as a switch.
+ * In BAKE_VERTEX uImp.w is instead the clip-space-z flag (1 when z is in [0,1], i.e. WebGPU).
  */
 export const IMPOSTOR_VERTEX_GLSL = /* glsl */ `
 precision highp float;

@@ -38,6 +38,16 @@ pub struct Metrics {
     pub tick_overrun_consecutive: IntGauge,
     pub tick_overrun_consecutive_max: IntGauge,
     pub input_queue_full_total: IntCounter,
+    /// Inputs refused, clamped or dropped by the session layer (M0-018), by reason.
+    pub input_rejected_total: IntCounterVec,
+    /// Input commands that passed validation and entered a buffer.
+    pub input_accepted_total: IntCounter,
+    /// Ticks in which a joined player had no input of its own (repeat / neutral was used).
+    pub input_missing_ticks_total: IntCounter,
+    /// Players whose input stream stalled for >= 9 ticks (one count per stall episode).
+    pub session_stall_total: IntCounter,
+    /// Connections closed by the server because of 30 consecutive input violations.
+    pub session_kicked_total: IntCounter,
     pub players: IntGaugeVec,
     pub bots: IntGauge,
     pub uptime_seconds: Gauge,
@@ -104,6 +114,30 @@ impl Metrics {
                 "server_input_queue_full_total",
                 "Inputs dropped because the input channel was full",
             ),
+            input_rejected_total: IntCounterVec::new(
+                Opts::new(
+                    "input_rejected_total",
+                    "Inputs rejected, clamped or dropped by validation",
+                ),
+                &["reason"],
+            )
+            .expect("input rejected"),
+            input_accepted_total: counter(
+                "input_accepted_total",
+                "Input commands accepted into a player's buffer",
+            ),
+            input_missing_ticks_total: counter(
+                "input_missing_ticks_total",
+                "Player-ticks resolved without an input of their own",
+            ),
+            session_stall_total: counter(
+                "session_stall_total",
+                "Input stalls (>= 9 ticks without input)",
+            ),
+            session_kicked_total: counter(
+                "session_kicked_total",
+                "Connections closed after 30 consecutive input violations",
+            ),
             players: IntGaugeVec::new(Opts::new("server_players", "Connected players"), &["team"])
                 .expect("players"),
             bots: gauge("server_bots", "Active bots"),
@@ -163,6 +197,18 @@ impl Metrics {
             .unwrap();
         r.register(Box::new(m.input_queue_full_total.clone()))
             .unwrap();
+        for c in [
+            Box::new(m.input_rejected_total.clone()) as Box<dyn prometheus::core::Collector>,
+            Box::new(m.input_accepted_total.clone()),
+            Box::new(m.input_missing_ticks_total.clone()),
+            Box::new(m.session_stall_total.clone()),
+            Box::new(m.session_kicked_total.clone()),
+        ] {
+            r.register(c).unwrap();
+        }
+        for reason in crate::validate::Reject::LABELS {
+            m.input_rejected_total.with_label_values(&[reason]);
+        }
         r.register(Box::new(m.players.clone())).unwrap();
         r.register(Box::new(m.bots.clone())).unwrap();
         r.register(Box::new(m.uptime_seconds.clone())).unwrap();

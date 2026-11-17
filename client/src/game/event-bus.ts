@@ -1,0 +1,101 @@
+/**
+ * Client event bus (ARCHITECTURE §8.4): typed, synchronous, allocation-free on the emit path.
+ *
+ * - `emit` calls the subscribers of that event in subscription order, on the caller's stack.
+ * - A throwing subscriber does not stop the others; the error goes to `onError` (default: console.error).
+ * - Subscriber lists are copy-on-write, so `on`/`off` during an `emit` are safe (they take effect
+ *   from the next emit) and `emit` itself allocates nothing.
+ * - Event payload objects on hot paths come from an `ObjectPool` (acquire, fill, emit, release).
+ *
+ * M0-022 and later add entries to `GameEvents`; they must not change this implementation.
+ */
+
+/** Event catalogue. Keys are `<producer>.<event>`; extend by declaration merging or by editing here. */
+export interface GameEvents {
+  'net.connected': { transport: 'wt' | 'ws'; rtt: number };
+  'net.disconnected': { reason: string };
+}
+
+export type Listener<P> = (payload: P) => void;
+
+export class EventBus<M extends object = GameEvents> {
+  private readonly lists = new Map<keyof M, Listener<never>[]>();
+
+  /** Called with (error, eventName) when a subscriber throws. */
+  onError: (error: unknown, event: keyof M) => void = (error, event) => {
+    console.error(`[event-bus] listener for '${String(event)}' threw`, error);
+  };
+
+  /** Subscribes; returns an unsubscribe function. The same function may be subscribed twice (called twice). */
+  on<K extends keyof M>(type: K, fn: Listener<M[K]>): () => void {
+    const cur = this.lists.get(type);
+    this.lists.set(type, cur ? [...cur, fn as Listener<never>] : [fn as Listener<never>]);
+    return () => this.off(type, fn);
+  }
+
+  /** Subscribes for exactly one emit. */
+  once<K extends keyof M>(type: K, fn: Listener<M[K]>): () => void {
+    const off = this.on(type, (p) => {
+      off();
+      fn(p);
+    });
+    return off;
+  }
+
+  /** Removes the most recent subscription of `fn`; no-op when it is not subscribed. */
+  off<K extends keyof M>(type: K, fn: Listener<M[K]>): void {
+    const cur = this.lists.get(type);
+    if (!cur) return;
+    const i = cur.lastIndexOf(fn as Listener<never>);
+    if (i < 0) return;
+    if (cur.length === 1) this.lists.delete(type);
+    else this.lists.set(type, [...cur.slice(0, i), ...cur.slice(i + 1)]);
+  }
+
+  /** Synchronous dispatch. Allocation-free unless a subscriber throws. */
+  emit<K extends keyof M>(type: K, payload: M[K]): void {
+    const cur = this.lists.get(type);
+    if (!cur) return;
+    for (let i = 0; i < cur.length; i++) {
+      try {
+        (cur[i] as Listener<M[K]>)(payload);
+      } catch (e) {
+        this.onError(e, type);
+      }
+    }
+  }
+
+  listenerCount(type: keyof M): number {
+    return this.lists.get(type)?.length ?? 0;
+  }
+
+  clear(): void {
+    this.lists.clear();
+  }
+}
+
+/** Free-list of reusable payload objects, so hot-path events do not allocate. */
+export class ObjectPool<T extends object> {
+  private readonly free: T[] = [];
+
+  constructor(
+    private readonly create: () => T,
+    private readonly reset: (o: T) => void = () => undefined,
+    prewarm = 0,
+  ) {
+    for (let i = 0; i < prewarm; i++) this.free.push(create());
+  }
+
+  acquire(): T {
+    return this.free.pop() ?? this.create();
+  }
+
+  release(o: T): void {
+    this.reset(o);
+    this.free.push(o);
+  }
+
+  get available(): number {
+    return this.free.length;
+  }
+}
