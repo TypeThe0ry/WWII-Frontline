@@ -231,9 +231,10 @@ fn duel_is_deterministic_and_golden() {
 /// the respawn (before, the loser stayed at hp <= 0 and the winner stopped shooting).
 /// M1-016: re-pinned (0x3849_3e76_201d_9cd5 before): lethal hits now down first, adding events.
 /// M1-017: re-pinned (0xfca9_b1fc_08b1_5dd2 before): `Suppress` events for near misses.
+/// M1-017b: re-pinned (see below): suppression changes spread and aim.
 /// M1-016b: re-pinned (0xff00_043d_6c81_f8cf before): shooters stop on a down (downed players
 /// crawl prone, so the standing-torso aim no longer finishes them).
-const GOLDEN_DUEL_EVENTS: u64 = 0x9f0a_6965_3fd5_712f;
+const GOLDEN_DUEL_EVENTS: u64 = 0x3165_5fbd_0105_0323;
 
 fn script(n: usize, seed: u64) -> Vec<InputCmd> {
     let mut r = Rng(seed);

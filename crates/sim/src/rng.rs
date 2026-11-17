@@ -18,6 +18,8 @@ pub enum Purpose {
     Misc = 4,
     /// Exit deflection of a penetrating shot (M1-012).
     Penetration = 5,
+    /// Suppression camera / ray shake (M1-017).
+    SuppressShake = 6,
 }
 
 const GOLDEN: u64 = 0x9e37_79b9_7f4a_7c15;

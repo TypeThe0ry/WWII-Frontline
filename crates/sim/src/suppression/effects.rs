@@ -41,3 +41,37 @@ pub fn effects(s: f32) -> SuppressionEffects {
         pinned: s >= PINNED_S,
     }
 }
+
+/// Shake frequency (Hz): a new random offset every 1/12 s, interpolated in between.
+pub const SHAKE_HZ: u32 = 12;
+
+/// Deterministic aim shake `(yaw, pitch)` in radians for `tick`: amplitude `shake_deg`, 12 Hz
+/// value noise from `Rng::for_(tick, player, SuppressShake)` (server and prediction agree).
+pub fn shake(
+    match_seed: u64,
+    tick: crate::ids::Tick,
+    entity: crate::ids::EntityId,
+    shake_deg: f32,
+    hz: u8,
+) -> (f32, f32) {
+    use crate::rng::{unit_f32, Purpose, Rng};
+    if shake_deg <= 0.0 {
+        return (0.0, 0.0);
+    }
+    let hz = u32::from(hz);
+    let k = tick.0 * SHAKE_HZ / hz;
+    let frac = (tick.0 * SHAKE_HZ % hz) as f32 / hz as f32;
+    let at = |k: u32| {
+        let mut r = Rng::for_(
+            match_seed,
+            crate::ids::Tick(k),
+            entity,
+            Purpose::SuppressShake,
+        );
+        (unit_f32(&mut r) * 2.0 - 1.0, unit_f32(&mut r) * 2.0 - 1.0)
+    };
+    let (a, b) = (at(k), at(k + 1));
+    let f = frac;
+    let amp = shake_deg.to_radians();
+    ((a.0 + (b.0 - a.0) * f) * amp, (a.1 + (b.1 - a.1) * f) * amp)
+}

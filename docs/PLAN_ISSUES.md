@@ -777,3 +777,12 @@
 - **受影响任务**：M1-013（散布读 `supp_spread`）、M1-038、M1-057/063、M2 计分。
 - **裁决（Fable 填写）**：
 
+### PI-058 M1-017b：压制对移动/射击的作用与 `/data` 推迟
+
+- **状态**：resolved（实现者裁决，待 Fable 复核）
+- **类别**：sim
+- **提出者 / 日期**：M1 线程 / 2026-11-17
+- **做法**：①移速：在 `movement` 里把摇杆轴按 `1−0.10e` 缩放（走/跑/冲刺实测 S=100 为 0.90 倍）。②ADS 时间 ×(1+0.30e)、腰射/ADS 散布 ×(1+1.5e)：在 `weapons` 里对该玩家的 `WeaponParams` 副本缩放（S=100 时开火角偏差 RMS 为 2.5 倍）。③晃动：`Rng::for_(tick, entity, SuppressShake)` 的 12 Hz 值噪声线性插值，幅度 `0.6°·e`，叠加到该 tick 射击用的 yaw/pitch 副本（不改玩家的视角）。④`pinned`：某次受压使 S≥85 时 `pinned_until = tick+15`，期间 `weapons` 屏蔽 AIM 位（再次受压重新计时）。⑤**客户端预测**：`PredictSim` 目前不带压制输入，被压制时预测的移速/散布会与服务器有微小偏差；`self_state.suppression`（4 bit）接入预测留给 M1 预测/和解任务（M1-019 一带）。⑥推迟：`/data/combat/suppression.json` 与 schema（与 PI-055 同样处理，系数在 `suppression/mod.rs` 常量），载具炮弹近失压制（M1-023）。⑦性能：近失广相用 16 m 均匀网格，50 射手 + 100 玩家每 tick 50 发近失弹，压制额外开销 0.14 ms（预算 0.3，开发机非参考机）。⑧golden 重定：bots、`damage_death` skirmish、`weapon_duel`。
+- **受影响任务**：M1-019（预测）、M1-038、M1-057/063。
+- **裁决（Fable 填写）**：
+

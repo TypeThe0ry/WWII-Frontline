@@ -9,7 +9,8 @@ use common::*;
 use frontline_sim::Team;
 
 // M1-014: re-pinned (0x2021_804c_0223_6403 before): friendly fire and the helmet rule change bullet outcomes.
-const GOLDEN: u64 = 0xfbcd_31e9_0ff9_45c7;
+// M1-017b: re-pinned (0xfbcd_31e9_0ff9_45c7 before): suppression slows, spreads and shakes bot fire.
+const GOLDEN: u64 = 0x0996_0e11_b01c_50f8;
 
 fn fold(mut h: u64, v: u64) -> u64 {
     h ^= v;

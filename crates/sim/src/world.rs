@@ -399,6 +399,22 @@ impl World {
         }
     }
 
+    /// Test-only (feature `test-util`): sets a player's suppression.
+    #[cfg(feature = "test-util")]
+    pub fn debug_set_suppression(&mut self, id: PlayerId, s: f32, pinned_until: u32) {
+        if let Some(&(_, e)) = self.ecs.resource::<PlayerIndex>().map.get(&id) {
+            if let Some(mut st) = self
+                .ecs
+                .entity_mut(e)
+                .get_mut::<crate::suppression::SuppressionState>()
+            {
+                st.s = s;
+                st.window_until = u32::MAX;
+                st.pinned_until = pinned_until;
+            }
+        }
+    }
+
     /// Test-only (feature `test-util`): moves a player to `pos` (e.g. onto a ledge to fall).
     #[cfg(feature = "test-util")]
     pub fn debug_teleport(&mut self, id: PlayerId, pos: Vec3) {

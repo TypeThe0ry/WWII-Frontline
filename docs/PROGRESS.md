@@ -532,3 +532,6 @@ blocked / in-progress / todo：无。M0 的 33 个任务全部已提交（M0-033
 - 新增 `suppression` 模块（detect/state/effects/anti_farm/system）、`SuppressionState` 组件、`SimEvent::{Suppress, SuppressionAssist}`、`World::suppression`；弹丸每个子步做近失检测，爆炸读 `Explosion` 事件。
 - 测试 `suppression_m1` 14 项；golden 重定 2 个（PI-057）；全量测试、clippy、fmt 通过。
 
+### M1-017b 压制效果 — done（M1-017 完成）— 2026-11-17 — 提交见 git log
+- 移速/ADS 时间/散布/晃动/pinned 接入 `movement`/`weapons`；近失广相网格；测试 `suppression_effects` 5 项，bench `suppression` 0.14 ms/tick；golden 重定 3 个（PI-058）。
+

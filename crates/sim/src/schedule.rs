@@ -57,14 +57,21 @@ pub fn movement(
         &LifeState,
         Option<&WeaponState>,
         &MeleeState,
+        &crate::suppression::SuppressionState,
     )>,
 ) {
     let Some(p) = params.0 else {
         return;
     };
     for (_, e) in table.sorted() {
-        if let Ok((mut t, mut m, last, life, w, melee)) = q.get_mut(e) {
+        if let Ok((mut t, mut m, last, life, w, melee, supp)) = q.get_mut(e) {
             let mut cmd = last.cmd;
+            if supp.s > 0.0 {
+                // M1-017: suppressed players move up to 10 % slower.
+                let k = crate::suppression::effects(supp.s).move_mult;
+                cmd.move_x = (f32::from(cmd.move_x) * k) as i8;
+                cmd.move_z = (f32::from(cmd.move_z) * k) as i8;
+            }
             if life.is_downed() {
                 // Crawl (GAMEDESIGN 7.1): prone only, at the downed speed.
                 let k = (p.crawl_mps / p.prone_mps).min(1.0);
@@ -96,6 +103,7 @@ pub fn movement(
 /// projectiles of this tick's shots. Uses the post-movement pose, ascending `EntityId`.
 #[allow(clippy::too_many_arguments, clippy::type_complexity)]
 pub fn weapons(
+    cfg: Res<SimCfgRes>,
     wt: Res<WeaponTable>,
     params: Res<MoveParamsRes>,
     tick: Res<CurrentTick>,
@@ -112,13 +120,14 @@ pub fn weapons(
         &LifeState,
         &MeleeState,
         &crate::medical::FireLock,
+        &crate::suppression::SuppressionState,
     )>,
 ) {
     let Some(mp) = params.0 else {
         return;
     };
     for (id, e) in table.sorted() {
-        let Ok((t, m, last, team, mut w, life, melee, lock)) = q.get_mut(e) else {
+        let Ok((t, m, last, team, mut w, life, melee, lock, supp)) = q.get_mut(e) else {
             continue;
         };
         if !life.is_alive() {
@@ -127,6 +136,8 @@ pub fn weapons(
         let Some(wp) = wt.params(w.def_id) else {
             continue;
         };
+        let mut wp = *wp;
+        let mut auth = m.to_auth(t);
         let ctx = ShotCtx {
             match_seed: rng.match_seed,
             tick: tick.0,
@@ -137,7 +148,22 @@ pub fn weapons(
             // A running melee action blocks the trigger (M1-013b).
             cmd.buttons &= !buttons::FIRE;
         }
-        let out = step_weapon(&mut w, wp, &cmd, &m.to_auth(t), &mp, ctx);
+        if supp.s > 0.0 || supp.pinned_until >= tick.0 .0 {
+            // M1-017: spread, ADS time, ray shake; pinned players cannot aim.
+            let fx = crate::suppression::effects(supp.s);
+            if tick.0 .0 <= supp.pinned_until {
+                cmd.buttons &= !buttons::AIM;
+            }
+            wp.ads_units = libm::roundf(wp.ads_units as f32 * fx.ads_mult) as i32;
+            wp.hip_deg *= fx.spread_mult;
+            wp.ads_deg *= fx.spread_mult;
+            let (dy, dp) =
+                crate::suppression::shake(rng.match_seed, tick.0, id, fx.shake_deg, cfg.hz);
+            auth.yaw += dy;
+            auth.pitch = (auth.pitch + dp)
+                .clamp(-core::f32::consts::FRAC_PI_2, core::f32::consts::FRAC_PI_2);
+        }
+        let out = step_weapon(&mut w, &wp, &cmd, &auth, &mp, ctx);
         if let Some(shot) = out.shot {
             let weapon = w.def_id;
             let v = wt.ballistics(weapon).map_or(0.0, |b| b.muzzle_velocity_mps);

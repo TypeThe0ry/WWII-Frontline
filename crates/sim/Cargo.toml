@@ -85,3 +85,11 @@ required-features = ["test-util"]
 [[test]]
 name = "suppression_m1"
 required-features = ["test-util"]
+
+[[test]]
+name = "suppression_effects"
+required-features = ["test-util"]
+
+[[bench]]
+name = "suppression"
+harness = false

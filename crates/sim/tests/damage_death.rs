@@ -597,7 +597,8 @@ fn twenty_players_fight_without_panic_and_counts_balance() {
 
 /// M1-016: re-pinned (0x90cd_4193_862c_a94c before): lethal hits now down players first.
 /// M1-017: re-pinned (0x3701_e23b_63cd_4aae before): near misses now suppress (state hash, events).
-const GOLDEN_SKIRMISH_FINAL: u64 = 0xb017_47d7_5dc1_3695;
+/// M1-017b: re-pinned (0xb017_47d7_5dc1_3695 before): suppression changes spread, aim and speed.
+const GOLDEN_SKIRMISH_FINAL: u64 = 0x9a3f_eabb_f2c6_870f;
 
 #[test]
 fn deaths_and_respawns_are_deterministic_5000_ticks() {
