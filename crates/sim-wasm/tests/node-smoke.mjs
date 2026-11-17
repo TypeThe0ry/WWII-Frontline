@@ -30,7 +30,10 @@ const ok = (name) => {
 // --- version / data hash agree with the native build (meta.json comes from the native example).
 {
   assert.equal(wasm.protocolVersion(), 1);
-  const native = JSON.parse(readFileSync(golden('native.json'), 'utf8'));
+  // The data hash changes with every /data edit, so compare against the native build's own value
+  // (`cargo run --example trace` writes it) and fall back to the committed file only without a trace.
+  const traceMeta = join(root, 'target/wasm-trace/meta.json');
+  const native = JSON.parse(readFileSync(existsSync(traceMeta) ? traceMeta : golden('native.json'), 'utf8'));
   assert.equal(wasm.protocolVersion(), native.protocolVersion);
   assert.equal(wasm.dataHash(), BigInt(native.dataHash));
   ok(`protocolVersion=${wasm.protocolVersion()} dataHash=0x${wasm.dataHash().toString(16)} equal native`);

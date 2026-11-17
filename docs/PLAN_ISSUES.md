@@ -594,3 +594,14 @@
 - **规则**：sim / bots / protocol 内禁止使用 `f32::{sin,cos,tan,atan,atan2,exp,ln,powf,...}`，一律用 `libm::*f`。
 - **受影响任务**：M0 确定性闸门（determinism / wasm-build / test-rust）。
 - **裁决（Fable 填写）**：
+
+### PI-040 金哈希不再依赖武器在 `GameData::weapons` 中的下标
+
+- **状态**：resolved
+- **类别**：测试/运维
+- **提出者 / 日期**：确定性修复线程（响应 M1 线程的预告）/ 2026-11-17
+- **问题**：M1 数据任务会新增武器、改变 `weapons/*.json` 的顺序，而 `World::state_hash` 把下标（`WeaponState.def_id`、弹丸 `weapon`、死亡记录里的 `weapon`）直接写进哈希，一加武器所有 sim/bots/server/wasm 金哈希都会移位。
+- **做法**：`state_hash` 改为写武器字符串 id 的 FNV-1a（`World::weapon_key`），不再写下标；线协议里的 `weapon:6` 与 `WeaponState::to_bytes` 不变（下标仍是运行时/线上的表示）。因此只有"武器的实际数值/新增武器改变了战斗结果"才会改金哈希。一次性重新定标：`damage_death` `GOLDEN_SKIRMISH_FINAL`、`determinism_basic` `GOLDEN_FINAL_HASH`（其余金哈希不含武器状态，未变）。`node-smoke.mjs` 的 `dataHash` 改为优先对比 `target/wasm-trace/meta.json`（原生 trace 的当次值），不再每次改 /data 就要重生成 `native.json`。
+- **仍然会变的**：`DATA_HASH`（按设计随 /data 变，现在测试里按当次值比对）、与武器数值有关的行为型金哈希（bots、skirmish 等，改数值就是行为变了，需按注释说明重新定标）。
+- **受影响任务**：M1 数据任务（武器/角色数据）。
+- **裁决（Fable 填写）**：
