@@ -260,3 +260,10 @@
 - **受影响任务**：M0-014、M0-015、M0-018、M0-019、M1-010、M1-016、M1-019。
 - **临时处理**：按此实现。
 - **裁决（Fable 填写）**：
+
+### PI-018 M0-014：sim-wasm 的 JS 接口形态、工作区依赖、数据 JSON 来源、构建 profile
+- **问题**：①任务要求 `client/package.json` 加对 `crates/sim-wasm/pkg` 的 workspace 依赖——但 pkg 是被 git 忽略的构建产物，干净检出里不存在，`pnpm install` 会因此失败，并拖垮其它执行者/CI 的 TS 作业。②`decode(bytes): DecodedSnapshot` 若每帧返回 wasm-bindgen 对象会产生 GC；`encodeHello({...})` 的对象参数需要 serde-wasm-bindgen（增大体积）。③`weaponDef/roleDef` 要 JSON bytes，但 `sim` 的 `*Def` 只实现 `Deserialize`，`embedded` 模块私有。④任务写在 sim-wasm/Cargo.toml 的 release profile 在工作区成员里无效。
+- **证据**：crates/sim-wasm/{build.rs,src/*}、client/src/net/wasm/、根 Cargo.toml `[profile.wasm-release]`、reports/m0/M0-014-wasm-size.json。
+- **建议方案（已按此实现）**：①不加 workspace 依赖；`client/src/net/wasm/{types,layout,index}.ts` 手写类型与 `LAYOUT_*` 常量表（由 `layoutJson()` 与 Rust golden `tests/golden/layout.json` 双向校验），模块对象由 M0-022 注入/导入（pkg 构建后再把 `crates/sim-wasm/pkg` 列入 pnpm-workspace 即可）。②`SnapshotDecoder.decode(bytes)` 返回 tick，列数据用 `ids()/pos()/…` 取零拷贝视图（TS 的 `decodeSnapshot()` 组装成 DecodedSnapshot 形状）；消息函数用位置参数（TS 封装成对象）。③sim-wasm 的 build.rs 读 /data/weapons、/data/roles，去掉 `_meta` 与 `historical._source` 后嵌入（与 sim 同一批文件，哈希一致）；不改 sim。④根 Cargo.toml 新增 `[profile.wasm-release]`（opt-level z、lto、codegen-units 1、panic abort），构建用 `wasm-pack build crates/sim-wasm --target web --profile wasm-release`，不影响服务器/测试 profile。`Predictor.reset` 增第三参（武器状态）、增 `resetWeapon/equipWeapon/setEntity/authState/tick`。
+- **受影响任务**：M0-022（接入 wasm、对账）、M0-029（漂移比较）、M0-030。
+- **临时处理**：按此实现。

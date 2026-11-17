@@ -92,3 +92,15 @@ and `docs/measurements/raw/` are also gitignored.
 
 Work is organised as task cards in `tasks/` - see `tasks/README.md` for rules and the definition
 of done, and `tasks/STATUS.md` for progress.
+
+## sim-wasm (M0-014)
+
+Pinned tools: wasm-bindgen 0.2.130 (`cargo install wasm-bindgen-cli --version =0.2.130 --locked`), wasm-pack 0.15.1, binaryen `version_132` (`wasm-opt`).
+
+```sh
+wasm-pack build crates/sim-wasm --target web --profile wasm-release   # -> crates/sim-wasm/pkg (git-ignored)
+node tools/ci/check-wasm-size.mjs                                     # wasm-opt -O3 in place; gate 1.2 MB / br 400 KB
+cargo run --release -p frontline-sim-wasm --example trace             # native reference trace (needs terrain)
+node crates/sim-wasm/tests/node-smoke.mjs                             # + native-vs-wasm.mjs, bench.mjs
+cargo run -p frontline-sim-wasm --example gen_golden                  # regenerate tests/golden after protocol/data changes
+```
