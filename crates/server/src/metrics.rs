@@ -50,6 +50,15 @@ pub struct Metrics {
     pub net_handshake_timeout_total: IntCounter,
     pub net_snapshots_dropped_total: IntCounter,
     pub net_c1_inbound_total: IntCounter,
+    // ---- WebTransport (M0-017) ----
+    /// Open connections per transport (`ws` / `wt`).
+    pub net_transport_connections: IntGaugeVec,
+    /// Outbound C2/C3 packets dropped because they exceed the connection's `max_datagram_size`.
+    pub net_datagram_oversize_total: IntCounter,
+    /// Datagrams received (C1 candidates, valid or not).
+    pub net_datagrams_in_total: IntCounter,
+    /// Datagrams sent (C2/C3).
+    pub net_datagrams_out_total: IntCounter,
     /// Latest published tick (for the report / smoke tests).
     pub ticks_run: AtomicU64,
     started: Instant,
@@ -123,6 +132,20 @@ impl Metrics {
                 "net_c1_inbound_total",
                 "Valid C1 input bundles received",
             ),
+            net_transport_connections: IntGaugeVec::new(
+                Opts::new(
+                    "net_transport_connections",
+                    "Open client connections by transport",
+                ),
+                &["transport"],
+            )
+            .expect("transport connections"),
+            net_datagram_oversize_total: counter(
+                "net_datagram_oversize_total",
+                "Outbound datagrams dropped for exceeding max_datagram_size",
+            ),
+            net_datagrams_in_total: counter("net_datagrams_in_total", "Datagrams received"),
+            net_datagrams_out_total: counter("net_datagrams_out_total", "Datagrams sent"),
             ticks_run: AtomicU64::new(0),
             started: Instant::now(),
             registry,
@@ -152,8 +175,15 @@ impl Metrics {
             Box::new(m.net_handshake_timeout_total.clone()),
             Box::new(m.net_snapshots_dropped_total.clone()),
             Box::new(m.net_c1_inbound_total.clone()),
+            Box::new(m.net_transport_connections.clone()),
+            Box::new(m.net_datagram_oversize_total.clone()),
+            Box::new(m.net_datagrams_in_total.clone()),
+            Box::new(m.net_datagrams_out_total.clone()),
         ] {
             r.register(c).unwrap();
+        }
+        for kind in ["ws", "wt"] {
+            m.net_transport_connections.with_label_values(&[kind]);
         }
         for reason in REJECT_REASONS {
             m.net_rejects_total.with_label_values(&[reason]);

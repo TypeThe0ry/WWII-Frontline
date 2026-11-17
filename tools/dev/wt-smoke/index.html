@@ -1,0 +1,15 @@
+<!doctype html><meta charset=utf-8><title>wt smoke</title><pre id=o></pre><script type=module>
+// ?url=https://127.0.0.1:7001/wt&certhash=<64 hex>   (hash from tools/dev/gen-dev-cert.sh)
+const q = new URLSearchParams(location.search), log = (...a) => (o.textContent += a.join(' ') + '\n');
+const hex = q.get('certhash'), h = Uint8Array.from(hex.match(/../g), (b) => parseInt(b, 16));
+const wt = new WebTransport(q.get('url') ?? 'https://127.0.0.1:7001/wt', { serverCertificateHashes: [{ algorithm: 'sha-256', value: h }] });
+await wt.ready; log('ready; max datagram', wt.datagrams.maxDatagramSize);
+const c0 = await wt.createBidirectionalStream(), w = c0.writable.getWriter(), r = c0.readable.getReader();
+const hello = new Uint8Array([...q.get('hello').match(/../g).map((b) => parseInt(b, 16))]); // ?hello=<hex of encoded Hello C0 payload>
+await w.write(new Uint8Array([hello.length & 255, hello.length >> 8, ...hello]));
+const { value } = await r.read(); log('C0 first bytes (len+Welcome):', [...value.slice(0, 8)].join(','));
+const dw = wt.datagrams.writable.getWriter(), dr = wt.datagrams.readable.getReader(); let got = 0;
+(async () => { for (;;) { const { value, done } = await dr.read(); if (done) break; got++; log('datagram back', got, 'ch', value[0], 'len', value.length); } })();
+for (let i = 0; i < 10; i++) { await dw.write(new Uint8Array([1, ...(q.get('c1') ?? '').match(/../g).map((b) => parseInt(b, 16))])); await new Promise((r) => setTimeout(r, 30)); }
+await new Promise((r) => setTimeout(r, 500)); log('sent 10, received', got); document.title = 'done ' + got;
+</script>

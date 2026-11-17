@@ -3,6 +3,7 @@
 
 pub mod conn;
 pub mod datagram;
+pub mod echo;
 pub mod handshake;
 pub mod limits;
 pub mod transport;

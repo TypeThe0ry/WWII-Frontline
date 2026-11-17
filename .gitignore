@@ -26,3 +26,8 @@ client/public/maps/
 # Playwright output
 client/test-results/
 client/playwright-report/
+
+# M0-017: WebTransport development certificate (generate with tools/dev/gen-dev-cert.sh)
+/dev-cert/
+dev-cert*.pem
+dev-key*.pem

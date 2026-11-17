@@ -34,6 +34,19 @@ pub struct Config {
     /// WebTransport port (bound by M0-017). 0 = ephemeral.
     #[arg(long, env = "FRONTLINE_WT_PORT", default_value_t = 7001)]
     pub wt_port: u16,
+    /// TLS certificate chain (PEM) for WebTransport. Needs `--key`.
+    #[arg(long, env = "FRONTLINE_CERT")]
+    pub cert: Option<std::path::PathBuf>,
+    /// TLS private key (PEM) for WebTransport. Needs `--cert`.
+    #[arg(long, env = "FRONTLINE_KEY")]
+    pub key: Option<std::path::PathBuf>,
+    /// Generate a throw-away self-signed certificate (13 days, ECDSA P-256) at startup and log its
+    /// SHA-256 for `serverCertificateHashes`. Development only.
+    #[arg(long, env = "FRONTLINE_DEV_CERT", default_value_t = false)]
+    pub dev_cert: bool,
+    /// Test scaffolding: answer every valid C1 bundle with a C2 datagram (replaces M0-018).
+    #[arg(long, hide = true, env = "FRONTLINE_DEV_ECHO", default_value_t = false)]
+    pub dev_echo: bool,
     /// Prometheus `/metrics` port. 0 = ephemeral (actual port is logged).
     #[arg(long, env = "FRONTLINE_METRICS_PORT", default_value_t = 9100)]
     pub metrics_port: u16,
@@ -147,6 +160,15 @@ impl Config {
                 }
             }
         }
+        match (&self.cert, &self.key) {
+            (Some(_), None) | (None, Some(_)) => {
+                return Err("--cert and --key must be given together".into())
+            }
+            (Some(_), Some(_)) if self.dev_cert => {
+                return Err("--dev-cert cannot be combined with --cert/--key".into())
+            }
+            _ => {}
+        }
         if let Some(d) = self.duration {
             if !d.is_finite() || d <= 0.0 {
                 return Err(format!(
@@ -164,6 +186,11 @@ impl Config {
             None => self.match_id = Some(random_uuid()),
         }
         Ok(self)
+    }
+
+    /// WebTransport is served only when a certificate source was configured.
+    pub fn wt_enabled(&self) -> bool {
+        self.dev_cert || self.cert.is_some()
     }
 
     /// Numeric mode id used in `Welcome.mode`.

@@ -56,12 +56,6 @@ fn run(cfg: Config) -> Result<(), String> {
             "bot subsystem arrives with M0-026; running without bots"
         );
     }
-    tracing::info!(
-        event = "wt_pending",
-        wt_port = cfg.wt_port as u64,
-        "WebTransport arrives with M0-017; port not bound"
-    );
-
     let rt = tokio::runtime::Builder::new_multi_thread()
         .worker_threads(2)
         .thread_name("net")
@@ -114,9 +108,39 @@ fn run(cfg: Config) -> Result<(), String> {
     let ws = rt
         .block_on(frontline_server::net::ws::WsListener::bind(
             ("0.0.0.0", cfg.ws_port),
-            net_ctx,
+            net_ctx.clone(),
         ))
         .map_err(|e| format!("cannot bind ws port {}: {e}", cfg.ws_port))?;
+    let wt = if cfg.wt_enabled() {
+        let identity = rt.block_on(load_identity(&cfg))?;
+        let hash = frontline_server::net::wt::cert_hash(&identity);
+        let l = rt
+            .block_on(frontline_server::net::wt::WtListener::bind(
+                std::net::SocketAddr::from(([0, 0, 0, 0], cfg.wt_port)),
+                identity,
+                net_ctx.clone(),
+            ))
+            .map_err(|e| format!("cannot bind wt port {} (udp): {e}", cfg.wt_port))?;
+        tracing::info!(
+            event = "wt_listening",
+            port = l.local_addr().port() as u64,
+            dev_cert = cfg.dev_cert,
+            cert_sha256_hex = frontline_server::net::wt::hash_hex(&hash),
+            cert_sha256_base64 = frontline_server::net::wt::hash_base64(&hash),
+            "serving WebTransport"
+        );
+        Some(l)
+    } else {
+        tracing::info!(
+            event = "wt_disabled",
+            "no --cert/--key/--dev-cert: WebTransport not served (WebSocket only)"
+        );
+        None
+    };
+    let echo = cfg.dev_echo.then(|| {
+        tracing::warn!(event = "dev_echo", "C1 -> C2 echo enabled (test scaffolding)");
+        frontline_server::net::echo::DevEcho::spawn(net_ctx.sessions.clone(), inbound.rx.clone())
+    });
     tracing::info!(
         event = "ws_listening",
         port = ws.local_addr().port() as u64,
@@ -147,6 +171,12 @@ fn run(cfg: Config) -> Result<(), String> {
     tracing::info!(event = "shutdown", reason, "stopping");
     stop.stop();
     rt.block_on(ws.shutdown());
+    if let Some(wt) = wt {
+        rt.block_on(wt.shutdown());
+    }
+    if let Some(e) = echo {
+        e.stop();
+    }
     drop(inbound);
     let report = handle.join();
     let _ = sd_tx.send(true);
@@ -170,4 +200,16 @@ fn run(cfg: Config) -> Result<(), String> {
         None => return Err("sim thread panicked".into()),
     }
     Ok(())
+}
+
+/// `--cert/--key` PEM files, or a fresh development certificate for `--dev-cert`.
+async fn load_identity(cfg: &Config) -> Result<wtransport::Identity, String> {
+    if let (Some(c), Some(k)) = (&cfg.cert, &cfg.key) {
+        wtransport::Identity::load_pemfiles(c, k)
+            .await
+            .map_err(|e| format!("cannot load --cert/--key: {e}"))
+    } else {
+        frontline_server::net::wt::dev_identity(frontline_server::net::wt::DEV_CERT_DAYS)
+            .map_err(|e| format!("cannot generate dev certificate: {e}"))
+    }
 }

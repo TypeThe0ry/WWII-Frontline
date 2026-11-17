@@ -201,6 +201,8 @@ pub async fn run_connection<T: ClientTransport>(
     // Whatever way this function ends, the writer side must not linger.
     let _close_guard = CloseOnDrop(handle.clone());
     let ip = t.peer_ip();
+    let kind = t.kind();
+    let _conn_gauge = TransportGauge::new(&ctx.metrics, kind);
     let mut rate = RateLimiter::new(RATE_FRAMES_PER_SEC, RATE_BURST_FRAMES, Instant::now());
 
     // ---- handshake ----
@@ -255,7 +257,7 @@ pub async fn run_connection<T: ClientTransport>(
         cleanup(&ctx, player).await;
         return;
     }
-    tracing::debug!(event = "client_joined", player_id = player as u64, ip = %ip, "handshake ok");
+    tracing::debug!(event = "client_joined", player_id = player as u64, ip = %ip, transport = kind, "handshake ok");
 
     // ---- established ----
     loop {
@@ -278,6 +280,21 @@ pub async fn run_connection<T: ClientTransport>(
         }
     }
     cleanup(&ctx, player).await;
+}
+
+/// Keeps `net_transport_connections{transport}` accurate for the lifetime of a connection.
+struct TransportGauge(prometheus::IntGauge);
+impl TransportGauge {
+    fn new(m: &Metrics, kind: &str) -> Self {
+        let g = m.net_transport_connections.with_label_values(&[kind]);
+        g.inc();
+        TransportGauge(g)
+    }
+}
+impl Drop for TransportGauge {
+    fn drop(&mut self) {
+        self.0.dec();
+    }
 }
 
 struct CloseOnDrop(ClientHandle);
