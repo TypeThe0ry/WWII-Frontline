@@ -1,0 +1,67 @@
+# PR gate (M0-029, ARCHITECTURE §17.1/§17.5, target < 6 min): sim determinism and native-vs-wasm drift.
+#  - blocking: native x2 and wasm x2 per-tick state_hash equal (3 seeds x 18 000 ticks), 10-player World x2,
+#    fault-injection test, golden hash, client heightAt vs sim height_at.
+#  - native vs wasm: R5 says warn-only. Strict mode (repo variable DETERMINISM_STRICT=1, or the
+#    workflow_dispatch input) makes any native/wasm difference fail the job.
+name: determinism
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      strict:
+        description: "Fail when native and wasm differ (R5 default: warn only)"
+        type: boolean
+        default: false
+concurrency:
+  group: determinism-${{ github.ref }}
+  cancel-in-progress: true
+permissions:
+  contents: read
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: "0"
+  FRONTLINE_REQUIRE_TERRAIN: "1"
+  FRONTLINE_DETERMINISM_STRICT: ${{ (inputs.strict == true || vars.DETERMINISM_STRICT == '1') && '1' || '0' }}
+jobs:
+  determinism:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust toolchain (pinned by rust-toolchain.toml)
+        run: rustup show active-toolchain || rustup toolchain install
+      - uses: Swatinem/rust-cache@v2
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: wasm-pack@0.15.1
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Generate M0 terrain (numpy)
+        run: |
+          python3 -m pip install numpy
+          PYTHONPATH=tools/map-pipeline python3 -m map_pipeline m0 --seed 1 --out data/maps/m0
+      - name: wasm-pack build
+        run: wasm-pack build crates/sim-wasm --target web --profile wasm-release
+      - name: Native tests (native x2, World x2, golden, fault injection)
+        run: cargo test -p frontline-sim-wasm --test determinism_native
+      - name: Native run (3 seeds x 18000 ticks, x2 + 10-player World x2)
+        run: cargo run --release -p frontline-sim-wasm --example determinism
+      - name: wasm run (x2 per seed)
+        run: node tools/determinism/run-wasm.mjs
+      - name: Compare (summary.json)
+        run: |
+          node --test tools/determinism/stats.test.mjs
+          if [ "$FRONTLINE_DETERMINISM_STRICT" = "1" ]; then node tools/determinism/compare.mjs --strict; else node tools/determinism/compare.mjs; fi
+      - name: Client heightAt vs sim height_at
+        run: pnpm -C client exec vitest run src/render/terrain/terrain-vs-sim.test.ts
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: determinism-summary
+          path: reports/m0/determinism/summary.json

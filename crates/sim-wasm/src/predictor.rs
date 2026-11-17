@@ -210,6 +210,11 @@ impl Predictor {
         Ok(())
     }
 
+    /// Sim terrain height (`CollisionData::height_at`, bilinear over the loaded chunks).
+    pub fn height_at_core(&mut self, x: f32, z: f32) -> Option<f32> {
+        self.sim.collision_mut().height_at(x, z)
+    }
+
     pub fn state_slice(&self) -> &[f32] {
         &self.out
     }
@@ -403,6 +408,15 @@ impl Predictor {
     #[wasm_bindgen(js_name = authState)]
     pub fn auth_state(&self) -> Vec<u8> {
         self.auth_bytes().to_vec()
+    }
+
+    /// Sim terrain height at world (x, z) from the loaded collision chunks (the value the
+    /// server's `height_at` returns), or NaN where no chunk is loaded. Used by the client's
+    /// terrain-vs-sim consistency test (M0-029).
+    #[wasm_bindgen(js_name = heightAt)]
+    pub fn height_at(&mut self, x: f64, z: f64) -> f64 {
+        self.height_at_core(x as f32, z as f32)
+            .map_or(f64::NAN, f64::from)
     }
 
     /// Full predicted tick counter.

@@ -267,3 +267,15 @@
 - **建议方案（已按此实现）**：①不加 workspace 依赖；`client/src/net/wasm/{types,layout,index}.ts` 手写类型与 `LAYOUT_*` 常量表（由 `layoutJson()` 与 Rust golden `tests/golden/layout.json` 双向校验），模块对象由 M0-022 注入/导入（pkg 构建后再把 `crates/sim-wasm/pkg` 列入 pnpm-workspace 即可）。②`SnapshotDecoder.decode(bytes)` 返回 tick，列数据用 `ids()/pos()/…` 取零拷贝视图（TS 的 `decodeSnapshot()` 组装成 DecodedSnapshot 形状）；消息函数用位置参数（TS 封装成对象）。③sim-wasm 的 build.rs 读 /data/weapons、/data/roles，去掉 `_meta` 与 `historical._source` 后嵌入（与 sim 同一批文件，哈希一致）；不改 sim。④根 Cargo.toml 新增 `[profile.wasm-release]`（opt-level z、lto、codegen-units 1、panic abort），构建用 `wasm-pack build crates/sim-wasm --target web --profile wasm-release`，不影响服务器/测试 profile。`Predictor.reset` 增第三参（武器状态）、增 `resetWeapon/equipWeapon/setEntity/authState/tick`。
 - **受影响任务**：M0-022（接入 wasm、对账）、M0-029（漂移比较）、M0-030。
 - **临时处理**：按此实现。
+
+### PI-019 M0-029：漂移度量定义、输入文件不入库、CI 严格模式建议
+
+- **状态**：open
+- **类别**：测试 / 度量定义
+- **提出者 / 日期**：M0-029 / 2026-11-17
+- **问题**：①"RMS 漂移 < 2 cm/s"（ARCHITECTURE §20.1-3）未精确定义，按任务备注落为 `err(t)=|pos_native-pos_wasm|`（3D）对时间的最小二乘斜率 ×100（cm/s），同时报告 `rms_m`、`max_m`、`over_0_05m_ratio`、每 60 s 分段最大误差（`tools/determinism/{stats,compare}.mjs`），请确认。②任务要求把 3×18 000 条输入入库（`testdata/determinism/inputs_seed*.bin`）；改为由固定种子的 PCG（`crates/sim-wasm/tests/support/determinism.rs::gen_inputs`，不依赖 `rand`）在运行时生成，并把生成结果写入 `target/determinism/inputs_seed{N}.bin`，golden 终值哈希进 `determinism_native.rs`——避免约 1 MB 二进制入库，且生成器本身有单测。③三个种子的出生点各不相同（平地 / 南坡脚 / 北高地），以覆盖陡坡与区块边界；出生高度取地形高度。④为一致性测试给 sim-wasm 的 `Predictor` 追加了只读查询 `heightAt(x,z)`（NaN 表示该处无碰撞块），无 sim 逻辑改动。
+- **证据**：reports/m0/determinism/summary.json（native×2、wasm×2 各 54 000/54 000 tick 一致；native 与 wasm 逐 tick 哈希与位置逐位相同，漂移全为 0）；client/src/render/terrain/terrain-vs-sim.test.ts（506 032 个采样点最大误差 6.9e-6 m）。
+- **建议方案**：CI 的 native-vs-wasm 比较建议**开严格模式**（仓库变量 `DETERMINISM_STRICT=1`）：当前 3 种子×18 000 tick 实测逐位一致，严格模式零误报；一旦将来引入 libm 之外的平台差异，会在 PR 上立刻暴露而不是被告警淹没。R5 的"不阻断"原则保留为开关默认值，若出现合理的小幅漂移再关掉严格模式并以 `drift.cm_per_s` 为准。native×2 / wasm×2 / World×2 永远阻断。
+- **受影响任务**：M0-022（对账阈值 0.05 m 目前在 18 000 tick 内零次触发）、M0-030。
+- **临时处理**：按此实现；默认警告模式，严格模式由开关启用。
+- **裁决（Fable 填写）**：

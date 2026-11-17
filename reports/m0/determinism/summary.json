@@ -1,0 +1,200 @@
+{
+  "task": "M0-029",
+  "generated_by": "tools/determinism/compare.mjs",
+  "versions": {
+    "data_hash": "0xeb4ef8d3b81fc45c",
+    "protocol_version": 1,
+    "rustc": "rustc 1.97.0 (2d8144b78 2026-07-07)",
+    "rapier3d": "0.36.1",
+    "rapier_features": "dim3,f32,std,enhanced-determinism",
+    "wasm_sha256": "444d5c3448393dcd0b6e99df3296855a0db3c1159665509a0494d59fb754f87a",
+    "node": "v22.23.4"
+  },
+  "mode": "strict",
+  "seeds": [
+    {
+      "seed": 1,
+      "ticks": 18000,
+      "native_x2": {
+        "equal": true,
+        "equal_ticks": 18000,
+        "first_diff_tick": null
+      },
+      "wasm_x2": {
+        "equal": true,
+        "equal_ticks": 18000,
+        "first_diff_tick": null
+      },
+      "world10_native_x2": {
+        "players": 10,
+        "ticks": 18000,
+        "equal": true,
+        "first_diff_tick": null
+      },
+      "native_final_hash": "0xb17038241d9e4c55",
+      "wasm_final_hash": "0xb17038241d9e4c55",
+      "native_vs_wasm": {
+        "hash_equal_ticks": 18000,
+        "hash_first_diff_tick": null,
+        "position_first_diff_tick": null
+      },
+      "drift": {
+        "rms_m": 0,
+        "max_m": 0,
+        "cm_per_s": 0,
+        "over_0_05m_ticks": 0,
+        "over_0_05m_ratio": 0,
+        "segment_max_m_per_60s": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "coverage": {
+        "spawn": [
+          128,
+          2.0812047,
+          100
+        ],
+        "blocked_ticks": 1748,
+        "grounded_ticks": 17336,
+        "chunks_visited": 6,
+        "shots": 144,
+        "max_speed_mps": 6.4
+      }
+    },
+    {
+      "seed": 2,
+      "ticks": 18000,
+      "native_x2": {
+        "equal": true,
+        "equal_ticks": 18000,
+        "first_diff_tick": null
+      },
+      "wasm_x2": {
+        "equal": true,
+        "equal_ticks": 18000,
+        "first_diff_tick": null
+      },
+      "world10_native_x2": {
+        "players": 10,
+        "ticks": 18000,
+        "equal": true,
+        "first_diff_tick": null
+      },
+      "native_final_hash": "0x7057a7233bafe74a",
+      "wasm_final_hash": "0x7057a7233bafe74a",
+      "native_vs_wasm": {
+        "hash_equal_ticks": 18000,
+        "hash_first_diff_tick": null,
+        "position_first_diff_tick": null
+      },
+      "drift": {
+        "rms_m": 0,
+        "max_m": 0,
+        "cm_per_s": 0,
+        "over_0_05m_ticks": 0,
+        "over_0_05m_ratio": 0,
+        "segment_max_m_per_60s": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "coverage": {
+        "spawn": [
+          60,
+          1.8951972,
+          118
+        ],
+        "blocked_ticks": 301,
+        "grounded_ticks": 16317,
+        "chunks_visited": 6,
+        "shots": 145,
+        "max_speed_mps": 6.966
+      }
+    },
+    {
+      "seed": 3,
+      "ticks": 18000,
+      "native_x2": {
+        "equal": true,
+        "equal_ticks": 18000,
+        "first_diff_tick": null
+      },
+      "wasm_x2": {
+        "equal": true,
+        "equal_ticks": 18000,
+        "first_diff_tick": null
+      },
+      "world10_native_x2": {
+        "players": 10,
+        "ticks": 18000,
+        "equal": true,
+        "first_diff_tick": null
+      },
+      "native_final_hash": "0x8b3efa3740d562ae",
+      "wasm_final_hash": "0x8b3efa3740d562ae",
+      "native_vs_wasm": {
+        "hash_equal_ticks": 18000,
+        "hash_first_diff_tick": null,
+        "position_first_diff_tick": null
+      },
+      "drift": {
+        "rms_m": 0,
+        "max_m": 0,
+        "cm_per_s": 0,
+        "over_0_05m_ticks": 0,
+        "over_0_05m_ratio": 0,
+        "segment_max_m_per_60s": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "coverage": {
+        "spawn": [
+          128,
+          10.24997,
+          170
+        ],
+        "blocked_ticks": 2919,
+        "grounded_ticks": 17197,
+        "chunks_visited": 9,
+        "shots": 161,
+        "max_speed_mps": 6.895
+      }
+    }
+  ],
+  "verdict": {
+    "native_x2_all_equal": true,
+    "wasm_x2_all_equal": true,
+    "native_vs_wasm_bit_identical": true,
+    "max_drift_cm_per_s": 0,
+    "drift_target_cm_per_s": 2,
+    "drift_target_met": true,
+    "max_over_0_05m_ratio": 0,
+    "recommend_review_reconciliation_threshold": false
+  }
+}

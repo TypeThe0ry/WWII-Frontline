@@ -104,3 +104,51 @@ cargo run --release -p frontline-sim-wasm --example trace             # native r
 node crates/sim-wasm/tests/node-smoke.mjs                             # + native-vs-wasm.mjs, bench.mjs
 cargo run -p frontline-sim-wasm --example gen_golden                  # regenerate tests/golden after protocol/data changes
 ```
+
+## WebTransport development certificate (M0-017)
+
+The server serves WebTransport (HTTP/3 over QUIC, UDP) on `--wt-port` (default 7001) only when it has a
+certificate; without one it logs `wt_disabled` and serves WebSocket only. Browsers require a trusted
+certificate, or - for development - a self-signed ECDSA P-256 certificate valid for at most 14 days that the
+page pins with `serverCertificateHashes` (support in Firefox/Safari is unverified, see M0-028). A trusted
+certificate / domain is the manual item H-017.
+
+```sh
+tools/dev/gen-dev-cert.sh                  # = cargo run -p frontline-server --bin gen_dev_cert; writes ./dev-cert/ (gitignored)
+cargo run -p frontline-server -- --cert dev-cert/dev-cert.pem --key dev-cert/dev-key.pem
+cargo run -p frontline-server -- --dev-cert    # alternative: throw-away in-memory certificate; its hash is in the `wt_listening` log line
+```
+
+`gen_dev_cert` (13 days, SAN `localhost`, `127.0.0.1`, `::1`) prints the SHA-256 fingerprint as hex and base64 and
+stores it in `dev-cert/dev-cert.sha256`. The client receives the hex fingerprint as a query parameter,
+`http://localhost:5173/?certhash=<64 hex chars>` (used by M0-021), and builds
+`new WebTransport(url, { serverCertificateHashes: [{ algorithm: 'sha-256', value: bytes }] })`. Regenerate the
+certificate every <= 13 days (the browser refuses expired ones; the hash changes each time).
+
+Session URL: `https://<host>:<wt-port>/wt` (`/` is accepted too, other paths get 404). Wire format
+(ARCHITECTURE §6.6.1): C0 = the client's first bidi stream, C4 = the server's first uni stream, both with
+`[len u16 LE][payload]` frames (no channel byte; the stream is the channel); C1 (up) and C2/C3 (down) are
+datagrams `[channel u8][payload]`. Read `datagram.maxDatagramSize` on the client; the server drops (and counts in
+`net_datagram_oversize_total`) any C2/C3 packet larger than the live `max_datagram_size` (loopback: 1413 B).
+
+Browser smoke page (`tools/dev/wt-smoke/index.html`, serve it with any static server; the page needs the encoded
+Hello/C1 bytes, `gen_dev_cert` prints a ready-made URL in its last line). Server-side test commands:
+
+```sh
+cargo test -p frontline-server --test transport_matrix --test wt_loopback --test wt_stress   # ws+wt handshake matrix, loopback, binary smoke
+cargo test --release -p frontline-server --test wt_stress -- --ignored --nocapture            # 100 clients x 120 s (WT_STRESS_SECS, WT_STRESS_CLIENTS)
+```
+
+## Determinism and native-vs-wasm drift (M0-029)
+
+```sh
+wasm-pack build crates/sim-wasm --target web --profile wasm-release       # pkg used by the wasm half
+tools/determinism/run.sh [--strict]    # native x2 + 10-player World x2 -> wasm x2 -> reports/m0/determinism/summary.json (~15 s)
+cargo test -p frontline-sim-wasm --test determinism_native                 # same checks in test form (+ fault injection, golden hash)
+node --test tools/determinism/stats.test.mjs                               # drift statistics unit tests
+pnpm -C client exec vitest run src/render/terrain/terrain-vs-sim.test.ts   # client heightAt vs sim height_at (wasm)
+```
+
+Native x2 / wasm x2 differences always fail. Native vs wasm differences are a warning by default (R5) and fail with
+`--strict` / `FRONTLINE_DETERMINISM_STRICT=1` (CI: repository variable `DETERMINISM_STRICT=1`). Raw traces go to
+the git-ignored `target/determinism/`; only `summary.json` is tracked.
