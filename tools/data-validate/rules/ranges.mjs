@@ -96,7 +96,44 @@ function checkRole(doc, errors) {
   }
 }
 
+const TANK_TYPES = ['light_tank', 'medium_tank', 'heavy_tank', 'tank_destroyer'];
+const ARMOR_ZONES = ['hull_front_upper', 'hull_front_lower', 'hull_side', 'hull_rear', 'hull_top', 'turret_front', 'turret_side', 'turret_rear', 'turret_top'];
+
 function checkVehicle(doc, errors) {
+  const g0 = doc.gameplay ?? {};
+  if (Array.isArray(g0.seats)) {
+    const seen = new Set();
+    g0.seats.forEach((s, i) => {
+      if (seen.has(s?.id)) errors.push({ pointer: `/gameplay/seats/${i}/id`, message: `duplicate seat id: ${s.id}` });
+      seen.add(s?.id);
+    });
+  }
+  if (Array.isArray(g0.armor_zones) && TANK_TYPES.includes(doc.type)) {
+    const ids = new Set(g0.armor_zones.map((z) => z?.id));
+    for (const z of ARMOR_ZONES) {
+      if (!ids.has(z)) errors.push({ pointer: '/gameplay/armor_zones', message: `missing armor zone: ${z}` });
+    }
+    if (ids.size !== g0.armor_zones.length) errors.push({ pointer: '/gameplay/armor_zones', message: 'duplicate armor zone id' });
+  }
+  for (const [list, name] of [[g0.modules, 'modules'], [g0.weapons, 'weapons']]) {
+    if (!Array.isArray(list)) continue;
+    const seen = new Set();
+    list.forEach((m, i) => {
+      if (seen.has(m?.id)) errors.push({ pointer: `/gameplay/${name}/${i}/id`, message: `duplicate ${name} id: ${m.id}` });
+      seen.add(m?.id);
+    });
+  }
+  if (Array.isArray(g0.weapons) && Array.isArray(g0.seats)) {
+    const seatIds = new Set(g0.seats.map((s) => s?.id));
+    g0.weapons.forEach((w, i) => {
+      if (!seatIds.has(w?.seat)) errors.push({ pointer: `/gameplay/weapons/${i}/seat`, message: `weapon seat '${w?.seat}' is not a seat of this vehicle` });
+    });
+  }
+  // GAMEDESIGN 14.3: game top speed = historical road speed x 0.75.
+  const hv = doc.historical?.max_speed_mps;
+  if (num(hv) && num(g0.max_speed_mps) && Math.abs(g0.max_speed_mps - hv * 0.75) > hv * 0.75 * 0.005) {
+    errors.push({ pointer: '/gameplay/max_speed_mps', message: `max_speed_mps must be 0.75 x historical (${(hv * 0.75).toFixed(4)}), got ${g0.max_speed_mps}` });
+  }
   const e = doc.gameplay?.gun_elevation_deg;
   if (Array.isArray(e) && e.length === 2 && num(e[0]) && num(e[1]) && e[0] >= e[1]) {
     errors.push({ pointer: '/gameplay/gun_elevation_deg', message: 'gun_elevation_deg must be [min,max] with min < max' });
