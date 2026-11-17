@@ -7,7 +7,7 @@ use frontline_protocol::msg::input::InputCmd;
 
 /// Final `Predictor.stateHash()`-equivalent after seed 1 / 18 000 ticks (native, rustc 1.97.0,
 /// x86_64-linux). Re-pin only for a deliberate sim/data change.
-const GOLDEN_SEED1_18000: u64 = 0xe242_86c0_3e89_35b7; // M1-011b re-pin (was 0xc938_3056_0976_d195): role data gained vault/lean fields (data hash), PlayerAuthState 80 B
+const GOLDEN_SEED1_18000: u64 = 0xe242_86c0_3e89_35b7; // M1-011b re-pin (was 0xc938_3056_0976_d195): vault/lean state (PlayerAuthState 80 B), PI-049
 
 #[test]
 fn inputs_round_trip_and_are_stable() {

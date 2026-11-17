@@ -1,0 +1,23 @@
+{
+  "id": "foliage",
+  "name_key": "material.foliage.name",
+  "gameplay": {
+    "cost_per_mm": 0.3,
+    "stop_mm": 0,
+    "min_mm": 0,
+    "deflect_deg": 0.5,
+    "ricochet": false,
+    "sound_class": "foliage",
+    "impact_fx_class": "leaves"
+  },
+  "_meta": {
+    "status": "initial",
+    "tunable": [
+      "gameplay.cost_per_mm",
+      "gameplay.stop_mm",
+      "gameplay.min_mm",
+      "gameplay.deflect_deg"
+    ],
+    "calibration_ref": "GAMEDESIGN §6.7 材质穿透表（待 M1-071）"
+  }
+}

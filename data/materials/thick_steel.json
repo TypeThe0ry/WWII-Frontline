@@ -1,0 +1,23 @@
+{
+  "id": "thick_steel",
+  "name_key": "material.thick_steel.name",
+  "gameplay": {
+    "cost_per_mm": 20.0,
+    "stop_mm": 0,
+    "min_mm": 0,
+    "deflect_deg": 1.5,
+    "ricochet": true,
+    "sound_class": "metal",
+    "impact_fx_class": "sparks"
+  },
+  "_meta": {
+    "status": "initial",
+    "tunable": [
+      "gameplay.cost_per_mm",
+      "gameplay.stop_mm",
+      "gameplay.min_mm",
+      "gameplay.deflect_deg"
+    ],
+    "calibration_ref": "GAMEDESIGN §6.7 材质穿透表（待 M1-071）"
+  }
+}

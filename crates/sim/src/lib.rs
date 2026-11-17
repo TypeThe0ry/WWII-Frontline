@@ -5,6 +5,7 @@
 //! wasm-bindgen, platform `sin`/`cos` (use `libm`). `bevy_ecs` runs with the single-threaded
 //! executor only. See [`components`] for the sorted-iteration rule.
 
+pub mod ballistics;
 pub mod collision;
 pub mod components;
 pub mod data;

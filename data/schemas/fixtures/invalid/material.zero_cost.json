@@ -1,0 +1,24 @@
+{
+  "_expect_error": "must be > 0",
+  "id": "fixture_bad",
+  "name_key": "material.thin_wood.name",
+  "gameplay": {
+    "cost_per_mm": 0,
+    "stop_mm": 0,
+    "min_mm": 0,
+    "deflect_deg": 0.5,
+    "ricochet": false,
+    "sound_class": "wood",
+    "impact_fx_class": "splinters"
+  },
+  "_meta": {
+    "status": "initial",
+    "tunable": [
+      "gameplay.cost_per_mm",
+      "gameplay.stop_mm",
+      "gameplay.min_mm",
+      "gameplay.deflect_deg"
+    ],
+    "calibration_ref": "GAMEDESIGN §6.7 材质穿透表（待 M1-071）"
+  }
+}

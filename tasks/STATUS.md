@@ -8,7 +8,7 @@
 
 - **当前里程碑**：M0 技术验证——**验收已执行（M0-033，2026-11-17）：M0 记 `partial`，可带条件关闭**，等 Fable 审阅检查点 0（H-038）；验收报告 `reports/m0/ACCEPTANCE.md`，进度总览与任务日志见 `docs/PROGRESS.md`。
 - **M0 统计（2026-11-17）**：33 个任务——done 19、partial 14（含 M0-033 自身）、blocked 0；M1–M4 共 230 个全部 todo。退出标准 E0-1…E0-12：通过 5（E0-1/2/4/9/11）、部分 5（E0-3/6/7/8/10）、需参考机或人工 2（E0-5/12）、未通过 0。
-- **下一个任务**：`M1-012`（M1-006 已 partial，余项拆 M1-006b；M1-005 已 partial：PI-036；M1-001–004 已 partial：CI 墙钟待 H-102，PI-032/033/034/035 待确认）。M1 前置待办（须在对应任务前解除）：H-102（CI 实跑）、H-021（参考机，M1 渲染任务前）、H-011/025/026（录像，M1 退出前）、PI-030（KCC 判据，待 Fable 裁决）。
+- **下一个任务**：`M1-013`（M1-006 已 partial，余项拆 M1-006b；M1-005 已 partial：PI-036；M1-001–004 已 partial：CI 墙钟待 H-102，PI-032/033/034/035 待确认）。M1 前置待办（须在对应任务前解除）：H-102（CI 实跑）、H-021（参考机，M1 渲染任务前）、H-011/025/026（录像，M1 退出前）、PI-030（KCC 判据，待 Fable 裁决）。
 - **blocked 清单**：（无）
   - 格式：`任务 ID — 所缺条目 — 登记日期 — 谁来解除（人类/素材/其它任务）`
   - 人工侧待办（不阻塞任务，但卡退出标准）：GitHub 无 main 分支/无法开 PR（H-102）、参考机（H-021）、对标录像（H-011/H-025/H-026，汇总 H-104）、受信任 TLS 证书（H-017）、Firefox/Safari 手工互通（H-103）、受限网络台（H-022）、Fable M0 审阅（H-038）。
@@ -89,7 +89,7 @@
 | M1-009 | 数据：M4A1 Sherman（M1 的 1 辆坦克） | done | `data/vehicles/us_m4a1_75.json`：3 座、主炮 AP30/HE24/WP6 装填 3.0 s、装甲 9 区 18 值、模块 HP 300/250/250/200/250/150（殉爆 60%）、hull 1600、最高速 7.9167 m/s（= 28.5 km/h，Rust 测试 `m4a1_sherman_matches_gd_14` 断言）；`data-validate` 0 错误（56 文件，fixtures 18 valid/44 invalid，测试 68 项）；`cargo test --workspace` 全过、clippy/fmt 干净；sim/bots 金哈希未变；DATA_HASH = 13133737544876726238 | PI-045 待 Fable 确认；`historical` 复核归 M1-070；悬挂/履带参数待 M1-022；sim-wasm 体积回归待 CI wasm-build 记录 |
 | M1-010 | protocol：M1 全消息集 | done | A（PR #15）+ b：载具记录（均值 15.8 B / 最大 20 B，`vehicle_delta_size`）、四元数与炮塔 ≤0.35°、TeamState 49 人 199 B、WorldState 16 B、60 实体含 8 车 15 µs / 单车 delta 0.33 µs（`vehicle_timing`，非参考机）、proptest 每族 1e5；`PROTOCOL_VERSION`=3；fuzz 靶 `c0,c4,events,snapshot_vehicle` 已写，另有 `tests/mutation.rs` 变异测试 | cargo-fuzz（nightly 0.13.2）四个靶各 600 s 零崩溃：c0 5027 万次、c4 1.054 亿次、events 2041 万次、snapshot_vehicle 401 万次（2026-11-17，本环境；同时新增 `.github/workflows/fuzz.yml` 每日 5 分钟/靶）；PI-046/047 |
 | M1-011 | sim：完整移动 | partial（核心完成；基准/100 玩家 3 ms 需参考机，headless 回放对比待 M1-044） | 011a 同上；011b：翻越（障碍 ≤1.30 m）24 tick/耗 10、攀爬（≤1.80 m）42 tick/耗 20，边界 1.29→翻越、1.31→攀爬、1.81→拒绝、0.25→不触发（`movement_vault`）；探身 ±1.0（=±20°）4.5 tick 到位，头位移 0.35 m，趴姿仅抬头 0.15 m，散布 ×1.10，探身时禁冲刺；翻越中禁开火；`PlayerAuthState` 45→80 B（lean、vault 状态）；金样重定标（layout/native），世界 `state_hash` 仅在探身/翻越时多写字段，其余金哈希未变 | kcc_step 基准与 100 玩家 3 ms 需参考机；headless 回放对比待 M1-044；PI-049 |
-| M1-012 | sim：弹道细化与穿透 | todo | | | |
+| M1-012 | sim：弹道细化与穿透 | partial（模块与数据完成；接入真实世界的层来源待 M1-034/035 地图道具碰撞） | 4 子步积分按弹种 `k_drag`（Garand 500 m：586 m/s、0.71 s、落差 2.5 m，误差 <3 %）；材质 12 种进 `data/materials/`（schema + 校验器 + 夹具），弹药补 .30-06/7.92×57/.50 BMG；穿透：30 mm 薄木 .30-06 0.864、9×19 0.500，沙袋 200 mm 两种弹均阻挡，砖 150 mm .30-06 阻挡、.50 BMG 余 70 点系数 0.25，4 层薄木最多 3 段且第 3 层停；跳弹 10° 弹/20° 不弹，速度 ×0.632；偏转 ±1.5°/±0.5° 有界且确定；`min_mm`（浅水不计）与 `stop_mm`（封顶优先）；单段（4 子步 + 1 层）133 ns，400 弹体积分 0.010 ms（开发机，非参考机） | 未接入 `projectile.rs` 命中结算（M1-014）；参考机基准；headless 向建筑墙射击待地图道具；PI-050 |
 | M1-013 | sim：冲锋枪、卡宾、手枪与近战 | todo | | | |
 | M1-014 | sim：命中区与伤害模型 | todo | | | |
 | M1-015 | sim：手雷与烟雾 | todo | | | |
