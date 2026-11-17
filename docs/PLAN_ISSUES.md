@@ -595,14 +595,25 @@
 - **受影响任务**：M0 确定性闸门（determinism / wasm-build / test-rust）。
 - **裁决（Fable 填写）**：
 
-### PI-040 M1-008 分两步：先交付 6 个枪械（现有 schema 内），手雷/火箭/近战/弹药表拆 M1-008b
+### PI-041 M1-008 分两步：先交付 6 个枪械（现有 schema 内），手雷/火箭/近战/弹药表拆 M1-008b
 - **问题 / 做法**（请 Fable 确认或改写）：
   1. **本次交付**：`us_m1_carbine`、`us_thompson_m1a1`、`us_m3_grease`、`ger_mp40`、`us_m1911a1`、`ger_p38`，数值逐项取自任务卡（GD §6.2/§6.3），`_meta.status=initial`，`historical._source` 为占位字符串（"待 M1-070 按 REF §6 复核"）；`historical` 值（口径、初速、整备质量等）来自记忆，未联网复核。手枪 `muzzle_flash_ms` 取 30（任务卡未给，取小于步枪的暂定值）。冲锋枪/手枪的 `spread.hip_deg`/`ads_deg` 用任务卡"盲射/ADS"两列。
   2. **推迟（M1-008b）**：手雷（`us_mk2`、`ger_m24`、`us_m18`、`ger_nb39`）、`ger_panzerfaust_60`、6 个近战、`data/ammo/`。现有 `weapon.schema.json` 的 `gameplay` 是 `additionalProperties:false` 且要求射击字段（`falloff/fire/reload/ads_ms/spread/recoil/ballistics`），不能表达引信/烟雾/后焰/近战前摇；需要扩展 schema（按 `class` 分支）与 `data.rs` 解析，属 M1-015 / M1-013 的前置，单独成 PR。
-  3. **金标重打**（总控指示：同一 PR 内重打并说明）：新增武器改变 `DATA_HASH` 与武器下标，`sim` 的 `GOLDEN_SKIRMISH_FINAL`、`GOLDEN_DUEL_EVENTS`、`sim-wasm` 的 `GOLDEN_SEED1_18000` 与 `tests/golden/native.json`（`gen_golden` 重生成）按新数据重打；`bots` 金标未变。以上在 rebase 到哈希线 PR #2（libm）之后得到，本地全工作区 `cargo test` 连跑两次均通过。
+  3. **金标重打**（总控指示：同一 PR 内重打并说明）：新增武器改变 `DATA_HASH` 与武器下标，`sim` 的 `GOLDEN_SKIRMISH_FINAL`、`GOLDEN_DUEL_EVENTS`、`sim-wasm` 的 `GOLDEN_SEED1_18000` 与 `tests/golden/native.json`（`gen_golden` 重生成）按新数据重打；`bots` 金标未变。合并哈希线 PR #2（libm）与 PR #10（`state_hash` 按武器字符串 id，`damage_death`/`determinism_basic` 由其重定标）后，`cargo test --workspace --locked` 与 `cargo test -p frontline-sim --features test-util`（CI 的两条命令）本地均通过。
   4. **名称规范**：武器 ID 沿用已落地的 `us_/ger_` 前缀（GD §0.3）。
 - **证据**：`data/weapons/*.json`（8 个文件）、`tools/data-validate` 0 错误；金标新值见各测试常量。
 - **受影响任务**：M1-007（loadout 引用这 6 个枪械；手雷/火箭/近战引用需等 M1-008b）、M1-012/013、M1-070。
 - **临时处理**：已按上实现。
 - **裁决（Fable 填写）**：
 
+
+### PI-040 金哈希不再依赖武器在 `GameData::weapons` 中的下标
+
+- **状态**：resolved
+- **类别**：测试/运维
+- **提出者 / 日期**：确定性修复线程（响应 M1 线程的预告）/ 2026-11-17
+- **问题**：M1 数据任务会新增武器、改变 `weapons/*.json` 的顺序，而 `World::state_hash` 把下标（`WeaponState.def_id`、弹丸 `weapon`、死亡记录里的 `weapon`）直接写进哈希，一加武器所有 sim/bots/server/wasm 金哈希都会移位。
+- **做法**：`state_hash` 改为写武器字符串 id 的 FNV-1a（`World::weapon_key`），不再写下标；线协议里的 `weapon:6` 与 `WeaponState::to_bytes` 不变（下标仍是运行时/线上的表示）。因此只有"武器的实际数值/新增武器改变了战斗结果"才会改金哈希。一次性重新定标：`damage_death` `GOLDEN_SKIRMISH_FINAL`、`determinism_basic` `GOLDEN_FINAL_HASH`（其余金哈希不含武器状态，未变）。`node-smoke.mjs` 的 `dataHash` 改为优先对比 `target/wasm-trace/meta.json`（原生 trace 的当次值），不再每次改 /data 就要重生成 `native.json`。
+- **仍然会变的**：`DATA_HASH`（按设计随 /data 变，现在测试里按当次值比对）、与武器数值有关的行为型金哈希（bots、skirmish 等，改数值就是行为变了，需按注释说明重新定标）。
+- **受影响任务**：M1 数据任务（武器/角色数据）。
+- **裁决（Fable 填写）**：

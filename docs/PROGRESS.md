@@ -454,7 +454,7 @@ blocked / in-progress / todo：无。M0 的 33 个任务全部已提交（M0-033
 
 ### M1-008 数据：M1 武器（枪械部分） — partial — 2026-11-17 — 提交见 git log
 - 新增 6 个枪械 JSON；重打 sim 2 处、sim-wasm 1 处金标并重生成 `native.json`（DATA_HASH 16618067817150479949）；全工作区测试连跑两次稳定。
-- 遗留：手雷/火箭/近战/弹药表 → M1-008b（PI-040）；`historical` 复核 → M1-070。
+- 遗留：手雷/火箭/近战/弹药表 → M1-008b（PI-041）；`historical` 复核 → M1-070。
 - 影响：M1-007 可引用这 6 个枪械；后续改 `/data` 须用 `gen_golden` 重生成 `native.json` 并重打金标。
 
 ## 8. 如何维护本文件

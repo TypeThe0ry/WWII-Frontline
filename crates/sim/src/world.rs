@@ -326,6 +326,19 @@ impl World {
         self.ecs.resource_mut::<TestJitter>().0 = on;
     }
 
+    /// Stable hash key of the weapon at `idx` in `GameData::weapons`: FNV-1a of its string id
+    /// (the index itself for an out-of-range value), independent of the data ordering.
+    fn weapon_key(&self, idx: u16) -> u64 {
+        match self.cfg.data.weapons.get(usize::from(idx)) {
+            Some(w) => {
+                let mut h = HashWriter::new();
+                h.write_bytes(w.id.as_bytes());
+                h.finish()
+            }
+            None => u64::from(idx),
+        }
+    }
+
     /// Hash of all simulation state: tick, seed, RNG draw count, then every entity in
     /// ascending `EntityId` order (id, player, team, transform, last input).
     pub fn state_hash(&self) -> u64 {
@@ -388,11 +401,15 @@ impl World {
                 h.write_u8(0xD0 | u8::from(*headshot));
                 h.write_u32(t_kia.0);
                 h.write_u16(killer.map_or(0xFFFF, u16::from));
-                h.write_u8(*weapon);
+                h.write_u64(self.weapon_key(u16::from(*weapon)));
                 h.write_u32(respawn_tick.0);
             }
             if let Some(w) = er.get::<WeaponState>() {
-                h.write_bytes(&w.to_bytes());
+                // The weapon is hashed by id, not by its index in `GameData::weapons`, so adding or
+                // reordering weapon data does not shift every golden hash.
+                let b = w.to_bytes();
+                h.write_u64(self.weapon_key(w.def_id));
+                h.write_bytes(&b[2..]);
             }
         }
         let projs = self.ecs.resource::<Projectiles>();
@@ -401,7 +418,7 @@ impl World {
         for p in projs.as_slice() {
             h.write_u32(p.id);
             h.write_u16(p.owner);
-            h.write_u16(p.weapon);
+            h.write_u64(self.weapon_key(p.weapon));
             for v in [p.origin, p.pos, p.vel] {
                 h.write_f32(v.x);
                 h.write_f32(v.y);
