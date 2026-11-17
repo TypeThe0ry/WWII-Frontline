@@ -156,9 +156,18 @@ pub struct MoveParamsRes(pub Option<MoveParams>);
 #[derive(Resource)]
 pub struct CollisionRes(pub CollisionData);
 
-/// Hit points (M0-012 subtracts damage; death / downed handling is M0-013).
+pub use crate::health::{Health, LifeState};
+
+/// Where a player joined (respawn fallback when its team has no spawn point).
 #[derive(Component, Debug, Clone, Copy, PartialEq)]
-pub struct Health(pub f32);
+pub struct Home {
+    pub pos: Vec3,
+    pub yaw: f32,
+}
+
+/// Respawn rule values of this match (`data/rules/respawn.json`).
+#[derive(Resource, Debug, Clone, Copy)]
+pub struct RespawnPolicyRes(pub crate::respawn::RespawnPolicy);
 
 /// Events produced by systems during a step; drained into `StepOutput` by `World::step`.
 #[derive(Resource, Debug, Default)]

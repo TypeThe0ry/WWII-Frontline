@@ -31,6 +31,9 @@ pub struct EntityStateView {
     pub pos: Vec3,
     pub yaw: f32,
     pub pitch: f32,
+    /// Health quantised to 8 bit (`health_q`; 0 = dead, see [`crate::health::quant_health`]).
+    pub health_q: u8,
+    pub alive: bool,
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
@@ -50,6 +53,14 @@ pub struct ObjectiveView {
 pub struct NavData {}
 
 pub trait WorldView {
+    /// Hit points of an entity (`None` for stale ids; `<= 0` while dead).
+    fn health(&self, _id: EntityId) -> Option<f32> {
+        None
+    }
+    /// `false` for stale ids and dead players.
+    fn alive(&self, _id: EntityId) -> bool {
+        false
+    }
     /// Alive players in ascending `EntityId` order.
     fn players(&self) -> &[PlayerView];
     fn vehicles(&self) -> &[VehicleView];
@@ -59,7 +70,7 @@ pub trait WorldView {
     fn los(&self, from: Vec3, to: Vec3) -> bool;
     /// Bilinear terrain height; `None` where no collision chunk is loaded.
     fn height_at(&self, x: f32, z: f32) -> Option<f32>;
-    /// Placeholder until M0-013: zero resources.
+    /// Placeholder: zero resources (no manpower / score model before M1).
     fn team_resources(&self, team: Team) -> Resources;
     fn objectives(&self) -> &[ObjectiveView];
     fn nav_hint(&self) -> &NavData;

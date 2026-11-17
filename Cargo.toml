@@ -14,3 +14,12 @@ unsafe_code = "forbid"
 
 [workspace.lints.clippy]
 all = { level = "deny", priority = -1 }
+
+# sim-wasm size build (M0-014): `wasm-pack build crates/sim-wasm --target web --profile wasm-release`.
+# A separate profile keeps the native server/test builds (panic=unwind, no LTO) unchanged.
+[profile.wasm-release]
+inherits = "release"
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"

@@ -7,6 +7,10 @@ import { loadTerrainData } from './terrain-data';
 
 export interface TerrainHandle {
   terrain: Terrain;
+  /** Stop the render loop (e2e: screenshots of a software-rendered page are slow while frames keep coming). */
+  pause(): void;
+  /** Update the terrain for the current camera and render exactly one frame (use after `pause`). */
+  renderOnce(): void;
   /** Move the fly camera (world metres). */
   setPose(pos: [number, number, number], target: [number, number, number]): void;
   /** Screen position (CSS px of the page, i.e. screenshot pixels) of the terrain surface point above world (x,z); for e2e probes. */
@@ -61,6 +65,13 @@ export async function attachTerrain(ctx: RenderContext, params: URLSearchParams)
 
   const handle: TerrainHandle = {
     terrain,
+    pause() {
+      ctx.engine.stopRenderLoop();
+    },
+    renderOnce() {
+      terrain.update(cam);
+      ctx.scene.render();
+    },
     setPose(p, t) {
       cam.position = new Vector3(p[0], p[1], p[2]);
       cam.setTarget(new Vector3(t[0], t[1], t[2]));

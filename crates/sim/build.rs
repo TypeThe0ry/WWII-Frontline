@@ -26,7 +26,8 @@ fn parse_typed(rel: &str, text: &str) -> Result<(), String> {
         "roles" if rel.matches('/').count() == 1 => typed!(defs::RoleDef),
         "loadouts" if rel.matches('/').count() == 1 => typed!(defs::LoadoutDef),
         "vehicles" if rel.matches('/').count() == 1 => typed!(defs::VehicleDef),
-        _ => Ok(()), // maps/, rules/, ...: hashed only until their schemas land
+        "rules" if rel == "rules/respawn.json" => typed!(defs::RespawnRulesDef),
+        _ => Ok(()), // maps/, other rules/, ...: hashed only until their schemas land
     }
 }
 
@@ -69,5 +70,17 @@ fn main() {
             "pub const {konst}: &str = include_str!(concat!(env!(\"OUT_DIR\"), \"/{file}\"));\n"
         ));
     }
+    let respawn = files
+        .iter()
+        .find(|(rel, _)| rel == "rules/respawn.json")
+        .map(|(_, text)| {
+            let v: serde_json::Value = serde_json::from_str(text).expect("validated above");
+            hash::canonical_json(&v)
+        })
+        .unwrap_or_else(|| panic!("data/rules/respawn.json is required"));
+    fs::write(out.join("respawn.json"), respawn).expect("write embedded json");
+    embedded.push_str(
+        "pub const RESPAWN_JSON: &str = include_str!(concat!(env!(\"OUT_DIR\"), \"/respawn.json\"));\n",
+    );
     fs::write(out.join("data_embedded.rs"), embedded).expect("write data_embedded.rs");
 }

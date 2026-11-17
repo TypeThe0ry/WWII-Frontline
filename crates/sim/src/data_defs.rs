@@ -396,3 +396,29 @@ pub struct VehicleDef {
     #[serde(rename = "_meta")]
     pub meta: Meta,
 }
+
+// ---- rules (M0-013) ----
+
+/// `data/rules/respawn.json` (GAMEDESIGN 10.6).
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct RespawnRulesDef {
+    /// Death camera: the spawn point is picked automatically this long after death.
+    pub death_cam_ms: f64,
+    /// HQ-type spawn points: `ready_time = t_kia + base_wait`.
+    pub base_wait_ms: f64,
+    pub wave_interval_ms: f64,
+    /// `false` skips the wave rounding (tests / sandbox).
+    pub wave_aligned: bool,
+    /// Maximum deterministic horizontal offset around the spawn point, metres.
+    #[serde(default)]
+    pub spawn_jitter_m: Option<f64>,
+    #[serde(rename = "_meta")]
+    pub meta: Meta,
+}
+
+/// All rule families under `data/rules/`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct RulesDef {
+    pub respawn: RespawnRulesDef,
+}

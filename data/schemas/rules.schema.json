@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://frontline.invalid/schemas/rules.schema.json",
+  "title": "Respawn rules (GAMEDESIGN 10.6, M0-013); one file per rule family under data/rules/",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["death_cam_ms", "base_wait_ms", "wave_interval_ms", "wave_aligned", "_meta"],
+  "properties": {
+    "death_cam_ms": { "type": "number", "minimum": 0 },
+    "base_wait_ms": { "type": "number", "minimum": 0 },
+    "wave_interval_ms": { "type": "number", "exclusiveMinimum": 0 },
+    "wave_aligned": { "type": "boolean" },
+    "spawn_jitter_m": { "type": "number", "minimum": 0, "maximum": 3 },
+    "_meta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "tunable"],
+      "properties": {
+        "status": { "enum": ["initial", "reviewed", "measured"] },
+        "tunable": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+        "calibration_ref": { "type": ["string", "null"] }
+      }
+    }
+  }
+}

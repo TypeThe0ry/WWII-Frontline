@@ -288,13 +288,16 @@ describe('terrain_morph_seam: no cracks along shared node edges (acceptance 3)',
     const rand = rng(7);
     let totalPairs = 0;
     let totalMixed = 0;
+    let overall = 0;
     for (let t = 0; t < 8; t++) {
       const cam: [number, number, number] = [-200 + rand() * 700, 1 + rand() * 30, -200 + rand() * 700];
       const r = maxSeamError(cam, 10_000, 12, rand);
       totalPairs += r.pairs;
       totalMixed += r.mixed;
+      overall = Math.max(overall, r.worst);
       expect(r.worst, `camera ${cam.map((v) => v.toFixed(1))}`).toBeLessThanOrEqual(1e-4);
     }
+    console.log(`seam: ${totalPairs} sampled pairs x 10000 points (${totalMixed} mixed-level edges available), worst height difference ${overall.toExponential(2)} m`);
     expect(totalPairs).toBeGreaterThan(100);
     expect(totalMixed).toBeGreaterThan(50); // the mixed-level case really is exercised
   });
@@ -327,6 +330,7 @@ describe('terrain_morph_seam: no cracks along shared node edges (acceptance 3)',
       const cam: [number, number, number] = [-200 + rand() * 700, 1 + rand() * 30, -200 + rand() * 700];
       worst = Math.max(worst, maxSeamError(cam, 2000, 40, rand, true).worst);
     }
+    console.log(`seam control (no edge masks): worst height difference ${worst.toExponential(2)} m`);
     expect(worst).toBeGreaterThan(1e-3);
   });
 });

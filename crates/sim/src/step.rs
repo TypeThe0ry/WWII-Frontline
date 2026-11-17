@@ -42,6 +42,20 @@ pub enum SimEvent {
         damage_hp: f32,
         dist_m: f32,
     },
+    /// A player died (M0-013). `killer` is `None` when the killer has left the match;
+    /// `weapon` indexes `GameData::weapons`; `headshot` = lethal hit in the head zone.
+    Kill {
+        victim: PlayerId,
+        killer: Option<PlayerId>,
+        weapon: u8,
+        headshot: bool,
+        dist_m: f32,
+    },
+    /// A dead player re-entered the world at `pos` (M0-013).
+    Spawn {
+        player: PlayerId,
+        pos: Vec3,
+    },
 }
 
 /// Objective / resource / phase changes (M0-013+; empty for now).

@@ -308,6 +308,24 @@ pub fn data_with(f: impl Fn(&mut WeaponDef)) -> &'static GameData {
         roles: e.roles,
         loadouts: e.loadouts,
         vehicles: e.vehicles,
+        rules: e.rules,
+        hash: e.hash,
+    }))
+}
+
+/// `no_spread()` with the respawn rules edited by `f` (M0-013).
+pub fn with_respawn_rules(
+    f: impl Fn(&mut frontline_sim::data::defs::RespawnRulesDef),
+) -> &'static GameData {
+    let e = no_spread();
+    let mut rules = e.rules.clone();
+    f(&mut rules.respawn);
+    Box::leak(Box::new(GameData {
+        weapons: e.weapons,
+        roles: e.roles,
+        loadouts: e.loadouts,
+        vehicles: e.vehicles,
+        rules: Box::leak(Box::new(rules)),
         hash: e.hash,
     }))
 }
@@ -448,6 +466,24 @@ pub fn event_hash(events: &[SimEvent]) -> u64 {
             SimEvent::DryFire { shooter } => {
                 put(&[4]);
                 put(&shooter.to_le_bytes());
+            }
+            SimEvent::Kill {
+                victim,
+                killer,
+                weapon,
+                headshot,
+                dist_m,
+            } => {
+                put(&[5, *weapon, u8::from(*headshot)]);
+                put(&[*victim]);
+                put(&killer.map_or([0xFF, 0xFF], |k| [k, 0]));
+                put(&dist_m.to_bits().to_le_bytes());
+            }
+            SimEvent::Spawn { player, pos } => {
+                put(&[6, *player]);
+                for v in [pos.x, pos.y, pos.z] {
+                    put(&v.to_bits().to_le_bytes());
+                }
             }
             _ => put(&[9]),
         }

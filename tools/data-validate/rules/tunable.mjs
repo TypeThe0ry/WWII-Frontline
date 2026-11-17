@@ -3,7 +3,7 @@
 export const STATUSES = ['initial', 'reviewed', 'measured'];
 
 /** Kinds whose files must carry `_meta` (map files may omit it, see data/README.md). */
-export const META_REQUIRED = new Set(['weapon', 'role', 'loadout', 'vehicle']);
+export const META_REQUIRED = new Set(['weapon', 'role', 'loadout', 'vehicle', 'rules']);
 
 export function resolvePath(doc, dotted) {
   let cur = doc;

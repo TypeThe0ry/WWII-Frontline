@@ -15,7 +15,9 @@ mod embedded {
     include!(concat!(env!("OUT_DIR"), "/data_embedded.rs"));
 }
 
-pub use defs::{DataStatus, Faction, LoadoutDef, RoleDef, VehicleDef, WeaponDef};
+pub use defs::{
+    DataStatus, Faction, LoadoutDef, RespawnRulesDef, RoleDef, RulesDef, VehicleDef, WeaponDef,
+};
 /// SHA-256 (first 8 bytes, little-endian) of the canonicalised `/data` tree. Sent as
 /// `Hello.data_hash`; client and server must agree (ARCHITECTURE 8.2).
 pub use embedded::DATA_HASH;
@@ -29,6 +31,8 @@ pub struct GameData {
     pub roles: &'static [RoleDef],
     pub loadouts: &'static [LoadoutDef],
     pub vehicles: &'static [VehicleDef],
+    /// Rule families from `data/rules/` (M0-013).
+    pub rules: &'static RulesDef,
     pub hash: u64,
 }
 
@@ -47,6 +51,10 @@ impl GameData {
             roles: leak(embedded::ROLES_JSON),
             loadouts: leak(embedded::LOADOUTS_JSON),
             vehicles: leak(embedded::VEHICLES_JSON),
+            rules: Box::leak(Box::new(RulesDef {
+                respawn: serde_json::from_str(embedded::RESPAWN_JSON)
+                    .expect("embedded data parsed at build time"),
+            })),
             hash: DATA_HASH,
         })
     }

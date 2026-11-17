@@ -10,9 +10,11 @@ use crate::collision::CollisionData;
 use crate::components::*;
 use crate::data::GameData;
 use crate::hash::HashWriter;
+use crate::health::{Health, HitLog, LifeState, LifeStateView};
 use crate::ids::{EntityAllocator, EntityId, PlayerId, Tick, MAX_PLAYER_ID};
 use crate::movement::{MoveParams, PlayerAuthState};
 use crate::projectile::{Projectile, Projectiles};
+use crate::respawn::{RespawnPolicy, RespawnQueue, SpawnPoints};
 use crate::schedule::build_schedule;
 use crate::step::{SimEvent, StepOutput};
 use crate::view::*;
@@ -116,6 +118,15 @@ impl World {
         ecs.insert_resource(WeaponTable::new(cfg.data, cfg.tick_hz));
         ecs.insert_resource(Projectiles::default());
         ecs.insert_resource(EventBuf::default());
+        ecs.insert_resource(HitLog::default());
+        ecs.insert_resource(RespawnQueue::default());
+        ecs.insert_resource(RespawnPolicyRes(RespawnPolicy::from_def(
+            &cfg.data.rules.respawn,
+        )));
+        ecs.insert_resource(SpawnPoints {
+            pos: [None, None],
+            center: collision_center(collision),
+        });
         World {
             cfg,
             ecs,
@@ -169,7 +180,7 @@ impl World {
             return Err(SpawnError::PlayerExists);
         }
         let id = self.alloc.alloc().ok_or(SpawnError::NoFreeSlot)?;
-        let health = self
+        let max_hp = self
             .cfg
             .data
             .role(DEFAULT_ROLE)
@@ -190,7 +201,12 @@ impl World {
                     cmd: neutral_input(),
                 },
                 Motion::from_auth(&PlayerAuthState::spawn(req.pos, req.yaw)),
-                Health(health),
+                Health::full(max_hp),
+                LifeState::Alive,
+                Home {
+                    pos: req.pos,
+                    yaw: req.yaw,
+                },
             ))
             .id();
         if let Some(w) = weapon {
@@ -215,6 +231,7 @@ impl World {
         };
         self.ecs.resource_mut::<EntityTable>().remove(eid);
         self.ecs.despawn(e);
+        self.ecs.resource_mut::<RespawnQueue>().remove_player(id);
         self.alloc.free(eid);
         self.pending_events.push(SimEvent::PlayerRemoved {
             player: id,
@@ -239,7 +256,29 @@ impl World {
     /// Current hit points of a player.
     pub fn health(&self, id: PlayerId) -> Option<f32> {
         let (_, e) = *self.ecs.resource::<PlayerIndex>().map.get(&id)?;
-        self.ecs.entity(e).get::<Health>().map(|h| h.0)
+        self.ecs.entity(e).get::<Health>().map(|h| h.hp)
+    }
+
+    /// Alive / dead state of a player (M0-013); `None` for an unknown player.
+    pub fn player_life(&self, id: PlayerId) -> Option<LifeStateView> {
+        let (_, e) = *self.ecs.resource::<PlayerIndex>().map.get(&id)?;
+        self.ecs.entity(e).get::<LifeState>().copied()
+    }
+
+    /// Sets the fixed respawn point of a team (M0: the HQ point of `spawns.json`). Without one,
+    /// players respawn where they joined.
+    pub fn set_team_spawn(&mut self, team: Team, pos: Vec3) {
+        self.ecs.resource_mut::<SpawnPoints>().pos[team as usize] = Some(pos);
+    }
+
+    /// Overrides the map centre respawned players face (default: centre of the loaded chunks).
+    pub fn set_map_center(&mut self, x: f32, z: f32) {
+        self.ecs.resource_mut::<SpawnPoints>().center = Some((x, z));
+    }
+
+    /// Players waiting to respawn.
+    pub fn respawn_pending(&self) -> usize {
+        self.ecs.resource::<RespawnQueue>().len()
     }
 
     /// Injects a projectile owned by `owner` (a player), flown by the rules of weapon `weapon`
@@ -335,7 +374,22 @@ impl World {
             h.write_u8(u8::from(mo.grounded) | (u8::from(mo.blocked) << 1));
             // M0-012: health and weapon state.
             if let Some(hp) = er.get::<Health>() {
-                h.write_f32(hp.0);
+                h.write_f32(hp.hp);
+            }
+            // M0-013: written only while dead, so scenarios without deaths keep their hashes.
+            if let Some(LifeState::Dead {
+                t_kia,
+                killer,
+                weapon,
+                headshot,
+                respawn_tick,
+            }) = er.get::<LifeState>()
+            {
+                h.write_u8(0xD0 | u8::from(*headshot));
+                h.write_u32(t_kia.0);
+                h.write_u16(killer.map_or(0xFFFF, u16::from));
+                h.write_u8(*weapon);
+                h.write_u32(respawn_tick.0);
             }
             if let Some(w) = er.get::<WeaponState>() {
                 h.write_bytes(&w.to_bytes());
@@ -363,6 +417,9 @@ impl World {
         let table = self.ecs.resource::<EntityTable>();
         for (id, e) in table.sorted() {
             let er = self.ecs.entity(e);
+            if er.get::<LifeState>().is_some_and(|l| !l.is_alive()) {
+                continue; // `players()` lists the living only
+            }
             if let (Some(p), Some(team), Some(t)) =
                 (er.get::<Player>(), er.get::<Team>(), er.get::<Transform>())
             {
@@ -379,7 +436,22 @@ impl World {
     }
 }
 
-fn neutral_input() -> InputCmd {
+/// Centre `(x, z)` of the loaded collision chunks (64 m each), or `None` when empty.
+fn collision_center(col: &CollisionData) -> Option<(f32, f32)> {
+    let mut it = col.chunks();
+    let first = it.next()?;
+    let (mut x0, mut x1, mut z0, mut z1) = (first.bx, first.bx, first.bz, first.bz);
+    for c in it {
+        x0 = x0.min(c.bx);
+        x1 = x1.max(c.bx);
+        z0 = z0.min(c.bz);
+        z1 = z1.max(c.bz);
+    }
+    Some(((x0 + x1 + 1) as f32 * 32.0, (z0 + z1 + 1) as f32 * 32.0))
+}
+
+/// Command of a player that does nothing (also the idle state after a respawn).
+pub(crate) fn neutral_input() -> InputCmd {
     InputCmd {
         seq: 0,
         tick: 0,
@@ -407,12 +479,35 @@ impl WorldView for World {
         }
         let e: Entity = self.ecs.resource::<EntityTable>().get(id)?;
         let t = self.ecs.get::<Transform>(e)?;
+        let (hp, alive) = self
+            .ecs
+            .get::<Health>(e)
+            .map_or((0.0, true), |h| (h.hp, h.hp > 0.0));
+        let max_hp = self.ecs.get::<Health>(e).map_or(100.0, |h| h.max_hp);
         Some(EntityStateView {
             entity: id,
             pos: t.pos,
             yaw: t.yaw,
             pitch: t.pitch,
+            health_q: crate::health::quant_health(hp, max_hp, 8),
+            alive,
         })
+    }
+    fn health(&self, id: EntityId) -> Option<f32> {
+        if !self.alloc.is_alive(id) {
+            return None;
+        }
+        let e = self.ecs.resource::<EntityTable>().get(id)?;
+        self.ecs.get::<Health>(e).map(|h| h.hp)
+    }
+    fn alive(&self, id: EntityId) -> bool {
+        self.alloc.is_alive(id)
+            && self
+                .ecs
+                .resource::<EntityTable>()
+                .get(id)
+                .and_then(|e| self.ecs.get::<LifeState>(e))
+                .is_some_and(LifeState::is_alive)
     }
     fn los(&self, from: Vec3, to: Vec3) -> bool {
         self.collision().los(from, to)
@@ -421,7 +516,7 @@ impl WorldView for World {
         self.collision().height_at(x, z)
     }
     fn team_resources(&self, _team: Team) -> Resources {
-        Resources::default() // TODO(M0-013)
+        Resources::default() // resources arrive with M1 scoring
     }
     fn objectives(&self) -> &[ObjectiveView] {
         &[]

@@ -60,7 +60,7 @@ fn duel(seed: u64, ticks: u32) -> (Vec<SimEvent>, World) {
             w.weapon_state(US).unwrap().mag,
             w.weapon_state(GER).unwrap().mag,
         ];
-        // Death handling is M0-013: a shooter simply stops when the enemy's health is gone.
+        // A shooter stops when the enemy is dead (hp 0 until the respawn, M0-013).
         let down = [w.health(GER).unwrap() <= 0.0, w.health(US).unwrap() <= 0.0];
         let [a, b] = duel_cmds(t, mags, pitch, down);
         events.extend(w.step(&[(US, a), (GER, b)]).events);
@@ -85,6 +85,10 @@ fn weapon_duel_events_and_damage_are_conserved() {
     let mut dry = [0u32; 2];
     let mut dealt = [0.0f32; 2]; // damage dealt BY us / ger
     let mut hits = [0u32; 2];
+    // M0-013: a respawn restores health and ammunition, so both are accounted per life.
+    let mut lost = [0.0f32; 2]; // damage taken BY us / ger since its last spawn
+    let mut shots_life = [0u32; 2];
+    let mut kills = [0u32; 2];
     let mut last_shot_for_hit: [u32; 2] = [0, 0];
     for e in &events {
         match e {
@@ -93,6 +97,7 @@ fn weapon_duel_events_and_damage_are_conserved() {
             } => {
                 let i = usize::from(*shooter == e_ger);
                 shots[i] += 1;
+                shots_life[i] += 1;
                 last_shot_for_hit[i] += 1;
                 let expect = if i == 0 { "us_m1_garand" } else { "ger_kar98k" };
                 assert_eq!(data.weapons[usize::from(*weapon)].id, expect);
@@ -112,7 +117,17 @@ fn weapon_duel_events_and_damage_are_conserved() {
                 );
                 last_shot_for_hit[i] -= 1;
                 dealt[i] += damage_hp;
+                lost[1 - i] += damage_hp;
                 hits[i] += 1;
+            }
+            SimEvent::Kill { victim, killer, .. } => {
+                assert_ne!(Some(*victim), *killer);
+                kills[usize::from(*victim == US)] += 1;
+            }
+            SimEvent::Spawn { player, .. } => {
+                let i = usize::from(*player == GER);
+                lost[i] = 0.0;
+                shots_life[i] = 0;
             }
             SimEvent::DryFire { shooter } => dry[usize::from(*shooter == e_ger)] += 1,
             _ => {}
@@ -123,11 +138,16 @@ fn weapon_duel_events_and_damage_are_conserved() {
         "duel 30 s: Garand shots {} hits {} dealt {:.1} HP -> Kar98k HP {:.1}; Kar98k shots {} hits {} dealt {:.1} HP -> Garand HP {:.1}; dry clicks {dry:?}",
         shots[0], hits[0], dealt[0], hp[1], shots[1], hits[1], dealt[1], hp[0]
     );
-    // Damage conservation: health lost == damage of the Hit events.
-    assert!((100.0 - hp[1] - dealt[0]).abs() < 1e-3);
-    assert!((100.0 - hp[0] - dealt[1]).abs() < 1e-3);
-    // Ammunition conservation.
-    for (p, s) in [(US, shots[0]), (GER, shots[1])] {
+    println!("duel kills (ger died, us died): {kills:?}");
+    assert!(kills[0] + kills[1] >= 1, "the duel must produce a kill");
+    // Damage conservation: health lost since the last spawn == damage of the Hit events (a dead
+    // player is at 0 hp, not below).
+    for (p, i) in [(US, 0usize), (GER, 1)] {
+        let expect = (100.0 - lost[i]).max(0.0);
+        assert!((w.health(p).unwrap() - expect).abs() < 1e-3, "player {p}");
+    }
+    // Ammunition conservation (per life).
+    for (p, s) in [(US, shots_life[0]), (GER, shots_life[1])] {
         let ws = w.weapon_state(p).unwrap();
         let (cap, mags) = (if p == US { 8u32 } else { 5 }, 6u32);
         assert_eq!(
@@ -174,7 +194,11 @@ fn duel_is_deterministic_and_golden() {
 
 /// Regression pin of the 600-tick duel (seed 11). Update only for deliberate weapon / data
 /// changes (and say why).
-const GOLDEN_DUEL_EVENTS: u64 = 0x2ced_8d49_9901_efde;
+///
+/// M0-013 re-pin (was 0x2ced_8d49_9901_efde): the duel now ends in a kill and the victim
+/// respawns, so the 600-tick sequence contains `Kill` / `Spawn` events and the duel goes on after
+/// the respawn (before, the loser stayed at hp <= 0 and the winner stopped shooting).
+const GOLDEN_DUEL_EVENTS: u64 = 0x09a7_e291_7060_9f65;
 
 fn script(n: usize, seed: u64) -> Vec<InputCmd> {
     let mut r = Rng(seed);

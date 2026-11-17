@@ -7,15 +7,17 @@
 //! team and the shooter are ignored (friendly fire is M1-014; there is no penetration in M0).
 //! A projectile that leaves the loaded collision, lives longer than 4 s or drops below 150 m/s
 //! is removed silently. Damage `D = damage_torso_hp * falloff(d) * part_mult` is subtracted from
-//! the target's [`Health`] and reported as [`SimEvent::Hit`]; death handling is M0-013.
+//! the target's [`Health`] and reported as [`SimEvent::Hit`] (and logged in [`HitLog`] for the
+//! rules stage, which turns a lethal hit into a kill: `crate::schedule::deaths`).
 
 use bevy_ecs::prelude::*;
 use glam::Vec3;
 
 use crate::components::{
-    CollisionRes, EntityTable, EventBuf, Health, Motion, SimCfgRes, Team, Transform, WeaponTable,
+    CollisionRes, EntityTable, EventBuf, Motion, SimCfgRes, Team, Transform, WeaponTable,
 };
 use crate::data::defs::WeaponDef;
+use crate::health::{Health, HitLog, HitRec};
 use crate::ids::EntityId;
 use crate::step::SimEvent;
 use crate::weapon::ballistics::{self, BallisticsParams, MIN_SPEED_MPS, SUBSTEPS};
@@ -91,6 +93,8 @@ struct Target {
     team: Team,
     foot: Vec3,
     blend: f32,
+    /// Cleared when a hit this tick kills it (later projectiles pass through the corpse).
+    alive: bool,
 }
 
 fn part_mult(def: &WeaponDef, zone: HitZone) -> f32 {
@@ -118,6 +122,7 @@ enum Fate {
 }
 
 /// The projectile stage (ARCHITECTURE 6.10 stage 4).
+#[allow(clippy::too_many_arguments)]
 pub fn projectile_system(
     cfg: Res<SimCfgRes>,
     wt: Res<WeaponTable>,
@@ -125,6 +130,7 @@ pub fn projectile_system(
     table: Res<EntityTable>,
     mut projs: ResMut<Projectiles>,
     mut events: ResMut<EventBuf>,
+    mut hitlog: ResMut<HitLog>,
     mut q: Query<(&Transform, &Motion, &Team, &mut Health)>,
 ) {
     if projs.list.is_empty() {
@@ -133,13 +139,14 @@ pub fn projectile_system(
     let mut targets: Vec<Target> = Vec::new();
     for (id, entity) in table.sorted() {
         if let Ok((t, m, team, h)) = q.get(entity) {
-            if h.0 > 0.0 {
+            if h.hp > 0.0 {
                 targets.push(Target {
                     id,
                     entity,
                     team: *team,
                     foot: t.pos,
                     blend: m.stance_blend,
+                    alive: true,
                 });
             }
         }
@@ -162,9 +169,10 @@ pub fn projectile_system(
             h,
             max_sub,
             &col.0,
-            &targets,
+            &mut targets,
             &mut q,
             &mut events.0,
+            &mut hitlog.0,
         );
         if matches!(fate, Fate::Alive) {
             keep.push(pr);
@@ -181,9 +189,10 @@ fn advance(
     h: f32,
     max_substeps: u32,
     col: &crate::collision::CollisionData,
-    targets: &[Target],
+    targets: &mut [Target],
     q: &mut Query<(&Transform, &Motion, &Team, &mut Health)>,
     events: &mut Vec<SimEvent>,
+    hitlog: &mut Vec<HitRec>,
 ) -> Fate {
     for _ in 0..SUBSTEPS {
         let p0 = pr.pos;
@@ -202,7 +211,7 @@ fn advance(
         // Nearest body hit on this segment.
         let mut body: Option<(f32, HitZone, usize)> = None;
         for (i, t) in targets.iter().enumerate() {
-            if t.id == pr.owner || t.team == pr.team {
+            if !t.alive || t.id == pr.owner || t.team == pr.team {
                 continue;
             }
             if !hitbox::seg_aabb_overlap(p0, p1, t.foot) {
@@ -226,15 +235,25 @@ fn advance(
                 let hit_pos = p0 + seg * tb;
                 let dist = (hit_pos - pr.origin).length();
                 let dmg = damage(def, zone, dist);
-                let tgt = &targets[i];
+                let tgt = &mut targets[i];
                 if let Ok((_, _, _, mut hp)) = q.get_mut(tgt.entity) {
-                    hp.0 -= dmg;
+                    hp.hp -= dmg;
+                    if hp.hp <= 0.0 {
+                        tgt.alive = false;
+                    }
                 }
                 events.push(SimEvent::Hit {
                     shooter: pr.owner,
                     target: tgt.id,
                     zone,
                     damage_hp: dmg,
+                    dist_m: dist,
+                });
+                hitlog.push(HitRec {
+                    target: tgt.id,
+                    shooter: pr.owner,
+                    weapon: pr.weapon,
+                    zone,
                     dist_m: dist,
                 });
                 return Fate::Gone;
