@@ -528,3 +528,7 @@ blocked / in-progress / todo：无。M0 的 33 个任务全部已提交（M0-033
 - 测试 `health_vitals` 10 项；重定 golden 3 个（见 PI-056），重复运行稳定；`cargo test --workspace`、clippy、fmt 通过。
 - 事故：构建盘写满时 `cargo fmt` 截断了 `medical.rs`（16384 B），已按会话记录重放编辑恢复，前缀与截断文件逐字节一致后继续。
 
+### M1-017a 压制：检测、累积/衰减、事件、反刷分 — partial（余 017b）— 2026-11-17 — 提交见 git log
+- 新增 `suppression` 模块（detect/state/effects/anti_farm/system）、`SuppressionState` 组件、`SimEvent::{Suppress, SuppressionAssist}`、`World::suppression`；弹丸每个子步做近失检测，爆炸读 `Explosion` 事件。
+- 测试 `suppression_m1` 14 项；golden 重定 2 个（PI-057）；全量测试、clippy、fmt 通过。
+
