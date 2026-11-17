@@ -11,11 +11,11 @@
 ## 背景
 M2-025 建立了 LiveKit 房间、gateway token、服务器订阅集合计算（squad + prox）。本任务加入 `command` 与 `crew` 频道（ARCH §14.1 表）。数字与规则：
 - 订阅集合每 0.5 s（2 Hz）计算：`candidates(i) = squad(i) ∪ (command 若 i 为队长/Commander) ∪ crew(i) ∪ prox(≤ 50 m)`；优先级 crew(1) > squad(2) > command(3) > prox 按距离升序(4)；取前 **8**；prox 迟滞：进入 50 m、退出 60 m；集合变动持续 ≥ 1 个周期才下发；只发 `(add, remove)` 差分；每玩家每 0.5 s 至多 1 次 API 调用（ARCH §14.2）。
-- Command 频道（GD §16.1）：说话者 = Commander + Officer（Infantry 小队长且兵种为 Officer）；收听者 = Commander、Officer，另 **Tank Commander 与 Recon 队长仅可听**【待调参】。
+- Command 频道（GD §16.1）：成员（可听可说）= Commander + Officer（Infantry 小队长且兵种为 Officer）+ Spotter（侦察组长）+ Tank Commander【待调参】。
 - Vehicle/crew 频道：同一载具内所有座位（含乘客）；出车后自动退出；不空间化、轻混响。
 - 阵营：敌方的 squad/command/crew 永不订阅；prox 含敌我（ARCH §14.2）。
 - 倒地者仅走 Proximity（受限）；KIA 者可听 Squad 不可说（GD §16.1）。
-注意：ARCH §14.1 把 command 成员写作"Commander + 各小队长（≤ 1+8）"，GD §16.1 更具体（仅 Officer 可说；TC/Recon 队长仅听）。**以 GD §16.1 为准**，在 PLAN_ISSUES 记一条。
+已裁定：以 GD §16.1 为准（Commander + Officer + Spotter（侦察组长）+ Tank Commander 可听可说），ARCH §14.1 已同步修订。
 规则只在 `crates/sim`（ARCH §4.3.4）：频道成员判定放纯函数，server 只负责调用 LiveKit API 应用差分。
 
 ## 具体内容
@@ -28,7 +28,7 @@ M2-025 建立了 LiveKit 房间、gateway token、服务器订阅集合计算（
 - `crates/server/tests/voice_channels.rs` —— 使用 mock LiveKit 的集成测试。
 ### 要实现的行为
 1. 上车 → 下一个 0.5 s 周期把同车乘员加入 `crew` 并升到最高优先级；下车 → 自动移除（≥ 1 个周期稳定后下发）。
-2. Command：Commander 与所有 Officer 互相可听可说；TC、Recon 队长只听；其他兵种无该频道。
+2. Command：Commander、所有 Officer、Spotter（侦察组长）、Tank Commander 互相可听可说；其他兵种无该频道。
 3. 8 路上限：候选 > 8 时，按优先级与距离截断；被截断的 prox 不下发。
 4. 死亡/倒地：死亡者撤销 prox 发布；KIA 保留 squad 听权。
 5. 敌我隔离：单测断言任意 `(i, j)` 若 team 不同，则 `j ∈ squad/command/crew(i)` 恒为假。
@@ -46,7 +46,7 @@ pub fn subscribe_set(sets: &ChannelSets, cap: usize /*8*/) -> Vec<PlayerId>;
 
 ## 验收标准
 1. 车内 3 人互通且不泄漏：mock LiveKit 集成测试：3 人在载具内，互相 `crew` 订阅为真；车外第 4 人（含同队、敌队各 1）订阅集合中不含这 3 人的 `crew` 轨道（0 泄漏）。
-2. Command 频道仅 Commander + Officer：10 个玩家（Commander、2 Officer、1 TC、1 Recon 队长、5 普通兵种）：说话权限仅前 3 人，收听权限前 5 人，其余 0。
+2. Command 频道成员 = Commander + Officer + Spotter（侦察组长）+ Tank Commander：10 个玩家（Commander、2 Officer、1 TC、1 Spotter 组长、5 普通兵种）：说话与收听权限均为前 5 人，其余 0。
 3. 8 路上限：构造 12 候选（2 crew、3 squad、2 command、5 prox），`subscribe_set` 长度 = 8 且包含全部 crew/squad/command（共 7）+ 1 个最近 prox。
 4. 迟滞与稳定：prox 在 49/51/59/61 m 反复穿越用例，进入阈值 50 m、退出 60 m；集合变动不足 1 个周期（0.5 s）不下发（时序单测）。
 5. API 频率：100 玩家合成场景下，对 LiveKit 的订阅更新调用 ≤ 200 次/s（ARCH §14.2），mock 计数。

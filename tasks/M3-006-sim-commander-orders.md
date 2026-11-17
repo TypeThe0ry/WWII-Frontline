@@ -25,7 +25,7 @@ M2-009 已实现 Manpower/Munitions/Fuel 的整分钟结算与资源池（R6：�
 3. **冷却**：每能力独立；下达即开始计时，持续到冷却结束。
 4. **全局空中支援锁**：Bombing/Strafing/Precision/Recon/Supply Drop/Ammo Drop/Airhead 任意两次之间 10 s；同时在空飞机 ≤ 3（Bombing 编队按 3 架计）；违反返回 `airlock`/`aircap`。
 5. **位置合法性**：落点在地图内；Supply/Ammo Drop 须在本方或战区 Sector、距敌方据点圆心 ≥ `R_sp+80 m`（GD §13.3）；友军 25 m 内的空袭目标**允许**但在 ticket 中置 `friendly_danger=true`（供 UI 警告，ff_mult 爆炸 0.7）。
-6. **Command 频道**：Commander + Officer 可说话；Tank Commander 与 Recon 队长只可听（GD §16.1）；输出 `can_speak(player)`、`listeners(team)`。
+6. **Command 频道**：Commander + Officer + Spotter（侦察组长）+ Tank Commander 均可听可说（GD §16.1，已裁定；ARCH §14.1 已与之一致）；输出 `can_speak(player)`、`listeners(team)`。
 7. **事件**：生成 `SimEvent::AbilityExecuted{state: queued/incoming/done/cancelled}` 与 `ResourceDelta`；敌方警告（`AirWarning`）在 T−15 s 发出（Bombing/Strafing/Precision，GD §13.1）。
 8. 所有计时以 tick 为单位（30 Hz），秒→tick 取 `round`，统一函数 `secs_to_ticks`。
 ### 接口与数据
@@ -43,7 +43,7 @@ pub struct AbilityTicket { pub id: u16, pub ability: AbilityId, pub team: Team, 
 2. 资源不足、冷却中、全局锁内、飞机上限 4 架时的指令 100% 被拒且**不扣资源**（断言资源不变）。
 3. 取消返还精确为 `floor(cost × 0.5)`；取消后冷却策略与 GD 一致（取消不重置已走冷却，文档未规定处记 PLAN_ISSUES）。
 4. 同 seed + 同输入两次运行 10 000 tick 的 `state_hash` 逐 tick 相同（含能力排队）。
-5. Command 频道权限表与 GD §16.1 逐行一致（5 个角色 × 说/听）。
+5. Command 频道权限表与 GD §16.1 逐行一致（4 个角色 × 说/听）。
 6. 能力流程每 tick 额外耗时 ≤ 0.05 ms（`cargo bench -p sim ability_tick`，100 玩家场景；计入 ARCHITECTURE §6.10 阶段 5 的 0.7 ms 规则预算）。
 
 ## 测试要求

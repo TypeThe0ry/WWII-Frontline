@@ -12,7 +12,7 @@
 公开测试前的安全审计与加固，范围对应 ARCHITECTURE §19：
 - **输入不可信（§19.1）**：所有网络输入（二进制消息、字符串、数组长度）解码时做长度/范围检查，失败即断开；解码器经 `cargo-fuzz`；**解码路径禁用 `unsafe`**；昵称 ≤ 24、聊天 ≤ 200，NFKC 规范化、拒绝控制字符/双向覆盖字符；UI 层禁止 `innerHTML` 注入用户内容；每连接缓冲 64 KB、握手超时 5 s、每 IP 并发连接 ≤ 4、每秒新连接限速。
 - **Token（§19.2）**：join ticket EdDSA、TTL 60 s、单次使用（`jti`）；游客 JWT TTL 24 h；管理 API 独立 token + IP 白名单 + 审计。
-- **速率限制（§19.3）**：gateway 登录/ticket 每 IP 10/min、每账号 6/min；聊天 2 条/s、10 条/10 s；举报 1/min、10/局；连接每 IP 4 并发。
+- **速率限制（§19.3）**：gateway 登录/ticket 每 IP 10/min、每账号 6/min；聊天每人每 8 s 最多 5 条（GD §16.2）；举报 1/min、10/局；连接每 IP 4 并发。
 - **供应链/前端（§19.5）**：`cargo-deny`、`npm audit`/`osv-scanner`、锁文件进库；第三方脚本零；CSP：`default-src 'self'; connect-src 'self' https://*.game-domain wss://… ; script-src 'self' 'wasm-unsafe-eval'`；`frame-ancestors 'none'`；入口脚本 SRI；不依赖 `SharedArrayBuffer`。
 - 目标（MILESTONES E4-9）：解码 fuzz 累计 ≥ 1 h 无 panic；CSP 无 `unsafe-inline`；依赖审计无高危未处理。
 

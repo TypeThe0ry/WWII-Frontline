@@ -19,7 +19,7 @@ M1-047 已建立粒子系统（枪口焰/曳光/烟/爆炸/尘土）、弹孔贴
 - `client/src/render/vfx/dust_explosion.ts` —— 爆炸尘土与冲击环、碎屑；按爆炸威力分三档（手雷/炮弹/炸药）。
 - `client/src/render/vfx/decals.ts` —— 贴花管理器：弹孔（M1-047 已有，纳入统一管理）、弹坑（爆炸后地形凹陷贴花）、血迹/飞溅/拖痕；环形缓冲回收 + 按距离/重要性淘汰。
 - `client/src/render/vfx/particle_budget.ts` —— 全局粒子/贴花预算与 LOD：超限按优先级丢弃（玩家附近 > 远处；爆炸 > 烟 > 尘）。
-- `data/render/vfx.json`、`data/schemas/render_vfx.schema.json` —— 贴花上限与粒子档位表（初值【待调参】：弹孔 256、弹坑 64、血迹 128；粒子上限 Low 300/Medium 800/High 1 600）。
+- `data/render/vfx.json`、`data/schemas/render_vfx.schema.json` —— 贴花上限与粒子档位表（粒子上限初值【待调参】：Low 300/Medium 800/High 1 600；各档贴花同屏上限取 ARCHITECTURE §13 画质表"贴花上限"行初值【待调参】——64/160/400/800，不再自拟分类上限）。
 - `client/src/render/vfx/placeholders.ts` —— 占位：纯色方片/球，材质命名 `PH_V-FX-005`、`PH_V-FX-001..`（按 SHOP 需求 ID）。
 ### 要实现的行为
 1. 烟雾：由服务器事件驱动；烟团内多层 flipbook，随风漂移；烟团半径与视线遮挡**视觉**一致（规则判定在 sim，客户端不判定遮挡）。

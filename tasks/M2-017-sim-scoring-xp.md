@@ -25,7 +25,7 @@ GD §18：四类得分 Combat / Offense / Defense / Support，总分 = 四类之
 1. 事件 → 得分映射表驱动（`scoring.json`）；每条得分记录 `category`、`reason`、`value`、`role_at_time`。
 2. 周期性得分：占领区内每 5 s 窗口、每分钟上限（Garrison 出生 +20、放置者 +15、Outpost +10、Ammo Crate 使用 +30）按 tick 计窗口，整数运算。
 3. 反刷分：60 s 同对击杀计数、90 s 易手冷却、AFK 标志（来自 M2-018 的 `afk` 组件，未就绪时默认 false）。
-4. 连杀、复仇、助攻窗口：沿用 M1-016 的击杀归属输入（助攻 = 近 N s 内造成 ≥ X 伤害，N/X 读 `/data`，GD 未给数值则 PLAN_ISSUES）。
+4. 连杀、复仇、助攻窗口：沿用 M1-016 的击杀归属输入（助攻 = 近 N s 内造成 ≥ X 伤害，N/X 读 `/data`（GD §18 助攻窗口 N = 10 s【待调参】；X 无 GD 数值，取最小默认 ≥ 20 HP 标 `initial`））。
 5. Role XP：按分数事件的 `role_at_time` 累加，本职标志 ×1.5（`xp_role_bonus` 表）；局末输出每个兵种的 `RoleXpDelta`。
 6. 局末 `MatchSummary`：胜负奖励、完整参与判定（在线时间 / 对局时间 ≥ 70%）、账号 XP 增量与等级。
 ### 接口与数据
@@ -64,5 +64,5 @@ ARCH §6.10 阶段 5「规则 0.7 ms」内 ≤ 0.05 ms/tick。
 
 ## 备注/已知风险
 - 建造/修理/资源节点/载具击毁等事件来自 M2-010/M2-011/M2-015/M2-016（依赖已列），须确保这些任务发出 `SimEvent`。
-- 助攻窗口等 GD 未给数值的参数：不自拟，写 PLAN_ISSUES 并用最小默认（5 s / 伤害 ≥ 20 HP）标注 `initial`。
+- 助攻窗口已裁定为 10 s【待调参】（GD §18）；伤害阈值 X 仍无 GD 数值：用最小默认 ≥ 20 HP 标注 `initial`，并写 PLAN_ISSUES 细化。
 - 数值待 REF §scoring 校准（M2-054）。

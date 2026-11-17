@@ -63,4 +63,4 @@ M1 有 5 个兵种（Officer/Rifleman/Medic/Support/Crewman）与 Sherman。M2 �
 
 ## 备注/已知风险
 - GD 史实参数出自记忆未联网复核（R8）；任何与公开史料冲突的数值先照 GD 写入并保持 `initial`。
-- MG 持续射击的过热/换弹链参数 GD 没有给出数字：只写 GD 已有的换弹秒数（M1919A4 6.5 s、MG 34 5.5/6.0 s、MG 42 6.0/7.0 s），过热字段留空并在 PLAN_ISSUES 登记缺口，由 M2-013 裁定。
+- MG 持续射击的过热/换弹链参数 GD 没有给出数字：只写 GD 已有的换弹秒数（M1919A4 6.5 s、MG 34 5.5/6.0 s、MG 42 6.0/7.0 s），首发**无过热机制**（总控裁定，GD 已写明）：数据中保留 `overheat` 字段、默认 `enabled=false`。

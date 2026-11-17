@@ -14,7 +14,7 @@
 - 连接：用 M2-024 的 `POST /voice/token` 获取 url+token；`autoSubscribe=false`；发布 1 条麦克风轨（Opus 24 kbps、DTX 开启、`maxBitrate` 32 kbps）；token 到期前 ≥ 60 s 续签。
 - 近距离轨道（ARCH §14.4/§12.5）：`MediaStreamAudioSourceNode → PannerNode`（`panningModel='HRTF'`、`distanceModel='inverse'`、`refDistance=2`、`maxDistance=50`、`rolloffFactor=1.5`），位置取该玩家实体的**插值位置**（来自 `game` 状态，与语音网络解耦）；遮挡走与 SFX 同一遮挡低通总线（M2-045 提供，此处预留接口，缺失时直通）。
 - 小队/指挥/车组频道：不空间化，加入"无线电"滤波（带通 300–3 400 Hz + 轻失真）。
-- 键位（GD §16.1，可改，最终以 UI_SPEC 为准）：近距离按住 `V`；小队按住 `B`；指挥按住 `N`；车组在载具内按 `V`。支持 PTT 与 VAD；`VoiceState{ptt,channel_pref}` 经 C0 上报（ARCH §6.8.1，权威仍由服务器推导）。
+- 键位（以 UI_SPEC §5.2 为准，GD §16.1 已同步；可改）：小队按住 `V`；近距离按住 `B`；指挥与车组按住 `N`。支持 PTT 与 VAD；`VoiceState{ptt,channel_pref}` 经 C0 上报（ARCH §6.8.1，权威仍由服务器推导）。
 - 同时收听上限 8（服务器控制）；逐玩家本地静音；输入灵敏度；倒地者音量 −12 dB + 低通（GD §16.1）。
 - 失败降级（ARCH §14.5）：LiveKit 不可用或麦克风权限被拒 → **游戏正常进行，仅禁用语音**；UI 明确提示；指数退避重连，上限 60 s，**不重试风暴**。
 - 延迟参考（ARCH §12.6）：`AudioContext({latencyHint:'interactive'})`，WebAudio 输出延迟 10–40 ms 起、蓝牙可 > 150 ms，不承诺更低。
@@ -73,5 +73,5 @@
 
 ## 备注/已知风险
 - 浏览器差异（Safari 的 WebRTC/PannerNode HRTF 行为）未核实，CI 只保证 Chromium（ARCH §20 第 6 项）。
-- 键位与 UI 最终以 UI_SPEC 为准；若 UI_SPEC 与 GD 默认键位冲突，按 UI_SPEC 并在 PLAN_ISSUES 记录。
+- 键位与 UI 以 UI_SPEC 为准（已裁定：PTT 键位小队 V、近距 B、指挥/车组 N）。
 - 语音数据合规与举报无语音证据的说明在设置页（M2-041）展示（H-082 的隐私政策为 M4）。

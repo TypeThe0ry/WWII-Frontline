@@ -13,7 +13,7 @@ GD §16 规定"谁能听到谁、谁能放什么标记"；**权限校验在服�
 **标记矩阵（GD §16.3，数量/生命周期【待调参】）**：Ping（Attention）所有玩家→小队可见，8 s，每人 ≤ 3 同时、间隔 ≥ 2 s；Ping Enemy 小队可见，若放置者为 Spotter/Officer 同时对全队可见，6 s；Need Medic/Ammo/Engineer/AT/Supplies：对应兵种所有友军地图闪烁 + 小队长可见，20 s，每人每类 ≤ 1；Squad Order（Move/Attack/Defend/Hold/Build）仅小队长，小队可见，至替换或 180 s，每类 1、共 ≤ 5；Team Mark（敌步兵/载具/火炮/AT 炮/Garrison）仅 Spotter/Officer/Commander，全队，Spotter ≤ 10、Officer ≤ 5、Commander ≤ 20；Command Order（Attack/Defend）仅 Commander ≤ 12；Fire Request：Officer ≤ 1、Commander ≤ 3，90 s；Garrison Request：Officer/Commander，≤ 3，120 s；Supply Request：Engineer/Officer/Commander，≤ 3，120 s；Fire Mission/Rally Marker 为 M3 条目。
 **Ping 系统（§16.4）**：8 类圆盘（Attention / Enemy / Need Medic / Need Ammo / Need Engineer / Need AT / Need Supplies / Thanks）；自动识别：准星指向敌方玩家/载具/建筑 → Enemy；指向友军 → Thanks，倒地者自动 Need Medic；反滥用：被同一小队成员静音超过 3 次的玩家，Ping 对该小队不可见 10 min。
 **Spotter 标记显示时长（§17.1）**：步兵 8 s、载具 15 s、火炮/AT 炮/建筑 60 s；敌方标记下发只给**地图图标**（1 Hz、位置量化到 5 m，R3）。
-**聊天（§16.2）**：All/Team/Squad/Command 四频道；Command 仅 Commander + Officer；每条 ≤ 200 字符；GD 限"每人每 8 s 最多 5 条"，而 ARCH §19.3 限"2 条/s、10 条/10 s、重复内容检测"——**两者取更严者同时生效**（冲突登记 PLAN_ISSUES）；系统消息走独立队列；服务器聊天保留 24 h（管理员，GD）/ 与举报关联前后 20 条保留 14 天（ARCH §19.4）。
+**聊天（§16.2）**：All/Team/Squad/Command 四频道；Command 仅 Commander + Officer + Spotter（侦察组长）+ Tank Commander（GD §16.1）；每条 ≤ 200 字符；限速以 GD §16.2 为准：**每人每 8 s 最多 5 条**（已裁定，ARCH §19.3 已同步），另保留重复内容检测；系统消息走独立队列；服务器聊天保留 24 h（管理员，GD）/ 与举报关联前后 20 条保留 14 天（ARCH §19.4）。
 
 ## 具体内容
 ### 要创建/修改的文件
@@ -41,7 +41,7 @@ GD §16 规定"谁能听到谁、谁能放什么标记"；**权限校验在服�
 2. Ping 速率限制：同一玩家 1.9 s 内第 2 次被拒、2.0 s 通过；同时 ≤ 3 个；Need* 每类 ≤ 1；以 tick 计 ±1。
 3. 生命周期：Ping 8 s（240 tick）、Enemy 6 s、Need* 20 s、Squad Order 180 s、Spotter 标记 步兵 8 s/载具 15 s/建筑 60 s，到期事件 ±1 tick。
 4. 敌方标记下发位置量化：任意位置与下发值距离 ≤ 2.5√2 m，且同一标记下发间隔 ≥ 1 s（测试断言）。
-5. 聊天：201 字符被拒；2 条/s 超限被丢；10 s 内第 11 条被丢；Command 频道非 Officer/Commander 发送被拒；控制字符/双向覆盖字符被过滤。
+5. 聊天：201 字符被拒；8 s 内第 6 条被丢（每 8 s 5 条）；Command 频道非 Commander/Officer/Spotter/Tank Commander 发送被拒；控制字符/双向覆盖字符被过滤。
 6. 反滥用：同小队 4 名成员静音某玩家后其 Ping 对该小队不可见 10 min（18 000 tick），他队可见。
 7. 本模块 CPU ≤ 0.05 ms/tick（200 活动标记、100 玩家）。
 

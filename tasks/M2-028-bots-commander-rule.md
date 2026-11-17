@@ -18,7 +18,7 @@ pub trait CommanderBrain {
 ```
 
 `Situation`（≤ 2 000 token 的结构化战况，**仅含该队可见信息**，不得泄露敌方未被发现的位置）：`phase`、`time_left`、`strongpoints[{id,owner,contested,my_strength_nearby,enemy_est}]`、`front_graph`、`resources{manpower,munitions,fuel}`、`ability_cooldowns`、`squads[{id,role_mix,pos_region,state,objective}]`、`recent_events`。输出动作 ≤ 6 条/决策，经与真人 Commander **同等**的校验层（资源、冷却、权限、标记配额）。
-GD §20.4 要求：C-01 每 15 s 评估战况（活动线、人数优势、资源），优先级 占点 > 建造 Garrison > 支援火力 > 载具；C-02 资源规则：保留 ≥ 100 Manpower 作 Airhead 预算，Fuel ≥ 120 才呼叫重/中型载具，Munitions ≥ 350 且前线有聚集目标才用 Bombing，其余同理；C-03 能力时机（M3 才有能力，规则先写进策略表）；C-04 在活动线放 Attack/Defend 标记，Garrison Request 在前线适当位置；C-05 载具呼叫取决于队内是否有 Armor Crew 与 bot 数量；C-06 所有指令频率与真人相同（冷却、资源、全局锁）。**注意**：ARCH §16.1 写"规则式 5 s 级"，GD C-01 写"每 15 s 评估"——两者节奏不一致，按 GD 的 15 s 评估 + 5 s 执行队列实现，登记 PLAN_ISSUES。
+GD §20.4 要求：C-01 每 15 s 评估战况（活动线、人数优势、资源），优先级 占点 > 建造 Garrison > 支援火力 > 载具；C-02 资源规则：保留 ≥ 100 Manpower 作 Airhead 预算，Fuel ≥ 120 才呼叫重/中型载具，Munitions ≥ 350 且前线有聚集目标才用 Bombing，其余同理；C-03 能力时机（M3 才有能力，规则先写进策略表）；C-04 在活动线放 Attack/Defend 标记，Garrison Request 在前线适当位置；C-05 载具呼叫取决于队内是否有 Armor Crew 与 bot 数量；C-06 所有指令频率与真人相同（冷却、资源、全局锁）。**已裁定**：规则式指挥官评估节奏为 15 s（GD §20.4；ARCH §16.1 已由 5 s 改为 15 s）；LLM 指挥官为 60 s（R4）。执行队列粒度（5 s）仅为内部实现细节。
 
 ## 具体内容
 ### 要创建/修改的文件

@@ -5,11 +5,11 @@
 - 工作流：assets
 - 规模：M
 - 前置依赖：M2-047, M3-037, M3-038, M3-039
-- 素材需求：A-WPN-*; B-*; D-*; E-ACT-001; F-AMB-*；素材状态：real（仅限 OK 项），缺失保持静音
+- 素材需求：A-WPN-*; B-*; D-*; E-ACT-001; F-AMB-*; I-MUS-*; J-IR-002；素材状态：real（仅限 OK 项），缺失保持静音
 - 引用文档：ASSET_SHOPPING_LIST §4.4.6; ASSET_GAPS §3.3; ASSET_GAPS §3.5; ARCHITECTURE §11.8; ARCHITECTURE §12.2; ARCHITECTURE §12.7; ARCHITECTURE §11.4
 
 ## 背景
-M3-037/038/039 已用静音占位完成音频映射。本任务接入**已 `OK`** 的 M3 音频：重武器（A-WPN-*）、爆炸/地雷/炸药包（B-EXP-002/003）、炮击/航弹（B-ART-*、B-AIR-*、B-HVY-001）、载具/飞机（D-TNK-*、D-VEH-001、D-AIR-001）、Foley（E-ACT-001）、环境床（F-AMB-*）、配乐与混响脉冲响应（IR）。（INDEX 写"配乐/IR"，其需求 ID 前缀在 SHOP §4.4.6 现有表中未单列，执行时以 ASSET_SHOPPING_LIST 实际登记的 ID 为准，Grep 补全。）
+M3-037/038/039 已用静音占位完成音频映射。本任务接入**已 `OK`** 的 M3 音频：重武器（A-WPN-*）、爆炸/地雷/炸药包（B-EXP-002/003）、炮击/航弹（B-ART-*、B-AIR-*、B-HVY-001）、载具/飞机（D-TNK-*、D-VEH-001、D-AIR-001）、Foley（E-ACT-001）、环境床（F-AMB-*）、配乐与混响脉冲响应（IR）。（需求 ID 已对照 ASSET_SHOPPING_LIST 补全：配乐 = I-MUS-001/002，远距离炮声 IR = J-IR-002；J-IR-001 已在 M1-065 接入。）
 规则：
 - 编码（D-AUD，ARCH §12.7）：Opus（WebM 容器内的数据放入 `.fpak`）为主、AAC 兜底；客户端启动时用 `decodeAudioData` 对内置探测样本实测，能解 Opus 则取 Opus 包，否则取 AAC 包。码率：枪声近距层 96 kbps，其它 48–64 kbps，环境床 32 kbps。
 - 预算：首张地图音频总量 ≈ 18 MB（Medium）；High 加入变体至 ≈ 40 MB；短音（< 3 s）常驻为预解码 `AudioBuffer`，长音流式解码。

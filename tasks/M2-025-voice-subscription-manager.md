@@ -10,7 +10,7 @@
 
 ## 背景
 每个真人玩家的客户端以 `autoSubscribe=false` 连接 LiveKit，**订阅哪些轨道由对局服务器决定**（ARCH §14.2）。规则（GD §16.1 与 ARCH §14.1 频道表）：
-- 频道：`squad`（同小队 ≤ 6，无空间化，PTT/VOX）、`command`（Commander + 各 Officer 小队长，GD：Tank Commander 与 Recon 队长仅可听）、`crew`（同载具乘员 ≤ 5）、`prox`（任意玩家距离 ≤ 50 m，**含敌方**，空间化）、`all-dead`（可选）。敌方的 `squad/command/crew` **永不订阅**。同时收听上限 **8 路**。
+- 频道：`squad`（同小队 ≤ 6，无空间化，PTT/VOX）、`command`（总控裁定，GD §16.1：Commander + Officer + Spotter（侦察组长）+ Tank Commander，均可听可说）、`crew`（同载具乘员 ≤ 5）、`prox`（任意玩家距离 ≤ 50 m，**含敌方**，空间化）、`all-dead`（可选）。敌方的 `squad/command/crew` **永不订阅**。同时收听上限 **8 路**。
 - 每 **0.5 s（2 Hz）** 对每个真人 `i`：`candidates = squad ∪ (command if i 是队长/Commander) ∪ crew ∪ {j: dist(i,j) ≤ 50 m}`；优先级 `crew(1) > squad(2) > command(3) > prox 按距离升序(4)`；取前 8；**迟滞**：prox 进入 50 m、退出 60 m；集合变动持续 ≥ 1 个周期才下发；只发差分 `(add, remove)`。
 - 死亡玩家：停止发布 `prox`（把其 prox 轨从他人订阅集排除，`squad` 保留）；KIA 者可听 Squad 不可说；倒地者仅走 Proximity（−12 dB、低通，客户端处理）。
 - 每人每秒平均变化 ≈ 0.2 次，100 人 ≈ 20 次/s，批量合并为每 0.5 s 至多 1 次/玩家的 API 调用（≤ 200 次/s 上限；LiveKit 具体限速未核实）。

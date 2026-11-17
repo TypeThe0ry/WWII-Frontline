@@ -13,7 +13,7 @@
 - **C0 control**（双向 bidi stream #0，可靠有序）：`DeployRequest/DeployResult`、`SquadOp`、`Chat`、`MarkerPlace`、`Report`。部署流程（§7.3）：校验 → 通过则创建实体、`spawn_tick = now + 倒计时`、回 `DeployResult(ok, spawn_tick)`；拒绝回 `DeployResult(ok=false, reason)`；到 `spawn_tick` 创建角色并发初始关键帧快照与 `PlayerRoster` 增量。
 - **C4 reliable-events**（uni stream #1，可靠有序）：`Kill/Death/Revive/ScoreDelta/ObjectiveChange/SpawnPointState/PlayerRoster/Notice/MatchPhase`。丢了会造成状态永久错误的事件（击杀、重生确认、弹药补给、据点占领）必须走 C4；只影响一次表现的走 C2.events。
 - **WebSocket 兜底**：同一 `Message` 枚举（`[channel:u8][len:u16][payload]`）；C4 在 TCP 上天然可靠。
-- 速率限制（§15.1/§19.3）：聊天 2 条/s、10 条/10 s，重复内容检测；部署 1/s；举报 1/min、10/局；超限消息**丢弃 + 惩罚计数**。聊天：≤ 200 字符，NFKC 规范化、拒绝控制字符与双向覆盖字符（§19.1）；UI 层纯文本渲染。
+- 速率限制（§15.1/§19.3）：聊天每人每 8 s 最多 5 条（GD §16.2，已裁定）、重复内容检测；部署 1/s；举报 1/min、10/局；超限消息**丢弃 + 惩罚计数**。聊天：≤ 200 字符，NFKC 规范化、拒绝控制字符与双向覆盖字符（§19.1）；UI 层纯文本渲染。
 - 连接：每 IP 并发 ≤ 4；握手超时 5 s；缓冲 ≤ 64 KB（M0 已有）。
 
 ## 具体内容
@@ -53,7 +53,7 @@ pub fn sanitize_chat(raw:&str) -> Result<String, ChatReject>;
 - 客户端消费 C4/C0：M1-040/M1-056。
 
 ## 验收标准
-1. 速率超限消息被丢弃并计数：聊天 3 条/秒时第 3 条丢弃、10 s 内第 11 条丢弃、部署 2 次/秒第 2 次丢弃、举报 1/min 超限（单测 + `/metrics` 断言 `c0_rate_limited_total` 递增）。
+1. 速率超限消息被丢弃并计数：聊天 8 s 内第 6 条丢弃、部署 2 次/秒第 2 次丢弃、举报 1/min 超限（单测 + `/metrics` 断言 `c0_rate_limited_total` 递增）。
 2. **C4 事件丢包 5% 下仍全部送达**（headless，WT 路径 netem 5% 丢包 10 min，每秒 10 个 C4 事件；接收端序号校验无缺失、无乱序；WS 路径同样）。
 3. 聊天过滤：201 字符被拒、含 U+202E（RLO）/控制字符被拒、NFKC 全角转半角后入库（单测 ≥ 10 例）。
 4. 部署：合法请求回 `DeployResult(ok=true, spawn_tick)` 且 `spawn_tick` 与 `sim` 的 `ready_time` 一致（±1 tick）；≥ 10 种非法请求（满员/名额/封锁点等）回 `ok=false` 且 `reason` 码与 sim 错误一一对应（表驱动测试）。

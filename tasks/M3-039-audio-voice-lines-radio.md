@@ -14,7 +14,7 @@
 - 无线电滤波（ARCH §12.5）：小队/指挥频道不空间化，加"无线电"滤波 = 带通 300–3 400 Hz + 轻失真；近距离（prox）走 HRTF（refDistance 2、maxDistance 50、rolloff 1.5）且不加无线电滤波。
 - 车组频道不空间化，轻混响（ARCH §14.1）。
 - 复音与合并（ARCH §12.4）：同类声音 50 ms 内合并；人声事件同类 50 ms 内合并为一个（如多人同时被击倒的呻吟）。
-- 频道定义（GD §16.1）：Proximity 50 m；Squad；Command（Commander + Officer 说话；TC 与 Recon 队长仅听）；Vehicle；倒地者仅走 Proximity（−12 dB、低通）。
+- 频道定义（GD §16.1）：Proximity 50 m；Squad；Command（Commander + Officer + Spotter（侦察组长）+ Tank Commander 可听可说）；Vehicle；倒地者仅走 Proximity（−12 dB、低通）。
 - 缺失素材：静音占位 + 每 ID 每会话一条日志（ASSET_GAPS §3.3）。无线电噪声底噪不属于素材，由代码程序化生成（白噪声经带通 + 低增益 −42 dBFS）【待调参】。
 
 ## 具体内容

@@ -23,7 +23,7 @@
 | E3-8 | 缩比对局 200 局 × 两模式：Frontline 阵营胜率 40–60%、Assault 攻方胜率 35–65%；武器占比 0.5%–25% | M3-046/047 |
 | E3-9 | LLM 指挥官：默认关闭；60 s；成本记账一致、≤ 0.5 美元/局；回退 `llm_fallback_total`；0 次绕过校验 | M3-027 |
 | E3-10 | 150 ms RTT 载具命中率与 0 延迟差 ≤ 5% | M3-022 |
-| E3-11 | 车内 3 人互通不泄漏；Command 仅 Commander + Officer；8 路上限 | M3-040 |
+| E3-11 | 车内 3 人互通不泄漏；Command 成员 = Commander + Officer + Spotter（侦察组长）+ Tank Commander；8 路上限 | M3-040 |
 | E3-12 | en/zh-CN 键 100% 对齐；3 500 字覆盖；最长文本不溢出 | M3-053 |
 | E3-13 | loadtest/balance/e2e-visual 连续 3 晚成功（在本任务验收时用 `tools/ci/check_nightly_history.sh 3` 复核；M3-050 只要求配置完成且首次运行成功） | M3-050 |
 | E3-14 | 全部载具与武器 historical 100% 有出处或"未核实"；批 M3 对标回填并复测 | M3-051/052 |

@@ -24,7 +24,7 @@ UI_SPEC §4.15：聊天窗口（左下，战斗态淡出，展开显示 100 条�
 - `client/src/i18n/{en,zh-CN}/chat.json` —— `ui.chat.*`、`ui.voice.*`。
 ### 要实现的行为
 1. 发送：超长截断提示；速率超限时显示"发送过快"并保留输入文本；服务器 `ChatRejected` 的原因枚举（rate_limited、profanity、muted_by_admin、no_permission）都有 i18n 文案。
-2. 权限：Command 频道仅对 Commander + Officer 显示可发；All 默认关闭（设置项开启后才显示）；Dead/KIA 状态按 GAMEDESIGN §16.1 限制发言频道。
+2. 权限：Command 频道仅对 Commander + Officer + Spotter（侦察组长）+ Tank Commander 显示可发（GD §16.1）；All 默认关闭（设置项开启后才显示）；Dead/KIA 状态按 GAMEDESIGN §16.1 限制发言频道。
 3. 麦克风权限：首次使用 PTT 时请求（用户手势）；拒绝 → "麦克风被禁用"并降级只听；默认只有 PTT，不做自动检测（UI_SPEC §4.15.5）。
 4. 语音失败降级：LiveKit 连接失败/断开时状态点变红 + toast，文字聊天与游戏不受影响；重试按钮调用 M2-026 `reconnect()`。
 5. 系统消息（据点占领、建造、能力使用）走独立队列并可过滤。
