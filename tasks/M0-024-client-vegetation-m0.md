@@ -10,7 +10,7 @@
 
 ## 背景
 E0-5："单块地形 + 植被：RTX 3060 / 1080p ≥ 60 fps；Iris Xe / WebGL2 / 720p ≥ 30 fps（P50，叠层导出）"（ARCHITECTURE §20.1-5、§13.5）。植被是帧率压力的主要来源，必须在 M0 验证 GPU instancing + 八面体 impostor 的路线。
-规格（ARCHITECTURE §9.6）：每 64 m 区块一份实例表 `(x:u16, z:u16, species:u8, scale:u8, rot:u8)` = 6 B；每块上限：草 4 096（仅 R_near）、灌木 256、树 192。渲染：①草——GPU instancing，3 档距离 LOD：0–25 m 完整叠片、25–60 m 简化、> 60 m 淡出，风动在顶点着色器；②灌木/小树——网格 LOD0（≈ 300–800 tri）→ LOD1（≈ 120 tri）→ 八面体 impostor（> 80 m）；③树——LOD0（≈ 2–4 k tri，近 30 m）→ LOD1（≈ 800 tri，< 100 m）→ 八面体 impostor（12×12 视角，每视角 128²，atlas 1536²）；全部使用实例化 + `Thin Instances`，**按区块一个 draw call/物种/LOD**。M0 无真素材：几何、贴图全部**程序化占位**（圆锥/圆柱/交叉面片 + 纯色/程序化噪声），命名遵循 ASSET_GAPS §3（`PH_V-NAT-*`）。画质档参数（§13.1）：High 草 100%/45 m；M0 默认取 High 的比例，另给 Low 档（草 35%/20 m，树 impostor 近）用于 Iris Xe 测试。
+规格（ARCHITECTURE §9.6）：每 64 m 区块一份实例表 `(x:u16, z:u16, species:u8, scale:u8, rot:u8)` = 6 B；每块上限：草 4 096（仅 R_near）、灌木 256、树 192。渲染：①草——GPU instancing，3 档距离 LOD：0–25 m 完整叠片、25–60 m 简化、> 60 m 淡出，风动在顶点着色器；②灌木/小树——网格 LOD0（≈ 300–800 tri）→ LOD1（≈ 120 tri）→ 八面体 impostor（> 80 m）；③树——LOD0（≈ 2–4 k tri，近 30 m）→ LOD1（≈ 800 tri，< 100 m）→ 八面体 impostor（12×12 视角，每视角 128²，atlas 1536²）；全部使用实例化 + `Thin Instances`，**按区块一个 draw call/物种/LOD**。M0 无真素材：几何、贴图全部**程序化占位**（圆锥/圆柱/交叉面片 + 纯色/程序化噪声），命名遵循 ASSET_GAPS §3（树 `PH_V-NAT-002`，草/灌木 `PH_V-NAT-004`）。画质档参数（§13.1）：High 草 100%/45 m；M0 默认取 High 的比例，另给 Low 档（草 35%/20 m，树 impostor 近）用于 Iris Xe 测试。
 
 ## 具体内容
 ### 要创建/修改的文件
@@ -60,5 +60,5 @@ E0-5："单块地形 + 植被：RTX 3060 / 1080p ≥ 60 fps；Iris Xe / WebGL2 /
 
 ## 备注/已知风险
 - 参考机缺失是此任务最大阻碍：Iris Xe 级机器与 RTX 3060 见 NEEDS_HUMAN H-021；没有时只能给出本机数字并标 `partial`，**不得**用别的机器数字顶替。
-- 本任务的缺失素材需求 ID（回报用）：V-NAT-001…（树/灌木/草，具体 ID 以 ASSET_SHOPPING_LIST 为准）与 V-NAT-007（地表，CC0 可选）。
+- 本任务的缺失素材需求 ID（回报用）：V-NAT-002（乔木）、V-NAT-004（草/灌木）；地表 V-NAT-007（CC0）属 M0-023。占位材质分别命名 `PH_V-NAT-002`、`PH_V-NAT-004`。
 - impostor 烘焙若在 WebGL2 软件渲染环境中过慢，允许 CI 用 `?impostor=lowres`（64² 每视角）并只在参考机测满尺寸。
