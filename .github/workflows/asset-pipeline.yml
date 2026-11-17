@@ -36,6 +36,8 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
+      - name: ffmpeg (audio pipeline tests)
+        run: ffmpeg -version >/dev/null 2>&1 || (sudo apt-get update && sudo apt-get install -y ffmpeg)
       - run: pnpm install --frozen-lockfile --filter @frontline/asset-pipeline...
       - name: eslint
         run: pnpm -C tools/asset-pipeline lint

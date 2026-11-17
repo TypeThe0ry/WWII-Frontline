@@ -524,3 +524,21 @@
 - **受影响任务**：M1-005（`packs.json` → manifest）、M1-006（读取器与解码 Worker）、M1-004（音频条目 `kind:'audio'`、codec 3）、M1-045（蒙皮网格布局）。
 - **临时处理**：已按上实现。
 - **裁决（Fable 填写）**：
+
+### PI-035 M1-004：音频条目命名（`@opus`/`@aac`）、Opus 码率模式、短剪辑响度回退与条目头
+
+- **状态**：open
+- **类别**：素材/管线（格式）
+- **提出者 / 日期**：M1-004 / 2026-11-17
+- **问题 / 做法**（请 Fable 确认或改写）：
+  1. **命名**：任务卡写 `…#opus` / `…#aac`；`.fpak` 逻辑 ID 的变体分隔符只允许 `@`（PI-034），所以用 `snd_…@opus` / `snd_…@aac`。M1-006/M1-062 按此取包；PROBE.md 已固定。
+  2. **Opus 用 CBR**（`-vbr off`）：1 s 单声道 64 kbps 正弦用 VBR 得 10.6 KB（> 9 KB 验收线），CBR 得 9.0 KB。代价是复杂音频的质量/体积折中不如 VBR；若需要可对 `ambience` 单独改回 VBR（`encode.ts` 一处）。
+  3. **条目不是裸 WebM/MP4**：音频条目 = 32 字节自有头 + 容器字节（`decodeAudioData` 需要完整容器）。头里放 `preload`、`loop`、时长等；条目因此不以 EBML/ftyp 魔数开头，但容器内容仍可被提取后识别，这只是"非独立文件分发"，不是保护。
+  4. **响度**：目标 LUFS 表 near -18 / ambience -24 / ui -20 取自任务卡；其余类别（gun_mid -20、gun_far -22、foley -20、music -20、voice -18）为【待调参】的暂定值。True Peak 目标 -1.5 dBTP（验收 ≤ -1）。ffmpeg `loudnorm` 对短于约 400 ms 的剪辑得不到积分响度（-inf）：回退为峰值归一到 -3 dBFS，报告里 `loudness_measured:false`、`integrated_lufs:-70`。
+  5. **AAC 容器**：MP4（`-movflags +faststart`，`-map_metadata -1`，bitexact），不是裸 ADTS，以便 Safari 的 `decodeAudioData`；解码侧 AAC 有编码器延迟/补零，往返时长判据只对 Opus 取 ±20 ms。
+  6. **fixtures**：任务卡写 `fixtures/sine_1s.wav`；测试里用自写的 WAV 写入器现场生成（含注入 `bext`/`iXML` 的版本），不新增二进制 fixture。
+  7. **依赖**：用系统 `ffmpeg`（GitHub `ubuntu-latest` 自带；本机 6.1.1），不新增 npm 依赖。许可证见 LICENSES §5 新增行（未核实，不随游戏分发）。
+- **证据**：`tools/asset-pipeline/src/audio/`、`src/fpak/entry-audio.ts`、`PROBE.md`；`pnpm -C tools/asset-pipeline test` 134 项、`test:e2e` 9 项通过。
+- **受影响任务**：M1-005（体积门禁读 `audio-report.json`）、M1-006/M1-062（探测与取包）、M1-065（真实音频接入）。
+- **临时处理**：已按上实现。
+- **裁决（Fable 填写）**：

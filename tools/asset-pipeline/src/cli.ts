@@ -1,5 +1,5 @@
 import { mkdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 import { ExitCode, GateError } from './errors.ts';
 import { ingest } from './ingest.ts';
@@ -10,6 +10,9 @@ import { normalize, type OriginMode } from './normalize.ts';
 import { loadAssetClass } from './asset-class.ts';
 import { processMesh } from './process.ts';
 import { pack } from './pack.ts';
+import { packAudio, writeProbe, type AudioItem } from './audio/index.ts';
+import { publishPath } from './fpak/writer.ts';
+import { loadLedger as loadLedgerForAudio } from './ledger.ts';
 import { assertNoStandalone } from './fpak/standalone.ts';
 import { readStats, sizeRatio, statsPath } from './stats.ts';
 import { buildReport, formatReport, parseShoppingList } from './report.ts';
@@ -20,6 +23,7 @@ const USAGE = `asset-pipeline <command> [options]
   normalize         unit/axes/origin/triangulate/merge one ingested glTF -> work/{asset_id}/normalized.gltf
   process            LOD chains, KTX2 textures, mesh compression, collision -> work/{asset_id}/lodN.glb, stats.json (M1-002)
   pack              work/ intermediates -> assets/processed/a/xx/yyyy.fpak + packs.json (M1-003)
+  audio-pack        audio items JSON -> loudnorm + Opus/AAC -> .fpak (@opus/@aac entries), work/audio-report.json, probe.json (M1-004)
   assert-no-standalone  fail when the output directory holds .glb/.ktx2/.ogg/... files
   check-size-ratio  LOD0 bytes / source bytes from stats.json (fails above --max, default 0.25)
   report            per requirement ID real/placeholder/missing (ASSET_GAPS 3.4)
@@ -31,6 +35,7 @@ ingest:  --incoming assets/incoming
 normalize: --asset AST-... --id <logical_id> [--input rel/in/raw] [--unit-scale m] [--up Y|Z] [--forward +Z|-Y|...] [--origin bottom-center|center|none]
 process: --asset AST-... --id <logical_id> --class asset-class.json [--no-collision]
 pack:    [--assets AST-a,AST-b] [--out assets/processed] [--max-bytes 16777216]
+audio-pack: --items items.json [--out assets/processed]   items: [{logical_id, src, cls, loop?, loop_start_ms?, loop_end_ms?, asset_id?}], src relative to --root
 assert-no-standalone: [--out assets/processed]
 check-size-ratio: --asset AST-... [--max 0.25] [--suffix _fp]
 report:  [--requirements assets/requirements.json] [--manifest draft.json] [--placeholders data/placeholders] [--milestone M1] [--out report.json] [--gaps] [--strict]
@@ -64,6 +69,7 @@ export async function main(argv: string[], out: (s: string) => void = console.lo
       out: { type: 'string' },
       'shopping-list': { type: 'string' },
       assets: { type: 'string' },
+      items: { type: 'string' },
       'max-bytes': { type: 'string' },
       class: { type: 'string' },
       max: { type: 'string' },
@@ -121,6 +127,19 @@ export async function main(argv: string[], out: (s: string) => void = console.lo
         });
         for (const p of r.packs) out(`pack: ${p.path} ${p.bytes} B, ${p.entries.length} entries (${p.group})`);
         out(`pack: ${r.packs.length} pack(s); index ${r.indexFile}`);
+        return ExitCode.Ok;
+      }
+      case 'audio-pack': {
+        if (!v.items) throw new GateError(ExitCode.Usage, 'audio-pack needs --items');
+        const items = (JSON.parse(readFileSync(resolve(root, v.items), 'utf8')) as AudioItem[]).map((i) => ({ ...i, src: resolve(root, i.src) }));
+        const outDir = resolve(root, v.out ?? 'assets/processed');
+        const res = await packAudio(items, { ledger: loadLedgerForAudio(ledger), reportPath: join(work, 'audio-report.json') });
+        const dest = join(outDir, publishPath(res.build.sha256).slice(1));
+        mkdirSync(dirname(dest), { recursive: true });
+        writeFileSync(dest, res.build.bytes);
+        await writeProbe(join(outDir, 'probe.json'));
+        out(`audio-pack: ${publishPath(res.build.sha256)} ${res.build.bytes.length} B, ${res.report.items.length} item(s) (opus ${res.report.total_opus_bytes} B, aac ${res.report.total_aac_bytes} B)`);
+        for (const r of res.report.items) out(`  ${r.logical_id}: ${r.integrated_lufs.toFixed(1)} LUFS (target ${r.target_lufs}), ${r.true_peak_dbtp.toFixed(1)} dBTP, ${r.duration_s} s${r.preload ? ' preload' : ''}`);
         return ExitCode.Ok;
       }
       case 'assert-no-standalone': {
