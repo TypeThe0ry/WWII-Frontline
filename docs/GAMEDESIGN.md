@@ -1786,7 +1786,7 @@ hull_hp -= dmg_pen × 0.5 + 模块伤害合计 × 0.2
 
 ### 15.2 阵地构建与资源
 
-- 阵地**只能建在地图预设的 Artillery Site**（每队 2–3 个，位于己方后方）。Engineer 建造：350 Supplies、45 s（§12.4）。
+- 榴弹炮是 **HQ 附近地图预设的固定阵地**（Artillery Site，每队 2–3 个，位于己方后方；**开局即存在，无需建造**，R7）；由玩家操作。**Engineer 不建造榴弹炮**，也无 Supplies 建造成本。阵地被毁后的重置规则（冷却/是否原地复原）【待调参】，不新增建造项。
 - **炮弹库存**：每门炮初始 24 HE + 8 烟雾；通过 **Shell Stock**（§12.4）补充：100 Supplies → 8 HE 或 4 烟雾；库存上限 48 HE + 16 烟雾。库存对炮手显示在 HUD。
 - 阵地在被敌方**占领区**内的 Overrun：敌人 15 m 内持续 20 s 且己方 15 m 内无人，则炮被摧毁。
 
@@ -1858,7 +1858,7 @@ Registration（校射）：若一发炮弹落点距目标 ≤ 40 m 且被友方 
 - 炮手/装填手被杀则炮停用，需要重新补人；炮本身 HP 1500，炸药包可一次摧毁（2500）。
 - **友军误伤**：爆炸 ×0.7。
 
-### 15.7 反坦克炮（Engineer 建造，AT/Engineer 操作）
+### 15.7 反坦克炮（Anti-Tank 建造，AT/Engineer 操作）
 
 | 项 | US 57 mm M1 | GER 7.5 cm Pak 40 |
 |---|---|---|
@@ -1874,7 +1874,7 @@ Registration（校射）：若一发炮弹落点距目标 ≤ 40 m 且被友方 
 | 水平射界 | 出厂方向 ±40°；Engineer 可在 3 s 内重新定向（转动尾架） | 同 |
 | 俯仰 | −5°/+15° | −5°/+25° |
 | 数量上限 | 全队 3 门；每 Sector ≤ 1 | 同 |
-| 建造 | Engineer 200 Supplies、20 s | 同 |
+| 建造 | **Anti-Tank 兵种** 200 Supplies、20 s（R7） | 同 |
 | 补充弹药 | Support/Engineer 靠近放置 Ammo Crate，或 Supplies 直接补（100 Supplies → 8 AP） | 同 |
 
 - 操作：与载具炮手类似（光学瞄准，AP/HE 切换需 1.0 s 重新装填）；反坦克炮无机枪。
@@ -1927,7 +1927,7 @@ Registration（校射）：若一发炮弹落点距目标 ≤ 40 m 且被友方 
 | Fire Request（请求炮火） | Officer、Commander | 全队，Commander 与炮手最显眼 | 90 s | Officer 同时 ≤ 1，Commander ≤ 3 |
 | Fire Mission（炮兵任务） | Commander（指派给指定炮位）；或 Officer 的 Fire Request 被 Commander 采纳 | 炮手、装填手、观察者 | 90 s | 每门炮 1 个 |
 | Rally Marker | Commander（Rally 能力） | 全队 | 60 s | 1 个 |
-| Garrison Request（请建 Garrison） | Officer、Commander | Engineer 与全队 | 120 s | 同时 ≤ 3 |
+| Garrison Request（请建 Garrison） | Officer、Commander | Officer、Spotter（Garrison 放置者）与全队 | 120 s | 同时 ≤ 3 |
 | Supply Request | Engineer、Officer、Commander | Support 与全队 | 120 s | ≤ 3 |
 
 - **权限校验在服务器**；客户端仅做 UI 提示。
@@ -1972,7 +1972,7 @@ Registration（校射）：若一发炮弹落点距目标 ≤ 40 m 且被友方 
 | 狙击镜反光（Scope Glint） | Sniper 开镜正对敌人 ±25° 范围且距离 ≤ 400 m 时，每 0.5 s 出现短暂光点（视觉） | 开镜期间 | 在其前方 400 m 内、可见该 Sniper 的敌人 |
 | 被击毙 | 击杀回放（Kill Cam）：不做 | — | — |
 
-- **敌人信息防作弊**：服务器不向客户端下发其"潜在可见集"以外的敌方精确位置。潜在可见集 = 距离 ≤ 350 m 且至少有一次粗略视线检测成功（服务器每秒 2 次射线采样）的敌人，另有 3 s 的缓冲；远于 350 m 的敌人仅在被标记/侦察时才以 1 Hz 低精度更新。【待调参】（具体见 ARCHITECTURE.md 的 AOI 设计）
+- **敌人信息防作弊（R3，与 ARCHITECTURE §6/§15 统一）**：服务器仅在敌方实体满足 **距离 ≤ 400 m 且（位于该玩家视锥 + 30° 余量内，或距离 ≤ 96 m）** 时才向客户端下发其精确状态；其余敌人一律不下发精确位置。被友军标记（§17.1）或侦察（§13.7）暴露的敌人**只下发地图图标**（1 Hz，位置量化到 5 m）。友军：最远 400 m 内按优先级下发，最低 2 Hz；更远的友军只走团队通道图标（1 Hz）。【待调参】（具体见 ARCHITECTURE.md 的 AOI 设计）
 
 ### 17.3 Sniper 隐蔽
 
@@ -1986,7 +1986,7 @@ Registration（校射）：若一发炮弹落点距目标 ≤ 40 m 且被友方 
 |---|---|---|
 | 同小队成员 | 同小队全员（含图标、角色、昵称、血量条） | 10 Hz（高优先级） |
 | 其他小队的小队长 | 全队 | 1 Hz，只显示小队长图标与小队编号 |
-| 其他友军步兵 | 仅在 60 m 内可见（近场友军图标）；Commander 看到小队成员 1 Hz 的点 | 1 Hz |
+| 其他友军步兵 | 仅在 60 m 内可见（近场友军图标）；Commander 看到小队成员 1 Hz 的点。网络层（R3）：400 m 内友军实体状态最低 2 Hz 下发，更远的友军只走团队通道图标 1 Hz；此处仅规定 UI 显示范围 | 1 Hz |
 | 友军载具 | 全队（图标与类型、乘员数） | 2 Hz |
 | 友军重生点（Garrison/Outpost） | 全队可见 Garrison；Outpost 仅小队长+Commander；OP 仅 Commander+Recon | 事件驱动 |
 | 倒地的友军 | 小队长、Medic（距离 ≤ 80 m）；其余人看不到 | 1 Hz |
@@ -2044,8 +2044,9 @@ Registration（校射）：若一发炮弹落点距目标 ≤ 40 m 且被友方 
 | Medic 救起队友 | +20 |
 | 包扎友军（含 Medic 医疗包） | 每 10 HP 治疗 +1，上限每次 +10 |
 | 补给弹药（Support/Medic/任意从 Ammo Crate 补给他人） | 每次 +3（Support 放置的 Ammo Crate 被使用：放置者获得，上限每分钟 +30） |
-| 建造（Engineer） | 每消耗 10 Supplies +1；完成 Garrison +20；完成 Resource Node +30 |
-| Garrison 出生 | 建造者每有 1 名队友出生 +1（每分钟上限 +15） |
+| 建造（Engineer） | 每消耗 10 Supplies +1；完成 Resource Node +30 |
+| 放置 Garrison（Officer/Spotter/Commander） | 每消耗 10 Supplies +1；完成 Garrison +20 |
+| Garrison 出生 | 放置者每有 1 名队友出生 +1（每分钟上限 +15） |
 | Outpost 出生 | Officer 每有 1 次队友出生 +1（每分钟上限 +10） |
 | 补给箱送达并被消耗 ≥ 50% | Support +10/箱 |
 | 修理载具 | 每 30 HP +1；修复模块 +5 |
@@ -2066,7 +2067,7 @@ Registration（校射）：若一发炮弹落点距目标 ≤ 40 m 且被友方 
 
 - **Match XP** = 本局总分 × 1.0 + 胜负奖励（胜 +10%，负 +5%，平 +7%，需在局内 ≥ 5 min）+ 完整参与奖励（≥ 70% 对局时间）+100。
 - **账号等级（1–100）**：累计 XP 需求 `XP_acc(n) = 400 × (n − 1)^1.5`（L10 ≈ 10800、L50 ≈ 137000、L100 ≈ 394000）【待调参】。账号等级只用于显示/个性化解锁（无付费，A1）。
-- **兵种等级（1–10）**：见 §5.2；Role XP = 在该兵种存活期间获得的分数，本职行为 ×1.5（Medic 救起/包扎、Support 补给与搬运、Engineer 建造与修理、Spotter 标记助攻、Sniper 击杀、Officer 的 Outpost 出生与小队行动、Commander 能力）。
+- **兵种等级（1–10）**：见 §5.2；Role XP = 在该兵种存活期间获得的分数，本职行为 ×1.5（Medic 救起/包扎、Support 补给与搬运、Engineer 建造与修理、Spotter 标记助攻、Sniper 击杀、Officer 的 Outpost/Garrison 出生与小队行动、Commander 能力）。
 - Role XP 记录进入局间存档（账号/匿名游客）。游客的进度保存在 gateway（以匿名 ID）与本地 token；未登录丢失 token 则丢失进度（诚实提示）。
 
 ### 18.3 局内计分板（Tab）
@@ -2190,7 +2191,7 @@ Registration（校射）：若一发炮弹落点距目标 ≤ 40 m 且被友方 
 | Commander bot | 每队 1 个（若无真人 Commander）：资源与能力调度、发布 Command 标记、选择载具 |
 | 小队长 bot（Officer/Armor/Recon 队长） | 选择当前目标、给队员下达移动/攻击/防守命令、放置 Outpost、与 Commander 交互 |
 | 士兵 bot | 战术行动：移动、战斗、使用兵种能力 |
-| 可选 LLM 指挥官 | 总纲规定：每队 1 个、每 45 s 决策一次、输入为结构化战况 JSON、输出为**受限动作枚举**（动作集合必须是 §13 能力与 §16.3 标记的子集），超预算回退规则式指挥官 |
+| 可选 LLM 指挥官 | 总纲规定：每队 1 个、每 **60 s** 决策一次（R4；总纲原为 45 s，已改）、输入为结构化战况 JSON、输出为**受限动作枚举**（动作集合必须是 §13 能力与 §16.3 标记的子集），每局成本上限 0.5 美元（价格未核实，实现前按官方价格重算），超预算回退规则式指挥官 |
 
 ### 20.2 填充规则
 
@@ -2210,10 +2211,10 @@ Registration（校射）：若一发炮弹落点距目标 ≤ 40 m 且被友方 
 | B-04 | 战斗 | 视线内目标选择（威胁评分：距离、武器、是否瞄准自己）；按武器射程选择姿态；使用掩体；开火散布与人类同规则（受压制/后坐影响）；手雷/烟雾使用规则（进入 ≤ 25 m 掩体后的目标/封锁视线） |
 | B-05 | 感知 | **无透视**：只能基于视觉（视锥、LoS、可见度 §9.5）与听觉（枪声方向）；反应时间按难度（§20.6） |
 | B-06 | 小队跟随 | 跟随小队长、保持队形（线形/楔形），响应 Squad Order（Move/Attack/Defend/Hold） |
-| B-07 | 小队长 | 选择目标据点、下达 Order、在条件满足（≥ 2 队员在身边）时放置 Outpost、倒地时被替代 |
+| B-07 | 小队长 | 选择目标据点、下达 Order、在条件满足（≥ 2 队员在身边）时放置 Outpost、在前线供给充足时放置 Garrison（Officer/Spotter bot）、倒地时被替代 |
 | B-08 | Medic | 搜索倒地友军，使用烟雾遮蔽后救起；自身安全评估（周围 30 m 敌人数量）；给受伤队友包扎 |
-| B-09 | Support | 搬运 Supply Crate 到 Engineer 工地或 Garrison 缺口；放置 Ammo Crate 于战斗点附近；响应 Need Ammo/Supply |
-| B-10 | Engineer | 在 Commander/小队长 Garrison Request 或策略点建造 Garrison/节点/障碍/铁丝网/AT 炮；修理载具；布设地雷（遵守 §12.4 限额与位置限制）；响应 Need Engineer |
+| B-09 | Support | 搬运 Supply Crate 到 Engineer 工地或 Garrison 放置点附近；放置 Ammo Crate 于战斗点附近；响应 Need Ammo/Supply |
+| B-10 | Engineer | 响应资源节点/工事请求或策略点建造节点/障碍/铁丝网（不建 Garrison；AT 炮由 Anti-Tank bot 建造）；修理载具；布设地雷（遵守 §12.4 限额与位置限制）；响应 Need Engineer |
 | B-11 | Anti-Tank | 发现敌方装甲后接近至有效射程内的侧后方，射击并转移；操作 AT 炮；保持与小队联动 |
 | B-12 | Machine Gunner/AR | 选择有射界的位置，趴下部署两脚架，覆盖通道；压制敌 |
 | B-13 | Sniper/Spotter | 前往 OP 位置并建 OP；Spotter 对视野内敌人标记；Sniper 长距离射击并转移（射击 2 次后换位）|
@@ -2285,7 +2286,7 @@ Registration（校射）：若一发炮弹落点距目标 ≤ 40 m 且被友方 
 | T-22 | §7.2 | 流血/绷带/救起时间/倒地血量 | 表 | 待调参 + 待测 → REFERENCE_MEASUREMENTS §medical | 黑盒测量 |
 | T-23 | §8 | 压制权重/衰减/效果 | 表 | 待调参 + 待测 → REFERENCE_MEASUREMENTS §suppression | 黑盒测量 |
 | T-24 | §9.1 | 移动速度表、体力、姿态时间 | 表 | 待调参 + 待测 → REFERENCE_MEASUREMENTS §movement | 黑盒测量 |
-| T-25 | §10.2 | Garrison 成本/时间/HP/间距/封锁/Overrun | 150/300；20 s；1200；150 m；30 m；25 s | 待调参 | 内部试玩 |
+| T-25 | §10.2 | Garrison 成本/时间/HP/间距/封锁/Overrun（放置者 Officer/Spotter/Commander） | 50/100；20 s；1200；150 m；30 m；25 s | 待调参 + 待测 → REFERENCE_MEASUREMENTS §economy | 黑盒测量 + 内部试玩 |
 | T-26 | §10.3 | Outpost 参数 | 表 | 待调参 | 内部试玩 |
 | T-27 | §10.4 | Airhead 参数 | 表 | 待调参 | 内部试玩 |
 | T-28 | §10.6 | 重生计时/波次 | HQ 5 s+15 s 波；Garrison 8 s | 待调参 + 待测 → REFERENCE_MEASUREMENTS §respawn | 黑盒测量 |
@@ -2303,9 +2304,9 @@ Registration（校射）：若一发炮弹落点距目标 ≤ 40 m 且被友方 
 | T-40 | §14.6 | 载具成本/上限/冷却/时间门槛 | 表 | 待调参 | balance-sim |
 | T-41 | §14.8 | 维修速度 | 表 | 待调参 | 内部试玩 |
 | T-42 | §15 | 火炮压缩射程、装药、散布、循环 | 表 | 待调参 + 待测 → REFERENCE_MEASUREMENTS §artillery | 黑盒测量 |
-| T-43 | §15.7 | AT 炮参数 | 表 | 待调参 | 内部试玩 |
+| T-43 | §15.7 | AT 炮参数（Anti-Tank 兵种建造） | 表 | 待调参 | 内部试玩 |
 | T-44 | §16.1 | Command 频道谁可说话 | Officer+Commander；TC/Recon 仅听 | 待调参 | 内部试玩 |
-| T-45 | §17.2 | 潜在可见集半径 350 m / 炮口闪光误差 | 表 | 待调参 | 与 ARCHITECTURE AOI 联调 |
+| T-45 | §17.2 | 敌方精确下发：400 m 且（视锥+30° 或 ≤ 96 m）；标记敌人图标 1 Hz/5 m；炮口闪光误差 | 表 | 待调参 | 与 ARCHITECTURE AOI 联调 |
 | T-46 | §18.1 | 得分表 | 表 | 待调参 + 待测 → REFERENCE_MEASUREMENTS §scoring | 黑盒测量 |
 | T-47 | §18.2 | 等级曲线 | `400×(n−1)^1.5` | 待调参 | 运营数据 |
 | T-48 | §19.1 | 自动平衡阈值 | 差 ≥ 4 持续 90 s | 待调参 | 运营数据 |
@@ -2314,6 +2315,8 @@ Registration（校射）：若一发炮弹落点距目标 ≤ 40 m 且被友方 
 | T-51 | §20.6 | Bot 难度参数 | 表 | 待调参 | balance-sim |
 | T-52 | §5 | 兵种 loadout 解锁等级 | 表 | 待调参 | 运营数据 |
 | T-53 | §4.4 | 兵种名额与解锁人数 | 表 | 待调参 | 内部试玩 |
+| T-54 | §4.1 | 编制上限：装甲车组数/队、侦察组数/队 | 4 / 2 | 待调参 | 内部试玩 |
+| T-55 | §0.4 / R8 | 史实参数（武器/载具）复核 | 全部 `initial` | 史实复核 | 按 REFERENCE_MEASUREMENTS §6 来源逐项复核 `/data` |
 
 ---
 

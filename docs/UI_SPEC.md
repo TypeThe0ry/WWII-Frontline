@@ -169,6 +169,7 @@ CSS 变量前缀 `--pl-`（Plotline）。
 
 要点：
 - Noto Sans SC 全量文件很大（量级数 MB，未核实具体字节数）。必须：①子集化到"GB2312 一级二级 + 游戏词表 + 常用标点"（词表由 i18n 文件自动抽取字符集，构建期生成）；②按 unicode-range 分 ≥ 4 片；③首屏（启动页）只加载启动页词表那一片；④进入主菜单前总字体预算 ≤ 400 KB（br 后）【待调参】。
+- **字体许可证（R10）**：上表字体的许可证均未核实，须在 **M0 任务中逐一核实**（许可证文本、可网页嵌入/子集化的条款、当前版本）后登记 `LICENSES.md`，未登记不得入库（见附录 B-1）。
 - 混排：CSS `font-family: "Barlow Semi Condensed", "Noto Sans SC", sans-serif`（标题）；`"IBM Plex Sans", "Noto Sans SC", sans-serif`（正文）。中文环境下不使用字间距 `letter-spacing` 大写技巧；`text-transform: uppercase` 对中文无效，不得依赖它做层级。
 - 字号阶梯（px，基准 1080p；实际 = 值 × `--pl-ui-scale`，见 §6）：
 
@@ -780,7 +781,7 @@ stateDiagram-v2
 | │ A B C D E F G H I J                               │ │ [+ 创建小队]             │ |
 | │1 · · ┌┐ · · · · · ·                               │ │ ▌Able     步兵 5/6  🔒?   │ |
 | │2 · ◆ │◇│ · ▣ · · ·       ▣=据点                  │ │  Baker    步兵 6/6  🔒    │ |
-| │3 · · └┘ · · ◈ ·  ·       ◈=Garrison             │ │  Charlie  装甲 2/3        │ |
+| │3 · · └┘ · · ◈ ·  ·       ◈=Garrison             │ │  Charlie  装甲 2/3（≤3）  │ |
 | │4 ... (战线着色:蓝/橙/灰)  ⬡=Outpost ▽=Airhead      │ │  ──── 无小队(自由) ────   │ |
 | │                                                   │ │  已选: Able               │ |
 | │  [已选重生点: Garrison-03 (可用)  距前线 180 m]   │ │ ┌ 兵种 ───────────────┐ │ |
@@ -843,7 +844,7 @@ stateDiagram-v2
 | 状态 | 表现 |
 |---|---|
 | 无可用重生点 | 地图中心提示"正在重新部署网络…"，自动选中 HQ；若 HQ 也不可用（极少，如阶段间）显示等待 |
-| 无小队 | 小队区显示"还没有小队。创建一个或以自由兵身份部署"；自由兵只能在 HQ/Garrison 部署 |
+| 无小队 | 小队区显示"还没有小队。创建一个或以自由兵身份部署"；自由兵（无小队）功能受限，只能选 Rifleman，并只能在 HQ/据点重生点部署，不能使用 Garrison/Outpost（GAMEDESIGN §2.5、R2） |
 | 兵种全满 | 兵种条显示"名额已满"，推荐"自由兵种" |
 | 部署被拒 | 底部红线条（danger）+ 原因 + 重选 |
 | 网络抖动 | 部署按钮显示"连接不稳"，不允许发送（防止重复请求） |
@@ -1109,7 +1110,7 @@ stateDiagram-v2
 |---|---|---|---|
 | Ping 轮盘 | 按住 `Mouse3`（中键）≥ 180 ms；短按=Attention | 所有 | Attention / Enemy Infantry / Enemy Vehicle / Enemy Structure / Request Medic / Request Ammo / Request Engineer / Cancel |
 | 语音快捷短语轮盘 | 按住 `T` | 所有（语音关闭时仍可用文字短语） | Yes / No / Thanks / Need Help / Moving / Covering / Reloading / Sorry |
-| 建造轮盘 | 按住 `Y`（需装备工具/可建造状态） | Engineer / Officer / Support（按权限显示不同扇区） | 防御工事 / 补给箱 / 障碍 / Garrison* / Outpost* / 取消（*仅 Officer） |
+| 建造轮盘 | 按住 `Y`（需装备工具/可建造状态） | Engineer / Officer / Spotter / Commander / Support / Anti-Tank（按权限显示不同扇区） | 防御工事（Engineer）/ 补给箱（Support）/ 障碍（Engineer）/ AT 炮阵地（仅 Anti-Tank）/ Garrison*（仅 Officer、Spotter、Commander；**不是 Engineer**，R1）/ Outpost*（仅 Officer）/ 取消 |
 | 指挥官快捷 | 按住 `K` | Commander | 打开指挥层 / 常用能力 1–4 / Rally / 取消 |
 
 #### 4.8.2 信息元素
@@ -1348,7 +1349,7 @@ stateDiagram-v2
 
 ### 4.12 小队长 / Officer 工具
 
-**用途：** 放置 Outpost/Garrison、下达小队命令、管理小队（锁定、踢人、改名/类型）。
+**用途：** 放置 Outpost/Garrison、下达小队命令、管理小队（锁定、踢人、改名/类型）。**放置者规则（R1）**：Garrison 可由 Officer、Spotter、Commander 放置（Spotter/Commander 复用同一放置工具，仅无小队管理部分）；Outpost 仅 Officer；OP 仅 Spotter；**Engineer 不放置 Garrison**（只建资源节点与防御工事）。
 
 **设计理由：** Officer 的核心动作是"在世界里点一下"。放置采用**虚影预览 + 合法性色编码**（类似建造，复用 §4.13 的预览组件）；命令走轮盘与地图；小队管理走 `U` 小面板（解锁态）。
 
@@ -1358,7 +1359,7 @@ stateDiagram-v2
 |---|---|---|---|
 | 当前小队面板（成员、状态、Officer 转交、锁定开关、类型） | `EVT` | 1 Hz | `U` 打开；点击成员→踢/提升/静音 |
 | Outpost/Garrison 放置工具（虚影、合法性：距敌/距己方据点/与其他重生点最小间距/地形合法） | `SNAP`+`data` | 每帧 | 左键放置，右键取消 |
-| 放置资源/冷却显示（Garrison 数量上限、Outpost 冷却） | `EVT` | 1 Hz | — |
+| 放置资源/冷却显示（Garrison 数量上限、Outpost 冷却；Garrison 的 Supplies 消耗：己方/中立区 50、敌方区 100【待调参】，并显示附近可用 Supplies 余量） | `EVT` | 1 Hz | — |
 | 合法性文案（"离敌军过近 / 地面不平 / 附近已有重生点 / 超过数量上限 / 在禁建区"） | LOCAL | 每帧 | — |
 | 命令轮盘入口 | — | — | 见 §4.8（Officer 的 Ping 轮盘多出 Order 扇区） |
 | 命令历史与活动命令 | `EVT` | 事件 | 点击撤销 |
@@ -1401,7 +1402,7 @@ stateDiagram-v2
 
 **用途：** 选择蓝图、放置、显示进度、合法性与资源消耗。
 
-**设计理由：** 建造是持续过程：放置（虚影）→ 施工（进度环）→ 完成。UI 把"放置合法性"和"进度"放在目标物旁（世界内标签）而不是 HUD 角落，保证视线不离开工地；总资源（Munitions 补给点）在底部居中显示。
+**设计理由：** 建造是持续过程：放置（虚影）→ 施工（进度环）→ 完成。UI 把"放置合法性"和"进度"放在目标物旁（世界内标签）而不是 HUD 角落，保证视线不离开工地；附近可用 **Supplies**（建造货币，补给箱承载）在底部居中显示；Supplies 与指挥官资源池 Manpower/Munitions/Fuel 是两套独立系统（R6），此处不得与 Munitions 混用。
 
 #### 4.13.1 信息元素
 
@@ -1410,7 +1411,7 @@ stateDiagram-v2
 | 建造轮盘（防御工事、补给箱、障碍、反坦克物…按兵种权限） | `data/build` | 呼出时 | `Y` 按住 |
 | 蓝图虚影 + 合法性色（蓝=合法 / 斜纹+warn=不合法 / 灰=资源不足） | `SNAP`+LOCAL | 每帧 | 滚轮/`Q E` 旋转；左键放置 |
 | 合法性原因文案 | LOCAL | 每帧 | — |
-| 资源消耗与剩余（当前持有 build points / 来源补给点） | `SNAP`/`EVT` | 事件 | — |
+| 资源消耗与剩余（附近可用 Supplies / 来源补给箱与车载补给，R6） | `SNAP`/`EVT` | 事件 | — |
 | 世界内进度环与剩余时间；参与施工人数（多人加速） | `EVT` | 4 Hz | 按住 `F`/左键施工 |
 | 可拆除/升级提示 | `SNAP` | 事件 | 长按 `F` 拆除 |
 | 完成/被摧毁事件播报 | `EVT` | 事件 | — |
@@ -1436,12 +1437,12 @@ stateDiagram-v2
         ╔══ 沙袋工事 ══╗   进度 ◔ 62%   2 人施工
         ║ 虚影/施工体  ║   剩余 8 s
         ╚═════════════╝
-                   [按住 F 施工]        建造点 40 / 100
+                   [按住 F 施工]        Supplies 40 / 100
 ```
 
 #### 4.13.4 空/错误
 
-- 无建造点：轮盘扇区灰置"需要补给"；靠近补给箱/资源点时提示。
+- 附近 Supplies 不足：轮盘扇区灰置"需要补给"；靠近补给箱/资源点时提示。
 - 不合法位置：虚影整体变斜纹，原因置于虚影上方一行。
 
 **i18n 前缀：** `ui.build.*`
@@ -1501,7 +1502,7 @@ stateDiagram-v2
 
 #### 4.14.4 火炮操作界面
 
-**用途：** 炮兵（Support/Officer 配属的火炮）按观察手的目标校准，装填并发射。
+**用途：** 炮兵（Support/Officer 配属的火炮）按观察手的目标校准，装填并发射。榴弹炮是 HQ 附近地图预设阵地上的固定火炮（开局即存在，玩家进入操作；**无建造流程，建造轮盘/建造菜单中没有榴弹炮**，R7）；反坦克炮由 Anti-Tank 兵种通过建造轮盘放置。
 
 | 元素 | 数据来源 | 更新频率 | 交互 |
 |---|---|---|---|
@@ -2016,7 +2017,7 @@ Playwright 视觉回归覆盖每屏 × 以上分辨率 × 两种语言（中文�
 - **数据到视图的节流：** `SNAP`→UI 默认最高 20 Hz；数值型元素（体力条、计时）用 CSS transform/`transition` 插值，不逐帧改文本。
 - **每帧更新（允许）：** 准星位置（transform）、指南针带（单个 `transform: translateX`）、受击楔形淡出（`opacity`）。其它元素禁止每帧写 DOM。
 - **事件驱动：** 击杀播报、toast、横幅为纯事件，不轮询。
-- **列表：** 小队列表 ≤ 8 行常驻；记分板 100 行用虚拟滚动；聊天保留 100 条上限，DOM 回收。
+- **列表：** 小队列表常驻视口 ≤ 8 行，**小队数量不设固定上限**（步兵小队数量由每队 50 人总数约束；装甲车组 ≤ 4、侦察组 ≤ 2，R2），超出视口用虚拟滚动；记分板 100 行用虚拟滚动；聊天保留 100 条上限，DOM 回收。
 - **后台：** 页面 `visibilityState !== 'visible'` 时暂停所有 UI 动画与 Canvas 重绘。
 
 ### 8.3 渲染与样式约束

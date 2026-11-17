@@ -74,7 +74,7 @@
 
 | 编号 | 假设 | 若不成立的后果 / 对策 |
 |---|---|---|
-| T1 | 客户端 WASM 与服务器原生在**同一 Rust 源码 + 同一 `/data` 哈希**下，对预测所需的角色移动结果"近似一致"（位置误差 < 2 cm / 秒级）即可，**不要求**与原生逐比特一致 | 逐比特一致只在"同构建 WASM vs WASM"（回放、CI）保证；预测误差靠对账平滑消化（§6.4）。不能因此把"必须比特一致"写进任何验收标准。 |
+| T1 | 客户端 WASM 与服务器原生在**同一 Rust 源码 + 同一 `/data` 哈希**下，对预测所需的角色移动结果"近似一致"即可（对账容差：位置误差 > 0.05 m 才触发回滚重放，R5），**不要求**与原生逐比特一致 | 逐比特一致只在"同构建 WASM vs WASM"（回放、CI）保证；预测误差靠对账平滑消化（§6.4）。不能因此把"必须比特一致"写进任何验收标准。 |
 | T2 | 玩家平均 RTT ≤ 80 ms，P95 ≤ 150 ms（单区域内） | 超过 250 ms 的玩家不享受延迟补偿上限之外的回溯（§6.7），并在 HUD 显示延迟警告。 |
 | T3 | 对局服务器主机提供 ≥ 4 个高频物理核心（≥ 3.5 GHz 级）与 ≥ 1 Gbps 出口 | 见 §6.10 CPU 预算与 §18.1 容量规划。 |
 | T4 | 玩家桌面机器有 ≥ 8 GB 系统内存、WebGPU 可用时驱动较新；Low 档以 Iris Xe 级核显为底线 | Low 以下不保证；启动时做能力探测与基准（§13.6）。 |
@@ -271,7 +271,7 @@ flowchart TD
 ### 4.4 `/data`、`/tools`、`/assets`
 
 - `/data`：JSON 数值真源。`sim` 的 `build.rs` 读取并嵌入（`include_bytes!` + 构建期 schema 校验），计算 `DATA_HASH`（SHA-256 前 8 字节）。`client` 不直接读取 `/data` 做逻辑判断，只用于显示字段（名称 key、图标 id），且经 `sim-wasm` 暴露的 `GameData` 查询接口读取，避免双份解析。
-- `tools/asset-pipeline`（Node）：glTF/KTX2/Meshopt/音频处理，产出 `/assets/processed` 与 `manifest.json`（§11）。
+- `tools/asset-pipeline`（Node）：glTF/KTX2/Meshopt/音频处理并打包为 `.fpak`（R11），产出 `/assets/processed` 与 `manifest.json`（§11）。
 - `tools/map-pipeline`（Python + GDAL）：DEM → 高度图、splat、植被分布、区块烘焙、碰撞、Recast 导航网格。
 - 依赖方向：`tools/*` 只读 `/data/maps/*` 与 `/assets/incoming`，输出到 `/assets/processed`；不得被 `crates/*` 在运行期依赖。
 
@@ -412,7 +412,7 @@ CI 用 `cargo deny` + 自写脚本检查 `cargo metadata` 依赖图（§17.5）�
 
 ### 5.7 AOI
 
-**决定**：服务器 2D 网格（64 m 格）+ 按距离/视锥/重要性的优先级；远距离玩家降频（最低 2 Hz）；地图图标信息（友军位置）走单独低频团队通道 1 Hz。
+**决定**：服务器 2D 网格（64 m 格）+ 按距离/视锥/重要性的优先级；远距离玩家降频（最低 2 Hz）；地图图标信息（友军位置）走单独低频团队通道 1 Hz。**敌方信息下发规则（R3）**：敌方实体仅在 ≤ 400 m 且（在视锥 + 30° 余量内 或 ≤ 96 m）时下发精确状态；被标记/侦察暴露的敌人只下发地图图标（1 Hz，位置量化到 5 m）；友军最远 400 m、最低 2 Hz，更远的友军只走团队通道图标（详见 §6.5.4、§15.2）。
 
 | 方案 | 优点 | 缺点 | 结论 |
 |---|---|---|---|
@@ -451,7 +451,7 @@ CI 用 `cargo deny` + 自写脚本检查 `cargo metadata` 依赖图（§17.5）�
 
 ### 5.10 资源管线
 
-**决定**：glTF 2.0 + KTX2（BasisU：颜色 ETC1S/UASTC 按需，法线 UASTC）+ Meshopt 压缩；工具 `gltf-transform` + `toktx`；64 m 区块 + 距离环流式；Cache API/OPFS 缓存。体积目标：主菜单 ≤ 8 MB（gzip/br 后 JS+WASM+UI）；首张地图 Medium ≤ 150 MB、High ≤ 350 MB、Ultra ≤ 600 MB。
+**决定**：glTF 2.0 + KTX2（BasisU：颜色 ETC1S/UASTC 按需，法线 UASTC）+ Meshopt 压缩；工具 `gltf-transform` + `toktx`；处理后的网格/贴图/音频打包进自有分块容器 **`.fpak`**（唯一下发格式，支持 HTTP Range 流式读取，R11/D-PAK，§11.8）；64 m 区块 + 距离环流式；Cache API/OPFS 缓存。体积目标：主菜单 ≤ 8 MB（gzip/br 后 JS+WASM+UI）；首张地图 Medium ≤ 150 MB、High ≤ 350 MB、Ultra ≤ 600 MB。
 
 | 方案 | 体积 | 解码成本 | 兼容 | 结论 |
 |---|---|---|---|---|
@@ -563,14 +563,17 @@ loop at 30 Hz (绝对时间表, 不累积漂移):
 ```
 on_snapshot(S_auth, ack_tick):
   discard unacked_inputs with tick <= ack_tick
-  state = S_auth                      // 回滚到权威状态
-  for cmd in unacked_inputs:          // 重放
-      state = sim.step_player(state, cmd)
-  err = distance(predicted_state_now.pos, state.pos)
-  if err < 0.02 m:   keep predicted (无视)
-  elif err < 1.0 m:  start visual_smoothing: render_offset = old_pos - new_pos; offset 在 100 ms 内指数衰减 (τ = 40 ms)
-  else:              snap (瞬移) 并播放"校正"提示 (仅调试面板)
-  predicted_state_now = state
+  // R5：按容差对账，不要求 WASM 与原生逐比特一致
+  err0 = distance(predicted_state_at(ack_tick).pos, S_auth.pos)
+  if err0 <= 0.05 m: keep predicted (容差内，不回滚、不重放)
+  else:
+    state = S_auth                    // 位置误差 > 0.05 m：回滚到权威状态
+    for cmd in unacked_inputs:        // 重放
+        state = sim.step_player(state, cmd)
+    err = distance(predicted_state_now.pos, state.pos)
+    if err < 1.0 m:  start visual_smoothing: render_offset = old_pos - new_pos; offset 在 100 ms 内指数衰减 (τ = 40 ms)
+    else:            snap (瞬移) 并播放"校正"提示 (仅调试面板)
+    predicted_state_now = state
 ```
 
 - 平滑作用于**渲染位置**与相机，不作用于模拟状态。
@@ -608,7 +611,7 @@ SnapshotPacket (bit-packed)
 
 **网格**：`cell = floor(pos.xz / 64 m)`，`cells[x][z] = Vec<EntityId>`，每 tick 增量更新（实体越界才移动）。
 
-**候选集**：客户端实体所在格的 5×5 邻域（±2 格 = ±128..192 m）为"近场"，更外圈至 400 m 为"远场"，超 400 m 默认不发（友军位置走团队通道，敌人不发，§15）。
+**候选集**：客户端实体所在格的 5×5 邻域（±2 格 = ±128..192 m）为"近场"，更外圈至 400 m 为"远场"，超 400 m 默认不发（友军位置走团队通道，敌人不发，§15）。**敌人候选过滤（R3）**：仅当 ≤ 400 m 且（在视锥 + 30° 余量内 或 ≤ 96 m）才入候选；被标记/侦察的敌人不走本候选集，只经团队通道下发地图图标（1 Hz，位置量化到 5 m）。
 
 **优先级（每 tick，对每个客户端 C、候选实体 E）**：
 
@@ -639,7 +642,7 @@ if 仍有 acc >= 2 的实体未发: 记录 aoi_starved++ 指标, 调节器可降
 
 **进入/离开迟滞**：实体进入候选集半径 400 m；离开半径 440 m；离开后连续 3 个出包周期不再发，客户端据 `entity_remove` 或超时（> 1.5 s 未更新且在远场）淡出。新进入实体首包必须是全量关键帧（不依赖基线）。
 
-**团队通道（1 Hz，unreliable 或搭载在快照）**：向同阵营每人发送 49 名队友的 `(x:11b, z:11b, role:4b, state:3b, facing:3b)` = 32 bit；己方小队成员（≤ 6 人）使用高精度 `(x:16b, z:16b, y:8b, ...)` 每 0.5 s 发送并走普通快照路径。敌军**绝不**经团队通道下发（Spotter/侦察机命中产生"标记事件"，带有效期，§15）。
+**团队通道（1 Hz，unreliable 或搭载在快照）**：向同阵营每人发送 49 名队友的 `(x:11b, z:11b, role:4b, state:3b, facing:3b)` = 32 bit；己方小队成员（≤ 6 人）使用高精度 `(x:16b, z:16b, y:8b, ...)` 每 0.5 s 发送并走普通快照路径。敌军**绝不**经团队通道下发精确状态；被友军标记/侦察暴露的敌人只以"标记事件"形式下发**地图图标**（1 Hz，位置量化到 5 m，带有效期，R3，§15）。
 
 ### 6.6 可靠/不可靠通道划分与 WebSocket 兜底
 
@@ -752,7 +755,7 @@ if 仍有 acc >= 2 的实体未发: 记录 aoi_starved++ 指标, 调节器可降
 | `DamageDir` | `angle:u8`, `dmg_q:u8` | 仅被害者 |
 | `Explosion` | `pos:q`, `kind:u8`, `radius_q:u8` | |
 | `Suppress` | `source_dir:u8`, `intensity:u8` | 弹道擦过 |
-| `Marker` | `kind:u8`, `pos:q`, `ttl:u8` | 敌方标记（Spotter/侦察）有时限 |
+| `Marker` | `kind:u8`, `pos:q`, `ttl:u8` | 敌方标记（Spotter/侦察）有时限；敌方标记的 `pos` 量化到 5 m、最高 1 Hz 刷新（R3） |
 
 ### 6.9 每玩家带宽预算算术推导
 
@@ -1445,7 +1448,7 @@ flowchart TD
 /assets/incoming/{category}/{source_pack}/...        人工放入，.gitignore
         │  tools/asset-pipeline: ingest
         ▼
-[1 ingest]   校验许可证登记 (LICENSES.md 必须有条目，否则失败) → 复制到 work/ 并计算 sha256
+[1 ingest]   校验许可证登记 (LICENSES.md 必须有条目且状态非 `PENDING`，否则失败，D-LIC) → 复制到 work/ 并计算 sha256
 [2 normalize] 统一单位 (m, Y-up, -Z forward 自定义规范), 重置原点, 三角化, 合并同材质子网格
 [3 lod]      meshoptimizer simplify 生成 LOD0..LODn (比例 1, 0.5, 0.25, 0.1) 并保留 UV 边界
 [4 textures] 去 alpha 预乘/打包 ORM (R=AO, G=Roughness, B=Metallic), 生成 mip; 
@@ -1453,19 +1456,23 @@ flowchart TD
 [5 mesh]     gltf-transform: dedup, prune, meshopt (量化: pos 16-bit, uv 16-bit, normal 8-bit oct)
 [6 collision] 视觉网格 → 简化碰撞网格/凸分解 (载具/建筑)
 [7 manifest] 写 manifest.json (哈希、大小、依赖、LOD、质量档标签)
-[8 upload]   内容哈希命名上传 R2 (immutable), manifest 进 git (/assets/manifests/)
+[8 pack]     (R11/D-PAK) 把 Meshopt 网格 + KTX2 贴图 + 音频打包进自有分块容器 `.fpak`（见 §11.8）；
+             处理后的 .glb/.ktx2/.ogg/.opus 只作中间产物，不单独上传、不单独下发
+[9 upload]   `.fpak` 内容哈希命名上传 R2 (immutable), manifest 进 git (/assets/manifests/)
         ▼
 /assets/processed/ (不进 git)   →   Cloudflare R2 + CDN
 ```
 
+- **`.fpak` 是资源管线的唯一下发格式（R11）**：线上 CDN 上不得出现可独立下载的标准 .glb/.ktx2/.ogg 文件；上文步骤 1–7 的产物仅存在于构建机的 `work/` 目录。
+
 - 地图数据走 `tools/map-pipeline`（GDAL）：DEM → 重采样到 1 m（2049²）→ 导出 `.r16` → 切块 → splat/植被/导航/碰撞 → 同样产出 manifest 条目。
-- 音频：见 §12.7，由同一管线处理（`ffmpeg`/`opusenc` 封装）。
+- 音频：见 §12.7，由同一管线处理（`ffmpeg`/`opusenc` 封装），产物同样打入 `.fpak`。
 
 ### 11.2 命名规范
 
 - 源/中间文件：`{category}_{faction?}_{name}_{variant}`，全小写 `snake_case`：`veh_us_m4a1_sherman`、`wpn_ger_kar98k`、`prop_building_farmhouse_01`、`tex_terrain_grass_a`。
 - 类别前缀：`veh_`、`wpn_`、`chr_`、`prop_`、`bld_`、`veg_`、`tex_`、`snd_`、`vfx_`、`ui_`。
-- 发布路径（内容寻址）：`/a/{sha256[0:2]}/{sha256[2:16]}.{ext}`（`ext` ∈ `glb`、`ktx2`、`bin`、`opus`、`json`），永不覆盖（`Cache-Control: public, max-age=31536000, immutable`）。
+- 发布路径（内容寻址）：`/a/{sha256[0:2]}/{sha256[2:16]}.{ext}`（`ext` ∈ `fpak`、`json`；**网格/贴图/音频一律封装在 `.fpak` 内，不以 .glb/.ktx2/.opus 单独发布**，R11），永不覆盖（`Cache-Control: public, max-age=31536000, immutable`）。
 - 清单中的逻辑 ID 为稳定名（`veh_us_m4a1_sherman@lod0`），路径可替换；游戏代码只引用逻辑 ID。
 
 ### 11.3 manifest.json 格式
@@ -1481,15 +1488,15 @@ flowchart TD
       "kind": "model",
       "tier": ["medium", "high", "ultra"],
       "lods": [
-        {"lod": 0, "url": "/a/3f/9a8c....glb", "bytes": 1840000, "tris": 24000, "sha256": "..."},
-        {"lod": 1, "url": "/a/aa/10b2....glb", "bytes": 520000, "tris": 8000, "sha256": "..."}
+        {"lod": 0, "pak": "/a/3f/9a8c....fpak", "entry": "veh_us_m4a1_sherman/lod0", "offset": 40960, "bytes": 1840000, "tris": 24000, "sha256": "..."},
+        {"lod": 1, "pak": "/a/3f/9a8c....fpak", "entry": "veh_us_m4a1_sherman/lod1", "offset": 1880960, "bytes": 520000, "tris": 8000, "sha256": "..."}
       ],
       "textures": ["tex_veh_us_m4a1_sherman_bc", "tex_veh_us_m4a1_sherman_n"],
       "license_ref": "LICENSES.md#sherman-pack"
     },
     "tex_terrain_grass_a": {
       "kind": "texture", "format": "ktx2-uastc", "dims": [1024, 1024],
-      "mips": 11, "url": "/a/..", "bytes": 345000, "tier": ["low","medium","high","ultra"],
+      "mips": 11, "pak": "/a/..fpak", "entry": "tex_terrain_grass_a", "offset": 0, "bytes": 345000, "tier": ["low","medium","high","ultra"],
       "fallback": "tex_terrain_grass_a@512"
     }
   },
@@ -1518,7 +1525,8 @@ CI 门禁：任何 PR 使 manifest 的 bundle 体积超预算 1% 以上 → 失�
 ### 11.5 加载策略
 
 - 启动：下载 `core` → 显示主菜单 → 后台预取"上次地图 + 当前画质"最小包。
-- 解码：Worker 池解码 KTX2（BasisU transcoder WASM）与 Meshopt；主线程仅做 GPU 上传（分帧，§9.3）。
+- 取包：先取 `.fpak` 索引（尾部/头部定长索引），再按 manifest 的 `offset/bytes` 用 HTTP Range 流式读取所需条目（§11.8）。
+- 解码：Worker 池从 `.fpak` 条目解出 KTX2（BasisU transcoder WASM）与 Meshopt；主线程仅做 GPU 上传（分帧，§9.3）。
 - 进度：`stream.progress` 事件；加载屏显示分阶段进度（下载/解码/着色器预热/物理/网络）。
 
 ### 11.6 缓存策略
@@ -1536,6 +1544,22 @@ CI 门禁：任何 PR 使 manifest 的 bundle 体积超预算 1% 以上 → 失�
 ### 11.7 许可证闸门
 
 `LICENSES.md` 为资产准入唯一入口：每个素材包一条记录（来源 URL、作者、许可证、是否允许商用与网页分发、是否要求署名、下载日期、所覆盖文件）。`asset-pipeline ingest` 在发现无登记的 `incoming/` 文件时失败。**禁止**使用 AI 生成的模型/动画/音效（A2）。
+
+- **付费素材入库条件（D-LIC）**：许可条款须允许"嵌入非原生引擎的网页游戏分发 + 商用"。对"慎用"渠道（TurboSquid、CGTrader、Sketchfab 非 CC 内容、KitBash3D、ActorCore、A Sound Effect 的多厂牌等）必须先取得卖家/厂商**书面确认**，否则该素材在 `LICENSES.md` 的状态保持 `PENDING`，`ingest` 拒绝处理，更不得进入主分支。首选 CC0（Poly Haven、ambientCG）与 Fab Standard License。
+- **"不自制"边界（D-MOD，待人最终确认，默认按此）**：**允许**对已购/已登记素材做格式转换、LOD/减面、贴图压缩、动画重定向（retarget）、换骨架时的绑定权重传递、材质参数调整、把多个已购部件组合装配；**不允许**从零建模、雕刻新部件、重画贴图、AI 生成。UI 图标/字形属于 UI 代码（SVG），由执行者按 UI_SPEC 原创绘制，不视为"模型/音效自制"（列入 NEEDS_HUMAN 待确认）。
+- **与 `.fpak` 的关系**：多数付费许可要求"嵌入产品、不得以可独立提取的原始形式再分发"，`.fpak`（§11.8）正是为此服务。
+
+### 11.8 `.fpak` 分块容器（R11 / D-PAK）
+
+**目的与诚实声明**：满足上述"非独立文件分发"的合规层面要求；这**不是 DRM**，技术上无法阻止有决心的提取，文档与对外沟通不得宣称其"防盗/加密保护"。
+
+- **内容**：Meshopt 压缩网格 + KTX2 贴图 + 音频（Opus，见 §12.7）+ 小型元数据；不含可直接被通用查看器打开的完整 .glb/.ktx2/.ogg 文件（条目为自有二进制布局，由客户端专用解包代码重建 Babylon 所需的 buffer/纹理对象）。
+- **分包方式**：按 64 m 区块（地形/建筑/植被，与 §9.1 对齐）与类别（`char`、`wpn`、`veh`、`snd`、`ui`…）分包；每个 `.fpak` 通常 1–16 MB，便于 CDN 缓存与 Range 读取。
+- **布局（示意）**：`magic "FPAK" | version:u16 | entry_count:u32 | index_offset:u64 | [entry data…] | index`；`index` 每条目：`logical_id`、`kind`、`offset:u64`、`bytes:u32`、`codec`、`sha256[0:8]`。索引可单独 Range 读取（读取尾部定长 footer 得 `index_offset`）。
+- **流式读取**：客户端用 `Range: bytes=a-b` 只取所需条目；manifest（§11.3）中的 `pak/entry/offset/bytes` 与索引互为校验；Range 失败（部分代理）时降级整包下载。
+- **缓存**：以 `.fpak` 的内容哈希为 key 存 Cache API / OPFS（§11.6），条目级 LRU。
+- **工具**：`/tools/asset-pipeline` 的 `pack` 阶段负责打包与校验；解包器为 `client/src/render` 下的专用加载器（与 Meshopt/KTX2 解码 Worker 配合）。
+- **武器模型精度（D-FP）**：武器分两套——**第一人称**网格 25k–60k 三角形【待调参】，**第三人称**网格 5k–12k 三角形；两套各自独立 LOD 与 `.fpak` 条目，第一人称仅本地玩家加载。体积估算（§11.4 的"角色/武器 ≈ 18 MB"）须按此重算。
 
 ---
 
@@ -1597,7 +1621,7 @@ LiveKit 轨道 → `MediaStreamAudioSourceNode` → `PannerNode`（HRTF，`refDi
 
 ### 12.7 素材与格式
 
-Opus（`.opus`，48 kHz，WebM/Ogg 容器），枪声近距层 96 kbps、其它 48–64 kbps、环境床 32 kbps；首张地图音频总量 ≈ 18 MB（Medium），High 加入多样化变体至 ≈ 40 MB。预解码到 `AudioBuffer`：短音（< 3 s）常驻；长音流式解码。
+**编码（D-AUD）**：Opus 为主（WebM 容器内的数据放入 `.fpak`，§11.8），AAC 兜底；客户端启动时用 `decodeAudioData` 对内置探测样本**实测探测**，能解 Opus 则用 Opus 包，不通过则改取 AAC 包。以下参数针对 Opus：Opus（48 kHz，WebM 容器数据封装进 `.fpak`），枪声近距层 96 kbps、其它 48–64 kbps、环境床 32 kbps；首张地图音频总量 ≈ 18 MB（Medium），High 加入多样化变体至 ≈ 40 MB。预解码到 `AudioBuffer`：短音（< 3 s）常驻；长音流式解码。
 
 ---
 
@@ -1798,12 +1822,12 @@ LiveKit 不可用或浏览器拒绝麦克风权限 → 游戏正常进行，仅�
 | 部署 | 兵种名额、出生点合法、Manpower、冷却 | sim | |
 | 速率限制 | `C0` 各消息每秒上限（聊天 2/s、部署 1/s、举报 1/min…） | server | 超限丢弃 + 惩罚计数 |
 | 数据一致性 | `data_hash` 握手校验 | server | 拒绝 |
-| 信息暴露 | AOI：不下发视野外远距离敌人精确数据（§6.5.4）；敌方位置仅在被 Spotter/侦察标记期间以事件形式给出 | server | — |
+| 信息暴露 | AOI：不下发视野外远距离敌人精确数据（§6.5.4，R3 规则）；敌方位置仅在被 Spotter/侦察标记期间以地图图标形式给出（1 Hz、量化到 5 m） | server | — |
 
 ### 15.2 反透视（AOI 作为信息控制）
 
-- 敌方实体仅在 ≤ 400 m 且（在视锥内 或 ≤ 96 m）才进入候选集；视锥外且远于 96 m 的**敌人不下发**（§6.5.4 的 `vis` 降频系数仅适用于友军；对敌军，视锥外 > 96 m 直接剔除候选）。
-- 潜在代价：玩家快速转身时远处敌人"突然出现"的延迟 ≈ 1 个包（≤ 50 ms）+ 插值缓冲；用 120° 的宽松视锥缓解（预测相机转速预留）。
+- **统一规则（R3，与 GAMEDESIGN §17.2 一致）**：敌方实体仅在 **≤ 400 m 且（在玩家视锥 + 30° 余量内 或 ≤ 96 m）** 时才进入候选集并下发精确状态；视锥（+30°）外且远于 96 m 的**敌人不下发**（§6.5.4 的 `vis` 降频系数仅适用于友军；对敌军，该范围外直接剔除候选）。被友军标记/侦察暴露的敌人**只下发地图图标**（团队通道，1 Hz，位置量化到 5 m），不含精确状态。友军：最远 400 m、最低 2 Hz；更远的友军只走团队通道图标。
+- 潜在代价：玩家快速转身时远处敌人"突然出现"的延迟 ≈ 1 个包（≤ 50 ms）+ 插值缓冲；用视锥 +30° 的余量缓解（预测相机转速预留）。
 - 烟雾、建筑内的敌人：LoS 检查剔除"完全被厚墙隔绝且 > 20 m"的敌人（保守，仅对明显被完全遮挡者；成本控制：每客户端每 0.25 s 检查，缓存结果）。【待调参】
 - 局限：近距离、视线内的敌人信息必须发送，所以**近距离墙后透视无法完全防止**；仅能通过 LoS 剔除降低。
 
@@ -1837,7 +1861,7 @@ LiveKit 不可用或浏览器拒绝麦克风权限 → 游戏正常进行，仅�
 
 ```mermaid
 flowchart TD
-  CMD[指挥官 Bot / LLM 指挥官: 战略意图 (每 45 s, 规则式 5 s 级)]
+  CMD[指挥官 Bot / LLM 指挥官: 战略意图 (LLM 每 60 s, 规则式 5 s 级)]
   SL[小队长 Bot: 小队目标/阵型 (每 2–5 s)]
   SOL[士兵 Bot: 战术动作 (行为树, 每 3 tick = 10 Hz)]
   NAV[导航: Recast navmesh + 局部避障]
@@ -1874,16 +1898,16 @@ pub trait CommanderBrain {
     fn decide(&mut self, situation: &Situation, budget: &mut CostBudget)
         -> Result<Vec<CommanderAction>, BrainError>;
 }
-pub struct LlmCommander { client: LlmClient, model: String, interval_s: u32 /*45*/, fallback: RuleCommander }
+pub struct LlmCommander { client: LlmClient, model: String, interval_s: u32 /*60，R4*/, fallback: RuleCommander }
 ```
 
-- **频率**：每 45 s 一次决策；异步（tokio 任务），超时 8 s，超时即沿用上一决策并启动回退。
+- **频率**：每 **60 s** 一次决策（总控裁定 R4，取代总纲原 45 s）；异步（tokio 任务），超时 8 s，超时即沿用上一决策并启动回退。
 - **输入**（结构化战况 JSON，≤ 2 000 token）：`phase`、`time_left`、`strongpoints[{id, owner, contested, my_strength_nearby, enemy_est}]`、`front_graph`、`resources{manpower, munitions, fuel}`、`ability_cooldowns{}`、`squads[{id, role_mix, pos_region, state, objective}]`、`recent_events[]`（击杀热区、失守）。仅包含**该队可见**信息（不得泄露敌方未被发现的位置，防止 bot 作弊）。
 - **输出**：受限动作枚举（JSON Schema 约束 + 服务端校验）：
   `{"actions":[{"type":"assign_squad_objective","squad":3,"objective":"sp02"}, {"type":"use_ability","ability":"bombing_run","pos":[x,z],"dir":deg}, {"type":"request_supply","kind":"munitions","at":"sp01"}, {"type":"set_priority","objective":"sp03","level":"high"}]}` ；动作数 ≤ 6；任何非法值丢弃并记录。
 - **模型**：默认 `claude-haiku-5-5`（来自总纲）；可配置。
 - **成本上限**：每局 ≤ **0.5 美元**。成本计量：`cost = tokens_in × price_in + tokens_out × price_out`，价格从配置读取（**价格未核实，不在文档中固定**）；`CostBudget` 在每次调用前按"最坏估算"检查，调用后按实际用量记账；达到 90% 时把间隔拉长到 90 s，达到 100% 立即切换回退。
-- 粗算（**仅示意，价格为假设值**）：一局 60 分钟 × 2 队 / 45 s = 160 次调用；若每次输入 2 000 token、输出 300 token，则共 320 k 输入 + 48 k 输出 token；若（假设）单价为 1 美元/百万输入、5 美元/百万输出，成本 ≈ 0.32 + 0.24 = 0.56 美元，已略超上限——因此上限机制会生效，或需压缩输入/拉长间隔（可用提示缓存降低输入成本，具体功能与价格未核实）。**实现前须以当时官方价格重新计算并写入配置**。
+- 粗算（**仅示意，价格为假设值**）：一局 60 分钟 × 2 队 / 60 s = 120 次调用；若每次输入 2 000 token、输出 300 token，则共 240 k 输入 + 36 k 输出 token；若（假设）单价为 1 美元/百万输入、5 美元/百万输出，成本 ≈ 0.24 + 0.18 = 0.42 美元，低于上限但余量有限——上限机制仍须生效，必要时压缩输入/拉长间隔（可用提示缓存降低输入成本，具体功能与价格未核实）。**实现前须以当时官方价格重新计算并写入配置**。
 - **回退**：`RuleCommander`（基于效用评分的规则指挥官）常驻热备；LLM 异常（超时、非法 JSON、成本超限、API 不可用）立即由规则指挥官接管，并记 `llm_fallback_total` 指标。
 - **安全**：LLM 输出不直接执行，只能产出已枚举的 `CommanderAction`，经与真人指挥官同等的校验（资源、冷却、权限）；提示词不含玩家聊天内容（防提示注入）；API key 仅在服务器环境变量/密钥存储，不进日志。
 - 观测：每次调用记录 `latency_ms`、`tokens`、`cost`、`actions_accepted/rejected`。
@@ -2071,5 +2095,5 @@ pub struct LlmCommander { client: LlmClient, model: String, interval_s: u32 /*45
 ### 20.2 对总纲的异议/备注（供总控汇总）
 
 - 总纲"快照基准 20 Hz"与"模拟 30 Hz"采用 2/3 出包（§6.1）；若偏好 30 Hz 全速出包，带宽约 ×1.5（≈ 82 kbps 典型），仍在预算内。
-- 总纲 AOI 描述"远距离降频（最低 2 Hz）"；本文额外规定"视锥外且 > 96 m 的敌人不下发"以支撑反透视（§15.2），与"最低 2 Hz"对**友军**适用、对**敌军**不适用，请总控确认。
-- LLM 指挥官 `claude-haiku-5-5` 每局 0.5 美元上限：按假设价格粗算一局 160 次调用可能略超（§16.4），已用成本控制器 + 回退处理；价格未核实。
+- 总纲 AOI 描述"远距离降频（最低 2 Hz）"；本文额外规定"视锥（+30° 余量）外且 > 96 m 的敌人不下发"以支撑反透视（§15.2），与"最低 2 Hz"对**友军**适用、对**敌军**不适用——该规则已被总控裁定 R3 采纳。
+- LLM 指挥官 `claude-haiku-5-5` 每局 0.5 美元上限：决策间隔已按 R4 改为 60 s；按假设价格粗算一局约 120 次调用 ≈ 0.42 美元（§16.4），仍由成本控制器 + 回退兜底；价格未核实，实现前按官方价格重算。
