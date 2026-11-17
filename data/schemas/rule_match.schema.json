@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://frontline.invalid/schemas/rule_match.schema.json",
+  "title": "M1 match rules (GAMEDESIGN 2.2; M1-018)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "warmup_s",
+    "early_start_players",
+    "time_limit_s",
+    "ended_freeze_s",
+    "ended_total_s",
+    "repeat_capture_s",
+    "_meta"
+  ],
+  "properties": {
+    "warmup_s": {
+      "type": "number",
+      "minimum": 0
+    },
+    "early_start_players": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "time_limit_s": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "ended_freeze_s": {
+      "type": "number",
+      "minimum": 0
+    },
+    "ended_total_s": {
+      "type": "number",
+      "minimum": 0
+    },
+    "repeat_capture_s": {
+      "type": "number",
+      "minimum": 0
+    },
+    "_meta": {
+      "$ref": "#/$defs/meta"
+    }
+  },
+  "$defs": {
+    "meta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "tunable"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "initial",
+            "reviewed",
+            "measured"
+          ]
+        },
+        "tunable": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "calibration_ref": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "unverified": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "deviation_reason": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  }
+}

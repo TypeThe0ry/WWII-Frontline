@@ -535,3 +535,6 @@ blocked / in-progress / todo：无。M0 的 33 个任务全部已提交（M0-033
 ### M1-017b 压制效果 — done（M1-017 完成）— 2026-11-17 — 提交见 git log
 - 移速/ADS 时间/散布/晃动/pinned 接入 `movement`/`weapons`；近失广相网格；测试 `suppression_effects` 5 项，bench `suppression` 0.14 ms/tick；golden 重定 3 个（PI-058）。
 
+
+### M1-018 据点占领与对局状态机 — done — 2026-11-17 — 提交见 git log
+- 新模块 `rules/`（占领公式、据点、对局阶段 Idle→Warmup→Live→Ended）、`/data/rules/match_m1.json` + schema `rule_match`；测试 `capture_m1` 10 项、`match_state_m1` 6 项；bench `objectives` 0.009 ms/tick；既有 golden 未变（PI-059）。
