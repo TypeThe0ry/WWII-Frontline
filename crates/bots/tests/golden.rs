@@ -8,7 +8,8 @@ mod common;
 use common::*;
 use frontline_sim::Team;
 
-const GOLDEN: u64 = 0x2021_804c_0223_6403;
+// M1-014: re-pinned (0x2021_804c_0223_6403 before): friendly fire and the helmet rule change bullet outcomes.
+const GOLDEN: u64 = 0xfbcd_31e9_0ff9_45c7;
 
 fn fold(mut h: u64, v: u64) -> u64 {
     h ^= v;

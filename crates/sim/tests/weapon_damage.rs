@@ -163,8 +163,9 @@ fn world_for(players: &[(u8, Team, f32, f32, u16)]) -> frontline_sim::World {
 }
 
 #[test]
-fn teammates_and_the_shooter_are_not_hit_enemies_behind_are() {
-    // Shooter, a friend 20 m ahead, an enemy 40 m ahead on the same line: the bullet passes the friend.
+fn teammates_take_half_damage_and_stop_the_bullet_shooter_is_never_hit() {
+    // Shooter, a friend 20 m ahead, an enemy 40 m ahead on the same line: the bullet hits the friend
+    // (friendly fire x0.5, M1-014) and stops there.
     let mut w = world_for(&[
         (0, Team::Us, 20.0, 60.0, 16384),
         (1, Team::Us, 40.0, 60.0, 16384),
@@ -182,12 +183,13 @@ fn teammates_and_the_shooter_are_not_hit_enemies_behind_are() {
         }
     }
     assert_eq!(hits.len(), 1);
-    assert_eq!(
-        w.health(1),
-        Some(100.0),
-        "friend untouched (friendly fire is M1-014)"
+    assert_eq!(hits, vec![frontline_sim::EntityId::from(hits[0])]);
+    let friend = w.health(1).unwrap();
+    assert!(
+        friend < 100.0 && friend > 55.0,
+        "friend took half damage: {friend}"
     );
-    assert!(w.health(2).unwrap() < 100.0);
+    assert_eq!(w.health(2), Some(100.0), "the bullet stopped at the friend");
     assert_eq!(w.health(0), Some(100.0));
 }
 
