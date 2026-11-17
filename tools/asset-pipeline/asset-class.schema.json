@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://frontline.invalid/schemas/asset-class.schema.json",
+  "title": "asset-class (M1-002): per-asset processing parameters for the mesh/texture pipeline",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "class": {
+      "description": "Drives the collision budget defaults (vehicle 400 tris, building 800 tris, others 400 [to be tuned]).",
+      "enum": ["prop", "building", "vehicle", "weapon", "character"],
+      "default": "prop"
+    },
+    "texture_profile": {
+      "description": "Default profile for colour textures: bg = ETC1S (background / large areas); hero and ui = UASTC (characters, weapons, UI); normal = UASTC (also what a normal-map slot always gets). Normal-map slots are always UASTC with a 2-channel RRRG layout whatever the asset profile is.",
+      "enum": ["bg", "hero", "ui", "normal"],
+      "default": "bg"
+    },
+    "textures": {
+      "description": "Per-texture profile overrides keyed by the glTF texture name (or image name).",
+      "type": "object",
+      "additionalProperties": { "enum": ["bg", "hero", "ui", "normal"] }
+    },
+    "lod_ratios": {
+      "description": "Override of the LOD triangle ratios (ARCHITECTURE 11.1: 1 / 0.5 / 0.25 / 0.1). First entry must be 1, strictly decreasing, at most 8 levels.",
+      "type": "array",
+      "items": { "type": "number", "exclusiveMinimum": 0, "maximum": 1 },
+      "minItems": 1,
+      "maxItems": 8
+    },
+    "collision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode"],
+      "properties": {
+        "mode": { "enum": ["trimesh", "convex"] },
+        "max_tris": { "description": "trimesh triangle budget", "type": "integer", "minimum": 4, "maximum": 20000 },
+        "max_hulls": { "description": "convex mode: maximum number of convex pieces (default and hard cap 32)", "type": "integer", "minimum": 1, "maximum": 32 },
+        "max_hull_vertices": { "description": "convex mode: points kept per hull before hull construction (default 48)", "type": "integer", "minimum": 8, "maximum": 256 }
+      }
+    },
+    "first_person": {
+      "description": "Single-chain asset that is the first-person model of a weapon: the chain gets the `_fp` suffix. Use `variants` for the two independent chains of one weapon.",
+      "type": "boolean",
+      "default": false
+    },
+    "variants": {
+      "description": "D-FP: two independent LOD chains from one asset (first person 25k-60k tris, third person 5k-12k tris [to be tuned]).",
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 2,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["suffix"],
+        "properties": {
+          "suffix": { "enum": ["_fp", "_tp"] },
+          "input": { "description": "glTF relative to work/{asset_id}/ (default normalized.gltf)", "type": "string", "minLength": 1 },
+          "lod_ratios": { "type": "array", "items": { "type": "number", "exclusiveMinimum": 0, "maximum": 1 }, "minItems": 1, "maxItems": 8 }
+        }
+      }
+    }
+  }
+}
