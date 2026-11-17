@@ -48,7 +48,7 @@ impl ClientBaselines {
     pub(crate) fn usable_baseline(&self, tick: u32) -> Option<&SnapshotStates> {
         let b = self.baseline.as_ref()?;
         let age = tick.wrapping_sub(b.tick);
-        (age >= 1 && age <= BASELINE_RING).then_some(b)
+        (1..=BASELINE_RING).contains(&age).then_some(b)
     }
 
     /// The client acknowledged the snapshot sent at `ack_tick` (absolute tick). Unknown or

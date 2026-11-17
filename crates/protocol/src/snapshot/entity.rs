@@ -162,7 +162,7 @@ pub(crate) fn make_sent(base: Option<&EntityState>, s: &EntityState, near: bool)
     match (base, near) {
         (Some(b), false) => {
             let mut o = *s;
-            o.yaw = ((((s.yaw + 2) >> 2) & 0xFF) << 2) as u16;
+            o.yaw = (((s.yaw + 2) >> 2) & 0xFF) << 2;
             o.pitch = b.pitch;
             o
         }

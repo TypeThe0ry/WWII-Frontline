@@ -1,0 +1,29 @@
+[package]
+name = "frontline-protocol-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2021"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+
+[dependencies.frontline-protocol]
+path = ".."
+
+[workspace]
+members = ["."]
+
+[[bin]]
+name = "snapshot_decode"
+path = "fuzz_targets/snapshot_decode.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "input_bundle_decode"
+path = "fuzz_targets/input_bundle_decode.rs"
+test = false
+doc = false

@@ -26,8 +26,9 @@ client-predict = []
 # Test-only system that draws RNG and jitters positions every tick (see world.rs).
 test-util = []
 
-[dev-dependencies]
-frontline-sim = { path = ".", features = ["test-util"] }
+[[test]]
+name = "determinism_basic"
+required-features = ["test-util"]
 
 [[bench]]
 name = "world_step_empty"

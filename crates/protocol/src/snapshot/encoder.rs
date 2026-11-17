@@ -225,7 +225,7 @@ impl SnapshotBuilder<'_> {
         }
         let base = self
             .baseline_tick
-            .and_then(|_| self.st.baseline.as_ref())
+            .and(self.st.baseline.as_ref())
             .and_then(|b| find_state(&b.states, s.id))
             .copied();
         self.scratch.clear();

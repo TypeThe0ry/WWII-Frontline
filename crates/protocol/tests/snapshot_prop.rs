@@ -96,7 +96,7 @@ fn expected(base: Option<&EntityState>, s: &EntityState, near: bool) -> EntitySt
     match (base, near) {
         (Some(b), false) => {
             let mut e = *s;
-            e.yaw = ((((s.yaw + 2) >> 2) & 0xFF) << 2) as u16;
+            e.yaw = (((s.yaw + 2) >> 2) & 0xFF) << 2;
             e.pitch = b.pitch;
             e
         }
