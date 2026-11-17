@@ -366,6 +366,12 @@ M0 共 21 个任务已提交（M0-021 待提交）；提交哈希取自 `git log
 - 影响：PI-025（灰盒尺寸在 data/placeholders，改变 DATA_HASH；占位名统一 `__`）；M0-030 可用 `?actors=demo&entities=N`；服务器与 wasm 需同源重建。
 
 
+### M0-026 bots：M0 基础 bot — done — 2026-11-17 — 提交 （待总控填）
+- 做了什么：`crates/bots`（`BotBrain` trait、`SoldierBrain` 状态机 Patrol/Engage/Reload/Dead、4 m 栅格 + 3/2 加权 A*、视锥 120°/距离衰减识别概率/LoS 感知、瞄准〔弹道下坠、目标速度提前量、高斯误差、扣后坐〕、卡住检测）；`crates/server/src/bot_host.rs`（`--bots N`：bot 占 PlayerId 127 倒数、队伍交替，每 tick 经 `SimBridge::ingest_cmd` 即真人同一条 `validate_input` 路径注入）；`data/rules/bots.json` + `bots.schema.json` + 校验器新种类，`GameData::rules.bots`；`server_bots`、`bot_think_ms`、`bot_path_ms` 指标；`WorldView::slope_deg_at`（只读追加）。
+- 关键实测（release，本机非参考机）：10 bot×5 min soak 0 panic/0 出界、52 击杀（命中率 21.7 %）、全体 bot step P99 0.032 ms（验收 ≤1）；`think_10/60/100` P99 0.025 / 0.355 / 0.665 ms（预算 1.0 / 3.0 / —）；100 bot 每 tick 路径查询 P99 0.13 ms，单次 A* 中位 23 µs；真实 30 Hz 的二进制 `--bots 10` tick P50 0.22 / P99 0.48 ms、`--bots 100` P50 1.86 / P99 3.56 ms（0 超限）；100 次反应延迟 min 0.400 s（≥0.35）；同种子两次 5000 tick 逐 tick 输入哈希一致。
+- 遗留：`step_overhead` 的 debug 100 玩家 P99<1 ms 在共享负载下失败（非本任务，bots=0）；M0 无听觉/掩体/手雷/补给（弹药打光的 bot 退回巡逻）；盲射距离取 12 m 而非任务卡的 80 m（实测依据见 PI-026）；难度档仅 Regular 接线（三档数据已在表里）。
+- 影响：**DATA_HASH 改变**（新增 `data/rules/bots.json`；sim-wasm 已重建并同步 `client/public/wasm`）；`sim_thread` 新增 `build_loop_with_bots`/`spawn_with_bots`/`SimLoop::{bot_host,tally}`/`EventTally`（`SimThreadConfig` 签名不变）；`Sessions::reserve_bot`；M0-027 可直接 `--bots 10` 做 10 headless + 10 bot 联测；M1-036/038 替换 `grid_nav`/`SoldierBrain`，保持 `BotBrain`/`BotHost`；黄金哈希 `crates/bots/tests/golden.rs` 在任何 sim 规则/数据调参后需有意更新。
+
 ## 8. 如何维护本文件
 
 - **执行者**：收工前，在"任务日志"末尾追加本任务条目（`### 任务 ID 标题 — 状态 — 日期 — 提交 abc1234`，3–6 行：做了什么、关键实测数字、遗留问题/需人工事项、对后续任务的影响）；写入前重新读取文件末尾（并行执行者可能同时追加），只追加、不改别人的条目。数字必须来自实测，查不到写"未记录"。同时更新 `tasks/STATUS.md` 自己那一行。

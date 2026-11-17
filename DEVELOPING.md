@@ -231,3 +231,18 @@ cargo test -p frontline-server --test input_buffer --test session_flow --test se
 cargo test --release -p frontline-server --test session_load -- --ignored --nocapture        # 20 and 100 clients x 60 s (FRONTLINE_LOAD_SECS)
 ```
 
+## Bots (M0-026)
+
+`frontline-server --bots N` hosts N soldier bots in the sim thread (teams alternate US, GER, ...; `PlayerId`s count down from 127 and are
+reserved against human joins; nicknames `[BOT] 01`...; gauge `server_bots`; histograms `bot_think_ms` / `bot_path_ms`, both per tick). A bot is a
+client without a connection: `crates/bots` reads the world only through the read-only `WorldView` and returns one `InputCmd` per tick; the host
+(`crates/server/src/bot_host.rs`) pushes it through `SimBridge::ingest_cmd` (window check + `validate_input` + input buffer, the human path).
+Tuning (difficulty tiers, FOV, aim error, ranges) lives in `data/rules/bots.json` (schema `data/schemas/bots.schema.json`; M0 uses the
+`default_difficulty` tier = Regular). Navigation is a 4 m walkability grid + A* (no navmesh before M1-036). Needs the terrain.
+
+```sh
+cargo test -p frontline-bots                                    # A*, perception/no-wallhack, state machine, golden input hash
+cargo test -p frontline-server --test bots_soak --test bots_validation
+cargo test --release -p frontline-server --test bots_soak -- --ignored --nocapture   # 5 min soak (FRONTLINE_SOAK_SECS / FRONTLINE_SOAK_BOTS)
+cargo bench -p frontline-bots --bench think                     # think_10 / think_60 / think_100 / path_query -> reports/baselines/bots-m0.json
+```

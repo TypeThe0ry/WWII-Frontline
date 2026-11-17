@@ -373,3 +373,22 @@
 - **受影响任务**：M0-030（读 `window.__placeholders`）、M1-001（缺失素材报告）、M1-046。
 - **临时处理**：按此实现；新增该文件会改变 DATA_HASH（服务器与 wasm 需用同一份 data 重建）。
 - **裁决（Fable 填写）**：
+
+### PI-026 M0-026：bot 数值表 `data/rules/bots.json`、`WorldView::slope_deg_at`、默认射击距离与实测不符、bot 的 PlayerId/队伍约定
+
+- **状态**：open
+- **类别**：接口细化 / 数据新增 / 数值偏离
+- **提出者 / 日期**：M0-026 / 2026-11-17
+- **问题 / 做法**：
+  1. **数据表**（任务卡要求"难度表放 `data/rules/bots.json` 并加 schema"）：新增 `data/rules/bots.json`（难度三档 Recruit/Regular/Veteran 取自 GAMEDESIGN §20.6，另含 `think_interval_ms`、`perception`（FOV 120°、视距上限 500 m、最小识别概率）、`nav`、`combat`、`stuck`）、`data/schemas/bots.schema.json`、校验器新种类 `bots`（`rules/bots.json` 专用；`reaction_ms` 必须 min ≤ max）、两份无效夹具；`sim` 的 `build.rs` 做 `deny_unknown_fields` 类型检查（`BotsRulesDef`），`GameData::rules.bots` 暴露给 `bots` crate。**这是 sim 里唯一的改动，没有逻辑变化**；代价：**DATA_HASH 改变**（客户端 wasm 与服务器必须同一份 data 重建）。
+  2. **`WorldView::slope_deg_at(x, z) -> Option<f32>`**（任务卡"如缺则补"）：默认实现用 `height_at` 的 1 m 中心差分，`World` 覆盖为碰撞世界的三角面斜率（与 KCC 同一份）。纯只读追加，现有实现者不受影响。
+  3. **默认射击距离与实测不符**（数值偏离，数据里可调）：任务卡写"≤ 80 m 盲射，更远 ADS"。M0 武器数据的盲射散布半角是 3.5°（Garand）/ 4.0°（Kar98k），15 m 处已有约 0.9 m 的 1σ，80 m 处 4.9 m；固定靶 15 m 盲射 18 发只命中 2 发，ADS（0.15°，起瞄 300 ms）同距离全中。因此 `combat.blind_fire_max_m` 取 **12 m**（不是 80 m），`approach_beyond_m`（超过则先接近再射击，新字段）取 50 m，`crouch_min_m` 35 m；机动靶的瞄准提前量由 bot 用两次目击估速度实现。这些数字全部在 `_meta.tunable` 里，M1 武器数据复核后重调。
+  4. **bot 的 PlayerId/队伍**：`--bots N` 的 bot 占用 127、126、…（真人取最小空闲 id，`Sessions::reserve_bot` 把 bot 的槽永久移出分配并计入队伍座位，所以真人加入仍按"人少的一队"平衡）；队伍按序交替 US、GER。`server_players` 只数真人，bot 数在 `server_bots`；bot 昵称 `[BOT] NN` 只保存在 `BotHost`（Hello 无昵称，M0 没有昵称线上字段，M1 的名牌/记分板再用）。
+  5. **感知的一处严格化**：目标从玩家列表里消失（死亡/重生）不算"可见"，bot 不知道它是死了还是躲了，按记忆（`memory_s`）追到最后已知位置；视野内才更新位置与速度。M0 **没有听觉**（B-05 的枪声方向留给 M1-038）、没有掩体/手雷/弹药补给——弹药打光（6 个弹匣，无补给）的 bot 退回巡逻，直到死亡重生。
+  6. **A\*** 用 3/2 加权的八向启发（路径最多 1.5 倍最优，平滑后实际近似最优），换最坏情况扩展节点数 1556 → 993、单次最坏 1.4 ms → 0.2–0.6 ms，满足"路径查询 ≤ 1 ms/tick"的逐 tick 上限；不加权版本在 100 bot 下偶有单 tick 2.6 ms。
+  7. **宿主接线**：`sim_thread::{build_loop_with_bots, spawn_with_bots}`（`SimThreadConfig` 与 `build_loop`/`spawn` 签名不变，避免打断并行任务）；`bots_think` 在 `World::step` 之后运行，bot 的第 T+1 tick 指令经 `SimBridge::ingest_cmd`（窗口检查 + `validate_input` + 输入环）进入，与真人同一条路径；`SimLoop::{bot_host, tally}` 供测试读取（`EventTally`：shots/hits/kills/headshots/spawns，读自 M0-019 保存的 `step_events`）。
+- **证据**：crates/bots/、crates/server/src/bot_host.rs、tests（crates/bots/tests/{nav,perception,behaviour,golden}.rs、crates/server/tests/{bots_soak,bots_validation}.rs）、crates/bots/benches/think.rs、reports/baselines/bots-m0.json；数字见 tasks/STATUS.md M0-026 行与 docs/PROGRESS.md。
+- **建议方案**：①M1-038 的行为树/效用 AI 替换 `SoldierBrain`，保持 `BotBrain` 与 `BotHost`；②M1-036 的 navmesh 替换 `grid_nav`，`BotMap` 的接口（`nav`、`patrol`）可保留；③武器数据复核后重调 `combat.*`（尤其 `blind_fire_max_m`）；④真人/bot 昵称上线字段由 M1 决定。
+- **受影响任务**：M0-027（10 headless + 10 bot 联测）、M1-036/037/038/039、M2-028、M1 武器复核。
+- **临时处理**：按此实现。
+- **裁决（Fable 填写）**：
