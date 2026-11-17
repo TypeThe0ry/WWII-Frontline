@@ -2,6 +2,8 @@
 //! ephemeral port plus a small client that speaks the frame format directly.
 #![allow(dead_code)]
 
+pub mod sim_harness;
+
 use std::sync::atomic::AtomicU32;
 use std::sync::Arc;
 use std::time::{Duration, Instant};

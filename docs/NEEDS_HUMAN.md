@@ -1350,3 +1350,15 @@
   4. ~~ARCHITECTURE §16.4 的 45 s 与 R4 的 60 s 不一致~~：已统一为 60 s（H-073，RISKS R-51）。
   5. ~~字体清单在 UI_SPEC 与 LICENSES §5 不一致~~：LICENSES §5 已改为与 UI_SPEC §2.3 一致，状态 PENDING 待 M0 核实（H-036，RISKS R-51）。
   6. **A7 简体中文不等于面向中国大陆运营**（H-092）。
+
+### 11.4 M0-024 植被灰盒占位（缺素材，执行者追加）
+
+M0-024 的植被全部是程序化灰盒（圆柱 + 椭球树、交叉叶片草、椭球灌木；材质 `PH_V-NAT-002` / `PH_V-NAT-004`，节点 `PH_V-NAT-…__{实例}`），**未下载、未使用任何第三方模型或贴图**，LICENSES.md 无新增。缺的真素材（按 ASSET_SHOPPING_LIST §8.6 的需求 ID，M1-051 接入）：
+
+| 需求 ID | 内容 | 状态 / 候选（见 §8.6） | 默认假设 |
+|---|---|---|---|
+| V-NAT-002 | 诺曼底落叶乔木（橡、榉、苹果树）：LOD0 2–4 k tri、LOD1 ≈ 800 tri，含 impostor 烘焙用的网格 | 候选 Poly Haven `tree_small_02`（CC0）、Quaternius Textured LowPoly Trees（CC0）；Megascans 欧洲山毛榉/橡树许可待核（H-099 下载） | 灰盒树继续使用 |
+| V-NAT-004 | 草、灌木、蕨（M1–M2），农作物（麦/玉米）另见 GAP-V14 | 候选 Poly Haven `grass_medium_01/02`、`shrub_01..04`、`fern_02`（CC0）；农作物无免费来源 | 灰盒草/灌木继续使用 |
+| V-NAT-001 | 树篱 bocage | 真实缺口（GAP-V03），M0-024 不做 | 不做 |
+
+另：真实素材到位后，impostor atlas 应由 KTX2 离线烘焙（ARCHITECTURE §9.6 写 "atlas 1536² KTX2"）；M0 运行时烘焙只用于灰盒，不含贴图下载。

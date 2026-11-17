@@ -279,3 +279,16 @@
 - **受影响任务**：M0-022（对账阈值 0.05 m 目前在 18 000 tick 内零次触发）、M0-030。
 - **临时处理**：按此实现；默认警告模式，严格模式由开关启用。
 - **裁决（Fable 填写）**：
+
+
+### PI-020 M0-024：植被实例表 §9.6 的"6 B"与字段宽度不自洽；植被入口、perf 导出与瞬移后的重分桶
+
+- **状态**：open
+- **类别**：接口 / 数据格式
+- **提出者 / 日期**：M0-024 / 2026-11-17
+- **问题**：①ARCHITECTURE §9.6 写 `(x:u16, z:u16, species:u8, scale:u8, rot:u8)` = 6 B，但字段宽度之和是 7 B（2+2+1+1+1）；任务验收 3 与 §9.6 都以"每条 6 B"为硬约束。②入口：`?scene=terrain` 保持纯地形（M0-023 的 e2e 断言地形 draw call = 1），植被另设 `?scene=vegetation`（= 地形 + 植被）。③`window.__perf.dump()` 增加顶层字段 `vegetation{drawCalls, instances, tris}`（无植被时为 0；schema 号不变，属加字段）。④相机瞬移（出生/复活/调试 setPose）后，默认的 0.45 ms 重分桶预算会把全量重分类摊到数帧，期间远处区块沿用旧 LOD。
+- **证据**：client/src/render/vegetation/{scatter,vegetation}.ts；scatter.test.ts（round-trip）；e2e/vegetation.spec.ts。
+- **建议方案（已按此实现）**：①保留 6 B，把 x、z 各压成 12 bit（块内 1/64 m = 1.5625 cm 步长，块边 4096 步），species/scale/rot 仍各 u8：`b0=x[7:0] b1=x[11:8]|z[3:0]<<4 b2=z[11:4] b3=species b4=scale b5=rot`（`packInstance`/`unpackInstance`）。撒点在量化后的位置上判泊松间距，所以 4 m/1.5 m 间距对存储值严格成立。**M1-035 的 map-pipeline 烘焙必须输出同一布局**（或先改本条再改烘焙）；也可改为 x/z 各 u16 + 7 B，需同步 §9.6 与验收 3。②③按此实现，M0-030 用 `?scene=vegetation&cam=0|1|2`。④瞬移后调用 `Vegetation.settle(camera)`（无预算，≈ 1–3 ms 一次）。
+- **受影响任务**：M0-030（入口与 perf 字段）、M1-035（实例表布局）、M1-051（真素材替换占位，接口以实例表字节为界不变）、M1-052。
+- **临时处理**：按此实现。
+- **裁决（Fable 填写）**：

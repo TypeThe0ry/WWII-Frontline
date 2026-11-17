@@ -90,6 +90,8 @@ export class LodBuckets {
   private lastZ = NaN;
   private lastRankLimit = -1;
   private lastVersion = -1;
+  /** Instances classified by the last `update` (0 when it was skipped): a load-independent cost measure. */
+  evaluated = 0;
 
   constructor(
     readonly inst: CompactInstances,
@@ -192,6 +194,7 @@ export class LodBuckets {
     const dx0 = cx - this.lastX;
     const dy0 = cy - this.lastY;
     const dz0 = cz - this.lastZ;
+    this.evaluated = 0;
     if (unchanged && dx0 * dx0 + dy0 * dy0 + dz0 * dz0 < REEVAL_MOVE_M * REEVAL_MOVE_M) return -1;
 
     if (unchanged && this.uniformLod !== UNASSIGNED) {
@@ -214,6 +217,7 @@ export class LodBuckets {
     }
 
     const inst = this.inst;
+    this.evaluated = inst.count;
     let moves = 0;
     let allSame = true;
     let common = UNASSIGNED; // band shared by all rank-eligible instances so far
