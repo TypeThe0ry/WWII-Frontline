@@ -67,6 +67,7 @@ pub struct World {
     players: Vec<PlayerView>,
     objective_views: Vec<ObjectiveView>,
     pending_events: Vec<SimEvent>,
+    supply: Box<dyn crate::supply_iface::SupplyProvider>,
 }
 
 /// Debug: panics unless ids are strictly ascending. Release: returns a sorted (stable, last
@@ -127,6 +128,7 @@ impl World {
         ecs.insert_resource(Projectiles::default());
         ecs.insert_resource(crate::suppression::SuppressSeen::default());
         ecs.insert_resource(crate::spawn::SpawnRules::default());
+        ecs.insert_resource(crate::spawn::garrison::Garrisons::default());
         ecs.insert_resource(crate::rules::Objectives::default());
         ecs.insert_resource(crate::rules::MatchState::default());
         ecs.insert_resource(crate::rules::MatchCfg::from_data(cfg.data, cfg.tick_hz));
@@ -149,6 +151,7 @@ impl World {
             players: Vec::new(),
             objective_views: Vec::new(),
             pending_events: Vec::new(),
+            supply: Box::new(crate::supply_iface::NoSupply),
         }
     }
 
@@ -272,6 +275,7 @@ impl World {
             crate::medical::FallTracker::default(),
             crate::suppression::SuppressionState::default(),
             crate::spawn::SpawnProtection::default(),
+            crate::spawn::garrison::Officer::default(),
         ));
         if let Some(w) = weapon {
             self.ecs.entity_mut(e).insert(w);
@@ -784,6 +788,22 @@ impl World {
                 h.write_u32(*t);
             }
         }
+        let gs = self.ecs.resource::<crate::spawn::garrison::Garrisons>();
+        if gs.next_id > 0 {
+            h.write_u8(0xD2);
+            for g in gs.list.values() {
+                h.write_u16(g.id);
+                h.write_u8(g.team as u8);
+                h.write_u8(g.state as u8);
+                h.write_f32(g.pos.x);
+                h.write_f32(g.pos.z);
+                h.write_f32(g.hp);
+                h.write_f32(g.progress);
+                h.write_f32(g.slots);
+                h.write_u32(g.overrun_ticks);
+                h.write_u32(g.last_enemy.unwrap_or(u32::MAX));
+            }
+        }
         let ms = self.ecs.resource::<crate::rules::MatchState>();
         if ms.phase != crate::rules::MatchPhaseKind::Idle {
             h.write_u8(0xC2 + ms.phase as u8);
@@ -968,6 +988,311 @@ impl WorldView for World {
     fn nav_hint(&self) -> &NavData {
         static NAV: NavData = NavData {};
         &NAV
+    }
+}
+
+// ---- M1-019b: Garrisons -------------------------------------------------------------------
+
+impl World {
+    /// Installs the Supplies source Garrison placement pays from (M1-020).
+    pub fn set_supply_provider(&mut self, p: Box<dyn crate::supply_iface::SupplyProvider>) {
+        self.supply = p;
+    }
+
+    /// Lets `id` place Garrisons (the Officer role, until real roles exist in M1-021).
+    pub fn set_officer(&mut self, id: PlayerId, on: bool) {
+        if let Some(&(_, e)) = self.ecs.resource::<PlayerIndex>().map.get(&id) {
+            self.ecs
+                .entity_mut(e)
+                .insert(crate::spawn::garrison::Officer(on));
+        }
+    }
+
+    pub fn garrison_list(&self) -> Vec<crate::spawn::garrison::Garrison> {
+        self.ecs
+            .resource::<crate::spawn::garrison::Garrisons>()
+            .list
+            .values()
+            .cloned()
+            .collect()
+    }
+
+    /// Placement rules of GAMEDESIGN 10.2 / 10.6 (`pos` is where the Garrison would stand).
+    pub fn validate_garrison_place(
+        &self,
+        who: PlayerId,
+        pos: Vec3,
+        sup: &dyn crate::supply_iface::SupplyProvider,
+    ) -> Result<crate::spawn::garrison::GarrisonCost, crate::spawn::garrison::PlaceError> {
+        use crate::spawn::garrison::*;
+        let &(_, e) = self
+            .ecs
+            .resource::<PlayerIndex>()
+            .map
+            .get(&who)
+            .ok_or(PlaceError::NotAlive)?;
+        let er = self.ecs.entity(e);
+        let life = er.get::<LifeState>().ok_or(PlaceError::NotAlive)?;
+        if life.is_dead() || life.is_downed() {
+            return Err(PlaceError::NotAlive);
+        }
+        if !er.get::<Officer>().is_some_and(|o| o.0) {
+            return Err(PlaceError::WrongRole);
+        }
+        let team = *er.get::<Team>().ok_or(PlaceError::NotAlive)?;
+        let placer = er.get::<Transform>().ok_or(PlaceError::NotAlive)?.pos;
+        let d = |a: Vec3, b: Vec3| ((a.x - b.x).powi(2) + (a.z - b.z).powi(2)).sqrt();
+        let rules = self.ecs.resource::<crate::spawn::SpawnRules>();
+        for hq in rules.hq.iter().flatten() {
+            if d(*hq, pos) < MIN_HQ_M {
+                return Err(PlaceError::TooCloseHq);
+            }
+        }
+        let gs = self.ecs.resource::<Garrisons>();
+        let mut own = 0usize;
+        for g in gs.list.values() {
+            if g.state == GarrisonState::Destroyed {
+                continue;
+            }
+            if g.team == team {
+                own += 1;
+                if d(g.pos, pos) < MIN_OWN_M {
+                    return Err(PlaceError::TooCloseOwnGarrison);
+                }
+            } else if d(g.pos, pos) < MIN_ENEMY_M {
+                return Err(PlaceError::TooCloseEnemyGarrison);
+            }
+        }
+        let objs = &self.ecs.resource::<crate::rules::Objectives>().0;
+        let mut nearest: Option<(f32, &crate::rules::Objective)> = None;
+        for o in objs {
+            let dd = d(o.pos, pos);
+            if dd < o.radius_m + OBJECTIVE_EXTRA_M {
+                return Err(PlaceError::TooCloseObjective);
+            }
+            if nearest.is_none_or(|(nd, _)| dd < nd) {
+                nearest = Some((dd, o));
+            }
+        }
+        let col = &self.ecs.resource::<CollisionRes>().0;
+        if col
+            .slope_deg_at(pos.x, pos.z)
+            .is_none_or(|s| s > MAX_SLOPE_DEG)
+        {
+            return Err(PlaceError::Slope);
+        }
+        let water = self
+            .cfg
+            .data
+            .materials
+            .iter()
+            .position(|m| m.id == "water")
+            .map(|i| i as u8);
+        if water.is_some() && col.material_at(pos.x, pos.z) == water {
+            return Err(PlaceError::Water);
+        }
+        let eye = pos + Vec3::Y * 1.6;
+        for &(_, oe) in self.ecs.resource::<PlayerIndex>().map.values() {
+            let oer = self.ecs.entity(oe);
+            let (Some(ot), Some(oteam), Some(ol)) = (
+                oer.get::<Transform>(),
+                oer.get::<Team>(),
+                oer.get::<LifeState>(),
+            ) else {
+                continue;
+            };
+            if *oteam != team
+                && !ol.is_dead()
+                && d(ot.pos, pos) <= ENEMY_NEAR_M
+                && col.los(eye, ot.pos + Vec3::Y * 1.6)
+            {
+                return Err(PlaceError::EnemyNear);
+            }
+        }
+        if own >= TEAM_CAP {
+            return Err(PlaceError::TeamCap);
+        }
+        let sector = nearest.map(|(_, o)| o.id);
+        let in_sector = gs
+            .list
+            .values()
+            .filter(|g| g.team == team && g.state != GarrisonState::Destroyed)
+            .filter(|g| {
+                let ns = objs
+                    .iter()
+                    .min_by(|a, b| d(a.pos, g.pos).total_cmp(&d(b.pos, g.pos)))
+                    .map(|o| o.id);
+                ns == sector
+            })
+            .count();
+        if in_sector >= SECTOR_CAP {
+            return Err(PlaceError::SectorCap);
+        }
+        let enemy_sector = nearest
+            .and_then(|(_, o)| o.owner)
+            .is_some_and(|ow| ow != team);
+        let cost = if enemy_sector {
+            COST_ENEMY
+        } else {
+            COST_FRIENDLY
+        };
+        if sup.available(placer, SUPPLY_RANGE_M) < cost {
+            return Err(PlaceError::NoSupplies);
+        }
+        Ok(GarrisonCost { supplies: cost })
+    }
+
+    /// Places a Garrison (starts as a building at 20 % health) and pays for it.
+    pub fn place_garrison(
+        &mut self,
+        who: PlayerId,
+        pos: Vec3,
+    ) -> Result<u16, crate::spawn::garrison::PlaceError> {
+        use crate::spawn::garrison::*;
+        let mut sup = std::mem::replace(&mut self.supply, Box::new(crate::supply_iface::NoSupply));
+        let res = self.validate_garrison_place(who, pos, sup.as_ref());
+        let out = match res {
+            Err(e) => Err(e),
+            Ok(cost) => {
+                let &(_, e) = self.ecs.resource::<PlayerIndex>().map.get(&who).unwrap();
+                let team = *self.ecs.entity(e).get::<Team>().unwrap();
+                let placer = self.ecs.entity(e).get::<Transform>().unwrap().pos;
+                if !sup.consume(placer, SUPPLY_RANGE_M, cost.supplies) {
+                    Err(PlaceError::NoSupplies)
+                } else {
+                    let y = self
+                        .ecs
+                        .resource::<CollisionRes>()
+                        .0
+                        .height_at(pos.x, pos.z)
+                        .unwrap_or(pos.y);
+                    let mut gs = self.ecs.resource_mut::<Garrisons>();
+                    let id = gs.next_id;
+                    gs.next_id += 1;
+                    gs.list.insert(
+                        id,
+                        Garrison {
+                            id,
+                            team,
+                            pos: Vec3::new(pos.x, y, pos.z),
+                            owner: who,
+                            state: GarrisonState::Building,
+                            hp: HEALTH_HP * START_HP_FRAC,
+                            max_hp: HEALTH_HP,
+                            progress: 0.0,
+                            slots: SLOTS,
+                            last_enemy: None,
+                            overrun_ticks: 0,
+                            last_spawn: None,
+                            recent: Vec::new(),
+                        },
+                    );
+                    Ok(id)
+                }
+            }
+        };
+        self.supply = sup;
+        out
+    }
+
+    /// Damages a Garrison (`nominal` HP before the class multiplier); `true` if it fell.
+    pub fn damage_garrison(
+        &mut self,
+        id: u16,
+        nominal: f32,
+        kind: crate::spawn::garrison::GarrisonDamage,
+    ) -> bool {
+        use crate::spawn::garrison::*;
+        let mut ev = None;
+        {
+            let mut gs = self.ecs.resource_mut::<Garrisons>();
+            let Some(g) = gs.list.get_mut(&id) else {
+                return false;
+            };
+            if g.state == GarrisonState::Destroyed {
+                return false;
+            }
+            g.hp -= nominal * kind.mult();
+            if g.hp <= 0.0 {
+                g.hp = 0.0;
+                g.state = GarrisonState::Destroyed;
+                ev = Some(SimEvent::SpawnPointState {
+                    id,
+                    team: g.team,
+                    pos: g.pos,
+                    state: GarrisonState::Destroyed,
+                });
+            }
+        }
+        match ev {
+            Some(e) => {
+                self.pending_events.push(e);
+                true
+            }
+            None => false,
+        }
+    }
+
+    /// A dead player picks a Garrison to respawn at. Returns the estimated wait in ticks.
+    pub fn request_spawn(
+        &mut self,
+        who: PlayerId,
+        garrison: u16,
+    ) -> Result<u32, crate::spawn::garrison::SpawnRequestError> {
+        use crate::spawn::garrison::*;
+        let now = self.tick().0;
+        let hz = self.cfg.tick_hz;
+        let &(_, e) = self
+            .ecs
+            .resource::<PlayerIndex>()
+            .map
+            .get(&who)
+            .ok_or(SpawnRequestError::NotDead)?;
+        let (team, t_kia) = {
+            let er = self.ecs.entity(e);
+            let LifeState::Dead { t_kia, .. } = *er.get::<LifeState>().unwrap() else {
+                return Err(SpawnRequestError::NotDead);
+            };
+            (*er.get::<Team>().unwrap(), t_kia)
+        };
+        {
+            let gs = self.ecs.resource::<Garrisons>();
+            let g = gs
+                .list
+                .get(&garrison)
+                .ok_or(SpawnRequestError::NoSuchPoint)?;
+            if g.team != team {
+                return Err(SpawnRequestError::WrongTeam);
+            }
+            if g.state != GarrisonState::Active {
+                return Err(SpawnRequestError::NotActive);
+            }
+            if g.blocked(now, hz) {
+                return Err(SpawnRequestError::Blocked);
+            }
+            if g.slots < 1.0 {
+                return Err(SpawnRequestError::NoSlots);
+            }
+        }
+        let extra = {
+            let rules = self.ecs.resource::<crate::spawn::SpawnRules>();
+            let g = &self.ecs.resource::<Garrisons>().list[&garrison];
+            crate::spawn::timing::penalty_s(
+                t_kia,
+                rules.last_spawn.get(&who).copied(),
+                &g.recent,
+                hz,
+            )
+        };
+        let due = crate::spawn::timing::garrison_spawn_tick(t_kia, Tick(now), extra, hz);
+        self.ecs
+            .resource_mut::<crate::spawn::SpawnRules>()
+            .choice
+            .insert(who, garrison);
+        let mut q = self.ecs.resource_mut::<RespawnQueue>();
+        q.remove_player(who);
+        q.schedule(who, due);
+        Ok(due.0.saturating_sub(now))
     }
 }
 

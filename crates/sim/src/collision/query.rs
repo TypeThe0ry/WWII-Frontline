@@ -148,6 +148,11 @@ impl CollisionData {
         Some((y, n, ch.material(i, j)))
     }
 
+    /// Material id of the terrain cell under `(x, z)`.
+    pub fn material_at(&self, x: f32, z: f32) -> Option<u8> {
+        self.surface_at(x, z).map(|s| s.2)
+    }
+
     /// Unit surface normal (triangle of the cell containing the point).
     pub fn normal_at(&self, x: f32, z: f32) -> Option<Vec3> {
         self.surface_at(x, z).map(|s| s.1)

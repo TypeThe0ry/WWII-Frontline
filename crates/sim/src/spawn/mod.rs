@@ -14,6 +14,7 @@ use glam::Vec3;
 use crate::components::Team;
 use crate::ids::PlayerId;
 
+pub mod garrison;
 pub mod place;
 pub mod system;
 pub mod timing;
@@ -55,6 +56,7 @@ pub struct SpawnProtection {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SpawnKind {
     Hq,
+    Garrison,
 }
 
 /// HQ spawn state of the match.
@@ -68,6 +70,8 @@ pub struct SpawnRules {
     pub recent: [Vec<u32>; 2],
     /// Tick an enemy first stood in a HQ zone.
     pub zone_since: BTreeMap<PlayerId, u32>,
+    /// Garrison each dead player picked (`World::request_spawn`).
+    pub choice: BTreeMap<PlayerId, u16>,
     /// `respawn.json` base wait, ms (restored after the warm-up halving).
     pub base_wait_ms: Option<u32>,
 }

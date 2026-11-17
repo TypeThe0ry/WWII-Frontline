@@ -13,6 +13,13 @@ pub enum SimEvent {
     HqWarning {
         player: PlayerId,
     },
+    /// A Garrison finished building or was destroyed (M1-019b).
+    SpawnPointState {
+        id: u16,
+        team: Team,
+        pos: glam::Vec3,
+        state: crate::spawn::garrison::GarrisonState,
+    },
     PlayerSpawned {
         player: PlayerId,
         entity: EntityId,

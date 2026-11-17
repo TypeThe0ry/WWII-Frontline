@@ -804,3 +804,12 @@
 - **做法**：①M1-019 工作量大，拆 019a（HQ 出生计时/保护/选点/保护区）与 019b（Garrison、槽位、吞吐、`SupplyProvider`）。②规则仅在 `World::set_hq` 后启用，未设 HQ 的世界走 M0 老路径，既有 golden 不变；状态按需入哈希（0xD1）。③惩罚在出生到期时判定：到期时若自杀/洪水惩罚使应出生 tick 更晚则重新入队（效果等价于死亡时加 base_wait，且无需改 `deaths` 签名）；洪水只统计该队 HQ 近 10 s 的出生。④热身 ×0.5 通过 `World::step` 每 tick 调整 `RespawnPolicy.base_wait_ms`（仅 HQ 规则开启时）。⑤出生保护实现为“撤销本 tick 对受保护玩家的伤害”（恢复满血并删去其 `HitLog` 记录），所有伤害源无需改动；移动/FIRE 位取消。⑥HQ 区伤害走 `HitRec(shooter=target, kind=Explosion, direct_kia)`，无击杀归属，会引发流血（约 1 HP/s）。⑦常量（40 m 出生区、150 m 区、3 s 警告、40 HP/s、20 s/5 s 自杀、10 s/8 人/2 s 洪水、8 m 抖动、10 m 防杀半径）写在 `spawn/mod.rs`，`spawn.json` 现有字段留待 019b 读取；出生点位置抖动 8 m（任务写“出生区 40 m、点周围 8 m”，取点周围 8 m）。⑧推迟：`SpawnPointState` 事件与 `DeployResult`（随 M1-010/M1-026）、主动重新部署（随 M1-021）。
 - **受影响任务**：M1-019b、M1-021、M1-026、M1-060。
 - **裁决（Fable 填写）**：
+
+### PI-061 M1-019b：Garrison 的实现取舍
+
+- **状态**：resolved（实现者裁决，待 Fable 复核）
+- **类别**：sim
+- **提出者 / 日期**：M1 线程 / 2026-11-17
+- **做法**：①放置者兵种：M1 尚无兵种系统，用 `Officer(bool)` 组件（默认 false，`World::set_officer`），M1-021 换成真实兵种校验。②“Sector”=离放置点最近的据点；该据点归敌方则花 100，否则 50；每 Sector 2 个、全队 6 个（先判队伍上限）；无据点时全部算同一 Sector。③建造：持 USE 且在 6 m 内的己方玩家算施工者，速率 1+0.6(n−1)，n≤3；生命值随进度从 20 % 线性增至 100 %。④伤害：Garrison 暂无弹丸/爆炸碰撞体，经 `World::damage_garrison(nominal, Bullet|Explosion)`（×0.05/×1.0）；后续碰撞接入随 M1-020/M1-056。⑤封锁/Overrun 以“存活且未倒地”的玩家 XZ 距离判断；封锁=最近一次有敌人 30 m 内后 3 s。⑥出生：`request_spawn` 校验后把玩家重新排队到 `max(t_kia+8 s+惩罚, now)`；到期时若点失效（毁/封锁/换队）则回落 HQ，无槽位则顺延到下一个槽回复；吞吐 ≤2 人/s=同一点相邻出生至少间隔 hz/2 tick；Garrison 出生无保护。⑦推迟：个人冷却 8 s、拆除返还（`SupplyProvider` 只有 available/consume 两个函数，返还随 M1-020 扩接口）、`DeployResult`/重新部署（M1-021/026）。⑧新增事件 `SimEvent::SpawnPointState`（建成/摧毁）。
+- **受影响任务**：M1-020、M1-021、M1-026、M1-056、M1-060。
+- **裁决（Fable 填写）**：

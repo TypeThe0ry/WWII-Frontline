@@ -40,6 +40,12 @@ pub fn hq_spawn_tick(
     respawn_time(t_kia, t_pick, &p, hz)
 }
 
+/// Garrison spawn tick: `max(t_kia + 8 s + penalty, now)`, not wave aligned.
+pub fn garrison_spawn_tick(t_kia: Tick, now: Tick, extra_s: u32, hz: u8) -> Tick {
+    let ready = t_kia.0 + secs(super::garrison::BASE_WAIT_S + extra_s, hz);
+    Tick(ready.max(now.0))
+}
+
 /// Ticks of `s` seconds.
 pub fn secs(s: u32, hz: u8) -> u32 {
     ms_to_ticks(s * 1000, hz)
