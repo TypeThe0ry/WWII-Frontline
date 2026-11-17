@@ -1163,6 +1163,8 @@ export function decodeC0(bytes: Uint8Array): { kind: number; payload: Uint8Array
 
 ### 8.5 `/data` 数据文件 schema
 
+> **变更说明（PI-002 / PI-003 裁定）**：本节各示例的字段名与单位后缀以 `data/schemas/*.schema.json` 为**唯一真源**；示例与 schema 如有出入，一律以 schema 为准。文档字段名到数据字段名的映射见 `data/README.md` 的 "Field-name mapping" 表。新增字段先在 schema 中以可选字段加入，再同步 `crates/sim/src/data_defs.rs`。
+
 通则：JSON；`id` 为稳定字符串 slug（`snake_case`）；名称字段为 i18n key（`name_key`）；所有数值带单位后缀（`_m`、`_ms`、`_mps`、`_rpm`、`_kg`）；`【待调参】` 的字段在 `_meta.tunable` 列表中登记；构建时用 JSON Schema 校验并编译为二进制。历史参数（口径：公开史料，实现前须由执行者再次核对并在 `_meta.source` 写明出处）与游戏性参数分块。
 
 #### 8.5.1 `data/weapons/{id}.json`
@@ -1174,28 +1176,33 @@ export function decodeC0(bytes: Uint8Array): { kind: number; payload: Uint8Array
   "faction": "us",
   "class": "rifle_semi",
   "historical": {
-    "caliber": ".30-06 Springfield",
+    "caliber": "7.62×63 mm",
+    "cartridge": ".30-06 Springfield",
     "magazine_capacity": 8,
     "magazine_type": "en_bloc_clip",
     "muzzle_velocity_mps": 853,
     "rate_of_fire_rpm_practical": 40,
-    "effective_range_m": 450,
     "mass_kg": 4.3,
-    "_source": "待执行者补充公开史料出处"
+    "_source": "待 M0-031 复核（初值取自 GAMEDESIGN §6.2）"
   },
   "gameplay": {
-    "damage_torso": 70, "damage_head": 150, "damage_limb": 45,
-    "falloff": [{"dist_m": 0, "mult": 1.0}, {"dist_m": 300, "mult": 0.85}, {"dist_m": 600, "mult": 0.6}],
-    "spread_hip_deg": 2.5, "spread_ads_deg": 0.15, "recoil_pattern_id": "garand_v1",
-    "reload_ms": 2600, "reload_empty_ms": 3000, "swap_in_ms": 600,
-    "penetration": {"class": "light", "wood_m": 0.08, "metal_m": 0.0},
-    "bullet_drop_gravity_mps2": 9.81, "drag_k_per_m": 0.00075,
-    "suppression_radius_m": 3.0, "suppression_strength": 0.4,
+    "damage_torso_hp": 70,
+    "part_mult": {"head": 3.0, "neck": 2.0, "torso": 1.0, "pelvis": 0.9, "limb": 0.65},
+    "falloff": [{"dist_m": 0, "mult": 1.0}, {"dist_m": 100, "mult": 1.0}, {"dist_m": 600, "mult": 0.72}],
+    "fire": {"mode": "semi", "cap_rpm": 120},
+    "reload": {"tactical_ms": 3400, "empty_ms": 2800},
+    "ads_ms": 300,
+    "spread": {"hip_deg": 3.5, "ads_deg": 0.15},
+    "recoil": {"vkick_deg": 1.6, "hsigma_deg": 0.25, "recover_deg_s": 12, "bloom_per_shot_deg": 0.40, "bloom_decay_deg_s": 3.0},
+    "ballistics": {"muzzle_velocity_mps": 853, "drag_k_per_m": 0.00075, "gravity_mps2": 9.81},
+    "pen_power": 220,
     "mag_reserve": 6
   },
+  "fx": {"muzzle_flash_ms": 50, "tracer": false},
   "_meta": {
-    "tunable": ["gameplay.damage_torso","gameplay.damage_head","gameplay.spread_hip_deg"],
-    "calibration_ref": "REFERENCE_MEASUREMENTS §待定"
+    "status": "initial",
+    "tunable": ["gameplay.damage_torso_hp", "gameplay.falloff", "gameplay.spread.hip_deg"],
+    "calibration_ref": "REFERENCE_MEASUREMENTS §4.1 W-01…W-37"
   }
 }
 ```
