@@ -18,7 +18,11 @@ pub const POS_Y_BITS: u8 = 13;
 /// Wire yaw widths.
 pub const YAW_BITS_SNAPSHOT: u8 = 10;
 pub const YAW_BITS_COMPACT: u8 = 8;
+/// Entity pitch in snapshots (ARCHITECTURE §6.5.2; remote-player visual only).
 pub const PITCH_BITS_SNAPSHOT: u8 = 6;
+/// Pitch in aim-critical wire data (event `Shot.dir`): 9 bit, max error 0.176 deg. PI-001
+/// ruling: 8 bit (0.353 deg) exceeds the 0.35 deg acceptance threshold.
+pub const PITCH_BITS_EVENT: u8 = 9;
 
 /// Result of a quantiser: the code and whether the input was a finite number.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

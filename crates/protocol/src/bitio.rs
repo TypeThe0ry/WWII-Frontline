@@ -95,6 +95,30 @@ impl BitWriter {
     pub fn finish(self) -> Vec<u8> {
         self.buf
     }
+
+    /// The bytes written so far (last byte zero padded).
+    pub fn as_bytes(&self) -> &[u8] {
+        &self.buf
+    }
+
+    /// Discard everything written (keeps the allocation).
+    pub fn clear(&mut self) {
+        self.buf.clear();
+        self.bits = 0;
+    }
+
+    /// Append all bits of `other` (bit-exact, not byte aligned).
+    pub fn append(&mut self, other: &BitWriter) -> Result<(), CodecError> {
+        let mut r = BitReader::new(&other.buf);
+        let mut left = other.bits;
+        while left > 0 {
+            let take = left.min(32) as u8;
+            let v = r.read_bits(take)?;
+            self.write_bits(v, take)?;
+            left -= take as usize;
+        }
+        Ok(())
+    }
 }
 
 /// Reads bit fields written by [`BitWriter`].
@@ -235,6 +259,22 @@ mod tests {
                 assert_eq!(r.read_i(n).unwrap(), v, "n={n}");
             }
         }
+    }
+
+    #[test]
+    fn append_is_bit_exact() {
+        let mut a = BitWriter::new();
+        a.write_bits(0b101, 3).unwrap();
+        let mut b = BitWriter::new();
+        b.write_bits(0x1_2345_6789, 33).unwrap();
+        b.write_bits(1, 1).unwrap();
+        a.append(&b).unwrap();
+        assert_eq!(a.bit_len(), 37);
+        let bytes = a.finish();
+        let mut r = BitReader::new(&bytes);
+        assert_eq!(r.read_bits(3).unwrap(), 0b101);
+        assert_eq!(r.read_bits(33).unwrap(), 0x1_2345_6789);
+        assert_eq!(r.read_bits(1).unwrap(), 1);
     }
 
     #[test]

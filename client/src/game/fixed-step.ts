@@ -34,14 +34,13 @@ export class FixedStepper {
 
   advance(realDtMs: number): StepResult {
     if (Number.isFinite(realDtMs) && realDtMs > 0) this.acc += realDtMs;
-    let steps = Math.floor((this.acc + EPS_MS) / this.stepMs);
+    const due = Math.floor((this.acc + EPS_MS) / this.stepMs);
+    let steps = due;
+    this.acc -= due * this.stepMs;
     if (steps > this.maxSteps) {
+      // Spiral-of-death guard: run only maxSteps, drop the surplus time (acc already holds just the sub-step phase).
       steps = this.maxSteps;
       this.stepperClamped++;
-      // Spiral-of-death guard: drop the surplus, keep only the sub-step phase.
-      this.acc = this.acc % this.stepMs;
-    } else {
-      this.acc -= steps * this.stepMs;
     }
     if (this.acc < 0) this.acc = 0;
     this.totalSteps += steps;
