@@ -7,6 +7,7 @@
 
 pub mod ballistics;
 pub mod collision;
+pub mod combat;
 pub mod components;
 pub mod data;
 pub mod hash;

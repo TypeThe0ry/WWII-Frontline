@@ -1,0 +1,7 @@
+us_m1_garand: near 2 mid 2 far 2
+ger_kar98k: near 1 mid 2 far 2
+us_m1_carbine: near 3 mid 3 far 4
+us_thompson_m1a1: near 3 mid 3 far 5
+ger_mp40: near 3 mid 4 far 6
+us_m1911a1: near 3 mid 3 far 5
+ger_p38: near 3 mid 4 far 6

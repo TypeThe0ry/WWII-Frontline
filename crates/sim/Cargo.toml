@@ -69,3 +69,7 @@ harness = false
 [[bench]]
 name = "weapon_step"
 harness = false
+
+[[bench]]
+name = "combat"
+harness = false

@@ -731,3 +731,12 @@
 - **做法**：①`weapon/melee.rs`：`MeleeState`（Idle/Windup/Cooldown + 剩余 tick + 是否冲刺突刺）、`step_melee`、纯函数 `melee_trace`；调度顺序 `movement -> melee -> weapons -> projectiles -> deaths`，近战期间屏蔽 FIRE。②近战武器按阵营取数据里的刺刀（`MeleeTable`，美 `us_m1_bayonet`、德 `ger_s8498_bayonet`）；刀、枪托、手枪托的数据与参数已就绪，等武器槽（013c）再接入。③判定用水平距离（≤ range_m）+ ±35° 扇形 + 脚高差 ≤1 m，角度比较留 0.01° 余量（大于 16 位偏航步长 0.0055°），使数据值 120°/35° 恰好命中。④背刺：攻击者在目标朝向反方向 ≥120° 内，直接击杀（伤害取 max(hp, damage)）。⑤冲刺中开始挥刺刀 → 射程 ×1.2（规格写"冲刺突刺 +20%"，取射程而非伤害）。⑥友军目标直接跳过（ff_mult=0）。⑦击杀事件 weapon 索引用 0xFF（`MELEE_WEAPON_IDX`），新增 `SimEvent::MeleeHit`；哈希仅在近战进行中写入，空闲时不改变既有 golden。⑧`swap_in_ms` 副武器切换需要武器槽/loadout 状态，拆为 013c。
 - **受影响任务**：M1-013c、M1-014、M1-016、M1-040。
 - **裁决（Fable 填写）**：
+
+### PI-053 M1-014：拆为 a（伤害模型、归属窗口、命中体历史）与 b（Downed 接入）；倍率仍取武器数据
+
+- **状态**：resolved（实现者裁决，待 Fable 复核）
+- **类别**：sim
+- **提出者 / 日期**：M1 线程 / 2026-11-17
+- **做法**：①新增 `combat/`：`damage`（`compute_damage`/`damage_amount`、`ff_mult`、`DamageOutcome::{Hit,Downed,Killed(reason)}`，Downed 血量 40、超杀 −60）、`credit`（15 s 近期伤害窗口，供 M1-016）、`lagcomp_history`（16 tick 环，`record`/`hitboxes_at` 线性插值，回溯逻辑仍归 M1-025）。②部位倍率沿用各武器数据里的 `part_mult`（已含颈/盆骨/肢体），不另建 `hit_zones.json`；上肢/下肢同为 ×0.65，不拆 `UpperLimb/LowerLimb`。③头盔：M1 全员视为戴盔，手枪/冲锋枪头部倍率封顶 2.0（取数据值与 2.0 的较小者），步枪不受影响；无头盔数据，待装备系统。④友军伤害默认开启：子弹 ×0.5（爆炸 0.7、近战 0、载具 1.0、坦克炮 0.5），`projectile.rs` 不再跳过队友，命中队友的子弹在此终止；穿透系数 `pen_mult` 暂为 1.0（M1-012 的层来源待地图道具）。⑤Downed 状态机属 M1-016：`deaths` 仍按 `hp ≤ 0` 判死，`compute_damage` 的 Downed 结果先不被消费。⑥姿态命中盒总高 1.79/1.19/0.51 m（含半径）与 GD 9.5 的 1.8/1.2/0.5 m 在 2 cm 内，未改体积。⑦golden 重定：`bots` 因友军伤害与头盔规则改变。
+- **受影响任务**：M1-015、M1-016、M1-017、M1-025、M1-040。
+- **裁决（Fable 填写）**：

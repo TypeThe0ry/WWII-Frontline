@@ -3,8 +3,8 @@
 //! Each tick a projectile integrates [`SUBSTEPS`] sub-steps (gravity + quadratic drag, see
 //! [`crate::weapon::ballistics`]); every sub-step segment is tested against the terrain
 //! (`CollisionData::raycast`) and the hit volumes of the enemy players
-//! ([`crate::weapon::hitbox`]); the nearest hit ends the projectile. Players of the shooter's
-//! team and the shooter are ignored (friendly fire is M1-014; there is no penetration in M0).
+//! ([`crate::weapon::hitbox`]); the nearest hit ends the projectile. The shooter is ignored;
+//! teammates take `ff_mult` damage ([`crate::combat::damage`], M1-014; no penetration yet).
 //! A projectile that leaves the loaded collision, lives longer than 4 s or drops below 150 m/s
 //! is removed silently. Damage `D = damage_torso_hp * falloff(d) * part_mult` is subtracted from
 //! the target's [`Health`] and reported as [`SimEvent::Hit`] (and logged in [`HitLog`] for the
@@ -13,6 +13,7 @@
 use bevy_ecs::prelude::*;
 use glam::Vec3;
 
+use crate::combat::damage::{damage_amount, DamageKind, HitInfo, TargetCtx};
 use crate::components::{
     CollisionRes, EntityTable, EventBuf, Motion, SimCfgRes, Team, Transform, WeaponTable,
 };
@@ -97,23 +98,24 @@ struct Target {
     alive: bool,
 }
 
-fn part_mult(def: &WeaponDef, zone: HitZone) -> f32 {
-    let m = &def.gameplay.part_mult;
-    (match zone {
-        HitZone::Head => m.head,
-        HitZone::Neck => m.neck,
-        HitZone::Torso => m.torso,
-        // PI-007: a missing pelvis multiplier falls back to the torso one.
-        HitZone::Pelvis => m.pelvis.unwrap_or(m.torso),
-        HitZone::Limb => m.limb,
-    }) as f32
-}
-
-/// `D = dmg * falloff(d) * part_mult` (GAMEDESIGN 6.6); no other modifiers in M0.
+/// `D = dmg * falloff(d) * part_mult` against an enemy wearing a helmet (GAMEDESIGN 6.6); the
+/// full model with friendly fire and penetration is [`crate::combat::compute_damage`].
 pub fn damage(def: &WeaponDef, zone: HitZone, dist_m: f32) -> f32 {
-    def.gameplay.damage_torso_hp as f32
-        * ballistics::falloff(&def.gameplay.falloff, dist_m)
-        * part_mult(def, zone)
+    crate::combat::damage::damage_amount(
+        def,
+        &HitInfo {
+            zone,
+            travelled_m: dist_m,
+            pen_mult: 1.0,
+            kind: DamageKind::Bullet,
+        },
+        &TargetCtx {
+            hp: 0.0,
+            same_team: false,
+            helmet: true,
+            friendly_fire: true,
+        },
+    )
 }
 
 enum Fate {
@@ -211,7 +213,7 @@ fn advance(
         // Nearest body hit on this segment.
         let mut body: Option<(f32, HitZone, usize)> = None;
         for (i, t) in targets.iter().enumerate() {
-            if !t.alive || t.id == pr.owner || t.team == pr.team {
+            if !t.alive || t.id == pr.owner {
                 continue;
             }
             if !hitbox::seg_aabb_overlap(p0, p1, t.foot) {
@@ -234,8 +236,24 @@ fn advance(
             (Some((tb, zone, i)), _, gt) if gt.is_none_or(|g| tb < g) => {
                 let hit_pos = p0 + seg * tb;
                 let dist = (hit_pos - pr.origin).length();
-                let dmg = damage(def, zone, dist);
                 let tgt = &mut targets[i];
+                let same_team = tgt.team == pr.team;
+                let hp_before = q.get(tgt.entity).map_or(0.0, |(_, _, _, h)| h.hp);
+                let dmg = damage_amount(
+                    def,
+                    &HitInfo {
+                        zone,
+                        travelled_m: dist,
+                        pen_mult: 1.0,
+                        kind: DamageKind::Bullet,
+                    },
+                    &TargetCtx {
+                        hp: hp_before,
+                        same_team,
+                        helmet: true,
+                        friendly_fire: true,
+                    },
+                );
                 if let Ok((_, _, _, mut hp)) = q.get_mut(tgt.entity) {
                     hp.hp -= dmg;
                     if hp.hp <= 0.0 {
