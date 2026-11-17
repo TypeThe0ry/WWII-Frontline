@@ -651,3 +651,14 @@
 - **体积**：不计入 `core`（按需加载，不在首包）；`manifest-budget` 的 `core` 由外部 size-report 提供（PI-036），应只统计首包。
 - **未做**：法线图 `RRRG` 布局的 BC5 路径（目前走 RGBA 格式，法线重建由材质着色器处理，M1-042）；Playwright 真机 GPU 上传与耗时（H-021）。
 - **裁决（Fable 填写）**：
+
+### PI-045 M1-009：炮弹内联在车辆 `weapons[]`，车辆 schema 向后兼容地扩展；ARCH 8.5.4 的 hull_health 1000 以 GD 的 1600 为准
+
+- **状态**：resolved（实现者裁决，待 Fable 复核）
+- **类别**：数据/文档不一致
+- **提出者 / 日期**：M1 线程 / 2026-11-17
+- **做法**：①卡允许"独立 `ammo_shells/` 文件或并入车辆 `weapons[]` 二选一"，选并入：M1 只有一种炮，单独成 kind 要再加 schema、Rust 类型与引用规则，收益到 M3 才有（M4A3E2 共用 75 mm M3 时再抽出，届时在 `weapons[].shells` 改为 `shell_ids`）。②`vehicle.schema.json` 新增均为可选字段：`historical.dimensions_m`、`gameplay.{max_speed_mps, hull_turn_deg_s, accel_time_s, max_slope_deg, armor_zones[], modules[], weapons[], spawn, sockets}`，旧夹具与 M0 数据不受影响。③`data-validate` 车辆规则：座位 id 唯一、坦克类 `armor_zones` 覆盖 9 区且 id 不重复、模块/武器 id 唯一、武器座位须存在、`max_speed_mps = 0.75 × 史实路速`（±0.5%）。单位白名单增加后缀 `_pct`、`_pct_per_100m`、`_rounds`。④`hull_health_hp = 1600`（GD 14.8），ARCH 8.5.4 示例的 1000 仅为结构示例。⑤`armor_mm{front,side,rear,top}` 汇总保留（必填，取车体前上/侧/后/顶），细粒度以 `armor_zones` 为准。
+- **假设**：车载 M1919 的伤害取 40（GD 6.3 单兵 MG34 49 × 0.8 的类推，GD 无 M1919 行），M2HB 取表内 85；M1919 初速 853 m/s、500 rpm 取 GD 6.2 表。Sherman 最高速 28.5 km/h = 7.9167 m/s 以 `max_speed_mps` 存（`_kph` 不在单位白名单）。悬挂/履带参数沿用 M0 夹具初值，待 M1-022 实测。
+- **未做**：Rust 侧 `weapons`/`spawn` 暂为松散 `serde_json::Value`，由 M1-022/M1-023 在消费时定型；`GOLDEN`（sim/bots）未受影响（`weapons` 表未动）。
+- **受影响任务**：M1-022、M1-023、M1-048、M1-064。
+- **裁决（Fable 填写）**：

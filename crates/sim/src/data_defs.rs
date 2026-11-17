@@ -517,8 +517,45 @@ pub struct VehicleHistorical {
     pub crew: Hist<u32>,
     pub main_gun: Option<String>,
     pub max_speed_mps: Hist<f64>,
+    #[serde(default)]
+    pub dimensions_m: Option<Dimensions>,
     #[serde(rename = "_source")]
     pub source: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Dimensions {
+    pub length: f64,
+    pub width: f64,
+    pub height: f64,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum ArmorKind {
+    Plate,
+    Mantlet,
+}
+
+/// One armour plate zone (GAMEDESIGN 14.3.3): thickness and angle from the vertical.
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ArmorZone {
+    pub id: String,
+    pub thickness_mm: f64,
+    pub slope_deg: f64,
+    pub kind: ArmorKind,
+}
+
+/// Damageable module (GAMEDESIGN 14.5.1); `effects.at_50pct` / `at_0` are loose maps of
+/// multipliers and flags that M1-023 interprets.
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct VehicleModule {
+    pub id: String,
+    pub health_hp: f64,
+    pub effects: BTreeMap<String, BTreeMap<String, serde_json::Value>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize)]
@@ -561,6 +598,29 @@ pub struct VehicleGameplay {
     pub turret_traverse_deg_s: Option<f64>,
     #[serde(default)]
     pub gun_elevation_deg: Option<[f64; 2]>,
+    /// Game top speed, m/s (= 0.75 x historical road speed, GAMEDESIGN 14.3).
+    #[serde(default)]
+    pub max_speed_mps: Option<f64>,
+    #[serde(default)]
+    pub hull_turn_deg_s: Option<f64>,
+    /// Time to reach top speed: `[min, max]` seconds.
+    #[serde(default)]
+    pub accel_time_s: Option<[f64; 2]>,
+    #[serde(default)]
+    pub max_slope_deg: Option<f64>,
+    #[serde(default)]
+    pub armor_zones: Vec<ArmorZone>,
+    #[serde(default)]
+    pub modules: Vec<VehicleModule>,
+    /// Cannon / machine-gun mounts with inline shell data (PI-045); consumed by M1-023.
+    #[serde(default)]
+    pub weapons: Vec<serde_json::Value>,
+    /// Spawn gating incl. the M1 test override (no resource system before M2).
+    #[serde(default)]
+    pub spawn: Option<serde_json::Value>,
+    /// Placeholder model attachment points.
+    #[serde(default)]
+    pub sockets: Vec<String>,
     pub spawn_cost: SpawnCost,
     pub respawn_cooldown_s: f64,
 }

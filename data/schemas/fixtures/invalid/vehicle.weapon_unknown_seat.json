@@ -1,0 +1,348 @@
+{
+  "_expect_error": "is not a seat of this vehicle",
+  "id": "us_bad",
+  "name_key": "vehicle.us_m4a1_75.name",
+  "faction": "us",
+  "type": "medium_tank",
+  "historical": {
+    "mass_kg": 30300,
+    "crew": 5,
+    "main_gun": "75 mm M3",
+    "max_speed_mps": 10.5556,
+    "dimensions_m": {
+      "length": 5.84,
+      "width": 2.62,
+      "height": 2.74
+    },
+    "_source": "待 M1-070 复核"
+  },
+  "gameplay": {
+    "hull_health_hp": 1600,
+    "max_speed_mps": 7.9167,
+    "armor_mm": {
+      "front": 51,
+      "side": 38,
+      "rear": 38,
+      "top": 19
+    },
+    "armor_zones": [
+      {
+        "id": "hull_front_upper",
+        "thickness_mm": 51,
+        "slope_deg": 56,
+        "kind": "plate"
+      },
+      {
+        "id": "hull_front_lower",
+        "thickness_mm": 51,
+        "slope_deg": 45,
+        "kind": "plate"
+      },
+      {
+        "id": "hull_side",
+        "thickness_mm": 38,
+        "slope_deg": 0,
+        "kind": "plate"
+      },
+      {
+        "id": "hull_rear",
+        "thickness_mm": 38,
+        "slope_deg": 0,
+        "kind": "plate"
+      },
+      {
+        "id": "hull_top",
+        "thickness_mm": 19,
+        "slope_deg": 90,
+        "kind": "plate"
+      },
+      {
+        "id": "turret_front",
+        "thickness_mm": 76,
+        "slope_deg": 30,
+        "kind": "mantlet"
+      },
+      {
+        "id": "turret_side",
+        "thickness_mm": 51,
+        "slope_deg": 25,
+        "kind": "plate"
+      },
+      {
+        "id": "turret_rear",
+        "thickness_mm": 51,
+        "slope_deg": 25,
+        "kind": "plate"
+      },
+      {
+        "id": "turret_top",
+        "thickness_mm": 25,
+        "slope_deg": 90,
+        "kind": "plate"
+      }
+    ],
+    "seats": [
+      {
+        "id": "driver",
+        "role": "driver"
+      },
+      {
+        "id": "gunner",
+        "role": "gunner",
+        "turret": true
+      },
+      {
+        "id": "commander",
+        "role": "commander",
+        "turret": true
+      }
+    ],
+    "modules": [
+      {
+        "id": "engine",
+        "health_hp": 300,
+        "effects": {
+          "at_50pct": {
+            "speed_mult": 0.6,
+            "accel_mult": 0.6
+          },
+          "at_0": {
+            "immobilized": true,
+            "fire_chance_pct": 40
+          }
+        }
+      },
+      {
+        "id": "track_l",
+        "health_hp": 250,
+        "effects": {
+          "at_50pct": {
+            "thrust_mult": 0.6
+          },
+          "at_0": {
+            "speed_mult": 0.3
+          }
+        }
+      },
+      {
+        "id": "track_r",
+        "health_hp": 250,
+        "effects": {
+          "at_50pct": {
+            "thrust_mult": 0.6
+          },
+          "at_0": {
+            "speed_mult": 0.3
+          }
+        }
+      },
+      {
+        "id": "turret_drive",
+        "health_hp": 200,
+        "effects": {
+          "at_50pct": {
+            "traverse_mult": 0.5
+          },
+          "at_0": {
+            "manual_traverse_deg_s": 3
+          }
+        }
+      },
+      {
+        "id": "main_gun",
+        "health_hp": 250,
+        "effects": {
+          "at_50pct": {
+            "reload_mult": 1.4,
+            "spread_mult": 1.5
+          },
+          "at_0": {
+            "can_fire": false
+          }
+        }
+      },
+      {
+        "id": "ammo_rack",
+        "health_hp": 150,
+        "effects": {
+          "at_0": {
+            "cookoff_chance_pct": 60,
+            "cookoff_radius_m": 12,
+            "cookoff_damage_max_hp": 350
+          }
+        }
+      },
+      {
+        "id": "crew_driver",
+        "health_hp": 100,
+        "effects": {}
+      },
+      {
+        "id": "crew_gunner",
+        "health_hp": 100,
+        "effects": {}
+      },
+      {
+        "id": "crew_commander",
+        "health_hp": 100,
+        "effects": {}
+      }
+    ],
+    "weapons": [
+      {
+        "id": "main_gun_75mm_m3",
+        "kind": "cannon",
+        "seat": "gunner",
+        "reload_s": 3,
+        "switch_reload_s": 1,
+        "ammo_rounds": {
+          "ap": 30,
+          "he": 24,
+          "wp": 6
+        },
+        "shells": [
+          {
+            "id": "us_75mm_m61_apcbc",
+            "type": "ap",
+            "muzzle_velocity_mps": 619,
+            "p100_mm": 82,
+            "drop_pct_per_100m": 3.5,
+            "structure_damage_hp": 400
+          },
+          {
+            "id": "us_75mm_m48_he",
+            "type": "he",
+            "muzzle_velocity_mps": 619,
+            "he_pen_mm": 15,
+            "explosion_damage_max_hp": 250,
+            "explosion_radius_m": 7
+          },
+          {
+            "id": "us_75mm_wp_smoke",
+            "type": "smoke",
+            "muzzle_velocity_mps": 619,
+            "cloud_radius_m": 12,
+            "duration_s": 40
+          }
+        ]
+      },
+      {
+        "id": "coax_m1919",
+        "kind": "mg",
+        "seat": "loader",
+        "ammo_rounds": {
+          "total": 1000
+        },
+        "rate_of_fire_rpm": 500,
+        "muzzle_velocity_mps": 853,
+        "damage_torso_hp": 40
+      },
+      {
+        "id": "hull_m1919",
+        "kind": "mg",
+        "seat": "driver",
+        "ammo_rounds": {
+          "total": 400
+        },
+        "rate_of_fire_rpm": 500,
+        "muzzle_velocity_mps": 853,
+        "damage_torso_hp": 40
+      },
+      {
+        "id": "roof_m2hb",
+        "kind": "mg",
+        "seat": "commander",
+        "ammo_rounds": {
+          "total": 200
+        },
+        "rate_of_fire_rpm": 550,
+        "muzzle_velocity_mps": 890,
+        "damage_torso_hp": 85
+      }
+    ],
+    "suspension": {
+      "rays_per_side": 6,
+      "rest_length_m": 0.6,
+      "stiffness_n_per_m": 38000,
+      "damping_ns_per_m": 3800
+    },
+    "tracks": {
+      "max_torque_nm": 22000,
+      "friction_forward": 1.1,
+      "friction_lateral": 2.2
+    },
+    "turret_traverse_deg_s": 24,
+    "gun_elevation_deg": [
+      -10,
+      25
+    ],
+    "hull_turn_deg_s": 30,
+    "accel_time_s": [
+      6,
+      12
+    ],
+    "max_slope_deg": 30,
+    "spawn_cost": {
+      "manpower": 140,
+      "munitions": 80,
+      "fuel": 120
+    },
+    "respawn_cooldown_s": 240,
+    "spawn": {
+      "armor_crew_min_players": 2,
+      "time_gate_s": 300,
+      "m1_override": {
+        "cost": {
+          "manpower": 0,
+          "munitions": 0,
+          "fuel": 0
+        },
+        "cooldown_s": 60,
+        "time_gate_s": 0
+      }
+    },
+    "sockets": [
+      "socket_gun_muzzle",
+      "socket_turret",
+      "socket_hatch"
+    ]
+  },
+  "_meta": {
+    "status": "initial",
+    "tunable": [
+      "gameplay.hull_health_hp",
+      "gameplay.max_speed_mps",
+      "gameplay.armor_mm.front",
+      "gameplay.armor_mm.side",
+      "gameplay.armor_mm.rear",
+      "gameplay.armor_mm.top",
+      "gameplay.suspension.rays_per_side",
+      "gameplay.suspension.rest_length_m",
+      "gameplay.suspension.stiffness_n_per_m",
+      "gameplay.suspension.damping_ns_per_m",
+      "gameplay.tracks.max_torque_nm",
+      "gameplay.tracks.friction_forward",
+      "gameplay.tracks.friction_lateral",
+      "gameplay.turret_traverse_deg_s",
+      "gameplay.gun_elevation_deg",
+      "gameplay.hull_turn_deg_s",
+      "gameplay.accel_time_s",
+      "gameplay.max_slope_deg",
+      "gameplay.spawn_cost.manpower",
+      "gameplay.spawn_cost.munitions",
+      "gameplay.spawn_cost.fuel",
+      "gameplay.respawn_cooldown_s",
+      "gameplay.spawn.armor_crew_min_players",
+      "gameplay.spawn.time_gate_s",
+      "gameplay.spawn.m1_override.cost.manpower",
+      "gameplay.spawn.m1_override.cost.munitions",
+      "gameplay.spawn.m1_override.cost.fuel",
+      "gameplay.spawn.m1_override.cooldown_s",
+      "gameplay.spawn.m1_override.time_gate_s",
+      "gameplay.armor_zones",
+      "gameplay.modules",
+      "gameplay.weapons"
+    ],
+    "calibration_ref": "GAMEDESIGN §14.2–14.6；悬挂/履带参数待 M1-022 实测（M1-071）"
+  }
+}

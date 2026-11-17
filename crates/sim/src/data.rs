@@ -263,6 +263,63 @@ mod tests {
     }
 
     #[test]
+    fn m4a1_sherman_matches_gd_14() {
+        let d = GameData::embedded();
+        let v = d.vehicle("us_m4a1_75").expect("us_m4a1_75");
+        let g = &v.gameplay;
+        assert_eq!(g.hull_health_hp, 1600.0);
+        assert_eq!(g.seats.len(), 3);
+        // game top speed = 38 km/h x 0.75 = 28.5 km/h
+        assert!((g.max_speed_mps.unwrap() * 3.6 - 28.5).abs() < 0.01);
+        assert_eq!(g.armor_zones.len(), 9);
+        let plates: Vec<(f64, f64)> = g
+            .armor_zones
+            .iter()
+            .map(|z| (z.thickness_mm, z.slope_deg))
+            .collect();
+        assert_eq!(
+            plates,
+            [
+                (51.0, 56.0),
+                (51.0, 45.0),
+                (38.0, 0.0),
+                (38.0, 0.0),
+                (19.0, 90.0),
+                (76.0, 30.0),
+                (51.0, 25.0),
+                (51.0, 25.0),
+                (25.0, 90.0)
+            ]
+        );
+        let hp = |id: &str| g.modules.iter().find(|m| m.id == id).unwrap().health_hp;
+        assert_eq!(
+            [
+                hp("engine"),
+                hp("track_l"),
+                hp("track_r"),
+                hp("turret_drive"),
+                hp("main_gun"),
+                hp("ammo_rack")
+            ],
+            [300.0, 250.0, 250.0, 200.0, 250.0, 150.0]
+        );
+        let main = g
+            .weapons
+            .iter()
+            .find(|w| w["id"] == "main_gun_75mm_m3")
+            .unwrap();
+        assert_eq!(
+            main["ammo_rounds"],
+            serde_json::json!({"ap": 30, "he": 24, "wp": 6})
+        );
+        assert_eq!(main["reload_s"], 3.0);
+        let rack = g.modules.iter().find(|m| m.id == "ammo_rack").unwrap();
+        assert_eq!(rack.effects["at_0"]["cookoff_chance_pct"], 60.0);
+        assert_eq!(g.gun_elevation_deg, Some([-10.0, 25.0]));
+        assert_eq!(g.turret_traverse_deg_s, Some(24.0));
+    }
+
+    #[test]
     fn data_canonical_json_sorted_compact() {
         let v: serde_json::Value =
             serde_json::from_str(r#"{ "b": [1, 2], "a": {"z": 1, "y": "s"} }"#).unwrap();
@@ -315,7 +372,7 @@ mod tests {
             }
             n += 1;
         }
-        assert_eq!(n, 10);
+        assert_eq!(n, 11);
     }
 
     #[test]
