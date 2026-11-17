@@ -538,3 +538,6 @@ blocked / in-progress / todo：无。M0 的 33 个任务全部已提交（M0-033
 
 ### M1-018 据点占领与对局状态机 — done — 2026-11-17 — 提交见 git log
 - 新模块 `rules/`（占领公式、据点、对局阶段 Idle→Warmup→Live→Ended）、`/data/rules/match_m1.json` + schema `rule_match`；测试 `capture_m1` 10 项、`match_state_m1` 6 项；bench `objectives` 0.009 ms/tick；既有 golden 未变（PI-059）。
+
+### M1-019a HQ 出生 — partial（019b Garrison 待做）— 2026-11-17 — 提交见 git log
+- 新模块 `spawn/`（timing/place/system）：HQ 波次出生、自杀/洪水惩罚、热身 ×0.5、出生保护（撤销当 tick 伤害）、防重生杀选点、HQ 保护区；`World::set_hq` 开启（未设置 HQ 时行为与 M0 完全一致，golden 未变）；测试 `spawn_hq` 8 项（PI-060）。

@@ -375,6 +375,7 @@ pub fn respawns(
     mut rng: ResMut<SimRng>,
     mut queue: ResMut<RespawnQueue>,
     mut events: ResMut<EventBuf>,
+    mut rules: ResMut<crate::spawn::SpawnRules>,
     mut q: Query<(
         &mut Transform,
         &mut Motion,
@@ -384,6 +385,7 @@ pub fn respawns(
         &Team,
         &Home,
         Option<&mut WeaponState>,
+        &mut crate::spawn::SpawnProtection,
     )>,
 ) {
     if queue.is_empty() {
@@ -393,7 +395,97 @@ pub fn respawns(
         let Some(&(eid, e)) = index.map.get(&pid) else {
             continue;
         };
-        let Ok((mut t, mut m, mut hp, mut life, mut last, team, home, weapon)) = q.get_mut(e)
+        // M1-019a: HQ rules (penalties, protection, spawn placement).
+        let hq_pos = match q.get(e) {
+            Ok((.., team, _, _, _)) if rules.active() => rules.hq_of(*team),
+            _ => None,
+        };
+        if let Some(hq) = hq_pos {
+            let Ok((_, _, _, life, _, team, ..)) = q.get(e) else {
+                continue;
+            };
+            let LifeState::Dead { t_kia, .. } = *life else {
+                continue;
+            };
+            let team = *team;
+            let extra = crate::spawn::timing::penalty_s(
+                t_kia,
+                rules.last_spawn.get(&pid).copied(),
+                &rules.recent[team as usize],
+                cfg.hz,
+            );
+            if extra > 0 {
+                let due = crate::spawn::timing::hq_spawn_tick(
+                    t_kia,
+                    policy.0.pick_tick(t_kia, cfg.hz),
+                    &policy.0,
+                    1.0,
+                    extra,
+                    cfg.hz,
+                );
+                if due.0 > tick.0 .0 {
+                    queue.schedule(pid, due);
+                    continue;
+                }
+            }
+            let mut all = Vec::new();
+            let mut enemies = Vec::new();
+            for (&other, &(_, oe)) in &index.map {
+                if other == pid {
+                    continue;
+                }
+                if let Ok((ot, _, _, ol, _, oteam, ..)) = q.get(oe) {
+                    if ol.is_dead() {
+                        continue;
+                    }
+                    all.push(ot.pos);
+                    if *oteam != team {
+                        enemies.push(ot.pos);
+                    }
+                }
+            }
+            let mut r = rng.stream(tick.0, eid, Purpose::Respawn);
+            let pick =
+                crate::spawn::place::pick_spawn(&col.0, hq, &all, &enemies, || unit_f32(&mut r));
+            let Ok((mut t, mut m, mut hp, mut life, mut last, _, home, weapon, mut prot)) =
+                q.get_mut(e)
+            else {
+                continue;
+            };
+            let pos = pick.pos;
+            let yaw = match points.center {
+                Some((cx, cz)) if (cx - pos.x).abs() + (cz - pos.z).abs() > 1e-3 => {
+                    libm::atan2f(cx - pos.x, cz - pos.z)
+                }
+                _ => home.yaw,
+            };
+            let code = quant_yaw(yaw, 16).code;
+            let yaw = dequant_yaw(code, 16);
+            t.pos = pos;
+            t.yaw = yaw;
+            t.pitch = 0.0;
+            *m = Motion::from_auth(&crate::movement::PlayerAuthState::spawn(pos, yaw));
+            hp.hp = hp.max_hp;
+            *life = LifeState::Alive;
+            let mut idle = neutral_input();
+            idle.yaw = code;
+            last.cmd = idle;
+            if let (Some(mut w), Some(fresh)) = (
+                weapon,
+                crate::components::starting_weapon(cfg.data, DEFAULT_ROLE, team, cfg.hz),
+            ) {
+                *w = fresh;
+            }
+            prot.until = tick.0 .0 + crate::spawn::PROTECTION_S * u32::from(cfg.hz);
+            rules.last_spawn.insert(pid, tick.0 .0);
+            let win = crate::spawn::FLOOD_WINDOW_S * u32::from(cfg.hz);
+            let rec = &mut rules.recent[team as usize];
+            rec.retain(|&x| tick.0 .0.saturating_sub(x) <= win);
+            rec.push(tick.0 .0);
+            events.0.push(SimEvent::Spawn { player: pid, pos });
+            continue;
+        }
+        let Ok((mut t, mut m, mut hp, mut life, mut last, team, home, weapon, _)) = q.get_mut(e)
         else {
             continue;
         };
@@ -478,6 +570,8 @@ pub fn build_schedule() -> Schedule {
             throwables,
             projectiles_system,
             crate::suppression::suppression,
+            crate::spawn::system::protection,
+            crate::spawn::system::hq_zone,
             deaths,
             crate::suppression::suppression_assists,
             medical,
@@ -500,6 +594,8 @@ pub fn build_schedule() -> Schedule {
             throwables,
             projectiles_system,
             crate::suppression::suppression,
+            crate::spawn::system::protection,
+            crate::spawn::system::hq_zone,
             deaths,
             crate::suppression::suppression_assists,
             medical,
