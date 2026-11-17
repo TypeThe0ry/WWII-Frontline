@@ -6,6 +6,7 @@
 > 3. §3–§6 的付费候选、渠道条款与许可流程**保留作参考，付费项为备选**（需负责人逐项批准）；§5.4 给出"零采购 = $0"与"最小补缺"两档金额。
 > 4. **唯一保留的排除项**：从商业游戏/电影提取或翻录的素材、盗版合集、倒卖的盗版包（**包括闲鱼等二手平台上转卖的模型包**）、来源不明的网盘资源——一律不列为候选。理由：这类素材的"作者"无权授权，一旦混入，整个游戏的授权链都会失效；同时我们不自制、不 AI 生成。（检查方法见 §2.3 与 §8.22。）
 > 5. 免费素材登记只需：asset_id、需求 ID、名称、作者、来源 URL、页面标注的许可、下载日期、是否需要署名——见 `LICENSES.md` §6"简化登记（当前生效）"。
+> 6. **（2026-11-17 新增）每项最便宜的可用商品、合格规格表、两档总价与"找不到"清单见 §11**；§11 的新调研推翻了 §9 / §4 中的部分旧推荐（RenderHub Loss 德军武器系列不再推荐；两个 $19.99 Fab 枪包仅第三人称精度；EVOLVE Studio Fab Pz.IV / Pz.V 仅 Unreal 格式），冲突处已在原位加注，以 §11 为准。
 
 > 读者：人类负责人（审核、付款、把文件放进 `assets/incoming/`、在本表勾选"已购"）。
 > 核实日期：**2026-11-17**（本文所有"已核实"均指该日期当天的页面所见；促销价会变，**下单前以结算页为准**）。
@@ -1207,6 +1208,7 @@ Best regards,
 > "哪里可以买"**只取自 §4 现有付费候选**（商品名、商店、URL、价格、证据标签原样保留；价格**未重新核实**，下单前以结算页为准）；§4 也没有付费候选的写"暂无现成商品，见 ASSET_GAPS 的 GAP-xxx"。
 > 付费项一律为**备选**，需负责人逐项批准（勾选"[ ] 决定购买"）；购买前仍建议按 §2.3 排查游戏提取，必要时按 §1.2 向卖家确认浏览器分发（该流程仅在购买时作为建议，不再是硬性门槛）。
 > "不买的后果"遵循 ASSET_GAPS §3 的灰盒占位约定：视觉占位 = 程序生成基本几何体，音频占位 = 静音 `AudioBuffer`，里程碑验收时仍须在 ASSET_GAPS 里对该 GAP 有"决定"。
+> **2026-11-17 补充（以 §11 为准）**：①RenderHub 上 Loss 的德军武器系列（G43 / MG34 / MG42 / MP40 / FG42 与 $70 bundle）面数仅 4k–12k 且许可疑为 Editorial / IP Restricted，**不再推荐，见 §11.2**；②两个 $19.99 的 Fab 枪械包（FPS World War Guns Pack 美 / 德）**仅第三人称精度，不满足第一人称硬性要求**，见 §11.2；③EVOLVE Studio 的 Fab Pz.IV / Pz.V（各 $59.99，69.8K / 76.5K 三角，面数达标）**仅 Unreal 格式**，需在 UE 导出，见 §11.5。
 
 ### 9.1 视觉：无合格免费候选（49）
 
@@ -1216,13 +1218,13 @@ Best regards,
 |---|---|---|---|---|---|---|
 | V-WPN-US-002 | M1 Carbine | M2 | 搜索未见 M1 Carbine 的 CC 模型 | CGTrader 'weapon ww2 low poly'（含 M1 Carbine + Thompson M1）｜CGTrader｜https://www.cgtrader.com/3d-models/military/gun/weapon-ww2-low-poly｜价格需确认（未核实）；Fab 美军包未发现 M1 Carbine（偏 GAP） | 灰盒占位（ASSET_GAPS §3.2） | [ ] 决定购买 |
 | V-WPN-US-006 | M1919A6 | M3 | 免费搜索未见 | 暂无现成商品，见 ASSET_GAPS 的 GAP-V09 | 灰盒占位（ASSET_GAPS §3.2） | [ ] 决定购买 |
-| V-WPN-US-007 | M1903A4 Springfield（带 M73 镜） | M2 | 免费搜索未搜到 | Fab 'FPS World War Guns Pack – United States'｜Raouf Benoudina｜https://www.fab.com/listings/00a8235f-055a-4532-9916-fe060949b9eb｜$19.99【核实】；含 M1903 Springfield（3k 顶点，是否 A4/带镜待核；M0/M1 美军枪包，同时覆盖 US-003/005/008） | 灰盒占位（ASSET_GAPS §3.2）；或用同包 M1903（无镜）近似 | [ ] 决定购买 |
+| V-WPN-US-007 | M1903A4 Springfield（带 M73 镜） | M2 | 免费搜索未搜到 | Fab 'FPS World War Guns Pack – United States'（**仅第三人称精度，不满足第一人称硬性要求**，见 §11.2）｜Raouf Benoudina｜https://www.fab.com/listings/00a8235f-055a-4532-9916-fe060949b9eb｜$19.99【核实】；含 M1903 Springfield（3k 顶点，是否 A4/带镜待核；M0/M1 美军枪包，同时覆盖 US-003/005/008） | 灰盒占位（ASSET_GAPS §3.2）；或用同包 M1903（无镜）近似 | [ ] 决定购买 |
 | V-WPN-US-009 | M1A1 Bazooka | M3 | Sketchfab 搜索只见现代 Panzerfaust 3 等，未见 M1A1 | CGTrader 'Anti Tank Rocket Launcher Collection Low-poly PBR'（含 M1A1 Bazooka 约 5.5k 面 + Panzerschreck 约 6.2k 面，4096 PBR，Royalty Free）｜CGTrader｜https://www.cgtrader.com/3d-model-collections/anti-tank-rocket-launcher-collection-low-poly-pbr｜价格需人工确认（未核实） | 灰盒占位（ASSET_GAPS §3.2） | [ ] 决定购买 |
 | V-WPN-US-010 | Mk2 手雷 | M1 | 本次搜索免费包未见 Mk2 | 暂无现成商品，见 ASSET_GAPS 的 GAP-V09（小件，可顺带向任一卖家询价） | 灰盒占位（ASSET_GAPS §3.2） | [ ] 决定购买 |
 | V-WPN-US-012 | M1/M3 刺刀（近战） | M2 | 严格意义无；仅 victorcstr 包内 Ka-Bar（非刺刀，许可未写明） | 暂无现成商品，见 ASSET_GAPS 的 GAP-V09 | 灰盒占位（ASSET_GAPS §3.2） | [ ] 决定购买 |
 | V-WPN-GE-002 | Kar98k + ZF41 镜（狙击型） | M3 | 免费无合格候选 | 暂无现成商品，见 ASSET_GAPS 的 GAP-V09（可由第一人称高精度 Kar98k 卖家加购） | 灰盒占位（ASSET_GAPS §3.2）；或用 V-WPN-GE-001 的 Kar98k 去镜替代 | [ ] 决定购买 |
-| V-WPN-GE-003 | Gewehr 43（半自动，10 发弹匣） | M3 | 本次未搜到免费候选 | RenderHub Loss 'WW2 Gewehr 43 Walther G43 Rigged'｜Loss｜https://www.renderhub.com/loss/ww2-gewehr-43-walther-g43｜$15【核实，bundle 页】；4,368 多边形，已绑定；许可 "Extended Use (IP Restricted)"（含义未核实）；德军武器 bundle $70：https://www.renderhub.com/loss/world-war-2-german-weapons | 灰盒占位（ASSET_GAPS §3.2） | [ ] 决定购买 |
-| V-WPN-GE-006 | MG34（两脚架/弹鼓） | M3 | 免费无合格候选 | RenderHub Loss 'MG34 Maschinengewehr'｜Loss｜https://www.renderhub.com/loss/world-war-2-german-weapons｜$20【核实】；12,149 多边形，GLB/FBX 等；许可 "Extended Use (IP Restricted)" 含义未核实 | 灰盒占位（ASSET_GAPS §3.2）；或用 MG42 外形近似 | [ ] 决定购买 |
+| V-WPN-GE-003 | Gewehr 43（半自动，10 发弹匣） | M3 | 本次未搜到免费候选 | **【不再推荐，见 §11.2】** RenderHub Loss 'WW2 Gewehr 43 Walther G43 Rigged'｜Loss｜https://www.renderhub.com/loss/ww2-gewehr-43-walther-g43｜$15【核实，bundle 页】；4,368 多边形，已绑定；许可 "Extended Use (IP Restricted)"（含义未核实）；德军武器 bundle $70：https://www.renderhub.com/loss/world-war-2-german-weapons | 灰盒占位（ASSET_GAPS §3.2） | [ ] 决定购买 |
+| V-WPN-GE-006 | MG34（两脚架/弹鼓） | M3 | 免费无合格候选 | **【不再推荐，见 §11.2】** RenderHub Loss 'MG34 Maschinengewehr'｜Loss｜https://www.renderhub.com/loss/world-war-2-german-weapons｜$20【核实】；12,149 多边形，GLB/FBX 等；许可 "Extended Use (IP Restricted)" 含义未核实 | 灰盒占位（ASSET_GAPS §3.2）；或用 MG42 外形近似 | [ ] 决定购买 |
 | V-WPN-GE-009 | Panzerschreck（带防护板） | M3 | 免费无合格候选 | CGTrader 合集（同 V-WPN-US-009）；CGTrader 单品 Panzerschreck｜https://www.cgtrader.com/3d-models/military/gun/panzerschreck-german-anti-tank-rocket-launcher｜Royalty Free No AI，价格需确认（未核实） | 灰盒占位（ASSET_GAPS §3.2） | [ ] 决定购买 |
 | V-WPN-GE-012 | Nebelhandgranate 39（德军烟雾手雷） | M3 | 仅 3dmodelscc0 包内通用 'Smoke grenade'（非 Nebelhandgranate，可作占位） | 暂无现成商品，见 ASSET_GAPS 的 GAP-V09 | 灰盒占位（ASSET_GAPS §3.2）；或用通用烟雾手雷占位 | [ ] 决定购买 |
 | V-WPN-GE-014 | S-Mine（跳雷） | M3 | 免费无合格候选 | 暂无现成商品，见 ASSET_GAPS 的 GAP-V09 | 灰盒占位（ASSET_GAPS §3.2） | [ ] 决定购买 |
@@ -1307,8 +1309,8 @@ Best regards,
 | 需求 ID | 需要什么 | 里程碑 | 为什么免费的不行 | 哪里可以买（商店｜商品｜URL｜价格｜证据） | 不买的后果 | 决定 |
 |---|---|---|---|---|---|---|
 | V-WPN-US-001 等全部第一人称武器 | 第一人称 25k–60k + 内部结构 + 可动部件 | M1 | A 档 3D 武器面数几乎全在 4.5k–20k（第三人称区间）；**没有第一人称级免费模型**；拆分枪机/弹匣需切分网格（D-MOD 待确认，GAP-V06） | CGTrader 'M1 Garand - Game and VR Ready'｜https://cgtrader.com/3d-models/military/gun/m1-garand-game-and-vr-ready｜$25【搜索摘要】；CGTrader 'M1 Garand With Complete Internals - Game Ready'（带内部结构）https://www.cgtrader.com/3d-models/military/gun/m1-garand-with-complete-internals-game-ready｜价格需人工确认 | M1 先用第三人称品质免费模型（GAP-V06 默认建议） | [ ] 决定购买 |
-| V-WPN-GE-001 | Kar98k（M0/M1） | M0 | 免费只有 Poly Haven 栓动步枪占位（19,985 三角，非 Kar98k） | Fab 'FPS World War Guns Pack – German'｜Raouf Benoudina｜https://www.fab.com/listings/13b4dea1-2849-480a-a3c7-b16fa5bd329a｜$19.99【核实】；含 Kar98k 2.6k 顶点、StG44、MP40、Luger P08（品质偏低，第三人称；许可证页未显示名称，待确认 Standard） | 用 Poly Haven 栓动步枪占位（不可冒充 Kar98k） | [ ] 决定购买 |
-| V-WPN-US-003/005/008 | Thompson、BAR、M1911A1（免费仅 Thompson 有 A 档；BAR/M1911 只有 B 档） | M1 | BAR 仅 CC-BY-SA/GPL；M1911 许可未写明 | Fab 'FPS World War Guns Pack – United States'｜https://www.fab.com/listings/00a8235f-055a-4532-9916-fe060949b9eb｜$19.99【核实】（Thompson 5.7k 顶点、M1911 2.5k、M1903 3k、BAR 4k；BAR 标注非 A2 版，需核对） | BAR/M1911 灰盒占位；或使用 B 档（负责人决定） | [ ] 决定购买 |
+| V-WPN-GE-001 | Kar98k（M0/M1） | M0 | 免费只有 Poly Haven 栓动步枪占位（19,985 三角，非 Kar98k） | Fab 'FPS World War Guns Pack – German'（**仅第三人称精度，不满足第一人称硬性要求**，见 §11.2）｜Raouf Benoudina｜https://www.fab.com/listings/13b4dea1-2849-480a-a3c7-b16fa5bd329a｜$19.99【核实】；含 Kar98k 2.6k 顶点、StG44、MP40、Luger P08（品质偏低，第三人称；许可证页未显示名称，待确认 Standard） | 用 Poly Haven 栓动步枪占位（不可冒充 Kar98k） | [ ] 决定购买 |
+| V-WPN-US-003/005/008 | Thompson、BAR、M1911A1（免费仅 Thompson 有 A 档；BAR/M1911 只有 B 档） | M1 | BAR 仅 CC-BY-SA/GPL；M1911 许可未写明 | Fab 'FPS World War Guns Pack – United States'（**仅第三人称精度，不满足第一人称硬性要求**，见 §11.2）｜https://www.fab.com/listings/00a8235f-055a-4532-9916-fe060949b9eb｜$19.99【核实】（Thompson 5.7k 顶点、M1911 2.5k、M1903 3k、BAR 4k；BAR 标注非 A2 版，需核对） | BAR/M1911 灰盒占位；或使用 B 档（负责人决定） | [ ] 决定购买 |
 | V-VEH-US-003 | M4 Sherman（M1 的 1 辆坦克） | M1 | 免费 Sherman 无贴图、未绑定、无内饰 | CGTrader 'Sherman M4 Gameready Rigged'｜https://www.cgtrader.com/3d-models/military/military-vehicle/sherman-m4-gameready-rigged｜$31【搜索摘要】（履带/轮随车体动，PBR 4K，Royalty Free；内饰未提） | 免费 Sherman + 单色材质 + 简化内饰盒（GAP-V01） | [ ] 决定购买 |
 | V-VEH-GE-004 | Panther | M3 | 免费版约 211.5k 三角，需大幅减面 | CGTrader 'Panzerkampfwagen V Panther G with texture pack GameReady'｜https://cgtrader.com/3d-models/vehicle/military-vehicle/panzerkampfwagen-v-panther-g-with-texture-pack-gameready｜$15【搜索摘要】（rigged，Royalty Free No AI）；'Panther G Tank' $5 https://cgtrader.com/3d-models/vehicle/military-vehicle/panther-g-tank-e909cd72-0ca7-456c-b390-b722e16d741f | 减面后使用免费版 | [ ] 决定购买 |
 | V-VEH-GE-005 | Tiger I | M3 | 免费只有 OGA Tiger（贴图许可存疑，B 档） | CGTrader 'Tiger 1 GameReady tank'（炮塔旋转/炮管俯仰/负重轮悬挂层级）｜https://cgtrader.com/3d-models/military/military-vehicle/tiger-1-gameready｜价格需确认；RenderHub max3ddd Tiger I｜https://www.renderhub.com/max3ddd/tiger-i-german-heavy-tank（65.5k 多边形，Extended Use；价格需确认）。含部分内饰的另一件 Tiger 被标注 AI 辅助制作，已排除 | 灰盒占位；或 B 档 OGA Tiger（负责人决定） | [ ] 决定购买 |
@@ -1341,11 +1343,11 @@ Best regards,
 |---|---|---|---|---|
 | 1 | V-CHR-US-001（含 -002 变体基础身体） | RenderHub albin 'SOLDIER WWII USA Paratrooper Rigged' 或 Alpenwolf 带绑定版 | 约 $60【搜索摘要】 | 免费完全没有；一个带绑定的美军士兵同时解决 M1 全部美军角色 |
 | 2 | V-CHR-GE-001 | CGTrader 'German Soldier Rig – WW2 Scanned Asset Pack' | 价格需确认；清单估 $40–80（按 $60 计）【估算】 | 德军侧同上 |
-| 3 | V-WPN-GE-001（含 -004、-005、-008） | Fab 'FPS World War Guns Pack – German' | $19.99【核实】 | 补 Kar98k 缺口；品质偏低（Kar98k 2.6k 顶点） |
-| 4 | V-WPN-US-003（含 -005、-008、-007） | Fab 'FPS World War Guns Pack – United States' | $19.99【核实】 | 补 BAR（A 档无）、M1903 与 Thompson 的统一风格 |
+| 3 | V-WPN-GE-001（含 -004、-005、-008） | Fab 'FPS World War Guns Pack – German' | $19.99【核实】 | 补 Kar98k 缺口；品质偏低（Kar98k 2.6k 顶点）；**仅第三人称精度，不满足第一人称硬性要求（见 §11.2）** |
+| 4 | V-WPN-US-003（含 -005、-008、-007） | Fab 'FPS World War Guns Pack – United States' | $19.99【核实】 | 补 BAR（A 档无）、M1903 与 Thompson 的统一风格；**仅第三人称精度，不满足第一人称硬性要求（见 §11.2）** |
 | 5 | V-ANM-001 | MoCap Online 'Rifle Starter' | $3.99【搜索摘要】（Pro 价格需确认） | 免费库没有步枪专用动作 |
 | 6 | V-VEH-US-003 | CGTrader 'Sherman M4 Gameready Rigged' | $31【搜索摘要】 | 免费 Sherman 无贴图无绑定；M1 唯一一辆坦克 |
-| 7 | V-VEH-GE-004 / V-VEH-GE-003 | CGTrader Panther G（$15）/ Fab Panzer IV Production models（$25.99） | $15【搜索摘要】/ $25.99【核实】；合计 $40.99 | 对手坦克；免费 Panzer IV 已有，Panther 免费版高面数 |
+| 7 | V-VEH-GE-004 / V-VEH-GE-003 | CGTrader Panther G（$15）/ Fab Panzer IV Production models（$25.99） | $15【搜索摘要】/ $25.99【核实】；合计 $40.99 | 对手坦克；免费 Panzer IV 已有，Panther 免费版高面数。**注（§11.5）**：EVOLVE Studio 的 Fab Pz.IV / Pz.V（各 $59.99，面数达标）**仅 Unreal 格式**，需在 UE 导出 |
 | 8 | V-BLD-006（含 -007） | CGTrader 'D-Day Atlantik Wall Collection'（21 件低模 PBR，含 6 种滩头障碍） | $89【搜索摘要】 | 一次补 BLD-006 与 BLD-007，让 Omaha（M4）有可用内容 |
 | | | **视觉小计** | **约 $325【估算】**（60 + 60 + 19.99 + 19.99 + 3.99 + 31 + 40.99 + 89 = 324.96；其中序 2 德军角色价格需确认，按 $60 计） | 调研原文同为"约 $325（估算）" |
 
@@ -1455,3 +1457,221 @@ Best regards,
 | Google Fonts 'Saira Stencil One' license 子页 | 404 | OFL 凭记忆 |
 | BlenderKit | 301，未再抓取 | 凭记忆，未核实 |
 | Fab 若干商品页（如 36 件 PBR 军械包） | 404 / 未打开 | 免费状态未核实 |
+
+
+---
+
+## 11. 每项最便宜的可用方案（2026-11-17 调研）
+
+> 本节是负责人 2026-11-17 追加调研（"每项最便宜的可用商品"）的结果，**优先于 §9 中与之冲突的旧推荐**（冲突处已在 §9 原位加注）。§1–§10 的章节编号与需求 ID 均未改动。
+> **全部商品名、作者/商店、URL、价格、面数、证据标签均原样取自三份调研片段（角色/武器/动画、载具/环境、音频），未新增或编造。**
+> 证据标签：**[F]** = 商品页直接读到；**[S]** = 仅搜索摘要（CGTrader 页面多数抓不到正文，只能 [S]，下单前须人工核对）。价格为美元、不含税（€ 者另注），促销价会变，**以结算页为准**。
+> **所有候选均未下载检验**（未登录、未购买、未下载），面数、贴图、部件独立性、许可均需购买前按 §11.10 逐件核对。
+> "达标"以 §11.1 规格为准。**现实结论：市面上"单价便宜"的枪几乎都在 0.4–2 万三角形；单价便宜的车辆多是 2k–12k 面的低模，对 5 万–15 万面的规格是"不达标"。下表凡不足均如实标"部分达标"或"不达标"，不隐瞒。**
+> 仅 Unreal / 仅 Unity 的商品，格式栏明确标出"需在该引擎导出"：本项目是 Babylon.js，须先在对应引擎里导出 FBX/glTF，并确认商店 EULA 允许导出再分发（未读到条款，需人工确认）。
+> 每行末尾的 `[ ] 决定购买` 由负责人勾选；与 §9 一致，付费项一律是备选。
+
+### 11.1 合格规格表（负责人给定）
+
+| 类别 | 面数（三角形） | 贴图 / 绑定 / 部件要求 |
+|---|---|---|
+| 第一人称武器 | 2.5 万–6 万 | 4K 贴图；枪栓、弹匣、扳机、表尺独立 |
+| 第三人称武器 | 5 千–1.2 万 | 由第一人称武器减面得到，**不单买** |
+| 士兵角色 | 3 万–6 万 | 人形骨骼，含手指；4K |
+| 第一人称手臂 | 8 千–1.5 万 | 带手指骨骼与军装袖 |
+| 坦克和车辆 | 5 万–15 万 | 炮塔、炮管、履带、负重轮、舱盖独立 |
+| 建筑 | 每栋 5 千–5 万 | 模块化 |
+| 道具和植被 | 几百–1 万 | PBR |
+| 文件格式 | fbx / glb / gltf / blend | — |
+
+### 11.2 武器（第一人称精度）
+
+> **Loss 的 RenderHub 德军武器系列（G43 / MG34 / MG42 / MP40 / FG42 与 $70 bundle）不再推荐。** 面数仅 4.4k–12k（G43 4,368；MP40 4,470；MG42 7,288；MG34 12,149；FG42 7.8k），均不达第一人称标准；许可为 "Extended Use License (IP Restricted)"，同站另一枪页（blackraven37 Kar98，[F]）的 IP Restricted 条款明写 "subject to an Editorial Use Only Restriction"，Loss 的同名许可很可能同样带该限制，**按"Editorial 排除"处理，不列为候选**。§4 与 §9 中引用 Loss 的项（G43 $15、MG34 $20、MG42 $20、MP40 $15、$70 bundle）已作废，需另核实后才可恢复。
+> 同样已排除：CGTrader 'Military WW2 Soldier Game Ready'（$20，含 Garand）页标 editorial；TurboSquid 'WW2 US Soldier' $59.99 为 Editorial Uses Only。
+> Fab 各页"许可"字段几乎都读不到（显示 Select a license），下表统一写"未读到"。
+
+| 需要什么（需求 ID） | 最便宜推荐（商品 / 作者·商店 / URL） | 价格与证据 | 格式 | 面数 / 关键规格 | 达标情况 | 备选（简写） | 决定 |
+|---|---|---|---|---|---|---|---|
+| M1 Garand（V-WPN-US-001） | 'M1 Garand With Complete Internals - Game Ready'｜CGTrader｜https://www.cgtrader.com/3d-models/military/gun/m1-garand-with-complete-internals-game-ready | $8 [S] | FBX [S] | 约 30.8k 多边形；扳机、弹夹为独立件（含内部结构）；标 rigged/animated/PBR；贴图分辨率与枪栓是否独立未读到；许可未读到 | 部分达标：4K、枪栓待核（面数达标，全场最便宜） | ② 'PBR M1 Garand and Attachments'｜CGTrader｜https://cgtrader.com/3d-models/military/gun/m1-garand-and-attachments｜$49 [S]（14 个独立对象，Maya/OBJ/FBX）；③ 'M1 Garand With FPS Animations'｜Fab / Agora Games Brazil｜https://www.fab.com/listings/84f12c05-9209-45be-a4db-89e7c3bb8614｜$45.99 [F]（4K；FP 武器+手臂动画；**仅 Unreal（UE5），需在 UE 导出**；面数未读到） | [ ] 决定购买 |
+| M1 Carbine（V-WPN-US-002） | 'M1 Carbine Rifle'｜Fab / Max3d｜https://fab.com/listings/a8dc03f9-eab1-4e36-bf80-2e9b23ef3c02 | $23.99 [F] | FBX、glTF、GLB、USDZ、OBJ、MAX | 17,894 三角；4096² PBR；"separate objects for animation"；未绑定；许可未读到 | 部分达标：面数 1.8 万 < 2.5 万 | 无 | [ ] 决定购买 |
+| M1A1 Thompson（V-WPN-US-003） | '[3D] Thompson SMG'｜itch.io / sundio｜https://sundio.itch.io/3d-thompson-smg | $5.50 起 [F] | glb、blend（glTF 可直接用） | 10,043 三角；4K UDIM PBR；"Simple rig covers almost every moving part"；自带简单开火动画；可商用、禁转售、署名可选 [F] | 部分达标：面数 1 万 | ② Neapolitan Studios 'M1A1 Thompson Sub-Machine Gun'｜Gumroad｜https://neapolitanstudios.gumroad.com/l/OTsat｜约 $25 [S]（页面正文读不到，需人工确认）；③ 'Fps weapon m1A1 ww2 Fps - Tps'｜CGTrader｜https://www.cgtrader.com/3d-models/military/gun/fps-weapon-m1a1-ww2-fps-tps｜$50 [S]（7,175 多边形，带骨骼 + FPS/TPS 手臂动画） | [ ] 决定购买 |
+| M3 Grease Gun（V-WPN-US-004） | Neapolitan 'M3 Grease Gun Sub-Machine Gun'｜Gumroad / Neapolitan Studios｜https://neapolitanstudios.gumroad.com/l/nuInc | 约 $25 [S]（Gumroad 页读不到价格） | FBX（+TGA）；同作者另有 Unity 版 | 摘要：约 16.4k 三角、4K PBR、可动枪机/拉机柄/枪托/曲柄，30 发弹匣+子弹；枢轴已设；许可未读到 | 部分达标：面数 1.6 万 | Unity 'M3 Grease Gun'｜Zeus Game Assets｜https://marketplace.unity.com/packages/3d/props/guns/m3-grease-gun-201933｜$30 [F]（**仅 Unity 包，需在 Unity 导出**；仅 Built-in 管线；页面无面数/贴图；数据不足） | [ ] 决定购买 |
+| M1918A2 BAR（V-WPN-US-005） | 'LowPoly Realistic GameReady M1918 BAR'｜Fab / Raouf Benoudina｜https://www.fab.com/listings/dd07cad5-eae8-4287-99f6-eb6594251e7c | $4.99 [F] | FBX / OBJ / Blend | 约 4k 顶点；4K 贴图；分部件；许可未读到 | **不达标（低模）**，仅可作占位 | CGTrader 'M1918 BAR gun'：摘要称 4096² + 已绑定 blend，价格/面数未读到 | [ ] 决定购买 |
+| M1919A6（V-WPN-US-006） | RenderHub eight-vertex 'M1919 Browning Gun All PBR Unity UE'｜https://www.renderhub.com/eight-vertex/m1919-browning-gun-all-pbr-unity-ue-textures-included | 价格需人工确认 | 未读到 | 未读到 | 线索，未核实 | 无 | [ ] 决定购买 |
+| M1903A4 带镜（V-WPN-US-007）、M1911A1（V-WPN-US-008） | 'FPS World War Guns Pack – US'｜Fab｜https://www.fab.com/listings/00a8235f-055a-4532-9916-fe060949b9eb（URL 同 §9.1） | $19.99 [F] | FBX / OBJ / Blend（§9.4 原记） | M1903 3k 顶点、M1911 2.5k（低模）；4K 贴图；许可未读到 | **不达标**（仅第三人称精度，不满足第一人称硬性要求）；是否带镜待核 | 未找到达到第一人称标准的商品 | [ ] 决定购买 |
+| M1A1 Bazooka（V-WPN-US-009） | 'M1A1 Bazooka Anti-tank Rocket Launcher'｜Fab / Max3d｜https://fab.com/listings/47052cd4-80e6-4f4f-9712-726bf415b403 | $23.99 [F] | FBX、glTF、GLB、USDZ、OBJ、blend | 10,542 三角；炮 4096²、火箭 2048²；无绑定；许可未读到 | 部分达标：面数 1 万；火箭 2K | 无 | [ ] 决定购买 |
+| Mk2 手雷（V-WPN-US-010） | 'mk2 grenade gameready'｜CGTrader｜https://www.cgtrader.com/3d-models/military/other/mk2-grenade-gameready | $2 [S] | 未读到 | 低模；Substance 贴图 | 小件，三角形下限不适用；贴图分辨率待核 | 无 | [ ] 决定购买 |
+| M1/M3 刺刀（V-WPN-US-012）；Tellermine（V-WPN-GE-013）；S-Mine（V-WPN-GE-014） | 本次未搜到任何商品 | — | — | — | 找不到（见 §11.8） | — | — |
+| Kar98k（V-WPN-GE-001）；带镜 Kar98k（V-WPN-GE-002） | 'Kar98k 5 lods'｜CGTrader｜https://www.cgtrader.com/3d-models/military/gun/kar98k-5-lods | $7 [S] | 未读到 | "Fully Rigged and Textured (5 variants)"，4K；**自带 5 级 LOD**（可顺带解决第三人称）；面数未读到；许可未读到 | 部分达标：面数/枪栓独立待核；带镜版可能在 5 个变体里，待核 | ② 'Kar98 Sniper Rifle – Realistic'｜Superhive（Blender Market）｜https://superhivemarket.com/products/kar98-sniper-rifle--realistic-weapon-3d-model｜$35.99 [F]（标 Rigged、"Detailed bolt-action mechanism"、Low/High；Blender/Maya/Unity/UE；Royalty Free；面数/贴图分辨率页面未给）；③ 'Mauser Karabiner Kar98k'｜CGTrader｜https://www.cgtrader.com/3d-models/military/gun/mauser-karabiner-kar98k｜价格需人工确认（高模无 UV + 4K PBR，需自行减面；Royalty Free (no AI) [S]） | [ ] 决定购买 |
+| Gewehr 43（V-WPN-GE-003） | 未找到达第一人称标准的商品 | — | — | Loss G43（RenderHub $15，4,368 多边形，IP Restricted）**不再推荐** | 不达标 + 许可风险 | — | — |
+| MP40（V-WPN-GE-004） | 'Animated FPS MP40 Pack'｜CGTrader / Ironbelly Studios｜https://cgtrader.com/3d-models/military/gun/animated-fps-mp40-pack | $24.99 [S] | 未读到 | 4K、3 级 LOD、各部件独立网格、**10 个第一人称动画 + 附赠带绑定的 FP 手臂**；面数未读到 | 部分达标：**许可待确认**（摘要写 "editorial license (no AI)"，**若为 Editorial 则排除**）；若许可合格，是唯一带 FP 手臂的 WW2 包 | 无（Loss MP40 不再推荐） | [ ] 决定购买 |
+| StG 44（V-WPN-GE-005） | 'sturmgewehr 44 stg44'｜CGTrader｜https://cgtrader.com/3d-models/military/gun/sturmgewehr-44-stg44 | $55 [S] | 未读到 | 约 46k 多边形；4K PBR；已绑定；买家称导入后贴图"偏平" | **达标（面数/4K）**，待核部件独立与贴图问题 | Unity 'MP44 StG44 PBR'（12k 三角）已下架，排除 | [ ] 决定购买 |
+| MG34（V-WPN-GE-006） | 未找到达第一人称标准的商品 | — | — | Loss MG34（12,149 面，许可存疑）**不再推荐** | 找不到（见 §11.8） | — | — |
+| MG42（V-WPN-GE-007） | 'WW2 MG42'｜Fab / ToLoss｜https://www.fab.com/listings/1935b32b-9a62-476c-a142-ea50218661be | $9.99 [F] | Blender、FBX、GLB | 约 1.6 万三角（含弹鼓+弹药）；**仅 2K**；完全绑定，弹链样条网格；许可未读到 | 部分达标：面数/贴图不足；便宜且含弹链 | 达标版：'MG42 Maschinengewehr 42'｜CGTrader｜https://cgtrader.com/3d-models/military/gun/mg42-maschinengewehr-42｜$60 [S]（约 27,550 多边形；4K PBR；已绑定（UE 测试）；FBX；待核枪机等独立部件） | [ ] 决定购买 |
+| Luger P08 / P38（V-WPN-GE-008） | 'Luger P08 Realistic'｜CGTrader｜https://www.cgtrader.com/3d-models/military/gun/luger-p08-realistic-3d-model | $17.95 [S] | 未读到 | 约 16.6k 多边形；4K PBR；标 rigged；为 FPS 设计 | 部分达标：面数 1.7 万 | Fab 'Luger P08 - World War'｜Rush Games｜https://www.fab.com/listings/bd3d5a66-7190-4ece-ba28-8bb788f84aa9｜$14.99 [F]（含骨骼网格；**仅 Unreal，需在 UE 导出**；面数未读到，数据不足）；P38：'Walther P38'｜CGTrader｜https://www.cgtrader.com/3d-models/military/gun/walther-p38-542626e9-0eee-487c-ae6d-d098be999a25｜$25 [S]（约 12k 三角；4K；rigged；部分达标） | [ ] 决定购买 |
+| Panzerschreck（V-WPN-GE-009） | Panzerschreck 单品｜CGTrader｜https://www.cgtrader.com/3d-models/military/gun/panzerschreck-german-anti-tank-rocket-launcher（片段另有含它的 CGTrader 合集） | 价格需人工确认 | 未读到 | 6.2k 面，低模 | **不达标（低模）** | 无 | [ ] 决定购买 |
+| Panzerfaust（V-WPN-GE-010） | 'Panzerfaust With Box'｜CGTrader｜https://www.cgtrader.com/3d-models/military/rocketry/panzerfaust-with-box | $20 [S] | 未读到 | 20,287 多边形，4K PBR，未绑定；弹头独立 | 部分达标：面数 2 万；绑定另一件 | Panzerfaust 60（rigged 弹头，4K）｜CGTrader｜https://cgtrader.com/3d-models/military/rocketry/panzerfaust-60｜价格需人工确认 | [ ] 决定购买 |
+| M24 手雷（V-WPN-GE-011） | 'German Stick Grenade M24 4K PBR'｜Fab / Rodrigo Maranzana｜https://fab.com/listings/e198ce25-fcb5-4b6c-a699-1f9b5083116a | $2.99 [F] | FBX、glTF、GLB、USDZ | 低模；4K PBR 16-bit；免费商用（不得转售）[F] | 小件，下限不适用；**达标（小件）** | 无 | [ ] 决定购买 |
+
+**整包方案（单价低但面数低，仅供参考，不入推荐）**
+
+| 整包 | 价格与证据 | 内容 / 规格 | 判定 |
+|---|---|---|---|
+| 'WW2 Polygon Pack'｜CGTrader｜https://www.cgtrader.com/3d-model-packs/ww2-polygon-pack | $50 [F] | MP40(3.5k)、Luger、Thompson/M1919、Kar98(1.1k)、M1 Carbine、Colt、M1A1 Bazooka(0.5k)、刀；FBX 全部 + glTF 部分 + blend；Royalty Free；同时含 8 个角色（见 §11.3） | 低多边形风格，面数远低于第一人称标准，只能当第三人称/占位 |
+| 'FPS World War Guns Pack' 美 / 德各一个｜Fab | 各 $19.99 [F] | 1–5.7k 顶点，4K 贴图，FBX/OBJ/Blend | **仅第三人称精度，不满足第一人称硬性要求** |
+| 'Ultimate Realistic World War Game Ready FPS Guns Pack'｜Fab | $54.99 [F] | 16 枪（苏/美/德/近战），Blender/OBJ/FBX；页面未列具体型号与面数 | 需人工确认 |
+| 'WW2 US Weapons Pack'｜Fab / OnurErdem | $44.99 [F] | 5 把枪，全带动画，3 档贴图，**仅 Unreal（需在 UE 导出）**；型号页面未列出 | 需人工确认 |
+| 'FPS World War Pack'｜Fab / Deadghost | $19.99 [F] | 4K，含动画与手臂，**仅 Unreal（需在 UE 导出）**，UE Marketplace License；型号未列 | 需人工确认 |
+
+### 11.3 角色与第一人称手臂
+
+| 需要什么（需求 ID） | 最便宜推荐 | 价格与证据 | 格式 | 面数 / 关键规格 | 达标情况 | 备选（简写） | 决定 |
+|---|---|---|---|---|---|---|---|
+| 美军步兵（V-CHR-US-001） | 'US WW2 GI Soldier'｜itch.io / owsam｜https://owsam.itch.io/usww2gisoldier | €9.99 起 [F] | FBX | 3,294 多边形，已绑定，含 base color/法线/AO 贴图（无手指信息）；可用，不得转售；PDF 协议 | **不达标（面数 3k）**；便宜，可作 bot/远景 | ② 'WWII American Soldier'｜GameDev Market｜https://gamedevmarket.net/asset/wwii-american-soldier-8759｜$19 [S]（约 6k 面，3ds Max biped，2017 年，MAX/OBJ/3DS/FBX；不达标）；③ 'WW2 US Soldier'｜RenderHub / Alpenwolf｜https://www.renderhub.com/alpenwolf/ww2-us-soldier｜页面 404，§9 原记约 46.3k 多边形、PBR、rigged，价格需人工确认；Extended Use（是否 IP Restricted 需核），**若许可无 Editorial 限制则达标** | [ ] 决定购买 |
+| 美军空降兵（V-CHR-US-002） | 'SOLDIER WWII USA Paratrooper Rigged'｜CGTrader/RenderHub / albin｜https://www.cgtrader.com/3d-models/military/military-character/soldier-wwii-usa-paratrooper | $60 [S，原清单] | 未读到 | 已绑定；面数未核 | 待核 | 无 | [ ] 决定购买 |
+| 美军兵种变体：军官/医护/坦克兵/狙击手（V-CHR-US-003）；德军坦克兵/军官（V-CHR-GE-004） | 'WW2 Polygon Pack'｜CGTrader｜https://www.cgtrader.com/3d-model-packs/ww2-polygon-pack | $50 [F] | FBX 14/14，glTF 10/14，blend | 含 US Rifleman/Medic/Pilot/Commander 与 DE Tank Crew/Leader/Sniper/Rifleman；风格化低模，面数未给；Mixamo 兼容的步枪/刀/机枪/驾驶动作；Royalty Free | **不达标（不达 3 万面标准）**；兵种变体最便宜 | 无 | [ ] 决定购买 |
+| 德军国防军步兵（V-CHR-GE-001） | 'German Soldier Rig – WW2 Scanned Asset Pack'｜CGTrader｜https://www.cgtrader.com/3d-models/character/clothing/german-soldier-rig-ww2-scanned-asset-pack | $40 [S] | FBX | 扫描重拓扑，人形绑定含扭转骨，4K PBR，头盔独立网格可隐藏；Royalty Free [S]；面数待核 | **最接近达标**（面数待核） | 'WW2 German Soldier Rigged Animated'｜CGTrader｜https://www.cgtrader.com/3d-models/character/clothing/ww2-german-soldier-rigged-animated｜$35 [S]（低模版已绑定 + 14 个动画，高模版，头盔、MP40，4K；部分达标，待核面数） | [ ] 决定购买 |
+| 德军伞兵（V-CHR-GE-002）、德军冬季（V-CHR-GE-003）、美军冬季（V-CHR-US-004） | 本次未找到现成商品 | — | — | Fallschirmjäger 仅找到 RenderHub FG42 枪（面数 7.8k）与 Daz 用 Genesis 8 人偶；冬季服无 | 找不到（见 §11.8） | — | — |
+| 第一人称手臂（V-CHR-FPA-001） | 'Animated FPS MP40 Pack' 附赠带绑定 FP 手臂｜CGTrader / Ironbelly Studios｜https://cgtrader.com/3d-models/military/gun/animated-fps-mp40-pack | $24.99 [S]（同 §11.2 MP40） | 未读到 | 附赠 FP 手臂；面数未读到 | 部分达标：**许可待确认（Editorial 则排除）**；未找到现成"WW2 袖子"商品 | ② 'FPS Arms Pack 01B / FPS Arms 02'｜RenderHub / Davlet｜https://www.renderhub.com/davlet/fps-arms-02｜价格需人工确认（通用手臂，含前臂扭转骨，非 WW2 袖口，需重贴图）；③ 'FPS First Person Arms - 01 B'｜CGTrader｜https://cgtrader.com/3d-models/character/man/fps-first-person-arms-01-b｜价格需人工确认（含军装类贴图变体 [S]）；④ 'FPS World Wars Pack'｜Fab / Deadghost｜$19.99 [F]（含手臂+4K+动画，**仅 Unreal，需在 UE 导出**） | [ ] 决定购买 |
+
+### 11.4 动画
+
+| 需要什么（需求 ID） | 最便宜推荐 | 价格与证据 | 格式 | 关键规格 | 达标情况 | 备选（简写） | 决定 |
+|---|---|---|---|---|---|---|---|
+| 第三人称步枪运动/射击（V-ANM-001） | 'Rifle Starter'｜itch.io / MoCap Online｜https://mocaponline.itch.io/rifle-starter-anims | $3.99 [F] | FBX/BIP；UE/Unity/Blender | 11+ 个：瞄准、转身、站/蹲射击、走/慢跑/蹲走、跳；个人项目不限，**商业仅 1 个项目，再商用需再买** | 部分达标：缺匍匐、Bazooka | 无 | [ ] 决定购买 |
+| 蹲/匍匐/火箭筒（V-ANM-002 等） | 'Human Soldier Animations'｜itch.io / kevdev｜https://kevdev.itch.io/human-soldier-animations | $15（半价，原 $30）[F] | Blender / Unity / Godot-Unreal | 538 个动画；步枪/突击/手枪/Bazooka；蹲走 8 向、匍匐；未提栓动 | 部分达标：缺栓动 | 无 | [ ] 决定购买 |
+| 第一人称武器动画：栓动/换弹（V-ANM-009） | 'Animated WW2 Weapons #2'｜Unity Asset Store｜https://marketplace.unity.com/packages/3d/props/weapons/animated-ww2-weapons-2-102602 | $12 [F] | 仅 Unity 包，**需在 Unity 导出**；标准 Unity EULA | 页面未列武器；摘要称含拉栓/换弹 FBX | 数据不足，需核 | Fab 'M1 Garand With FPS Animations' $45.99 [F]（仅 UE，需在 UE 导出）；Fab 'FPS Animation Pack Lite'｜KINEMATION｜https://www.fab.com/listings/79752ba2-c659-4375-8fa9-5e6fc8025b62｜$24.99 [F]（含 Kar98k 装填循环；仅 UE，需在 UE 导出） | [ ] 决定购买 |
+| 医护救治/拖拽（V-ANM-006）、载具进出/驾驶/炮手（V-ANM-008） | 本次未找到现成商品 | — | — | — | 找不到（见 §11.8） | — | — |
+
+### 11.5 载具 / 火炮 / 飞机
+
+> 负责人规格（5 万–15 万面、部件独立）与"最便宜"天然冲突：页面能看到的便宜车辆多是 2k–12k 面低模。能同时在页面上读到"5 万面以上 + 独立部件"的，只有 Fab 上 EVOLVE Studio 的 Pz.IV / Pz.V，且**只有 Unreal 格式（需在 UE 导出）**；M8 Greyhound（85k）面数达标但价格未读到。
+> JonahH 的两个 Unity 大包（各 $49.99）面数 2.6k–12.1k、部件独立，同样低于 5 万下限；Unity EULA（Extension Asset，Single Entity），导出模型放进浏览器游戏分发是否允许，**未读到条款，需人工确认**。
+> 'World War Toon Tank Pack'（卡通风）、已下架的 'Low Poly WWII Vehicles'、标 Editorial 的 'Panzer II Ausf L Lynx'（CGTrader）与 TurboSquid 'Panzer II Luchs'（$25）、标 AI 辅助的 'WWII field howitzer'、3D 打印用 STL 均已排除。
+
+| 需要什么（需求 ID） | 最便宜推荐 | 价格与证据 | 格式 | 面数 / 关键规格 | 达标情况 | 备选（简写） | 决定 |
+|---|---|---|---|---|---|---|---|
+| M4 Sherman 75（V-VEH-US-003） | 'M4 Sherman'｜CGTrader｜https://cgtrader.com/3d-models/military/armor/m4-sherman-ddd981af-e9d7-41d3-a94e-90327e0ffff7 | $9 [S] | FBX（2 文件，28.2 MB）[S]；2048 PBR | 低模，三角数未读到；许可未读到 | 部分达标：有 PBR 与 FBX，面数/部件未知 | Fab 'M4 Sherman-US WW2 Medium Tank'｜Erich Von Manstein｜https://www.fab.com/listings/1cbcdcea-479c-40c2-b93b-2e266ec55406｜$20.99 [F]（Blender/FBX/glTF/GLB/USDZ；有炮管、悬挂、负重轮、履带；带绑定标签；面数未列；无内饰）；JonahH 'WW2 United States Armed Forces'｜Unity｜https://assetstore.unity.com/packages/3d/vehicles/land/ww2-united-states-armed-forces-176742｜$49.99 [F] | [ ] 决定购买 |
+| M4A3(76)W / Jumbo（V-VEH-US-004） | Sherman M4A3(76)W HVSS（Dezryelle）｜Sketchfab｜https://sketchfab.com/3d-models/low-poly-m4a376-hvss-710e93ef16c84160a5e8b980ce07163a | 免费下载 [S] | 页面未读 | 34.6k 面 [S]；**无贴图、未绑定**；CC BY 4.0（M4A3(75)W 页 [F]；76 页未逐条读） | 不达标（无贴图、面数不足）；免费且合规，需自己上贴图 | 含在 JonahH 美军包（$49.99 [F]）内（M4A3(76)） | [ ] 决定购买 |
+| M5A1 Stuart（V-VEH-US-002） | 'WW2 US Low Poly Tanks #3'｜Unity / Kado3D｜https://assetstore.unity.com/packages/3d/vehicles/land/wwii-low-poly-us-tanks-pack-3-107371 | $9.90 [F] | 仅 Unity 包，**需在 Unity 导出**；Unity EULA，Extension Asset | M3 Lee 3,257 / **M3A1 Stuart 2,966** / M10 / M12 / WC51（Sketchfab 页 [F]）；注意是 M3A1 不是 M5A1 | 不达标（面数） | JonahH 美军包 $49.99 [F]（含 M3A1/M3A3/M5A1 Stuart） | [ ] 决定购买 |
+| M8 Greyhound（V-VEH-US-001） | 'Low Poly M8 Greyhound armored car'｜CGTrader｜https://cgtrader.com/3d-models/vehicle/military-vehicle/low-poly-m8-greyhound-armored-car | $12–$15 [S]（两个版本价格不同） | FBX（Kado3D 系，假定） | 低模；Royalty Free [S] | 不达标（面数） | 'M8 Greyhound game ready'｜CGTrader｜https://www.cgtrader.com/3d-models/vehicle/military-vehicle/m8-greyhound-game-ready｜价格需人工确认（85,000 三角，另附高模用于烘焙；Royalty Free [S]；**面数达标**，部件独立性未知） | [ ] 决定购买 |
+| M3 半履带（V-VEH-US-006） | 'Low Poly M3A1 Half-track Personnel Carrier'｜CGTrader / Kado3D 疑似｜https://cgtrader.com/3d-models/military/vehicle/low-poly-m3-half-track-personal-carrier | $12 [S] | FBX、Maya、Collada、OBJ；PBR；有绑定 | 约 11.9k 面；Royalty Free | 不达标（面数） | 含在 JonahH 美军包（M3A1 半履带）内 | [ ] 决定购买 |
+| Willys Jeep（V-VEH-US-007） | Willys MB 低模（CGTrader 商品页 slug：ww2-willys-jeep-vehicle-game-ready-low-poly）｜CGTrader｜https://cgtrader.com/3d-models/military/vehicle/ww2-willys-jeep-vehicle-game-ready-low-poly | $5 [S] | FBX（1.95 MB），PBR，三种贴图变体 | 25,473 面 [S]；Royalty Free [S] | 不达标（面数），但已是同类最便宜 | 免费 'Jeep Willys'｜CGTrader｜https://cgtrader.com/3d-models/military/military-vehicle/jeep-willys-4e91d899-32b6-4e0d-a5cd-760371d4a995｜免费 [S]（OBJ、FBX、GLB；车轮独立于车身；面数未读到；部分达标）；Unity Kado3D US Tanks #2 内含 Willys MB 2,202 三角 | [ ] 决定购买 |
+| GMC CCKW（V-VEH-US-005） | 'WW2 US Low Poly Tanks #2'（"WWII Low Poly US Tanks Pack 2"）｜Unity / Kado3D｜https://assetstore.unity.com/packages/3d/vehicles/land/wwii-low-poly-us-tanks-pack-2-95689 | $7.90 [F] | 仅 Unity 包，**需在 Unity 导出**（PSD 贴图）；Unity EULA，Extension Asset | **CCKW 353 卡车 2,501 三角**（来自 Sketchfab 同名包页 [F]，Unity 页未列内容，假定同内容，需确认）；另含 M4A4 Firefly 2,317 / M24 / M26 / Willys MB 2,202 | 不达标（面数远低于 5 万）；史实型号吻合，价格最低 | 无（其他商店读不到 CCKW 低价合规件） | [ ] 决定购买 |
+| Panzer IV（V-VEH-GE-003） | 'Low Poly Panzer IV G / Tiger Ausf E'（Kado3D）｜CGTrader｜https://cgtrader.com/3d-models/military/vehicle/low-poly-panzer-iv-g-medium-tank | $12 [S] | 摘要写有 FBX | 5,003 面 | 不达标（面数） | **面数达标版：'Tank Drivable Pz.IV'｜Fab / EVOLVE Studio｜https://www.fab.com/listings/1228a974-3491-4ec8-a426-dcf9be02bb14｜$59.99 [F]｜69.8K 三角；2 个骨骼网格 + 3 个静态网格；5 个材质（4 张 4K）；无内饰；注明 AI 使用不允许；格式：仅 Unreal Engine，需在 UE 导出；部分达标（部件独立性页面未逐项命名）**；JonahH 德军包 $49.99 [F] | [ ] 决定购买 |
+| Panther（V-VEH-GE-004） | 'WWII Low Poly German Tanks #2'（含 Panther D）｜Unity / Kado3D｜https://assetstore.unity.com/packages/3d/vehicles/land/wwii-low-poly-german-tanks-2-94574 | $7.90 [F] | 仅 Unity 包，**需在 Unity 导出**；Unity EULA | Panther D、Puma 2,143 三角、Sd.Kfz.251 Hanomag 等 5 辆（搜索摘要 [S]；Unity 页未列内容）；约 2k 面级 | 不达标（面数） | **面数达标版：'Tank Drivable Pz.V'｜Fab / EVOLVE Studio｜https://www.fab.com/listings/99add306-d186-4fe7-a797-082ed5403eda｜$59.99 [F]｜76.5K 三角；结构同 Pz.IV；无内饰；格式：仅 Unreal Engine，需在 UE 导出；部分达标**；CGTrader 'Panther Ausf A' $12 [S]（Low-poly，需人工确认）；Panther G（texture pack GameReady）$15 [S]（旧清单值，需确认面数） | [ ] 决定购买 |
+| Tiger I（V-VEH-GE-005） | 'Low Poly Panzer IV G / Tiger Ausf E'（Kado3D）｜CGTrader｜https://cgtrader.com/3d-models/military/vehicle/low-poly-panzer-iv-g-medium-tank（片段合并列出 Pz.IV G / Tiger E，各 $12） | $12 [S] | 摘要写有 FBX | 5k–11k 面（片段对该合并条目的范围） | 不达标（面数） | Fab 'Tiger I'｜TANK｜https://www.fab.com/listings/8a43cbb5-fb9a-485d-aa01-90f411867c0e｜$14.99 [F]（OBJ、glTF、GLB、USDZ，无 FBX、无 blend；三角数、部件、内饰页面均未写；无法判定）；JonahH 德军包 $49.99 [F]（含 Tiger E / (P) / II） | [ ] 决定购买 |
+| Panzer II Luchs（V-VEH-GE-002） | 无单买达标商品 | — | — | 其他商店读不到合规的 Luchs；Fab 'Tank Drivable PzII.G'｜EVOLVE Studio｜https://www.fab.com/listings/a5f7ded1-28a3-42c1-9ab4-fa87730ab933｜$49.99 [F] 是 Pz.II Ausf.G **不是 Luchs**（35.5K 三角；Unreal、Blender、FBX、OBJ、GLB、glTF、USDZ）；CGTrader / TurboSquid 的 Luchs 为 Editorial，排除 | 找不到合规单品；近似替代见 §11.8 | JonahH 德军包 $49.99 [F]（含 Luchs；Unity 包，需导出） | [ ] 决定购买 |
+| Sd.Kfz. 234 Puma（V-VEH-GE-001） | 'WWII Low Poly German Tanks #2'（含 Puma）｜Unity / Kado3D｜https://assetstore.unity.com/packages/3d/vehicles/land/wwii-low-poly-german-tanks-2-94574 | $7.90 [F] | 仅 Unity 包，**需在 Unity 导出** | Puma 2,143 三角 [S] | 不达标（面数） | 'Low Poly Sd.Kfz.234/2 Puma'｜CGTrader｜https://cgtrader.com/3d-models/military/vehicle/low-poly-sdkfz-234-puma-armored-car｜$12 [S]（6,754 面，FBX/OBJ/Maya，PBR）；'Sd Kfz 234 Puma Low-poly PBR'｜Fab / Max3d｜https://fab.com/listings/1e3114e9-acba-40fa-8a13-a673f20b2a6b｜$28.99 [F]（FBX/glTF/GLB/USDZ；4K PBR；三角数未列；部分达标） | [ ] 决定购买 |
+| Sd.Kfz. 251（V-VEH-GE-007） | 'WWII Low Poly German Tanks #2'（含 Sd.Kfz.251 Hanomag）｜Unity / Kado3D | $7.90 [F] | 仅 Unity 包，**需在 Unity 导出** | 约 2k 面级（搜索摘要 [S]） | 不达标（面数） | RenderHub max3ddd 'Sd.Kfz. 251 German Armored Fighting Vehicle'｜https://www.renderhub.com/max3ddd/sd-kfz-251-german-armored-fighting-vehicle｜价格需人工确认（约 41.5k 三角，game ready；接近达标）；CGTrader 版 $29 [S]（FBX + PBR；Royalty Free No AI） | [ ] 决定购买 |
+| Opel Blitz（V-VEH-GE-006） | 'Opel Blitz 1940'｜CGTrader｜https://cgtrader.com/3d-models/military/vehicle/opel-blitz-b06e3dbf-f574-4678-8c60-6e044d9028f6 | $10 [S] | 格式未读到 | 低模；摘要写 VR/AR 通过、有绑定；Royalty Free | 不达标（面数） | 'Opel Blitz WWII - Rigged with interior'｜CGTrader｜https://www.cgtrader.com/3d-models/vehicle/truck/opel-blitz-wwii-rigged-with-interior｜$29.99 [S]（FBX；3 种涂装；有内饰；摘要写约 800 多边形，可疑需核；部分达标） | [ ] 决定购买 |
+| M2A1 105mm 榴弹炮（V-VEH-ART-001） | 含在 JonahH 'WW2 United States Armed Forces'（105mm M2A1、M3 105mm、75mm M1A1、155mm M1）｜Unity｜https://assetstore.unity.com/packages/3d/vehicles/land/ww2-united-states-armed-forces-176742 | $49.99 [F]（整包） | 仅 Unity 包，**需在 Unity 导出** | 火炮 0.9k–2.4k 三角 [论坛 v1.0 数据] | 不达标（面数） | CGTrader 'M2A1 howitzer'｜https://www.cgtrader.com/3d-models/military/vehicle/m2a1-howitzer｜价格需人工确认（摘要写 Maya + FBX，4K 贴图；M101A1 页 LOD1 约 44k 面、2048 PBR；另一个 43,900 面低模 PBR + FBX；面数接近下限） | [ ] 决定购买 |
+| leFH 18（V-VEH-ART-002） | 含在 JonahH 'WW2 German Armed Forces'（10.5cm leFH 18）｜Unity｜https://assetstore.unity.com/packages/3d/vehicles/land/ww2-german-armed-forces-165215 | $49.99 [F]（整包） | 仅 Unity 包，**需在 Unity 导出** | 火炮 0.9k–2.4k 三角（美军包 v1.0 数据；德军包面数未单独读到） | 不达标（面数） | Hum3D '10.5 cm leFH 18'｜https://hum3d.com/3d-models/10-5-cm-lefh-18/｜$150 [S，旧清单]；约 70.8 万面需减面；贵，不推荐 | [ ] 决定购买 |
+| 57mm M1 反坦克炮（V-VEH-ART-003） | 未找到 M1 57mm | — | — | 替代：'low poly ordnance qf 6 pounder'｜CGTrader｜https://www.cgtrader.com/3d-models/military/gun/low-poly-ordnance-qf-6-pounder｜价格需人工确认；Royalty Free（6-pdr 是允许的替代） | 找不到（见 §11.8） | — | — |
+| Pak 40（V-VEH-ART-004） | 'Low Poly 7.5 cm Pak 40'｜CGTrader｜https://cgtrader.com/3d-models/military/gun/low-poly-7-5-cm-panzerabwehrkanone-40-anti-tank-gun | $12 [S]（另一处摘要写 $20，**价格冲突需人工确认**） | 摘要写含 FBX | 面数未读到 | 需人工确认 | 'Pak 40 - Rigged'｜RenderHub / Loss｜https://www.renderhub.com/loss/ww2-pak-40-rigged-panzerabwehrkanone｜价格需人工确认（FBX、Blend；4K PBR；下载 885.7 MB；§9 原记约 16k 面；Extended Use（IP Restricted）；面数不达标，有绑定）；含在 JonahH 德军包内 | [ ] 决定购买 |
+| P-47（V-VEH-AIR-001）；仅过场，低精度可 | 'P-47 Thunderbolt'｜TurboSquid｜https://www.turbosquid.com/de/3d-models/p-47-1038354 | $9 [S] | 含 FBX（是否 game-ready、许可是否允许游戏用均未确认；TurboSquid 标准许可） | — | 低精度可接受；许可需核 | CGTrader 低模 PBR（约 1.2 万面）｜https://cgtrader.com/3d-models/aircraft/military-aircraft/united-states-fighter-aircraft-republic-p-47-thunderbolt｜$139 [S]（Royalty Free，FBX；旧清单值） | [ ] 决定购买 |
+| Ju 87（V-VEH-AIR-002） | Ju 87 低模｜CGTrader｜https://www.cgtrader.com/3d-models/aircraft/historic-aircraft/ww2-german-dive-bomber-ju87-stuka | $15–$18 [S] | FBX | 低模单贴图含驾驶舱；另有 $4.99 手绘风版本，风格不符不选 | 低精度可接受；许可需核 | 无 | [ ] 决定购买 |
+| Bf 109（V-VEH-AIR-003） | 'BF - 109 Messerschmitt'｜CGTrader｜https://cgtrader.com/3d-models/aircraft/military/bf-109-messerschmitt-3d-model | $15 [S] | FBX（约 160 MB） | Royalty Free；$2 的 Bf 109 F 只有 3ds Max 格式，排除 | 低精度可接受；许可需核 | 无 | [ ] 决定购买 |
+| C-47（V-VEH-AIR-004） | 'Douglas C-47 Skytrain'｜CGTrader｜https://cgtrader.com/3d-models/aircraft/military/c-47-skytrain | $30 [S] | FBX | 低模 PBR | 低精度可接受；许可需核 | 'Historic Air Superiority and Logistics Collection WWI and WWII'｜CGTrader｜https://www.cgtrader.com/3d-model-packs/historic-air-superiority-and-logistics-collection-wwi-and-wwii｜价格未读到（螺旋桨/副翼分离，FBX/GLB/OBJ）；Synty 'POLYGON War Pack'｜https://syntystore.com/products/polygon-war-pack｜$50 促销（原价 $99.99）[F]，风格化低模，与写实不符，页面同时出现 "Sold out" | [ ] 决定购买 |
+
+**载具小结（片段原结论）**：美军 JonahH 包（M4 各型、Stuart、M8、半履带、105mm 榴弹炮；无 Jeep、CCKW、57mm、无内饰）与德军 JonahH 包（Pz.IV 各型、Panther、Tiger E/(P)/II、Luchs、Puma、251、Opel Blitz、Kübelwagen、leFH 18、Pak 40 等，约 105 个初始模型，4 种涂装）单车摊价最低，部件独立达标但面数不达标。免费样本 'WW2 Armed Forces Demo'｜itch.io / sloffice｜https://sloffice.itch.io/ww2-armed-forces-demo｜标 Free（未写价格）[F]：M5A1 Stuart、M4A3(75)，4.3k–8.2k 三角，Unity 包 233 MB，**页面未写许可，不能直接用于发布**，仅用于先试看质量。
+
+### 11.6 建筑 / 环境 / 道具 / 植被 / 特效
+
+| 需要什么（需求 ID） | 最便宜推荐 | 价格与证据 | 格式 | 面数 / 关键规格 | 达标情况 | 备选（简写） | 决定 |
+|---|---|---|---|---|---|---|---|
+| 大西洋壁垒碉堡、滩头障碍（捷克刺猬/比利时门/木桩）、铁丝网、桶、无线电（V-BLD-006/007、V-PRP-002/003/005/006） | 'D-Day Atlantik Wall Collection'｜CGTrader｜https://www.cgtrader.com/3d-model-packs/d-day-atlantik-wall-collection | $89 [F] | BLEND/FBX/OBJ/DAE，glTF 18/21 | 21 件：7 个组装好的碉堡 + 74 物体 + 95 模块；PBR（基础色/金属度/粗糙度/法线/AO）；3 级 LOD；Royalty Free（No AI）；不含 LCVP；评论称个别件的 STL/DAE/OBJ 不准，FBX 未被指出有问题 | **达标**（道具与碉堡、有 LOD、PBR） | 单件捷克刺猬：'WW2 Anti-tank Obstacle PBR Game ready'｜CGTrader｜https://cgtrader.com/3d-models/military/other/ww2-anti-tank-obstacle-pbr-game-ready｜$5.99 [S]（部分达标，LOD 未读到）；KangarooZ 捷克刺猬｜RenderHub｜https://www.renderhub.com/kangarooz-3d/czech-hedgehog-obstacle-wwii｜价格需人工确认（638 面，PBR，Extended Use） | [ ] 决定购买 |
+| 沙袋、战壕、铁丝网、弹药箱（V-PRP-001/008 等） | 'World War Trenches'｜Unity Asset Store / Aquarius Max｜https://assetstore.unity.com/packages/3d/environments/historic/world-war-trenches-152381 | $44 [F] | 仅 Unity 包，**需在 Unity 导出** | 道具 2.5k–5k 三角，PBR（搜索摘要 [S]）；含沙袋、铁丝网、金属/纸弹药箱 | 道具规格达标 | 无 | [ ] 决定购买 |
+| 废墟街区 / 民居模块（V-BLD-004、V-BLD-010、V-BLD-001） | 'WW2 Pack - Ruined Town'｜Unity Asset Store / BSP｜https://assetstore.unity.com/packages/3d/environments/historic/ww2-pack-ruined-town-284837 | $39.99 [F] | 仅 Unity 包（1.9 GB，URP/HDRP；Built-in 在 Unity 6 不兼容），**需在 Unity 导出** | 300+ 物体 [S]；PBR；面数、格式未读到 | 无法判定：是否法国石屋、是否模块化未读到 | 'Modular House & Ruins Mega Pack'｜Unity Asset Store｜https://assetstore.unity.com/packages/3d/props/modular-house-ruins-mega-pack-perfect-for-horror-war-historic-sc-317174｜$75 [S]（23 栋完整房屋 + 21 栋废墟版；Unity 与 Unreal，**需在对应引擎导出**；有破损版；是否诺曼底风格未读到）；'European architecture collection'｜CGTrader｜https://cgtrader.com/3d-model-collections/european-buildings-3d5e4f6c-a67d-4cfb-9112-9128719ec245｜$159 [S]（19 栋建筑 + 2 路 + 2 桥；PBR 低模；贵） | [ ] 决定购买 |
+| 桥梁（V-BLD-008） | 'Stone Bridge'（4 段，可拼接）｜CGTrader｜https://cgtrader.com/3d-models/architectural/street/stone-bridge-8dfa3584-2e71-4f79-b8f1-c31c84e6c372 | $5 [S] | FBX、OBJ、Unity 包 | 约 31.6k 面 | 部分达标：中世纪风格，非诺曼底 | 无 | [ ] 决定购买 |
+| 登陆艇 / 帐篷 / 树篱 / 农舍 / 石墙等风格化合集（V-PRP-007 等） | 'POLYGON War Pack'｜Synty｜https://syntystore.com/products/polygon-war-pack | $50 促销（原价 $99.99）[F]；页面同时出现 "Sold out" | FBX 源文件 + Unity 2022.3 + UE 4.25 | 588 件；沙袋 8、木箱 6、迷彩网帐篷 4、木栅栏 7、树篱 4、联排屋 6、农舍/谷仓、石墙 8、登陆艇、战壕 | **风格不符**（风格化低模与写实方向不符）；但是唯一读到含登陆艇、帐篷、树篱的合集 | 'WW2 Invasion Beach'｜Unreal Marketplace｜https://www.unrealengine.com/marketplace/en-US/product/ww2-invasion-beach｜价格需人工确认（4 种混凝土碉堡、Higgins 登陆艇（带绑定/动画）、4 种坦克障碍；UE 4.26–5.1，**仅 Unreal，需在 UE 导出**，未迁到 Fab） | [ ] 决定购买 |
+| 树篱 bocage / 落叶树（V-NAT-001、V-NAT-002） | 'UK Hedgerow 3D Collection'｜CGTrader｜https://www.cgtrader.com/3d-models/plant/leaf/uk-hedgerow-3d-collection | $4–$40 [S，旧清单] | Hornbeam 集合有 PBR，FBX/OBJ/USD | 含山毛榉树篱、灌木、常春藤；LOD 未读到 | 部分达标：植物可用，但没有土堤 | 'broadleaf oak trees for games'｜CGTrader｜https://cgtrader.com/3d-models/plant/leaf/broadleaf-oak-trees-for-games｜价格需人工确认（4 级 LOD，末级公告牌；偏 Unreal） | [ ] 决定购买 |
+| 阿登云杉含雪（V-NAT-003） | 'Canadian Spruce Tree Snow V1'｜CGTrader｜https://cgtrader.com/3d-models/plant/conifer/canadian-spruce-tree-snow-v1 | 价格需人工确认 | 未读到 | 4 级 LOD，PBR，LOD0 619 面；单棵树 | 达标（植被规格）；欧洲云杉是否贴近未核 | 'Conifers Spruces'｜CGTrader｜https://www.cgtrader.com/3d-models/plant/conifer/conifers-spruces｜价格需人工确认（25 个云杉模型含雪；LOD2/3 为公告牌） | [ ] 决定购买 |
+| 水面材质 / 泡沫（V-NAT-008） | 'Realistic Water Texture Pack'｜Fab｜https://www.fab.com/listings/b7800dde-fb2c-4134-aa02-7e8ce8e647ff | 价格需人工确认 | 未读到该页 | 含水面贴图与泡沫遮罩（贴图可用于任何引擎） | 需人工确认 | 'Easy Water'｜itch.io / symphonie-studio｜https://symphonie-studio.itch.io/easy-water｜$2.99+ [S]（Unity 着色器，**不能直接用于 Babylon.js**；未提泡沫；不推荐） | [ ] 决定购买 |
+| 爆炸序列帧（V-FX-003） | 'Realistic Explosion VFX Spritesheet/flipbook'｜Gumroad｜https://thenerdforum.gumroad.com/l/vznsx | $10 [S] | 序列帧图 | 5 张写实爆炸序列帧；枪口焰、烟未包含 | 部分达标 | 'Animated Game VFX Vol.1 - 37 Sprite Sheet Effects'｜Fab｜https://fab.com/s/cc7e3fda26c2｜价格需人工确认（37 套序列帧；是否写实未核） | [ ] 决定购买 |
+| 枪口焰 / 烟 / 弹孔 / 血迹（V-FX-001/002/004/005） | 本次只找到爆炸类；RenderHub 'RC Art - Muzzle Effects'（CC-BY 4.0，需署名）见 §8/§4 旧清单，未重新核实 | — | — | — | 找不到（见 §11.8） | — | — |
+
+### 11.7 音效与音乐
+
+> 许可栏只写页面原话要点，完整条款均需另读 License 页。Sonniss / A Sound Effect 常在促销，价格以结算页为准。
+> 已排除 / 不入候选：fusehive 'Military Weapons of War'（https://fusehive.itch.io/military-weapons-of-war-sound-effects-library-army-combat-battlefield-weapon-sou ，$99.99 [F]，现代通用设计音效且未写许可）；delusiondrive 'Sounds of War'（https://delusiondrive.itch.io/sounds-of-war-full-audio-effects-pack-in-mp3-format ，$3.99 起 [F]，MP3/OGG，现代通用，来源未说明，仅可作兜底占位）；Sound Ideas 'World War 2 Firearms Bundle' $204（原 $255）[F]（比 BOOM 起步价高）；Soundstripe（订阅制）、ElevenLabs（AI 生成站）、AudioJungle 'German Soldiers chant'（古代战争）。
+
+| 需要什么（需求 ID） | 最便宜推荐 | 价格与证据 | 格式 | 内容 / 关键规格 | 达标情况 | 备选（简写） | 决定 |
+|---|---|---|---|---|---|---|---|
+| 步枪/冲锋枪/手枪开火：Garand、Carbine、BAR 单发、G43、Kar98k、MG42 点射、MP40、Thompson、M3、M1911、Luger、P38、M1903、M1919（A-WPN-001–011、015） | 'Weapons of World War II - Designed'｜Sonniss｜https://sonniss.com/sound-effects/weapons-world-war-ii-designed/ | $38.50（原 $55）[F] | 18 文件 / 133 变体，立体声 96k/24bit，350 MB | 设计音效（Designed）；14 枪：M1919、M1911、BAR M1918、Gewehr 43、M3、Kar98k、Luger、M1 Carbine、M1 Garand、MG42、MP40、P38、Thompson、M1903；"Royalty free forever"，无订阅；完整条款未读到 | 部分达标：**无 StG 44、无 MG34**；BAR 仅单发 | BOOM 'World War II Firearms'｜https://boomlibrary.com/sound-effects/world-war-ii-firearms｜$139–$269 [F]（25 枪含 StG44、MG42、Garand、Carbine、Kar98k、G41、FG42；**无 BAR、无 G43、无 MG34**；各版本价未读到） | [ ] 决定购买 |
+| StG 44（A-WPN-012） | 'WW2 Weapons: German & US'（德包）｜A Sound Effect / Diegetix｜https://www.asoundeffect.com/sound-library/ww2-weapons-german-us/ | $25–$40 区间 [F]（德包/美包/合集各一档，页面未标明哪档对应哪个；页面显示 $0,00 为占位）**需人工确认** | 48k/24bit，116 MB（德）/ 141 MB（美），未标文件类型 | 德包：StG 44、P38、Kar98k、MP40（181 条）；美包：M1911、Garand、Thompson（203 条）；是否实录页面未明说；Royalty-free，结算时选用户数 | 部分达标：德包单价待确认 | 无 | [ ] 决定购买 |
+| MG34（A-WPN-013） | 无商品 | — | — | 搜索中所有 WW2 枪库清单均无 MG34；用 MG42 替代需负责人接受 | 找不到（见 §11.8） | — | — |
+| MG42 近/中/远（A-WPN-014） | 'MG 42 Machine Gun'（Pole Position）｜Sonniss｜https://sonniss.com/product/mg-42-machine-gun/ | $111.75（原 $149）[F] | 183 文件 4.81 GB，96k/24，mono/stereo/M-S/环绕，含 Pro Tools/Reaper 会话 | 实录，两个场地，多距离（24 视角/44 声道），含操作声；Royalty-free，无订阅 | 达标（可选升级；非必买） | 无 | [ ] 决定购买 |
+| BAR 全自动（A-WPN-005） | 未找到全自动实录 | — | — | Designed 仅单发 | 找不到（见 §11.8） | — | — |
+| 75mm 坦克主炮（D-TNK-004） | 'Sherman Cannon - 75mm M4A1'（Pole Position）｜A Sound Effect｜https://int.test-env.asoundeffect.com/sound-library/sherman-cannon-75mm-m4a1（测试环境域名，搜索摘要；Sonniss 页面 URL 未读到，正式页需核实） | $149 [S] | 24+ 文件，96k/24，约 780 MB | 实录 WWII 75mm M4A1 Sherman 空包发射，近/中/远，侧后方，wild foley；Royalty-free [S]；唯一明确 WW2 Sherman 炮实录；德军 88/75 炮无单独商品 | 部分达标：仅美军炮 | 预算紧：'Military Tanks of Warfare'（mini）｜A Sound Effect / Sonniss｜https://www.asoundeffect.com/sound-library/military-tanks-of-warfare-sound-effects-library-war-tank-army-land-vehicles-artillery｜$34.99（原 $39.99）[F]（现代/通用坦克，**非 WW2 型号**，180 文件/60 声音，96k/16bit，约 250 MB；仅作占位）；BOOM 'WW2 Tanks'｜https://asoundeffect.com/sound-library/world-war-2-tanks｜$247.20（原 $309，价格有效期至 2026-12-03）[F]（实录，含 Sherman M4A1、Panther、Hetzer 等 8 种；400+ 文件 27 GB） | [ ] 决定购买 |
+| 德军坦克车外/内 + 履带 + 空包发射（D-TNK-006、D-TNK-002） | 'Panzer Tank'（Rob Nokes，发行 sounddogs）｜Sonniss｜https://sonniss.com/product/panzer-tank/ | $37.50（原 $75，-50%）[F] | 39 文件，48k/24，721 MB | WWII Panzer 坦克车内外实录：怠速、加速、换挡、启动、停止、机动、驶过、空包发射（Blank Fire）、倒车提示、履带；"Royalty free forever"，无订阅；页面未写具体型号，需试听 | 部分达标：德军侧；美军 Sherman 需另买 | Sherman 车外：'Sherman M4A1 Medium Tank'（Pole Position）｜Sonniss｜https://sonniss.com/product/sherman-m4a1-medium-tank｜$224.25（原 $299）[F]（Continental R975，249 文件 27.99 GB，96k/24，**不含炮声**）；Sonniss 'Panzer IV Ausf. G' $224.25（原 $299）[F]（https://sonniss.com/sound-effects/panzer-iv-ausf/ ，太贵）；预算紧可用 Panzer 声变调近似美军坦克（需负责人接受） | [ ] 决定购买 |
+| Stuka / 战斗机扫射 / 航弹 / 远炮 / 战场环境（B-AIR-001、B-AIR-002、D-AIR-001、F-AMB-005） | 'Sounds of War Sound Effects Library'｜Sound Ideas｜https://sound-ideas.com/products/sounds-of-war-sound-effects-library | $65（原 $129）[F] | 75 条，24/48 WAV，74 MB（页面三种规格均标 "Sold out" 但有加购按钮，**需人工确认可买**） | 页面称历史 WWII 音频：武器、飞机、部队、装甲突击、战场环境、整场战斗序列、装备与坦克；提到 Stukas、Flying Fortresses；型号清单未列；实录/翻制来源页面未明说；Royalty-free，"无后续费用" | 部分达标：只确认含 Stukas 与飞机，未确认含航弹、扫射，需试听 | 单独 WW2 战斗机：A Sound Effect 'WW2 Aircraft' 约 $150 [S]；Sound Ideas 'P-51 Mustang'（BOOM）$65 [S]（https://sound-ideas.com/Product/183/P-51-Mustang-Sound-Effects ，本次抓取 404，价格未能复核）；Sonniss Spitfire Mk IX $449 [F]（太贵，排除）；fusehive 'Warfare Ambiences'（https://fusehive.itch.io/warfare-ambiences-sound-effects-library-army-combat-battlefield-weapon-war-backg ，[S]，价格与内容未读到，需人工确认） | [ ] 决定购买 |
+| Bazooka / Panzerschreck / Panzerfaust（B-HVY-001） | 未找到任何 WW2 发射器实录商品 | — | — | fusehive 现代库含 rocket launcher 但是现代设计音效（$99.99）；A Sound Effect 'Warfare 2' $199 [F]（清单提供，未复核）为现代 RPG；建议不买 | 找不到（见 §11.8） | — | — |
+| 坦克被击中/跳弹（D-TNK-005）、卡车/吉普/半履带（D-VEH-001）、Stuka 俯冲警报专门库 | 未找到 | — | — | — | 找不到（见 §11.8） | — | — |
+| 英语战场喊话（G-VOX-001、G-VOX-003、G-VOX-004） | 'Army Voice Pack'｜itch.io / Raketenfaust｜https://raketenfaust.itch.io/army-voice-pack | $4.49 起 [F] | WAV | 155 条 WW2 士兵语音，专业配音（英语，美式与否页面未写）；允许商用与游戏、可编辑；不需署名；禁止转售/再分发 [F]；可能含口令（页面未列，需试听）；受伤/倒地痛呼未明确 | 部分达标：需试听 | 无 | [ ] 决定购买 |
+| 德语喊话 / 口令（G-VOX-002、G-VOX-004） | 'SonicArchive Military Personnel German'｜Shockwave-Sound｜https://shockwave-sound.com/sound-effects/12396/sonicarchive-military-personnel-german | $30 全套（单条 $3.45）[F] | WAV 16bit/44.1k 立体声，每条 1–3 秒 | 46 条德语军人喊话：Achtung、Kompanie、Marsch、Links、Rechts、Jawohl 等；出品方为 DYNAMEDION 声音设计师；页面仅链接 License Terms，未读到 | 部分达标：规格偏低；受伤/倒地痛呼未明确 | 无 | [ ] 决定购买 |
+| 无线电（H-RAD-001） | 'Military Radio Voices'（GfxSoundsStudios）｜Sonniss｜https://sonniss.com/product/military-radio-voices | $25（原 $35）[F] | 48k/32bit，155 文件，112 MB | 现代风格军事无线电语音，125+ 条；**非 WW2 年代**，无静电/PTT 专门说明 | 不达标（年代不符） | 'Just Noise'｜Sound Ideas｜https://portal.sound-ideas.com/Product/430/Just-Noise-Sound-Effects-Library｜$195 [S]（140 条，含 1940s–50s 老电台杂音、静电、嗡声）；MuseHub 'Radios and TVs'｜https://www.musehub.com/loops-and-audio/radios-and-tvs｜价格、许可需人工确认 [S]；片段另提 WebAudio 自生成噪声 $0（是否算允许的后期，须按 §2.2 D-MOD 由负责人确认） | [ ] 决定购买 |
+| 菜单 / 结算音乐（I-MUS-001、I-MUS-002） | 'Warfare Soundtrack 25 Tracks Vol 1'｜itch.io / Bobby Cole｜https://bobbycolemusic.itch.io/warfare-spundtrack-25-tracks-vol-1 | $24.99 起 [F] | WAV 44.1k/16bit | 25 曲（22 个唯一 WAV），约 1.5 小时，不可循环（循环需自行处理）；itch 标签含 WWII（搜索摘要）；"Unlimited" royalty-free | 部分达标 | 免费：'Free Military WW2 Game Music Pack'｜Unity Asset Store / alkakrab｜https://assetstore.unity.com/packages/audio/music/free-military-ww2-game-music-pack-362056｜免费 [F]（457.7 MB，曲目清单页面未显示；标准 Unity EULA（Extension Asset），用于浏览器游戏是否允许需人工确认）；'TOP SECRET WW2 Music Pack'｜itch.io / Daniel Carl｜https://danielcarlmusic.itch.io/top-secret-ww2-music-pack｜$34.99 起 [F]（14 主题 32:36 + 13 无缝循环，WAV 44.1k/16bit，591 MB） | [ ] 决定购买 |
+| 户外混响 IR（J-IR-002 等） | 'Forest Reverb'（outdoor IR）｜A Sound Effect｜https://www.asoundeffect.com/?p=30802（该页抓取只返回其他商品，未能确认；价格来自搜索摘要） | $25 [S] | 未读到 | 134 条森林 IR；需人工确认商品页 | 需人工确认 | 免费 'Canyon Soundings'｜KVR｜https://www.kvraudio.com/forum/viewtopic.php?p=9276689｜免费 [S]（51 条 IR，48k/24 立体声；峡谷场景不匹配西线；许可需人工确认）；BOOM 'Outdoor Impulse Responses'｜https://www.boomlibrary.com/sound-effects/outdoor-impulse-responses/｜页面显示 "$69.00 / year"（与 "One purchase. Forever" 矛盾，需人工确认）[F]（68 WAV，192k/24，约 0.6 GB；royalty-free，禁止转售；仅向商业客户销售） | [ ] 决定购买 |
+
+### 11.8 找不到任何达标或可用商品的清单
+
+> 处理建议三选一：**灰盒占位**（程序生成基本几何体 / 静音 `AudioBuffer`，按 ASSET_GAPS §3.2 约定，里程碑验收时仍须在 ASSET_GAPS 里有"决定"）、**近似替代**（须负责人接受史实偏差）、**定制**（外包）。以下建议为文档作者依据片段结论所拟，需负责人确认。
+
+| 类别 | 找不到的项 | 片段原结论 | 处理建议 |
+|---|---|---|---|
+| 武器（视觉） | BAR（第一人称级）、M1919（线索未核）、M1903A4 带镜、M1911、M1/M3 刺刀、Kar98k 带镜（待核）、Gewehr 43、MG34、Panzerschreck（仅 6.2k 低模）、Tellermine、S-Mine，以及 Mk2/M24 之外的第一人称级手雷 | Loss 的 G43/MG34/MG42/MP40/FG42 因面数低且许可存疑不再推荐 | BAR / M1903 / M1911 / Panzerschreck：用低模（见 §11.2）作第三人称与占位，第一人称灰盒占位或定制；MG34：近似替代（外形用 MG42）或灰盒；G43、刺刀、地雷：灰盒占位 |
+| 角色 | 德军伞兵、德军冬季、美军冬季 | 现成商品未找到；Fallschirmjäger 仅有 RenderHub FG42 枪与 Daz Genesis 8 人偶 | 近似替代：国防军 / 美军夏季角色 + 贴图变体（须按 §2.2 D-MOD 由负责人确认）；或灰盒；或定制 |
+| 第一人称手臂 | 带 WW2 军装袖的现成手臂 | 未找到现成"WW2 袖子"商品；通用手臂需重贴图（是否允许见 D-MOD） | 近似替代（买通用/MP40 包手臂 + 贴图变体，需确认 D-MOD），或定制 |
+| 动画 | 医护救治/拖拽（V-ANM-006）、载具进出/驾驶/炮手（V-ANM-008） | 本次未找到现成商品 | 灰盒占位（无动画的姿势切换）；或定制 |
+| 载具与火炮 | 面数 5 万–15 万且价格明确的美军车辆（只有 M8 85k 价格未读到）；Jeep / CCKW 的达标版；57mm M1 反坦克炮；Luchs 单品；带内饰的坦克（仅 Rng3r 美军车辆包宣称有"详细内饰"，价格/面数/格式/许可均未读到，见 https://forums.unrealengine.com/t/rng3r-us-military-vehicle-pack-1/2840763 ，需人工确认） | 单价便宜的车均为低模；达标者仅 Fab Pz.IV / Pz.V（仅 Unreal）与 M8 | 低模近似替代或灰盒；57mm 用 6-pounder 近似（价格需确认）；内饰：灰盒占位或定制 |
+| 建筑 | 诺曼底乡村教堂（含钟楼）、阿登冬季村舍、欧洲小火车站、bocage 土堤（只有植物）、诺曼底风格石屋/农场的写实模块化套件、单独的写实 LCVP（只有 UE 包与 Synty 风格化登陆艇） | 只见中世纪/奇幻或风格不明的合集；Unity 'WW II French Village Asset Pack'（https://assetstore-fallback.unity.com/packages/3d/environments/world-war-2-french-village-25233）已下架 | 灰盒占位（盒体 + 通用材质）；或定制；LCVP 可考虑 UE 包 'WW2 Invasion Beach'（仅 Unreal，价格需确认，需在 UE 导出） |
+| 环境 / 特效 | 农作物（麦、玉米）、水面（无合适商品，Unity 着色器不能直接用于 Babylon.js）、写实枪口焰 / 烟序列帧 | 本次只找到爆炸类序列帧 | 水面：自写 Babylon 着色器（贴图可另买）；农作物与枪口焰：灰盒或定制 |
+| 音频：枪械与重武器 | MG34、BAR 全自动、Bazooka / Panzerschreck / Panzerfaust、坦克被击中/跳弹、航空炸弹专门库、Stuka 俯冲警报专门库 | 搜索中所有 WW2 枪库清单均无 MG34；未找到任何 WW2 发射器实录商品 | MG34：近似替代（MG42 声，须负责人接受史实偏差）；其余：静音占位或定制 |
+| 音频：载具 | 卡车、吉普、半履带 | 未找到 WW2 车辆实录商品 | 近似替代（现有坦克库通用引擎声，需接受）或静音占位 |
+| 音频：人声与无线电 | 受伤/倒地人声（未证实）、WW2 年代无线电 PTT | 现有人声库两者均未明确；无线电仅现代语音 | 试听后再定；否则静音占位或定制 |
+
+### 11.9 总价（两档）
+
+> **口径**：
+> - **最低价方案（含不达标的低模）**：每个需求取 §11.2–§11.7 里"最便宜推荐"列的商品，包括"不达标"的低模；音乐取免费 Unity 包（若其许可经确认不可用，加 $24.99）。
+> - **尽量达标方案**：每个需求取页面读到的"达标"或最接近规格的商品；车辆取 JonahH 两个包 + EVOLVE Pz.IV / Pz.V（仅 Unreal）；音频含 MG42 近/中/远升级与付费音乐；**不含**不达标的低模（BAR、美军枪包、美军步兵 €9.99 低模、变体包）；Jeep / CCKW 无更达标替代，仍保留最便宜的低模；JonahH 两包仅"部件独立"达标、面数仍不达标。
+> - 两档均**不含**："价格需人工确认"的商品（Alpenwolf 美军步兵、M8 Greyhound 85k、M2A1 单品、Panzerschreck、各云杉/橡树/水面贴图/37 套序列帧等）、"找不到"的项（§11.8）、可选项（World War Trenches $44、单件捷克刺猬 $5.99、片段中的现代通用库）。
+> - 小计为本文档作者对上表价格的逐项相加，未计税；€ 单列不折算。
+
+| 类别 | 最低价方案（含不达标的低模） | 尽量达标方案 |
+|---|---|---|
+| 武器（含 FP 手臂，见 MP40 包） | $251.38：Garand 8 + Carbine 23.99 + Thompson 5.50 + M3 25 + Bazooka 23.99 + Mk2 2 + Kar98k 7 + MP40 24.99 + StG44 55 + **MG42 Fab 9.99** + Luger 17.95 + Panzerfaust 20 + M24 2.99 + **BAR 4.99 + 美军枪包 19.99**（低模） | $276.41：同上，但 MG42 取 CGTrader $60，且不含 BAR、美军枪包。若还要 P38 另加 $25 |
+| 角色 | $145 + €9.99：德军 $35 + 空降兵 $60 + 变体包 $50 + 美军步兵 €9.99 | $100：德军 $40 + 空降兵 $60；美军步兵（Alpenwolf，价格需人工确认）未计入 |
+| 动画 | $30.99：Rifle Starter 3.99 + kevdev 15 + Unity Animated WW2 Weapons #2 12 | $30.99（同左） |
+| 载具与火炮 | $109.70：Sherman 9 + Willys 5 + Unity US#2 7.90 + US#3 9.90 + M8 12 + 半履带 12 + Unity 德 #2 7.90 + Pz.IV G 12 + Tiger E 12 + Blitz 10 + Pak 40 12 | $232.86：JonahH 美军包 49.99 + JonahH 德军包 49.99 + EVOLVE Pz.IV 59.99 + Pz.V 59.99 + Willys 5 + Unity US#2 7.90（JonahH 德军包与 EVOLVE 两车有重叠，如接受低面数可去掉其一） |
+| 飞机（仅过场） | $69：P-47 9 + Ju 87 15 + Bf 109 15 + C-47 30 | $69（同左） |
+| 建筑 / 环境 / 特效 | $143.99：Atlantik 89 + 废墟街区 39.99 + 石桥 5 + 爆炸序列帧 10 | $143.99（同左，该类无更便宜或更达标的替代） |
+| 音效与音乐 | $374.49：Designed 38.50 + 德包 25 + Sherman 炮 149 + Panzer Tank 37.50 + Sounds of War 65 + 英语喊话 4.49 + 德语喊话 30 + 森林 IR 25；音乐取免费 Unity 包（许可待确认，若不可用 +$24.99 = $399.48） | $511.23：同上，音乐取 Bobby Cole $24.99，另加 MG42 近/中/远 111.75 |
+| **合计** | **$1,124.55 + €9.99** | **$1,364.48** |
+
+**价格证据构成**（相同口径，按上表商品）
+
+| 构成 | 最低价方案 | 尽量达标方案 |
+|---|---|---|
+| 页面直接读到 [F] | $502.61 | $756.54 |
+| 仅来自搜索摘要 [S] | $596.94 | $582.94 |
+| [F] 区间下限、需人工确认（Diegetix 德包 $25–$40，按下限计） | $25.00 | $25.00 |
+| 合计 | $1,124.55 | $1,364.48 |
+
+- **需人工确认的价格 / 条件**（影响小计）：Diegetix 德包单价（$25–$40，最高可再加 $15）；Sherman 炮声 $149 为 [S]，且链接为测试环境域名；Sounds of War 页面标 "Sold out" 但有加购按钮；Pak 40 的 $12 与 $20 冲突；MP40 包许可若为 Editorial 则排除（−$24.99，且失去 FP 手臂）；CGTrader 的 [S] 价格占武器、角色、飞机、多数低模车辆的大头，须在结算页逐项核对。
+- **仍缺价格、未计入**：Alpenwolf 美军步兵、M8 Greyhound 85k、M2A1 单品、Panzerschreck、Panzerfaust 60、Davlet 手臂、云杉 / 橡树、水面贴图、37 套序列帧、Mauser Kar98k、max3ddd 251、MuseHub 等。
+- 促销有截止期（如 BOOM WW2 Tanks 至 2026-12-03），Unity Asset Store / Sonniss 价格可能随促销变动。
+- **所有候选均未下载检验**：面数、贴图分辨率、部件独立性、格式与许可均为页面或搜索摘要所见。
+
+### 11.10 购买前必查清单（每件）
+
+对每一件打算购买的商品，下单前逐项核对，并在 `LICENSES.md` §6 简化登记里留痕：
+
+- [ ] **格式**：文件列表里有没有 FBX / glTF（glb）？只有 .uasset / .unitypackage 的，须确认能在对应引擎导出 FBX/glTF，且商店 EULA 允许导出再分发（本项目是 Babylon.js，浏览器分发）。仅 Unreal / 仅 Unity 的已在表中标"需在该引擎导出"。
+- [ ] **Fab 许可**：Fab 页面"许可"字段多数读不到。下单前确认是 **Standard** 还是 **UE-Only**；UE-Only 的不可用于本项目。
+- [ ] **是否标 Editorial**：商品页或许可文字含 "Editorial"、"Editorial Use Only"、"IP Restricted" 的一律排除（如 Loss 系列、MP40 包摘要中的 "editorial license (no AI)"、TurboSquid Luchs、CGTrader 'Panzer II Ausf L Lynx'）。
+- [ ] **面数与贴图**：对照 §11.1，实际三角形数（不是顶点数、不是多边形数）、贴图分辨率（4K / 2K）、有无 LOD；Fab 页面多数不列面数。
+- [ ] **可动部件是否独立**：第一人称武器的枪栓、弹匣、扳机、表尺；车辆的炮塔、炮管、履带、负重轮、舱盖是否为独立网格 / 骨骼；是否已绑定。
+- [ ] **AI 使用声明**：页面是否声明 "No AI"；EVOLVE Studio 页面注明"AI 使用不允许"，须与 §2.4 禁用清单一并核对。
+- [ ] **来源**：按 §2.3 排查是否从商业游戏提取（本次未发现，但 CGTrader / RenderHub 卖家未逐一核查来源）。
