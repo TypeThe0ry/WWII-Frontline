@@ -17,6 +17,7 @@ declare module 'node:fs' {
 declare module 'node:dgram' {
   export function createSocket(type: 'udp4'): {
     once(ev: 'error', cb: (e: Error) => void): void;
+    on(ev: 'message', cb: () => void): void;
     bind(port: number, host: string, cb: () => void): void;
     address(): { port: number };
     close(cb: () => void): void;

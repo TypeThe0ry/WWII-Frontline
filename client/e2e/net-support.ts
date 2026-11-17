@@ -33,7 +33,7 @@ export interface DevCert {
 export function makeDevCert(): DevCert {
   const dir = mkdtempSync(join(tmpdir(), 'fl-net-cert-'));
   execFileSync(GEN_CERT_BIN, ['--out', dir], { stdio: 'pipe' });
-  return { dir, cert: `${dir}/dev-cert.pem`, key: `${dir}/dev-key.pem`, hashHex: readFileSync(`${dir}/dev-cert.sha256`, 'utf8').trim().split(/\s+/)[0] ?? '' };
+  return { dir, cert: `${dir}/dev-cert.pem`, key: `${dir}/dev-key.pem`, hashHex: /hex=([0-9a-f]{64})/.exec(readFileSync(`${dir}/dev-cert.sha256`, 'utf8'))?.[1] ?? '' };
 }
 
 export function removeDir(dir: string): void {
@@ -59,6 +59,17 @@ export async function freePorts(): Promise<{ ws: number; wt: number }> {
     });
   });
   return { ws: tcp, wt: udp };
+}
+
+/** A UDP socket that swallows everything: a QUIC handshake towards it never completes and never errors (no ICMP). */
+export async function startUdpBlackhole(): Promise<{ port: number; close(): Promise<void> }> {
+  const sock = createSocket('udp4');
+  sock.on('message', () => undefined);
+  const port = await new Promise<number>((res, rej) => {
+    sock.once('error', rej);
+    sock.bind(0, '127.0.0.1', () => res(sock.address().port));
+  });
+  return { port, close: () => new Promise<void>((r) => sock.close(() => r())) };
 }
 
 export interface ServerProc {

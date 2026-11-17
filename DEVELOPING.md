@@ -83,6 +83,24 @@ pnpm -C client test:e2e -- terrain.spec.ts            # software WebGL2 pixel ch
 SAVE_SHOTS=1 pnpm -C client test:e2e -- terrain.spec.ts   # also refresh docs/measurements/M0-023/*.png
 ```
 
+## Vegetation in the client (M0-024)
+
+Grey-box vegetation (procedural placeholders, no third-party assets) on top of the terrain: `?scene=vegetation` = terrain + vegetation
+(`?scene=terrain` stays terrain only). Instance tables are scattered at start-up per 64 m chunk (`render/vegetation/scatter.ts`, 6 B
+per entry, layout in PI-020); M1 replaces the source with baked tables, the table bytes are the interface.
+
+```sh
+pnpm -C client dev    # then   http://localhost:5173/?scene=vegetation&debug=1
+#   &quality=high|low   &impostor=lowres (64 px views, faster bake)   &veg_seed=n   &veg_budget=ms|inf   &renderer=webgpu|webgl2
+#   &cam=0|1|2 / pos= / target= as for the terrain scene
+# window.__vegetation = { veg, perf(), loadMs, ... }; window.__perf.dump().vegetation = { drawCalls, instances, tris }
+# After teleporting the camera call veg.settle(camera) (update() spreads re-bucketing over frames by a 0.45 ms budget).
+pnpm -C client test:e2e -- vegetation.spec.ts                 # software WebGL2 pixel checks + WebGPU compile/orientation check
+SAVE_SHOTS=1 pnpm -C client test:e2e -- vegetation.spec.ts    # also refresh docs/measurements/M0-024/*.png
+```
+
+`pnpm -C client sync-map` also copies `spawns.json` (keep-out discs around spawn points).
+
 ## Directories
 
 See `README.md`. `assets/incoming/` is created manually and never committed; `assets/processed/`
@@ -137,6 +155,15 @@ Hello/C1 bytes, `gen_dev_cert` prints a ready-made URL in its last line). Server
 ```sh
 cargo test -p frontline-server --test transport_matrix --test wt_loopback --test wt_stress   # ws+wt handshake matrix, loopback, binary smoke
 cargo test --release -p frontline-server --test wt_stress -- --ignored --nocapture            # 100 clients x 120 s (WT_STRESS_SECS, WT_STRESS_CLIENTS)
+```
+
+Client networking (M0-021, `client/src/net`): URL parameters `?server=host[:wsport]` (default 7000), `?wtport=` (default ws port + 1),
+`?transport=wt|ws|auto`, `?certhash=<hex|base64>`. `auto` tries WebTransport and falls back to WebSocket when `WebTransport` is undefined,
+its constructor throws, `ready` rejects, or the session + handshake is not done within 3 s; a server Reject never falls back. Browser e2e against a real
+server (headless Chromium, own harness page on localhost, needs `cargo build -p frontline-server` and the sim-wasm pkg):
+
+```sh
+pnpm -C client exec playwright test -c playwright.net.config.ts      # FRONTLINE_REQUIRE_SERVER=1 turns the missing-binary skip into a failure
 ```
 
 ## Determinism and native-vs-wasm drift (M0-029)

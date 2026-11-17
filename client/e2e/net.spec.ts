@@ -13,6 +13,7 @@ import {
   SKIP_REASON,
   startHarness,
   startServer,
+  startUdpBlackhole,
 } from './net-support';
 
 // M0-021: the real client net module (WebTransport / WebSocket / fallback / handshake / disconnect) in headless Chromium
@@ -166,18 +167,32 @@ test('auto: wrong certificate hash -> fallback to WebSocket', async ({ page }) =
   expect(Number(r.info?.connect_ms)).toBeLessThan(5000);
 });
 
-test('auto: WebTransport port is silent (UDP blackhole) -> fallback after 3 s, WebSocket handshake done within 5 s of starting', async ({ page }) => {
+test('auto: WebTransport port is silent (UDP blackhole, no ICMP) -> fallback after 3 s, WebSocket handshake done within 5 s of starting', async ({ page }) => {
   const srv = await server();
-  const dead = (await freePorts()).wt; // nothing listens: QUIC handshake packets vanish
+  const hole = await startUdpBlackhole();
+  try {
+    await open(page, srv, { certhash: cert.hashHex, wtport: String(hole.port) });
+    const r = await settled(page, 15_000);
+    expect(r.info?.transport).toBe('ws');
+    const ms = Number(r.info?.connect_ms);
+    measurements['fallback_wt_blackhole'] = { connect_ms: ms, reason: r.info?.fallback_reason };
+    expect(ms).toBeGreaterThanOrEqual(2900); // waited for the WT session until the 3 s deadline
+    expect(ms).toBeLessThanOrEqual(5000); // E0-7: from starting to connect until the WS handshake is done
+    expect(String(r.info?.fallback_reason)).toMatch(/not ready after 3000 ms/);
+  } finally {
+    await hole.close();
+  }
+});
+
+// A port nobody listens on: Linux answers the QUIC packets with ICMP port unreachable, Chromium fails the session at once.
+test('auto: WebTransport port closed (ICMP unreachable) -> immediate fallback', async ({ page }) => {
+  const srv = await server();
+  const dead = (await freePorts()).wt;
   await open(page, srv, { certhash: cert.hashHex, wtport: String(dead) });
   const r = await settled(page);
   expect(r.info?.transport).toBe('ws');
-  const ms = Number(r.info?.connect_ms);
-  measurements['fallback_wt_blackhole'] = { connect_ms: ms, reason: r.info?.fallback_reason };
-  expect(ms).toBeLessThanOrEqual(5000);
-  // Either the browser reported the failure itself (ICMP unreachable on loopback) or the 3 s timer fired.
-  expect(ms).toBeGreaterThanOrEqual(0);
-  expect(String(r.info?.fallback_reason)).toMatch(/failed|not ready after 3000 ms|closed/i);
+  measurements['fallback_wt_port_closed'] = { connect_ms: Number(r.info?.connect_ms), reason: r.info?.fallback_reason };
+  expect(Number(r.info?.connect_ms)).toBeLessThanOrEqual(5000);
 });
 
 for (const path of ['wt', 'ws'] as const) {

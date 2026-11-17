@@ -1,0 +1,46 @@
+{
+  "wt": {
+    "connect_ms": 17.5,
+    "handshake_rtt_ms": 1.9,
+    "loopback_rtt_ewma_ms": 1.733,
+    "jitter_ms": 0.661,
+    "c2_received": 105,
+    "stats": {
+      "bytesIn": 675,
+      "bytesOut": 2491,
+      "pktsIn": 114,
+      "pktsOut": 114,
+      "rttMs": 1.7327150844134178,
+      "jitterMs": 0.6612744895070968,
+      "transport": "wt"
+    }
+  },
+  "ws": {
+    "connect_ms": 6.6,
+    "handshake_rtt_ms": 1.7,
+    "loopback_rtt_ewma_ms": 2.347,
+    "jitter_ms": 3.1,
+    "c2_received": 105,
+    "stats": {
+      "bytesIn": 894,
+      "bytesOut": 2710,
+      "pktsIn": 114,
+      "pktsOut": 114,
+      "rttMs": 2.3474329852942395,
+      "jitterMs": 3.1001792063787224,
+      "transport": "ws"
+    }
+  },
+  "fallback_ready_rejected": {
+    "connect_ms": 94.1,
+    "reason": "wt connection failed: Opening handshake failed."
+  },
+  "fallback_wt_blackhole": {
+    "connect_ms": 3014.4,
+    "reason": "wt connection not ready after 3000 ms"
+  },
+  "fallback_wt_port_closed": {
+    "connect_ms": 11.8,
+    "reason": "wt connection failed: Opening handshake failed."
+  }
+}
