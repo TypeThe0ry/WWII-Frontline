@@ -4,6 +4,7 @@
 export const UNIT_SUFFIXES = [
   '_m', '_mm', '_ms', '_s', '_mps', '_mps2', '_rpm', '_rpm_practical', '_kg', '_deg', '_deg_s', '_hp',
   '_per_m', '_per_s', '_nm', '_n_per_m', '_ns_per_m', '_mult',
+  '_points', '_supplies', '_players', '_slots', '_uses', '_crates',
 ];
 
 export const BAD_UNIT_SUFFIXES = [
@@ -16,7 +17,7 @@ export const DIMENSIONLESS = new Set([
   'count', 'ammo_mags', 'mag_reserve', 'magazine_capacity', 'pen_power', 'stamina_max',
   'max_per_squad', 'max_per_team', 'manpower_cost', 'squad_size_min', 'crew', 'rays_per_side',
   'manpower', 'munitions', 'fuel', 'friction_forward', 'friction_lateral',
-  'epsg', 'samples', 'seed', 'origin_e', 'origin_n', 'e', 'n', 'dx', 'dy', 'design', 'pos', 'mult',
+  'unlock_level', 'secondary_mags', 'epsg', 'samples', 'seed', 'origin_e', 'origin_n', 'e', 'n', 'dx', 'dy', 'design', 'pos', 'mult',
 ]);
 
 /** Container keys whose numeric children share the unit (part_mult.head, armor_mm.front). */

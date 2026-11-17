@@ -1,0 +1,56 @@
+{
+  "_expect_error": "unknown property: hp",
+  "crate": {
+    "content_supplies": 100,
+    "health_hp": 150,
+    "ground_max_crates": 40,
+    "place_s": 1.5,
+    "hp": 150
+  },
+  "depot": {
+    "interval_s": 45,
+    "stock_max_crates": 8
+  },
+  "point_depot": {
+    "interval_s": 90,
+    "stock_max_crates": 4
+  },
+  "ammo_crate": {
+    "content_points": 600,
+    "max_uses": 2,
+    "place_cooldown_s": 30,
+    "lifetime_s": 150,
+    "health_hp": 100,
+    "price_points": {
+      "pistol_mag": 1,
+      "smg_mag": 3,
+      "rifle_clip": 4,
+      "grenade": 6,
+      "bandage": 2
+    }
+  },
+  "_meta": {
+    "status": "initial",
+    "tunable": [
+      "crate.content_supplies",
+      "crate.health_hp",
+      "crate.ground_max_crates",
+      "crate.place_s",
+      "depot.interval_s",
+      "depot.stock_max_crates",
+      "point_depot.interval_s",
+      "point_depot.stock_max_crates",
+      "ammo_crate.content_points",
+      "ammo_crate.max_uses",
+      "ammo_crate.place_cooldown_s",
+      "ammo_crate.lifetime_s",
+      "ammo_crate.health_hp",
+      "ammo_crate.price_points.pistol_mag",
+      "ammo_crate.price_points.smg_mag",
+      "ammo_crate.price_points.rifle_clip",
+      "ammo_crate.price_points.grenade",
+      "ammo_crate.price_points.bandage"
+    ],
+    "calibration_ref": "GAMEDESIGN §12.2, §12.3"
+  }
+}

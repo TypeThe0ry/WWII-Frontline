@@ -1,0 +1,234 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://frontline.invalid/schemas/rule_supplies.schema.json",
+  "title": "Supply rules (GAMEDESIGN 12.2, 12.3; M1-007)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "crate",
+    "depot",
+    "point_depot",
+    "ammo_crate",
+    "_meta"
+  ],
+  "properties": {
+    "crate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "content_supplies",
+        "health_hp",
+        "ground_max_crates",
+        "place_s"
+      ],
+      "properties": {
+        "content_supplies": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "health_hp": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "ground_max_crates": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "place_s": {
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    },
+    "depot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "interval_s",
+        "stock_max_crates"
+      ],
+      "properties": {
+        "interval_s": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "stock_max_crates": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "point_depot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "interval_s",
+        "stock_max_crates"
+      ],
+      "properties": {
+        "interval_s": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "stock_max_crates": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "ammo_crate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "content_points",
+        "max_uses",
+        "place_cooldown_s",
+        "lifetime_s",
+        "health_hp",
+        "price_points"
+      ],
+      "properties": {
+        "content_points": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "max_uses": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "place_cooldown_s": {
+          "type": "number",
+          "minimum": 0
+        },
+        "lifetime_s": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "health_hp": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "price_points": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "pistol_mag",
+            "smg_mag",
+            "rifle_clip",
+            "grenade",
+            "bandage"
+          ],
+          "properties": {
+            "pistol_mag": {
+              "type": "number",
+              "minimum": 0
+            },
+            "smg_mag": {
+              "type": "number",
+              "minimum": 0
+            },
+            "rifle_clip": {
+              "type": "number",
+              "minimum": 0
+            },
+            "grenade": {
+              "type": "number",
+              "minimum": 0
+            },
+            "bandage": {
+              "type": "number",
+              "minimum": 0
+            }
+          }
+        }
+      }
+    },
+    "_meta": {
+      "$ref": "#/$defs/meta"
+    }
+  },
+  "$defs": {
+    "slug": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*$"
+    },
+    "i18n_key": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*(\\.[a-z0-9_]+)+$"
+    },
+    "pos": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "nonneg": {
+      "type": "number",
+      "minimum": 0
+    },
+    "unit01": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "meta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "tunable"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "initial",
+            "reviewed",
+            "measured"
+          ]
+        },
+        "tunable": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "calibration_ref": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "unverified": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "deviation_reason": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "source": {
+      "oneOf": [
+        {
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object"
+          }
+        }
+      ]
+    }
+  }
+}

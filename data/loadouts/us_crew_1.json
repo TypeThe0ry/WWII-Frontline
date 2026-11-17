@@ -1,0 +1,33 @@
+{
+  "id": "us_crew_1",
+  "role": "crewman",
+  "faction": "us",
+  "unlock_level": 1,
+  "primary": "us_m3_grease",
+  "secondary": "us_m1911a1",
+  "secondary_mags": 2,
+  "gadget_1": null,
+  "gadget_2": null,
+  "tools": [
+    {
+      "id": "bandage",
+      "count": 2
+    },
+    {
+      "id": "repair_toolbox",
+      "count": 1
+    }
+  ],
+  "melee": "us_m3_knife",
+  "ammo_mags": 4,
+  "unlock_condition": null,
+  "tags": [],
+  "_meta": {
+    "status": "initial",
+    "tunable": [
+      "ammo_mags",
+      "secondary_mags"
+    ],
+    "calibration_ref": "GAMEDESIGN §5.3 / 弹药记法含枪内一个"
+  }
+}

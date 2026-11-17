@@ -1,0 +1,35 @@
+{
+  "id": "ger_rifleman_pf60",
+  "role": "rifleman",
+  "faction": "ger",
+  "unlock_level": 1,
+  "primary": "ger_kar98k",
+  "secondary": null,
+  "gadget_1": {
+    "id": "ger_panzerfaust_60",
+    "count": 1
+  },
+  "gadget_2": {
+    "id": "ger_m24",
+    "count": 1
+  },
+  "tools": [
+    {
+      "id": "bandage",
+      "count": 2
+    }
+  ],
+  "melee": "ger_s8498_bayonet",
+  "ammo_mags": 12,
+  "unlock_condition": null,
+  "tags": [
+    "m1_only"
+  ],
+  "_meta": {
+    "status": "initial",
+    "tunable": [
+      "ammo_mags"
+    ],
+    "calibration_ref": "GAMEDESIGN §5.3 / 弹药记法含枪内一个"
+  }
+}

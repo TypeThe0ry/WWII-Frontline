@@ -16,7 +16,7 @@ mod embedded {
 }
 
 pub use defs::{
-    AmmoDef, BotsRulesDef, DataStatus, ExplosiveDef, Faction, LoadoutDef, MeleeDef,
+    AmmoDef, BotsRulesDef, DataStatus, ExplosiveDef, Faction, GadgetDef, LoadoutDef, MeleeDef,
     RespawnRulesDef, RoleDef, RulesDef, VehicleDef, WeaponDef,
 };
 /// SHA-256 (first 8 bytes, little-endian) of the canonicalised `/data` tree. Sent as
@@ -33,6 +33,7 @@ pub struct GameData {
     pub explosives: &'static [ExplosiveDef],
     pub melee: &'static [MeleeDef],
     pub ammo: &'static [AmmoDef],
+    pub gadgets: &'static [GadgetDef],
     pub roles: &'static [RoleDef],
     pub loadouts: &'static [LoadoutDef],
     pub vehicles: &'static [VehicleDef],
@@ -56,6 +57,7 @@ impl GameData {
             explosives: leak(embedded::EXPLOSIVES_JSON),
             melee: leak(embedded::MELEE_JSON),
             ammo: leak(embedded::AMMO_JSON),
+            gadgets: leak(embedded::GADGETS_JSON),
             roles: leak(embedded::ROLES_JSON),
             loadouts: leak(embedded::LOADOUTS_JSON),
             vehicles: leak(embedded::VEHICLES_JSON),
@@ -77,6 +79,9 @@ impl GameData {
     }
     pub fn melee_weapon(&self, id: &str) -> Option<&'static MeleeDef> {
         self.melee.iter().find(|m| m.id == id)
+    }
+    pub fn gadget(&self, id: &str) -> Option<&'static GadgetDef> {
+        self.gadgets.iter().find(|g| g.id == id)
     }
     pub fn ammo_def(&self, id: &str) -> Option<&'static AmmoDef> {
         self.ammo.iter().find(|a| a.id == id)
@@ -189,6 +194,75 @@ mod tests {
     }
 
     #[test]
+    fn roles_match_gd_4_4() {
+        // (role, max_per_squad, squad_size_min); Crewman is team-capped instead (GAMEDESIGN 4.4).
+        let d = GameData::embedded();
+        for (id, cap, min) in [
+            ("officer", 1, 2),
+            ("rifleman", 6, 1),
+            ("medic", 2, 2),
+            ("support", 1, 3),
+        ] {
+            let r = d.role(id).unwrap_or_else(|| panic!("role {id}"));
+            assert_eq!(r.max_per_squad, Some(cap), "{id} max_per_squad");
+            assert_eq!(
+                r.unlock.as_ref().unwrap().squad_size_min,
+                min,
+                "{id} squad_size_min"
+            );
+        }
+        assert_eq!(d.role("crewman").unwrap().max_per_team, Some(8));
+        assert_eq!(d.roles.len(), 5);
+    }
+
+    #[test]
+    fn loadouts_reference_existing_data() {
+        let d = GameData::embedded();
+        assert_eq!(d.loadouts.len(), 13);
+        let weapon_space = |id: &str| {
+            d.weapon(id).is_some() || d.explosive(id).is_some() || d.melee_weapon(id).is_some()
+        };
+        let mut refs = 0;
+        for l in d.loadouts {
+            let mut ids = vec![l.primary.as_str()];
+            ids.extend(l.secondary.as_deref());
+            ids.extend(l.melee.as_deref());
+            for id in ids {
+                assert!(weapon_space(id), "{}: unknown weapon {id}", l.id);
+                refs += 1;
+            }
+            for g in [&l.gadget_1, &l.gadget_2].into_iter().flatten() {
+                assert!(
+                    weapon_space(&g.id) || d.gadget(&g.id).is_some(),
+                    "{}: {}",
+                    l.id,
+                    g.id
+                );
+                refs += 1;
+            }
+            for t in &l.tools {
+                assert!(d.gadget(&t.id).is_some(), "{}: unknown tool {}", l.id, t.id);
+                refs += 1;
+            }
+            assert_eq!(
+                l.tags.contains(&"m1_only".to_string()),
+                l.id == "ger_rifleman_pf60"
+            );
+        }
+        assert!(refs > 60);
+        // every role's loadouts exist and name that role and faction
+        for r in d.roles {
+            for (fac, o) in &r.faction_overrides {
+                for lid in &o.loadout_ids {
+                    let l = d.loadout(lid).unwrap();
+                    assert_eq!(l.role, r.id);
+                    assert_eq!(format!("{:?}", l.faction).to_lowercase(), *fac);
+                }
+            }
+        }
+    }
+
+    #[test]
     fn data_canonical_json_sorted_compact() {
         let v: serde_json::Value =
             serde_json::from_str(r#"{ "b": [1, 2], "a": {"z": 1, "y": "s"} }"#).unwrap();
@@ -217,6 +291,10 @@ mod tests {
                     serde_json::from_str::<MeleeDef>(&text)
                         .unwrap_or_else(|e| panic!("{name}: {e}")),
                 ),
+                "gadget" => drop(
+                    serde_json::from_str::<GadgetDef>(&text)
+                        .unwrap_or_else(|e| panic!("{name}: {e}")),
+                ),
                 "ammo" => drop(
                     serde_json::from_str::<AmmoDef>(&text)
                         .unwrap_or_else(|e| panic!("{name}: {e}")),
@@ -237,7 +315,7 @@ mod tests {
             }
             n += 1;
         }
-        assert_eq!(n, 9);
+        assert_eq!(n, 10);
     }
 
     #[test]

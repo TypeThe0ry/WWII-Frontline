@@ -17,5 +17,13 @@
     "tunable": [
       "ammo_mags"
     ]
-  }
+  },
+  "unlock_level": 1,
+  "tags": [],
+  "tools": [
+    {
+      "id": "fixture_kit",
+      "count": 1
+    }
+  ]
 }

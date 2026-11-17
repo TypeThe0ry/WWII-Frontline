@@ -1,0 +1,11 @@
+{
+  "id": "repair_toolbox",
+  "name_key": "gadget.repair_toolbox.name",
+  "class": "tool",
+  "gameplay": {},
+  "_meta": {
+    "status": "initial",
+    "tunable": [],
+    "calibration_ref": "GAMEDESIGN §14.8（M3 载具任务填值）"
+  }
+}

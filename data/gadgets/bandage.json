@@ -1,0 +1,21 @@
+{
+  "id": "bandage",
+  "name_key": "gadget.bandage.name",
+  "class": "consumable",
+  "gameplay": {
+    "apply_s": 3.5,
+    "heal_hp": 25,
+    "heal_cap_hp": 75,
+    "bandage_other_s": 2.5
+  },
+  "_meta": {
+    "status": "initial",
+    "tunable": [
+      "gameplay.apply_s",
+      "gameplay.heal_hp",
+      "gameplay.heal_cap_hp",
+      "gameplay.bandage_other_s"
+    ],
+    "calibration_ref": "GAMEDESIGN §7.2"
+  }
+}

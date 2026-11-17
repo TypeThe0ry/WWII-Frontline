@@ -1,0 +1,17 @@
+{
+  "id": "ammo_crate_kit",
+  "name_key": "gadget.ammo_crate_kit.name",
+  "class": "kit",
+  "gameplay": {
+    "place_cooldown_s": 30,
+    "max_uses": 2
+  },
+  "_meta": {
+    "status": "initial",
+    "tunable": [
+      "gameplay.place_cooldown_s",
+      "gameplay.max_uses"
+    ],
+    "calibration_ref": "GAMEDESIGN §12.3（规则值见 rules/supplies.json）"
+  }
+}

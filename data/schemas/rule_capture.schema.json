@@ -1,0 +1,148 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://frontline.invalid/schemas/rule_capture.schema.json",
+  "title": "Capture rules (GAMEDESIGN 3.2; M1-007)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "k_cap_pct_per_s",
+    "regress_pct_per_s",
+    "height_tolerance_m",
+    "default_radius_m",
+    "eff",
+    "vehicle_occupants_counted",
+    "_meta"
+  ],
+  "properties": {
+    "k_cap_pct_per_s": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "regress_pct_per_s": {
+      "type": "number",
+      "minimum": 0
+    },
+    "height_tolerance_m": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "default_radius_m": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "eff": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "full_weight_players",
+        "max_net_players",
+        "partial_weight_mult"
+      ],
+      "properties": {
+        "full_weight_players": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "max_net_players": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "partial_weight_mult": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    },
+    "vehicle_occupants_counted": {
+      "type": "boolean"
+    },
+    "_meta": {
+      "$ref": "#/$defs/meta"
+    }
+  },
+  "$defs": {
+    "slug": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*$"
+    },
+    "i18n_key": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*(\\.[a-z0-9_]+)+$"
+    },
+    "pos": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "nonneg": {
+      "type": "number",
+      "minimum": 0
+    },
+    "unit01": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "meta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "tunable"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "initial",
+            "reviewed",
+            "measured"
+          ]
+        },
+        "tunable": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "calibration_ref": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "unverified": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "deviation_reason": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "source": {
+      "oneOf": [
+        {
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object"
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,5 +1,5 @@
 {
-  "_expect_error": "unknown weapon id: us_no_such_grenade",
+  "_expect_error": "unknown gadget or weapon id: us_no_such_grenade",
   "id": "us_fixture_rifleman_1",
   "role": "fixture_rifleman",
   "faction": "us",

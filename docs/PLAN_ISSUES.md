@@ -628,3 +628,14 @@
 - **与卡的偏差**：目录名；`rate_of_fire_rpm_cap/rpm_cyclic` 对手雷/近战无意义，未加。
 - **受影响任务**：M1-007（loadout 引用）、M1-015（投掷物行为）、M1-013（近战）、M1-012（弹药阻力）。
 - **裁决（Fable 填写）**：
+
+### PI-043 M1-007：gadget 与三类规则作为新 kind；`ammo_mags` 含枪内一个；loadout 增补字段
+
+- **状态**：resolved（实现者裁决，待 Fable 复核）
+- **类别**：数据/规则
+- **提出者 / 日期**：M1 线程 / 2026-11-17
+- **做法**：①新 kind `gadget`（`data/gadgets/`，8 个：绷带、医疗包、望远镜、Garrison/Outpost/Ammo Crate 套件、Supply Crate 搬运、维修工具箱；`gameplay` 为带单位后缀的扁平数值表，校验器强制单位）。②`data/rules/` 下 `capture.json`、`spawn.json`、`supplies.json` 各成独立 kind（`rule_capture/rule_spawn/rule_supplies`，各有 schema；按文件名分派，`respawn.json`/`bots.json` 不变）。`spawn.json` 只放卡中新增项（Garrison、出生保护、HQ/Garrison 的 base_wait）；波次间隔仍以 `respawn.json` 为运行时真源，`spawn.json.wave_interval_s` 为文档性副本，M1-016 接入时二选一合并。这三类规则暂只做 schema 校验与哈希，未做 Rust 类型化（消费它们的 sim 任务 M1-016..021 各自加）。③loadout 增补 `unlock_level`（必填）、`secondary_mags`、`tools[]`（≤4，非武器工具含绷带）、`tags`（仅 `m1_only`，且只允许 `ger_rifleman_pf60`，由 data-validate 强制）；`gadget_1/2` 作为手雷/发射器栏（可引用 explosives 的 id）。Outpost 套件在 GD 5.5 提到但卡的 gadget 清单没有，补了 `outpost_kit`。④单位白名单新增后缀 `_points/_supplies/_players/_slots/_uses/_crates` 与无量纲 `unlock_level/secondary_mags`。
+- **`ammo_mags` 语义（行为变更）**：GD 5.3 的"N 弹匣含枪内一个"——`starting_weapon` 的备弹由 `cap × ammo_mags` 改为 `cap × (ammo_mags − 1)`；M0 数据里 `ammo_mags: 6` 原本是"6 个备弹匣"。`us_rifleman_1`/`ger_rifleman_1` 现为 10/16（卡与 GD 5.6）。因此 `GOLDEN_SKIRMISH_FINAL`、`determinism_basic::GOLDEN_FINAL_HASH` 重新定标，`weapon_duel`/`damage_death` 的弹药守恒断言按新数值改写。
+- **未决/假设**：Crewman 的 `unlock` 省略（无小队编制，全队上限 8）；Officer 的近战取匕首（GD 未给，待 M1-070）；`ger_rifleman_pf60` 的步枪取 Kar98k ×12、另带 M24 ×1（卡只说"加 Panzerfaust 60"）；望远镜无数值。
+- **受影响任务**：M1-016..021（规则消费）、M1-014（弹药/换弹）、M1-064。
+- **裁决（Fable 填写）**：

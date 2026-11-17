@@ -1,0 +1,32 @@
+{
+  "_expect_error": "missing: garrison",
+  "wave_interval_s": 15,
+  "base_wait_s": {
+    "hq": 5,
+    "garrison": 8
+  },
+  "spawn_protection_s": 3,
+  "_meta": {
+    "status": "initial",
+    "tunable": [
+      "wave_interval_s",
+      "base_wait_s.hq",
+      "base_wait_s.garrison",
+      "spawn_protection_s",
+      "garrison.capacity_slots",
+      "garrison.slot_regen_s",
+      "garrison.health_hp",
+      "garrison.build_s",
+      "garrison.cost_supplies.friendly_or_neutral",
+      "garrison.cost_supplies.enemy",
+      "garrison.spacing_m.friendly_min",
+      "garrison.spacing_m.enemy_garrison_min",
+      "garrison.spacing_m.strongpoint_extra",
+      "garrison.spacing_m.hq_min",
+      "garrison.block_radius_m",
+      "garrison.overrun.radius_m",
+      "garrison.overrun.duration_s"
+    ],
+    "calibration_ref": "REFERENCE_MEASUREMENTS §respawn / GAMEDESIGN §10.2, §10.6"
+  }
+}

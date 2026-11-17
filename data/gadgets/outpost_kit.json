@@ -1,0 +1,21 @@
+{
+  "id": "outpost_kit",
+  "name_key": "gadget.outpost_kit.name",
+  "class": "kit",
+  "gameplay": {
+    "place_s": 6,
+    "health_hp": 300,
+    "spawn_capacity_slots": 18,
+    "lifetime_s": 600
+  },
+  "_meta": {
+    "status": "initial",
+    "tunable": [
+      "gameplay.place_s",
+      "gameplay.health_hp",
+      "gameplay.spawn_capacity_slots",
+      "gameplay.lifetime_s"
+    ],
+    "calibration_ref": "GAMEDESIGN §10.3"
+  }
+}

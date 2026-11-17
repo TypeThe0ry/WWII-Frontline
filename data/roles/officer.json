@@ -1,0 +1,73 @@
+{
+  "id": "officer",
+  "name_key": "role.officer.name",
+  "faction_overrides": {
+    "us": {
+      "loadout_ids": [
+        "us_officer_1"
+      ]
+    },
+    "ger": {
+      "loadout_ids": [
+        "ger_officer_1"
+      ]
+    }
+  },
+  "movement": {
+    "walk_mps": 2,
+    "run_mps": 4.4,
+    "sprint_mps": 6.4,
+    "crouch_mps": 2.4,
+    "crouch_walk_mps": 1.5,
+    "prone_mps": 0.9,
+    "stamina_max": 100,
+    "jump_height_m": 0.6,
+    "stance_transition_ms": 250,
+    "air_control_mult": 0.3,
+    "gravity_mps2": 9.81,
+    "max_slope_deg": 35,
+    "autostep_max_m": 0.3,
+    "autostep_min_width_m": 0.2,
+    "snap_to_ground_m": 0.3,
+    "accel_time_s": 0.25,
+    "decel_time_s": 0.2
+  },
+  "capsule": {
+    "radius_m": 0.35,
+    "height_stand_m": 1.8,
+    "height_crouch_m": 1.2,
+    "eye_height_stand_m": 1.65,
+    "eye_height_crouch_m": 1.05
+  },
+  "health_hp": 100,
+  "_meta": {
+    "status": "initial",
+    "tunable": [
+      "movement.walk_mps",
+      "movement.run_mps",
+      "movement.sprint_mps",
+      "movement.crouch_mps",
+      "movement.crouch_walk_mps",
+      "movement.prone_mps",
+      "movement.jump_height_m",
+      "movement.stance_transition_ms",
+      "movement.air_control_mult",
+      "movement.max_slope_deg",
+      "movement.autostep_max_m",
+      "movement.autostep_min_width_m",
+      "movement.snap_to_ground_m",
+      "movement.accel_time_s",
+      "movement.decel_time_s",
+      "capsule.eye_height_stand_m",
+      "capsule.eye_height_crouch_m",
+      "max_per_squad",
+      "unlock.squad_size_min"
+    ],
+    "calibration_ref": "GAMEDESIGN §4.4 / §9.1"
+  },
+  "max_per_squad": 1,
+  "unlock": {
+    "squad_size_min": 2,
+    "requires_squad_leader": true
+  }
+}
