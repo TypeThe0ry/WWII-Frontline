@@ -86,7 +86,9 @@ fn run_hashes(seed: u64, ticks: u32) -> Vec<u64> {
 /// weapon state (ammo, state machine, recoil, bloom, ADS), the projectile list and its id counter;
 /// the random inputs press fire / reload, so weapon state and projectiles differ from before.
 /// Re-pinned when `state_hash` began hashing weapons by id instead of index (0x44d1_6e86_af4c_cf27).
-const GOLDEN_FINAL_HASH: u64 = 0xce40_2769_4ae1_5175;
+/// M1-013a: re-pinned (0xce40_2769_4ae1_5175 before) because reload is now cancelled by sprint/vault
+/// and shots carry a spread seed; the random inputs sprint while reloading.
+const GOLDEN_FINAL_HASH: u64 = 0x8847_1eb1_d55d_f1d7;
 
 #[test]
 fn ten_thousand_ticks_identical_across_threads() {

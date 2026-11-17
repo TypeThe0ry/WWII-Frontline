@@ -25,6 +25,17 @@ pub fn complete_reload(w: &mut WeaponState, mag_capacity: u16) -> u16 {
     take
 }
 
+/// The spare rounds as magazines: `(full, partial)` where `partial` is the rounds of the one
+/// partly filled magazine (0 if none). The reserve is kept as a round count (PI-051); a tactical
+/// reload moves the old magazine's rounds into it, which is exactly "the old magazine goes back
+/// into the pouch with `k` rounds".
+pub fn mag_stack(reserve: u16, mag_capacity: u16) -> (u16, u16) {
+    if mag_capacity == 0 {
+        return (0, 0);
+    }
+    (reserve / mag_capacity, reserve % mag_capacity)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
