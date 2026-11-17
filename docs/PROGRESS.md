@@ -493,3 +493,8 @@ blocked / in-progress / todo：无。M0 的 33 个任务全部已提交（M0-033
 ### M1-011a 移动：趴姿、体力、修正与验证 — partial — 2026-11-17 — 提交见 git log
 
 - 趴姿状态机与转换表、体力模型、速度/ADS/装填/负重修正、GD §9.5 修正表、`check_displacement`；`PlayerAuthState` 45 B（PI-048）。cargo-fuzz 四靶 10 分钟零崩溃，新增每日 fuzz CI。
+
+### M1-011b 移动：翻越/攀爬与探身 — partial — 2026-11-17 — 提交见 git log
+- 新增 `movement/vault.rs`、`movement/lean.rs`，`PlayerAuthState` 80 B；测试 `crates/sim/tests/movement_vault.rs`（5 项）；数据 15 项进 role（schema 同步）。
+- 实测：翻越 24 tick（±1）、攀爬 42 tick（±1）、耗体力 10/20；1.29/1.31/1.81 m 分别翻越/攀爬/拒绝；探身 5 tick 到位；趴姿窥视 +0.15 m；散布 ×1.10。
+- 余项：参考机基准、headless 回放对比；见 PI-049。

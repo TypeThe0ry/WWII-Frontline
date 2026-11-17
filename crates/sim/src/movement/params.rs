@@ -96,6 +96,26 @@ pub struct MoveParams {
     pub hitbox_height_m: [f32; 3],
     pub move_spread_walk_mult: f32,
     pub move_spread_run_mult: f32,
+    /// Obstacle height limits (vault <= `vault_max_m` < climb <= `climb_max_m`) and the
+    /// durations in ticks (role time multiplier applied), one-off stamina costs.
+    pub vault_max_m: f32,
+    pub climb_max_m: f32,
+    pub vault_ticks: u8,
+    pub climb_ticks: u8,
+    pub vault_cost: f32,
+    pub climb_cost: f32,
+    /// Free space above the obstacle top needed to climb, forward reach of the probe and the
+    /// minimum width of the top surface.
+    pub climb_headroom_m: f32,
+    pub vault_reach_m: f32,
+    pub vault_top_width_m: f32,
+    /// Lean: maximum angle, head displacement at full lean, ticks (fractional) to reach it,
+    /// spread multiplier while leaning, and the prone peek height.
+    pub lean_deg: f32,
+    pub lean_head_offset_m: f32,
+    pub lean_ticks: f32,
+    pub lean_spread_mult: f32,
+    pub prone_peek_m: f32,
 }
 
 impl MoveParams {
@@ -188,6 +208,12 @@ impl MoveParams {
         let regen_delay =
             libm::roundf(reqp(m.stamina_regen_delay_s, "movement.stamina_regen_delay_s")? * hz)
                 .clamp(0.0, 255.0) as u8;
+        let vault_mult = reqp(m.vault_time_mult, "movement.vault_time_mult")?;
+        let whole_ticks = |ms: Option<f64>, mult: f32, hz: f32, k: &'static str| {
+            Ok::<u8, ParamsError>(
+                libm::roundf(reqp(ms, k)? * mult * hz / 1000.0).clamp(1.0, 255.0) as u8,
+            )
+        };
         let stamina_max = pos(m.stamina_max, "movement.stamina_max")?;
         Ok(Self {
             dt: 1.0 / hz,
@@ -295,6 +321,20 @@ impl MoveParams {
             ],
             move_spread_walk_mult: reqp(m.move_spread_walk_mult, "movement.move_spread_walk_mult")?,
             move_spread_run_mult: reqp(m.move_spread_run_mult, "movement.move_spread_run_mult")?,
+            vault_max_m: reqp(m.vault_max_m, "movement.vault_max_m")?,
+            climb_max_m: reqp(m.climb_max_m, "movement.climb_max_m")?,
+            vault_ticks: whole_ticks(m.vault_ms, vault_mult, hz, "movement.vault_ms")?,
+            climb_ticks: whole_ticks(m.climb_ms, vault_mult, hz, "movement.climb_ms")?,
+            vault_cost: req(m.vault_cost_points, "movement.vault_cost_points")?,
+            climb_cost: req(m.climb_cost_points, "movement.climb_cost_points")?,
+            climb_headroom_m: reqp(m.climb_headroom_m, "movement.climb_headroom_m")?,
+            vault_reach_m: reqp(m.vault_reach_m, "movement.vault_reach_m")?,
+            vault_top_width_m: reqp(m.vault_top_width_m, "movement.vault_top_width_m")?,
+            lean_deg: reqp(m.lean_deg, "movement.lean_deg")?,
+            lean_head_offset_m: reqp(m.lean_head_offset_m, "movement.lean_head_offset_m")?,
+            lean_ticks: ms_ticks(m.lean_ms, "movement.lean_ms")?,
+            lean_spread_mult: reqp(m.lean_spread_mult, "movement.lean_spread_mult")?,
+            prone_peek_m: reqp(m.prone_peek_m, "movement.prone_peek_m")?,
         })
     }
 }

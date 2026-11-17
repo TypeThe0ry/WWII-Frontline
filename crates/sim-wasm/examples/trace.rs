@@ -3,7 +3,7 @@
 //! on the real M0 terrain and writes, into the output directory (default
 //! `target/wasm-trace`):
 //!   cmds.bin   N x 18 B `InputCmd` (what `Predictor.step` takes)
-//!   trace.bin  N x 78 B: `PlayerAuthState::to_bytes` (45) ++ `WeaponState::to_bytes` (33) after each tick
+//!   trace.bin  N x 113 B: `PlayerAuthState::to_bytes` (80) ++ `WeaponState::to_bytes` (33) after each tick
 //!   meta.json  `{ticks, protocolVersion, dataHash, matchSeed, ...}`
 //! Run: `cargo run --release -p frontline-sim-wasm --example trace [-- OUT_DIR [TICKS]]`.
 use std::path::PathBuf;

@@ -63,7 +63,22 @@
     "hitbox_height_crouch_m": 1.2,
     "hitbox_height_prone_m": 0.5,
     "move_spread_walk_mult": 1.5,
-    "move_spread_run_mult": 2.5
+    "move_spread_run_mult": 2.5,
+    "vault_max_m": 1.3,
+    "climb_max_m": 1.8,
+    "vault_ms": 800,
+    "climb_ms": 1400,
+    "vault_cost_points": 10,
+    "climb_cost_points": 20,
+    "climb_headroom_m": 0.6,
+    "vault_reach_m": 0.7,
+    "vault_top_width_m": 0.2,
+    "vault_time_mult": 1.0,
+    "lean_deg": 20,
+    "lean_head_offset_m": 0.35,
+    "lean_ms": 150,
+    "lean_spread_mult": 1.1,
+    "prone_peek_m": 0.15
   },
   "capsule": {
     "radius_m": 0.35,

@@ -3,6 +3,7 @@
 use glam::Vec3;
 
 use super::stance::Stance;
+use super::vault::Vault;
 
 /// Authoritative movement state of one player (server) / predicted state (client).
 ///
@@ -37,11 +38,15 @@ pub struct PlayerAuthState {
     /// Set when the last step could not move because the player is on or would leave the
     /// loaded collision (ARCHITECTURE 9.3 failure handling).
     pub blocked: bool,
+    /// Lean, `-1` (full left) ..= `1` (full right); `+-1` is `lean_deg` degrees (M1-011b).
+    pub lean: f32,
+    /// A vault / climb in progress.
+    pub vault: Option<Vault>,
 }
 
 impl PlayerAuthState {
     /// Serialised size of [`to_bytes`](Self::to_bytes).
-    pub const BYTES: usize = 45;
+    pub const BYTES: usize = 80;
 
     /// A standing, airborne (it will settle onto the ground) player at `pos`.
     pub fn spawn(pos: Vec3, yaw: f32) -> Self {
@@ -59,6 +64,8 @@ impl PlayerAuthState {
             sprint_locked: false,
             grounded: false,
             blocked: false,
+            lean: 0.0,
+            vault: None,
         }
     }
 
@@ -68,7 +75,7 @@ impl PlayerAuthState {
 
     /// Little-endian layout (offsets in bytes): `pos` f32x3 @0, `vel` f32x3 @12, `yaw` f32
     /// @24, `pitch` f32 @28, `stance_blend` f32 @32, `stance` u8 @36, `stance_timer` u8 @37,
-    /// flags u8 @38 (bit0 `grounded`, bit1 `blocked`, bit2 `sprint_locked`), `stance_from` u8 @39, `stamina` f32 bits XOR `SPAWN_STAMINA` bits @40 (so that an all-zero tail means a fresh player and the round trip is exact), `stamina_delay` u8 @44. Used for `self_state` and
+    /// flags u8 @38 (bit0 `grounded`, bit1 `blocked`, bit2 `sprint_locked`), `stance_from` u8 @39, `stamina` f32 bits XOR `SPAWN_STAMINA` bits @40 (so that an all-zero tail means a fresh player and the round trip is exact), `stamina_delay` u8 @44, `lean` f32 @45, vault ticks left u8 @49 (0 = none), vault total ticks u8 @50, vault start f32x3 @51, target f32x3 @63, top f32 @75, flag bit3 (climb) in the flags byte; @79 reserved 0. Used for `self_state` and
     /// `Predictor.reset(authState)` (M0-014 / M0-022); a layout change must be mirrored there.
     pub fn to_bytes(&self) -> [u8; Self::BYTES] {
         let mut b = [0u8; Self::BYTES];
@@ -90,12 +97,24 @@ impl PlayerAuthState {
         b[37] = self.stance_timer;
         b[38] = u8::from(self.grounded)
             | (u8::from(self.blocked) << 1)
-            | (u8::from(self.sprint_locked) << 2);
+            | (u8::from(self.sprint_locked) << 2)
+            | (u8::from(self.vault.is_some_and(|v| v.climb)) << 3);
         b[39] = self.stance_from as u8;
         b[40..44].copy_from_slice(
             &(self.stamina.to_bits() ^ Self::SPAWN_STAMINA.to_bits()).to_le_bytes(),
         );
         b[44] = self.stamina_delay;
+        b[45..49].copy_from_slice(&self.lean.to_le_bytes());
+        if let Some(v) = &self.vault {
+            b[49] = v.ticks_left;
+            b[50] = v.total;
+            let f = [
+                v.start.x, v.start.y, v.start.z, v.target.x, v.target.y, v.target.z, v.top,
+            ];
+            for (i, x) in f.iter().enumerate() {
+                b[51 + i * 4..55 + i * 4].copy_from_slice(&x.to_le_bytes());
+            }
+        }
         b
     }
 
@@ -112,9 +131,30 @@ impl PlayerAuthState {
         let stamina = f32::from_bits(
             u32::from_le_bytes([b[40], b[41], b[42], b[43]]) ^ Self::SPAWN_STAMINA.to_bits(),
         );
-        if f.iter().any(|v| !v.is_finite()) || !stamina.is_finite() || b[38] & !0b111 != 0 {
+        let lean = f32::from_le_bytes([b[45], b[46], b[47], b[48]]);
+        let mut vf = [0f32; 7];
+        for (i, v) in vf.iter_mut().enumerate() {
+            *v = f32::from_le_bytes([b[51 + i * 4], b[52 + i * 4], b[53 + i * 4], b[54 + i * 4]]);
+        }
+        if f.iter().any(|v| !v.is_finite())
+            || !stamina.is_finite()
+            || !lean.is_finite()
+            || vf.iter().any(|v| !v.is_finite())
+            || b[38] & !0b1111 != 0
+            || b[79] != 0
+            || (b[49] == 0 && (b[50] != 0 || b[38] & 8 != 0))
+            || b[49] > b[50]
+        {
             return None;
         }
+        let vault = (b[49] != 0).then(|| Vault {
+            ticks_left: b[49],
+            total: b[50],
+            climb: b[38] & 8 != 0,
+            start: Vec3::new(vf[0], vf[1], vf[2]),
+            target: Vec3::new(vf[3], vf[4], vf[5]),
+            top: vf[6],
+        });
         Some(Self {
             pos: Vec3::new(f[0], f[1], f[2]),
             vel: Vec3::new(f[3], f[4], f[5]),
@@ -129,6 +169,8 @@ impl PlayerAuthState {
             sprint_locked: b[38] & 4 != 0,
             grounded: b[38] & 1 != 0,
             blocked: b[38] & 2 != 0,
+            lean,
+            vault,
         })
     }
 
@@ -158,11 +200,23 @@ mod tests {
             sprint_locked: true,
             grounded: true,
             blocked: true,
+            lean: -0.6,
+            vault: Some(Vault {
+                ticks_left: 9,
+                total: 42,
+                climb: true,
+                start: Vec3::new(1.0, 2.0, 3.0),
+                target: Vec3::new(1.5, 3.8, 4.5),
+                top: 3.7,
+            }),
         };
         let b = s.to_bytes();
         assert_eq!(b.len(), PlayerAuthState::BYTES);
         assert_eq!(PlayerAuthState::from_bytes(&b), Some(s));
         assert!(PlayerAuthState::from_bytes(&b[..44]).is_none());
+        let mut bad = b;
+        bad[49] = 50; // more ticks left than total
+        assert!(PlayerAuthState::from_bytes(&bad).is_none());
         let mut bad = b;
         bad[36] = 9;
         assert!(PlayerAuthState::from_bytes(&bad).is_none());
@@ -170,7 +224,7 @@ mod tests {
         bad[0..4].copy_from_slice(&f32::NAN.to_le_bytes());
         assert!(PlayerAuthState::from_bytes(&bad).is_none());
         let mut bad = b;
-        bad[38] = 8;
+        bad[38] = 16;
         assert!(PlayerAuthState::from_bytes(&bad).is_none());
     }
 }
