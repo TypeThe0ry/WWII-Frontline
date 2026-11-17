@@ -485,3 +485,7 @@ blocked / in-progress / todo：无。M0 的 33 个任务全部已提交（M0-033
 ### M1-010 协议（阶段 A） — partial — 2026-11-17 — 提交见 git log
 
 - C0 新增 DeployRequest/DeployResult/SquadOp/Chat/MarkerPlace/Settings/Report，C4 九种事件，事件段新增 Explosion/Suppress/Marker；协议版本 2，见 `crates/protocol/CHANGELOG.md`（PI-046）。
+
+### M1-010b 协议（载具、团队通道） — done — 2026-11-17 — 提交见 git log
+
+- 载具关键帧/delta、TeamState/WorldState、fuzz 靶与变异测试；协议版本 3（PI-047）。

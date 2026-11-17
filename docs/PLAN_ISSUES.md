@@ -673,3 +673,13 @@
 - **下游处理**：服务器 C0 收到新客户端消息先接受并丢弃（M1-026 实现）；sim-wasm `pack_event` 增加三种事件的 13 字节记录，JS 暴露归 M1-040。`hello.hex` 与 `native.json` 金样已重定标。
 - **受影响任务**：M1-024/025/026/040。
 - **裁决（Fable 填写）**：
+
+### PI-047 M1-010b：载具实体记录、团队通道的线格式取舍，协议版本 3
+
+- **状态**：resolved（实现者裁决，待 Fable 复核）
+- **类别**：协议
+- **提出者 / 日期**：M1 线程 / 2026-11-17
+- **做法**：①实体记录 tag 扩为 `1`=delta、`01`=玩家关键帧、`001`=载具关键帧、`000`=移除（移除 10→11 bit），kind 由基线实体决定，delta 不带 kind；这是对版本 2 的破坏性改动，故 `PROTOCOL_VERSION` 2→3（版本 2 仅存在于刚合并的 PR #15）。②载具含速度（3×i11，1/64 m/s，±16 m/s）以供客户端外推；delta 中 pos 沿用玩家的尺寸类，quat/vel/turret/crew 为整字段替换（不做差分），实测均值 15.8 B、最大 20 B，远低于 24/28 B。③`VehicleExtra` 去掉 M0 占位的 `u8` 炮塔字段，改为 12+12 bit，新增 `damage_flags`；`seats` 为 3 位乘员位图。④`TeamState` 不带 player_id（卡限定每人 32 bit、49 人 ≤200 B）：第 i 项对应本队按 player_id 升序的第 i 名成员，花名册来自 C4 `PlayerRoster`，`state==0` 表示缺席/阵亡；超 49 人按 id 序截断并返回被丢弃数。⑤位置坐标 x/z 各 11 bit，含义由消费方按地图尺寸定。⑥`WorldState` M1 子集 16 B。
+- **验证**：proptest 1e5 往返（车辆状态/团队/世界），四元数 ≤0.35°（1e5 样本），炮塔/炮管 12 bit ≤0.35°；`vehicle_delta_size`（1e4 步）；60 实体包（含 8 辆载具）编码 15 µs（≤25），单载具 0.33 µs（≤2）。cargo-fuzz 靶 `c0,c4,events,snapshot_vehicle` 已加入 `fuzz/`，但本环境无 nightly/cargo-fuzz，改以 `tests/mutation.rs`（同属性、每靶 ≥5e4 变异输入，随 CI 跑）替代；10 分钟 fuzz 记录待参考机/CI nightly（H-102）。
+- **受影响任务**：M1-024/025（发送策略）、M1-040（客户端解码与 JS 暴露）。
+- **裁决（Fable 填写）**：

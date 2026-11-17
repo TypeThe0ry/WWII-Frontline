@@ -151,6 +151,92 @@ pub fn rad_to_deg(r: f32) -> f32 {
     r * (180.0 / PI)
 }
 
+// ---- quaternions (smallest-three, 32 bit) -----------------------------------------------
+
+/// Square root by Newton iteration using only `+ - * /` (deterministic, no libm; this crate
+/// is `no_std`). Input is clamped to `[0, 2]`.
+fn sqrt_nr(x: f32) -> f32 {
+    if x <= 0.0 {
+        return 0.0;
+    }
+    let x = if x > 2.0 { 2.0 } else { x };
+    let mut y = if x > 1.0 { x } else { 1.0 };
+    for _ in 0..8 {
+        y = 0.5 * (y + x / y);
+    }
+    y
+}
+
+const QUAT_MAX: f32 = 0.707_106_77;
+
+/// Pack a unit quaternion `[x, y, z, w]` as `index:2 | 3 x i10` (the largest component is
+/// dropped and made positive). Input is normalised first; non-finite input packs identity.
+pub fn quat_pack(q: [f32; 4]) -> u32 {
+    if q.iter().any(|v| !v.is_finite()) {
+        return quat_pack([0.0, 0.0, 0.0, 1.0]);
+    }
+    let n2: f32 = q.iter().map(|v| v * v).sum();
+    if n2 < 1e-12 {
+        return quat_pack([0.0, 0.0, 0.0, 1.0]);
+    }
+    let inv = 1.0 / sqrt_nr_big(n2);
+    let mut q = [q[0] * inv, q[1] * inv, q[2] * inv, q[3] * inv];
+    let mut big = 0usize;
+    for i in 1..4 {
+        if q[i].abs() > q[big].abs() {
+            big = i;
+        }
+    }
+    if q[big] < 0.0 {
+        for v in q.iter_mut() {
+            *v = -*v;
+        }
+    }
+    let mut out = (big as u32) << 30;
+    let mut shift = 20;
+    for (i, v) in q.iter().enumerate() {
+        if i == big {
+            continue;
+        }
+        let t = (v.clamp(-QUAT_MAX, QUAT_MAX) / QUAT_MAX) * 511.0;
+        let r = if t >= 0.0 { t + 0.5 } else { t - 0.5 };
+        let c = (r as i32).clamp(-511, 511);
+        out |= ((c as u32) & 0x3FF) << shift;
+        shift -= 10;
+    }
+    out
+}
+
+/// Unpack to `[x, y, z, w]` (unit length up to quantisation error).
+pub fn quat_unpack(p: u32) -> [f32; 4] {
+    let big = (p >> 30) as usize;
+    let mut out = [0.0f32; 4];
+    let mut sum = 0.0f32;
+    let mut shift = 20;
+    for (i, o) in out.iter_mut().enumerate() {
+        if i == big {
+            continue;
+        }
+        let raw = ((p >> shift) & 0x3FF) as i32;
+        let c = if raw >= 512 { raw - 1024 } else { raw };
+        let v = c as f32 / 511.0 * QUAT_MAX;
+        *o = v;
+        sum += v * v;
+        shift -= 10;
+    }
+    out[big] = sqrt_nr(1.0 - sum);
+    out
+}
+
+/// Newton square root for inputs near 1 (quaternion norm), wider range than [`sqrt_nr`].
+fn sqrt_nr_big(x: f32) -> f32 {
+    let mut y = if x > 1.0 { x } else { 1.0 };
+    for _ in 0..30 {
+        y = 0.5 * (y + x / y);
+    }
+    y
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

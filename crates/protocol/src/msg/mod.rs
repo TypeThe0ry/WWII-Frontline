@@ -3,7 +3,9 @@
 pub mod c0;
 pub mod c4;
 pub mod input;
+pub mod team;
 
 pub use c0::*;
 pub use c4::*;
 pub use input::*;
+pub use team::*;

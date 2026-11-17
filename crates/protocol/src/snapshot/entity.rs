@@ -88,9 +88,10 @@ impl QPos {
 pub enum EntityKind {
     #[default]
     Player,
+    Vehicle,
 }
 
-/// Quantised velocity. Not sent in M0 (reserved for vehicles).
+/// Vehicle velocity, 11-bit signed per axis, step 1/64 m/s (range about ±16 m/s).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct QVel {
     pub x: i16,
@@ -98,18 +99,69 @@ pub struct QVel {
     pub z: i16,
 }
 
-/// Vehicle-only extras. Not sent in M0 (M1-010).
+pub const VEL_BITS: u8 = 11;
+pub const VEL_STEP: f32 = 1.0 / 64.0;
+
+impl QVel {
+    pub fn from_mps(x: f32, y: f32, z: f32) -> QVel {
+        let f = |v: f32| -> i16 {
+            if !v.is_finite() {
+                return 0;
+            }
+            let t = v / VEL_STEP;
+            // round half away from zero without libm
+            let r = if t >= 0.0 { t + 0.5 } else { t - 0.5 };
+            (r as i32).clamp(-1024, 1023) as i16
+        };
+        QVel {
+            x: f(x),
+            y: f(y),
+            z: f(z),
+        }
+    }
+
+    pub fn to_mps(self) -> [f32; 3] {
+        [
+            self.x as f32 * VEL_STEP,
+            self.y as f32 * VEL_STEP,
+            self.z as f32 * VEL_STEP,
+        ]
+    }
+
+    fn in_range(&self) -> bool {
+        [self.x, self.y, self.z]
+            .iter()
+            .all(|v| (-1024..=1023).contains(v))
+    }
+}
+
+/// Vehicle-only state (ARCHITECTURE §6.9.1). `quat` is smallest-three
+/// ([`crate::quant::quat_pack`]); `turret_yaw` and `gun_pitch` are 12-bit codes (24 bit
+/// together); `seats` is a 3-bit occupancy bitmap.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct VehicleExtra {
     pub quat: u32,
-    pub turret_yaw: u8,
-    pub gun_pitch: u8,
+    pub turret_yaw: u16,
+    pub gun_pitch: u16,
     pub track_flags: u8,
     pub seats: u8,
+    pub damage_flags: u8,
 }
+
+/// Vehicle delta mask bits (the mask is interpreted by the baseline's kind).
+pub const VMASK_POS: u8 = 1;
+pub const VMASK_QUAT: u8 = 2;
+pub const VMASK_VEL: u8 = 4;
+pub const VMASK_TURRET: u8 = 8;
+pub const VMASK_CREW: u8 = 16;
+pub const VMASK_HEALTH: u8 = 32;
+pub const VMASK_DAMAGE: u8 = 64;
+pub const VMASK_FLAGS: u8 = 128;
 
 /// Wire-level entity state (not an ECS component). Field ranges: `yaw` 10-bit code,
 /// `pitch` 6-bit code, `anim` < 16, `stance` < 8, `weapon` < 64, `pos.y` < 8192.
+/// A vehicle (`kind == Vehicle`) carries `vel` and `vehicle`; its `yaw/pitch/anim/stance/weapon`
+/// must be zero (orientation is `vehicle.quat`). Players must have `vel`/`vehicle` = `None`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct EntityState {
     pub id: u8,
@@ -127,10 +179,30 @@ pub struct EntityState {
 }
 
 impl EntityState {
-    /// Range-check for the M0 wire format.
+    /// Range-check for the wire format.
     pub fn validate(&self) -> Result<(), CodecError> {
-        if self.vel.is_some() || self.vehicle.is_some() {
-            return Err(CodecError::InvalidValue);
+        match (self.kind, &self.vel, &self.vehicle) {
+            (EntityKind::Player, None, None) => {}
+            (EntityKind::Vehicle, Some(v), Some(x)) => {
+                if !v.in_range()
+                    || x.turret_yaw >= 1 << 12
+                    || x.gun_pitch >= 1 << 12
+                    || x.seats >= 8
+                    || self.pos.y > POS_Y_MAX
+                {
+                    return Err(CodecError::Overflow);
+                }
+                if self.yaw != 0
+                    || self.pitch != 0
+                    || self.anim != 0
+                    || self.stance != 0
+                    || self.weapon != 0
+                {
+                    return Err(CodecError::InvalidValue);
+                }
+                return Ok(());
+            }
+            _ => return Err(CodecError::InvalidValue),
         }
         if self.pos.y > POS_Y_MAX
             || self.yaw >= 1 << YAW_BITS_NEAR
@@ -159,6 +231,9 @@ impl EntityState {
 /// Far records quantise yaw to 8 bit and do not carry pitch. Keyframes (`base == None`) are
 /// exact.
 pub(crate) fn make_sent(base: Option<&EntityState>, s: &EntityState, near: bool) -> EntityState {
+    if s.kind == EntityKind::Vehicle {
+        return *s;
+    }
     match (base, near) {
         (Some(b), false) => {
             let mut o = *s;
@@ -181,10 +256,118 @@ fn class_of(d: i32) -> u8 {
 
 pub(crate) fn write_remove(w: &mut BitWriter, id: u8) -> Result<(), CodecError> {
     w.write_bits(id as u64, 8)?;
-    w.write_bits(0, 2)
+    w.write_bits(0, 3)
+}
+
+fn write_vehicle_keyframe(w: &mut BitWriter, s: &EntityState) -> Result<(), CodecError> {
+    let (v, x) = match (&s.vel, &s.vehicle) {
+        (Some(v), Some(x)) => (v, x),
+        _ => return Err(CodecError::InvalidValue),
+    };
+    w.write_bits(s.id as u64, 8)?;
+    w.write_bits(0b001, 3)?;
+    s.pos.write_abs(w)?;
+    w.write_bits(x.quat as u64, 32)?;
+    write_vel(w, v)?;
+    write_turret(w, x)?;
+    write_crew(w, x)?;
+    w.write_bits(x.damage_flags as u64, 8)?;
+    w.write_bits(s.flags as u64, 8)?;
+    w.write_bits(s.health_q as u64, 8)
+}
+
+fn write_vel(w: &mut BitWriter, v: &QVel) -> Result<(), CodecError> {
+    w.write_i(v.x as i64, VEL_BITS)?;
+    w.write_i(v.y as i64, VEL_BITS)?;
+    w.write_i(v.z as i64, VEL_BITS)
+}
+
+fn read_vel(r: &mut BitReader<'_>) -> Result<QVel, CodecError> {
+    Ok(QVel {
+        x: r.read_i(VEL_BITS)? as i16,
+        y: r.read_i(VEL_BITS)? as i16,
+        z: r.read_i(VEL_BITS)? as i16,
+    })
+}
+
+fn write_turret(w: &mut BitWriter, x: &VehicleExtra) -> Result<(), CodecError> {
+    w.write_bits(x.turret_yaw as u64, 12)?;
+    w.write_bits(x.gun_pitch as u64, 12)
+}
+
+fn write_crew(w: &mut BitWriter, x: &VehicleExtra) -> Result<(), CodecError> {
+    w.write_bits(x.track_flags as u64, 8)?;
+    w.write_bits(x.seats as u64, 3)
+}
+
+fn write_vehicle_delta(
+    w: &mut BitWriter,
+    base: &EntityState,
+    sent: &EntityState,
+) -> Result<(), CodecError> {
+    let (bx, sx, sv, bv) = match (&base.vehicle, &sent.vehicle, &sent.vel, &base.vel) {
+        (Some(bx), Some(sx), Some(sv), Some(bv)) => (bx, sx, sv, bv),
+        _ => return Err(CodecError::InvalidValue),
+    };
+    let mut mask = 0u8;
+    if sent.pos != base.pos {
+        mask |= VMASK_POS;
+    }
+    if sx.quat != bx.quat {
+        mask |= VMASK_QUAT;
+    }
+    if sv != bv {
+        mask |= VMASK_VEL;
+    }
+    if sx.turret_yaw != bx.turret_yaw || sx.gun_pitch != bx.gun_pitch {
+        mask |= VMASK_TURRET;
+    }
+    if sx.track_flags != bx.track_flags || sx.seats != bx.seats {
+        mask |= VMASK_CREW;
+    }
+    if sent.health_q != base.health_q {
+        mask |= VMASK_HEALTH;
+    }
+    if sx.damage_flags != bx.damage_flags {
+        mask |= VMASK_DAMAGE;
+    }
+    if sent.flags != base.flags {
+        mask |= VMASK_FLAGS;
+    }
+    w.write_bits(sent.id as u64, 8)?;
+    w.write_bits(1, 1)?;
+    w.write_bits(mask as u64, 8)?;
+    if mask & VMASK_POS != 0 {
+        write_pos_delta(w, &base.pos, &sent.pos)?;
+    }
+    if mask & VMASK_QUAT != 0 {
+        w.write_bits(sx.quat as u64, 32)?;
+    }
+    if mask & VMASK_VEL != 0 {
+        write_vel(w, sv)?;
+    }
+    if mask & VMASK_TURRET != 0 {
+        write_turret(w, sx)?;
+    }
+    if mask & VMASK_CREW != 0 {
+        write_crew(w, sx)?;
+    }
+    if mask & VMASK_HEALTH != 0 {
+        w.write_bits(sent.health_q as u64, 8)?;
+    }
+    if mask & VMASK_DAMAGE != 0 {
+        w.write_bits(sx.damage_flags as u64, 8)?;
+    }
+    if mask & VMASK_FLAGS != 0 {
+        w.write_bits(sent.flags as u64, 8)?;
+    }
+    Ok(())
 }
 
 pub(crate) fn write_keyframe(w: &mut BitWriter, s: &EntityState) -> Result<(), CodecError> {
+    if s.kind == EntityKind::Vehicle {
+        return write_vehicle_keyframe(w, s);
+    }
     w.write_bits(s.id as u64, 8)?;
     w.write_bits(0b01, 2)?;
     s.pos.write_abs(w)?;
@@ -204,6 +387,9 @@ pub(crate) fn write_delta(
     sent: &EntityState,
     near: bool,
 ) -> Result<(), CodecError> {
+    if sent.kind == EntityKind::Vehicle {
+        return write_vehicle_delta(w, base, sent);
+    }
     let mut mask = 0u8;
     if sent.pos != base.pos {
         mask |= MASK_POS;
@@ -332,7 +518,7 @@ pub(crate) enum Record {
 }
 
 /// Smallest possible record (a remove) in bits; used to bound allocations.
-pub(crate) const MIN_RECORD_BITS: usize = 10;
+pub(crate) const MIN_RECORD_BITS: usize = 11;
 
 pub(crate) fn find_state(states: &[EntityState], id: u8) -> Option<&EntityState> {
     states
@@ -352,6 +538,9 @@ pub(crate) fn read_record(
             .and_then(|b| find_state(b, id))
             .ok_or(CodecError::MissingBaseline)?;
         let mask = r.read_bits(8)? as u8;
+        if base.kind == EntityKind::Vehicle {
+            return read_vehicle_delta(r, id, base, mask);
+        }
         if mask & MASK_VEL != 0 {
             return Err(CodecError::InvalidValue);
         }
@@ -399,9 +588,88 @@ pub(crate) fn read_record(
             health_q: r.read_bits(8)? as u8,
             vehicle: None,
         }))
+    } else if r.read_bool()? {
+        Ok(Record::Keyframe(EntityState {
+            id,
+            kind: EntityKind::Vehicle,
+            pos: QPos::read_abs(r)?,
+            yaw: 0,
+            pitch: 0,
+            vel: None,
+            anim: 0,
+            stance: 0,
+            weapon: 0,
+            flags: 0,
+            health_q: 0,
+            vehicle: None,
+        }))
+        .and_then(|rec| finish_vehicle_keyframe(r, rec))
     } else {
         Ok(Record::Remove(id))
     }
+}
+
+fn finish_vehicle_keyframe(r: &mut BitReader<'_>, rec: Record) -> Result<Record, CodecError> {
+    let Record::Keyframe(mut s) = rec else {
+        return Err(CodecError::InvalidValue);
+    };
+    let quat = r.read_bits(32)? as u32;
+    s.vel = Some(read_vel(r)?);
+    let turret_yaw = r.read_bits(12)? as u16;
+    let gun_pitch = r.read_bits(12)? as u16;
+    let track_flags = r.read_bits(8)? as u8;
+    let seats = r.read_bits(3)? as u8;
+    let damage_flags = r.read_bits(8)? as u8;
+    s.flags = r.read_bits(8)? as u8;
+    s.health_q = r.read_bits(8)? as u8;
+    s.vehicle = Some(VehicleExtra {
+        quat,
+        turret_yaw,
+        gun_pitch,
+        track_flags,
+        seats,
+        damage_flags,
+    });
+    Ok(Record::Keyframe(s))
+}
+
+fn read_vehicle_delta(
+    r: &mut BitReader<'_>,
+    id: u8,
+    base: &EntityState,
+    mask: u8,
+) -> Result<Record, CodecError> {
+    let mut s = *base;
+    s.id = id;
+    let mut x = base.vehicle.ok_or(CodecError::InvalidValue)?;
+    if mask & VMASK_POS != 0 {
+        s.pos = read_pos_delta(r, &base.pos)?;
+    }
+    if mask & VMASK_QUAT != 0 {
+        x.quat = r.read_bits(32)? as u32;
+    }
+    if mask & VMASK_VEL != 0 {
+        s.vel = Some(read_vel(r)?);
+    }
+    if mask & VMASK_TURRET != 0 {
+        x.turret_yaw = r.read_bits(12)? as u16;
+        x.gun_pitch = r.read_bits(12)? as u16;
+    }
+    if mask & VMASK_CREW != 0 {
+        x.track_flags = r.read_bits(8)? as u8;
+        x.seats = r.read_bits(3)? as u8;
+    }
+    if mask & VMASK_HEALTH != 0 {
+        s.health_q = r.read_bits(8)? as u8;
+    }
+    if mask & VMASK_DAMAGE != 0 {
+        x.damage_flags = r.read_bits(8)? as u8;
+    }
+    if mask & VMASK_FLAGS != 0 {
+        s.flags = r.read_bits(8)? as u8;
+    }
+    s.vehicle = Some(x);
+    Ok(Record::Delta(s))
 }
 
 #[cfg(test)]
