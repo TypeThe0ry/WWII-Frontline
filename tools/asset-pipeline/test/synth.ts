@@ -33,7 +33,8 @@ export function hash2(x: number, y: number, seed = 0): number {
 /** Procedural albedo: gradient + mild value noise (a plausible painted/texture-like image, not incompressible noise). */
 export function albedoPng(size: number, seed = 1): Buffer {
   return png(size, size, (x, y) => {
-    const n = 0.85 + 0.15 * hash2(x >> 2, y >> 2, seed);
+    // coarse blotches plus per-pixel grain: PNG-compresses like a photographic / scanned material, not like a flat fill
+    const n = 0.8 + 0.12 * hash2(x >> 3, y >> 3, seed) + 0.08 * hash2(x, y, seed + 7);
     const u = x / size;
     const v = y / size;
     return [Math.round(255 * (0.3 + 0.5 * u) * n), Math.round(255 * (0.4 + 0.4 * v) * n), Math.round(255 * 0.35 * n), 255];
@@ -42,8 +43,8 @@ export function albedoPng(size: number, seed = 1): Buffer {
 
 export function normalPng(size: number): Buffer {
   return png(size, size, (x, y) => {
-    const nx = 0.35 * Math.sin((x / size) * 40);
-    const ny = 0.35 * Math.cos((y / size) * 31);
+    const nx = 0.3 * Math.sin((x / size) * 40) + 0.08 * (hash2(x, y, 11) - 0.5);
+    const ny = 0.3 * Math.cos((y / size) * 31) + 0.08 * (hash2(x, y, 12) - 0.5);
     const nz = Math.sqrt(1 - nx * nx - ny * ny);
     return [Math.round((nx * 0.5 + 0.5) * 255), Math.round((ny * 0.5 + 0.5) * 255), Math.round((nz * 0.5 + 0.5) * 255), 255];
   });

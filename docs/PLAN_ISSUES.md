@@ -486,3 +486,23 @@
 - **受影响任务**：M1-002、M1-003、M1-004、M1-005（沿用 `assertAllowed` 与 `work/` 目录布局）；M1 素材接入类任务（朝向、需求 ID 表）。
 - **临时处理**：已按上实现；STATUS 标 partial 的原因只有验收 7（CI 墙钟需 GitHub 实跑，H-102）。
 - **裁决（Fable 填写）**：
+
+### PI-033 M1-002：纹理编码器、法线两通道布局、碰撞与处理权限、体积比判据的几处实现取舍
+
+- **状态**：open
+- **类别**：素材/管线（接口细化）
+- **提出者 / 日期**：M1-002 / 2026-11-17
+- **问题 / 做法**（均按最保守、最易回滚实现，请 Fable 确认或改写）：
+  1. **编码器**：任务卡写 `toktx`（KTX-Software 原生程序，CI 镜像需另装）。实现改用 npm 的 `ktx2-encoder`（Basis Universal 编码器的 WASM 构建，MIT 包装 + Apache-2.0 编码器，与 `toktx` 同一编码器与同一 KTX2 容器），无需原生二进制，任何构建机 `pnpm install` 即可；依赖已在上一提交 919d1d7 加入。若坚持 `toktx`，只需替换 `textures.ts` 的 `encodeKtx2`。参数：ETC1S quality 128 / effort 1；UASTC level 1 + zstd；UASTC RDO 实测过（1024² 法线 23–31 s/张）太慢，未启用。
+  2. **法线贴图"RG 双通道"**：输入先转成 RRRG 布局（X 写 RGB、Y 写 A），再按 UASTC 编码；KTX2 key/value 里写 `fl_layout=RRRG`、`fl_channels=2`，验收 4 的"通道数 = 2"按这两个 tag 校验（`inspectKtx2`），格式按 DFD 色彩模型（UASTC=166、ETC1S=163）校验。运行时（M1-006）需要按 RRRG 还原 Z；若 Fable 想要真正的 2 通道 KTX2（如 BC5/EAC_RG 目标），需改转码目标，属 M1-006。
+  3. **量化后 normal**：`quantize` 把 normal 写成 8-bit snorm（xyz），再经 meshopt FILTER 方法（含八面体滤波）压缩；"8-bit oct" 即此滤波路径。position/uv 为 16-bit（SHORT/UNSIGNED_SHORT，normalized）。包围盒误差实测 ~2e-6 到 4e-6（< 0.1 % 判据）。
+  4. **处理权限**：LOD 链、网格压缩、碰撞简化统一要求 `LOD`；纹理要求 `TEXCOMP`（仅当文档含纹理时才检查，无纹理资产不需要）。碰撞没有独立处理码，沿用 `LOD`。
+  5. **碰撞**：trimesh 先 `simplify`（Prune），达不到预算再 `simplifySloppy`；convex 用"三角形质心沿最长轴递归二分 ≤ 32 簇 + 每簇增量凸包"，不做 V-HACD 式凹度细化（任务卡备注：新依赖先写 PLAN_ISSUES，故自实现）；退化簇回退为 AABB 盒。
+  6. **ORM**：材质同时有 occlusion 与 metallicRoughness 且尺寸相同时，打包成一张 R=AO、G=roughness、B=metallic 的图，两个槽共用；尺寸不同则跳过并告警；只有 AO 无 MR 时 G/B 填 255（保持"因子 × 1"）。
+  7. **NPOT**：宽或高不是 4 的倍数时边缘复制补到 4 的倍数并告警，**UV 不重缩放**（补边在右/下，影响最多 3 像素）。
+  8. **验收 1 的体积比取决于内容**：ETC1S 颜色图压缩比很高（2048² 合成 albedo PNG 7.7 MB → ≈ 0.6 MB），UASTC 法线图只有约 35 % 的节省（1024² PNG 1.7 MB → 1.1 MB）。合成样例 A（2 万三角 + 2048² albedo + 3 张 1024²）为 18.3 %；样例 B（5 万三角 + 4 张 1024²，法线占比大）为 31.5 %，**超过 25 %**。真实 CC0 样例（带 2048² PNG 的材质模型）尚未入库，该验收按"合成样例通过、真实样例待测"记 partial；若总控要求法线图也 ≤ 25 %，需允许法线用 ETC1S 或降分辨率（改 `selectFormat` 表一行）。
+  9. **"原始大小"**：`stats.source_bytes` = `normalized.gltf` 的 json + .bin + 图片字节（normalize 不改变图片与几何精度，与原始 glTF+PNG 等价）；`check-size-ratio` 用 `lods[0].bytes / source_bytes`。
+- **证据**：`tools/asset-pipeline/src/{textures,mesh-compress,collision,process,stats}.ts`；`pnpm -C tools/asset-pipeline test` 102 项、`test:e2e` 5 项通过。
+- **受影响任务**：M1-003（读取 `lodN{_fp,_tp}.glb`、`collision.glb`、`stats.json`）、M1-005（`stats.chains[].lods[]`）、M1-006（RRRG 法线与 KTX2 转码）、M1-064。
+- **临时处理**：已按上实现。
+- **裁决（Fable 填写）**：

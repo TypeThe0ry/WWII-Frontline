@@ -1,0 +1,146 @@
+{
+  "schema": "frontline.asset-stats/1",
+  "asset_id": "AST-V-TEST-001-01",
+  "logical_id": "prop_test_sphere",
+  "source_bytes": 162737,
+  "lods": [
+    {
+      "lod": 0,
+      "tris": 3120,
+      "vertices": 1681,
+      "bytes": 47840,
+      "simplify_error": 0,
+      "simplify_error_m": 0,
+      "seam_lock": "none",
+      "file": "lod0.glb"
+    },
+    {
+      "lod": 1,
+      "tris": 1560,
+      "vertices": 897,
+      "bytes": 40788,
+      "simplify_error": 0.002533994149416685,
+      "simplify_error_m": 0.002533994149416685,
+      "seam_lock": "hard",
+      "file": "lod1.glb"
+    },
+    {
+      "lod": 2,
+      "tris": 780,
+      "vertices": 505,
+      "bytes": 36468,
+      "simplify_error": 0.007397247012704611,
+      "simplify_error_m": 0.007397247012704611,
+      "seam_lock": "hard",
+      "file": "lod2.glb"
+    },
+    {
+      "lod": 3,
+      "tris": 312,
+      "vertices": 266,
+      "bytes": 32480,
+      "simplify_error": 0.04035795480012894,
+      "simplify_error_m": 0.04035795480012894,
+      "seam_lock": "hard",
+      "file": "lod3.glb"
+    }
+  ],
+  "chains": [
+    {
+      "suffix": "",
+      "lods": [
+        {
+          "lod": 0,
+          "tris": 3120,
+          "vertices": 1681,
+          "bytes": 47840,
+          "simplify_error": 0,
+          "simplify_error_m": 0,
+          "seam_lock": "none",
+          "file": "lod0.glb"
+        },
+        {
+          "lod": 1,
+          "tris": 1560,
+          "vertices": 897,
+          "bytes": 40788,
+          "simplify_error": 0.002533994149416685,
+          "simplify_error_m": 0.002533994149416685,
+          "seam_lock": "hard",
+          "file": "lod1.glb"
+        },
+        {
+          "lod": 2,
+          "tris": 780,
+          "vertices": 505,
+          "bytes": 36468,
+          "simplify_error": 0.007397247012704611,
+          "simplify_error_m": 0.007397247012704611,
+          "seam_lock": "hard",
+          "file": "lod2.glb"
+        },
+        {
+          "lod": 3,
+          "tris": 312,
+          "vertices": 266,
+          "bytes": 32480,
+          "simplify_error": 0.04035795480012894,
+          "simplify_error_m": 0.04035795480012894,
+          "seam_lock": "hard",
+          "file": "lod3.glb"
+        }
+      ],
+      "bbox_error": 0.000004371761021886754
+    }
+  ],
+  "collision": {
+    "mode": "convex",
+    "tris": 2872,
+    "hulls": 32,
+    "source_tris": 3120,
+    "bytes": 69232,
+    "file": "collision.glb"
+  },
+  "textures": [
+    {
+      "name": "albedo",
+      "slot": "color",
+      "profile": "bg",
+      "format": "ETC1S",
+      "width": 128,
+      "height": 128,
+      "levels": 8,
+      "channels": 3,
+      "bytes": 4223,
+      "sourceBytes": 31043,
+      "padded": false
+    },
+    {
+      "name": "normal",
+      "slot": "normal",
+      "profile": "normal",
+      "format": "UASTC",
+      "width": 128,
+      "height": 128,
+      "levels": 8,
+      "channels": 2,
+      "bytes": 17696,
+      "sourceBytes": 29929,
+      "padded": false
+    },
+    {
+      "name": "orm_mat",
+      "slot": "orm",
+      "profile": "bg",
+      "format": "ETC1S",
+      "width": 128,
+      "height": 128,
+      "levels": 8,
+      "channels": 3,
+      "bytes": 4404,
+      "sourceBytes": 15045,
+      "padded": false
+    }
+  ],
+  "warnings": []
+}
