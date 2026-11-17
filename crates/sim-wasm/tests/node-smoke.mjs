@@ -62,7 +62,7 @@ const ok = (name) => {
 {
   assert.deepEqual([...wasm.encodePing(1234)], [...hex('ping.hex')]);
   // Parameters of protocol/tests/limits.rs `sample_messages` (Hello is bit packed: no byte offsets).
-  const out = wasm.encodeHello(1, 0x0123456789abcdefn, new Uint8Array(40).fill(7), 42, 3);
+  const out = wasm.encodeHello(2, 0x0123456789abcdefn, new Uint8Array(40).fill(7), 42, 3);
   assert.deepEqual([...out], [...hex('hello.hex')]);
   const pong = wasm.decodeServerC0(hex('pong.hex'));
   assert.equal(pong.kind, 5);
