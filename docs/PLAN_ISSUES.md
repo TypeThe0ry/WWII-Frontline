@@ -467,3 +467,22 @@
 - **受影响任务**：M0-002（CI）、M0-028、M0-029、M0-030。
 - **临时处理**：已修正。
 - **裁决（Fable 填写）**：验收内的最小修补，待总控确认。
+
+### PI-032 M1-001：闸门与规范化的几处接口细化（FLAGGED 与 D-LIC 的关系、空 allowed_processing、源朝向约定、requirements.json 最小版本、退出码 5–8）
+
+- **状态**：open
+- **类别**：素材/许可证 | 协议/数据（接口细化）
+- **提出者 / 日期**：M1-001 / 2026-11-17
+- **问题**：任务卡与 LICENSES.md 的几处表述需要落地时取舍，均按"最保守、最易回滚"实现，请 Fable 确认或改写：
+  1. **D-LIC 与 LICENSES §6（简化登记，当前生效）**：任务卡要求"D-LIC 渠道且 `confirmation_path = —` → 退出码 4"，而 §6 说免费素材 `OK` 无需 `confirmation_path`。实现：渠道命中 D-LIC 清单（TurboSquid、CGTrader、Sketchfab、KitBash3D、ActorCore、A Sound Effect）且 `confirmation_path` 为空时拒绝，**例外**：`order_id` 以 `FREE` 开头（LICENSES §2 对免费素材的约定）或 Sketchfab 且许可证名以 `CC` 开头（规则原文"Sketchfab 非 CC"）。付费行不受影响。
+  2. **`FLAGGED`**：LICENSES §6.2 在三值枚举外新增了 `FLAGGED`。解析器接受四值（其它值仍报错并给行号）；闸门把 `FLAGGED` 与 `PENDING` 同样处理（退出码 3，提示文字区分）。
+  3. **`allowed_processing` 为空/`—`**：§6.5 说该列对免费素材可选填，但任务卡的 `assertAllowed` 以白名单为准。实现：空列 = D-MOD 全部处理码都允许；显式列出则只允许所列（越权退出码 8）；未知码在解析台账时报错。另外认可 §2 的音频码 `EQCOMP/CONVOLVE`（任务卡清单未列）与 PI-009 的 `SUBSET/RENAME`。
+  4. **源朝向约定**：ARCHITECTURE §11.1 只规定输出为"Y-up、前向 -Z"，没规定源的约定。实现（均可用 `--up/--forward` 或 glTF `asset.extras.{unit,up_axis,forward_axis}` 覆盖）：Y-up 源默认前向 `+Z`（glTF 2.0 规范：资产正面朝 +Z），故默认 Y-up 资产会绕 Y 转 180° 到 -Z；Z-up 源默认前向 `-Y`（Blender 前视图约定）。**若总控/Fable 认为默认应为"不转"，把 normalize.ts 中的默认前向改为 `-Z` 即可（一行）**；对称件（立方体）不受影响。
+  5. **`assets/requirements.json` 最小版本**：由 `asset-pipeline gen-requirements` 从 ASSET_SHOPPING_LIST §4.1–4.5 各表第一列抽取需求 ID（共 168 个，里程碑取所在小节、重复 ID 取最早里程碑；`kind` 仅按 `V-` 前缀粗分 visual/audio）。局限：只有 ID→里程碑映射，没有规格/数量；表格之外（正文里提到但没有表格行）的需求不会出现；`V-ANM-001（M1` 这类单元格中的括号注记靠正则容错。M1 内 72 个 ID（M1 小节首次出现者）：real 0 / placeholder 1（仅 `data/placeholders` 中带 `requirement_id` 的灰盒）/ missing 71。
+  6. **退出码**：任务卡只定了 2/3/4。其余：1 用法/内部错误、5 台账引用的 `license_text_path`/`confirmation_path` 文件不存在（LICENSES §4.4）、6 台账无法解析、7 逻辑 ID 不合 §11.2、8 处理动作越权（D-MOD）。
+  7. **运行方式**：CLI 入口 `tools/asset-pipeline/bin/asset-pipeline.mjs` 直接用 Node 的 type stripping 跑 `src/*.ts`（Node 22.18+ 默认开启，仓库固定 22.23.4）；`engines` 写的是 `>=22.12`，22.12–22.17 需加 `--experimental-strip-types`，或先 `pnpm -C tools/asset-pipeline build` 生成 `dist/`（入口优先用 dist）。
+- **证据**：`tools/asset-pipeline/src/{gate,ledger,allowed,normalize,report}.ts`；`pnpm -C tools/asset-pipeline test` 80 项通过；`assets/requirements.json`。
+- **建议方案**：按上采纳；若 1 的例外不被接受，删 `gate.ts` 里 `dlicChannel` 的两条 return 即回到任务卡原文（此时免费 CGTrader/Sketchfab 素材也需要 `confirmation_path`）。第 4 条请在 M1-002 / 素材接入任务拿到第一个真实素材时用肉眼核对朝向。
+- **受影响任务**：M1-002、M1-003、M1-004、M1-005（沿用 `assertAllowed` 与 `work/` 目录布局）；M1 素材接入类任务（朝向、需求 ID 表）。
+- **临时处理**：已按上实现；STATUS 标 partial 的原因只有验收 7（CI 墙钟需 GitHub 实跑，H-102）。
+- **裁决（Fable 填写）**：

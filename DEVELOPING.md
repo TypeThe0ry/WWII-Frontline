@@ -290,3 +290,19 @@ light `/?server=same&empty=1&debug=1`. Add `&renderer=webgl2` to force WebGL2.
 
 Keys (defaults from `client/src/input/keymap.ts`; click the canvas for pointer lock): W/A/S/D move, mouse look, Left Shift
 sprint (hold), C crouch, Space jump, left mouse fire, right mouse aim, R reload. Walk is unbound by default (debug: hold CapsLock).
+
+## Asset pipeline (M1-001)
+
+`tools/asset-pipeline` = steps 1–2 of ARCHITECTURE §11.1 plus the missing-asset report. Reads the ledger in `LICENSES.md` §3 and
+refuses anything that is unregistered (exit 2), not `OK` (3, `FLAGGED` counts as `PENDING`), a D-LIC channel without a confirmation (4),
+or missing archive files (5). Intermediate products go to `work/` (git-ignored).
+
+```
+A=tools/asset-pipeline/bin/asset-pipeline.mjs
+node $A ledger-check                       # LICENSES §4.4: counts per status, missing archive files
+node $A ingest                             # assets/incoming/** -> work/{asset_id}/raw/ (+ sha256, ingest.json)
+node $A normalize --asset AST-... --id prop_crate_01 [--unit-scale 0.01 --up Z --forward -Y --origin bottom-center]
+node $A report --milestone M1 --placeholders data/placeholders --gaps    # real / placeholder / missing per requirement ID
+node $A gen-requirements                   # refresh assets/requirements.json from docs/ASSET_SHOPPING_LIST.md §4
+pnpm -C tools/asset-pipeline lint | typecheck | test
+```

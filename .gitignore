@@ -36,3 +36,6 @@ dev-key*.pem
 # M0-032: private analysis scratch (frames, extracted audio) — recordings themselves live in raw/ or ref-captures/
 docs/measurements/frames/
 docs/measurements/tmp/
+
+# M1-001: asset-pipeline intermediate products (work/{asset_id}/raw, normalized.gltf ...)
+/work/

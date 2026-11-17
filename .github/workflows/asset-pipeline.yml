@@ -1,0 +1,55 @@
+# PR gate: asset pipeline ingest/license gate (M1-001; ARCHITECTURE §11.1/§11.7, target < 3 min).
+# Unit tests, lint, type check, then the gate against the real LICENSES.md (assets/incoming/ is not in git, so the real
+# run must succeed with zero files) and the missing-asset report.
+name: asset-pipeline
+on:
+  pull_request:
+    paths:
+      - "tools/asset-pipeline/**"
+      - "LICENSES.md"
+      - "licenses/**"
+      - "assets/requirements.json"
+      - "docs/ASSET_SHOPPING_LIST.md"
+      - "data/placeholders/**"
+      - "pnpm-lock.yaml"
+      - ".github/workflows/asset-pipeline.yml"
+  push:
+    branches: [main]
+    paths:
+      - "tools/asset-pipeline/**"
+      - "LICENSES.md"
+      - "licenses/**"
+      - "assets/requirements.json"
+concurrency:
+  group: asset-pipeline-${{ github.ref }}
+  cancel-in-progress: true
+permissions:
+  contents: read
+jobs:
+  asset-pipeline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile --filter @frontline/asset-pipeline...
+      - name: eslint
+        run: pnpm -C tools/asset-pipeline lint
+      - name: tsc
+        run: pnpm -C tools/asset-pipeline typecheck
+      - name: vitest
+        run: pnpm -C tools/asset-pipeline test
+      - name: Ledger check (LICENSES §4.4) and gate on the real ledger
+        run: |
+          node tools/asset-pipeline/bin/asset-pipeline.mjs ledger-check
+          node tools/asset-pipeline/bin/asset-pipeline.mjs ingest --work "$RUNNER_TEMP/work"
+      - name: requirements.json is up to date with ASSET_SHOPPING_LIST
+        run: |
+          node tools/asset-pipeline/bin/asset-pipeline.mjs gen-requirements --out "$RUNNER_TEMP/requirements.json"
+          diff -u assets/requirements.json "$RUNNER_TEMP/requirements.json"
+      - name: Missing-asset report (M1)
+        run: node tools/asset-pipeline/bin/asset-pipeline.mjs report --milestone M1 --placeholders data/placeholders --gaps --strict --work "$RUNNER_TEMP/work" --out "$RUNNER_TEMP/asset-report.json"

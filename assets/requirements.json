@@ -1,0 +1,846 @@
+{
+  "schema": 1,
+  "source": "docs/ASSET_SHOPPING_LIST.md",
+  "requirements": [
+    {
+      "id": "V-NAT-007",
+      "milestone": "M0",
+      "kind": "visual"
+    },
+    {
+      "id": "V-SKY-001",
+      "milestone": "M0",
+      "kind": "visual"
+    },
+    {
+      "id": "V-WPN-GE-001",
+      "milestone": "M0",
+      "kind": "visual"
+    },
+    {
+      "id": "V-ANM-001",
+      "milestone": "M0",
+      "kind": "visual"
+    },
+    {
+      "id": "A-WPN-001",
+      "milestone": "M0",
+      "kind": "audio"
+    },
+    {
+      "id": "A-WPN-009",
+      "milestone": "M0",
+      "kind": "audio"
+    },
+    {
+      "id": "C-BUL-001",
+      "milestone": "M0",
+      "kind": "audio"
+    },
+    {
+      "id": "E-FTS-001",
+      "milestone": "M0",
+      "kind": "audio"
+    },
+    {
+      "id": "H-UI-001",
+      "milestone": "M0",
+      "kind": "audio"
+    },
+    {
+      "id": "V-FNT-001",
+      "milestone": "M0",
+      "kind": "visual"
+    },
+    {
+      "id": "V-FNT-002",
+      "milestone": "M0",
+      "kind": "visual"
+    },
+    {
+      "id": "V-FNT-003",
+      "milestone": "M0",
+      "kind": "visual"
+    },
+    {
+      "id": "V-FNT-004",
+      "milestone": "M0",
+      "kind": "visual"
+    },
+    {
+      "id": "V-BLD-001",
+      "milestone": "M1",
+      "kind": "visual"
+    },
+    {
+      "id": "V-BLD-002",
+      "milestone": "M1",
+      "kind": "visual"
+    },
+    {
+      "id": "V-BLD-003",
+      "milestone": "M1",
+      "kind": "visual"
+    },
+    {
+      "id": "V-NAT-001",
+      "milestone": "M1",
+      "kind": "visual"
+    },
+    {
+      "id": "V-NAT-002",
+      "milestone": "M1",
+      "kind": "visual"
+    },
+    {
+      "id": "V-NAT-004",
+      "milestone": "M1",
+      "kind": "visual"
+    },
+    {
+      "id": "V-NAT-005",
+      "milestone": "M1",
+      "kind": "visual"
+    },
+    {
+      "id": "V-PRP-001",
+      "milestone": "M1",
+      "kind": "visual"
+    },
+    {
+      "id": "V-PRP-002",
+      "milestone": "M1",
+      "kind": "visual"
+    },
+    {
+      "id": "V-PRP-003",
+      "milestone": "M1",
+      "kind": "visual"
+    },
+    {
+      "id": "V-PRP-004",
+      "milestone": "M1",
+      "kind": "visual"
+    },
+    {
+      "id": "V-PRP-006",
+      "milestone": "M1",
+      "kind": "visual"
+    },
+    {
+      "id": "V-CHR-US-001",
+      "milestone": "M1",
+      "kind": "visual"
+    },
+    {
+      "id": "V-CHR-US-002",
+      "milestone": "M1",
+      "kind": "visual"
+    },
+    {
+      "id": "V-CHR-GE-001",
+      "milestone": "M1",
+      "kind": "visual"
+    },
+    {
+      "id": "V-CHR-FPA-001",
+      "milestone": "M1",
+      "kind": "visual"
+    },
+    {
+      "id": "V-WPN-US-001",
+      "milestone": "M1",
+      "kind": "visual"
+    },
+    {
+      "id": "V-WPN-US-003",
+      "milestone": "M1",
+      "kind": "visual"
+    },
+    {
+      "id": "V-WPN-US-005",
+      "milestone": "M1",
+      "kind": "visual"
+    },
+    {
+      "id": "V-WPN-US-008",
+      "milestone": "M1",
+      "kind": "visual"
+    },
+    {
+      "id": "V-WPN-US-010",
+      "milestone": "M1",
+      "kind": "visual"
+    },
+    {
+      "id": "V-WPN-GE-004",
+      "milestone": "M1",
+      "kind": "visual"
+    },
+    {
+      "id": "V-WPN-GE-005",
+      "milestone": "M1",
+      "kind": "visual"
+    },
+    {
+      "id": "V-WPN-GE-007",
+      "milestone": "M1",
+      "kind": "visual"
+    },
+    {
+      "id": "V-WPN-GE-008",
+      "milestone": "M1",
+      "kind": "visual"
+    },
+    {
+      "id": "V-WPN-GE-011",
+      "milestone": "M1",
+      "kind": "visual"
+    },
+    {
+      "id": "V-ANM-002",
+      "milestone": "M1",
+      "kind": "visual"
+    },
+    {
+      "id": "V-ANM-004",
+      "milestone": "M1",
+      "kind": "visual"
+    },
+    {
+      "id": "V-ANM-005",
+      "milestone": "M1",
+      "kind": "visual"
+    },
+    {
+      "id": "V-ANM-008",
+      "milestone": "M1",
+      "kind": "visual"
+    },
+    {
+      "id": "V-ANM-009",
+      "milestone": "M1",
+      "kind": "visual"
+    },
+    {
+      "id": "V-VEH-US-003",
+      "milestone": "M1",
+      "kind": "visual"
+    },
+    {
+      "id": "V-VEH-US-007",
+      "milestone": "M1",
+      "kind": "visual"
+    },
+    {
+      "id": "V-VEH-GE-003",
+      "milestone": "M1",
+      "kind": "visual"
+    },
+    {
+      "id": "A-WPN-002",
+      "milestone": "M1",
+      "kind": "audio"
+    },
+    {
+      "id": "A-WPN-003",
+      "milestone": "M1",
+      "kind": "audio"
+    },
+    {
+      "id": "A-WPN-004",
+      "milestone": "M1",
+      "kind": "audio"
+    },
+    {
+      "id": "A-WPN-005",
+      "milestone": "M1",
+      "kind": "audio"
+    },
+    {
+      "id": "A-WPN-006",
+      "milestone": "M1",
+      "kind": "audio"
+    },
+    {
+      "id": "A-WPN-007",
+      "milestone": "M1",
+      "kind": "audio"
+    },
+    {
+      "id": "A-WPN-008",
+      "milestone": "M1",
+      "kind": "audio"
+    },
+    {
+      "id": "A-WPN-010",
+      "milestone": "M1",
+      "kind": "audio"
+    },
+    {
+      "id": "A-WPN-011",
+      "milestone": "M1",
+      "kind": "audio"
+    },
+    {
+      "id": "A-WPN-014",
+      "milestone": "M1",
+      "kind": "audio"
+    },
+    {
+      "id": "A-WPN-015",
+      "milestone": "M1",
+      "kind": "audio"
+    },
+    {
+      "id": "A-WPN-016",
+      "milestone": "M1",
+      "kind": "audio"
+    },
+    {
+      "id": "A-WPN-017",
+      "milestone": "M1",
+      "kind": "audio"
+    },
+    {
+      "id": "B-EXP-001",
+      "milestone": "M1",
+      "kind": "audio"
+    },
+    {
+      "id": "C-BUL-002",
+      "milestone": "M1",
+      "kind": "audio"
+    },
+    {
+      "id": "C-BUL-003",
+      "milestone": "M1",
+      "kind": "audio"
+    },
+    {
+      "id": "C-BUL-004",
+      "milestone": "M1",
+      "kind": "audio"
+    },
+    {
+      "id": "C-BUL-005",
+      "milestone": "M1",
+      "kind": "audio"
+    },
+    {
+      "id": "D-TNK-001",
+      "milestone": "M1",
+      "kind": "audio"
+    },
+    {
+      "id": "D-TNK-002",
+      "milestone": "M1",
+      "kind": "audio"
+    },
+    {
+      "id": "D-TNK-003",
+      "milestone": "M1",
+      "kind": "audio"
+    },
+    {
+      "id": "D-TNK-004",
+      "milestone": "M1",
+      "kind": "audio"
+    },
+    {
+      "id": "E-GER-001",
+      "milestone": "M1",
+      "kind": "audio"
+    },
+    {
+      "id": "F-AMB-001",
+      "milestone": "M1",
+      "kind": "audio"
+    },
+    {
+      "id": "F-AMB-003",
+      "milestone": "M1",
+      "kind": "audio"
+    },
+    {
+      "id": "F-AMB-005",
+      "milestone": "M1",
+      "kind": "audio"
+    },
+    {
+      "id": "F-AMB-006",
+      "milestone": "M1",
+      "kind": "audio"
+    },
+    {
+      "id": "G-VOX-001",
+      "milestone": "M1",
+      "kind": "audio"
+    },
+    {
+      "id": "G-VOX-002",
+      "milestone": "M1",
+      "kind": "audio"
+    },
+    {
+      "id": "H-RAD-001",
+      "milestone": "M1",
+      "kind": "audio"
+    },
+    {
+      "id": "H-UI-002",
+      "milestone": "M1",
+      "kind": "audio"
+    },
+    {
+      "id": "I-MUS-001",
+      "milestone": "M1",
+      "kind": "audio"
+    },
+    {
+      "id": "J-IR-001",
+      "milestone": "M1",
+      "kind": "audio"
+    },
+    {
+      "id": "V-FX-001",
+      "milestone": "M1",
+      "kind": "visual"
+    },
+    {
+      "id": "V-FX-002",
+      "milestone": "M1",
+      "kind": "visual"
+    },
+    {
+      "id": "V-FX-003",
+      "milestone": "M1",
+      "kind": "visual"
+    },
+    {
+      "id": "V-FX-004",
+      "milestone": "M1",
+      "kind": "visual"
+    },
+    {
+      "id": "V-FX-006",
+      "milestone": "M1",
+      "kind": "visual"
+    },
+    {
+      "id": "V-BLD-004",
+      "milestone": "M2",
+      "kind": "visual"
+    },
+    {
+      "id": "V-BLD-008",
+      "milestone": "M2",
+      "kind": "visual"
+    },
+    {
+      "id": "V-BLD-010",
+      "milestone": "M2",
+      "kind": "visual"
+    },
+    {
+      "id": "V-PRP-005",
+      "milestone": "M2",
+      "kind": "visual"
+    },
+    {
+      "id": "V-PRP-007",
+      "milestone": "M2",
+      "kind": "visual"
+    },
+    {
+      "id": "V-PRP-008",
+      "milestone": "M2",
+      "kind": "visual"
+    },
+    {
+      "id": "V-PRP-009",
+      "milestone": "M2",
+      "kind": "visual"
+    },
+    {
+      "id": "V-PRP-010",
+      "milestone": "M2",
+      "kind": "visual"
+    },
+    {
+      "id": "V-CHR-US-003",
+      "milestone": "M2",
+      "kind": "visual"
+    },
+    {
+      "id": "V-WPN-US-002",
+      "milestone": "M2",
+      "kind": "visual"
+    },
+    {
+      "id": "V-WPN-US-007",
+      "milestone": "M2",
+      "kind": "visual"
+    },
+    {
+      "id": "V-WPN-US-011",
+      "milestone": "M2",
+      "kind": "visual"
+    },
+    {
+      "id": "V-WPN-US-012",
+      "milestone": "M2",
+      "kind": "visual"
+    },
+    {
+      "id": "V-WPN-GE-010",
+      "milestone": "M2",
+      "kind": "visual"
+    },
+    {
+      "id": "V-ANM-003",
+      "milestone": "M2",
+      "kind": "visual"
+    },
+    {
+      "id": "V-ANM-006",
+      "milestone": "M2",
+      "kind": "visual"
+    },
+    {
+      "id": "V-ANM-007",
+      "milestone": "M2",
+      "kind": "visual"
+    },
+    {
+      "id": "A-WPN-012",
+      "milestone": "M2",
+      "kind": "audio"
+    },
+    {
+      "id": "A-WPN-013",
+      "milestone": "M2",
+      "kind": "audio"
+    },
+    {
+      "id": "G-VOX-003",
+      "milestone": "M2",
+      "kind": "audio"
+    },
+    {
+      "id": "G-VOX-004",
+      "milestone": "M2",
+      "kind": "audio"
+    },
+    {
+      "id": "I-MUS-002",
+      "milestone": "M2",
+      "kind": "audio"
+    },
+    {
+      "id": "J-IR-002",
+      "milestone": "M2",
+      "kind": "audio"
+    },
+    {
+      "id": "V-FX-005",
+      "milestone": "M2",
+      "kind": "visual"
+    },
+    {
+      "id": "V-BLD-009",
+      "milestone": "M3",
+      "kind": "visual"
+    },
+    {
+      "id": "V-SKY-003",
+      "milestone": "M3",
+      "kind": "visual"
+    },
+    {
+      "id": "V-CHR-GE-002",
+      "milestone": "M3",
+      "kind": "visual"
+    },
+    {
+      "id": "V-CHR-GE-004",
+      "milestone": "M3",
+      "kind": "visual"
+    },
+    {
+      "id": "V-WPN-US-004",
+      "milestone": "M3",
+      "kind": "visual"
+    },
+    {
+      "id": "V-WPN-US-006",
+      "milestone": "M3",
+      "kind": "visual"
+    },
+    {
+      "id": "V-WPN-US-009",
+      "milestone": "M3",
+      "kind": "visual"
+    },
+    {
+      "id": "V-WPN-GE-002",
+      "milestone": "M3",
+      "kind": "visual"
+    },
+    {
+      "id": "V-WPN-GE-003",
+      "milestone": "M3",
+      "kind": "visual"
+    },
+    {
+      "id": "V-WPN-GE-006",
+      "milestone": "M3",
+      "kind": "visual"
+    },
+    {
+      "id": "V-WPN-GE-009",
+      "milestone": "M3",
+      "kind": "visual"
+    },
+    {
+      "id": "V-WPN-GE-012",
+      "milestone": "M3",
+      "kind": "visual"
+    },
+    {
+      "id": "V-WPN-GE-013",
+      "milestone": "M3",
+      "kind": "visual"
+    },
+    {
+      "id": "V-WPN-GE-014",
+      "milestone": "M3",
+      "kind": "visual"
+    },
+    {
+      "id": "V-ANM-010",
+      "milestone": "M3",
+      "kind": "visual"
+    },
+    {
+      "id": "V-VEH-US-001",
+      "milestone": "M3",
+      "kind": "visual"
+    },
+    {
+      "id": "V-VEH-US-002",
+      "milestone": "M3",
+      "kind": "visual"
+    },
+    {
+      "id": "V-VEH-US-004",
+      "milestone": "M3",
+      "kind": "visual"
+    },
+    {
+      "id": "V-VEH-US-005",
+      "milestone": "M3",
+      "kind": "visual"
+    },
+    {
+      "id": "V-VEH-US-006",
+      "milestone": "M3",
+      "kind": "visual"
+    },
+    {
+      "id": "V-VEH-GE-001",
+      "milestone": "M3",
+      "kind": "visual"
+    },
+    {
+      "id": "V-VEH-GE-002",
+      "milestone": "M3",
+      "kind": "visual"
+    },
+    {
+      "id": "V-VEH-GE-004",
+      "milestone": "M3",
+      "kind": "visual"
+    },
+    {
+      "id": "V-VEH-GE-005",
+      "milestone": "M3",
+      "kind": "visual"
+    },
+    {
+      "id": "V-VEH-GE-006",
+      "milestone": "M3",
+      "kind": "visual"
+    },
+    {
+      "id": "V-VEH-GE-007",
+      "milestone": "M3",
+      "kind": "visual"
+    },
+    {
+      "id": "V-VEH-ART-001",
+      "milestone": "M3",
+      "kind": "visual"
+    },
+    {
+      "id": "V-VEH-ART-002",
+      "milestone": "M3",
+      "kind": "visual"
+    },
+    {
+      "id": "V-VEH-ART-003",
+      "milestone": "M3",
+      "kind": "visual"
+    },
+    {
+      "id": "V-VEH-ART-004",
+      "milestone": "M3",
+      "kind": "visual"
+    },
+    {
+      "id": "V-VEH-AIR-001",
+      "milestone": "M3",
+      "kind": "visual"
+    },
+    {
+      "id": "V-VEH-AIR-002",
+      "milestone": "M3",
+      "kind": "visual"
+    },
+    {
+      "id": "V-VEH-AIR-003",
+      "milestone": "M3",
+      "kind": "visual"
+    },
+    {
+      "id": "V-VEH-AIR-004",
+      "milestone": "M3",
+      "kind": "visual"
+    },
+    {
+      "id": "B-EXP-002",
+      "milestone": "M3",
+      "kind": "audio"
+    },
+    {
+      "id": "B-EXP-003",
+      "milestone": "M3",
+      "kind": "audio"
+    },
+    {
+      "id": "B-HVY-001",
+      "milestone": "M3",
+      "kind": "audio"
+    },
+    {
+      "id": "B-ART-001",
+      "milestone": "M3",
+      "kind": "audio"
+    },
+    {
+      "id": "B-ART-002",
+      "milestone": "M3",
+      "kind": "audio"
+    },
+    {
+      "id": "B-ART-003",
+      "milestone": "M3",
+      "kind": "audio"
+    },
+    {
+      "id": "B-AIR-001",
+      "milestone": "M3",
+      "kind": "audio"
+    },
+    {
+      "id": "B-AIR-002",
+      "milestone": "M3",
+      "kind": "audio"
+    },
+    {
+      "id": "D-TNK-005",
+      "milestone": "M3",
+      "kind": "audio"
+    },
+    {
+      "id": "D-TNK-006",
+      "milestone": "M3",
+      "kind": "audio"
+    },
+    {
+      "id": "D-VEH-001",
+      "milestone": "M3",
+      "kind": "audio"
+    },
+    {
+      "id": "D-AIR-001",
+      "milestone": "M3",
+      "kind": "audio"
+    },
+    {
+      "id": "E-ACT-001",
+      "milestone": "M3",
+      "kind": "audio"
+    },
+    {
+      "id": "V-BLD-005",
+      "milestone": "M4",
+      "kind": "visual"
+    },
+    {
+      "id": "V-BLD-006",
+      "milestone": "M4",
+      "kind": "visual"
+    },
+    {
+      "id": "V-BLD-007",
+      "milestone": "M4",
+      "kind": "visual"
+    },
+    {
+      "id": "V-NAT-003",
+      "milestone": "M4",
+      "kind": "visual"
+    },
+    {
+      "id": "V-NAT-006",
+      "milestone": "M4",
+      "kind": "visual"
+    },
+    {
+      "id": "V-NAT-008",
+      "milestone": "M4",
+      "kind": "visual"
+    },
+    {
+      "id": "V-SKY-002",
+      "milestone": "M4",
+      "kind": "visual"
+    },
+    {
+      "id": "V-CHR-US-004",
+      "milestone": "M4",
+      "kind": "visual"
+    },
+    {
+      "id": "V-CHR-GE-003",
+      "milestone": "M4",
+      "kind": "visual"
+    },
+    {
+      "id": "F-AMB-002",
+      "milestone": "M4",
+      "kind": "audio"
+    },
+    {
+      "id": "F-AMB-004",
+      "milestone": "M4",
+      "kind": "audio"
+    },
+    {
+      "id": "I-PD-001",
+      "milestone": "M4",
+      "kind": "audio"
+    }
+  ]
+}

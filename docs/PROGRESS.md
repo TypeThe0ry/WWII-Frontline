@@ -409,6 +409,12 @@ blocked / in-progress / todo：无。M0 的 33 个任务全部已提交（M0-033
 - 遗留 / 需人工：H-038（Fable 审阅）、H-021（参考机：E0-3/5/6 真 GPU）、H-102（CI 实跑）、H-011/025/026（录像，H-104）、H-017、H-103、H-022（`tc netem`：本机无 tc，演示步 3 无法执行）；PI-030 待 Fable 裁决；浏览器内未手工复现"被击杀后重生"（headless 564 击杀/563 重生与单测覆盖）。任务卡写的 `pytest tools/map-pipeline tools/ref-analysis` 单次调用不可用，须分目录运行。
 - 影响：M1-001 可开工；M1 渲染任务（M1-043/044/049）前必须拿到参考机数据；M1-068 的 RSS 判据建议改为斜率口径并跑 ≥ 1 h；对 M1 的 10 条建议见 `reports/m0/ACCEPTANCE.md` §9。
 
+### M1-001 素材管线：ingest 与许可证闸门 — partial — 2026-11-17 — 提交 （待总控填）
+- 做了什么：新建 `tools/asset-pipeline`（TypeScript，CLI `ingest|normalize|report|ledger-check|gen-requirements`）：按列名解析 LICENSES.md §3（缺列/重复/非法状态/管道符均报行号，忽略 AST-EXAMPLE 行）；ingest 闸门（未登记 → 退出码 2、非 OK/FLAGGED → 3、D-LIC 渠道缺确认 → 4、存档文件缺失 → 5，全部通过才复制并校验 sha256）；`assertAllowed`（D-MOD 白名单，越权 → 8）；命名校验（§11.2）；normalize（单位→米、Z-up→Y-up/-Z 前向、原点置底部中心、三角化、同材质合并；骨骼/动画资产只套单位+轴向外壳节点）；缺失素材报告与 `assets/requirements.json`（168 个需求 ID，由 ASSET_SHOPPING_LIST §4 生成）；`.github/workflows/asset-pipeline.yml`。
+- 关键实测：vitest 7 文件 / 80 项通过（全套本机 0.5 s）；3 个样例退出码 3/3/2；立方体 1 cm Z-up → 1 m 边长（误差 < 1e-4）；真实 LICENSES.md（4 行：OK 2、PENDING 2）+ 无 incoming → 成功、零文件；M1 范围 72 个需求 ID：real 0 / placeholder 1 / missing 71；CI 作业各命令本机顺序 3.9 s。新增依赖 `@gltf-transform/core 4.5.1`（MIT，传递依赖 property-graph MIT）、devDep `@types/node`；client vitest 238/238 无回归。
+- 遗留 / 需人工：验收 7（Actions 墙钟）待 H-102；PI-032（D-LIC 与 LICENSES §6 的免费例外、FLAGGED 视同 PENDING、空 allowed_processing=全放行、源朝向默认约定、requirements.json 最小版本）待 Fable 确认；无需人类采购。
+- 影响：M1-002/003/004/005 在 `work/{asset_id}/` 目录布局（`raw/`、`ingest.json`、`normalized.gltf/.bin/.json`）与 `assertAllowed(assetId, code, ledger?)` 上扩展；运行用 Node type stripping（22.18+），或 `pnpm -C tools/asset-pipeline build`。
+
 ## 8. 如何维护本文件
 
 - **执行者**：收工前，在"任务日志"末尾追加本任务条目（`### 任务 ID 标题 — 状态 — 日期 — 提交 abc1234`，3–6 行：做了什么、关键实测数字、遗留问题/需人工事项、对后续任务的影响）；写入前重新读取文件末尾（并行执行者可能同时追加），只追加、不改别人的条目。数字必须来自实测，查不到写"未记录"。同时更新 `tasks/STATUS.md` 自己那一行。

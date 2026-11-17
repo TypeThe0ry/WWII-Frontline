@@ -8,7 +8,7 @@
 
 - **当前里程碑**：M0 技术验证——**验收已执行（M0-033，2026-11-17）：M0 记 `partial`，可带条件关闭**，等 Fable 审阅检查点 0（H-038）；验收报告 `reports/m0/ACCEPTANCE.md`，进度总览与任务日志见 `docs/PROGRESS.md`。
 - **M0 统计（2026-11-17）**：33 个任务——done 19、partial 14（含 M0-033 自身）、blocked 0；M1–M4 共 230 个全部 todo。退出标准 E0-1…E0-12：通过 5（E0-1/2/4/9/11）、部分 5（E0-3/6/7/8/10）、需参考机或人工 2（E0-5/12）、未通过 0。
-- **下一个任务**：`M1-001`（素材管线：ingest 与许可证闸门）。M1 前置待办（不阻塞 M1-001，但须在对应任务前解除）：H-102（CI 实跑）、H-021（参考机，M1 渲染任务前）、H-011/025/026（录像，M1 退出前）、PI-030（KCC 判据，待 Fable 裁决）。
+- **下一个任务**：`M1-002`（素材管线：网格 LOD、纹理与碰撞简化；M1-001 已 partial，仅 CI 墙钟待 H-102，PI-032 待确认）。M1 前置待办（须在对应任务前解除）：H-102（CI 实跑）、H-021（参考机，M1 渲染任务前）、H-011/025/026（录像，M1 退出前）、PI-030（KCC 判据，待 Fable 裁决）。
 - **blocked 清单**：（无）
   - 格式：`任务 ID — 所缺条目 — 登记日期 — 谁来解除（人类/素材/其它任务）`
   - 人工侧待办（不阻塞任务，但卡退出标准）：GitHub 无 main 分支/无法开 PR（H-102）、参考机（H-021）、对标录像（H-011/H-025/H-026，汇总 H-104）、受信任 TLS 证书（H-017）、Firefox/Safari 手工互通（H-103）、受限网络台（H-022）、Fable M0 审阅（H-038）。
@@ -27,7 +27,7 @@
   - M0-030 — 基线、回归脚本、三项修正通过 — RTX 3060/Iris Xe 帧时间未测；`snapshot_decode` 基准不存在 — H-021；PI-029
   - M0-032 — 工具链与我方复测完成 — 参考作品一侧数字全部"待测"（缺录像） — H-011/H-025/H-026（H-104）；PI-027
   - M0-033 — 全量复验与演示通过 — 按判定规则（E0-3/5/6 未完全通过）M0 partial，等 Fable 审阅 — H-038；PI-030
-- **最近更新**：2026-11-17 / M0-033 验收（填完成提交哈希、更新摘要与统计、新增 PI-030/031、`reports/m0/ACCEPTANCE.md`）
+- **最近更新**：2026-11-17 / M1-001 素材管线 ingest 闸门（partial）；此前：M0-033 验收（填完成提交哈希、更新摘要与统计、新增 PI-030/031、`reports/m0/ACCEPTANCE.md`）
 
 ## 列说明
 
@@ -77,7 +77,7 @@
 
 | ID | 标题 | 状态 | 实测结果 | 遗留问题 | 完成提交 |
 |---|---|---|---|---|---|
-| M1-001 | 素材管线：ingest 与许可证闸门 | todo | | | |
+| M1-001 | 素材管线：ingest 与许可证闸门 | partial | 验收 1–6 通过：vitest 7 文件 / 80 项全绿（ingest.gate 20 项含 3 样例退出码 3/3/2、CLI 实跑 3,3,2；D-LIC 退出码 4 与放行；AST-EXAMPLE 忽略、真实 LICENSES.md + 空 incoming 零文件成功；normalize 1 cm Z-up 立方体 → 边长 1 m±1e-4、Y-up、底部中心；report real/placeholder/missing 计数）；eslint/tsc/`pnpm -r lint`/`typecheck`、`ci:test` 18/18、data:validate 0 error、client vitest 238/238 无回归；CI 作业文件已写（YAML 语法已校验），其全部命令本机顺序跑 3.9 s | 验收 7（CI 作业墙钟 < 3 min）未在 Actions 实测——H-102；PI-032（D-LIC 与 §6 的例外、FLAGGED、空 allowed_processing、源朝向默认约定、requirements.json 最小版本 168 个 ID）待 Fable 确认；M1 需求 ID 72 个：real 0 / placeholder 1 / missing 71 | |
 | M1-002 | 素材管线：网格 LOD、纹理与碰撞简化 | todo | | | |
 | M1-003 | 素材管线：.fpak 分块容器（D-PAK） | todo | | | |
 | M1-004 | 素材管线：音频处理与打包 | todo | | | |
