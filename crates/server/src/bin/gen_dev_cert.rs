@@ -67,8 +67,14 @@ fn run(out: &std::path::Path, days: u32) -> Result<(), String> {
     println!("valid for   : {days} days from now (ECDSA P-256, SAN localhost/127.0.0.1/::1)");
     println!("sha256 hex  : {hex}");
     println!("sha256 b64  : {b64}");
-    println!("run server  : frontline-server --cert {} --key {}", cert.display(), key.display());
-    println!("client url  : ?certhash={hex}   (hex; the client turns it into serverCertificateHashes)");
+    println!(
+        "run server  : frontline-server --cert {} --key {}",
+        cert.display(),
+        key.display()
+    );
+    println!(
+        "client url  : ?certhash={hex}   (hex; the client turns it into serverCertificateHashes)"
+    );
     println!(
         "smoke page  : tools/dev/wt-smoke/index.html?url=https://127.0.0.1:7001/wt&certhash={hex}&hello={}&c1={}",
         smoke_hello(),

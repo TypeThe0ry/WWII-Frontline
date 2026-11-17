@@ -16,7 +16,9 @@ use std::sync::mpsc;
 use std::time::{Duration, Instant};
 
 use common::*;
-use frontline_protocol::msg::c0::{decode_c0_server, encode_c0_client, ClientMsgC0, Disconnect, ServerMsgC0};
+use frontline_protocol::msg::c0::{
+    decode_c0_server, encode_c0_client, ClientMsgC0, Disconnect, ServerMsgC0,
+};
 use frontline_protocol::msg::input::{encode_input_bundle, InputBundle, InputCmd};
 use frontline_protocol::Channel;
 use wtransport::tls::{Sha256Digest, Sha256DigestFmt};
@@ -32,7 +34,14 @@ impl Server {
     fn start(report: Option<&std::path::Path>) -> Server {
         let mut cmd = Command::new(env!("CARGO_BIN_EXE_frontline-server"));
         cmd.args([
-            "--metrics-port", "0", "--ws-port", "0", "--wt-port", "0", "--dev-cert", "--dev-echo",
+            "--metrics-port",
+            "0",
+            "--ws-port",
+            "0",
+            "--wt-port",
+            "0",
+            "--dev-cert",
+            "--dev-echo",
         ])
         .stdout(Stdio::piped())
         .stderr(Stdio::inherit());
@@ -52,8 +61,12 @@ impl Server {
         let (mut wt, mut met, mut hash) = (None, None, None);
         let deadline = Instant::now() + Duration::from_secs(15);
         while Instant::now() < deadline && (wt.is_none() || met.is_none()) {
-            let Ok(l) = rx.recv_timeout(Duration::from_millis(100)) else { continue };
-            let Ok(v) = serde_json::from_str::<serde_json::Value>(&l) else { continue };
+            let Ok(l) = rx.recv_timeout(Duration::from_millis(100)) else {
+                continue;
+            };
+            let Ok(v) = serde_json::from_str::<serde_json::Value>(&l) else {
+                continue;
+            };
             match v["event"].as_str() {
                 Some("wt_listening") => {
                     wt = v["port"].as_u64().map(|p| p as u16);
@@ -71,7 +84,12 @@ impl Server {
             metrics_port: met.expect("server never reported metrics_listening"),
             hash: Sha256Digest::from_str_fmt(
                 // "aa:bb:..." form expected by from_str_fmt
-                hash.expect("hash").as_bytes().chunks(2).map(|c| std::str::from_utf8(c).unwrap()).collect::<Vec<_>>().join(":"),
+                hash.expect("hash")
+                    .as_bytes()
+                    .chunks(2)
+                    .map(|c| std::str::from_utf8(c).unwrap())
+                    .collect::<Vec<_>>()
+                    .join(":"),
                 Sha256DigestFmt::DottedHex,
             )
             .expect("hash parse"),
@@ -85,7 +103,8 @@ impl Server {
     fn scrape(&self) -> String {
         let mut s = TcpStream::connect(("127.0.0.1", self.metrics_port)).unwrap();
         s.set_read_timeout(Some(Duration::from_secs(3))).unwrap();
-        s.write_all(b"GET /metrics HTTP/1.1\r\nHost: x\r\n\r\n").unwrap();
+        s.write_all(b"GET /metrics HTTP/1.1\r\nHost: x\r\n\r\n")
+            .unwrap();
         let mut out = String::new();
         s.read_to_string(&mut out).unwrap();
         out
@@ -93,7 +112,8 @@ impl Server {
 
     fn cpu_seconds(&self) -> f64 {
         // /proc/<pid>/stat fields 14 (utime) and 15 (stime), in clock ticks (CLK_TCK = 100).
-        let stat = std::fs::read_to_string(format!("/proc/{}/stat", self.child.id())).unwrap_or_default();
+        let stat =
+            std::fs::read_to_string(format!("/proc/{}/stat", self.child.id())).unwrap_or_default();
         let after = stat.rsplit_once(')').map(|x| x.1).unwrap_or("");
         let f: Vec<&str> = after.split_whitespace().collect();
         let g = |i: usize| f.get(i).and_then(|x| x.parse::<f64>().ok()).unwrap_or(0.0);
@@ -102,7 +122,9 @@ impl Server {
 
     /// SIGTERM and wait for the exit code.
     fn terminate(&mut self) -> Option<i32> {
-        let _ = Command::new("kill").args(["-TERM", &self.child.id().to_string()]).status();
+        let _ = Command::new("kill")
+            .args(["-TERM", &self.child.id().to_string()])
+            .status();
         self.child.wait().ok().and_then(|s| s.code())
     }
 }
@@ -116,7 +138,9 @@ impl Drop for Server {
 
 fn metric(text: &str, name: &str) -> f64 {
     text.lines()
-        .find(|l| l.starts_with(name) && l[name.len()..].starts_with([' ', '{']) && !l.starts_with('#'))
+        .find(|l| {
+            l.starts_with(name) && l[name.len()..].starts_with([' ', '{']) && !l.starts_with('#')
+        })
         .and_then(|l| l.rsplit(' ').next())
         .and_then(|v| v.parse().ok())
         .unwrap_or(0.0)
@@ -128,7 +152,11 @@ fn tick_buckets(text: &str) -> Vec<(f64, f64)> {
         .filter_map(|l| {
             let rest = l.strip_prefix("server_tick_ms_bucket{le=\"")?;
             let (le, tail) = rest.split_once("\"}")?;
-            let le = if le == "+Inf" { f64::INFINITY } else { le.parse().ok()? };
+            let le = if le == "+Inf" {
+                f64::INFINITY
+            } else {
+                le.parse().ok()?
+            };
             Some((le, tail.trim().parse().ok()?))
         })
         .collect()
@@ -169,10 +197,14 @@ fn bundle(seq: u16) -> Vec<u8> {
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 async fn binary_serves_wt_with_dev_cert() {
     let mut srv = Server::start(None);
-    let mut c = WtClient::connect(&srv.url(), srv.hash.clone()).await.expect("connect");
+    let mut c = WtClient::connect(&srv.url(), srv.hash.clone())
+        .await
+        .expect("connect");
     assert!(c.send_c0(&real_hello()).await);
     match c.recv_within(Duration::from_secs(5)).await {
-        Got::Frame(Channel::C0, p) => assert!(matches!(decode_c0_server(&p), Ok(ServerMsgC0::Welcome(_)))),
+        Got::Frame(Channel::C0, p) => {
+            assert!(matches!(decode_c0_server(&p), Ok(ServerMsgC0::Welcome(_))))
+        }
         _ => panic!("no Welcome"),
     }
     assert!(c.send_datagram(Channel::C1, &bundle(7)));
@@ -186,7 +218,10 @@ async fn binary_serves_wt_with_dev_cert() {
     }
     assert!(echoed, "no C2 echo from the real binary");
     let m = srv.scrape();
-    assert_eq!(metric(&m, "net_transport_connections{transport=\"wt\"}") as i64, 1);
+    assert_eq!(
+        metric(&m, "net_transport_connections{transport=\"wt\"}") as i64,
+        1
+    );
     drop(c);
     assert_eq!(srv.terminate(), Some(0), "SIGTERM exit code");
 }
@@ -199,11 +234,19 @@ struct ClientResult {
     closed_early: bool,
 }
 
-async fn run_client(i: usize, url: String, hash: Sha256Digest, secs: f64, go: std::sync::Arc<tokio::sync::Barrier>) -> ClientResult {
+async fn run_client(
+    i: usize,
+    url: String,
+    hash: Sha256Digest,
+    secs: f64,
+    go: std::sync::Arc<tokio::sync::Barrier>,
+) -> ClientResult {
     // 25 source addresses x 4 connections each.
     let ip = [127, 0, 1 + (i / 4) as u8 / 100, 2 + (i / 4) as u8 % 100];
     let t0 = Instant::now();
-    let mut c = WtClient::connect_from(ip, &url, hash).await.expect("connect");
+    let mut c = WtClient::connect_from(ip, &url, hash)
+        .await
+        .expect("connect");
     assert!(c.send_c0(&real_hello()).await);
     loop {
         match c.recv_within(Duration::from_secs(10)).await {
@@ -252,7 +295,9 @@ async fn run_client(i: usize, url: String, hash: Sha256Digest, secs: f64, go: st
             }
         }
     }
-    let _ = c.send_c0(&encode_c0_client(&ClientMsgC0::Disconnect(Disconnect { reason: 0 })).unwrap()).await;
+    let _ = c
+        .send_c0(&encode_c0_client(&ClientMsgC0::Disconnect(Disconnect { reason: 0 })).unwrap())
+        .await;
     ClientResult {
         sent: sent_at.len() as u32,
         received,
@@ -265,8 +310,14 @@ async fn run_client(i: usize, url: String, hash: Sha256Digest, secs: f64, go: st
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 #[ignore = "M0-017 acceptance 2: 100 clients x 120 s; run manually / nightly"]
 async fn stress_100_clients() {
-    let secs: f64 = std::env::var("WT_STRESS_SECS").ok().and_then(|v| v.parse().ok()).unwrap_or(120.0);
-    let n: usize = std::env::var("WT_STRESS_CLIENTS").ok().and_then(|v| v.parse().ok()).unwrap_or(100);
+    let secs: f64 = std::env::var("WT_STRESS_SECS")
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(120.0);
+    let n: usize = std::env::var("WT_STRESS_CLIENTS")
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(100);
     let report = std::env::temp_dir().join(format!("wt-stress-report-{}.json", std::process::id()));
     let mut srv = Server::start(Some(&report));
     let go = std::sync::Arc::new(tokio::sync::Barrier::new(n + 1));
@@ -288,13 +339,21 @@ async fn stress_100_clients() {
     let sent: u64 = results.iter().map(|r| r.sent as u64).sum();
     let recv: u64 = results.iter().map(|r| r.received as u64).sum();
     let c1_in = metric(&after, "net_c1_inbound_total") - metric(&before, "net_c1_inbound_total");
-    let dg_out = metric(&after, "net_datagrams_out_total") - metric(&before, "net_datagrams_out_total");
+    let dg_out =
+        metric(&after, "net_datagrams_out_total") - metric(&before, "net_datagrams_out_total");
     let up = c1_in / sent as f64;
     let down = recv as f64 / dg_out;
     let early = results.iter().filter(|r| r.closed_early).count();
-    let mut rtts: Vec<f64> = results.iter().flat_map(|r| r.rtts_ms.iter().copied()).collect();
+    let mut rtts: Vec<f64> = results
+        .iter()
+        .flat_map(|r| r.rtts_ms.iter().copied())
+        .collect();
     rtts.sort_by(|a, b| a.partial_cmp(b).unwrap());
-    let q = |p: f64| rtts.get(((rtts.len() as f64 * p) as usize).min(rtts.len().saturating_sub(1))).copied().unwrap_or(f64::NAN);
+    let q = |p: f64| {
+        rtts.get(((rtts.len() as f64 * p) as usize).min(rtts.len().saturating_sub(1)))
+            .copied()
+            .unwrap_or(f64::NAN)
+    };
     let mut hs: Vec<f64> = results.iter().map(|r| r.handshake_ms).collect();
     hs.sort_by(|a, b| a.partial_cmp(b).unwrap());
 
@@ -309,20 +368,49 @@ async fn stress_100_clients() {
         .unwrap_or(f64::NAN);
 
     eprintln!("== wt_stress: {n} clients x {secs:.0} s (window {wall:.1} s) ==");
-    eprintln!("uplink  : client sent {sent}, server accepted {c1_in} -> {:.4} %", up * 100.0);
-    eprintln!("downlink: server sent {dg_out}, clients received {recv} -> {:.4} %", down * 100.0);
-    eprintln!("end-to-end echo: {recv}/{sent} = {:.4} %", recv as f64 / sent as f64 * 100.0);
-    eprintln!("unexpected session closes: {early}; oversize drops: {}; snapshots dropped: {}",
-        metric(&after, "net_datagram_oversize_total"), metric(&after, "net_snapshots_dropped_total"));
-    eprintln!("echo RTT ms: P50 {:.2} P99 {:.2} max {:.2}; handshake ms: P50 {:.1} max {:.1}", q(0.5), q(0.99), q(1.0), hs[hs.len() / 2], hs[hs.len() - 1]);
-    eprintln!("server CPU: {:.2} s over {wall:.1} s = {:.1} % of one core", cpu1 - cpu0, (cpu1 - cpu0) / wall * 100.0);
+    eprintln!(
+        "uplink  : client sent {sent}, server accepted {c1_in} -> {:.4} %",
+        up * 100.0
+    );
+    eprintln!(
+        "downlink: server sent {dg_out}, clients received {recv} -> {:.4} %",
+        down * 100.0
+    );
+    eprintln!(
+        "end-to-end echo: {recv}/{sent} = {:.4} %",
+        recv as f64 / sent as f64 * 100.0
+    );
+    eprintln!(
+        "unexpected session closes: {early}; oversize drops: {}; snapshots dropped: {}",
+        metric(&after, "net_datagram_oversize_total"),
+        metric(&after, "net_snapshots_dropped_total")
+    );
+    eprintln!(
+        "echo RTT ms: P50 {:.2} P99 {:.2} max {:.2}; handshake ms: P50 {:.1} max {:.1}",
+        q(0.5),
+        q(0.99),
+        q(1.0),
+        hs[hs.len() / 2],
+        hs[hs.len() - 1]
+    );
+    eprintln!(
+        "server CPU: {:.2} s over {wall:.1} s = {:.1} % of one core",
+        cpu1 - cpu0,
+        (cpu1 - cpu0) / wall * 100.0
+    );
     eprintln!("server_tick_ms P99 bucket upper bound over the window: {p99_bucket} ms");
-    eprintln!("input_queue_full: {}", metric(&after, "server_input_queue_full_total"));
+    eprintln!(
+        "input_queue_full: {}",
+        metric(&after, "server_input_queue_full_total")
+    );
 
     let code = srv.terminate();
     if let Ok(r) = std::fs::read_to_string(&report) {
         if let Ok(v) = serde_json::from_str::<serde_json::Value>(&r) {
-            eprintln!("server report (whole process): tick_ms {} interval_error_ms {} overruns {}", v["tick_ms"], v["tick_interval_error_ms"], v["tick_overrun_total"]);
+            eprintln!(
+                "server report (whole process): tick_ms {} interval_error_ms {} overruns {}",
+                v["tick_ms"], v["tick_interval_error_ms"], v["tick_overrun_total"]
+            );
         }
         let _ = std::fs::remove_file(&report);
     }

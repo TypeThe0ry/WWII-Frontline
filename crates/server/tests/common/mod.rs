@@ -17,11 +17,11 @@ use frontline_server::net::conn::{Inbound, InboundQueue, NetCtx, Sessions};
 use frontline_server::net::limits::HANDSHAKE_TIMEOUT;
 use frontline_server::net::ws::WsListener;
 use frontline_server::net::wt::{cert_hash, dev_identity, WtListener};
-use wtransport::tls::Sha256Digest;
 use frontline_server::sim_thread::Command;
 use futures_util::{SinkExt, StreamExt};
 use tokio_tungstenite::tungstenite::Message;
 use tokio_tungstenite::{connect_async, MaybeTlsStream, WebSocketStream};
+use wtransport::tls::Sha256Digest;
 
 pub const DATA_HASH: u64 = 0xDA7A_0000_1234_5678;
 
@@ -273,7 +273,9 @@ pub async fn wait_until(d: Duration, mut f: impl FnMut() -> bool) -> bool {
 // Transport-agnostic client (WebSocket or WebTransport) for the parameterised tests.
 // ---------------------------------------------------------------------------------------------
 
-use frontline_server::net::datagram::{decode_datagram, encode_datagram, encode_stream_frame, StreamFramer};
+use frontline_server::net::datagram::{
+    decode_datagram, encode_datagram, encode_stream_frame, StreamFramer,
+};
 use tokio::sync::mpsc;
 use wtransport::{ClientConfig, Connection, Endpoint, SendStream};
 
@@ -335,7 +337,9 @@ impl WtClient {
         let t = tx.clone();
         let c = conn.clone();
         tokio::spawn(async move {
-            let Ok(mut s) = c.accept_uni().await else { return };
+            let Ok(mut s) = c.accept_uni().await else {
+                return;
+            };
             let mut f = StreamFramer::new(65_535);
             let mut buf = vec![0u8; 4096];
             loop {
@@ -403,19 +407,21 @@ impl WtClient {
     }
 
     pub fn send_datagram(&self, ch: Channel, payload: &[u8]) -> bool {
-        self.conn.send_datagram(encode_datagram(ch, payload)).is_ok()
+        self.conn
+            .send_datagram(encode_datagram(ch, payload))
+            .is_ok()
     }
 }
 
 pub enum Conn {
-    Ws(Client),
+    Ws(Box<Client>),
     Wt(Box<WtClient>),
 }
 
 impl Conn {
     pub async fn connect(t: &Target) -> Result<Conn, String> {
         match t.kind {
-            Kind::Ws => Client::connect(&t.url).await.map(Conn::Ws),
+            Kind::Ws => Client::connect(&t.url).await.map(|c| Conn::Ws(Box::new(c))),
             Kind::Wt => WtClient::connect(&t.url, t.hash.clone().expect("hash"))
                 .await
                 .map(|c| Conn::Wt(Box::new(c))),

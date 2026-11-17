@@ -115,7 +115,11 @@ async fn c0_and_c4_one_thousand_messages_in_order() {
     // Server -> client: 1000 on C0 and 1000 on C4, interleaved, pushed in one burst.
     for i in 0..1000u32 {
         assert!(sh.send(Channel::C0, Bytes::from(pong(i)), Rel::Reliable));
-        assert!(sh.send(Channel::C4, Bytes::copy_from_slice(&i.to_le_bytes()), Rel::Reliable));
+        assert!(sh.send(
+            Channel::C4,
+            Bytes::copy_from_slice(&i.to_le_bytes()),
+            Rel::Reliable
+        ));
     }
     let (mut n0, mut n4) = (0u32, 0u32);
     let end = Instant::now() + Duration::from_secs(10);
@@ -129,7 +133,11 @@ async fn c0_and_c4_one_thousand_messages_in_order() {
                 n0 += 1;
             }
             Got::Frame(Channel::C4, p) => {
-                assert_eq!(u32::from_le_bytes(p[..4].try_into().unwrap()), n4, "C4 order");
+                assert_eq!(
+                    u32::from_le_bytes(p[..4].try_into().unwrap()),
+                    n4,
+                    "C4 order"
+                );
                 n4 += 1;
             }
             Got::Closed => panic!("closed early"),
@@ -213,7 +221,11 @@ async fn oversize_datagram_is_dropped_and_counted() {
     let max_srv = sh.max_datagram_size().unwrap();
     if max_srv == max {
         let before = m.net_datagram_oversize_total.get();
-        sh.send(Channel::C2, Bytes::from(vec![1u8; max - 1]), Rel::Unreliable);
+        sh.send(
+            Channel::C2,
+            Bytes::from(vec![1u8; max - 1]),
+            Rel::Unreliable,
+        );
         match c.recv_within(T).await {
             Got::Frame(Channel::C2, p) => assert_eq!(p.len(), max - 1),
             _ => panic!("full-size datagram lost"),
@@ -253,11 +265,20 @@ async fn hostile_input_closes_the_session() {
         ("C4 on a datagram", Abuse::Dgram(vec![4, 1, 2])),
         ("C1 garbage", Abuse::Dgram(vec![1, 0xFF, 0xFF, 0xFF])),
         ("C1 empty", Abuse::Dgram(vec![1])),
-        ("oversize stream frame header", Abuse::Stream(vec![0x01, 0x10])),
+        (
+            "oversize stream frame header",
+            Abuse::Stream(vec![0x01, 0x10]),
+        ),
         ("max length header", Abuse::Stream(vec![0xFF, 0xFF])),
-        ("garbage C0 message", Abuse::Stream(encode_stream_frame(&[0xEE, 1, 2]).unwrap())),
+        (
+            "garbage C0 message",
+            Abuse::Stream(encode_stream_frame(&[0xEE, 1, 2]).unwrap()),
+        ),
         ("empty C0 frame", Abuse::Stream(vec![0, 0])),
-        ("second Hello", Abuse::Stream(encode_stream_frame(&good_hello()).unwrap())),
+        (
+            "second Hello",
+            Abuse::Stream(encode_stream_frame(&good_hello()).unwrap()),
+        ),
         ("second bidi stream", Abuse::ExtraBidi),
         ("client uni stream", Abuse::ExtraUni),
     ];
@@ -284,7 +305,11 @@ async fn hostile_input_closes_the_session() {
         }
         assert!(c.recv_closed(T).await, "{name}: session not closed");
         expected += 1;
-        assert_eq!(h.metrics.net_frames_malformed_total.get(), expected, "{name}");
+        assert_eq!(
+            h.metrics.net_frames_malformed_total.get(),
+            expected,
+            "{name}"
+        );
     }
 
     // Pre-handshake: anything but a valid Hello on C0 closes it.
@@ -293,11 +318,17 @@ async fn hostile_input_closes_the_session() {
         ("not a Hello", encode_stream_frame(&ping_msg(1)).unwrap()),
         ("empty frame", vec![0, 0]),
     ] {
-        let mut c = WtClient::connect(&t.url, t.hash.clone().unwrap()).await.unwrap();
+        let mut c = WtClient::connect(&t.url, t.hash.clone().unwrap())
+            .await
+            .unwrap();
         assert!(c.c0_tx.write_all(&bytes).await.is_ok());
         assert!(c.recv_closed(T).await, "pre-handshake {name}");
         expected += 1;
-        assert_eq!(h.metrics.net_frames_malformed_total.get(), expected, "{name}");
+        assert_eq!(
+            h.metrics.net_frames_malformed_total.get(),
+            expected,
+            "{name}"
+        );
     }
 
     // Random garbage: whole frames with random payloads on C0 (pre- and post-handshake) and random
@@ -323,14 +354,22 @@ async fn hostile_input_closes_the_session() {
         let mut c = if established {
             wt_connect(&h).await.0
         } else {
-            WtClient::connect(&t.url, t.hash.clone().unwrap()).await.unwrap()
+            WtClient::connect(&t.url, t.hash.clone().unwrap())
+                .await
+                .unwrap()
         };
         if as_datagram {
             let _ = c.conn.send_datagram(body);
         } else {
-            let _ = c.c0_tx.write_all(&encode_stream_frame(&body).unwrap()).await;
+            let _ = c
+                .c0_tx
+                .write_all(&encode_stream_frame(&body).unwrap())
+                .await;
         }
-        assert!(c.recv_closed(T).await, "random case {random_cases} not closed");
+        assert!(
+            c.recv_closed(T).await,
+            "random case {random_cases} not closed"
+        );
         expected += 1;
         random_cases += 1;
     }
@@ -370,7 +409,13 @@ async fn c1_flood_is_rate_limited() {
     let h = wt_harness(4).await;
     let (mut c, _) = wt_connect(&h).await;
     for seq in 0..1500u16 {
-        if c.conn.send_datagram(frontline_server::net::datagram::encode_datagram(Channel::C1, &bundle(seq))).is_err() {
+        if c.conn
+            .send_datagram(frontline_server::net::datagram::encode_datagram(
+                Channel::C1,
+                &bundle(seq),
+            ))
+            .is_err()
+        {
             break;
         }
         if seq % 100 == 99 {

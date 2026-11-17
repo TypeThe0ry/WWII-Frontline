@@ -146,6 +146,12 @@ pub(crate) async fn writer(
     metrics: Arc<Metrics>,
 ) {
     handle.set_max_datagram_size(conn.max_datagram_size());
+    tracing::debug!(
+        event = "wt_session",
+        max_datagram_size = conn.max_datagram_size().map(|n| n as u64).unwrap_or(0),
+        rtt_ms = conn.rtt().as_secs_f64() * 1e3,
+        "session established"
+    );
     loop {
         let item = tokio::select! {
             i = handle.next_outbound() => i,

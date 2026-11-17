@@ -138,7 +138,10 @@ fn run(cfg: Config) -> Result<(), String> {
         None
     };
     let echo = cfg.dev_echo.then(|| {
-        tracing::warn!(event = "dev_echo", "C1 -> C2 echo enabled (test scaffolding)");
+        tracing::warn!(
+            event = "dev_echo",
+            "C1 -> C2 echo enabled (test scaffolding)"
+        );
         frontline_server::net::echo::DevEcho::spawn(net_ctx.sessions.clone(), inbound.rx.clone())
     });
     tracing::info!(

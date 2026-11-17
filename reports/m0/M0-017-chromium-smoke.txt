@@ -1,0 +1,22 @@
+UA: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.8010.12 Safari/537.36
+server wt port 50645, cert sha256 221443d57e47a16b5d8ad975138a5c18cdecc9c634ae5dfac8c491e38381c84a
+--- page output ---
+ready; max datagram 1024
+C0 first bytes (len+Welcome): 28,0,2,0,0,0,0,4
+datagram back 1 ch 2 len 5
+datagram back 2 ch 2 len 5
+datagram back 3 ch 2 len 5
+datagram back 4 ch 2 len 5
+datagram back 5 ch 2 len 5
+datagram back 6 ch 2 len 5
+datagram back 7 ch 2 len 5
+datagram back 8 ch 2 len 5
+datagram back 9 ch 2 len 5
+datagram back 10 ch 2 len 5
+sent 10, received 10
+
+--- server (debug) ---
+{"event":"wt_session","level":"DEBUG","match_id":"f377f662-496b-4826-9984-52007770dcc2","max_datagram_size":1389,"msg":"session established","rtt_ms":0.47243799999999997,"target":"frontline_server::net::wt_conn","tick":4,"ts":1794900150.731}
+--- logs ---
+
+result: DONE
