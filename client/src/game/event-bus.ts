@@ -11,9 +11,28 @@
  */
 
 /** Event catalogue. Keys are `<producer>.<event>`; extend by declaration merging or by editing here. */
+export interface Vec3 {
+  x: number;
+  y: number;
+  z: number;
+}
+
 export interface GameEvents {
   'net.connected': { transport: 'wt' | 'ws'; rtt: number };
   'net.disconnected': { reason: string };
+  // --- M0-022 (game): snapshot / entity / combat events. Payload objects of the hot events are
+  // reused by the publisher: read them inside the handler, never keep a reference. ---
+  'snapshot.applied': { tick: number; entityCount: number };
+  'entity.spawned': { id: number; kind: 'player'; pos: Vec3 };
+  'entity.removed': { id: number; reason: 'removed' | 'timeout' };
+  /** The local player fired (prediction): never carries a hit result. `dir` is a unit vector. */
+  'fire.local': { weapon: number; muzzlePos: Vec3; dir: Vec3 };
+  'fire.remote': { shooter: number; weapon: number; muzzlePos: Vec3; dir: Vec3; distance: number };
+  'impact': { pos: Vec3; normal: number; material: number };
+  /** Server-confirmed hit by the local player (the only place hits are ever reported). */
+  'hit.confirm': { target: number; zone: number; damage: number; killed: boolean };
+  /** `angle` in radians (0 = ahead of the player's view, clockwise), `amount` 0..1. */
+  'damage.taken': { angle: number; amount: number };
 }
 
 export type Listener<P> = (payload: P) => void;

@@ -61,7 +61,7 @@ export async function attachVegetation(
   });
   const cam = ctx.scene.activeCamera as UniversalCamera;
   ctx.onFrame((dtMs) => veg.update(cam, dtMs / 1000));
-  veg.update(cam, 0);
+  veg.settle(cam); // first full classification without the per-frame budget (no pop-in on the first frames)
   const handle: VegetationHandle = {
     veg,
     loadMs: performance.now() - t0,

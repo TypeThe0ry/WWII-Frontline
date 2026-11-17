@@ -275,6 +275,19 @@ test('Low quality: grass 35 % within 20 m, trees turn into impostors early, stil
   expect(errors).toEqual([]);
 });
 
+test('debug overlay lists instance counts, per-LOD counts, draw calls, triangles and re-bucket time (acceptance: stats)', async ({ page }) => {
+  const errors = watchErrors(page);
+  await page.goto('/?renderer=webgl2&scene=vegetation&impostor=lowres&debug=1&cam=0');
+  await ready(page, 4);
+  const o = page.locator('#debug-overlay');
+  await expect(o).toContainText('veg       inst grass');
+  await expect(o).toContainText('per LOD grass');
+  await expect(o).toContainText('draws');
+  await expect(o).toContainText('rebucket');
+  console.log(`overlay: ${(await o.innerText()).split('\n').slice(-5).join(' | ')}`);
+  expect(errors).toEqual([]);
+});
+
 test('wind: crowns sway, trunks stay fixed (acceptance: wind in the vertex shader)', async ({ page }) => {
   test.setTimeout(120_000);
   const errors = watchErrors(page);
