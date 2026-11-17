@@ -1,0 +1,37 @@
+# PR gate: manifest generation + bundle size budgets (M1-005; ARCHITECTURE §11.3/§11.4/§17.5, target < 3 min).
+# More than 1 % over a bundle budget fails; growth above 20 % versus the base branch needs the `budget-approved` label.
+name: manifest-budget
+on:
+  pull_request:
+    paths:
+      - "assets/manifests/**"
+      - "tools/asset-pipeline/**"
+      - "LICENSES.md"
+      - ".github/workflows/manifest-budget.yml"
+concurrency:
+  group: manifest-budget-${{ github.ref }}
+  cancel-in-progress: true
+permissions:
+  contents: read
+jobs:
+  manifest-budget:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile --filter @frontline/asset-pipeline...
+      - name: Base manifest (previous version on the target branch, if any)
+        run: git show "origin/${{ github.base_ref }}:assets/manifests/manifest.json" > "$RUNNER_TEMP/base-manifest.json" || rm -f "$RUNNER_TEMP/base-manifest.json"
+      - name: Budgets, consistency and placeholder rule
+        env:
+          BUDGET_APPROVED: ${{ contains(github.event.pull_request.labels.*.name, 'budget-approved') && '1' || '0' }}
+        run: |
+          node tools/asset-pipeline/bin/asset-pipeline.mjs manifest-budget \
+            --base "$RUNNER_TEMP/base-manifest.json" --core-size-file client/dist/size-report.json

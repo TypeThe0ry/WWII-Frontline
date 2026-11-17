@@ -16,6 +16,9 @@ import { loadLedger as loadLedgerForAudio } from './ledger.ts';
 import { assertNoStandalone } from './fpak/standalone.ts';
 import { readStats, sizeRatio, statsPath } from './stats.ts';
 import { buildReport, formatReport, parseShoppingList } from './report.ts';
+import { buildManifest, readManifest, writeManifest, type Overrides } from './manifest.ts';
+import { checkBudgets, formatUsages, loadBudgets } from './budget.ts';
+import { checkConsistency, checkPlaceholders } from './consistency.ts';
 
 const USAGE = `asset-pipeline <command> [options]
 
@@ -28,6 +31,8 @@ const USAGE = `asset-pipeline <command> [options]
   check-size-ratio  LOD0 bytes / source bytes from stats.json (fails above --max, default 0.25)
   report            per requirement ID real/placeholder/missing (ASSET_GAPS 3.4)
   ledger-check      LICENSES.md 4.4 validation: counts per status, missing archive files
+  manifest          .fpak files + stats + ledger -> assets/manifests/manifest.json (+ missing-report.json) (M1-005)
+  manifest-budget   per-bundle size budgets (1 % over fails, > 20 % growth needs budget-approved), pack consistency, placeholder rule
   gen-requirements  build assets/requirements.json from docs/ASSET_SHOPPING_LIST.md
 
 common:  --ledger LICENSES.md   --work work   --root <repo root, default cwd>
@@ -39,6 +44,8 @@ audio-pack: --items items.json [--out assets/processed]   items: [{logical_id, s
 assert-no-standalone: [--out assets/processed]
 check-size-ratio: --asset AST-... [--max 0.25] [--suffix _fp]
 report:  [--requirements assets/requirements.json] [--manifest draft.json] [--placeholders data/placeholders] [--milestone M1] [--out report.json] [--gaps] [--strict]
+manifest: [--packs assets/processed] [--out assets/manifests/manifest.json] [--bundles assets/manifests/bundles.json] [--budgets assets/manifests/budgets.json] [--overrides f.json] [--game-version 0.1.0] [--data-hash h] [--requirements assets/requirements.json]
+manifest-budget: [--manifest assets/manifests/manifest.json] [--budgets ...] [--base base-manifest.json] [--packs assets/processed] [--core-size-file client/dist/size-report.json] [--approved | env BUDGET_APPROVED=1]
 gen-requirements: [--shopping-list docs/ASSET_SHOPPING_LIST.md] [--out assets/requirements.json]
 `;
 
@@ -77,6 +84,15 @@ export async function main(argv: string[], out: (s: string) => void = console.lo
       'no-collision': { type: 'boolean' },
       gaps: { type: 'boolean' },
       strict: { type: 'boolean' },
+      packs: { type: 'string' },
+      bundles: { type: 'string' },
+      budgets: { type: 'string' },
+      overrides: { type: 'string' },
+      'game-version': { type: 'string' },
+      'data-hash': { type: 'string' },
+      base: { type: 'string' },
+      'core-size-file': { type: 'string' },
+      approved: { type: 'boolean' },
     },
   });
   const root = resolve(v.root ?? process.cwd());
@@ -189,6 +205,47 @@ export async function main(argv: string[], out: (s: string) => void = console.lo
           if (r.status === 'OK' && isBlank(r.license_name_version)) out(`  warning: ${r.asset_id}: OK row without license_name_version`);
         }
         return bad > 0 ? ExitCode.ArchiveMissing : ExitCode.Ok;
+      }
+      case 'manifest': {
+        const dir = resolve(root, 'assets/manifests');
+        const bundlesFile = resolve(root, v.bundles ?? join(dir, 'bundles.json'));
+        const m = await buildManifest({
+          packs: resolve(root, v.packs ?? 'assets/processed'), work, ledger,
+          bundles: existsSync(bundlesFile) ? (JSON.parse(readFileSync(bundlesFile, 'utf8')) as Record<string, string[]>) : {},
+          budgets: loadBudgets(resolve(root, v.budgets ?? join(dir, 'budgets.json'))),
+          ...(v['game-version'] ? { gameVersion: v['game-version'] } : {}),
+          ...(v['data-hash'] ? { dataHash: v['data-hash'] } : {}),
+          ...(v.overrides ? { overrides: JSON.parse(readFileSync(resolve(root, v.overrides), 'utf8')) as Overrides } : {}),
+        });
+        const dst = resolve(root, v.out ?? join(dir, 'manifest.json'));
+        writeManifest(dst, m);
+        const reqPath = resolve(root, v.requirements ?? 'assets/requirements.json');
+        if (existsSync(reqPath)) {
+          const rep = buildReport({ requirements: reqPath, ledger, work, manifest: dst });
+          writeFileSync(join(dirname(dst), 'missing-report.json'), JSON.stringify(rep, null, 2) + '\n');
+        }
+        out(`manifest: ${Object.keys(m.assets).length} asset(s) -> ${dst}`);
+        return ExitCode.Ok;
+      }
+      case 'manifest-budget': {
+        const dir = resolve(root, 'assets/manifests');
+        const m = readManifest(resolve(root, v.manifest ?? join(dir, 'manifest.json')));
+        const base = v.base && existsSync(resolve(root, v.base)) ? readManifest(resolve(root, v.base)) : undefined;
+        const external: Record<string, number> = {};
+        if (v['core-size-file'] && existsSync(resolve(root, v['core-size-file']))) {
+          const j = JSON.parse(readFileSync(resolve(root, v['core-size-file']), 'utf8')) as { core_bytes?: number; br_bytes?: number; total_br_bytes?: number };
+          const n = j.core_bytes ?? j.br_bytes ?? j.total_br_bytes;
+          if (typeof n === 'number') external.core = n;
+        }
+        const approved = v.approved === true || process.env.BUDGET_APPROVED === '1';
+        const r = checkBudgets(m, loadBudgets(resolve(root, v.budgets ?? join(dir, 'budgets.json'))), base, { external, approved });
+        out(formatUsages(r));
+        const problems = [...r.failures, ...checkPlaceholders(m, ledger)];
+        const packs = resolve(root, v.packs ?? 'assets/processed');
+        if (Object.keys(m.assets).length > 0) problems.push(...(await checkConsistency(m, packs)));
+        for (const p of problems) out(`FAIL ${p}`);
+        if (r.skipped.length > 0) out(`note: skipped ${r.skipped.join(', ')} (no size measurement)`);
+        return problems.length === 0 ? ExitCode.Ok : ExitCode.Usage;
       }
       case 'gen-requirements': {
         const src = resolve(root, v['shopping-list'] ?? 'docs/ASSET_SHOPPING_LIST.md');

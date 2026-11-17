@@ -542,3 +542,17 @@
 - **受影响任务**：M1-005（体积门禁读 `audio-report.json`）、M1-006/M1-062（探测与取包）、M1-065（真实音频接入）。
 - **临时处理**：已按上实现。
 - **裁决（Fable 填写）**：
+
+### PI-036 M1-005：manifest 由 `.fpak` 反推、`core` 只认外部测量、bundle 通配与分档规则、`audio-report` 资产 ID
+- **问题 / 做法**（请 Fable 确认或改写）：
+  1. **manifest 来源**：`manifest` 命令直接打开 `assets/processed/**/*.fpak` 读索引并计算每条目 sha256（任务卡写"汇总 stats.json、索引、台账"）。`pak/entry/offset/bytes/sha256` 因此天然正确；`stats.json` 只补 `tris` 与资产 ID；`consistency` 用同一读取路径逐条复核（偏移 +1 可被定位到条目）。
+  2. **`@` 变体 → manifest 字段**：`X@lodN[_fp|_tp]` → `lods[]`（带 `suffix`）；`@collision`、`@tex_*`、`@opus|@aac`（`audio[]`，`codec`）、`@meta`。与 ARCHITECTURE §11.3 示例相比，`entry` 是 `.fpak` 逻辑 ID（`veh_x@lod0`，不是 `veh_x/lod0`）、纹理放在资产内联 `textures[]`；示例仅追加 `placeholder`/`req_id`/`index_bytes`。
+  3. **`placeholder`**：台账行存在且 `status=OK` → `false`，否则 `true`；`--overrides` 可强制，但 `placeholder:false` 对应非 OK 台账一律失败（`checkPlaceholders`）。音频资产 ID 取自 `audio-report.json` 的 `asset_id`（`audio-pack` 已写入 item 的 `asset_id` 时才有）。
+  4. **`tier`**：stats 不含 asset-class 的档位，缺省为全档 `low..ultra`；用 overrides（通配）收窄。`*_medium|high|ultra` 的 bundle 只计 `tier` 含该档的资产；bundle 通配 `*` 不跨 `/`，`**` 跨。
+  5. **预算口径**：bundle 字节 = 命中资产全部条目 `bytes` + 每条目索引字节（26 + id 长度）；不含 16 字节对齐填充与头尾（≤ 约 0.1 %，在 1 % 容差内）。`core` 不由 manifest 计算，只读 `--core-size-file`（`core_bytes|br_bytes|total_br_bytes`），缺失即 `skipped`。M0 的 Vite 构建尚未输出 size-report（M1-054 前登记），所以 CI 当前 `core` 为 skipped。
+  6. **默认 bundles.json**：Medium/High/Ultra 暂用同一组类别通配（`bld_* chr_* prop_* snd_* tex_* veg_* veh_* wpn_*`），靠 `tier` 区分；`terrain_carentan/*` 区块（M1-035）使用 `/`，而 `.fpak` 逻辑 ID 不允许 `/`，M1-035 须决定用 `terrain_carentan_b_{bx}_{bz}` 命名并相应改通配。High/Ultra 预算按 350/600 MiB（367001600 / 629145600 B）。
+  7. **基线 manifest**：CI 取目标分支的 `assets/manifests/manifest.json`（`git show origin/<base>:…`），不存在则只做绝对预算；`budget-approved` 标签经环境变量 `BUDGET_APPROVED=1` 传入。
+- **证据**：`tools/asset-pipeline/src/{manifest,budget,consistency}.ts`、`.github/workflows/manifest-budget.yml`、`test/manifest.test.ts`。
+- **受影响任务**：M1-006（消费 manifest；`entry` 为 `.fpak` 逻辑 ID）、M1-035（区块命名）、M1-054（core size-report）、M1-064（按类别汇总）。
+- **临时处理**：已按上实现。
+- **裁决（Fable 填写）**：

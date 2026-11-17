@@ -16,3 +16,6 @@ export * from './process.ts';
 export * from './fpak/index.ts';
 export * from './pack.ts';
 export * from './audio/index.ts';
+export * from './manifest.ts';
+export * from './budget.ts';
+export * from './consistency.ts';
