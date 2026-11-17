@@ -93,7 +93,10 @@ fn terrain() -> CollisionData {
         for bx in 0..4 {
             let p = dir.join(format!("c_{bx}_{bz}.bin"));
             let bytes = std::fs::read(&p).unwrap_or_else(|e| {
-                panic!("{}: {e} (regenerate terrain, see DEVELOPING.md)", p.display())
+                panic!(
+                    "{}: {e} (regenerate terrain, see DEVELOPING.md)",
+                    p.display()
+                )
             });
             chunks.push(CollisionChunk::from_bytes(bx, bz, &bytes).unwrap());
         }

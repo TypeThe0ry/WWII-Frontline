@@ -7,7 +7,7 @@
 use std::collections::VecDeque;
 use std::future::Future;
 use std::net::IpAddr;
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard};
 
 use bytes::Bytes;
@@ -49,6 +49,8 @@ pub trait ClientTransport: Send {
     /// Cloneable sending side (also used by the session layer to push snapshots).
     fn handle(&self) -> ClientHandle;
     fn peer_ip(&self) -> IpAddr;
+    /// Transport label for metrics and logs: `"ws"` or `"wt"`.
+    fn kind(&self) -> &'static str;
     /// Next inbound frame. Cancel-safe.
     fn recv(&mut self) -> impl Future<Output = Recv> + Send;
 
@@ -93,6 +95,8 @@ pub struct Outbox {
     pub(crate) bytes_in: AtomicU64,
     pub(crate) bytes_out: AtomicU64,
     snapshots_dropped: AtomicU64,
+    /// Current datagram size limit of the connection (0 = no datagram path, e.g. WebSocket).
+    max_datagram: AtomicUsize,
 }
 
 /// Cloneable handle to a connection's outbound side.
@@ -118,6 +122,7 @@ impl ClientHandle {
             bytes_in: AtomicU64::new(0),
             bytes_out: AtomicU64::new(0),
             snapshots_dropped: AtomicU64::new(0),
+            max_datagram: AtomicUsize::new(0),
         }))
     }
 
@@ -197,6 +202,20 @@ impl ClientHandle {
         drop(s);
         let _ = self.0.closed_tx.send(true);
         self.0.notify.notify_one();
+    }
+
+    /// Largest `[channel][payload]` datagram the connection can carry right now (QUIC
+    /// `max_datagram_size`, updated by the WebTransport writer). `None` on transports without a
+    /// datagram path (WebSocket) or before the first update.
+    pub fn max_datagram_size(&self) -> Option<usize> {
+        match self.0.max_datagram.load(Ordering::Relaxed) {
+            0 => None,
+            n => Some(n),
+        }
+    }
+
+    pub(crate) fn set_max_datagram_size(&self, n: Option<usize>) {
+        self.0.max_datagram.store(n.unwrap_or(0), Ordering::Relaxed);
     }
 
     pub fn is_closed(&self) -> bool {

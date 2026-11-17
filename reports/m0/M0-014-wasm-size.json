@@ -1,0 +1,14 @@
+{
+  "frontline_sim_wasm_bg.wasm": {
+    "raw_bytes": 742712,
+    "optimised_bytes": 746966,
+    "gzip_bytes": 308284,
+    "brotli_bytes": 240957,
+    "wasm_opt": "wasm-opt version 132 (version_132)",
+    "limits": {
+      "bytes": 1200000,
+      "brotli": 400000
+    },
+    "ok": true
+  }
+}

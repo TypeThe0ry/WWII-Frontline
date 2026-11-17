@@ -26,7 +26,10 @@ fn arr<T: std::fmt::Display>(v: &[T]) -> String {
 
 fn json(d: &DecodedSnapshot, events: &[u8]) -> String {
     let e = &d.entities;
-    let (selfp, corr) = d.self_state.as_ref().map_or((false, None), |s| (true, s.pos_corr));
+    let (selfp, corr) = d
+        .self_state
+        .as_ref()
+        .map_or((false, None), |s| (true, s.pos_corr));
     let st = d.self_state.unwrap_or_default();
     let c = corr.map(|c| c.to_meters());
     format!(
@@ -58,6 +61,15 @@ fn main() {
         }
         docs.push(json(&d, &ev));
     }
+    std::fs::write(
+        out.join("native.json"),
+        format!(
+            "{{\"protocolVersion\":{},\"dataHash\":\"{}\"}}\n",
+            frontline_protocol::PROTOCOL_VERSION,
+            frontline_sim::data::DATA_HASH
+        ),
+    )
+    .unwrap();
     std::fs::write(
         out.join("snapshot_expected.json"),
         format!("[{}]\n", docs.join(",")),

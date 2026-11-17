@@ -173,13 +173,13 @@ pub(crate) fn bundle_core(
     ack_tick: u32,
     pred_hash: u32,
 ) -> Result<Vec<u8>, String> {
-    if cmds.is_empty() || cmds.len() % INPUT_CMD_BYTES != 0 {
+    if cmds.is_empty() || !cmds.len().is_multiple_of(INPUT_CMD_BYTES) {
         return Err(format!(
             "cmds must be 1..={MAX_BUNDLE_CMDS} x {INPUT_CMD_BYTES} bytes, got {}",
             cmds.len()
         ));
     }
-    if fire.len() % FIRE_CMD_BYTES != 0 {
+    if !fire.len().is_multiple_of(FIRE_CMD_BYTES) {
         return Err(format!("fire must be a multiple of {FIRE_CMD_BYTES} bytes"));
     }
     let mut list: ArrayVec<InputCmd, MAX_BUNDLE_CMDS> = ArrayVec::new();

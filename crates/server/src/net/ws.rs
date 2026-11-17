@@ -39,6 +39,10 @@ impl ClientTransport for WsTransport {
         self.ip
     }
 
+    fn kind(&self) -> &'static str {
+        "ws"
+    }
+
     async fn recv(&mut self) -> Recv {
         loop {
             let msg = tokio::select! {
