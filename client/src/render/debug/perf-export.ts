@@ -1,6 +1,6 @@
 import type { WindowStats } from './frame-stats';
 
-export const PERF_SCHEMA_VERSION = 1;
+export const PERF_SCHEMA_VERSION = 2;
 
 export interface VegetationPerf {
   drawCalls: number;
@@ -25,6 +25,8 @@ export interface PerfDump {
   render_scale: number;
   resolution: { width: number; height: number };
   sim: { steps_total: number; stepper_clamped: number };
+  /** CPU ms per frame stage (M0-030): each `onFrame` callback by label, `scene_render`, and Babylon's split of it. */
+  stages: Record<string, WindowStats>;
   /** Vegetation meshes that passed culling in the last frame (M0-024); zeros when vegetation is not attached. */
   vegetation: VegetationPerf;
   slots: { rtt: string; transport: string; corrections: string };
@@ -46,6 +48,7 @@ export const PERF_DUMP_KEYS: readonly (keyof PerfDump)[] = [
   'render_scale',
   'resolution',
   'sim',
+  'stages',
   'vegetation',
   'slots',
 ];
@@ -56,14 +59,16 @@ export interface PerfApi {
   dump(): PerfDump;
   /** Frame counter, handy for e2e waits. */
   frames(): number;
+  /** Clears the statistics windows (M0-030: capture resets after the warm-up). */
+  reset?(): void;
   /** M0-025: engine frame id at which each `fire.*` event was emitted / its muzzle flash became visible (same order, last 512). */
   fireEventFrame?: number[];
   muzzleFlashVisibleFrame?: number[];
 }
 
 /** Installs `window.__perf`. `getDump` is supplied by the composition root. */
-export function installPerfApi(target: { __perf?: PerfApi }, getDump: () => PerfDump): void {
-  target.__perf = { dump: getDump, frames: () => getDump().frames };
+export function installPerfApi(target: { __perf?: PerfApi }, getDump: () => PerfDump, reset?: () => void): void {
+  target.__perf = { dump: getDump, frames: () => getDump().frames, ...(reset ? { reset } : {}) };
 }
 
 /** Render-side numbers gathered by the render module; sim numbers are added by the composition root. */
@@ -81,6 +86,8 @@ export interface RenderSnapshot {
   renderScale: number;
   width: number;
   height: number;
+  /** See `PerfDump.stages`; optional so that test fixtures stay small. */
+  stages?: Record<string, WindowStats>;
 }
 
 export function buildPerfDump(
@@ -106,6 +113,7 @@ export function buildPerfDump(
     render_scale: r.renderScale,
     resolution: { width: r.width, height: r.height },
     sim,
+    stages: r.stages ?? {},
     vegetation,
     slots,
   };

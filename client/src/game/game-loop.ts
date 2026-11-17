@@ -305,6 +305,11 @@ export class GameLoop {
   private applySelf(s: ReturnType<SnapshotApplier['decode']>): void {
     if (!s.hasSelf) return;
     const rc = this.reconciler;
+    // Dead players' inputs are ignored by the server: stop predicting (frozen), and a jump while alive again is a
+    // respawn (PI-028; same rules as crates/headless-client). Must be set before the rollback replays anything.
+    const alive = s.health > 0;
+    this.predictor.frozen = !alive;
+    rc.frozen = !alive;
     const r = rc.onSelf(s.ackInputSeq, s.hasCorr, s.corrX, s.corrY, s.corrZ);
     if (r.kind === 'unknown') return; // ack from the future: keep the previous hash / ack tick
     // pred_hash covers the position right after the acknowledged command: the server's own (an accepted

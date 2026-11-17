@@ -38,6 +38,12 @@ export class LocalPredictor implements ReplayPort {
   steps = 0;
   /** Replay steps executed by reconciliations (diagnostic). */
   replaySteps = 0;
+  /**
+   * The server says the player is dead: it ignores the inputs, so nothing is predicted. `step` / `replay` leave the
+   * state as it is (and report no events) until the next life begins.
+   */
+  frozen = false;
+  private readonly weaponOpts: { id: string; reserve: number } | null;
 
   constructor(
     private readonly sim: SimWasmModule,
@@ -46,6 +52,7 @@ export class LocalPredictor implements ReplayPort {
     this.wasm = new sim.Predictor(opts.matchSeed, opts.mapId, opts.playerId);
     this.wasm.setEntity(opts.entityId ?? opts.playerId);
     const w = opts.weapon === undefined ? { id: 'us_m1_garand', reserve: 80 } : opts.weapon;
+    this.weaponOpts = w;
     if (w) this.wasm.equipWeapon(w.id, w.reserve);
     this.pull(this.wasm.state());
   }
@@ -102,8 +109,12 @@ export class LocalPredictor implements ReplayPort {
     this.pull(this.wasm.state());
   }
 
-  /** One live prediction step. */
+  /** One live prediction step (none while `frozen`). */
   step(cmd: Uint8Array): void {
+    if (this.frozen) {
+      this.state[LAYOUT_STATE_EVENTS] = 0;
+      return;
+    }
     this.pull(this.wasm.step(cmd));
     this.steps++;
   }
@@ -128,8 +139,27 @@ export class LocalPredictor implements ReplayPort {
 
   /** Replay step (identical to `step`, counted separately; callers suppress fire events). */
   replay(cmd: Uint8Array): void {
+    if (this.frozen) return;
     this.pull(this.wasm.step(cmd));
     this.replaySteps++;
+  }
+
+  /**
+   * A respawn is a teleport into a new life: rewrites `auth` to a fresh standing state at (x, y, z) keeping the yaw
+   * it held (no velocity, stance or airborne time of the old life) and returns the starting weapon of that life, so
+   * the rollback replays the unacknowledged commands from exactly what the server starts from.
+   */
+  freshLife(auth: Uint8Array, x: number, y: number, z: number): Uint8Array | undefined {
+    const dv = new DataView(auth.buffer, auth.byteOffset, auth.byteLength);
+    const yaw = dv.getFloat32(24, true);
+    auth.fill(0);
+    dv.setFloat32(0, x, true);
+    dv.setFloat32(4, y, true);
+    dv.setFloat32(8, z, true);
+    dv.setFloat32(24, yaw, true);
+    if (!this.weaponOpts) return undefined;
+    this.wasm.equipWeapon(this.weaponOpts.id, this.weaponOpts.reserve);
+    return this.wasm.weaponState().slice();
   }
 
   weaponDefId(): number {

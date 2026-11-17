@@ -9,7 +9,7 @@
  * (+0.5: the Pong tick is the integer floor of the server's continuous tick, so its expected value is
  * half a tick low). The estimate uses, of the last PONG_WINDOW Pongs, the one with the smallest RTT
  * (least queueing, so its half-RTT assumption is the most accurate), with that Pong's own RTT.
- * `rtt()` is the EWMA (alpha 0.1) over all samples and drives the input lead.
+ * `rtt()` is the EWMA (alpha 0.1) over all samples and drives the input lead (capped at `MAX_INPUT_LEAD_TICKS`).
  *
  * Input lead: `ceil(rtt/2 / TICK_MS) + 1` ticks plus a slack correction. The server reports how many
  * ticks before execution the latest input arrived (`input_slack`, 4 bit); `applySlack` nudges the
@@ -25,6 +25,13 @@ export const TARGET_SLACK = 1;
 export const MAX_SLACK_BIAS_TICKS = 1;
 /** Slack correction may change by at most this many ticks per second (10 %/s). */
 export const MAX_SLACK_RATE = 0.1;
+/**
+ * The server accepts commands up to `now + 10` ticks ahead (ARCHITECTURE §6.3) and drops later ones, so a
+ * lead beyond 9 can only lose inputs. A client at 1-5 fps measures RTTs inflated by its own blocked main
+ * thread (Pongs are handled a frame late); without this cap the lead followed them to 12-16 ticks and every
+ * command landed outside the window (M0-030).
+ */
+export const MAX_INPUT_LEAD_TICKS = 9;
 const PONG_WINDOW = 8;
 const JITTER_WINDOW = 32;
 
@@ -167,7 +174,7 @@ export class ClockSync {
 
   /** Ticks the client must run ahead of the server for inputs to arrive in time. */
   inputLeadTicks(): number {
-    return Math.ceil(this.rtt() / 2 / this.tickMs) + 1 + Math.round(this.slackBias);
+    return Math.min(MAX_INPUT_LEAD_TICKS, Math.ceil(this.rtt() / 2 / this.tickMs) + 1 + Math.round(this.slackBias));
   }
 
   /** The tick to stamp on inputs generated now. */

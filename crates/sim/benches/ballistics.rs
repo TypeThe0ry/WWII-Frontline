@@ -173,7 +173,9 @@ fn main() {
         "{{\n  \"ballistics_400_projectiles_stage_median_ms\": {smed:.4},\n  \"ballistics_400_projectiles_stage_p99_ms\": {sp99:.4},\n  \"world_step_20_players_with_400_projectiles_median_ms\": {m:.4},\n  \"world_step_20_players_no_projectiles_median_ms\": {b:.4},\n  \"world_step_20_players_firing_median_ms\": {fmed:.4},\n  \"world_step_20_players_firing_p99_ms\": {fp99:.4},\n  \"budget_ballistics_stage_ms\": 2.5,\n  \"note\": \"M0-012, this machine (not the reference machine), release, enhanced-determinism, plain Instant harness\"\n}}\n"
     );
     if std::env::var_os("FRONTLINE_NO_BASELINE").is_none() {
-        let dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../reports/baselines");
+        let dir = std::env::var_os("FRONTLINE_BASELINE_DIR")
+            .map(PathBuf::from)
+            .unwrap_or_else(|| PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../reports/baselines"));
         let _ = std::fs::create_dir_all(&dir);
         let _ = std::fs::write(dir.join("sim-m0-weapon.json"), json);
     }

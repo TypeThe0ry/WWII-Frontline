@@ -10,6 +10,7 @@ use frontline_sim::{PlayerId, Team};
 use crate::input_buffer::{InputBuffer, PushResult};
 use crate::validate::{
     validate_input, Clamps, PlayerInputState, Reject, ValidateCfg, AUX_LEVEL_MASK, EDGE_BUTTONS,
+    FAR_FUTURE_TICKS,
 };
 use frontline_protocol::msg::input::buttons;
 
@@ -130,6 +131,17 @@ impl PlayerInput {
     pub fn ingest(&mut self, cmd: &InputCmd, now: u32) -> Ingest {
         let none = Clamps::default();
         if let Err(r) = self.buf.classify(cmd.tick, now) {
+            // A tick a little beyond the window is clock skew (dropped, no strike); one absurdly
+            // far ahead is forged and counts like any other malformed value.
+            if r == PushResult::TooFar
+                && cmd.tick as u64 > now as u64 + FAR_FUTURE_TICKS as u64
+            {
+                self.state.note(Reject::FarFuture);
+                return Ingest {
+                    result: PushResult::Invalid(Reject::FarFuture),
+                    clamps: none,
+                };
+            }
             if let Some(reason) = r.reject() {
                 self.state.note(reason);
             }
@@ -264,6 +276,8 @@ pub fn yaw_code(yaw: f32) -> u16 {
 mod tests {
     use super::*;
 
+    use crate::validate::KICK_STREAK;
+
     fn cmd(tick: u32) -> InputCmd {
         InputCmd {
             seq: tick as u16,
@@ -377,9 +391,84 @@ mod tests {
             p.ingest(&bad, 50).result,
             PushResult::Invalid(Reject::ReservedBits)
         );
-        // TooFar and reserved bits are violations (TooOld/Duplicate are not); the clean accept
+        // Reserved bits are a violation (TooFar/TooOld/Duplicate are not); the clean accept
         // of tick 50 in between reset the streak, so only the reserved-bits one remains.
         assert_eq!(p.state.violation_streak, 1);
+    }
+
+    /// M0-030: a client whose tick estimate runs ahead (a 1-5 fps browser measuring its RTT
+    /// with a blocked main thread) is dropped command by command but never kicked; forged
+    /// ticks and every other malformed value still count.
+    #[test]
+    fn clock_skew_is_not_a_violation_but_forged_ticks_are() {
+        let mut p = pi();
+        let now = 1000;
+        // 200 commands, every one 11..=60 ticks ahead: all refused, no strike.
+        for i in 0..200u32 {
+            let r = p.ingest(&cmd(now + 11 + i % 50), now);
+            assert_eq!(r.result, PushResult::TooFar);
+        }
+        assert_eq!(p.state.violation_streak, 0);
+        assert!(!p.state.should_kick());
+        // The edge: now + FAR_FUTURE_TICKS is still skew, one more tick is forged.
+        assert_eq!(
+            p.ingest(&cmd(now + FAR_FUTURE_TICKS), now).result,
+            PushResult::TooFar
+        );
+        assert_eq!(p.state.violation_streak, 0);
+        assert_eq!(
+            p.ingest(&cmd(now + FAR_FUTURE_TICKS + 1), now).result,
+            PushResult::Invalid(Reject::FarFuture)
+        );
+        assert_eq!(p.state.violation_streak, 1);
+        for _ in 0..KICK_STREAK - 1 {
+            p.ingest(&cmd(u32::MAX), now);
+        }
+        assert!(p.state.should_kick(), "30 forged ticks in a row kick");
+    }
+
+    /// M0-030: the same client at 3 fps (5 commands per frame, one frame per second, RTT
+    /// inflated so the lead is 12-14 ticks) keeps getting its in-window commands accepted
+    /// and is never kicked over 60 s, while 30 reserved-bit commands still are.
+    #[test]
+    fn low_fps_burst_pattern_is_never_kicked_for_60_s() {
+        let mut p = pi();
+        let mut seq = 0u16;
+        let mut accepted = 0u32;
+        for sec in 0..60u32 {
+            let now = 1 + sec * 30;
+            // lead 8 + a 5-command burst: the last two are beyond now + 10, the first three fit
+            for k in 0..5u32 {
+                seq = seq.wrapping_add(1);
+                let mut c = cmd(now + 8 + k);
+                c.seq = seq;
+                if p.ingest(&c, now).result.is_accepted() {
+                    accepted += 1;
+                }
+            }
+            assert!(!p.state.should_kick());
+        }
+        assert_eq!(accepted, 60 * 3, "in-window commands still get through");
+        // Everything out of window, 60 s long: still no kick.
+        for sec in 0..60u32 {
+            let now = 5000 + sec * 30;
+            for k in 0..5u32 {
+                seq = seq.wrapping_add(1);
+                let mut c = cmd(now + 15 + k);
+                c.seq = seq;
+                p.ingest(&c, now);
+            }
+        }
+        assert!(!p.state.should_kick());
+        // Real violations still kick.
+        for _ in 0..KICK_STREAK {
+            seq = seq.wrapping_add(1);
+            let mut c = cmd(9000);
+            c.seq = seq;
+            c.buttons |= 1 << 14;
+            p.ingest(&c, 9000);
+        }
+        assert!(p.state.should_kick());
     }
 
     #[test]

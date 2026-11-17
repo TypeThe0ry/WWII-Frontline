@@ -313,6 +313,10 @@ pub fn spawn_with_bots(
                 );
             }
             let mut lp = lp;
+            // A spawned loop's scheduler statistics are unreachable (only `Report` leaves the thread), so keeping the
+            // per-packet / per-second sample vectors was a slow leak: 6 B per packet per client (about 125 B/s per
+            // client; capped at 400k samples per vector, which a 10-client match reaches after ~33 min). M0-030.
+            lp.snap.collect = false;
             lp.run()
         })?;
     Ok(SimThreadHandle {

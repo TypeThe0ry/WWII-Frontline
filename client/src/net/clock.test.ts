@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { ClockSync, ewma, MAX_SLACK_RATE, TICK_MS } from './clock';
+import { ClockSync, ewma, MAX_INPUT_LEAD_TICKS, MAX_SLACK_RATE, TICK_MS } from './clock';
 
 describe('RTT EWMA (alpha 0.1)', () => {
   it('[100,100,200,100] matches the hand calculation to 0.01 ms', () => {
@@ -62,6 +62,19 @@ describe('ClockSync misc', () => {
     const d = new ClockSync({ now: () => 0 });
     d.seed(0, 200, 0);
     expect(d.inputLeadTicks()).toBe(Math.ceil(100 / TICK_MS) + 1); // 5
+  });
+});
+
+describe('input lead cap (M0-030)', () => {
+  it('never exceeds what the server accepts, however inflated the RTT of a 1-5 fps client gets', () => {
+    for (const rtt of [600, 1000, 3000]) {
+      const c = new ClockSync({ now: () => 0 });
+      c.seed(0, rtt, 0);
+      expect(c.inputLeadTicks()).toBe(MAX_INPUT_LEAD_TICKS);
+    }
+    const ok = new ClockSync({ now: () => 0 });
+    ok.seed(0, 300, 0);
+    expect(ok.inputLeadTicks()).toBe(Math.ceil(150 / TICK_MS) + 1); // 6: below the cap, unchanged
   });
 });
 

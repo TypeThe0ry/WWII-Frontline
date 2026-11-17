@@ -60,7 +60,7 @@ export async function attachVegetation(
     rebucketBudgetMs: budget === 'inf' ? Infinity : budget ? Number(budget) : undefined,
   });
   const cam = ctx.scene.activeCamera as UniversalCamera;
-  ctx.onFrame((dtMs) => veg.update(cam, dtMs / 1000));
+  ctx.onFrame((dtMs) => veg.update(cam, dtMs / 1000), undefined, 'vegetation_update');
   veg.settle(cam); // first full classification without the per-frame budget (no pop-in on the first frames)
   const handle: VegetationHandle = {
     veg,

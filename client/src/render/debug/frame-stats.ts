@@ -77,6 +77,14 @@ export class FrameStats {
     this.frames++;
   }
 
+  /** Forget everything measured so far (the perf capture resets after its warm-up). */
+  reset(): void {
+    this.cpu.clear();
+    this.interval.clear();
+    this.frames = 0;
+    this.lastStart = NaN;
+  }
+
   fps(): number {
     const s = this.interval.stats();
     return s.mean > 0 ? 1000 / s.mean : 0;

@@ -5,7 +5,7 @@ import type { Scene } from '@babylonjs/core/scene';
 import { SceneInstrumentation } from '@babylonjs/core/Instrumentation/sceneInstrumentation';
 import { probeCapabilities, errMsg, type Capabilities, type Gl2Like } from './capabilities';
 import { createTestScene } from './test-scene';
-import { FrameStats } from './debug/frame-stats';
+import { FrameStats, RingStats, type WindowStats } from './debug/frame-stats';
 import { GpuTimer } from './debug/gpu-timing';
 import type { RenderSnapshot } from './debug/perf-export';
 
@@ -28,10 +28,12 @@ export interface RenderContext {
   /** Why the requested/auto-preferred WebGPU path was not used; null when no fallback happened. */
   fallbackReason: string | null;
   /** Register a callback run at the start of every render frame with real_dt in ms (`'first'`: before all callbacks registered so far, e.g. the game update that feeds the camera). */
-  onFrame(cb: (realDtMs: number) => void, order?: 'first' | 'last'): () => void;
+  onFrame(cb: (realDtMs: number) => void, order?: 'first' | 'last', label?: string): () => void;
   /** Start the render loop. */
   start(): void;
   snapshot(): RenderSnapshot;
+  /** Clears the frame / stage statistics windows (used after a warm-up so a capture only contains its own frames). */
+  resetStats(): void;
   dispose(): void;
 }
 
@@ -131,6 +133,17 @@ export async function createRenderer(canvas: HTMLCanvasElement, opts: RendererOp
   const gpuTimer = new GpuTimer(eng, kind, caps);
   const sceneInstr = new SceneInstrumentation(scene);
   const callbacks: ((dt: number) => void)[] = [];
+  const labels = new Map<(dt: number) => void, string>();
+  // CPU time of each frame stage (M0-030): every onFrame callback by label, the scene.render() call, and Babylon's own
+  // active-mesh evaluation / render-pass split of it.
+  const stageStats = new Map<string, RingStats>();
+  const stage = (name: string): RingStats => {
+    let r = stageStats.get(name);
+    if (!r) stageStats.set(name, (r = new RingStats()));
+    return r;
+  };
+  sceneInstr.captureActiveMeshesEvaluationTime = true;
+  sceneInstr.captureRenderTime = true;
 
   (window as unknown as { __caps?: unknown }).__caps = {
     kind,
@@ -150,22 +163,36 @@ export async function createRenderer(canvas: HTMLCanvasElement, opts: RendererOp
     kind,
     caps,
     fallbackReason,
-    onFrame(cb, order) {
+    onFrame(cb, order, label) {
       if (order === 'first') callbacks.unshift(cb);
       else callbacks.push(cb);
+      labels.set(cb, label ?? `callback_${callbacks.length}`);
       return () => {
         const i = callbacks.indexOf(cb);
         if (i >= 0) callbacks.splice(i, 1);
+        labels.delete(cb);
       };
     },
     start() {
       eng.runRenderLoop(() => {
         const t0 = performance.now();
         const dt = frameStats.begin(t0);
-        for (const cb of callbacks) cb(dt);
+        for (const cb of callbacks) {
+          const c0 = performance.now();
+          cb(dt);
+          stage(labels.get(cb) ?? 'callback').push(performance.now() - c0);
+        }
+        const r0 = performance.now();
         scene.render();
+        stage('scene_render').push(performance.now() - r0);
+        stage('babylon_active_meshes_eval').push(sceneInstr.activeMeshesEvaluationTimeCounter.current);
+        stage('babylon_render_pass').push(sceneInstr.renderTimeCounter.current);
         frameStats.end(performance.now() - t0);
       });
+    },
+    resetStats() {
+      frameStats.reset();
+      for (const r of stageStats.values()) r.clear();
     },
     snapshot() {
       const interval = frameStats.interval.stats();
@@ -180,6 +207,7 @@ export async function createRenderer(canvas: HTMLCanvasElement, opts: RendererOp
         drawCalls: sceneInstr.drawCallsCounter.current,
         activeMeshes: scene.getActiveMeshes().length,
         triangles: Math.round(scene.getActiveIndices() / 3),
+        stages: Object.fromEntries([...stageStats].map(([k, v]) => [k, v.stats()])) as Record<string, WindowStats>,
         renderScale: 1 / eng.getHardwareScalingLevel(),
         width: eng.getRenderWidth(),
         height: eng.getRenderHeight(),

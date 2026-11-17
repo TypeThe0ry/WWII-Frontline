@@ -101,7 +101,7 @@ async function boot(): Promise<void> {
   const stepper = new FixedStepper();
   const getDump = () =>
     buildPerfDump(ctx.snapshot(), { steps_total: stepper.totalSteps, stepper_clamped: stepper.stepperClamped }, Date.now(), undefined, vegHandle?.perf());
-  installPerfApi(window, getDump);
+  installPerfApi(window, getDump, () => ctx.resetStats());
 
   // The game update and the actors / first-person camera run before every other frame callback, so the terrain and
   // vegetation selection of this frame already see this frame's camera.
@@ -109,7 +109,7 @@ async function boot(): Promise<void> {
     const { steps, alpha } = stepper.advance(dt);
     netGame?.update(steps, alpha, dt);
     actors?.update(alpha, dt);
-  }, 'first');
+  }, 'first', 'game_update');
   if (actors && window.__perf) {
     const fx = actors.manager.fx;
     window.__perf.fireEventFrame = fx.fireEventFrames;
@@ -117,7 +117,7 @@ async function boot(): Promise<void> {
   }
   ctx.onFrame(() => {
     overlay.update(performance.now(), getDump(), [...(terrainHandle?.overlayLines() ?? []), ...(vegHandle?.overlayLines() ?? []), ...(netGame?.overlayLines() ?? [])]);
-  });
+  }, undefined, 'overlay');
   // ?norender=1 skips the render loop (debug aid; also needed where WebGPU cannot present, e.g. SwiftShader).
   if (params.get('norender') !== '1') ctx.start();
 

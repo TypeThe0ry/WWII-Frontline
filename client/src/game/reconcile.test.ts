@@ -10,6 +10,11 @@ class LinePort implements ReplayPort {
   replays = 0;
   tick = 0;
   resets = 0;
+  freshLives = 0;
+  freshLife(): undefined {
+    this.freshLives++;
+    return undefined;
+  }
   reset(auth: Uint8Array, predTick: number): void {
     const dv = new DataView(auth.buffer, auth.byteOffset, auth.byteLength);
     this.x = dv.getFloat32(0, true);
@@ -126,6 +131,23 @@ describe('reconcile_threshold (R5: 0.05 m / 1.0 m)', () => {
     expect(rc.smoother.magnitude).toBe(0);
     expect(rc.stats.lastErrM).toBeCloseTo(1.2, 5);
     expect(port.replays).toBe(6);
+  });
+
+  it('a >= 1 m jump while alive is a respawn (fresh life); while frozen (dead) or below 1 m it is not', () => {
+    const alive = rig();
+    const ref = (alive.ring.stateAt(4) as StateRef).x;
+    alive.rc.onSelf(4, true, ref + 20, 0, 0);
+    expect(alive.port.freshLives).toBe(1);
+    const dead = rig();
+    dead.rc.frozen = true;
+    dead.rc.onSelf(4, true, (dead.ring.stateAt(4) as StateRef).x + 20, 0, 0);
+    expect(dead.port.freshLives).toBe(0);
+    const small = rig();
+    small.rc.onSelf(4, true, (small.ring.stateAt(4) as StateRef).x + 0.5, 0, 0);
+    expect(small.port.freshLives).toBe(0);
+    const first = rig(false);
+    first.rc.onSelf(4, true, 50, 0, 0);
+    expect(first.port.freshLives).toBe(0); // the initial placement is not a respawn
   });
 
   it('just below 1.0 m still smooths, 1.0 m snaps', () => {

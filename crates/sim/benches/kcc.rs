@@ -183,7 +183,9 @@ fn main() {
         "{{\n  \"kcc_step_median_us\": {med:.3},\n  \"kcc_step_mean_us\": {mean:.3},\n  \"kcc_step_p99_us\": {p99u:.3},\n  \"kcc_100_players_tick_median_ms\": {tmed:.4},\n  \"kcc_100_players_tick_mean_ms\": {tmean:.4},\n  \"kcc_100_players_tick_p99_ms\": {tp99:.4},\n  \"budget_kcc_step_us\": 20.0,\n  \"budget_kcc_100_players_tick_ms\": 3.0,\n  \"note\": \"M0-011, this machine (not the reference machine), release, enhanced-determinism, plain Instant harness\"\n}}\n"
     );
     if std::env::var_os("FRONTLINE_NO_BASELINE").is_none() {
-        let dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../reports/baselines");
+        let dir = std::env::var_os("FRONTLINE_BASELINE_DIR")
+            .map(PathBuf::from)
+            .unwrap_or_else(|| PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../reports/baselines"));
         let _ = std::fs::create_dir_all(&dir);
         let _ = std::fs::write(dir.join("sim-m0.json"), json);
     }

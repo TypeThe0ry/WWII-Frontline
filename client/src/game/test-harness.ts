@@ -254,6 +254,11 @@ export interface Scenario {
   clockWobbleTicks?: number;
   /** Fake wasm perturbation: every `kickEveryS` the server teleports the player by `kick` metres in x. */
   kick?: { everyS: number; metres: number };
+  /**
+   * The server kills the player at `atS` (it ignores the player's inputs, `self.health` = 0) and respawns it at the
+   * spawn point `respawnAfterS` later as a fresh life (standing, full magazine, health 255): a teleport.
+   */
+  death?: { atS: number; respawnAfterS: number };
   /** Number of scripted remote entities (constant-velocity bots). */
   bots?: number;
   /** Frame times of the client in ms (default 1000/60). */
@@ -296,6 +301,10 @@ export interface ScenarioResult {
   updateMs: number[];
   /** Server tick of every correction (for "per 10 s" statistics). */
   correctionTimesS: number[];
+  /** The server respawned the player (see `Scenario.death`). */
+  respawned: boolean;
+  /** Authoritative position at the end of the run. */
+  serverPos: [number, number, number];
   game: GameLoop;
 }
 
@@ -377,6 +386,9 @@ export async function runScenario(sc: Scenario): Promise<ScenarioResult> {
   let snapsSent = 0;
   let nextKickT = sc.kick ? sc.kick.everyS * 1000 : Infinity;
   const botCount = sc.bots ?? 0;
+  let dead = false;
+  let deathDone = false;
+  let respawned = false;
 
   const repack = (c: Uint8Array, clearEdges: boolean, zeroMove: boolean): Uint8Array => {
     const sgn = (v: number): number => (v > 127 ? v - 256 : v);
@@ -398,7 +410,17 @@ export async function runScenario(sc: Scenario): Promise<ScenarioResult> {
     } else {
       c = real.packInputCmd(0, T, 0, 0, 0, 0, 0, 0, 0, 0);
     }
-    srv.step(c);
+    if (sc.death && !deathDone && t >= sc.death.atS * 1000) {
+      dead = true;
+      deathDone = true;
+    }
+    if (dead && sc.death && t >= (sc.death.atS + sc.death.respawnAfterS) * 1000) {
+      dead = false;
+      respawned = true;
+      srv.reset(spawn, srv.tick());
+      srv.equipWeapon('us_m1_garand', 80);
+    }
+    if (!dead) srv.step(c);
     {
       const st = srv.state();
       pathM += Math.hypot((st[0] as number) - lastX, (st[2] as number) - lastZ);
@@ -436,7 +458,7 @@ export async function runScenario(sc: Scenario): Promise<ScenarioResult> {
         yaw.push(Math.PI / 2);
         pitch.push(0);
       }
-      const snap: FakeSnap = { tick: T, ackInputSeq: lastRealSeq, inputSlack: 1, self: selfArray({ ...(corr ? { corr } : {}), ammo: 8, reserve: 80 }), ids, pos, yaw, pitch, removed: [], events: new Uint8Array(0) };
+      const snap: FakeSnap = { tick: T, ackInputSeq: lastRealSeq, inputSlack: 1, self: selfArray({ ...(corr ? { corr } : {}), ammo: 8, reserve: 80, health: dead ? 0 : 255 }), ids, pos, yaw, pitch, removed: [], events: new Uint8Array(0) };
       snapsSent++;
       down.send(t, FakeSnapshotDecoder.wire(snap));
     }
@@ -522,6 +544,12 @@ export async function runScenario(sc: Scenario): Promise<ScenarioResult> {
     pathM,
     updateMs,
     correctionTimesS,
+    respawned,
+    serverPos: (() => {
+      const a = srv.authState();
+      const dv = new DataView(a.buffer, a.byteOffset, a.byteLength);
+      return [dv.getFloat32(0, true), dv.getFloat32(4, true), dv.getFloat32(8, true)] as [number, number, number];
+    })(),
     game,
   };
 }

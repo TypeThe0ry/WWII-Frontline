@@ -183,8 +183,11 @@ fn main() {
         ));
     }
     // write reports/baselines/server-m0.json (merge)
-    let path =
-        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../reports/baselines/server-m0.json");
+    // `FRONTLINE_BASELINE_DIR` redirects the output (the perf regression check must not overwrite the baseline).
+    let path = std::env::var_os("FRONTLINE_BASELINE_DIR")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../reports/baselines"))
+        .join("server-m0.json");
     let mut root: serde_json::Value = std::fs::read_to_string(&path)
         .ok()
         .and_then(|s| serde_json::from_str(&s).ok())

@@ -1,4 +1,5 @@
 import { Color4 } from '@babylonjs/core/Maths/math.color';
+import { PERF_CAMERAS } from '../perf-cameras';
 import { Matrix, Vector3 } from '@babylonjs/core/Maths/math.vector';
 import type { UniversalCamera } from '@babylonjs/core/Cameras/universalCamera';
 import type { RenderContext } from '../engine';
@@ -19,13 +20,6 @@ export interface TerrainHandle {
   /** Overlay lines (nodes per LOD, select time, upload size). */
   overlayLines(): string[];
 }
-
-/** Debug camera presets for `?scene=terrain&cam=N` (M0-030 replaces these with its three fixed pose definitions). */
-const PRESETS: { pos: [number, number, number]; target: [number, number, number] }[] = [
-  { pos: [128, 0, 40], target: [128, 0, 128] }, // 0: ground level (eye 1.7 m above terrain), looking north
-  { pos: [128, 110, -90], target: [128, 0, 140] }, // 1: elevated overview of the block
-  { pos: [20, 12, 128], target: [-3000, 0, 128] }, // 2: block edge looking west over the far ring
-];
 
 function triple(v: string | null): [number, number, number] | null {
   if (!v) return null;
@@ -52,15 +46,15 @@ export async function attachTerrain(ctx: RenderContext, params: URLSearchParams)
   cam.maxZ = 12000;
   cam.minZ = 0.1;
   cam.speed = Number(params.get('speed') ?? 0.8);
-  const preset = PRESETS[Number(params.get('cam') ?? 0)] ?? PRESETS[0]!;
-  const pos = triple(params.get('pos')) ?? preset.pos;
-  const target = triple(params.get('target')) ?? preset.target;
+  const preset = PERF_CAMERAS[Number(params.get('cam') ?? 0)] ?? PERF_CAMERAS[0]!;
+  const pos = triple(params.get('pos')) ?? ([...preset.pos] as [number, number, number]);
+  const target = triple(params.get('target')) ?? ([...preset.target] as [number, number, number]);
   if (pos[1] === 0) pos[1] = terrain.heightAt(pos[0], pos[2]) + 1.7;
   if (target[1] === 0) target[1] = terrain.heightAt(Math.min(Math.max(target[0], -3900), 4100), Math.min(Math.max(target[2], -3900), 4100)) + 1.5;
   cam.position = new Vector3(pos[0], pos[1], pos[2]);
   cam.setTarget(new Vector3(target[0], target[1], target[2]));
 
-  ctx.onFrame(() => terrain.update(cam));
+  ctx.onFrame(() => terrain.update(cam), undefined, 'terrain_update');
   terrain.update(cam); // so stats/first-update time exist before the first frame is rendered
 
   const handle: TerrainHandle = {

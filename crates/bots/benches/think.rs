@@ -105,7 +105,9 @@ fn main() {
         "think_10": think_10, "think_60": think_60, "think_100": think_100, "path_query": path,
         "budgets_ms": { "think_10": 1.0, "think_60": 3.0, "path_per_tick": 1.0 },
     });
-    let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../reports/baselines");
+    let dir = std::env::var_os("FRONTLINE_BASELINE_DIR")
+        .map(std::path::PathBuf::from)
+        .unwrap_or_else(|| std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../reports/baselines"));
     if std::fs::create_dir_all(&dir).is_ok() {
         let f = dir.join("bots-m0.json");
         if std::fs::write(&f, serde_json::to_string_pretty(&report).unwrap() + "\n").is_ok() {

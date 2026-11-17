@@ -28,6 +28,8 @@ export interface ReplayPort {
   replay(cmd: Uint8Array): void;
   /** Stores the state after the last step in `e`. */
   capture(e: StateRef): void;
+  /** Rewrites `auth` (in place) to a fresh life at the given position; returns that life's starting weapon state. */
+  freshLife(auth: Uint8Array, x: number, y: number, z: number): Uint8Array | undefined;
 }
 
 /**
@@ -128,6 +130,8 @@ export class Reconciler {
   readonly smoother = new RenderSmoother();
   /** `false` until the server has told us where the player is. */
   spawned = false;
+  /** The player is dead: no new life can start (a jump is not a respawn) and the replay does not simulate. */
+  frozen = false;
   private readonly result: ReconcileResult = { kind: 'none', err0: NaN, err: 0 };
 
   constructor(
@@ -170,11 +174,11 @@ export class Reconciler {
       this.stats.toleranceKept++;
       return r;
     }
-    return this.rollback(cx, cy, cz, r);
+    return this.rollback(cx, cy, cz, r, err0);
   }
 
   /** Rolls back to the authoritative position at `base` and replays the unacknowledged commands. */
-  private rollback(cx: number, cy: number, cz: number, r: ReconcileResult): ReconcileResult {
+  private rollback(cx: number, cy: number, cz: number, r: ReconcileResult, err0: number): ReconcileResult {
     const port = this.port;
     const base = this.ring.base;
     const oldX = port.x;
@@ -188,7 +192,18 @@ export class Reconciler {
     base.x = dv.getFloat32(0, true);
     base.y = dv.getFloat32(4, true);
     base.z = dv.getFloat32(8, true);
-    port.reset(base.auth, base.predTick, base.weaponLen ? base.weapon : undefined);
+    let weapon = base.weaponLen ? base.weapon : undefined;
+    if (this.spawned && !this.frozen && err0 >= this.snapM) {
+      // A teleport while alive is a respawn: the server starts the new life from a fresh state (headless-client
+      // does the same), so the old life's velocity / stance / weapon must not leak into the replay.
+      const w = port.freshLife(base.auth, base.x, base.y, base.z);
+      if (w && w.length === base.weapon.length) {
+        base.weapon.set(w);
+        base.weaponLen = w.length;
+        weapon = base.weapon;
+      }
+    }
+    port.reset(base.auth, base.predTick, weapon);
     const n = this.ring.length;
     for (let i = 0; i < n; i++) {
       const e = this.ring.at(i);

@@ -24,6 +24,13 @@ pub const RESERVED_BUTTONS: u16 = 0xC000;
 /// Tolerated move vector length, in 1/127 units: `hypot(x, z) / 127 <= 1 + 1/127`.
 pub const MAX_MOVE_LEN: f32 = 128.0;
 
+/// A command stamped further ahead than this many ticks (10 s) is not a clock error but a forged
+/// or corrupt tick: it counts towards the kick streak. Anything between `now + MAX_FUTURE` and
+/// this is plain clock skew (a client that stalled or measured its RTT while its main thread was
+/// blocked, e.g. a software-rendered browser at 1-5 fps): the command is dropped and counted as
+/// `too_far`, but a legitimate client must not be kicked for it (M0-030).
+pub const FAR_FUTURE_TICKS: u32 = 300;
+
 /// Why an input was refused, clamped or dropped.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Reject {
@@ -33,8 +40,11 @@ pub enum Reject {
     TickRegress,
     /// `tick` is older than the accepted window (or older than what the ring slot holds).
     TooOld,
-    /// `tick` is beyond the accepted window.
+    /// `tick` is beyond the accepted window by at most [`FAR_FUTURE_TICKS`] (clock skew; dropped,
+    /// not a violation).
     TooFar,
+    /// `tick` is more than [`FAR_FUTURE_TICKS`] ahead: forged or corrupt (a violation).
+    FarFuture,
     /// A buffered, not yet consumed command was overwritten by a newer one (ring wrap).
     RingOverwrite,
     ReservedBits,
@@ -60,6 +70,7 @@ impl Reject {
         "tick_regress",
         "too_old",
         "too_far",
+        "far_future",
         "ring_overwrite",
         "reserved_bits",
         "weapon_slot",
@@ -77,6 +88,7 @@ impl Reject {
             Reject::TickRegress => "tick_regress",
             Reject::TooOld => "too_old",
             Reject::TooFar => "too_far",
+            Reject::FarFuture => "far_future",
             Reject::RingOverwrite => "ring_overwrite",
             Reject::ReservedBits => "reserved_bits",
             Reject::WeaponSlot => "weapon_slot",
@@ -90,11 +102,11 @@ impl Reject {
     }
 
     /// Whether this outcome counts towards the 30-in-a-row kick. Network artefacts (replays,
-    /// late packets) and rate drops do not; malformed or abusive values do.
+    /// late or early packets, clock skew) and rate drops do not; malformed or abusive values do.
     pub fn is_violation(self) -> bool {
         matches!(
             self,
-            Reject::TooFar
+            Reject::FarFuture
                 | Reject::ReservedBits
                 | Reject::WeaponSlot
                 | Reject::BadMove
@@ -580,6 +592,7 @@ mod tests {
             Reject::TickRegress,
             Reject::TooOld,
             Reject::TooFar,
+            Reject::FarFuture,
             Reject::RingOverwrite,
             Reject::ReservedBits,
             Reject::WeaponSlot,
