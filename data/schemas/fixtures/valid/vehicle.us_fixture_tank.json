@@ -1,0 +1,61 @@
+{
+  "id": "us_fixture_tank",
+  "name_key": "vehicle.us_fixture_tank.name",
+  "faction": "us",
+  "type": "medium_tank",
+  "historical": {
+    "mass_kg": 30300,
+    "crew": 5,
+    "main_gun": "75mm",
+    "max_speed_mps": 10.5,
+    "_source": "未核实 (fixture)"
+  },
+  "gameplay": {
+    "hull_health_hp": 1600,
+    "armor_mm": {
+      "front": 51,
+      "side": 38,
+      "rear": 38,
+      "top": 19
+    },
+    "seats": [
+      {
+        "id": "driver",
+        "role": "driver"
+      },
+      {
+        "id": "gunner",
+        "role": "gunner",
+        "turret": true
+      }
+    ],
+    "suspension": {
+      "rays_per_side": 6,
+      "rest_length_m": 0.6,
+      "stiffness_n_per_m": 38000,
+      "damping_ns_per_m": 3800
+    },
+    "tracks": {
+      "max_torque_nm": 22000,
+      "friction_forward": 1.1,
+      "friction_lateral": 2.2
+    },
+    "turret_traverse_deg_s": 24,
+    "gun_elevation_deg": [
+      -10,
+      25
+    ],
+    "spawn_cost": {
+      "manpower": 140,
+      "munitions": 80,
+      "fuel": 120
+    },
+    "respawn_cooldown_s": 240
+  },
+  "_meta": {
+    "status": "initial",
+    "tunable": [
+      "gameplay.hull_health_hp"
+    ]
+  }
+}

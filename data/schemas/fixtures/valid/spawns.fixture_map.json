@@ -1,0 +1,40 @@
+{
+  "schema": "frontline.map.spawns/1",
+  "hq": {
+    "US": {
+      "pos": [
+        250,
+        1750
+      ],
+      "radius_m": 40
+    },
+    "GER": {
+      "pos": [
+        1850,
+        250
+      ],
+      "radius_m": 40
+    }
+  },
+  "garrison_candidates": [
+    {
+      "side": "US",
+      "pos": [
+        250,
+        1750
+      ],
+      "notes": "fixture"
+    }
+  ],
+  "outpost_candidates": [],
+  "airhead_candidates": [],
+  "observation_posts": [],
+  "kinds_supported": [
+    "hq",
+    "garrison",
+    "outpost",
+    "airhead",
+    "op",
+    "boat"
+  ]
+}

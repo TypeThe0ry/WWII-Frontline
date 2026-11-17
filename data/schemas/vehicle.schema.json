@@ -1,0 +1,111 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://frontline.invalid/schemas/vehicle.schema.json",
+  "title": "Vehicle (ARCHITECTURE 8.5.4; M0 has no instances)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "name_key", "faction", "type", "historical", "gameplay", "_meta"],
+  "properties": {
+    "id": { "$ref": "#/$defs/slug" },
+    "name_key": { "$ref": "#/$defs/i18n_key" },
+    "faction": { "enum": ["us", "ger"] },
+    "type": { "enum": ["light_tank", "medium_tank", "heavy_tank", "tank_destroyer", "apc", "truck", "jeep", "boat", "aircraft"] },
+    "historical": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mass_kg", "crew", "main_gun", "max_speed_mps", "_source"],
+      "properties": {
+        "mass_kg": { "$ref": "#/$defs/hist_num" },
+        "crew": { "$ref": "#/$defs/hist_int" },
+        "main_gun": { "type": ["string", "null"] },
+        "max_speed_mps": { "$ref": "#/$defs/hist_num" },
+        "_source": { "type": "string", "minLength": 1 }
+      }
+    },
+    "gameplay": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["hull_health_hp", "armor_mm", "seats", "spawn_cost", "respawn_cooldown_s"],
+      "properties": {
+        "hull_health_hp": { "type": "number", "exclusiveMinimum": 0 },
+        "armor_mm": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["front", "side", "rear", "top"],
+          "properties": {
+            "front": { "type": "number", "minimum": 0 },
+            "side": { "type": "number", "minimum": 0 },
+            "rear": { "type": "number", "minimum": 0 },
+            "top": { "type": "number", "minimum": 0 }
+          }
+        },
+        "seats": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "role"],
+            "properties": {
+              "id": { "$ref": "#/$defs/slug" },
+              "role": { "$ref": "#/$defs/slug" },
+              "turret": { "type": "boolean" }
+            }
+          }
+        },
+        "suspension": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["rays_per_side", "rest_length_m", "stiffness_n_per_m", "damping_ns_per_m"],
+          "properties": {
+            "rays_per_side": { "type": "integer", "minimum": 1 },
+            "rest_length_m": { "type": "number", "exclusiveMinimum": 0 },
+            "stiffness_n_per_m": { "type": "number", "exclusiveMinimum": 0 },
+            "damping_ns_per_m": { "type": "number", "minimum": 0 }
+          }
+        },
+        "tracks": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["max_torque_nm", "friction_forward", "friction_lateral"],
+          "properties": {
+            "max_torque_nm": { "type": "number", "exclusiveMinimum": 0 },
+            "friction_forward": { "type": "number", "minimum": 0 },
+            "friction_lateral": { "type": "number", "minimum": 0 }
+          }
+        },
+        "turret_traverse_deg_s": { "type": "number", "minimum": 0 },
+        "gun_elevation_deg": { "type": "array", "minItems": 2, "maxItems": 2, "items": { "type": "number" } },
+        "spawn_cost": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["manpower", "munitions", "fuel"],
+          "properties": {
+            "manpower": { "type": "integer", "minimum": 0 },
+            "munitions": { "type": "integer", "minimum": 0 },
+            "fuel": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "respawn_cooldown_s": { "type": "number", "minimum": 0 }
+      }
+    },
+    "_meta": { "$ref": "#/$defs/meta" }
+  },
+  "$defs": {
+    "slug": { "type": "string", "pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*$" },
+    "i18n_key": { "type": "string", "pattern": "^[a-z][a-z0-9_]*(\\.[a-z0-9_]+)+$" },
+    "unverified": { "const": "未核实" },
+    "hist_num": { "anyOf": [{ "type": "number", "minimum": 0 }, { "$ref": "#/$defs/unverified" }] },
+    "hist_int": { "anyOf": [{ "type": "integer", "minimum": 0 }, { "$ref": "#/$defs/unverified" }] },
+    "meta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "tunable"],
+      "properties": {
+        "status": { "enum": ["initial", "reviewed", "measured"] },
+        "tunable": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+        "calibration_ref": { "type": ["string", "null"] }
+      }
+    }
+  }
+}

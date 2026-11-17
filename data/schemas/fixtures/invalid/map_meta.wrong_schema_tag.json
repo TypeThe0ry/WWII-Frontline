@@ -1,0 +1,50 @@
+{
+  "_expect_error": "must be equal to constant \"frontline.map.meta/1\"",
+  "schema": "frontline.map.meta/2",
+  "map_id": "fixture_map",
+  "display_name": "Fixture",
+  "date_setting": "1944-06-11",
+  "crs": {
+    "epsg": 32630,
+    "origin_e": 626432,
+    "origin_n": 5462016,
+    "size_m": 2048
+  },
+  "height": {
+    "res_m": 1,
+    "samples": 2049,
+    "hmin_m": -1.2,
+    "hmax_m": 45,
+    "datum": "IGN69"
+  },
+  "far_ring": {
+    "res_m": 8,
+    "samples": 1025,
+    "extent_m": 8192
+  },
+  "anchors": [
+    {
+      "id": "church",
+      "e": 627709,
+      "n": 5462913,
+      "design": [
+        1277,
+        897
+      ],
+      "confidence_m": 40
+    }
+  ],
+  "similarity": {
+    "dx": 0,
+    "dy": 0,
+    "rot_deg": 0,
+    "applied": false
+  },
+  "sources": [
+    {
+      "id": "fixture_src",
+      "license": "CC0-1.0",
+      "verified": "2026-11-17"
+    }
+  ]
+}

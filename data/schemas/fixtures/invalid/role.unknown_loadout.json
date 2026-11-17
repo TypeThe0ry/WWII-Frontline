@@ -1,0 +1,44 @@
+{
+  "_expect_error": "unknown loadout id: us_no_such_loadout",
+  "id": "fixture_rifleman",
+  "name_key": "role.fixture_rifleman.name",
+  "faction_overrides": {
+    "us": {
+      "loadout_ids": [
+        "us_no_such_loadout"
+      ]
+    }
+  },
+  "max_per_squad": 4,
+  "max_per_team": null,
+  "unlock": {
+    "squad_size_min": 1,
+    "requires_squad_leader": false
+  },
+  "movement": {
+    "walk_mps": 1.8,
+    "run_mps": 4.2,
+    "sprint_mps": 6,
+    "crouch_mps": 1.2,
+    "prone_mps": 0.6,
+    "stamina_max": 100
+  },
+  "capsule": {
+    "radius_m": 0.35,
+    "height_stand_m": 1.8,
+    "height_crouch_m": 1.2
+  },
+  "health_hp": 100,
+  "abilities": [
+    "resupply_self"
+  ],
+  "icon_id": "icon_rifleman",
+  "manpower_cost": 0,
+  "_meta": {
+    "status": "initial",
+    "tunable": [
+      "movement.run_mps",
+      "health_hp"
+    ]
+  }
+}

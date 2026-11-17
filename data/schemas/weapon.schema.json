@@ -1,0 +1,130 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://frontline.invalid/schemas/weapon.schema.json",
+  "title": "Weapon (ARCHITECTURE 8.5.1, GAMEDESIGN 6.1)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "name_key", "faction", "class", "historical", "gameplay", "_meta"],
+  "properties": {
+    "id": { "$ref": "#/$defs/slug" },
+    "name_key": { "$ref": "#/$defs/i18n_key" },
+    "faction": { "enum": ["us", "ger"] },
+    "class": {
+      "enum": ["rifle_semi", "rifle_bolt", "rifle_auto", "carbine", "smg", "lmg", "mmg", "pistol", "sniper", "shotgun", "launcher", "grenade", "mine", "explosive", "melee"]
+    },
+    "historical": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["caliber", "cartridge", "magazine_capacity", "magazine_type", "muzzle_velocity_mps", "rate_of_fire_rpm_practical", "mass_kg", "_source"],
+      "properties": {
+        "caliber": { "type": "string", "minLength": 1 },
+        "cartridge": { "type": "string", "minLength": 1 },
+        "magazine_capacity": { "$ref": "#/$defs/hist_int" },
+        "magazine_type": { "type": "string", "minLength": 1 },
+        "muzzle_velocity_mps": { "$ref": "#/$defs/hist_num" },
+        "rate_of_fire_rpm_practical": { "$ref": "#/$defs/hist_num" },
+        "mass_kg": { "$ref": "#/$defs/hist_num" },
+        "effective_range_m": { "$ref": "#/$defs/hist_num" },
+        "_source": { "type": "string", "minLength": 1 }
+      }
+    },
+    "gameplay": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["damage_torso_hp", "part_mult", "falloff", "fire", "reload", "ads_ms", "spread", "recoil", "ballistics", "pen_power", "mag_reserve"],
+      "properties": {
+        "damage_torso_hp": { "type": "number", "exclusiveMinimum": 0 },
+        "part_mult": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["head", "neck", "torso", "limb"],
+          "properties": {
+            "head": { "type": "number" },
+            "neck": { "type": "number" },
+            "torso": { "type": "number" },
+            "limb": { "type": "number" }
+          }
+        },
+        "falloff": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["dist_m", "mult"],
+            "properties": { "dist_m": { "type": "number", "minimum": 0 }, "mult": { "type": "number" } }
+          }
+        },
+        "fire": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["mode"],
+          "properties": {
+            "mode": { "enum": ["semi", "auto", "burst", "bolt", "pump"] },
+            "cap_rpm": { "type": "number" },
+            "bolt_cycle_ms": { "type": "number", "exclusiveMinimum": 0 }
+          }
+        },
+        "reload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["tactical_ms", "empty_ms"],
+          "properties": {
+            "tactical_ms": { "type": "number", "minimum": 0 },
+            "empty_ms": { "type": "number", "minimum": 0 },
+            "per_round_ms": { "type": "number", "minimum": 0 }
+          }
+        },
+        "ads_ms": { "type": "number", "minimum": 0 },
+        "spread": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["hip_deg", "ads_deg"],
+          "properties": { "hip_deg": { "type": "number", "minimum": 0 }, "ads_deg": { "type": "number", "minimum": 0 } }
+        },
+        "recoil": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["vkick_deg", "hsigma_deg", "recover_deg_s", "bloom_per_shot_deg", "bloom_decay_deg_s"],
+          "properties": {
+            "vkick_deg": { "type": "number", "minimum": 0 },
+            "hsigma_deg": { "type": "number", "minimum": 0 },
+            "recover_deg_s": { "type": "number", "minimum": 0 },
+            "bloom_per_shot_deg": { "type": "number", "minimum": 0 },
+            "bloom_decay_deg_s": { "type": "number", "minimum": 0 }
+          }
+        },
+        "ballistics": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["muzzle_velocity_mps", "drag_k_per_m", "gravity_mps2"],
+          "properties": {
+            "muzzle_velocity_mps": { "type": "number" },
+            "drag_k_per_m": { "type": "number", "minimum": 0 },
+            "gravity_mps2": { "type": "number", "minimum": 0 }
+          }
+        },
+        "pen_power": { "type": "number", "minimum": 0 },
+        "mag_reserve": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "_meta": { "$ref": "#/$defs/meta" }
+  },
+  "$defs": {
+    "slug": { "type": "string", "pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*$" },
+    "i18n_key": { "type": "string", "pattern": "^[a-z][a-z0-9_]*(\\.[a-z0-9_]+)+$" },
+    "unverified": { "const": "未核实" },
+    "hist_num": { "anyOf": [{ "type": "number", "minimum": 0 }, { "$ref": "#/$defs/unverified" }] },
+    "hist_int": { "anyOf": [{ "type": "integer", "minimum": 0 }, { "$ref": "#/$defs/unverified" }] },
+    "meta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "tunable"],
+      "properties": {
+        "status": { "enum": ["initial", "reviewed", "measured"] },
+        "tunable": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+        "calibration_ref": { "type": ["string", "null"] }
+      }
+    }
+  }
+}

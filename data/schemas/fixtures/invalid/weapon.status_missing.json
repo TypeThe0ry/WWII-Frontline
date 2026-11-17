@@ -1,0 +1,76 @@
+{
+  "_expect_error": "missing: _meta.status",
+  "id": "us_fixture_rifle",
+  "name_key": "weapon.us_fixture_rifle.name",
+  "faction": "us",
+  "class": "rifle_semi",
+  "historical": {
+    "caliber": ".30",
+    "cartridge": "fixture round",
+    "magazine_capacity": 8,
+    "magazine_type": "en_bloc_clip",
+    "muzzle_velocity_mps": 850,
+    "rate_of_fire_rpm_practical": 40,
+    "mass_kg": 4.3,
+    "effective_range_m": "未核实",
+    "_source": "未核实 (fixture, not real data)"
+  },
+  "gameplay": {
+    "damage_torso_hp": 70,
+    "part_mult": {
+      "head": 2,
+      "neck": 1.5,
+      "torso": 1,
+      "limb": 0.7
+    },
+    "falloff": [
+      {
+        "dist_m": 0,
+        "mult": 1
+      },
+      {
+        "dist_m": 100,
+        "mult": 1
+      },
+      {
+        "dist_m": 600,
+        "mult": 0.72
+      }
+    ],
+    "fire": {
+      "mode": "semi",
+      "cap_rpm": 120
+    },
+    "reload": {
+      "tactical_ms": 3400,
+      "empty_ms": 2800
+    },
+    "ads_ms": 300,
+    "spread": {
+      "hip_deg": 2.5,
+      "ads_deg": 0.15
+    },
+    "recoil": {
+      "vkick_deg": 1.2,
+      "hsigma_deg": 0.3,
+      "recover_deg_s": 8,
+      "bloom_per_shot_deg": 0.4,
+      "bloom_decay_deg_s": 2
+    },
+    "ballistics": {
+      "muzzle_velocity_mps": 850,
+      "drag_k_per_m": 0.00075,
+      "gravity_mps2": 9.81
+    },
+    "pen_power": 220,
+    "mag_reserve": 6
+  },
+  "_meta": {
+    "tunable": [
+      "gameplay.damage_torso_hp",
+      "gameplay.part_mult.head",
+      "gameplay.spread.hip_deg"
+    ],
+    "calibration_ref": null
+  }
+}

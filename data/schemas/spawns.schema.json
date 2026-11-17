@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://frontline.invalid/schemas/spawns.schema.json",
+  "title": "Map spawns.json (MAPS 6.2, frontline.map.spawns/1)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "hq", "kinds_supported"],
+  "properties": {
+    "schema": { "const": "frontline.map.spawns/1" },
+    "hq": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["US", "GER"],
+      "properties": { "US": { "$ref": "#/$defs/hq" }, "GER": { "$ref": "#/$defs/hq" } }
+    },
+    "garrison_candidates": { "$ref": "#/$defs/candidates" },
+    "outpost_candidates": { "$ref": "#/$defs/candidates" },
+    "airhead_candidates": { "$ref": "#/$defs/candidates" },
+    "observation_posts": { "$ref": "#/$defs/candidates" },
+    "kinds_supported": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "enum": ["hq", "garrison", "outpost", "airhead", "op", "boat"] }
+    },
+    "_meta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "tunable"],
+      "properties": {
+        "status": { "enum": ["initial", "reviewed", "measured"] },
+        "tunable": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true }
+      }
+    }
+  },
+  "$defs": {
+    "pos2": { "type": "array", "minItems": 2, "maxItems": 2, "items": { "type": "number" } },
+    "hq": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["pos", "radius_m"],
+      "properties": { "pos": { "$ref": "#/$defs/pos2" }, "radius_m": { "type": "number", "exclusiveMinimum": 0 } }
+    },
+    "candidates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["pos"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "side": { "enum": ["US", "GER"] },
+          "pos": { "$ref": "#/$defs/pos2" },
+          "radius_m": { "type": "number", "exclusiveMinimum": 0 },
+          "notes": { "type": "string" }
+        }
+      }
+    }
+  }
+}

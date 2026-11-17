@@ -1,6 +1,6 @@
 [package]
 name = "frontline-protocol"
-description = "Frontline protocol (M0-001 skeleton)"
+description = "Frontline wire protocol: bit I/O, quantisation and message codecs (M0-005)"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -11,3 +11,7 @@ publish.workspace = true
 workspace = true
 
 [dependencies]
+arrayvec = { version = "0.7", default-features = false }
+
+[dev-dependencies]
+proptest = "1"

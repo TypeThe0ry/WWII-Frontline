@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://frontline.invalid/schemas/role.schema.json",
+  "title": "Role (ARCHITECTURE 8.5.2)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "name_key", "faction_overrides", "movement", "health_hp", "_meta"],
+  "properties": {
+    "id": { "$ref": "#/$defs/slug" },
+    "name_key": { "$ref": "#/$defs/i18n_key" },
+    "faction_overrides": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "properties": {
+        "us": { "$ref": "#/$defs/faction_override" },
+        "ger": { "$ref": "#/$defs/faction_override" }
+      }
+    },
+    "max_per_squad": { "type": ["integer", "null"], "minimum": 0 },
+    "max_per_team": { "type": ["integer", "null"], "minimum": 0 },
+    "unlock": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["squad_size_min", "requires_squad_leader"],
+      "properties": {
+        "squad_size_min": { "type": "integer", "minimum": 0 },
+        "requires_squad_leader": { "type": "boolean" }
+      }
+    },
+    "movement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["walk_mps", "run_mps", "sprint_mps", "crouch_mps", "prone_mps", "stamina_max"],
+      "properties": {
+        "walk_mps": { "type": "number" },
+        "run_mps": { "type": "number" },
+        "sprint_mps": { "type": "number" },
+        "crouch_mps": { "type": "number" },
+        "prone_mps": { "type": "number" },
+        "stamina_max": { "type": "number", "exclusiveMinimum": 0 }
+      }
+    },
+    "capsule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["radius_m", "height_stand_m", "height_crouch_m"],
+      "properties": {
+        "radius_m": { "type": "number", "exclusiveMinimum": 0 },
+        "height_stand_m": { "type": "number", "exclusiveMinimum": 0 },
+        "height_crouch_m": { "type": "number", "exclusiveMinimum": 0 }
+      }
+    },
+    "health_hp": { "type": "number", "exclusiveMinimum": 0 },
+    "abilities": { "type": "array", "items": { "$ref": "#/$defs/slug" } },
+    "icon_id": { "type": "string", "minLength": 1 },
+    "manpower_cost": { "type": "integer", "minimum": 0 },
+    "_meta": { "$ref": "#/$defs/meta" }
+  },
+  "$defs": {
+    "slug": { "type": "string", "pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*$" },
+    "i18n_key": { "type": "string", "pattern": "^[a-z][a-z0-9_]*(\\.[a-z0-9_]+)+$" },
+    "faction_override": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["loadout_ids"],
+      "properties": { "loadout_ids": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/slug" } } }
+    },
+    "meta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "tunable"],
+      "properties": {
+        "status": { "enum": ["initial", "reviewed", "measured"] },
+        "tunable": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+        "calibration_ref": { "type": ["string", "null"] }
+      }
+    }
+  }
+}

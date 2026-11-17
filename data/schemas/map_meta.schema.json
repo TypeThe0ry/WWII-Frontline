@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://frontline.invalid/schemas/map_meta.schema.json",
+  "title": "Map meta.json (MAPS 6.2, frontline.map.meta/1)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "map_id", "display_name", "date_setting", "crs", "height", "far_ring"],
+  "properties": {
+    "schema": { "const": "frontline.map.meta/1" },
+    "map_id": { "type": "string", "pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*$" },
+    "display_name": { "type": "string", "minLength": 1 },
+    "date_setting": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}(-[0-9]{2})?$" },
+    "crs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["epsg", "origin_e", "origin_n", "size_m"],
+      "properties": {
+        "epsg": { "type": "integer", "minimum": 1 },
+        "origin_e": { "type": "number" },
+        "origin_n": { "type": "number" },
+        "size_m": { "type": "number", "exclusiveMinimum": 0 }
+      }
+    },
+    "height": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["res_m", "samples", "hmin_m", "hmax_m", "datum"],
+      "properties": {
+        "res_m": { "type": "number", "exclusiveMinimum": 0 },
+        "samples": { "type": "integer", "minimum": 2 },
+        "hmin_m": { "type": "number" },
+        "hmax_m": { "type": "number" },
+        "datum": { "type": "string", "minLength": 1 }
+      }
+    },
+    "far_ring": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["res_m", "samples", "extent_m"],
+      "properties": {
+        "res_m": { "type": "number", "exclusiveMinimum": 0 },
+        "samples": { "type": "integer", "minimum": 2 },
+        "extent_m": { "type": "number", "exclusiveMinimum": 0 }
+      }
+    },
+    "anchors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "e", "n", "design", "confidence_m"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "e": { "type": "number" },
+          "n": { "type": "number" },
+          "design": { "type": "array", "minItems": 2, "maxItems": 2, "items": { "type": "number" } },
+          "confidence_m": { "type": "number", "minimum": 0 }
+        }
+      }
+    },
+    "similarity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["dx", "dy", "rot_deg", "applied"],
+      "properties": {
+        "dx": { "type": "number" },
+        "dy": { "type": "number" },
+        "rot_deg": { "type": "number" },
+        "applied": { "type": "boolean" }
+      }
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "license", "verified"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "license": { "type": "string", "minLength": 1 },
+          "verified": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" }
+        }
+      }
+    },
+    "_meta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "tunable"],
+      "properties": {
+        "status": { "enum": ["initial", "reviewed", "measured"] },
+        "tunable": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true }
+      }
+    }
+  }
+}
