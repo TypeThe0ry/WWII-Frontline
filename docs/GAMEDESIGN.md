@@ -1187,15 +1187,15 @@ Medic 等 Support 不提供解压；Rally 效果见 §13.8（累积 ×0.7）
 
 | 项 | 规则 |
 |---|---|
-| 建造者 | Engineer（建造菜单，§12.4） |
-| 补给消耗 | **己方 Sector 或战区（中立）150 Supplies；敌方 Sector 300 Supplies**（在位置所在 Sector 的所有者决定）【待调参】 |
-| 建造时间 | 20 s（1 名 Engineer）；每多 1 名同时施工的 Engineer 速度 +0.6，最多 3 人（×2.2） |
+| 放置者 | **Officer、Spotter、Commander**（各自的 Garrison 套件；**不是 Engineer**，R1）。Engineer 负责资源节点与防御工事（§11.3、§12.4），不放置 Garrison |
+| 补给消耗 | 消耗放置点附近（15 m 内箱/车，§12.1）的 Supplies：**己方 Sector 或战区（中立）50 Supplies；敌方 Sector 100 Supplies**（由位置所在 Sector 的所有者决定）【待调参】【待测 → REFERENCE_MEASUREMENTS §economy】 |
+| 建造时间 | 20 s（1 名放置者）；每多 1 名同时施工的友军（任意兵种）速度 +0.6，最多 3 人（×2.2） |
 | 生命值 | 1200 HP；对枪弹伤害 ×0.05；对爆炸/炮弹/炸弹 ×1.0 |
 | 数量上限 | 全队 6 个；每 Sector 2 个；Assault 防守方 +2 |
 | 间距限制 | 距离**己方**任何 Garrison/Outpost ≥ 150 m；距离**敌方** Garrison ≥ 250 m；距离任何据点圆心 ≥ `R_sp + 100 m`（活动线据点）；距任何 HQ ≥ 200 m |
-| 放置检测 | 坡度 ≤ 25°；非水体；周围 50 m 内无已知敌人（放置瞬间检测；检测对象是**可见的**敌人，避免利用隐藏信息）；Engineer 须携带 ≥ 成本的 Supplies（附近 15 m 内的箱/车） |
+| 放置检测 | 坡度 ≤ 25°；非水体；周围 50 m 内无已知敌人（放置瞬间检测；检测对象是**可见的**敌人，避免利用隐藏信息）；放置者 15 m 内的箱/车须有 ≥ 成本的 Supplies |
 | 封锁（Blocked） | 任意存活未倒地的敌方玩家在 30 m 内，该 Garrison **停止接受重生**（红圈显示）；敌离开 3 s 后恢复 |
-| 被摧毁条件 | ① HP 归零（炸药包 2500、Bazooka 800 ×2、Panzerschreck 1200 ×1、炮弹 HE 直击 600、轰炸 1500）；② **Overrun**：敌方有人在 20 m 内且己方 20 m 内无人，持续 25 s；③ Sector 易手后 30 s 的 Condemned 倒计时（§3.3.6）；④ Engineer 主动拆除（返还 50% Supplies）；⑤ 地图边界/换图 |
+| 被摧毁条件 | ① HP 归零（炸药包 2500、Bazooka 800 ×2、Panzerschreck 1200 ×1、炮弹 HE 直击 600、轰炸 1500）；② **Overrun**：敌方有人在 20 m 内且己方 20 m 内无人，持续 25 s；③ Sector 易手后 30 s 的 Condemned 倒计时（§3.3.6）；④ 放置者或任意 Engineer 主动拆除（返还 50% Supplies）；⑤ 地图边界/换图 |
 | 重生槽 | 容量 24 槽，每次出生消耗 1 槽，每 5 s 恢复 1（可累积到 24）；槽满则不受限制；槽空则必须等待 |
 | 重生计时 | 玩家个人冷却 8 s；Garrison 同一时刻最多容纳 2 人/秒的吞吐 |
 | 对敌可见性 | 敌方地图不显示；敌人看见实体即可攻击；被标记（§17）后在敌方地图显示 60 s |
@@ -1378,7 +1378,7 @@ income_X(per min) = base_X + sectors_held × sector_rate_X + nodes_X × node_rat
 
 ### 12.4 建造清单（Engineer）
 
-> 所有建造都通过 Engineer 的**建造菜单**：预览"全息图"（绿=可放，红=不可放），按放置键确认。建造阶段：生命值从 20% 线性增至 100%；任何友军 Engineer 可加入；敌方不可看到未完工的全息图。拆除返还 50% Supplies（仅 Engineer）。
+> 本表建筑（除下列标注的例外）通过 Engineer 的**建造菜单**。**Garrison 由 Officer/Spotter/Commander 用各自的 Garrison 套件放置**（R1，§10.2）；**反坦克炮阵地由 Anti-Tank 兵种建造**（R7，§15.7）；**榴弹炮不可建造**（地图预设阵地，R7，§15.1）。预览"全息图"（绿=可放，红=不可放），按放置键确认。建造阶段：生命值从 20% 线性增至 100%；任何友军 Engineer 可加入；敌方不可看到未完工的全息图。拆除返还 50% Supplies（仅 Engineer）。
 
 | 建筑 | 谁能建 | 补给消耗 | 建造时间（1 Engineer） | 生命值 | 全队上限 | 备注 |
 |---|---|---|---|---|---|---|
@@ -1388,11 +1388,10 @@ income_X(per min) = base_X + sectors_held × sector_rate_X + nodes_X × node_rat
 | Foxhole（散兵坑） | Engineer（工兵铲） | 10 | 10 s | —（地形凹陷） | 20 | 蹲/趴躲入后受爆炸伤害 ×0.4；可被 AP 地雷影响；寿命 10 min |
 | MG Nest（机枪巢：沙袋围成 + 载具机枪位） | Engineer | 100 | 12 s | 800 | 6 | 内置 M1919A4（三脚架）/ MG 34（Lafette）一挺，300 发，可补给；无人时不会自动射击 |
 | Repair Station（维修站） | Engineer | 120 | 15 s | 600 | 3 | 8 m 内载具自动修理：每 1 Supplies 修 5 HP，初始库存 200 Supplies；Support 可补箱；同时对载具补弹药（1 发/2 s，扣 Supplies 4/发）|
-| Garrison | Engineer | 150 / 300 | 20 s | 1200 | 6 | 见 §10.2 |
+| Garrison | Officer / Spotter / Commander（**非 Engineer**） | 50 / 100（己方·中立 / 敌方 Sector）【待调参】【待测】 | 20 s | 1200 | 6 | 见 §10.2 |
 | Resource Node（Manpower/Munitions/Fuel） | Engineer | 250 | 25 s | 1500 | 各 3 | 见 §11.3 |
-| AT Gun Emplacement（反坦克炮阵地） | Engineer | 200 | 20 s | 600 | 3 | M1 57 mm / Pak 40，§15.7 |
-| Artillery Gun（榴弹炮；仅限地图预设 Artillery Site） | Engineer | 350 | 45 s | 1500 | 2 | §15.1；Site 地图数据预设 |
-| Shell Stock（炮弹堆） | Support（放入）/Engineer（建） | 每 100 Supplies → 8 发 HE 或 4 发烟雾 | 即时 | — | — | 补充已建榴弹炮的库存，在炮位 6 m 内操作 |
+| AT Gun Emplacement（反坦克炮阵地） | Anti-Tank | 200 | 20 s | 600 | 3 | M1 57 mm / Pak 40，§15.7 |
+| Shell Stock（炮弹堆） | Support（放入）/Engineer（建） | 每 100 Supplies → 8 发 HE 或 4 发烟雾 | 即时 | — | — | 补充预设榴弹炮阵地的库存，在炮位 6 m 内操作 |
 | AP Mine | Engineer（携带） | 0（从 loadout 携带；补给点 10 弹药点/枚） | 布设 2 s | 1 | 全队 20 | §6.9.5 |
 | AT Mine | Engineer（携带） | 0（携带；补给 10 弹药点/枚） | 布设 3 s | 1 | 全队 16 | §6.9.5 |
 | Satchel/Geballte Ladung | Engineer（携带） | 0（携带） | 放置 1.5 s | — | 全队未引爆 ≤ 8 | §6.9.3 |
@@ -1417,7 +1416,7 @@ income_X(per min) = base_X + sectors_held × sector_rate_X + nodes_X × node_rat
 ### 12.5 补给流程示例
 
 1. HQ Depot 生成 Supply Crate → Support 搬运（或装卡车）→ 到前线。
-2. Engineer 在前线建 Garrison（150）：从 15 m 内 2 箱抽取。
+2. Officer（或 Spotter/Commander）在前线放置 Garrison（己方/中立区 50）：从 15 m 内 1 箱抽取（敌方区 100，即 1 整箱）；Engineer 同期用同批箱子建资源节点/工事（250 等）。
 3. 前线耗尽后，Support 再补；Commander 可呼叫 Supply Drop 补空窗。
 
 ### 12.6 反滥用
