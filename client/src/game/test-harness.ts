@@ -363,7 +363,7 @@ export async function runScenario(sc: Scenario): Promise<ScenarioResult> {
   srv.setEntity(3);
   srv.equipWeapon('us_m1_garand', 80);
   for (const c of chunks) srv.loadCollision(c.bx, c.bz, c.data);
-  const spawn = new Uint8Array(39);
+  const spawn = new Uint8Array(45);
   new DataView(spawn.buffer).setFloat32(0, 128, true);
   new DataView(spawn.buffer).setFloat32(4, 2.4, true);
   new DataView(spawn.buffer).setFloat32(8, 56, true);

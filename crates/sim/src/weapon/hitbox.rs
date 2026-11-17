@@ -1,7 +1,7 @@
 //! Player hit volumes (ARCHITECTURE 6.7.1) and segment intersection.
 //!
 //! Four vertical capsules per player (head sphere, torso, thigh, shin) positioned relative to the
-//! feet and blended between the standing and crouched tables by `stance_blend`. The numbers are
+//! feet and blended between the standing, crouched and prone tables by `stance_blend` (0..2). The numbers are
 //! initial values 【待调参】【待测 → REFERENCE_MEASUREMENTS M-15】; the target capsule used for
 //! movement collision is a different (bigger) volume. Hit zones: the head sphere is `Head`, the
 //! lowest quarter of the torso capsule `Pelvis`, the rest of it `Torso`, thigh and shin `Limb`.
@@ -49,6 +49,14 @@ pub const CROUCH: [Volume; 4] = [
     v(0.10, 0.24, 0.11, HitZone::Limb),
 ];
 
+/// Prone hit volumes (a body lying down is about 0.5 m tall). 【待调参】
+pub const PRONE: [Volume; 4] = [
+    v(0.40, 0.40, 0.11, HitZone::Head),
+    v(0.22, 0.30, 0.20, HitZone::Torso),
+    v(0.15, 0.24, 0.14, HitZone::Limb),
+    v(0.10, 0.14, 0.10, HitZone::Limb),
+];
+
 /// Fraction of the torso capsule's height (from its bottom) that counts as `Pelvis`.
 pub const PELVIS_FRACTION: f32 = 0.25;
 
@@ -56,11 +64,16 @@ pub const PELVIS_FRACTION: f32 = 0.25;
 const BROAD_HALF_M: f32 = 0.45;
 const BROAD_TOP_M: f32 = 1.9;
 
-/// Hit volumes for a crouch blend `0 (standing) .. 1 (crouched)`.
+/// Hit volumes for a pose coordinate `0 (standing) .. 1 (crouched) .. 2 (prone)`.
 pub fn volumes(blend: f32) -> [Volume; 4] {
-    let b = blend.clamp(0.0, 1.0);
-    let mut out = STAND;
-    for (o, c) in out.iter_mut().zip(CROUCH.iter()) {
+    let t = blend.clamp(0.0, 2.0);
+    let (from, to, b) = if t <= 1.0 {
+        (&STAND, &CROUCH, t)
+    } else {
+        (&CROUCH, &PRONE, t - 1.0)
+    };
+    let mut out = *from;
+    for (o, c) in out.iter_mut().zip(to.iter()) {
         o.y0 += (c.y0 - o.y0) * b;
         o.y1 += (c.y1 - o.y1) * b;
         o.r += (c.r - o.r) * b;

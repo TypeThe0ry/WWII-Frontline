@@ -78,7 +78,7 @@ fn detours_around_a_steep_wall_and_reports_unreachable() {
 }
 
 #[test]
-fn ten_bots_reach_three_patrol_points_in_60_s() {
+fn ten_bots_reach_three_patrol_points_in_75_s() {
     let Some(col) = terrain() else { return };
     for seed in [11u64, 12, 13, 14] {
         let mut a = Arena::new(&col, seed);
@@ -94,7 +94,8 @@ fn ten_bots_reach_three_patrol_points_in_60_s() {
                 0.0,
             );
         }
-        for _ in 0..1800 {
+        // 75 s instead of the M0 60 s: stamina (M1-011a, GD 9.3) limits sustained sprinting.
+        for _ in 0..2250 {
             a.step();
         }
         let mut report = Vec::new();
@@ -103,14 +104,14 @@ fn ten_bots_reach_three_patrol_points_in_60_s() {
             report.push(distinct);
             assert!(
                 distinct >= 3,
-                "seed {seed}: bot {p} reached only {distinct} distinct patrol points in 60 s ({:?})",
+                "seed {seed}: bot {p} reached only {distinct} distinct patrol points in 75 s ({:?})",
                 b.patrol_reached
             );
             let pos = a.pos_of(*p).expect("alive");
             assert!((0.0..=MAP_SIZE).contains(&pos.x) && (0.0..=MAP_SIZE).contains(&pos.z));
         }
         eprintln!(
-            "seed {seed}: distinct patrol points reached by the 10 bots within 60 s: {report:?}"
+            "seed {seed}: distinct patrol points reached by the 10 bots within 75 s: {report:?}"
         );
     }
 }

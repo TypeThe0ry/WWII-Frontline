@@ -384,6 +384,10 @@ impl World {
             h.write_u8(mo.stance as u8);
             h.write_f32(mo.stance_blend);
             h.write_u8(mo.stance_timer);
+            h.write_u8(mo.stance_from as u8);
+            h.write_f32(mo.stamina);
+            h.write_u8(mo.stamina_delay);
+            h.write_u8(u8::from(mo.sprint_locked));
             h.write_u8(u8::from(mo.grounded) | (u8::from(mo.blocked) << 1));
             // M0-012: health and weapon state.
             if let Some(hp) = er.get::<Health>() {

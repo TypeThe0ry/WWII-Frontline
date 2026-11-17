@@ -592,7 +592,7 @@ fn twenty_players_fight_without_panic_and_counts_balance() {
     assert_eq!(dead, pending);
 }
 
-const GOLDEN_SKIRMISH_FINAL: u64 = 0x7d6a_b503_df9c_60ac;
+const GOLDEN_SKIRMISH_FINAL: u64 = 0x90cd_4193_862c_a94c;
 
 #[test]
 fn deaths_and_respawns_are_deterministic_5000_ticks() {

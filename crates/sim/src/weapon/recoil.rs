@@ -8,6 +8,7 @@ pub fn stance_recoil(s: Stance) -> f32 {
     match s {
         Stance::Stand => 1.00,
         Stance::Crouch => 0.75,
+        Stance::Prone => 0.50,
     }
 }
 

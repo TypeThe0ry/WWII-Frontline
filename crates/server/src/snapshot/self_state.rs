@@ -1,7 +1,7 @@
 //! `self_state` of the receiving player (ARCHITECTURE §6.5.3), filled from the sim.
 
 use frontline_protocol::snapshot::{QPos, SelfState};
-use frontline_sim::{PlayerId, World};
+use frontline_sim::{PlayerAuthState, PlayerId, World};
 
 /// Bits of `cooldown_bits` (M0 convention): 0..=2 weapon FSM code (0 ready, 1 cooldown,
 /// 2 bolt cycle, 3 reload (tactical), 4 reload (empty), 5 empty), bit 3 trigger held,
@@ -25,6 +25,8 @@ pub fn build(world: &World, player: PlayerId, health_q: u8, pos_corr: Option<QPo
     }
     if let Some(m) = world.player_state(player) {
         s.stance = m.stance as u8;
+        s.stamina =
+            (m.stamina / PlayerAuthState::SPAWN_STAMINA * 63.0 + 0.5).clamp(0.0, 63.0) as u8;
     }
     s
 }

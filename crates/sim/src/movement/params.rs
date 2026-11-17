@@ -57,6 +57,45 @@ pub struct MoveParams {
     /// Eye height above the feet when standing / crouched (muzzle origin, M0-012).
     pub eye_height_stand_m: f32,
     pub eye_height_crouch_m: f32,
+    /// Prone capsule and eye height (M1-011). The capsule is at least `2 * radius` tall, so it
+    /// is taller than the 0.5 m prone *hit* height (`hitbox_height_m[2]`).
+    pub height_prone_m: f32,
+    pub eye_height_prone_m: f32,
+    /// Prone speeds: slow (`aux` walk / default) and fast (SPRINT held, costs stamina).
+    pub prone_mps: f32,
+    pub prone_fast_mps: f32,
+    pub prone_fast_cost_per_s: f32,
+    /// Stance transition lengths in ticks (fractional): crouch->prone, prone->crouch,
+    /// stand->prone (dive), prone->stand. Stand <-> crouch is `stance_ticks`.
+    pub ticks_c2p: f32,
+    pub ticks_p2c: f32,
+    pub ticks_s2p: f32,
+    pub ticks_p2s: f32,
+    /// Aim-down-sights speed multipliers by stance, and while reloading.
+    pub ads_mult: [f32; 3],
+    pub reload_move_mult: f32,
+    /// Downed crawl speed (used by M1-016).
+    pub crawl_mps: f32,
+    /// Load modifier: `clamp(1 - penalty * (load - ref), min, 1)`.
+    pub load_ref_kg: f32,
+    pub load_penalty_per_kg: f32,
+    pub load_min_mult: f32,
+    pub stamina_max: f32,
+    pub sprint_cost_per_s: f32,
+    pub stamina_regen_per_s: f32,
+    /// Regeneration starts this many ticks after the last spend.
+    pub stamina_regen_delay_ticks: u8,
+    pub stamina_regen_mult: [f32; 3],
+    pub stamina_low: f32,
+    pub stamina_unlock: f32,
+    pub jump_cost: f32,
+    /// Stance tables of GAMEDESIGN 9.5, indexed by `Stance as usize`.
+    pub recoil_mult: [f32; 3],
+    pub spread_mult: [f32; 3],
+    pub visibility_mult: [f32; 3],
+    pub hitbox_height_m: [f32; 3],
+    pub move_spread_walk_mult: f32,
+    pub move_spread_run_mult: f32,
 }
 
 impl MoveParams {
@@ -133,6 +172,23 @@ impl MoveParams {
             Some(v) => nonneg(v, k),
             None => Ok(0.0),
         };
+        let req = |v: Option<f64>, k: &'static str| -> Result<f32, ParamsError> {
+            nonneg(need(v, k)?, k)
+        };
+        let reqp =
+            |v: Option<f64>, k: &'static str| -> Result<f32, ParamsError> { pos(need(v, k)?, k) };
+        let hp = reqp(cap.height_prone_m, "capsule.height_prone_m")?;
+        let eye_p = reqp(cap.eye_height_prone_m, "capsule.eye_height_prone_m")?;
+        if hp < 2.0 * r || hp > hc || eye_p > hp {
+            return Err(ParamsError::Invalid("capsule.height_prone_m"));
+        }
+        let ms_ticks = |v: Option<f64>, k: &'static str| -> Result<f32, ParamsError> {
+            Ok(reqp(v, k)? * hz / 1000.0)
+        };
+        let regen_delay =
+            libm::roundf(reqp(m.stamina_regen_delay_s, "movement.stamina_regen_delay_s")? * hz)
+                .clamp(0.0, 255.0) as u8;
+        let stamina_max = pos(m.stamina_max, "movement.stamina_max")?;
         Ok(Self {
             dt: 1.0 / hz,
             hz,
@@ -168,6 +224,77 @@ impl MoveParams {
             decel_time_s: ramp(m.decel_time_s, "movement.decel_time_s")?,
             eye_height_stand_m: eye_s,
             eye_height_crouch_m: eye_c,
+            height_prone_m: hp,
+            eye_height_prone_m: eye_p,
+            prone_mps: pos(m.prone_mps, "movement.prone_mps")?,
+            prone_fast_mps: reqp(m.prone_fast_mps, "movement.prone_fast_mps")?,
+            prone_fast_cost_per_s: req(m.prone_fast_cost_per_s, "movement.prone_fast_cost_per_s")?,
+            ticks_c2p: ms_ticks(m.crouch_to_prone_ms, "movement.crouch_to_prone_ms")?,
+            ticks_p2c: ms_ticks(m.prone_to_crouch_ms, "movement.prone_to_crouch_ms")?,
+            ticks_s2p: ms_ticks(m.stand_to_prone_ms, "movement.stand_to_prone_ms")?,
+            ticks_p2s: ms_ticks(m.prone_to_stand_ms, "movement.prone_to_stand_ms")?,
+            ads_mult: [
+                reqp(m.ads_stand_mult, "movement.ads_stand_mult")?,
+                reqp(m.ads_crouch_mult, "movement.ads_crouch_mult")?,
+                reqp(m.ads_prone_mult, "movement.ads_prone_mult")?,
+            ],
+            reload_move_mult: reqp(m.reload_move_mult, "movement.reload_move_mult")?,
+            crawl_mps: reqp(m.crawl_mps, "movement.crawl_mps")?,
+            load_ref_kg: req(m.load_ref_kg, "movement.load_ref_kg")?,
+            load_penalty_per_kg: req(m.load_penalty_per_kg, "movement.load_penalty_per_kg")?,
+            load_min_mult: reqp(m.load_min_mult, "movement.load_min_mult")?,
+            stamina_max,
+            sprint_cost_per_s: req(m.sprint_cost_per_s, "movement.sprint_cost_per_s")?,
+            stamina_regen_per_s: req(m.stamina_regen_per_s, "movement.stamina_regen_per_s")?,
+            stamina_regen_delay_ticks: regen_delay,
+            stamina_regen_mult: [
+                1.0,
+                reqp(
+                    m.stamina_regen_crouch_mult,
+                    "movement.stamina_regen_crouch_mult",
+                )?,
+                reqp(
+                    m.stamina_regen_prone_mult,
+                    "movement.stamina_regen_prone_mult",
+                )?,
+            ],
+            stamina_low: req(m.stamina_low_points, "movement.stamina_low_points")?,
+            stamina_unlock: req(m.stamina_unlock_points, "movement.stamina_unlock_points")?,
+            jump_cost: req(m.jump_cost_points, "movement.jump_cost_points")?,
+            recoil_mult: [
+                1.0,
+                reqp(
+                    m.stance_recoil_crouch_mult,
+                    "movement.stance_recoil_crouch_mult",
+                )?,
+                reqp(
+                    m.stance_recoil_prone_mult,
+                    "movement.stance_recoil_prone_mult",
+                )?,
+            ],
+            spread_mult: [
+                1.0,
+                reqp(
+                    m.stance_spread_crouch_mult,
+                    "movement.stance_spread_crouch_mult",
+                )?,
+                reqp(
+                    m.stance_spread_prone_mult,
+                    "movement.stance_spread_prone_mult",
+                )?,
+            ],
+            visibility_mult: [
+                1.0,
+                reqp(m.visibility_crouch_mult, "movement.visibility_crouch_mult")?,
+                reqp(m.visibility_prone_mult, "movement.visibility_prone_mult")?,
+            ],
+            hitbox_height_m: [
+                reqp(m.hitbox_height_stand_m, "movement.hitbox_height_stand_m")?,
+                reqp(m.hitbox_height_crouch_m, "movement.hitbox_height_crouch_m")?,
+                reqp(m.hitbox_height_prone_m, "movement.hitbox_height_prone_m")?,
+            ],
+            move_spread_walk_mult: reqp(m.move_spread_walk_mult, "movement.move_spread_walk_mult")?,
+            move_spread_run_mult: reqp(m.move_spread_run_mult, "movement.move_spread_run_mult")?,
         })
     }
 }

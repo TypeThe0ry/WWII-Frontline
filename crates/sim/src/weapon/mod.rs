@@ -165,12 +165,13 @@ pub struct ShotCtx {
 /// Whether the command sprints (same rule as in movement: SPRINT, forward, standing).
 pub fn is_sprinting(cmd: &InputCmd) -> bool {
     let (_, mz) = decode_move(cmd);
-    cmd.buttons & buttons::SPRINT != 0 && mz > 0.0 && cmd.buttons & buttons::CROUCH == 0
+    cmd.buttons & buttons::SPRINT != 0
+        && mz > 0.0
+        && cmd.buttons & (buttons::CROUCH | buttons::PRONE) == 0
 }
 
 fn eye_position(auth: &PlayerAuthState, mp: &MoveParams) -> Vec3 {
-    let h = mp.eye_height_stand_m
-        + (mp.eye_height_crouch_m - mp.eye_height_stand_m) * auth.stance_blend;
+    let h = crate::movement::eye_height(auth.stance_blend, mp);
     auth.pos + Vec3::new(0.0, h, 0.0)
 }
 

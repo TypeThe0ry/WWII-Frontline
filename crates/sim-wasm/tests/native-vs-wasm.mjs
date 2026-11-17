@@ -23,7 +23,7 @@ if (BigInt(meta.dataHash) !== wasm.dataHash()) throw new Error('data hash differ
 const root = join(here, '../../..');
 const p = new wasm.Predictor(BigInt(meta.matchSeed), 0, meta.player);
 for (let bz = 0; bz < 4; bz++) for (let bx = 0; bx < 4; bx++) p.loadCollision(bx, bz, readFileSync(join(root, `data/maps/m0/chunks/c_${bx}_${bz}.bin`)));
-const st = new DataView(new ArrayBuffer(39));
+const st = new DataView(new ArrayBuffer(45));
 [...meta.spawn, 0, 0, 0, 0, 0, 0].forEach((v, i) => st.setFloat32(i * 4, v, true));
 p.reset(new Uint8Array(st.buffer), 0);
 p.equipWeapon('us_m1_garand', meta.reserve);
@@ -37,8 +37,11 @@ const field = (off) => {
   if (off < 36) return AUTH[off >> 2];
   if (off === 36) return 'stance';
   if (off === 37) return 'stance_timer';
-  if (off === 38) return 'flags(grounded|blocked)';
-  const w = off - 39;
+  if (off === 38) return 'flags(grounded|blocked|locked)';
+  if (off === 39) return 'stance_from';
+  if (off < 44) return 'stamina^100';
+  if (off === 44) return 'stamina_delay';
+  const w = off - 45;
   const f = WEAP.find(([o, l]) => w >= o && w < o + l);
   return `weapon.${f ? f[2] : '?'}`;
 };
@@ -48,7 +51,7 @@ let diffTicks = 0;
 for (let t = 0; t < n; t++) {
   p.step(cmds.subarray(t * 18, t * 18 + 18));
   const got = Buffer.concat([p.authState(), p.weaponState()]);
-  const want = trace.subarray(t * 72, t * 72 + 72);
+  const want = trace.subarray(t * 78, t * 78 + 78);
   if (!got.equals(want)) {
     diffTicks++;
     if (!first) {
@@ -61,6 +64,6 @@ if (first) {
   console.log(`MISMATCH: ${diffTicks}/${n} ticks differ; first at tick ${first.tick}, byte ${first.offset} (${first.field}): wasm=${first.wasm} native=${first.native}`);
   process.exit(1);
 }
-console.log(`native == wasm: ${n} ticks, PlayerAuthState(39 B) + WeaponState(33 B) bit-identical on every tick`);
+console.log(`native == wasm: ${n} ticks, PlayerAuthState(45 B) + WeaponState(33 B) bit-identical on every tick`);
 const f = p.state();
 console.log(`final: pos=(${f[0].toFixed(3)}, ${f[1].toFixed(3)}, ${f[2].toFixed(3)}) ammo=${f[10]}/${f[11]} tick=${p.tick()}`);

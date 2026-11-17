@@ -12,7 +12,7 @@ use crate::components::{
     WeaponTable,
 };
 use crate::health::{Health, HitLog, LifeState};
-use crate::movement::step_player;
+use crate::movement::{step_player_ex, MoveCtx};
 use crate::projectile::{projectile_system as projectiles_system, Projectiles};
 use crate::respawn::{respawn_time, RespawnQueue, SpawnPoints};
 use crate::rng::{unit_f32, Purpose};
@@ -46,17 +46,27 @@ pub fn movement(
     params: Res<MoveParamsRes>,
     collision: Res<CollisionRes>,
     table: Res<EntityTable>,
-    mut q: Query<(&mut Transform, &mut Motion, &LastInput, &LifeState)>,
+    mut q: Query<(
+        &mut Transform,
+        &mut Motion,
+        &LastInput,
+        &LifeState,
+        Option<&WeaponState>,
+    )>,
 ) {
     let Some(p) = params.0 else {
         return;
     };
     for (_, e) in table.sorted() {
-        if let Ok((mut t, mut m, last, life)) = q.get_mut(e) {
+        if let Ok((mut t, mut m, last, life, w)) = q.get_mut(e) {
             if !life.is_alive() {
                 continue;
             }
-            let next = step_player(&m.to_auth(&t), &last.cmd, &p, &collision.0);
+            let ctx = MoveCtx {
+                reloading: w.is_some_and(|w| w.fsm.is_reloading()),
+                load_kg: None,
+            };
+            let next = step_player_ex(&m.to_auth(&t), &last.cmd, &p, &collision.0, &ctx);
             t.pos = next.pos;
             t.yaw = next.yaw;
             t.pitch = next.pitch;

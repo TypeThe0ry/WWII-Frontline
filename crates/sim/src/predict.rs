@@ -7,7 +7,7 @@
 
 use crate::collision::CollisionData;
 use crate::ids::{PlayerId, Tick};
-use crate::movement::{step_player, MoveParams, PlayerAuthState};
+use crate::movement::{step_player_ex, MoveCtx, MoveParams, PlayerAuthState};
 use crate::weapon::{step_weapon, ShotCtx, WeaponOut, WeaponParams, WeaponState};
 use crate::world::{SimConfig, DEFAULT_ROLE};
 use crate::{data::GameData, ids::EntityId};
@@ -98,7 +98,14 @@ impl PredictSim {
 
     /// Predicts one tick.
     pub fn step_player(&mut self, cmd: &InputCmd) -> PlayerAuthState {
-        self.state = step_player(&self.state, cmd, &self.params, &self.collision);
+        let mctx = MoveCtx {
+            reloading: self
+                .weapon
+                .as_ref()
+                .is_some_and(|(w, _)| w.fsm.is_reloading()),
+            load_kg: None,
+        };
+        self.state = step_player_ex(&self.state, cmd, &self.params, &self.collision, &mctx);
         self.tick = self.tick.next();
         self.last_weapon_out = WeaponOut::default();
         if let Some((w, wp)) = self.weapon.as_mut() {

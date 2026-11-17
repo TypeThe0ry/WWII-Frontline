@@ -162,7 +162,7 @@ const ok = (name) => {
   } else {
     const p = new wasm.Predictor(0x5eed0014n, 0, 3);
     for (let bz = 0; bz < 4; bz++) for (let bx = 0; bx < 4; bx++) p.loadCollision(bx, bz, readFileSync(join(dir, `c_${bx}_${bz}.bin`)));
-    const st = new DataView(new ArrayBuffer(39));
+    const st = new DataView(new ArrayBuffer(45));
     [128, 2.4, 56, 0, 0, 0, 0, 0, 0].forEach((v, i) => st.setFloat32(i * 4, v, true));
     p.reset(new Uint8Array(st.buffer), 0);
     p.equipWeapon('us_m1_garand', 400);
@@ -174,7 +174,7 @@ const ok = (name) => {
     assert.equal(s[16], 0, 'not blocked');
     assert.equal(p.tick(), 120);
     assert.equal(p.weaponState().length, 33);
-    assert.equal(p.authState().length, 39);
+    assert.equal(p.authState().length, 45);
     assert.ok(typeof p.stateHash() === 'bigint');
     assert.equal(p.unloadCollision(0, 0), true);
     p.free();

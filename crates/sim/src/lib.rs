@@ -29,7 +29,7 @@ pub use data::GameData;
 pub use glam::Vec3;
 pub use health::{Health, LifeState, LifeStateView};
 pub use ids::{EntityId, PlayerId, Tick};
-pub use movement::{step_player, MoveParams, PlayerAuthState, Stance};
+pub use movement::{step_player, step_player_ex, MoveCtx, MoveParams, PlayerAuthState, Stance};
 pub use respawn::{respawn_time, RespawnPolicy, RespawnQueue};
 pub use step::{RuleChange, SimEvent, StepOutput};
 pub use view::WorldView;

@@ -9,6 +9,7 @@ pub fn stance_spread(s: Stance) -> f32 {
     match s {
         Stance::Stand => 1.00,
         Stance::Crouch => 0.80,
+        Stance::Prone => 0.60,
     }
 }
 

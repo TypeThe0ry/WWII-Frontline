@@ -26,14 +26,19 @@
 //! height, gravity, slope limit and capsule come from `data/roles/*.json`.
 
 mod kcc;
+pub mod modifiers;
 mod params;
+pub mod stamina;
 mod stance;
 mod state;
+pub mod validate;
 
 pub use kcc::{move_capsule, KccMove};
 pub use params::{MoveParams, ParamsError};
-pub use stance::{capsule_height, Stance};
+pub use stamina::quantised as stamina_quantised;
+pub use stance::{capsule_height, duration_ticks, eye_height, stance_height, Stance};
 pub use state::PlayerAuthState;
+pub use validate::{check_displacement, max_speed_for, MoveBound, Violation};
 
 use frontline_protocol::msg::input::{buttons, InputCmd};
 use frontline_protocol::quant::{dequant_yaw, pitch_i16_to_rad};
@@ -67,26 +72,52 @@ pub fn decode_move(cmd: &InputCmd) -> (f32, f32) {
     normalize_move(f32::from(cmd.move_x) / 127.0, f32::from(cmd.move_z) / 127.0)
 }
 
-/// Horizontal speed (m/s at full deflection) chosen by the buttons and stance.
-fn select_speed(cmd: &InputCmd, forward: f32, want: Stance, p: &MoveParams) -> f32 {
+/// Per-tick context that is not part of the movement state: weapon and loadout facts.
+#[derive(Debug, Clone, Copy, Default, PartialEq)]
+pub struct MoveCtx {
+    /// A reload is in progress (speed x `reload_move_mult`).
+    pub reloading: bool,
+    /// Carried load; `None` = the reference load (no penalty).
+    pub load_kg: Option<f32>,
+}
+
+/// What the commanded move costs / selects, see [`select_speed`].
+struct Speed {
+    mps: f32,
+    sprint: bool,
+    prone_fast: bool,
+}
+
+/// Horizontal speed (m/s at full deflection) chosen by the buttons, stance and stamina.
+fn select_speed(
+    cmd: &InputCmd,
+    forward: f32,
+    want: Stance,
+    can_exert: bool,
+    p: &MoveParams,
+) -> Speed {
     let walk = cmd.aux & AUX_WALK != 0;
-    match want {
-        Stance::Crouch => {
-            if walk {
-                p.crouch_walk_mps
-            } else {
-                p.crouch_run_mps
-            }
+    let sprint_btn = cmd.buttons & buttons::SPRINT != 0;
+    let (mut sprint, mut prone_fast) = (false, false);
+    let mps = match want {
+        Stance::Prone if sprint_btn && can_exert && !walk => {
+            prone_fast = true;
+            p.prone_fast_mps
         }
-        Stance::Stand => {
-            if cmd.buttons & buttons::SPRINT != 0 && forward > 0.0 {
-                p.sprint_mps
-            } else if walk {
-                p.walk_mps
-            } else {
-                p.run_mps
-            }
+        Stance::Prone => p.prone_mps,
+        Stance::Crouch if walk => p.crouch_walk_mps,
+        Stance::Crouch => p.crouch_run_mps,
+        Stance::Stand if sprint_btn && forward > 0.0 && can_exert => {
+            sprint = true;
+            p.sprint_mps
         }
+        Stance::Stand if walk => p.walk_mps,
+        Stance::Stand => p.run_mps,
+    };
+    Speed {
+        mps,
+        sprint,
+        prone_fast,
     }
 }
 
@@ -119,24 +150,62 @@ fn ramp_horizontal(
     }
 }
 
-/// Advances one player by one tick. Pure: the result depends only on the arguments.
-///
-/// Out of loaded collision (or a non-finite state) the position is kept and `blocked` is set.
+/// Headroom above the feet: how tall a capsule may be at `pos` (terrain overhangs only; the
+/// collision world has no other ceilings yet).
+fn headroom(col: &CollisionData, pos: Vec3, p: &MoveParams) -> f32 {
+    let probe = 0.05;
+    match col.raycast(pos + Vec3::new(0.0, probe, 0.0), Vec3::Y, p.height_stand_m) {
+        Some(h) => h.t + probe,
+        None => p.height_stand_m,
+    }
+}
+
+/// Advances one player by one tick with the default context (no reload, reference load).
 pub fn step_player(
     state: &PlayerAuthState,
     cmd: &InputCmd,
     p: &MoveParams,
     col: &CollisionData,
 ) -> PlayerAuthState {
+    step_player_ex(state, cmd, p, col, &MoveCtx::default())
+}
+
+/// Advances one player by one tick. Pure: the result depends only on the arguments.
+///
+/// Out of loaded collision (or a non-finite state) the position is kept and `blocked` is set.
+pub fn step_player_ex(
+    state: &PlayerAuthState,
+    cmd: &InputCmd,
+    p: &MoveParams,
+    col: &CollisionData,
+    ctx: &MoveCtx,
+) -> PlayerAuthState {
     let mut s = *state;
     s.yaw = dequant_yaw(cmd.yaw, 16);
     s.pitch = pitch_i16_to_rad(cmd.pitch);
+    s.stamina = s.stamina.clamp(0.0, p.stamina_max);
 
-    let want = if cmd.buttons & buttons::CROUCH != 0 {
+    let mut want = if cmd.buttons & buttons::PRONE != 0 {
+        Stance::Prone
+    } else if cmd.buttons & buttons::CROUCH != 0 {
         Stance::Crouch
     } else {
         Stance::Stand
     };
+    // Rising needs room: pick the tallest stance that fits under the ceiling.
+    if want.pose() < s.stance.pose() && s.pos.is_finite() {
+        let room = headroom(col, s.pos, p);
+        while want != s.stance && stance::stance_height(want, p) > room {
+            want = if want == Stance::Stand {
+                Stance::Crouch
+            } else {
+                Stance::Prone
+            };
+        }
+        if want.pose() > s.stance.pose() {
+            want = s.stance;
+        }
+    }
     stance::advance(&mut s, want, p);
 
     // Out-of-bounds protection (ARCHITECTURE 9.3): never move on or into unloaded terrain.
@@ -151,11 +220,26 @@ pub fn step_player(
 
     // Wish velocity.
     let (mx, mz) = decode_move(cmd);
-    let speed = select_speed(cmd, mz, want, p);
+    let exert = stamina::can_exert(&s);
+    let sel = select_speed(cmd, mz, want, exert, p);
+    let mut speed = sel.mps;
+    if cmd.buttons & buttons::AIM != 0 && !sel.sprint && !ctx.reloading {
+        speed *= p.ads_mult[want as usize];
+    }
+    if ctx.reloading {
+        speed *= p.reload_move_mult;
+    }
+    if let Some(kg) = ctx.load_kg {
+        speed *= modifiers::load_mult(kg, p);
+    }
     let (sy, cy) = (libm::sinf(s.yaw), libm::cosf(s.yaw));
     let wish_x = (mx * cy + mz * sy) * speed;
     let wish_z = (mz * cy - mx * sy) * speed;
     let has_input = mx != 0.0 || mz != 0.0;
+    // Stamina is only spent while actually moving.
+    let spend_sprint = sel.sprint && has_input;
+    let spend_fast = sel.prone_fast && has_input;
+    let mut jumped = false;
 
     let mut vel = s.vel;
     let mut grounded = s.grounded;
@@ -169,21 +253,36 @@ pub fn step_player(
             if has_input {
                 speed
             } else {
-                select_speed(cmd, 1.0, want, p)
+                select_speed(cmd, 1.0, want, exert, p).mps
             },
             p,
         );
         vel.x = hx;
         vel.z = hz;
         vel.y = 0.0;
-        if cmd.buttons & buttons::JUMP != 0 && want == Stance::Stand {
+        if cmd.buttons & buttons::JUMP != 0
+            && want == Stance::Stand
+            && stamina::can_afford(&s, p.jump_cost)
+        {
             vel.y = p.jump_speed_mps;
             grounded = false;
+            jumped = true;
         }
     } else if has_input {
         vel.x += (wish_x - vel.x) * p.air_control;
         vel.z += (wish_z - vel.z) * p.air_control;
     }
+    stamina::update(
+        &mut s,
+        stamina::Spend {
+            sprint: spend_sprint,
+            prone_fast: spend_fast,
+            jump: jumped,
+            extra: 0.0,
+        },
+        want,
+        p,
+    );
 
     // Vertical displacement for this tick (exact for constant gravity).
     let g = p.gravity_mps2;

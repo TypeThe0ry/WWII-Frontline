@@ -80,7 +80,7 @@ fn fold(states: &[PlayerAuthState]) -> u64 {
 /// M0-012: re-pinned (0x0427_5f5f_f85f_ebd8 before) because ground movement now ramps linearly
 /// (accel 0.25 s / decel 0.20 s from data/roles/rifleman.json), and the script holds each command
 /// 30 ticks instead of 7 so that the player still travels.
-const GOLDEN: u64 = 0x1fe0_0bf7_4d6b_9efa;
+const GOLDEN: u64 = 0x3f59_d71b_c403_5a2e;
 
 #[test]
 fn movement_replay_10k() {
