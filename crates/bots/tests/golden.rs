@@ -31,7 +31,11 @@ pub fn run_hash(seed: u64, ticks: u32) -> Option<u64> {
             team,
             x,
             z,
-            if team == Team::Us { 0.0 } else { std::f32::consts::PI },
+            if team == Team::Us {
+                0.0
+            } else {
+                std::f32::consts::PI
+            },
         );
     }
     let mut h = 0xcbf2_9ce4_8422_2325u64;

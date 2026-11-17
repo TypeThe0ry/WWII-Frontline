@@ -16,7 +16,8 @@ mod embedded {
 }
 
 pub use defs::{
-    BotsRulesDef, DataStatus, Faction, LoadoutDef, RespawnRulesDef, RoleDef, RulesDef, VehicleDef, WeaponDef,
+    BotsRulesDef, DataStatus, Faction, LoadoutDef, RespawnRulesDef, RoleDef, RulesDef, VehicleDef,
+    WeaponDef,
 };
 /// SHA-256 (first 8 bytes, little-endian) of the canonicalised `/data` tree. Sent as
 /// `Hello.data_hash`; client and server must agree (ARCHITECTURE 8.2).

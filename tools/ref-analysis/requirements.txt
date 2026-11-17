@@ -1,0 +1,6 @@
+# Runtime + test dependencies of tools/ref-analysis (ffmpeg / ffprobe >= 6 must be on PATH).
+# Versions are the ones the test-suite was last run with (2026-11-17).
+numpy>=1.26
+scipy>=1.11
+opencv-python-headless>=4.9
+pytest>=8

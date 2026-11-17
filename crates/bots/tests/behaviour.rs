@@ -234,7 +234,11 @@ fn commands_are_always_legal_in_a_long_fight() {
             team,
             x,
             z,
-            if team == Team::Us { 0.0 } else { std::f32::consts::PI },
+            if team == Team::Us {
+                0.0
+            } else {
+                std::f32::consts::PI
+            },
         );
     }
     let mut last: std::collections::BTreeMap<u8, (u16, u16, bool)> = Default::default();

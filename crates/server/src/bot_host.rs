@@ -28,7 +28,14 @@ const MAX_SAMPLES: usize = 4_000_000;
 /// free id), teams alternate US, GER, ... so `--bots N` splits evenly.
 pub fn bot_slot(index: u16) -> (PlayerId, Team) {
     let id = 127u16.saturating_sub(index) as PlayerId;
-    (id, if index.is_multiple_of(2) { Team::Us } else { Team::Ger })
+    (
+        id,
+        if index.is_multiple_of(2) {
+            Team::Us
+        } else {
+            Team::Ger
+        },
+    )
 }
 
 /// Display name of the `index`-th bot.

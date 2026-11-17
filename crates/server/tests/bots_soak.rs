@@ -188,7 +188,10 @@ fn bots_smoke_20s() {
         "server_bots must equal the configured count"
     );
     assert_eq!(s.out_of_bounds, 0);
-    assert_eq!(s.rejected_total, 0, "bots produced inputs the validator refused");
+    assert_eq!(
+        s.rejected_total, 0,
+        "bots produced inputs the validator refused"
+    );
 }
 
 #[test]
