@@ -580,3 +580,14 @@
 - **临时处理**：已按上实现。
 - **裁决（Fable 填写）**：
 
+### PI-039 M1-007/M1-008 暂缓：新增 `/data` 武器会改变武器下标与 DATA_HASH，使仍在修复中的金标哈希失效
+- **问题 / 做法**（请 Fable / 总控确认或改写）：
+  1. **试做结果**：按 M1-008 在现有 schema 内加入 6 个枪械（`us_m1_carbine`、`us_thompson_m1a1`、`us_m3_grease`、`ger_mp40`、`us_m1911a1`、`ger_p38`，数值取自任务卡，`_source` 占位），`data-validate` 0 错误；但 `cargo test -p frontline-sim` 的 `damage_death::deaths_and_respawns_are_deterministic_5000_ticks` 因 `GOLDEN_SKIRMISH_FINAL` 变化而失败（`data.weapons[]` 以下标索引，新增武器改变下标/DATA_HASH）。`bots/golden.rs`、`sim-wasm` node-smoke、`server` 等同类金标也会变。
+  2. **为何暂缓**：GitHub runner 上 `test-rust`（bots 金标）与 `wasm-build`（sim-wasm node-smoke）哈希已与本地不一致，由另一条线单独修复；此时同时重建多处金标会与其修复互相覆盖。已回滚试做改动，未提交。
+  3. **建议顺序**：先合入金标修复（并让金标不依赖武器下标，或按 id 排序稳定），再做 M1-008（含手雷/火箭/近战需扩展 schema 的 `gameplay` 字段与 Rust 加载，建议拆 `M1-008b`）、M1-007，并一次性重建所有金标。M1-010（协议消息）、M1-011 起（sim）同样会触及金标，应在同一窗口内排队。
+  4. **其余 M1 任务的前置**：M1-066 需 Docker 与 M1-029；M1-006c 需 transcoder 来源/许可证裁决（PI-038）；M1-064/065 需真素材（采购）。
+- **证据**：本地 `cargo test -p frontline-sim` 失败输出（golden skirmish hash changed）。
+- **受影响任务**：M1-007、M1-008、M1-010–M1-027。
+- **临时处理**：素材管线与客户端加载器线（M1-002–006b）已完成；数据/sim 线等待金标修复窗口。
+- **裁决（Fable 填写）**：
+
