@@ -54,6 +54,7 @@ def iter_frames(
     p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     assert p.stdout is not None
     i = 0
+    early = True
     try:
         while True:
             buf = p.stdout.read(size)
@@ -62,11 +63,14 @@ def iter_frames(
             a = np.frombuffer(buf, dtype=np.uint8)
             yield i, (a.reshape(h, w) if gray else a.reshape(h, w, 3))
             i += 1
+        early = False
     finally:
+        if early:  # consumer stopped reading: do not wait for ffmpeg to finish
+            p.kill()
         p.stdout.close()
         err = p.stderr.read().decode(errors="replace") if p.stderr else ""
         p.wait()
-        if p.returncode not in (0, None) and i == 0:
+        if not early and p.returncode != 0 and i == 0:
             raise ToolError(f"ffmpeg failed: {err.strip()}")
 
 

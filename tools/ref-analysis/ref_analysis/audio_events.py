@@ -53,6 +53,32 @@ def _noise_floor(env: np.ndarray) -> tuple[float, float]:
     return med, mad
 
 
+def _interval_by_comb(onsets_s: np.ndarray, min_s: float = 0.015, max_s: float = 3.0) -> float | None:
+    """Repetition period of a train of onsets: the smallest period T whose 'comb score' (fraction of onsets
+    that have a partner T later, within +-8 % of T) reaches 60 % of the best score over a log grid of T.
+    Multiples of the true period score as well, hence 'smallest'; echoes score low (few coincidences)."""
+    st = np.sort(np.asarray(onsets_s, dtype=np.float64))
+    if len(st) < 3:
+        return None
+    grid = np.exp(np.arange(np.log(min_s), np.log(max_s), 0.01))
+    score = np.zeros(len(grid))
+    for k, T in enumerate(grid):
+        tol = max(0.004, 0.08 * T)
+        lo = np.searchsorted(st, st + T - tol, side="left")
+        hi = np.searchsorted(st, st + T + tol, side="right")
+        score[k] = np.count_nonzero(hi > lo) / len(st)
+    best = score.max()
+    if best <= 0:
+        return None
+    idx = np.where(score >= 0.6 * best)[0]
+    # take the local maximum of the first run of qualifying grid points
+    run_end = idx[0]
+    while run_end + 1 < len(grid) and score[run_end + 1] >= 0.6 * best:
+        run_end += 1
+    k = idx[0] + int(np.argmax(score[idx[0]:run_end + 1]))
+    return float(grid[k])
+
+
 def _segments(above: np.ndarray) -> list[tuple[int, int]]:
     """(start, end) sample ranges of consecutive True runs."""
     d = np.diff(np.concatenate([[0], above.astype(np.int8), [0]]))
@@ -76,16 +102,16 @@ def detect_events(
     win_ms: float = 1.0,
     thresh_frac: float = 0.25,
     noise_k: float = 8.0,
-    min_gap_frac: float = 0.5,
+    min_gap_frac: float = 0.35,
     onset_frac: float = 0.3,
     mode: str = "onset",
 ) -> AudioResult:
     """Detect shot events and return their times (3.3 step 3).
 
     The 1 ms RMS envelope is thresholded at max(noise + noise_k*sigma, thresh_frac * 99.9th percentile).
-    Above-threshold runs closer than `min_gap_frac` x the shot interval are merged into one event (echo /
-    reverb secondary peaks are removed this way). Without `expected_interval_s` it is estimated from the
-    data in two refinement passes. `mode='onset'` returns the time the envelope rises above `onset_frac` of
+    Above-threshold runs closer than `min_gap_frac` (0.35) x the shot interval are merged into one event (echo /
+    reverb secondary peaks are removed this way). Without `expected_interval_s` it is estimated by a comb
+    score over the onset train and refined once or twice from the detected gaps. `mode='onset'` returns the time the envelope rises above `onset_frac` of
     the event's peak (insensitive to the decay shape); `mode='peak'` returns the envelope maximum."""
     env = envelope(x, rate, win_ms)
     floor, sigma = _noise_floor(env)
@@ -98,16 +124,12 @@ def detect_events(
 
     guess = expected_interval_s
     if guess is None:
-        segs = _merge(raw, int(0.015 * rate))
-        guess = 0.05
-        for _ in range(3):
-            if len(segs) < 3:
+        guess = _interval_by_comb(np.array([a for a, _ in _merge(raw, int(0.005 * rate))]) / rate) or 0.1
+        for _ in range(2):  # refine with the median of the detected onset gaps
+            st = np.array([a for a, _ in events(guess)], dtype=np.float64) / rate
+            if len(st) < 3:
                 break
-            st = np.array([a for a, _ in segs], dtype=np.float64) / rate
-            gaps = np.diff(st)
-            big = gaps[gaps > gaps.max() * 0.5]
-            guess = float(np.median(big))
-            segs = events(guess)
+            guess = float(np.median(np.diff(st)))
     segs = events(guess)
 
     times = []

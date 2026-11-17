@@ -20,7 +20,11 @@ from .own_compare import fill_own, load_own, own_table_md
 from .record import read_summary, validate_summary
 
 ROOT = Path(__file__).resolve().parents[3]
-MEAS = ROOT / "docs" / "measurements"
+
+
+def _meas() -> Path:
+    """docs/measurements, or $REF_MEASUREMENTS_DIR (tests, scratch runs)."""
+    return Path(os.environ.get("REF_MEASUREMENTS_DIR") or ROOT / "docs" / "measurements")
 
 
 def _cap(p: str) -> str:
@@ -122,7 +126,7 @@ def cmd_stats(a):
 
 
 def cmd_status(a):
-    rows = {(r["id"]): r for r in read_summary(MEAS / "summary.csv")}
+    rows = {(r["id"]): r for r in read_summary(_meas() / "summary.csv")}
     missing, bad = [], []
     for it, rid, _ in all_rows():
         r = rows.get(rid)
@@ -130,7 +134,7 @@ def cmd_status(a):
             missing.append(rid)
         elif r["status"] == "measured" and r["pass"] != "yes":
             bad.append(rid)
-        elif not (MEAS / f"{rid}.md").exists():
+        elif not (_meas() / f"{rid}.md").exists():
             missing.append(rid + " (record file)")
     total = len(all_rows())
     print(f"M0 batch: {total} rows; {total - len(missing)} measured/infeasible with record; "
@@ -141,13 +145,13 @@ def cmd_status(a):
 
 
 def cmd_validate(a):
-    rows = validate_summary(MEAS / "summary.csv")
+    rows = validate_summary(_meas() / "summary.csv")
     print(f"summary.csv ok: {len(rows)} rows, 25 columns")
     return 0
 
 
 def cmd_own_fill(a):
-    n = fill_own(MEAS / "summary.csv", a.own)
+    n = fill_own(_meas() / "summary.csv", a.own)
     print(f"own-fill: {n} rows updated")
     return 0
 
