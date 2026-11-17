@@ -359,6 +359,13 @@ M0 共 21 个任务已提交（M0-021 待提交）；提交哈希取自 `git log
 - 遗留：C3 团队通道、载具记录、带宽调节器未做（M1/M2）；`pred_hash` 应改由 sim-wasm 导出（M0-025）；实机 tc netem 对账可现在复测（M0-022 遗留）；Firefox/WebKit 仍未验证（H-103）；`bots_soak::bots_smoke_20s` 在 M0-026 进行中失败（非本任务）。
 - 影响：`client/e2e/net-support.ts` 默认不再起 `--dev-echo`，浏览器矩阵 C2 来源已是 `server`；`SimLoop::{snapshot_stats, snapshot_degraded}` 与 `SnapshotScheduler`（可被 M0-027 headless 对拍）；M0-025 须按 PI-024 第 4 条解释 `flags`/`anim`。
 
+### M0-025 client/render：灰盒角色、第一人称枪与射击反馈 — partial — 2026-11-17 — 提交 （待总控填）
+- 做了什么：`client/src/render/actors`（ActorManager、实例化灰盒角色/枪、命名与 `window.__placeholders`）、`render/fx`（枪口焰、曳光、尘土、第一人称相机与枪）、`ui/{crosshair,hit-marker}`、`actors-boot.ts` 接线（`?server=` 用真实 GameState，`?actors=demo` 无服务器）；键位改为 Left Shift 冲刺 / CapsLock 调试慢走；sim-wasm 导出 `predHash`，client 删除 TS 版。
+- 关键实测：30 次开火同帧差 0；10 bot 60 s 渲染二阶差分 RMS 1e-5 m、0 瞬移；10 / 100 个士兵相对 0 个：draw call 均 +16、三角形 +6 520 / +65 200；真实服务器（含快照与 8 个 bot）冒烟通过，同队两页互见；vitest 226 通过。
+- 遗留：CPU/GPU 帧时间待参考机（H-021）；tc netem 本机无 tc 未测；软件渲染下带植被场景仅 1–4 帧/s，联网时出现纠正（环境所致）。
+- 影响：PI-025（灰盒尺寸在 data/placeholders，改变 DATA_HASH；占位名统一 `__`）；M0-030 可用 `?actors=demo&entities=N`；服务器与 wasm 需同源重建。
+
+
 ## 8. 如何维护本文件
 
 - **执行者**：收工前，在"任务日志"末尾追加本任务条目（`### 任务 ID 标题 — 状态 — 日期 — 提交 abc1234`，3–6 行：做了什么、关键实测数字、遗留问题/需人工事项、对后续任务的影响）；写入前重新读取文件末尾（并行执行者可能同时追加），只追加、不改别人的条目。数字必须来自实测，查不到写"未记录"。同时更新 `tasks/STATUS.md` 自己那一行。

@@ -3,7 +3,7 @@ import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { createServer, type ViteDevServer } from 'vite';
 import { HAVE_BINARIES, removeDir, REPO_ROOT, SERVER_BIN, SKIP_REASON } from './net-support';
 
@@ -140,3 +140,35 @@ test(`browser -> server -> walk -> see the other entities (first-person camera, 
   expect(errors).toEqual([]);
 });
 }
+
+test('two players see each other as grey-box actors (3 pages: two of them share a team, friendlies are always visible)', async ({ browser }) => {
+  const pages: Page[] = [];
+  for (let i = 0; i < 3; i++) {
+    const p = await (await browser.newContext({ viewport: { width: 320, height: 180 } })).newPage();
+    await p.goto(`${base}?renderer=webgl2&empty=1&transport=ws&server=127.0.0.1:${wsPort}`);
+    pages.push(p);
+  }
+  try {
+    const info: { id: number; team: number }[] = [];
+    for (const p of pages) {
+      await p.waitForFunction(() => window.__netGame !== undefined && window.__actors !== undefined, undefined, { timeout: 120_000 });
+      info.push(await p.evaluate(() => ({ id: window.__netGame!.session.welcome.playerId, team: window.__netGame!.session.welcome.team })));
+    }
+    const a = info.findIndex((x, i) => info.some((y, j) => j !== i && y.team === x.team));
+    const b = info.findIndex((y, j) => j !== a && y.team === info[a]!.team);
+    console.log(`[actors-net two players] welcome ${JSON.stringify(info)} -> pair ${a},${b}`);
+    for (const [me, other] of [[a, b], [b, a]] as const) {
+      await pages[me]!.waitForFunction(
+        (id) => {
+          const e = window.__netGame!.game.state.entities;
+          for (let k = 0; k < e.count; k++) if (e.ids[k] === id) return window.__actors!.manager.actor(id) !== undefined;
+          return false;
+        },
+        info[other]!.id,
+        { timeout: 60_000 },
+      );
+    }
+  } finally {
+    for (const p of pages) await p.context().close();
+  }
+});

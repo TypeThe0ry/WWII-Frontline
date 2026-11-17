@@ -339,6 +339,7 @@
 - **受影响任务**：M0-019（pred_hash 比较与 pos_corr 内容）、M0-025（`GameState` / 事件接线）、M0-027、M1-041（载具预测的哈希）、M2-041（键位）、M1-025（FireCmd）。
 - **临时处理**：按此实现。
 - **裁决（Fable 填写）**：
+- **M0-025 落实**（2026-11-17）：①键位：冲刺 = Left Shift（按住）；慢走（`aux` bit0）默认不绑定，M0 调试键 `CapsLock`；Right Shift 不再绑定；`client/src/input/{keymap,input.test}.ts` 已按此更新（原 "Shift = walk" 测试作废）。②`predHash` 已由 sim-wasm 导出（`crates/sim-wasm/src/lib.rs`，调用 protocol 的唯一实现），`client/src/game/pred-hash.ts` 已删除，GameLoop / 测试 harness 改调 wasm，`pred-hash.test.ts` 经 wasm 对拍同一组黄金值。
 - **M0-019 对齐情况**（2026-11-17，按 PI-023 实现，无修改）：①`ack_snapshot_tick` 低 16 位用"不超过本客户端最近发出的快照 tick 的、低 16 位相同的最新 tick"还原（`ClientBook::extend_ack`，环绕测试）；只承认服务器真发出过的 tick。②服务器为每个发出的包记录 `(tick, CRC-8(该包所告知的自身位置))`，客户端 `pred_hash` 与"其 ack 所指快照的记录"比较；**每个客户端的第 1 个包必带 `pos_corr`**，之后只在不匹配时置位；置位后**每个包**都带 `pos_corr`（位置 = 该包 `ack_input_seq` 对应命令之后的权威位置），直到收到 ack ≥ 首个携带包的 tick 且哈希匹配才清除（丢包安全）；不匹配/清除各只在"更新的 ack"到来时评估一次，旧 ack 不会重新触发。③哈希只有一份实现：`crates/protocol/src/snapshot/pred_hash.rs`（`crc8`、`pred_hash(x,y,z)`、`pred_hash_q(QPos)`，纯函数，无新依赖），单元测试用 `pred-hash.test.ts` 的 5 个黄金值（66、175、151、0、16）+ CRC-8 检验值 0xF4 对拍通过；**后续应由 sim-wasm 导出 `predHash` 并替换 `client/src/game/pred-hash.ts`（接线留给 M0-025）**。④线上自身实体 id = `player_id`（实体记录的 id 即 PlayerId，0..127；服务器不向客户端发它自己的记录，自身状态走 `self_state`），客户端 `selfWireId = player_id` 的假定成立，无需映射。⑤`ack_input_seq` = sim 本 tick 实际用于该玩家的命令的 seq（重复/保持输入时仍为最后一条真实命令的 seq）；`input_slack` = 最近 8 条被接受命令的"到达时距执行 tick 的提前量（tick）"的最小值，钳到 0..15，无样本时为 1。⑥`HitConfirm` 无击杀位、事件 14 位位置码 256 m/16384（1/64 m）均按 crates/protocol 现状实现，未扩展协议。
 
 ### PI-024 M0-019：AOI v0 / 快照发送的实现细化，以及与 PI-010 提示相悖的实测
@@ -359,4 +360,16 @@
 - **建议方案**：①M1-024 的 AOI v1 在此基础上加团队通道与标记；②若 M1 要把 T1 提到 20 Hz 平滑，打开 `near_every_packet` 并重测带宽；③C3 团队通道、载具记录、带宽调节器（M2-020）未做。
 - **受影响任务**：M0-025（`predHash` 换 wasm、flags/anim 位含义）、M0-027、M1-024、M1-010、M2-020。
 - **临时处理**：按此实现。
+- **裁决（Fable 填写）**：
+
+### PI-025 M0-025：灰盒武器尺寸与第一人称视图参数放在 data/placeholders/（而非 weapon.schema 的 fx.dimensions）；占位命名统一为 `__` 分隔
+
+- **状态**：open
+- **类别**：数据位置 / 命名
+- **提出者 / 日期**：M0-025 / 2026-11-17
+- **问题**：任务卡要求枪的长度、枪口位置等"写在 /data 的 fx/dimensions 字段"，但 `weapon.schema.json` 的 `fx` 目前只有 `muzzle_flash_ms`/`tracer`，且 `crates/sim/src/data_defs.rs`（deny_unknown_fields）要同步修改；本任务被限定不改 crates/sim。另：M0-023/024 的占位名（`PH_V-NAT-007_terrain`、`PH_V-NAT-004_shrub` 等）用单下划线，不匹配验收 2 的 `^PH_V-[A-Z]+-[A-Z0-9-]+(__.+)?$`。
+- **证据**：client/src/render/actors/actor-data.ts；data/placeholders/weapon_models.json（`build.rs` 对未知目录只计入 DATA_HASH，不做类型检查；`tools/data-validate` 不扫该目录）；client/e2e/actors.spec.ts 的命名检查。
+- **建议方案**：现状：灰盒尺寸（枪各部件尺寸、第一人称握持/开镜偏移、ADS FOV 倍率、`hip_fov_deg`）放 `data/placeholders/weapon_models.json`，客户端运行时校验（正数/三元组）并有单测；胶囊、眼高、站蹲过渡、枪口焰时长、阵营、初速、ads_ms 都来自 role/weapon 数据。M1-046 换真模型时删除该文件；若要保留为正式字段，再在 sim 侧加 `fx.dimensions`。命名：把 M0-023/024 的网格/材质名改为 `__` 分隔（`PH_V-NAT-007__terrain`、`PH_V-NAT-004__shrub`、`…__impostor`），对应 e2e 引用同步。
+- **受影响任务**：M0-030（读 `window.__placeholders`）、M1-001（缺失素材报告）、M1-046。
+- **临时处理**：按此实现；新增该文件会改变 DATA_HASH（服务器与 wasm 需用同一份 data 重建）。
 - **裁决（Fable 填写）**：
