@@ -65,6 +65,7 @@ pub struct World {
     schedule: Schedule,
     alloc: EntityAllocator,
     players: Vec<PlayerView>,
+    objective_views: Vec<ObjectiveView>,
     pending_events: Vec<SimEvent>,
 }
 
@@ -125,6 +126,10 @@ impl World {
         ecs.insert_resource(crate::throwables::Smokes::default());
         ecs.insert_resource(Projectiles::default());
         ecs.insert_resource(crate::suppression::SuppressSeen::default());
+        ecs.insert_resource(crate::rules::Objectives::default());
+        ecs.insert_resource(crate::rules::MatchState::default());
+        ecs.insert_resource(crate::rules::MatchCfg::from_data(cfg.data, cfg.tick_hz));
+        ecs.insert_resource(crate::rules::RuleChangeBuf::default());
         ecs.insert_resource(EventBuf::default());
         ecs.insert_resource(HitLog::default());
         ecs.insert_resource(RespawnQueue::default());
@@ -141,6 +146,7 @@ impl World {
             schedule: build_schedule(),
             alloc: EntityAllocator::new(),
             players: Vec::new(),
+            objective_views: Vec::new(),
             pending_events: Vec::new(),
         }
     }
@@ -171,7 +177,9 @@ impl World {
         self.pending_events.extend(produced);
         StepOutput {
             events: std::mem::take(&mut self.pending_events),
-            rule_changes: Vec::new(),
+            rule_changes: std::mem::take(
+                &mut self.ecs.resource_mut::<crate::rules::RuleChangeBuf>().0,
+            ),
         }
     }
 
@@ -276,6 +284,55 @@ impl World {
     pub fn health(&self, id: PlayerId) -> Option<f32> {
         let (_, e) = *self.ecs.resource::<PlayerIndex>().map.get(&id)?;
         self.ecs.entity(e).get::<Health>().map(|h| h.hp)
+    }
+
+    /// Places the strongpoints (replaces any earlier set). US-owned points start at p = +100,
+    /// German ones at -100, neutral ones at 0.
+    pub fn set_objectives(&mut self, specs: &[crate::rules::ObjectiveSpec]) {
+        self.ecs.resource_mut::<crate::rules::Objectives>().0 = specs
+            .iter()
+            .copied()
+            .map(crate::rules::Objective::new)
+            .collect();
+    }
+
+    pub fn objective_list(&self) -> &[crate::rules::Objective] {
+        &self.ecs.resource::<crate::rules::Objectives>().0
+    }
+
+    /// Starts the warm-up (`Idle -> Warmup`); capturing is locked until it ends.
+    pub fn begin_warmup(&mut self) {
+        let now = self.tick().0;
+        let w = self.ecs.resource::<crate::rules::MatchCfg>().warmup_ticks;
+        let mut ms = self.ecs.resource_mut::<crate::rules::MatchState>();
+        ms.phase = crate::rules::MatchPhaseKind::Warmup;
+        ms.phase_start = now;
+        ms.ends_at = now + w;
+        let ends = ms.ends_at;
+        self.ecs
+            .resource_mut::<crate::rules::RuleChangeBuf>()
+            .0
+            .push(crate::step::RuleChange::MatchPhase {
+                phase: crate::rules::MatchPhaseKind::Warmup,
+                ends_at: ends,
+            });
+    }
+
+    /// Number of connected human players (bots do not count towards the early start).
+    pub fn set_human_players(&mut self, n: u8) {
+        self.ecs.resource_mut::<crate::rules::MatchState>().humans = n;
+    }
+
+    pub fn match_state(&self) -> &crate::rules::MatchState {
+        self.ecs.resource::<crate::rules::MatchState>()
+    }
+
+    /// Overrides the match timing (tests, sandbox): warm-up and time limit in seconds.
+    pub fn configure_match(&mut self, warmup_s: f32, time_limit_s: f32) {
+        let hz = f32::from(self.cfg.tick_hz);
+        let mut c = self.ecs.resource_mut::<crate::rules::MatchCfg>();
+        c.warmup_ticks = (warmup_s * hz).ceil() as u32;
+        c.limit_ticks = (time_limit_s * hz).ceil() as u32;
     }
 
     /// Suppression `S in [0, 100]` of a player (M1-017).
@@ -411,6 +468,44 @@ impl World {
                 st.s = s;
                 st.window_until = u32::MAX;
                 st.pinned_until = pinned_until;
+            }
+        }
+    }
+
+    /// Test-only (feature `test-util`): sets a strongpoint's progress and owners.
+    #[cfg(feature = "test-util")]
+    pub fn debug_set_objective(
+        &mut self,
+        id: u16,
+        p: f32,
+        owner: Option<crate::components::Team>,
+        last_owner: Option<crate::components::Team>,
+    ) {
+        for o in self
+            .ecs
+            .resource_mut::<crate::rules::Objectives>()
+            .0
+            .iter_mut()
+        {
+            if o.id == id {
+                o.p = p;
+                o.owner = owner;
+                o.last_owner = last_owner;
+            }
+        }
+    }
+
+    /// Test-only (feature `test-util`): moves a strongpoint (height-tolerance tests).
+    #[cfg(feature = "test-util")]
+    pub fn debug_move_objective(&mut self, id: u16, pos: Vec3) {
+        for o in self
+            .ecs
+            .resource_mut::<crate::rules::Objectives>()
+            .0
+            .iter_mut()
+        {
+            if o.id == id {
+                o.pos = pos;
             }
         }
     }
@@ -591,6 +686,25 @@ impl World {
                 h.write_bytes(&b[2..]);
             }
         }
+        // M1-018: written only when strongpoints exist / a match runs.
+        let objs = self.ecs.resource::<crate::rules::Objectives>();
+        if !objs.0.is_empty() {
+            h.write_u8(0xC1);
+            for o in &objs.0 {
+                h.write_u16(o.id);
+                h.write_f32(o.p);
+                h.write_u8(o.owner.map_or(2, |t| t as u8));
+                h.write_u8(o.last_owner.map_or(2, |t| t as u8));
+                h.write_u8(u8::from(o.locked));
+            }
+        }
+        let ms = self.ecs.resource::<crate::rules::MatchState>();
+        if ms.phase != crate::rules::MatchPhaseKind::Idle {
+            h.write_u8(0xC2 + ms.phase as u8);
+            h.write_u32(ms.phase_start);
+            h.write_u32(ms.ends_at);
+            h.write_u8(ms.humans);
+        }
         let th = self.ecs.resource::<crate::throwables::Throwables>();
         if th.next_id > 0 {
             h.write_u32(th.next_id);
@@ -636,6 +750,17 @@ impl World {
     }
 
     fn refresh_views(&mut self) {
+        self.objective_views.clear();
+        for o in &self.ecs.resource::<crate::rules::Objectives>().0 {
+            self.objective_views.push(ObjectiveView {
+                id: o.id,
+                pos: o.pos,
+                radius_m: o.radius_m,
+                p: o.p,
+                owner: o.owner,
+                contested: o.contested,
+            });
+        }
         self.players.clear();
         let table = self.ecs.resource::<EntityTable>();
         for (id, e) in table.sorted() {
@@ -752,7 +877,7 @@ impl WorldView for World {
         Resources::default() // resources arrive with M1 scoring
     }
     fn objectives(&self) -> &[ObjectiveView] {
-        &[]
+        &self.objective_views
     }
     fn nav_hint(&self) -> &NavData {
         static NAV: NavData = NavData {};

@@ -786,3 +786,12 @@
 - **受影响任务**：M1-019（预测）、M1-038、M1-057/063。
 - **裁决（Fable 填写）**：
 
+
+### PI-059 M1-018：简化胜负规则、阵营符号与预热 API
+
+- **状态**：resolved（实现者裁决，待 Fable 复核）
+- **类别**：sim
+- **提出者 / 日期**：M1 线程 / 2026-11-17
+- **做法**：①占领进度 p：美军为正、德军为负；有效人数 `min(d,4)+0.5·max(0,min(d,10)−4)`，速率 0.2 %/s×有效人数，僵持不动，无人时以 0.15 %/s 回归上一任主人（中立点不回归）。②对局阶段 Idle→Warmup→Live→Ended，M1 简化胜负：全占=FullControl，否则限时比点数、再比 p 之和，仍平=Draw（无延时/加时，Overtime 仅占位）。③新增 API `begin_warmup`、`set_human_players`（真人≥2 提前开始）、`configure_match`，阶段映射到线协议 `Phase` 留待 M1-019/网络任务。④常量进 `/data/rules/match_m1.json`（schema `rule_match`，字段 `early_start_players` 带单位后缀）与既有 `capture.json`；状态按需入哈希，既有 golden 不变。⑤推迟：预热期复活 ×0.5、`zones.json` 载入（M1-034）、载具乘员计入（M2）。
+- **受影响任务**：M1-019、M1-034、M1-038、网络层 Phase 映射。
+- **裁决（Fable 填写）**：

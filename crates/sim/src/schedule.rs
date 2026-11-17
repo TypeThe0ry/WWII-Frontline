@@ -50,6 +50,9 @@ pub fn movement(
     params: Res<MoveParamsRes>,
     collision: Res<CollisionRes>,
     table: Res<EntityTable>,
+    tick: Res<CurrentTick>,
+    ms: Res<crate::rules::MatchState>,
+    mcfg: Res<crate::rules::MatchCfg>,
     mut q: Query<(
         &mut Transform,
         &mut Motion,
@@ -66,6 +69,12 @@ pub fn movement(
     for (_, e) in table.sorted() {
         if let Ok((mut t, mut m, last, life, w, melee, supp)) = q.get_mut(e) {
             let mut cmd = last.cmd;
+            if ms.input_frozen(tick.0 .0, mcfg.freeze_ticks) {
+                // The match is over: movement input is frozen for a few seconds (M1-018).
+                cmd.move_x = 0;
+                cmd.move_z = 0;
+                cmd.buttons &= !(buttons::SPRINT | buttons::JUMP);
+            }
             if supp.s > 0.0 {
                 // M1-017: suppressed players move up to 10 % slower.
                 let k = crate::suppression::effects(supp.s).move_mult;
@@ -473,6 +482,8 @@ pub fn build_schedule() -> Schedule {
             crate::suppression::suppression_assists,
             medical,
             vitals,
+            crate::rules::objectives,
+            crate::rules::match_state,
             respawns,
             bookkeeping,
         )
@@ -493,6 +504,8 @@ pub fn build_schedule() -> Schedule {
             crate::suppression::suppression_assists,
             medical,
             vitals,
+            crate::rules::objectives,
+            crate::rules::match_state,
             respawns,
             bookkeeping,
         )

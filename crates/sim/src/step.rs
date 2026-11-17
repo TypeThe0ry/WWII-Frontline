@@ -2,6 +2,7 @@
 
 use glam::Vec3;
 
+use crate::components::Team;
 use crate::ids::{EntityId, PlayerId};
 use crate::weapon::HitZone;
 
@@ -124,7 +125,25 @@ pub enum SimEvent {
 /// Objective / resource / phase changes (M0-013+; empty for now).
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
-pub enum RuleChange {}
+pub enum RuleChange {
+    /// A strongpoint changed hands the tick `|p|` reached 100 (M1-018). `repeat` = it changed
+    /// hands again within 90 s (anti-farm, scoring is M2).
+    ObjectiveOwner {
+        objective: u16,
+        owner: Team,
+        reason: crate::rules::CaptureReason,
+        repeat: bool,
+    },
+    /// The match entered a phase (`ends_at` = tick it ends, 0 = open ended).
+    MatchPhase {
+        phase: crate::rules::MatchPhaseKind,
+        ends_at: u32,
+    },
+    MatchEnded {
+        reason: crate::rules::VictoryReason,
+        winner: Option<Team>,
+    },
+}
 
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct StepOutput {

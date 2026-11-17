@@ -43,9 +43,15 @@ pub struct Resources {
     pub ammo: i32,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct ObjectiveView {
     pub id: u16,
+    pub pos: Vec3,
+    pub radius_m: f32,
+    /// Capture progress `[-100, +100]`, US positive.
+    pub p: f32,
+    pub owner: Option<Team>,
+    pub contested: bool,
 }
 
 /// Navigation hint data for bots (filled by M0-010+).

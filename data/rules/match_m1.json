@@ -1,0 +1,20 @@
+{
+  "warmup_s": 60,
+  "early_start_players": 2,
+  "time_limit_s": 1200,
+  "ended_freeze_s": 3,
+  "ended_total_s": 30,
+  "repeat_capture_s": 90,
+  "_meta": {
+    "status": "initial",
+    "tunable": [
+      "warmup_s",
+      "early_start_players",
+      "time_limit_s",
+      "ended_freeze_s",
+      "ended_total_s",
+      "repeat_capture_s"
+    ],
+    "calibration_ref": "GAMEDESIGN \u00a72.2 / \u00a73.2; M1-018 simplified win rule (PI-059)"
+  }
+}

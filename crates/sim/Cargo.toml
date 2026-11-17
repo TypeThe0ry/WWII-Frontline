@@ -93,3 +93,15 @@ required-features = ["test-util"]
 [[bench]]
 name = "suppression"
 harness = false
+
+[[test]]
+name = "capture_m1"
+required-features = ["test-util"]
+
+[[test]]
+name = "match_state_m1"
+required-features = ["test-util"]
+
+[[bench]]
+name = "objectives"
+harness = false

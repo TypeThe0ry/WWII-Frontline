@@ -863,9 +863,47 @@ pub struct BotsRulesDef {
     pub meta: Meta,
 }
 
+/// `data/rules/capture.json` (GAMEDESIGN 3.2).
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct CaptureEffDef {
+    pub full_weight_players: u32,
+    pub max_net_players: u32,
+    pub partial_weight_mult: f64,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct CaptureRulesDef {
+    pub k_cap_pct_per_s: f64,
+    pub regress_pct_per_s: f64,
+    pub height_tolerance_m: f64,
+    pub default_radius_m: f64,
+    pub eff: CaptureEffDef,
+    pub vehicle_occupants_counted: bool,
+    #[serde(rename = "_meta")]
+    pub meta: Meta,
+}
+
+/// `data/rules/match_m1.json` (GAMEDESIGN 2.2, M1 simplified match).
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct MatchRulesDef {
+    pub warmup_s: f64,
+    pub early_start_players: u32,
+    pub time_limit_s: f64,
+    pub ended_freeze_s: f64,
+    pub ended_total_s: f64,
+    pub repeat_capture_s: f64,
+    #[serde(rename = "_meta")]
+    pub meta: Meta,
+}
+
 /// All rule families under `data/rules/`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct RulesDef {
     pub respawn: RespawnRulesDef,
     pub bots: BotsRulesDef,
+    pub capture: CaptureRulesDef,
+    pub match_m1: MatchRulesDef,
 }
