@@ -436,6 +436,12 @@ blocked / in-progress / todo：无。M0 的 33 个任务全部已提交（M0-033
 - 遗留 / 需人工：PI-035 待 Fable 确认；ffmpeg 许可证未核实；探测与取包由 M1-006/M1-062 实现。
 - 影响：M1-005 读 `work/audio-report.json` 与 `packs.json`；音频条目 id 用 `@opus`/`@aac`。
 
+### M1-005 素材管线：manifest 与体积预算门禁 — partial — 2026-11-17 — 提交见 git log
+- 新增 `manifest.ts`（读 `.fpak` 索引生成 `assets/manifests/manifest.json`，键/条目排序，仅 `build` 含时间戳）、`budget.ts`（bundle 求和、超预算 1 % 失败、较基线增量 > 20 % 无 `budget-approved` 失败、`core` 只读外部测量）、`consistency.ts`（offset/bytes/sha256 与 `.fpak` 复核、`placeholder:false` 对台账 OK），CLI `manifest` / `manifest-budget`，`manifest-budget.yml` 工作流。
+- 实测：vitest 160 项通过（新增 26）；1000 条目生成 + 校验 < 5 s；空仓库状态作业通过，`core` skipped。
+- 遗留：`core` size-report 缺失；CI 墙钟待 PR 实跑；PI-036 待 Fable 确认。
+- 影响：M1-006 按 manifest 的 `entry`（`.fpak` 逻辑 ID）+ `offset/bytes` 取条目；M1-035 区块命名须与 bundle 通配一致。
+
 ## 8. 如何维护本文件
 
 - **执行者**：收工前，在"任务日志"末尾追加本任务条目（`### 任务 ID 标题 — 状态 — 日期 — 提交 abc1234`，3–6 行：做了什么、关键实测数字、遗留问题/需人工事项、对后续任务的影响）；写入前重新读取文件末尾（并行执行者可能同时追加），只追加、不改别人的条目。数字必须来自实测，查不到写"未记录"。同时更新 `tasks/STATUS.md` 自己那一行。

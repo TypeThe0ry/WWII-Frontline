@@ -33,6 +33,8 @@ export interface AudioItem {
 
 export interface AudioReportItem {
   logical_id: string;
+  /** Ledger asset id when the item was gated (M1-005 reads it to set `placeholder` / `license_ref`). */
+  asset_id?: string;
   cls: AudioClass;
   target_lufs: number;
   source_lufs: number;
@@ -103,7 +105,7 @@ async function processItem(item: AudioItem, tmp: string): Promise<Processed> {
   return {
     item, opus, aac, durationMs: Math.round(seconds * 1000),
     report: {
-      logical_id: item.logical_id, cls: item.cls, target_lufs: target, source_lufs: before.integrated_lufs,
+      logical_id: item.logical_id, ...(item.asset_id ? { asset_id: item.asset_id } : {}), cls: item.cls, target_lufs: target, source_lufs: before.integrated_lufs,
       loudness_measured: measurable, integrated_lufs: after.integrated_lufs, true_peak_dbtp: after.true_peak_dbtp, duration_s: Math.round(seconds * 1000) / 1000,
       channels: wav.channels, preload: isPreload(seconds), bitrate_kbps: bitrate, opus_bytes: opus.length, aac_bytes: aac.length,
     },

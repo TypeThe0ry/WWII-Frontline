@@ -1,0 +1,49 @@
+{
+  "assets": {},
+  "budgets": {
+    "core_bytes": 8388608,
+    "map_carentan_high_bytes": 367001600,
+    "map_carentan_medium_bytes": 157286400,
+    "map_carentan_ultra_bytes": 629145600
+  },
+  "build": "1970-01-01T00:00:00.000Z",
+  "bundles": {
+    "core": [
+      "tex_common_*",
+      "ui_*"
+    ],
+    "map_carentan_high": [
+      "bld_*",
+      "chr_*",
+      "prop_*",
+      "snd_*",
+      "tex_*",
+      "veg_*",
+      "veh_*",
+      "wpn_*"
+    ],
+    "map_carentan_medium": [
+      "bld_*",
+      "chr_*",
+      "prop_*",
+      "snd_*",
+      "tex_*",
+      "veg_*",
+      "veh_*",
+      "wpn_*"
+    ],
+    "map_carentan_ultra": [
+      "bld_*",
+      "chr_*",
+      "prop_*",
+      "snd_*",
+      "tex_*",
+      "veg_*",
+      "veh_*",
+      "wpn_*"
+    ]
+  },
+  "data_hash": "",
+  "game_version": "0.1.0",
+  "schema": 1
+}
