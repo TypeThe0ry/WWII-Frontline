@@ -10,7 +10,7 @@
 //          --viewport WxH (640x360 without --gpu, 1920x1080 with)  --quality high|low  --machine NAME (default: hostname)
 //          --out-dir DIR (reports/m0/perf)  --gpu (use the machine's GPU: no SwiftShader flags)  --headed
 //          --m1 (M1-069: the three M1 scenes of tools/perf/m1-scenes.json on ?scene=world&map=carentan with 60 demo entities; warm-up/capture/repeats from that file unless given; writes perf-<machine>-<renderer>-<scene>.json)
-//          --veg 0|1 (with --m1: vegetation scatter on the world scene; default 1)  --novsync (uncap the frame rate: --disable-frame-rate-limit --disable-gpu-vsync)
+//          --extra "k=v&k2=v2" (with --m1: extra query parameters for the page, e.g. veg_budget=0)  --veg 0|1 (with --m1: vegetation scatter on the world scene; default 1)  --novsync (uncap the frame rate: --disable-frame-rate-limit --disable-gpu-vsync)
 //          --url URL (an already running client instead of starting a Vite dev server)
 // Output: <out-dir>/perf-<machine>-<renderer>-cam<N>.json  { meta, runs: [PerfDump + meta], aggregate }
 // Without a usable WebGPU adapter a webgpu request is skipped and written as { skipped: reason } (reported "未测").
@@ -28,7 +28,7 @@ const CLIENT = path.join(ROOT, 'client');
 const require = createRequire(path.join(CLIENT, 'package.json'));
 
 function parseArgs(argv) {
-  const o = { renderer: 'webgl2', cams: '0,1,2', repeats: 3, warmup: 5, duration: 30, viewport: null, quality: 'high', machine: os.hostname(), outDir: path.join(ROOT, 'reports/m0/perf'), gpu: false, headed: false, url: null, m1: false, veg: '1' };
+  const o = { renderer: 'webgl2', cams: '0,1,2', repeats: 3, warmup: 5, duration: 30, viewport: null, quality: 'high', machine: os.hostname(), outDir: path.join(ROOT, 'reports/m0/perf'), gpu: false, headed: false, url: null, m1: false, veg: '1', extra: '' };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     const next = () => argv[++i];
@@ -45,6 +45,7 @@ function parseArgs(argv) {
     else if (a === '--headed') o.headed = true;
     else if (a === '--m1') o.m1 = true;
     else if (a === '--veg') o.veg = next();
+    else if (a === '--extra') o.extra = next();
     else if (a === '--novsync') o.novsync = true;
     else if (a === '--url') o.url = next();
     else if (a === '-h' || a === '--help') {
@@ -158,6 +159,7 @@ async function runOnceM1(browser, o, baseUrl, scene, runIndex, cfg) {
     requestAnimationFrame(tick);
   });
   const q = new URLSearchParams({ renderer: o.renderer, scene: 'world', map: 'carentan', cam: scene, actors: 'demo', entities: String(cfg.entities), debug: '1', quality: o.quality, veg: o.veg });
+  for (const [k, v] of new URLSearchParams(o.extra ?? '')) q.set(k, v);
   const t0 = Date.now();
   await page.goto(`${baseUrl}?${q}`);
   await page.waitForFunction(() => window.__world !== undefined && window.__terrain !== undefined && window.__actors !== undefined && (window.__perf?.frames() ?? 0) >= 2, undefined, { timeout: 240_000 });
