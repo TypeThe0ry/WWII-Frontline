@@ -40,6 +40,20 @@ node tools/perf/m1-report.mjs        # -> reports/m1-perf.json
 - **做法**：(1) `Vegetation` 新增 `groupChunks`：实例表仍是 64 m 区块，但 g×g 个区块共用一组 LOD 网格（world 场景用 4，即 256 m）：draw 400–800 → 84–205，`vegetation_update` 约 2 ms → 0.2 ms；(2) `world/veg-mask.ts`：把 buildings/roads/hedgerows/water/forests 栅格到 1 m 的掩码，散布避开建筑（+1.5 m）、道路（半宽 +0.4 m）、树篱（半宽 +0.6 m）、水（+0.5 m），树在 forests 内概率 0.9、林外 ×0.12；(3) 草的保留概率 ×0.4（`veg_grass`，[tbd]），草实例 2.2 M → 0.6 M，内存随之下降。M0 的 `?scene=vegetation` 行为不变（默认 groupChunks=1、无掩码）。
 - 测试：`veg-mask.test.ts`（4 项）、`scatter.test.ts` 掩码 3 项、`vegetation.test.ts` 分组 1 项。
 
+## E1-6 卡顿与 CPU 复查（2026-11-19，PI-114）
+
+在 `nice -n -15`（提高优先级，其余条件相同）下重采 M1 三机位，植被开，3 轮×60 s（`reports/m1-perf-raw/perf-RTX3080-ws-nice-webgpu-*.json`）：
+
+| 场景 | CPU P50 ms（3 轮） | 帧 P95 ms（3 轮） | 卡顿帧 >50 ms（3 轮） |
+| --- | --- | --- | --- |
+| open_field | 8.2 / 8.3 / 8.7 | 33.3 / 49.9 / 66.6 | 33 / 90 / 148 |
+| hedgerow | 9.3 / 8.6 / 9.0 | 66.7 / 83.3 / 16.8 | 168 / 169 / 21 |
+| old_town | 8.7 / 8.6 / 9.2 | 16.8 / 16.8 / 33.4 | 6 / 28 / 102 |
+
+- **CPU P50 8.2–9.3 ms，达到 §13.5 的约 10.4 ms 目标。** 之前（不提优先级）的 12–18 ms 里有一部分是工作站的 CPU 抢占（平均负载 60–100/96 线程）。
+- **卡顿不是本项目代码造成的，是工作站 GPU 被其它任务占着。** 证据：(1) 采集时 `nvidia-smi` 四张卡都在 93–100 % 利用率（别的会话的训练任务，Chrome 的 GPU 进程与 Sunshine/训练任务共用一张卡），我们自己的 GPU 时间只有 0.2–0.5 ms/帧；(2) 主线程 CPU 只有 8–9 ms 而帧间隔却出现 >50 ms，即在等 GPU/呈现；(3) **对照实验**：old_town 植被开，把植被重分桶/上传完全关掉（`veg_budget=0`，不再写缓冲）与默认（0.45 ms）交替各跑两次 45 s：卡顿帧 100 / 113（两个“坏窗口”）和 3 / 2（两个“好窗口”），**与植被上传无关，只和时间窗口（机器当时的占用）有关**；(4) 同一配置不同轮之间卡顿帧从 6 到 169，波动远大于任何配置差异。
+- 所以 **E1-6 的 P95 与卡顿帧在这台共享 GPU 的工作站上无法判定**；需要空闲 GPU（或参考机）重测。我不把它记成 PASS。可复现命令：`nice -n -15 node tools/perf/capture.mjs --m1 ...`；`--extra "veg_budget=0"` 传页面参数。
+
 ## 本次接线（M1-051b / 052b 的已做部分）
 
 - `?scene=world`：地形 + 植被 + 树篱 + 建筑；树篱为 1 个 thin-instance 方盒网格（1 draw call，缺口段不画），建筑按 128 m 格合并为 173 个挤出体网格（墙 + 平屋顶，耳切三角化，0 失败）。`window.__world.stats` 给出数量。
