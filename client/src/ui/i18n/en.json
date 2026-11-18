@@ -26,5 +26,16 @@
   "ui.menu.language": "Language",
   "ui.menu.recommended": "Recommended servers",
   "ui.menu.serversFailed": "Could not fetch the server list",
-  "ui.menu.retry": "Retry"
+  "ui.menu.retry": "Retry",
+  "ui.faction.reason.full": "This team is full",
+  "ui.faction.reason.unbalanced": "This team has more players",
+  "ui.faction.reason.cooldown": "Team switch on cooldown",
+  "ui.browser.reason.incompatible": "Incompatible game version",
+  "ui.browser.reason.full": "Server is full",
+  "ui.reject.version": "Game version mismatch",
+  "ui.reject.full": "Server is full",
+  "ui.reject.banned": "You are banned from this server",
+  "ui.reject.ticket": "Join ticket invalid or expired",
+  "ui.reject.dataHash": "Game data mismatch, please reload",
+  "ui.reject.unknown": "Could not join the server"
 }

@@ -26,5 +26,16 @@
   "ui.menu.language": "语言",
   "ui.menu.recommended": "推荐服务器",
   "ui.menu.serversFailed": "无法获取服务器列表",
-  "ui.menu.retry": "重试"
+  "ui.menu.retry": "重试",
+  "ui.faction.reason.full": "该队已满员",
+  "ui.faction.reason.unbalanced": "该队人数较多",
+  "ui.faction.reason.cooldown": "换队冷却中",
+  "ui.browser.reason.incompatible": "游戏版本不兼容",
+  "ui.browser.reason.full": "服务器已满",
+  "ui.reject.version": "游戏版本不匹配",
+  "ui.reject.full": "服务器已满",
+  "ui.reject.banned": "你已被此服务器封禁",
+  "ui.reject.ticket": "加入凭证无效或已过期",
+  "ui.reject.dataHash": "游戏数据不匹配，请刷新页面",
+  "ui.reject.unknown": "无法加入服务器"
 }
