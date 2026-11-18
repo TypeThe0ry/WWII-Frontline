@@ -1,8 +1,7 @@
 # Nightly cargo-fuzz of the protocol decoders (M1-010). Not a required check.
 name: fuzz
+# 2026-11-18: automatic triggers removed (PI-078); checks run locally via scripts/local-ci.sh.
 on:
-  schedule:
-    - cron: "41 4 * * *"
   workflow_dispatch:
 permissions:
   contents: read

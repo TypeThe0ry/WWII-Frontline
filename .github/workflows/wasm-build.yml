@@ -2,10 +2,9 @@
 # Pinned tools: wasm-bindgen 0.2.130 (Cargo.toml `=`; wasm-pack fetches the matching CLI),
 # binaryen version_132 (wasm-opt), wasm-pack 0.15.1.
 name: wasm-build
+# 2026-11-18: automatic triggers removed (PI-078); checks run locally via scripts/local-ci.sh.
 on:
-  pull_request:
-  push:
-    branches: [main]
+  workflow_dispatch:
 concurrency:
   group: wasm-build-${{ github.ref }}
   cancel-in-progress: true

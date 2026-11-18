@@ -2,12 +2,9 @@
 # M0-002 created the placeholder; M0-004 wires in tools/data-validate.
 # Triggers only on data / validator changes (the sim build.rs type-check runs in test-rust).
 name: data-validate
+# 2026-11-18: automatic triggers removed (PI-078); checks run locally via scripts/local-ci.sh.
 on:
-  pull_request:
-    paths: ["data/**", "tools/data-validate/**", ".github/workflows/data-validate.yml"]
-  push:
-    branches: [main]
-    paths: ["data/**", "tools/data-validate/**"]
+  workflow_dispatch:
 permissions:
   contents: read
 jobs:

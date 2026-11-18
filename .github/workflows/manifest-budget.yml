@@ -1,13 +1,9 @@
 # PR gate: manifest generation + bundle size budgets (M1-005; ARCHITECTURE §11.3/§11.4/§17.5, target < 3 min).
 # More than 1 % over a bundle budget fails; growth above 20 % versus the base branch needs the `budget-approved` label.
 name: manifest-budget
+# 2026-11-18: automatic triggers removed (PI-078); checks run locally via scripts/local-ci.sh.
 on:
-  pull_request:
-    paths:
-      - "assets/manifests/**"
-      - "tools/asset-pipeline/**"
-      - "LICENSES.md"
-      - ".github/workflows/manifest-budget.yml"
+  workflow_dispatch:
 concurrency:
   group: manifest-budget-${{ github.ref }}
   cancel-in-progress: true
