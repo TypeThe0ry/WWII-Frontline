@@ -1,0 +1,19 @@
+/* Plotline tokens (UI_SPEC §2.2.1, §2.3, §2.4). Single dark theme. */
+:root {
+  --pl-bg-0: #0a1018; --pl-bg-1: #101a25;
+  --pl-surface-1: #16222f; --pl-surface-2: #1d2e3f; --pl-surface-3: #274058;
+  --pl-hud-scrim: rgba(8, 14, 22, 0.55);
+  --pl-border: #3a5268; --pl-border-hi: #6c8aa3;
+  --pl-text-hi: #eee8d8; --pl-text-mid: #b4bec6; --pl-text-lo: #7c8b98;
+  --pl-accent: #e4cc8a; --pl-accent-ink: #1a1608;
+  --pl-friend: #3da5ff; --pl-enemy: #ff7a2f; --pl-squad: #b58cff; --pl-neutral: #a3adb5;
+  --pl-warn: #ffd33d; --pl-danger: #e5326e; --pl-ok: #52d6a0; --pl-cmd: #7fe0e8;
+  --pl-faction-us: #6f9bc4; --pl-faction-ger: #b8a98a;
+  --pl-s1: 4px; --pl-s2: 8px; --pl-s3: 12px; --pl-s4: 16px; --pl-s5: 20px;
+  --pl-s6: 24px; --pl-s7: 32px; --pl-s8: 48px; --pl-s9: 64px; --pl-s10: 96px;
+  --pl-fs-xs: 12px; --pl-fs-sm: 14px; --pl-fs-md: 16px; --pl-fs-lg: 20px;
+  --pl-fs-xl: 28px; --pl-fs-hud-ammo: 44px; --pl-fs-hero: 64px;
+  --pl-ui-scale: 1;
+  --pl-z-world: 0; --pl-z-hud: 10; --pl-z-hud-fx: 20; --pl-z-map: 30; --pl-z-panel: 40;
+  --pl-z-modal: 50; --pl-z-toast: 60; --pl-z-tooltip: 70; --pl-z-pointer-lock: 80;
+}
