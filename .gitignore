@@ -39,3 +39,6 @@ docs/measurements/tmp/
 
 # M1-001: asset-pipeline intermediate products (work/{asset_id}/raw, normalized.gltf ...)
 /work/
+
+# M1-065a: generated font subsets (python3 tools/font-subset/subset.py --fetch --src assets/incoming/fonts --out client/public/fonts)
+client/public/fonts/
