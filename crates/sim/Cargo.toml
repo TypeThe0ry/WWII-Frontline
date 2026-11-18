@@ -117,3 +117,7 @@ required-features = ["test-util"]
 [[bench]]
 name = "spawn"
 harness = false
+
+[[test]]
+name = "supply_crates"
+required-features = ["test-util"]

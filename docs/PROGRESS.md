@@ -544,3 +544,6 @@ blocked / in-progress / todo：无。M0 的 33 个任务全部已提交（M0-033
 
 ### M1-019b Garrison — done（M1-019 完成）— 2026-11-17 — 提交见 git log
 - `spawn/garrison.rs`（放置规则、建造、封锁、Overrun、槽位）、`supply_iface.rs`（`SupplyProvider` + `NoSupply`）、`World::{place_garrison,validate_garrison_place,damage_garrison,request_spawn,set_officer,set_supply_provider}`；测试 `spawn_garrison` 14 项；bench `spawn`（PI-061）。
+
+### M1-020a Supplies — partial（020b Ammo Crate 待做）— 2026-11-18 — 提交见 git log
+- 新模块 `supply/`（crates/depot/limits/provider/system）：Supply Crate、HQ Depot、据点补给点、Support 搬运、80 m 反滥用、40 箱 FIFO、`SupplyProvider` 真实实现；`data/rules/supplies.json` 类型化解析；Garrison 放置接入；测试 `supply_crates` 8 项（PI-062）。

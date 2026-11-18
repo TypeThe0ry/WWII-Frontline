@@ -20,6 +20,20 @@ pub enum SimEvent {
         pos: glam::Vec3,
         state: crate::spawn::garrison::GarrisonState,
     },
+    /// A Supply Crate was put on the ground (M1-020).
+    CratePlaced {
+        id: u32,
+        team: Team,
+        pos: glam::Vec3,
+    },
+    CrateDestroyed {
+        id: u32,
+    },
+    /// A message for one player ("cannot place here" etc.); `code` per `supply::system`.
+    SupplyNotice {
+        player: PlayerId,
+        code: u8,
+    },
     PlayerSpawned {
         player: PlayerId,
         entity: EntityId,

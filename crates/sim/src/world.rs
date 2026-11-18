@@ -129,6 +129,8 @@ impl World {
         ecs.insert_resource(crate::suppression::SuppressSeen::default());
         ecs.insert_resource(crate::spawn::SpawnRules::default());
         ecs.insert_resource(crate::spawn::garrison::Garrisons::default());
+        ecs.insert_resource(crate::supply::SupplyWorld::default());
+        ecs.insert_resource(crate::supply::SupplyCfg::from_data(cfg.data, cfg.tick_hz));
         ecs.insert_resource(crate::rules::Objectives::default());
         ecs.insert_resource(crate::rules::MatchState::default());
         ecs.insert_resource(crate::rules::MatchCfg::from_data(cfg.data, cfg.tick_hz));
@@ -276,6 +278,8 @@ impl World {
             crate::suppression::SuppressionState::default(),
             crate::spawn::SpawnProtection::default(),
             crate::spawn::garrison::Officer::default(),
+            crate::supply::Carrying::default(),
+            crate::supply::Support::default(),
         ));
         if let Some(w) = weapon {
             self.ecs.entity_mut(e).insert(w);
@@ -788,6 +792,28 @@ impl World {
                 h.write_u32(*t);
             }
         }
+        let sw = self.ecs.resource::<crate::supply::SupplyWorld>();
+        if sw.active() {
+            h.write_u8(0xD3);
+            for d in &sw.depots {
+                h.write_u8(d.team as u8);
+                h.write_u32(d.stock);
+                h.write_u32(d.timer);
+            }
+            for p in &sw.points {
+                h.write_u16(p.objective);
+                h.write_u32(p.stock);
+                h.write_u32(p.timer);
+            }
+            for c in sw.crates.values() {
+                h.write_u32(c.id);
+                h.write_u32(c.supplies);
+                h.write_f32(c.hp);
+                h.write_f32(c.pos.x);
+                h.write_f32(c.pos.z);
+                h.write_u8(c.carried_by.unwrap_or(255));
+            }
+        }
         let gs = self.ecs.resource::<crate::spawn::garrison::Garrisons>();
         if gs.next_id > 0 {
             h.write_u8(0xD2);
@@ -1142,15 +1168,36 @@ impl World {
         Ok(GarrisonCost { supplies: cost })
     }
 
-    /// Places a Garrison (starts as a building at 20 % health) and pays for it.
+    /// Places a Garrison (starts as a building at 20 % health) and pays for it from the crates
+    /// near the placer (or the installed `SupplyProvider` while no Depot exists).
     pub fn place_garrison(
         &mut self,
         who: PlayerId,
         pos: Vec3,
     ) -> Result<u16, crate::spawn::garrison::PlaceError> {
+        if self.ecs.resource::<crate::supply::SupplyWorld>().active() {
+            let mut sw =
+                std::mem::take(&mut *self.ecs.resource_mut::<crate::supply::SupplyWorld>());
+            let r = self.place_garrison_with(who, pos, &mut sw);
+            *self.ecs.resource_mut::<crate::supply::SupplyWorld>() = sw;
+            r
+        } else {
+            let mut sup =
+                std::mem::replace(&mut self.supply, Box::new(crate::supply_iface::NoSupply));
+            let r = self.place_garrison_with(who, pos, sup.as_mut());
+            self.supply = sup;
+            r
+        }
+    }
+
+    fn place_garrison_with(
+        &mut self,
+        who: PlayerId,
+        pos: Vec3,
+        sup: &mut dyn crate::supply_iface::SupplyProvider,
+    ) -> Result<u16, crate::spawn::garrison::PlaceError> {
         use crate::spawn::garrison::*;
-        let mut sup = std::mem::replace(&mut self.supply, Box::new(crate::supply_iface::NoSupply));
-        let res = self.validate_garrison_place(who, pos, sup.as_ref());
+        let res = self.validate_garrison_place(who, pos, &*sup);
         let out = match res {
             Err(e) => Err(e),
             Ok(cost) => {
@@ -1191,7 +1238,6 @@ impl World {
                 }
             }
         };
-        self.supply = sup;
         out
     }
 
@@ -1293,6 +1339,119 @@ impl World {
         q.remove_player(who);
         q.schedule(who, due);
         Ok(due.0.saturating_sub(now))
+    }
+}
+
+// ---- M1-020: Supplies --------------------------------------------------------------------
+
+impl World {
+    /// Adds the HQ Supply Depot of `team` at `pos` (stock starts empty; first crate after 45 s).
+    pub fn add_depot(&mut self, team: Team, pos: Vec3) {
+        self.ecs
+            .resource_mut::<crate::supply::SupplyWorld>()
+            .depots
+            .push(crate::supply::Depot {
+                team,
+                pos,
+                stock: 0,
+                timer: 0,
+            });
+    }
+
+    /// Adds the supply store of strongpoint `objective` at `pos`.
+    pub fn add_supply_point(&mut self, objective: u16, pos: Vec3) {
+        self.ecs
+            .resource_mut::<crate::supply::SupplyWorld>()
+            .points
+            .push(crate::supply::SupplyPoint {
+                objective,
+                pos,
+                owner: None,
+                stock: 0,
+                timer: 0,
+            });
+    }
+
+    /// Lets `id` carry Supply Crates (the Support role, until real roles exist in M1-021).
+    pub fn set_support(&mut self, id: PlayerId, on: bool) {
+        if let Some(&(_, e)) = self.ecs.resource::<PlayerIndex>().map.get(&id) {
+            self.ecs.entity_mut(e).insert(crate::supply::Support(on));
+        }
+    }
+
+    pub fn supply_crates(&self) -> Vec<crate::supply::SupplyCrate> {
+        self.ecs
+            .resource::<crate::supply::SupplyWorld>()
+            .crates
+            .values()
+            .cloned()
+            .collect()
+    }
+
+    pub fn supply_world(&self) -> &crate::supply::SupplyWorld {
+        self.ecs.resource::<crate::supply::SupplyWorld>()
+    }
+
+    /// The crate `id` is carrying, if any.
+    pub fn carrying(&self, id: PlayerId) -> Option<u32> {
+        let &(_, e) = self.ecs.resource::<PlayerIndex>().map.get(&id)?;
+        self.ecs.entity(e).get::<crate::supply::Carrying>()?.0
+    }
+
+    /// Damages a Supply Crate; its Supplies are lost when it breaks. `true` if it broke.
+    pub fn damage_supply_crate(
+        &mut self,
+        id: u32,
+        nominal: f32,
+        kind: crate::supply::CrateDamage,
+    ) -> bool {
+        let broke = {
+            let mut sw = self.ecs.resource_mut::<crate::supply::SupplyWorld>();
+            let Some(c) = sw.crates.get_mut(&id) else {
+                return false;
+            };
+            c.hp -= nominal * kind.mult();
+            if c.hp <= 0.0 {
+                sw.crates.remove(&id);
+                true
+            } else {
+                false
+            }
+        };
+        if broke {
+            self.pending_events.push(SimEvent::CrateDestroyed { id });
+        }
+        broke
+    }
+
+    /// Test-only (feature `test-util`): sets the stock of Depot `i`.
+    #[cfg(feature = "test-util")]
+    pub fn debug_add_depot_stock(&mut self, i: usize, stock: u32) {
+        self.ecs.resource_mut::<crate::supply::SupplyWorld>().depots[i].stock = stock;
+    }
+
+    /// Test-only (feature `test-util`): puts a crate with `supplies` on the ground.
+    #[cfg(feature = "test-util")]
+    pub fn debug_add_crate(&mut self, team: Team, pos: Vec3, supplies: u32) -> u32 {
+        let hp = self.ecs.resource::<crate::supply::SupplyCfg>().crate_hp;
+        let mut sw = self.ecs.resource_mut::<crate::supply::SupplyWorld>();
+        let id = sw.next_id;
+        sw.next_id += 1;
+        let seq = sw.next_seq;
+        sw.next_seq += 1;
+        sw.crates.insert(
+            id,
+            crate::supply::SupplyCrate {
+                id,
+                team,
+                pos,
+                supplies,
+                hp,
+                carried_by: None,
+                seq,
+            },
+        );
+        id
     }
 }
 
