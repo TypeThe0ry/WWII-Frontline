@@ -1136,3 +1136,7 @@ CSM 用 Babylon `CascadedShadowGenerator`（`lighting/csm.ts`）：没有显式�
 
 ## PI-117 续：自写 CSM（2026-11-19）
 地形与 PBR 光照变体现在通过 `?csm=custom` 接收级联阴影（自写级联拟合 + RGBA32F 深度目标 + GLSL/WGSL 接收片段）。CPU 射线验真：地面阴影 WebGPU 97.2 %、WebGL2 96.3 % 一致；两后端截图 ΔE 均值 0.024。开销 WebGPU +0.5 ms GPU / +3.8–4.4 ms CPU，WebGL2 +0.2 ms GPU / +2.2–2.7 ms CPU（主要是阴影 pass 的 draw call）。投射体只有建筑与树篱；角色/坦克/植被不投射；太阳方向统一为 (0.45,-0.8,0.35)。
+
+## PI-122 M1-041b：载具预测接线的真实前置（2026-11-19）
+- 发现：服务器快照调度器（`crates/server/src/snapshot/scheduler.rs`）目前只输出 `EntityKind::Player`，`vehicle: None`；sim-wasm 快照解码器（`WasmSnapshotDecoder`）也没有载具实体接口。因此 `VehiclePredictor` 在 PR #111 之后仍没有权威运动学来源，接线（输入环、对账、远端插值）无法端到端验证。
+- 决定：把剩余工作拆为 M1-041c，顺序为 ① 服务器调度器输出载具实体（`VehicleExtra`：四元数、炮塔/炮管、座位位图）及其 AOI/优先级；② sim-wasm 解码器暴露载具实体数组；③ `net-game` 接线（进出座切换 `VehiclePredictor`、未确认指令回放、远端载具用 `vehicle-interp.ts` 采样）；④ headless 驾驶 + netem 验收。041b 状态保持 partial，不声称完成。
