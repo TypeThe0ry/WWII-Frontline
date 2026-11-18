@@ -40,7 +40,7 @@ pub mod world;
 pub use collision::{CollisionChunk, CollisionData, CollisionError};
 pub use components::Team;
 pub use data::GameData;
-pub use glam::Vec3;
+pub use glam::{Quat, Vec3};
 pub use health::{Health, LifeState, LifeStateView};
 pub use ids::{EntityId, PlayerId, Tick};
 pub use movement::{step_player, step_player_ex, MoveCtx, MoveParams, PlayerAuthState, Stance};
