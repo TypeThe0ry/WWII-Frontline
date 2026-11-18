@@ -41,6 +41,12 @@ export interface CustomCsm {
   cascades: number;
   /** Adds a caster; `instanced` selects the thin-instance depth material. */
   addCaster(mesh: AbstractMesh, instanced?: boolean): void;
+  /**
+   * Registers a dynamic caster class: every frame the scene's meshes that satisfy `pick` (returning 'plain' or 'instanced' for the
+   * depth material to use, or null) are put into the cascades' render lists next to the static casters (characters, the tank,
+   * visible vegetation LODs). `maxDistM` skips casters farther from the camera than any cascade can show.
+   */
+  addDynamicCasters(pick: (m: AbstractMesh) => 'plain' | 'instanced' | null, maxDistM?: number): void;
   /** Binds the shadow maps / uniforms to a material (call once per material, then `update` keeps the uniforms fresh). */
   attach(material: ShaderMaterial): void;
   /** Per frame, before the render: refits the cascades to `camera` and pushes the uniforms. */
@@ -82,6 +88,10 @@ export function attachCustomCsm(ctx: RenderContext, o: CustomCsmOptions): Custom
   const cams: FreeCamera[] = [];
   const casters: AbstractMesh[] = [];
   const instancedCasters = new Set<AbstractMesh>();
+  const dynamicPicks: { pick: (m: AbstractMesh) => 'plain' | 'instanced' | null; maxDist: number }[] = [];
+  const overridden = new WeakSet<AbstractMesh>();
+  let staticCount = 0;
+  let dynamicCount = 0;
   const materials: ShaderMaterial[] = [];
   const dummy = dummyShadowTexture(scene);
   for (let i = 0; i < n; i++) {
@@ -121,7 +131,11 @@ export function attachCustomCsm(ctx: RenderContext, o: CustomCsmOptions): Custom
 
   return {
     cascades: n,
+    addDynamicCasters(pick, maxDistM) {
+      dynamicPicks.push({ pick, maxDist: maxDistM ?? 400 });
+    },
     addCaster(mesh, instanced = false) {
+      staticCount++;
       casters.push(mesh);
       if (instanced) instancedCasters.add(mesh);
       for (const r of rtts) {
@@ -183,13 +197,49 @@ export function attachCustomCsm(ctx: RenderContext, o: CustomCsmOptions): Custom
         near = far;
       }
       for (const m of materials) push(m);
+      if (dynamicPicks.length > 0) {
+        // rebuild the dynamic part of the render lists: static casters first, then the picked meshes of this frame
+        for (const r of rtts) r.renderList!.length = staticCount;
+        dynamicCount = 0;
+        const maxD2 = Math.max(...dynamicPicks.map((d) => d.maxDist)) ** 2;
+        for (const m of scene.meshes) {
+          if (!m.isEnabled() || !m.isVisible && m.getClassName() !== 'InstancedMesh') continue;
+          if (m.getClassName() === 'InstancedMesh' && !(m as unknown as { visibility: number }).visibility) continue;
+          let kind: 'plain' | 'instanced' | null = null;
+          let maxDist = 0;
+          for (const d of dynamicPicks) {
+            const k = d.pick(m);
+            if (k) {
+              kind = k;
+              maxDist = d.maxDist;
+              break;
+            }
+          }
+          if (!kind) continue;
+          const bs = m.getBoundingInfo().boundingSphere;
+          const bp = bs.centerWorld;
+          const dx = bp.x - pos.x;
+          const dy = bp.y - pos.y;
+          const dz = bp.z - pos.z;
+          // distance to the sphere's surface: grouped vegetation meshes cover 256 m, their centre can be far while trees are near
+          const dd = Math.max(0, Math.sqrt(dx * dx + dy * dy + dz * dz) - bs.radiusWorld);
+          if (dd * dd > Math.min(maxD2, maxDist * maxDist)) continue;
+          const src = (m as unknown as { sourceMesh?: AbstractMesh }).sourceMesh ?? m;
+          if (!overridden.has(src)) {
+            overridden.add(src);
+            for (const r of rtts) r.setMaterialForRendering(src, kind === 'instanced' ? inst : plain);
+          }
+          for (const r of rtts) r.renderList!.push(m);
+          dynamicCount++;
+        }
+      }
     },
     setEnabled(on) {
       enabled = on;
       for (const r of rtts) r.refreshRate = on ? 1 : 0;
       for (const m of materials) push(m);
     },
-    stats: () => ({ cascades: n, sizes: cfg.sizes.slice(0, n) as number[], renderListSize: casters.length }),
+    stats: () => ({ cascades: n, sizes: cfg.sizes.slice(0, n) as number[], renderListSize: staticCount + dynamicCount }),
     dispose() {
       for (const r of rtts) {
         scene.customRenderTargets.splice(scene.customRenderTargets.indexOf(r), 1);
