@@ -122,6 +122,12 @@ fn main(input: VertexInputs) -> FragmentInputs {
 export const TERRAIN_FRAGMENT_WGSL = /* wgsl */ `
 uniform uHeightRange: vec2f;
 uniform uDebug: f32;
+uniform uSplat: vec4f;
+
+var splatA: texture_2d<f32>;
+var splatASampler: sampler;
+var splatB: texture_2d<f32>;
+var splatBSampler: sampler;
 
 varying vWorld: vec3f;
 varying vNormal: vec3f;
@@ -137,6 +143,33 @@ fn lodColor(l: i32) -> vec3f {
   return vec3f(0.75, 0.35, 0.85);
 }
 
+fn hash21(p: vec2f) -> f32 {
+  return fract(sin(dot(p, vec2f(127.1, 311.7))) * 43758.5453);
+}
+
+fn vnoise(p: vec2f) -> f32 {
+  let i = floor(p);
+  let f = fract(p);
+  let u = f * f * (3.0 - 2.0 * f);
+  return mix(mix(hash21(i), hash21(i + vec2f(1.0, 0.0)), u.x), mix(hash21(i + vec2f(0.0, 1.0)), hash21(i + vec2f(1.0, 1.0)), u.x), u.y);
+}
+
+// Two-scale detail so layers do not read as flat colour (placeholder for the real KTX2 layers, PI-113).
+fn detail2(p: vec2f) -> f32 {
+  return 0.55 * vnoise(p / 0.7) + 0.45 * vnoise(p / 3.1);
+}
+
+fn layerColor(i: i32) -> vec3f {
+  if (i == 0) { return vec3f(0.27, 0.40, 0.17); }
+  if (i == 1) { return vec3f(0.46, 0.43, 0.22); }
+  if (i == 2) { return vec3f(0.45, 0.36, 0.24); }
+  if (i == 3) { return vec3f(0.27, 0.21, 0.15); }
+  if (i == 4) { return vec3f(0.47, 0.45, 0.42); }
+  if (i == 5) { return vec3f(0.55, 0.52, 0.46); }
+  if (i == 6) { return vec3f(0.70, 0.62, 0.44); }
+  return vec3f(0.17, 0.20, 0.10);
+}
+
 fn gridLine(p: vec2f, spacing: f32, width: f32) -> f32 {
   let q = p / spacing;
   let fw = fwidth(q);
@@ -148,6 +181,9 @@ fn gridLine(p: vec2f, spacing: f32, width: f32) -> f32 {
 fn main(input: FragmentInputs) -> FragmentOutputs {
   // Derivative-based terms first (uniform control flow).
   let world = fragmentInputs.vWorld;
+  let sUv = clamp(world.xz / uniforms.uSplat.x, vec2f(0.0), vec2f(1.0));
+  let sa = textureSample(splatA, splatASampler, sUv);
+  let sb = textureSample(splatB, splatBSampler, sUv);
   let l16 = gridLine(world.xz, 16.0, 1.0);
   let l64 = gridLine(world.xz, 64.0, 1.5);
   let n = normalize(fragmentInputs.vNormal);
@@ -156,13 +192,32 @@ fn main(input: FragmentInputs) -> FragmentOutputs {
 
   let slope = 1.0 - n.y;
   let hn = clamp((world.y - uniforms.uHeightRange.x) / max(uniforms.uHeightRange.y - uniforms.uHeightRange.x, 1e-3), 0.0, 1.0);
-  let grass = vec3f(0.27, 0.40, 0.17);
-  let dirt = vec3f(0.45, 0.36, 0.24);
-  let rock = vec3f(0.47, 0.45, 0.42);
-  var base = mix(grass, dirt, smoothstep(0.02, 0.10, slope) * 0.8 + 0.25 * hn);
-  base = mix(base, rock, smoothstep(0.12, 0.30, slope));
-  let blotch = 0.5 + 0.5 * sin(world.x * 0.37) * sin(world.z * 0.41);
-  base = base * (0.9 + 0.1 * blotch);
+  var base = vec3f(0.0);
+  if (uniforms.uSplat.y > 0.5) {
+    // 8 procedural layers weighted by the splat; steep faces use a triplanar detail so rock does not stretch along the slope
+    let wts = array<f32, 8>(sa.x, sa.y, sa.z, sa.w, sb.x, sb.y, sb.z, sb.w);
+    let an = pow(abs(n), vec3f(4.0));
+    let tri = an / max(an.x + an.y + an.z, 1e-4);
+    let steep = 1.0 - smoothstep(0.643, 0.766, n.y);
+    let dPlanar = detail2(world.xz);
+    let dTri = tri.y * detail2(world.xz) + tri.x * detail2(world.zy + 17.0) + tri.z * detail2(world.xy + 41.0);
+    let d = mix(dPlanar, dTri, steep);
+    for (var i = 0; i < 8; i = i + 1) {
+      var amp = 0.30;
+      if (i == 4) { amp = 0.45; }
+      if (i == 5) { amp = 0.38; }
+      base = base + wts[i] * layerColor(i) * (1.0 - 0.5 * amp + amp * d);
+    }
+    base = base * (0.92 + 0.16 * vnoise(world.xz / 80.0));
+  } else {
+    let grass = vec3f(0.27, 0.40, 0.17);
+    let dirt = vec3f(0.45, 0.36, 0.24);
+    let rock = vec3f(0.47, 0.45, 0.42);
+    base = mix(grass, dirt, smoothstep(0.02, 0.10, slope) * 0.8 + 0.25 * hn);
+    base = mix(base, rock, smoothstep(0.12, 0.30, slope));
+    let blotch = 0.5 + 0.5 * sin(world.x * 0.37) * sin(world.z * 0.41);
+    base = base * (0.9 + 0.1 * blotch);
+  }
 
   let sun = normalize(vec3f(-0.45, 0.80, -0.35));
   let diff = max(dot(n, sun), 0.0);

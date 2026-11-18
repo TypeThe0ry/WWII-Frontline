@@ -1,16 +1,24 @@
 /** Tank rendering maths (M1-048, GAMEDESIGN 14.1/14.3): track speeds, turret smoothing, socket list. */
 
+/**
+ * Sockets of the tank. The vehicle data file (`gameplay.sockets`) is the source of truth for the names (PI-112, resolved):
+ * `socket_gun_muzzle`, `socket_turret`, `socket_hatch` come from /data; the rest have no data counterpart yet and keep the task-card names.
+ */
 export const TANK_SOCKETS = [
-  'socket_muzzle',
+  'socket_gun_muzzle',
+  'socket_turret',
+  'socket_hatch',
   'socket_seat_driver',
   'socket_seat_gunner',
   'socket_seat_commander',
-  'socket_hatch',
   'socket_exhaust',
   'socket_track_l',
   'socket_track_r',
   'socket_mg_coax',
 ] as const;
+
+/** Task-card names that map onto a data name; kept as read-only aliases until every caller has moved over. */
+export const TANK_SOCKET_ALIASES: Readonly<Record<string, (typeof TANK_SOCKETS)[number]>> = { socket_muzzle: 'socket_gun_muzzle' };
 
 export interface TrackSpeeds {
   left: number;

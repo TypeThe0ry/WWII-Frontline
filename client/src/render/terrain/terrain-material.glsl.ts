@@ -125,6 +125,9 @@ varying vec4 vInfo;
 
 uniform vec2 uHeightRange;
 uniform float uDebug; // 0 shaded, 1 lod, 2 morph, 3 normal, 4 height, 5 flat
+uniform vec4 uSplat; // (map size m, splat enabled, 0, 0)
+uniform sampler2D splatA;
+uniform sampler2D splatB;
 
 vec3 lodColor(int l) {
   if (l == 0) return vec3(0.90, 0.25, 0.25);
@@ -136,6 +139,33 @@ vec3 lodColor(int l) {
   return vec3(0.75, 0.35, 0.85);
 }
 
+float hash21(vec2 p) {
+  return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+}
+
+float vnoise(vec2 p) {
+  vec2 i = floor(p);
+  vec2 f = fract(p);
+  vec2 u = f * f * (3.0 - 2.0 * f);
+  return mix(mix(hash21(i), hash21(i + vec2(1.0, 0.0)), u.x), mix(hash21(i + vec2(0.0, 1.0)), hash21(i + vec2(1.0, 1.0)), u.x), u.y);
+}
+
+// Two-scale detail so layers do not read as flat colour (placeholder for the real KTX2 layers, PI-113).
+float detail2(vec2 p) {
+  return 0.55 * vnoise(p / 0.7) + 0.45 * vnoise(p / 3.1);
+}
+
+vec3 layerColor(int i) {
+  if (i == 0) return vec3(0.27, 0.40, 0.17);
+  if (i == 1) return vec3(0.46, 0.43, 0.22);
+  if (i == 2) return vec3(0.45, 0.36, 0.24);
+  if (i == 3) return vec3(0.27, 0.21, 0.15);
+  if (i == 4) return vec3(0.47, 0.45, 0.42);
+  if (i == 5) return vec3(0.55, 0.52, 0.46);
+  if (i == 6) return vec3(0.70, 0.62, 0.44);
+  return vec3(0.17, 0.20, 0.10);
+}
+
 float gridLine(vec2 p, float spacing, float width) {
   vec2 q = p / spacing;
   vec2 fw = fwidth(q);
@@ -145,19 +175,41 @@ float gridLine(vec2 p, float spacing, float width) {
 
 void main() {
   vec3 n = normalize(vNormal);
+  vec2 sUv = clamp(vWorld.xz / uSplat.x, vec2(0.0), vec2(1.0));
+  vec4 sa = texture2D(splatA, sUv);
+  vec4 sb = texture2D(splatB, sUv);
   float l16 = gridLine(vWorld.xz, 16.0, 1.0);
   float l64 = gridLine(vWorld.xz, 64.0, 1.5);
   int lod = int(vInfo.x + 0.5);
 
   float slope = 1.0 - n.y;
   float hn = clamp((vWorld.y - uHeightRange.x) / max(uHeightRange.y - uHeightRange.x, 1e-3), 0.0, 1.0);
-  vec3 grass = vec3(0.27, 0.40, 0.17);
-  vec3 dirt = vec3(0.45, 0.36, 0.24);
-  vec3 rock = vec3(0.47, 0.45, 0.42);
-  vec3 base = mix(grass, dirt, smoothstep(0.02, 0.10, slope) * 0.8 + 0.25 * hn);
-  base = mix(base, rock, smoothstep(0.12, 0.30, slope));
-  float blotch = 0.5 + 0.5 * sin(vWorld.x * 0.37) * sin(vWorld.z * 0.41);
-  base *= 0.9 + 0.1 * blotch;
+  vec3 base = vec3(0.0);
+  if (uSplat.y > 0.5) {
+    float wts[8];
+    wts[0] = sa.x; wts[1] = sa.y; wts[2] = sa.z; wts[3] = sa.w; wts[4] = sb.x; wts[5] = sb.y; wts[6] = sb.z; wts[7] = sb.w;
+    vec3 an = pow(abs(n), vec3(4.0));
+    vec3 tri = an / max(an.x + an.y + an.z, 1e-4);
+    float steep = 1.0 - smoothstep(0.643, 0.766, n.y);
+    float dPlanar = detail2(vWorld.xz);
+    float dTri = tri.y * detail2(vWorld.xz) + tri.x * detail2(vWorld.zy + 17.0) + tri.z * detail2(vWorld.xy + 41.0);
+    float d = mix(dPlanar, dTri, steep);
+    for (int i = 0; i < 8; i++) {
+      float amp = 0.30;
+      if (i == 4) amp = 0.45;
+      if (i == 5) amp = 0.38;
+      base += wts[i] * layerColor(i) * (1.0 - 0.5 * amp + amp * d);
+    }
+    base *= 0.92 + 0.16 * vnoise(vWorld.xz / 80.0);
+  } else {
+    vec3 grass = vec3(0.27, 0.40, 0.17);
+    vec3 dirt = vec3(0.45, 0.36, 0.24);
+    vec3 rock = vec3(0.47, 0.45, 0.42);
+    base = mix(grass, dirt, smoothstep(0.02, 0.10, slope) * 0.8 + 0.25 * hn);
+    base = mix(base, rock, smoothstep(0.12, 0.30, slope));
+    float blotch = 0.5 + 0.5 * sin(vWorld.x * 0.37) * sin(vWorld.z * 0.41);
+    base *= 0.9 + 0.1 * blotch;
+  }
 
   vec3 sun = normalize(vec3(-0.45, 0.80, -0.35));
   float diff = max(dot(n, sun), 0.0);

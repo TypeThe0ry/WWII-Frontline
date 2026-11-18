@@ -24,6 +24,7 @@ import {
 import { frustumPlanes } from './frustum';
 import { buildGridMesh } from './grid-mesh';
 import { NEAR_BLEND_M, type TerrainData } from './terrain-data';
+import type { SplatMaps } from './terrain-splat';
 import { TERRAIN_FRAGMENT_GLSL, TERRAIN_VERTEX_GLSL } from './terrain-material.glsl';
 import { TERRAIN_FRAGMENT_WGSL, TERRAIN_VERTEX_WGSL } from './terrain-material.wgsl';
 
@@ -56,6 +57,8 @@ export interface TerrainOptions {
   debug?: TerrainDebugMode;
   /** Edge-mask stitching (default true). `false` is a debug/control switch (`?terrain_stitch=0`): shows cracks. */
   stitch?: boolean;
+  /** Procedural placeholder splat (M1-050b); omit for the M0 slope/height colouring. */
+  splat?: SplatMaps;
 }
 
 const MAX_NODES = 2048;
@@ -127,8 +130,8 @@ export class Terrain {
       wgsl ? { vertexSource: TERRAIN_VERTEX_WGSL, fragmentSource: TERRAIN_FRAGMENT_WGSL } : { vertexSource: TERRAIN_VERTEX_GLSL, fragmentSource: TERRAIN_FRAGMENT_GLSL },
       {
         attributes: [VertexBuffer.PositionKind, 'inst0', 'inst1'],
-        uniforms: ['viewProjection', 'uCam', 'uHeightRange', 'uMap', 'uMap2', 'uDebug', 'uYScale'],
-        samplers: ['heightNear', 'heightFar'],
+        uniforms: ['viewProjection', 'uCam', 'uHeightRange', 'uMap', 'uMap2', 'uDebug', 'uYScale', 'uSplat'],
+        samplers: ['heightNear', 'heightFar', 'splatA', 'splatB'],
         shaderLanguage: wgsl ? ShaderLanguage.WGSL : ShaderLanguage.GLSL,
       },
     );
@@ -140,6 +143,21 @@ export class Terrain {
     mat.setVector2('uMap2', new Vector2(data.meta.far_ring.samples, NEAR_BLEND_M));
     mat.setFloat('uDebug', DEBUG_CODE[this.debug]);
     mat.setFloat('uYScale', 1);
+    // splat textures (RGBA8, bilinear): real ones when given, 1x1 dummies otherwise (`uSplat.y` = 0 keeps the M0 colouring)
+    const sp = opts.splat;
+    const mkSplat = (name: string, px: Uint8Array, n: number): RawTexture => {
+      const t = new RawTexture(px, n, n, Constants.TEXTUREFORMAT_RGBA, scene, false, false, Constants.TEXTURE_BILINEAR_SAMPLINGMODE, Constants.TEXTURETYPE_UNSIGNED_BYTE);
+      t.name = name;
+      t.wrapU = Constants.TEXTURE_CLAMP_ADDRESSMODE;
+      t.wrapV = Constants.TEXTURE_CLAMP_ADDRESSMODE;
+      return t;
+    };
+    const sa = mkSplat('PH_V-NAT-007_splat_a', sp ? sp.a : new Uint8Array([255, 0, 0, 0]), sp ? sp.n : 1);
+    const sb = mkSplat('PH_V-NAT-007_splat_b', sp ? sp.b : new Uint8Array([0, 0, 0, 0]), sp ? sp.n : 1);
+    this.textures.push(sa, sb);
+    mat.setTexture('splatA', sa);
+    mat.setTexture('splatB', sb);
+    mat.setVector4('uSplat', new Vector4(sp ? sp.sizeM : 1, sp ? 1 : 0, 0, 0));
     mesh.material = mat;
     this.material = mat;
 

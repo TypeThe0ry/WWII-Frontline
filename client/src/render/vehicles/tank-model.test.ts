@@ -26,10 +26,15 @@ describe('TankModel (M1-048b)', () => {
     expect(reg.report().find((e) => e.id === TANK_REQ)!.instances).toBe(5); // hull, 2 tracks, turret body, barrel
   });
 
-  it('has the 9 task sockets plus the data-file socket names', () => {
+  it('has every socket, uses the data-file names as primary and resolves the task-card alias', () => {
     const { tank } = make();
     for (const s of requiredSockets()) expect(tank.sockets.has(s), s).toBe(true);
-    expect(requiredSockets().length).toBe(11);
+    expect(requiredSockets().length).toBe(10);
+    for (const s of json.gameplay.sockets) expect(tank.sockets.has(s), `data socket ${s}`).toBe(true);
+    expect(tank.sockets.has('socket_muzzle')).toBe(false); // alias only, no node of its own
+    const a = tank.socketWorld('socket_muzzle', new Vector3());
+    const b = tank.socketWorld('socket_gun_muzzle', new Vector3());
+    expect(Vector3.Distance(a, b)).toBe(0);
   });
 
   it('hull box is sized from historical.dimensions_m (error < 1 %)', () => {
@@ -68,9 +73,9 @@ describe('TankModel (M1-048b)', () => {
     expect(tank.gun.rotation.x).toBeCloseTo(-(25 * Math.PI) / 180, 6);
     tank.update({ ...base, gunPitchDeg: -80 }, 1 / 60);
     expect(tank.gun.rotation.x).toBeCloseTo((10 * Math.PI) / 180, 6);
-    const a = tank.socketWorld('socket_muzzle', new Vector3());
+    const a = tank.socketWorld('socket_gun_muzzle', new Vector3());
     for (let i = 0; i < 400; i++) tank.update({ ...base, turretYaw: Math.PI / 2 }, 1 / 60);
-    const b = tank.socketWorld('socket_muzzle', new Vector3());
+    const b = tank.socketWorld('socket_gun_muzzle', new Vector3());
     expect(Vector3.Distance(a, b)).toBeGreaterThan(1);
   });
 

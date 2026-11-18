@@ -5,6 +5,8 @@ import type { UniversalCamera } from '@babylonjs/core/Cameras/universalCamera';
 import type { RenderContext } from '../engine';
 import { Terrain, parseTerrainDebug } from './terrain';
 import { loadTerrainData } from './terrain-data';
+import { buildSplat } from './terrain-splat';
+import { loadVegMask } from '../world/veg-mask';
 
 export interface TerrainHandle {
   terrain: Terrain;
@@ -37,7 +39,14 @@ export async function attachTerrain(ctx: RenderContext, params: URLSearchParams)
   const mapId = params.get('map') ?? 'm0';
   const data = await loadTerrainData(`${import.meta.env.BASE_URL}maps/${mapId}/`);
   const debug = parseTerrainDebug(params.get('terrain_debug'));
-  const terrain = new Terrain(ctx.scene, data, { kind: ctx.kind, debug, stitch: params.get('terrain_stitch') !== '0' });
+  // M1-050b: procedural placeholder splat for non-M0 maps (`splat=0|1` forces it off/on; `splat_res` = metres per texel, default 2)
+  let splat;
+  if (params.get('splat') === '1' || (mapId !== 'm0' && params.get('splat') !== '0')) {
+    const size = data.meta.crs.size_m;
+    const mask = await loadVegMask(`${import.meta.env.BASE_URL}maps/${mapId}/`, size);
+    splat = buildSplat({ sizeM: size, resM: Number(params.get('splat_res') ?? 2), heightAt: (x, z) => data.heightAt(x, z), flags: mask ? (x, z) => mask.flags(x, z) : undefined });
+  }
+  const terrain = new Terrain(ctx.scene, data, { kind: ctx.kind, debug, stitch: params.get('terrain_stitch') !== '0', splat });
   if (debug === 'flat') ctx.scene.clearColor = new Color4(1, 0, 1, 1);
 
   const yScale = Number(params.get('terrain_yscale') ?? 1);

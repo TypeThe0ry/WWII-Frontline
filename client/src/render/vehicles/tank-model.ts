@@ -15,14 +15,12 @@ import type { Mesh } from '@babylonjs/core/Meshes/mesh';
 import { TransformNode } from '@babylonjs/core/Meshes/transformNode';
 import type { Scene } from '@babylonjs/core/scene';
 import { PlaceholderRegistry, phName, placeholderMaterial } from '../actors/names';
-import { TANK_SOCKETS, angleDiff, clampGunPitch, followAngle, hullBox, trackSpeeds, trackUvRate } from './tank-math';
+import { TANK_SOCKETS, TANK_SOCKET_ALIASES, angleDiff, clampGunPitch, followAngle, hullBox, trackSpeeds, trackUvRate } from './tank-math';
 
 export const TANK_REQ = 'V-VEH-US-003';
 /** Belt repeat length (m) for the track UV scroll [tbd, real track pitch comes with the asset]. */
 export const TRACK_REPEAT_M = 0.6;
 const TRACK_W = 0.38;
-/** Sockets the data file names (`gameplay.sockets`) that `TANK_SOCKETS` (task card) does not: created as aliases (PI-112). */
-export const DATA_SOCKET_ALIASES = ['socket_gun_muzzle', 'socket_turret'] as const;
 
 export interface TankDef {
   id: string;
@@ -35,7 +33,7 @@ export interface TankDef {
 interface TankJson {
   id: string;
   historical: { dimensions_m: { length: number; width: number; height: number } };
-  gameplay: { max_speed_mps: number; turret_traverse_deg_s: number; gun_elevation_deg: [number, number] };
+  gameplay: { max_speed_mps: number; turret_traverse_deg_s: number; gun_elevation_deg: [number, number]; sockets: string[] };
 }
 
 export function tankDefFromJson(j: TankJson): TankDef {
@@ -143,7 +141,6 @@ export class TankModel {
       n.position.set(x, y, z);
       this.sockets.set(name, n);
     };
-    sock('socket_muzzle', this.gun, 0, 0, gunLen);
     sock('socket_gun_muzzle', this.gun, 0, 0, gunLen);
     sock('socket_turret', this.turret, 0, 0, 0);
     sock('socket_seat_driver', this.root, -0.4, hullH * 0.8, size[2] * 0.3);
@@ -173,7 +170,7 @@ export class TankModel {
 
   /** World position of a socket (fresh matrix; for spawning muzzle effects). */
   socketWorld(name: string, out: Vector3): Vector3 {
-    const n = this.sockets.get(name);
+    const n = this.sockets.get(TANK_SOCKET_ALIASES[name] ?? name);
     if (!n) throw new Error(`tank socket ${name} missing`);
     n.computeWorldMatrix(true);
     return Vector3.TransformCoordinatesFromFloatsToRef(0, 0, 0, n.getWorldMatrix() as Matrix, out);
@@ -194,4 +191,4 @@ export class TankModel {
   }
 }
 
-export const requiredSockets = (): string[] => [...new Set<string>([...TANK_SOCKETS, ...DATA_SOCKET_ALIASES])];
+export const requiredSockets = (): string[] => [...TANK_SOCKETS];
