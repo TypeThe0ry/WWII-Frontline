@@ -1,0 +1,155 @@
+{
+  "task": "M1-069b",
+  "date": "2026-11-19",
+  "status": "M1 场景未测；M0 vegetation 场景为补充数据",
+  "stand_in_notice": "本机数字是工作站数字，不代表 RTX 3060 参考机（H-021）；不得用于 E1-6/E1-7 判定。",
+  "machine": {
+    "gpu": "NVIDIA GeForce RTX 3080 (20 GB, Ampere, PCI 01:00.0, 同时承载 Sunshine 桌面)",
+    "driver": "595.58.03",
+    "cpu": "2x AMD EPYC 7402 (96 线程)",
+    "mem_gb": 405,
+    "os": "Linux 7.0.0-14-generic (Ubuntu 26.04)",
+    "chromium": "153.0.8010.12",
+    "renderer": "webgpu (timestamp-query 可用)",
+    "viewport": "1920x1080",
+    "chromium_extra_args": "--use-angle=vulkan --ignore-gpu-blocklist (Linux GPU)"
+  },
+  "m1_scenes": {
+    "open_field": {
+      "verdict": "未测",
+      "reason": "客户端没有 open_field/hedgerow/old_town 场景入口、60 实体脚本，且 m1-scenes.json 机位仍为占位坐标 [0,0,0]；树篱/建筑渲染接线 M1-051b/052b 未完成"
+    },
+    "hedgerow": {
+      "verdict": "未测",
+      "reason": "客户端没有 open_field/hedgerow/old_town 场景入口、60 实体脚本，且 m1-scenes.json 机位仍为占位坐标 [0,0,0]；树篱/建筑渲染接线 M1-051b/052b 未完成"
+    },
+    "old_town": {
+      "verdict": "未测",
+      "reason": "客户端没有 open_field/hedgerow/old_town 场景入口、60 实体脚本，且 m1-scenes.json 机位仍为占位坐标 [0,0,0]；树篱/建筑渲染接线 M1-051b/052b 未完成"
+    }
+  },
+  "supplementary_m0_vegetation_scene": {
+    "note": "capture.mjs 目前只会采 M0 的 ?scene=vegetation&cam=0|1|2（地形+植被，无实体/HUD/树篱/建筑）。仅说明工作站 GPU 路径可用，不是 M1 机位。",
+    "runs_per_cam": 3,
+    "warmup_s": 5,
+    "capture_s": 30,
+    "vsync_on": {
+      "cam0": {
+        "interval_p50_ms": 16.7,
+        "interval_p50_range_pct": 0,
+        "interval_p99_ms_runs": [
+          17.9,
+          17.9,
+          17.9
+        ],
+        "cpu_p50_ms": 2.9,
+        "gpu_ms_runs": [
+          0.3584,
+          0.366592,
+          0.361472
+        ],
+        "draw_calls": 50,
+        "tris": 450341,
+        "veg_instances": 8130,
+        "js_heap_mb": 70.4
+      },
+      "cam1": {
+        "interval_p50_ms": 16.7,
+        "interval_p50_range_pct": 0,
+        "interval_p99_ms_runs": [
+          18.2,
+          17.2,
+          17.5
+        ],
+        "cpu_p50_ms": 3.3,
+        "gpu_ms_runs": [
+          0.265216,
+          0.263168,
+          0.270336
+        ],
+        "draw_calls": 33,
+        "tris": 9884,
+        "veg_instances": 4942,
+        "js_heap_mb": 65.6
+      },
+      "cam2": {
+        "interval_p50_ms": 16.7,
+        "interval_p50_range_pct": 0,
+        "interval_p99_ms_runs": [
+          19,
+          17.4,
+          19.6
+        ],
+        "cpu_p50_ms": 2.6,
+        "gpu_ms_runs": [
+          0.206848,
+          0.202752,
+          0.297984
+        ],
+        "draw_calls": 13,
+        "tris": 318492,
+        "veg_instances": 3197,
+        "js_heap_mb": 65.5
+      }
+    },
+    "vsync_off": {
+      "cam0": {
+        "interval_p50_ms": 2.3,
+        "interval_p50_range_pct": 21.7,
+        "interval_p99_ms_runs": [
+          13.3,
+          8.5,
+          17.5
+        ],
+        "cpu_p50_ms": 2,
+        "gpu_ms_runs": [
+          0.354304,
+          0.362496,
+          0.354304
+        ],
+        "draw_calls": 50,
+        "tris": 450341,
+        "veg_instances": 8130,
+        "js_heap_mb": 63.5
+      },
+      "cam1": {
+        "interval_p50_ms": 2.7,
+        "interval_p50_range_pct": 25.9,
+        "interval_p99_ms_runs": [
+          7.7,
+          24.3,
+          10.4
+        ],
+        "cpu_p50_ms": 2.1,
+        "gpu_ms_runs": [
+          0.311296,
+          0.265216,
+          0.275456
+        ],
+        "draw_calls": 33,
+        "tris": 9884,
+        "veg_instances": 4942,
+        "js_heap_mb": 73.4
+      },
+      "cam2": {
+        "interval_p50_ms": 3.2,
+        "interval_p50_range_pct": 78.1,
+        "interval_p99_ms_runs": [
+          19.1,
+          9,
+          22.4
+        ],
+        "cpu_p50_ms": 2.1,
+        "gpu_ms_runs": [
+          0.206848,
+          0.216064,
+          0.205824
+        ],
+        "draw_calls": 13,
+        "tris": 318492,
+        "veg_instances": 3197,
+        "js_heap_mb": 70.9
+      }
+    }
+  }
+}

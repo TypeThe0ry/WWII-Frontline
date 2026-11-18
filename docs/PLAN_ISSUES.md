@@ -1091,3 +1091,6 @@ INDEX 写"绿/红"，UI_SPEC §4.12/§4.13 规定"蓝=合法 / 斜纹+warn=不�
 
 ## PI-108 M1-064/065：素材阻塞与字体产物不入库（2026-11-18）
 M1-064 无可接入素材（台账 OK 仅字体），标 blocked，不影响其它任务（INDEX §0）。M1-065 字体部分用 `tools/font-subset/subset.py` 生成（Python fonttools+brotli，开发机一次性 `pip install fonttools brotli`），产物按需重建不进 git，避免 ~1 MB 二进制入库；发布构建需把该步骤接入打包流程（待 M1-067 部署任务）。Noto Sans SC 采用可变字体实例化（400–700 轴）而非 3 个静态字重，体积更小。
+
+## PI-109 M1-069b：工作站数字顶替 RTX 3060 参考机（2026-11-19）
+H-021（RTX 3060 参考机）尚未到位。经总控指示，在本工作站（RTX 3080 20 GB，驱动 595.58.03，Chromium 153，WebGPU，1080p）上做了采集链路验证，**这些是工作站数字，不是参考机数字，不得用于 E1-6/E1-7 的 PASS/FAIL 判定**。同时 open_field/hedgerow/old_town 三个 M1 机位无场景入口（M1-051b/052b 渲染接线与 60 实体脚本缺失），全部标 未测；仅补充了 M0 vegetation 场景的 WebGPU 数字（见 `reports/m1-perf.md`）。H-021 到位且 051b/052b 完成后须在参考机上重测。顺带修了 `capture.mjs` 在 Linux GPU 机器上拿不到 WebGPU 适配器的问题。
