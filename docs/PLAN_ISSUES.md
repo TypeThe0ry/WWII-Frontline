@@ -1112,3 +1112,6 @@ H-021（RTX 3060 参考机）尚未到位。经总控指示，在本工作站（
 
 ## PI-115 M1-068b：netem 在私有命名空间做、命中率对照无效（2026-11-19）
 为避免影响工作站上其它服务，netem 不加在宿主 `lo` 上，而是 `ip netns` 私有命名空间里的 `lo`（`scripts/loadtest-netem.sh`）。E1-5 的“150 ms RTT 命中率差 ≤5%”本次只能给出服务器事件命中率（17.9 % vs 22.5 %，差 4.6 pp），不是有效的延迟补偿检验（含 bot、无客户端瞄准、样本小）；真正的检验场景未做。WT 30 分钟的 201 ms 单刻尖峰（3 次超时）在负载约 30–90 的共享工作站上出现，无法归因。
+
+## PI-116 M1-042b：PBR 着色器的范围（2026-11-19）
+`render/materials/pbr-shader.ts/pbr-material.ts/prewarm.ts/pbr-scene.ts`：GLSL/WGSL 双语言 GGX 着色器（4 个宏展开为源码文本，变体数仍 32/Low 20）、`MaterialFactory` 接 `ShaderMaterial`、预热计时、`?scene=pbr` 测试场景。法线用屏幕空间导数构造切线框架（没有切线顶点属性），一盏平行光 + 半球环境光；IBL、CSM 阴影采样、TAA 抖动留给 043b/044b。数字见 `reports/m1-pbr.md`。ΔE 与冻结数字只是单次测量；没有任务卡阈值，不判 PASS。

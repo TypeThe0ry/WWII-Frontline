@@ -32,6 +32,8 @@ declare global {
     __vegetation?: VegetationHandle;
     /** `?scene=world` (terrain + vegetation + hedgerows + buildings, M1-051b/052b): load stats and meshes. */
     __world?: WorldHandle;
+    /** `?scene=pbr`: PBR material test scene and prewarm result (M1-042b). */
+    __pbr?: import('./render/materials/pbr-scene').PbrSceneHandle;
     /** `?vehicle=demo`: placeholder tank (M1-048b). */
     __vehicle?: import('./render/vehicles/vehicle-demo').VehicleDemoHandle;
     /** `?vfx=stress`: particle stress hook (M1-047b). */
@@ -67,8 +69,12 @@ async function boot(): Promise<void> {
   const ctx = await createRenderer(canvas, {
     renderer: parseRendererParam(params.get('renderer')),
     fly: params.get('fly') === '1' || terrainScene,
-    empty: params.get('empty') === '1' || terrainScene,
+    empty: params.get('empty') === '1' || terrainScene || sceneParam === 'pbr',
   });
+  if (sceneParam === 'pbr') {
+    const { attachPbrScene } = await import('./render/materials/pbr-scene');
+    window.__pbr = await attachPbrScene(ctx, params);
+  }
   let terrainHandle: TerrainHandle | null = null;
   if (terrainScene) {
     const { attachTerrain } = await import('./render/terrain/terrain-scene');

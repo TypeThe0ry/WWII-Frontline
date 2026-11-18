@@ -1,0 +1,37 @@
+{
+  "task": "M1-042b",
+  "date": "2026-11-18T20:17:28.329Z",
+  "scene": "?scene=pbr (10 spheres metallic x roughness, normal-mapped + detail plane, alpha-tested plane, blended plane)",
+  "viewport": "1280x720",
+  "metric": "CIE76 delta E, WebGPU (WGSL) vs WebGL2 (GLSL) screenshots",
+  "stats": {
+    "pixels": 921600,
+    "mean": 0.01781111927510279,
+    "p99": 0,
+    "p9999": 24.195633285422293,
+    "max": 28.18631720959873,
+    "over1": 0.0019520399305555556,
+    "over2": 0.0018532986111111111,
+    "over5": 0.000908203125
+  },
+  "meta": {
+    "webgpu": {
+      "renderer": "webgpu",
+      "prewarm": {
+        "variants": 32,
+        "total_ms": 18,
+        "max_ms": 2.199999999254942,
+        "failed": []
+      }
+    },
+    "webgl2": {
+      "renderer": "webgl2",
+      "prewarm": {
+        "variants": 32,
+        "total_ms": 64,
+        "max_ms": 10.300000000745058,
+        "failed": []
+      }
+    }
+  }
+}
