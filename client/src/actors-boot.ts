@@ -60,7 +60,9 @@ export async function bootActors(o: ActorsBootOptions): Promise<ActorsHandle> {
     const us = w.find((x) => x.faction === 'us') ?? (w[0] as (typeof w)[number]);
     const ger = w.find((x) => x.faction === 'ger') ?? us;
     const n = Math.max(0, Math.min(200, Number(params.get('entities') ?? 10) | 0));
-    feed = createDemoFeed({ count: n, local: { x: 128, z: 112, yaw: 0 }, heightAt: o.heightAt ?? (() => 0), weapons: [us.index, ger.index] });
+    const lp = (params.get('local') ?? '').split(',').map(Number); // `local=x,z,yaw` places the demo player (M1 camera scenes)
+    const local = lp.length === 3 && lp.every(Number.isFinite) ? { x: lp[0]!, z: lp[1]!, yaw: lp[2]! } : { x: 128, z: 112, yaw: 0 };
+    feed = createDemoFeed({ count: n, local, heightAt: o.heightAt ?? (() => 0), weapons: [us.index, ger.index] });
     state = feed.state;
     localWeapon = () => us.index;
     aiming = () => params.get('ads') === '1';
