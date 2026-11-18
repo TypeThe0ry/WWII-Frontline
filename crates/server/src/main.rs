@@ -122,6 +122,17 @@ fn run(cfg: Config) -> Result<(), String> {
     )
     .map_err(|e| format!("cannot start sim thread: {e}"))?;
 
+    let gate = cfg.gateway_enabled().then(|| {
+        frontline_server::gateway_link::TicketGate::new(
+            frontline_server::gateway_link::system_now_secs(),
+        )
+    });
+    if gate.is_none() {
+        tracing::warn!(
+            event = "dev_no_gateway",
+            "no GATEWAY_URL: not registering and NOT checking join tickets (development only)"
+        );
+    }
     let net_ctx = std::sync::Arc::new(frontline_server::net::conn::NetCtx {
         metrics: metrics.clone(),
         sessions: sessions.clone(),
@@ -135,6 +146,7 @@ fn run(cfg: Config) -> Result<(), String> {
         server_tick: &logging::CURRENT_TICK,
         started: std::time::Instant::now(),
         handshake_timeout: frontline_server::net::limits::HANDSHAKE_TIMEOUT,
+        tickets: gate.clone(),
     });
     let ws = rt
         .block_on(frontline_server::net::ws::WsListener::bind(
@@ -193,6 +205,21 @@ fn run(cfg: Config) -> Result<(), String> {
     );
     let server = rt.spawn(metrics::serve(listener, metrics.clone(), sd_rx));
 
+    // Register once everything is listening; a refused registration ends the process.
+    let (hb_stop_tx, hb_stop_rx) = tokio::sync::watch::channel(false);
+    let link = match &gate {
+        Some(g) => Some(rt.block_on(start_gateway_link(
+            &cfg,
+            g,
+            &ws,
+            wt.as_ref(),
+            &metrics,
+            &sessions,
+            hb_stop_rx,
+        ))?),
+        None => None,
+    };
+
     let reason = rt.block_on(async {
         match cfg.duration {
             Some(d) => tokio::select! {
@@ -203,6 +230,7 @@ fn run(cfg: Config) -> Result<(), String> {
         }
     });
     tracing::info!(event = "shutdown", reason, "stopping");
+    let humans_at_end = sessions.connections();
     stop.stop();
     rt.block_on(ws.shutdown());
     if let Some(wt) = wt {
@@ -213,6 +241,27 @@ fn run(cfg: Config) -> Result<(), String> {
     }
     drop(inbound);
     let report = handle.join();
+    if let Some((client, id)) = &link {
+        let result = frontline_server::gateway_link::result::MatchResult {
+            players: humans_at_end.min(usize::from(u16::MAX)) as u16,
+            bots: cfg.bots,
+            objectives: 0,
+            duration_s: report.as_ref().map_or(0, |r| (r.ticks / 30) as u32),
+            ticks: report.as_ref().map_or(0, |r| r.ticks),
+            rows: Vec::new(),
+        };
+        if let Err(e) = rt.block_on(client.submit_result(id, &result)) {
+            match frontline_server::gateway_link::result::spool(&cfg.spool_dir, id, &result) {
+                Ok(p) => {
+                    tracing::warn!(event = "result_spooled", error = %e, path = %p.display(), "result not delivered; kept for a retry")
+                }
+                Err(io) => {
+                    tracing::error!(event = "result_lost", error = %e, io = %io, "result not delivered and could not be spooled")
+                }
+            }
+        }
+    }
+    let _ = hb_stop_tx.send(true);
     let _ = sd_tx.send(true);
     let _ = rt.block_on(server);
     rt.shutdown_timeout(Duration::from_millis(50));
@@ -246,4 +295,98 @@ async fn load_identity(cfg: &Config) -> Result<wtransport::Identity, String> {
         frontline_server::net::wt::dev_identity(frontline_server::net::wt::DEV_CERT_DAYS)
             .map_err(|e| format!("cannot generate dev certificate: {e}"))
     }
+}
+
+fn parse_hex16(s: &str) -> Option<[u8; 16]> {
+    if s.len() != 32 || !s.bytes().all(|b| b.is_ascii_hexdigit()) {
+        return None;
+    }
+    let mut out = [0u8; 16];
+    for (i, o) in out.iter_mut().enumerate() {
+        *o = u8::from_str_radix(&s[2 * i..2 * i + 2], 16).ok()?;
+    }
+    Some(out)
+}
+
+/// Registers with the gateway (3 attempts), arms the ticket gate with the announced key and
+/// starts the 1 s heartbeat. Returns the client and the gateway-assigned match id.
+async fn start_gateway_link(
+    cfg: &Config,
+    gate: &frontline_server::gateway_link::SharedGate,
+    ws: &frontline_server::net::ws::WsListener,
+    wt: Option<&frontline_server::net::wt::WtListener>,
+    metrics: &std::sync::Arc<metrics::Metrics>,
+    sessions: &std::sync::Arc<frontline_server::net::conn::Sessions>,
+    hb_stop: tokio::sync::watch::Receiver<bool>,
+) -> Result<
+    (
+        frontline_server::gateway_link::client::GatewayClient,
+        String,
+    ),
+    String,
+> {
+    use frontline_server::gateway_link::{client, heartbeat, ticket_verify};
+    let url = cfg.gateway_url.as_deref().unwrap_or_default();
+    let token = cfg.internal_api_token.as_deref().unwrap_or_default();
+    let gw = client::GatewayClient::new(url, token)?;
+    let pinned = match &cfg.ticket_public_key_file {
+        Some(p) => Some(ticket_verify::parse_public_key(
+            &std::fs::read_to_string(p)
+                .map_err(|e| format!("cannot read TICKET_PUBLIC_KEY_FILE: {e}"))?,
+        )?),
+        None => None,
+    };
+    let req = client::RegisterReq {
+        name: cfg.server_name.clone(),
+        map: cfg.map.clone(),
+        mode: cfg.mode.clone(),
+        region: cfg.region.clone(),
+        tags: Vec::new(),
+        version: GIT_SHA.to_string(),
+        protocol_version: frontline_protocol::PROTOCOL_VERSION,
+        data_hash: format!("{:016x}", frontline_sim::GameData::embedded().hash),
+        cap: 16,
+        addr: cfg.public_addr.clone(),
+        ws_port: ws.local_addr().port(),
+        wt_port: wt.map_or(0, |w| w.local_addr().port()),
+    };
+    let resp = gw
+        .register_with_retry(&req, 3, Duration::from_millis(500))
+        .await
+        .map_err(|e| format!("gateway registration failed after 3 attempts: {e}"))?;
+    let key = ticket_verify::parse_public_key(&resp.ticket_public_key)
+        .map_err(|e| format!("gateway sent a bad ticket key: {e}"))?;
+    if let Some(p) = pinned {
+        if p != key {
+            return Err(
+                "gateway announced a ticket key that differs from TICKET_PUBLIC_KEY_FILE".into(),
+            );
+        }
+    }
+    let id = parse_hex16(&resp.match_id).ok_or("gateway sent a malformed match id")?;
+    gate.arm(ticket_verify::TicketVerifier::new(vec![key]), id);
+    metrics.gateway_registered.set(1);
+    tracing::info!(
+        event = "gateway_registered",
+        gateway_match_id = %resp.match_id,
+        key_fp = %resp.ticket_key_fingerprint,
+        "registered with the gateway"
+    );
+    let bots = cfg.bots.min(255) as u8;
+    let sess = sessions.clone();
+    let source: heartbeat::Source = std::sync::Arc::new(move || client::Heartbeat {
+        humans: sess.connections().min(255) as u8,
+        bots,
+        phase: "playing".into(),
+        time_left_s: 0,
+    });
+    tokio::spawn(heartbeat::run(
+        gw.clone(),
+        resp.match_id.clone(),
+        source,
+        metrics.clone(),
+        hb_stop,
+        heartbeat::INTERVAL,
+    ));
+    Ok((gw, resp.match_id))
 }

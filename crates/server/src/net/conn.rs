@@ -66,6 +66,8 @@ pub struct NetCtx {
     pub server_tick: &'static AtomicU32,
     pub started: Instant,
     pub handshake_timeout: Duration,
+    /// Join-ticket check (M1-029); `None` = tickets are not required (development / tests).
+    pub tickets: Option<crate::gateway_link::SharedGate>,
 }
 
 /// A released `PlayerId` is not handed out again for this long, so a client that is still
@@ -302,6 +304,18 @@ pub async fn run_connection<T: ClientTransport>(
         reject_label_count(&ctx, reject_label(reason));
         send_reject(&handle, reason);
         return;
+    }
+    if let Some(gate) = &ctx.tickets {
+        // The ticket text is never logged (§19.1); only the reason is counted.
+        if let Err(why) = gate.check(&hello.ticket) {
+            ctx.metrics
+                .ticket_rejected_total
+                .with_label_values(&[why.label()])
+                .inc();
+            reject_label_count(&ctx, reject_label(RejectReason::InvalidTicket));
+            send_reject(&handle, RejectReason::InvalidTicket);
+            return;
+        }
     }
     let Some((player, team)) = ctx.sessions.alloc_player_team(&handle) else {
         reject_label_count(&ctx, "server_full");
