@@ -19,10 +19,13 @@ pub mod brain;
 pub mod bt;
 pub mod ctx;
 pub mod difficulty;
+pub mod fill;
 pub mod grid_nav;
 pub mod nav;
 pub mod perception;
+pub mod role_select;
 pub mod soldier;
+pub mod squad_leader;
 pub mod tactics;
 pub mod utility;
 
