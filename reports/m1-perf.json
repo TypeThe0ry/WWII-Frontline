@@ -1,155 +1,758 @@
 {
   "task": "M1-069b",
-  "date": "2026-11-19",
-  "status": "M1 场景未测；M0 vegetation 场景为补充数据",
-  "stand_in_notice": "本机数字是工作站数字，不代表 RTX 3060 参考机（H-021）；不得用于 E1-6/E1-7 判定。",
-  "machine": {
-    "gpu": "NVIDIA GeForce RTX 3080 (20 GB, Ampere, PCI 01:00.0, 同时承载 Sunshine 桌面)",
-    "driver": "595.58.03",
-    "cpu": "2x AMD EPYC 7402 (96 线程)",
-    "mem_gb": 405,
-    "os": "Linux 7.0.0-14-generic (Ubuntu 26.04)",
-    "chromium": "153.0.8010.12",
-    "renderer": "webgpu (timestamp-query 可用)",
-    "viewport": "1920x1080",
-    "chromium_extra_args": "--use-angle=vulkan --ignore-gpu-blocklist (Linux GPU)"
-  },
-  "m1_scenes": {
-    "open_field": {
-      "verdict": "未测",
-      "reason": "客户端没有 open_field/hedgerow/old_town 场景入口、60 实体脚本，且 m1-scenes.json 机位仍为占位坐标 [0,0,0]；树篱/建筑渲染接线 M1-051b/052b 未完成"
-    },
-    "hedgerow": {
-      "verdict": "未测",
-      "reason": "客户端没有 open_field/hedgerow/old_town 场景入口、60 实体脚本，且 m1-scenes.json 机位仍为占位坐标 [0,0,0]；树篱/建筑渲染接线 M1-051b/052b 未完成"
-    },
-    "old_town": {
-      "verdict": "未测",
-      "reason": "客户端没有 open_field/hedgerow/old_town 场景入口、60 实体脚本，且 m1-scenes.json 机位仍为占位坐标 [0,0,0]；树篱/建筑渲染接线 M1-051b/052b 未完成"
-    }
-  },
-  "supplementary_m0_vegetation_scene": {
-    "note": "capture.mjs 目前只会采 M0 的 ?scene=vegetation&cam=0|1|2（地形+植被，无实体/HUD/树篱/建筑）。仅说明工作站 GPU 路径可用，不是 M1 机位。",
-    "runs_per_cam": 3,
-    "warmup_s": 5,
-    "capture_s": 30,
-    "vsync_on": {
-      "cam0": {
-        "interval_p50_ms": 16.7,
-        "interval_p50_range_pct": 0,
-        "interval_p99_ms_runs": [
-          17.9,
-          17.9,
-          17.9
-        ],
-        "cpu_p50_ms": 2.9,
-        "gpu_ms_runs": [
-          0.3584,
-          0.366592,
-          0.361472
-        ],
-        "draw_calls": 50,
-        "tris": 450341,
-        "veg_instances": 8130,
-        "js_heap_mb": 70.4
+  "machine": "RTX3080-ws",
+  "tier": "high",
+  "variants": [
+    {
+      "vegetation": true,
+      "rows": {
+        "open_field": {
+          "machine": "RTX3080-ws",
+          "scene": "open_field",
+          "tier": "high",
+          "runs": 3,
+          "frame_ms": {
+            "p50": 33.30000000000291,
+            "p95": 33.40000000000873,
+            "p99": 33.5
+          },
+          "frame_p95_runs": [
+            33.40000000000873,
+            33.400000000001455,
+            33.40000000000873
+          ],
+          "range_pct": 2.1784304234076417e-11,
+          "draw_calls": 402,
+          "tris": 658110,
+          "cpu_ms_p50": 27.699999999254942,
+          "gpu_ms_total": 0.48128,
+          "hitches_gt_50ms": 7,
+          "js_heap_mb": 968.625147819519,
+          "vegetation_instances": 45472,
+          "world": {
+            "hedge_segments": 424,
+            "hedge_length_m": 2394.498662871738,
+            "hedge_meshes": 1,
+            "building_count": 2839,
+            "building_cells": 173,
+            "building_triangles": 56572,
+            "building_roof_failures": 0,
+            "enterable": 70,
+            "load_ms": 267.19999999925494
+          }
+        },
+        "hedgerow": {
+          "machine": "RTX3080-ws",
+          "scene": "hedgerow",
+          "tier": "high",
+          "runs": 3,
+          "frame_ms": {
+            "p50": 33.30000000000291,
+            "p95": 33.5,
+            "p99": 50
+          },
+          "frame_p95_runs": [
+            33.5,
+            33.40000000000873,
+            50
+          ],
+          "range_pct": 49.552238805944086,
+          "draw_calls": 814,
+          "tris": 590378,
+          "cpu_ms_p50": 30.09999999962747,
+          "gpu_ms_total": 0.611328,
+          "hitches_gt_50ms": 43,
+          "js_heap_mb": 992.6422328948975,
+          "vegetation_instances": 59376,
+          "world": {
+            "hedge_segments": 424,
+            "hedge_length_m": 2394.498662871738,
+            "hedge_meshes": 1,
+            "building_count": 2839,
+            "building_cells": 173,
+            "building_triangles": 56572,
+            "building_roof_failures": 0,
+            "enterable": 70,
+            "load_ms": 164.59999999962747
+          }
+        },
+        "old_town": {
+          "machine": "RTX3080-ws",
+          "scene": "old_town",
+          "tier": "high",
+          "runs": 3,
+          "frame_ms": {
+            "p50": 33.30000000000291,
+            "p95": 50,
+            "p99": 50.10000000000582
+          },
+          "frame_p95_runs": [
+            50,
+            50.09999999999127,
+            50
+          ],
+          "range_pct": 0.1999999999825377,
+          "draw_calls": 696,
+          "tris": 604962,
+          "cpu_ms_p50": 35.69999999925494,
+          "gpu_ms_total": 0.47616,
+          "hitches_gt_50ms": 88,
+          "js_heap_mb": 983.0997667312622,
+          "vegetation_instances": 56334,
+          "world": {
+            "hedge_segments": 424,
+            "hedge_length_m": 2394.498662871738,
+            "hedge_meshes": 1,
+            "building_count": 2839,
+            "building_cells": 173,
+            "building_triangles": 56572,
+            "building_roof_failures": 0,
+            "enterable": 70,
+            "load_ms": 271.3999999985099
+          }
+        }
       },
-      "cam1": {
-        "interval_p50_ms": 16.7,
-        "interval_p50_range_pct": 0,
-        "interval_p99_ms_runs": [
-          18.2,
-          17.2,
-          17.5
-        ],
-        "cpu_p50_ms": 3.3,
-        "gpu_ms_runs": [
-          0.265216,
-          0.263168,
-          0.270336
-        ],
-        "draw_calls": 33,
-        "tris": 9884,
-        "veg_instances": 4942,
-        "js_heap_mb": 65.6
+      "summary": {
+        "tier": "high",
+        "overall": "FAIL",
+        "missing_scenes": 0,
+        "checks": [
+          {
+            "scene": "open_field",
+            "check": "frame_ms.p95",
+            "value": 33.40000000000873,
+            "limit": 16.7,
+            "verdict": "FAIL",
+            "over": 16.7
+          },
+          {
+            "scene": "open_field",
+            "check": "draw_calls",
+            "value": 402,
+            "limit": 1200,
+            "verdict": "PASS"
+          },
+          {
+            "scene": "open_field",
+            "check": "tris",
+            "value": 658110,
+            "limit": 4000000,
+            "verdict": "PASS"
+          },
+          {
+            "scene": "open_field",
+            "check": "hitches_gt_50ms",
+            "value": 7,
+            "limit": 2,
+            "verdict": "FAIL",
+            "over": 5
+          },
+          {
+            "scene": "open_field",
+            "check": "gpu_ms.csm",
+            "value": null,
+            "limit": 2.2,
+            "verdict": "UNMEASURED"
+          },
+          {
+            "scene": "open_field",
+            "check": "gpu_ms.opaque",
+            "value": null,
+            "limit": 4,
+            "verdict": "UNMEASURED"
+          },
+          {
+            "scene": "open_field",
+            "check": "gpu_ms.transparent",
+            "value": null,
+            "limit": 0.7,
+            "verdict": "UNMEASURED"
+          },
+          {
+            "scene": "open_field",
+            "check": "gpu_ms.taa",
+            "value": null,
+            "limit": 0.8,
+            "verdict": "UNMEASURED"
+          },
+          {
+            "scene": "open_field",
+            "check": "gpu_ms.post",
+            "value": null,
+            "limit": 0.7,
+            "verdict": "UNMEASURED"
+          },
+          {
+            "scene": "open_field",
+            "check": "js_heap_mb+wasm_mb",
+            "value": null,
+            "limit": 1536,
+            "verdict": "UNMEASURED"
+          },
+          {
+            "scene": "open_field",
+            "check": "vram_mb_est",
+            "value": null,
+            "limit": 4096,
+            "verdict": "UNMEASURED"
+          },
+          {
+            "scene": "hedgerow",
+            "check": "frame_ms.p95",
+            "value": 33.5,
+            "limit": 16.7,
+            "verdict": "FAIL",
+            "over": 16.8
+          },
+          {
+            "scene": "hedgerow",
+            "check": "draw_calls",
+            "value": 814,
+            "limit": 1200,
+            "verdict": "PASS"
+          },
+          {
+            "scene": "hedgerow",
+            "check": "tris",
+            "value": 590378,
+            "limit": 4000000,
+            "verdict": "PASS"
+          },
+          {
+            "scene": "hedgerow",
+            "check": "hitches_gt_50ms",
+            "value": 43,
+            "limit": 2,
+            "verdict": "FAIL",
+            "over": 41
+          },
+          {
+            "scene": "hedgerow",
+            "check": "gpu_ms.csm",
+            "value": null,
+            "limit": 2.2,
+            "verdict": "UNMEASURED"
+          },
+          {
+            "scene": "hedgerow",
+            "check": "gpu_ms.opaque",
+            "value": null,
+            "limit": 4,
+            "verdict": "UNMEASURED"
+          },
+          {
+            "scene": "hedgerow",
+            "check": "gpu_ms.transparent",
+            "value": null,
+            "limit": 0.7,
+            "verdict": "UNMEASURED"
+          },
+          {
+            "scene": "hedgerow",
+            "check": "gpu_ms.taa",
+            "value": null,
+            "limit": 0.8,
+            "verdict": "UNMEASURED"
+          },
+          {
+            "scene": "hedgerow",
+            "check": "gpu_ms.post",
+            "value": null,
+            "limit": 0.7,
+            "verdict": "UNMEASURED"
+          },
+          {
+            "scene": "hedgerow",
+            "check": "js_heap_mb+wasm_mb",
+            "value": null,
+            "limit": 1536,
+            "verdict": "UNMEASURED"
+          },
+          {
+            "scene": "hedgerow",
+            "check": "vram_mb_est",
+            "value": null,
+            "limit": 4096,
+            "verdict": "UNMEASURED"
+          },
+          {
+            "scene": "old_town",
+            "check": "frame_ms.p95",
+            "value": 50,
+            "limit": 16.7,
+            "verdict": "FAIL",
+            "over": 33.3
+          },
+          {
+            "scene": "old_town",
+            "check": "draw_calls",
+            "value": 696,
+            "limit": 1200,
+            "verdict": "PASS"
+          },
+          {
+            "scene": "old_town",
+            "check": "tris",
+            "value": 604962,
+            "limit": 4000000,
+            "verdict": "PASS"
+          },
+          {
+            "scene": "old_town",
+            "check": "hitches_gt_50ms",
+            "value": 88,
+            "limit": 2,
+            "verdict": "FAIL",
+            "over": 86
+          },
+          {
+            "scene": "old_town",
+            "check": "gpu_ms.csm",
+            "value": null,
+            "limit": 2.2,
+            "verdict": "UNMEASURED"
+          },
+          {
+            "scene": "old_town",
+            "check": "gpu_ms.opaque",
+            "value": null,
+            "limit": 4,
+            "verdict": "UNMEASURED"
+          },
+          {
+            "scene": "old_town",
+            "check": "gpu_ms.transparent",
+            "value": null,
+            "limit": 0.7,
+            "verdict": "UNMEASURED"
+          },
+          {
+            "scene": "old_town",
+            "check": "gpu_ms.taa",
+            "value": null,
+            "limit": 0.8,
+            "verdict": "UNMEASURED"
+          },
+          {
+            "scene": "old_town",
+            "check": "gpu_ms.post",
+            "value": null,
+            "limit": 0.7,
+            "verdict": "UNMEASURED"
+          },
+          {
+            "scene": "old_town",
+            "check": "js_heap_mb+wasm_mb",
+            "value": null,
+            "limit": 1536,
+            "verdict": "UNMEASURED"
+          },
+          {
+            "scene": "old_town",
+            "check": "vram_mb_est",
+            "value": null,
+            "limit": 4096,
+            "verdict": "UNMEASURED"
+          }
+        ]
       },
-      "cam2": {
-        "interval_p50_ms": 16.7,
-        "interval_p50_range_pct": 0,
-        "interval_p99_ms_runs": [
-          19,
-          17.4,
-          19.6
-        ],
-        "cpu_p50_ms": 2.6,
-        "gpu_ms_runs": [
-          0.206848,
-          0.202752,
-          0.297984
-        ],
-        "draw_calls": 13,
-        "tris": 318492,
-        "veg_instances": 3197,
-        "js_heap_mb": 65.5
+      "variance_flags": [
+        "hedgerow"
+      ],
+      "capture_meta": {
+        "machine": "RTX3080-ws",
+        "cpu": "AMD EPYC 7402 24-Core Processor",
+        "cores": 96,
+        "mem_gb": 405,
+        "os": "Linux 7.0.0-14-generic",
+        "node": "v22.22.1",
+        "chromium": "153.0.8010.12",
+        "gpu_mode": "hardware",
+        "renderer_requested": "webgpu",
+        "viewport": "1920x1080",
+        "quality": "high",
+        "commit": "3985266",
+        "dirty": true,
+        "date": "2026-11-18T17:25:13.450Z",
+        "command": "node tools/perf/capture.mjs --m1 --gpu --renderer webgpu --viewport 1920x1080 --machine RTX3080-ws --veg 1 --out-dir reports/m1-perf-raw"
       }
     },
-    "vsync_off": {
-      "cam0": {
-        "interval_p50_ms": 2.3,
-        "interval_p50_range_pct": 21.7,
-        "interval_p99_ms_runs": [
-          13.3,
-          8.5,
-          17.5
-        ],
-        "cpu_p50_ms": 2,
-        "gpu_ms_runs": [
-          0.354304,
-          0.362496,
-          0.354304
-        ],
-        "draw_calls": 50,
-        "tris": 450341,
-        "veg_instances": 8130,
-        "js_heap_mb": 63.5
+    {
+      "vegetation": false,
+      "rows": {
+        "open_field": {
+          "machine": "RTX3080-ws",
+          "scene": "open_field",
+          "tier": "high",
+          "runs": 3,
+          "frame_ms": {
+            "p50": 16.69999999999709,
+            "p95": 16.799999999995634,
+            "p99": 16.80000000000291
+          },
+          "frame_p95_runs": [
+            16.799999999995634,
+            16.79999999998836,
+            16.799999999995634
+          ],
+          "range_pct": 4.330927151300784e-11,
+          "draw_calls": 42,
+          "tris": 45740,
+          "cpu_ms_p50": 9.5,
+          "gpu_ms_total": 0.18944,
+          "hitches_gt_50ms": 2,
+          "js_heap_mb": 101.54039096832275,
+          "vegetation_instances": 0,
+          "world": {
+            "hedge_segments": 424,
+            "hedge_length_m": 2394.498662871738,
+            "hedge_meshes": 1,
+            "building_count": 2839,
+            "building_cells": 173,
+            "building_triangles": 56572,
+            "building_roof_failures": 0,
+            "enterable": 70,
+            "load_ms": 211.40000000037253
+          }
+        },
+        "hedgerow": {
+          "machine": "RTX3080-ws",
+          "scene": "hedgerow",
+          "tier": "high",
+          "runs": 3,
+          "frame_ms": {
+            "p50": 16.69999999999709,
+            "p95": 16.70000000001164,
+            "p99": 16.80000000000291
+          },
+          "frame_p95_runs": [
+            16.70000000001164,
+            16.799999999995634,
+            16.70000000001164
+          ],
+          "range_pct": 0.5988023951133125,
+          "draw_calls": 144,
+          "tris": 55410,
+          "cpu_ms_p50": 8.599999999627471,
+          "gpu_ms_total": 0.211968,
+          "hitches_gt_50ms": 9,
+          "js_heap_mb": 117.6757402420044,
+          "vegetation_instances": 0,
+          "world": {
+            "hedge_segments": 424,
+            "hedge_length_m": 2394.498662871738,
+            "hedge_meshes": 1,
+            "building_count": 2839,
+            "building_cells": 173,
+            "building_triangles": 56572,
+            "building_roof_failures": 0,
+            "enterable": 70,
+            "load_ms": 302.90000000037253
+          }
+        },
+        "old_town": {
+          "machine": "RTX3080-ws",
+          "scene": "old_town",
+          "tier": "high",
+          "runs": 3,
+          "frame_ms": {
+            "p50": 16.69999999999709,
+            "p95": 16.799999999995634,
+            "p99": 33.299999999995634
+          },
+          "frame_p95_runs": [
+            16.799999999995634,
+            16.799999999999272,
+            16.799999999995634
+          ],
+          "range_pct": 2.165463575650392e-11,
+          "draw_calls": 81,
+          "tris": 61668,
+          "cpu_ms_p50": 10.199999999254942,
+          "gpu_ms_total": 0.226304,
+          "hitches_gt_50ms": 6,
+          "js_heap_mb": 115.7949275970459,
+          "vegetation_instances": 0,
+          "world": {
+            "hedge_segments": 424,
+            "hedge_length_m": 2394.498662871738,
+            "hedge_meshes": 1,
+            "building_count": 2839,
+            "building_cells": 173,
+            "building_triangles": 56572,
+            "building_roof_failures": 0,
+            "enterable": 70,
+            "load_ms": 249.59999999962747
+          }
+        }
       },
-      "cam1": {
-        "interval_p50_ms": 2.7,
-        "interval_p50_range_pct": 25.9,
-        "interval_p99_ms_runs": [
-          7.7,
-          24.3,
-          10.4
-        ],
-        "cpu_p50_ms": 2.1,
-        "gpu_ms_runs": [
-          0.311296,
-          0.265216,
-          0.275456
-        ],
-        "draw_calls": 33,
-        "tris": 9884,
-        "veg_instances": 4942,
-        "js_heap_mb": 73.4
+      "summary": {
+        "tier": "high",
+        "overall": "FAIL",
+        "missing_scenes": 0,
+        "checks": [
+          {
+            "scene": "open_field",
+            "check": "frame_ms.p95",
+            "value": 16.799999999995634,
+            "limit": 16.7,
+            "verdict": "FAIL",
+            "over": 0.1
+          },
+          {
+            "scene": "open_field",
+            "check": "draw_calls",
+            "value": 42,
+            "limit": 1200,
+            "verdict": "PASS"
+          },
+          {
+            "scene": "open_field",
+            "check": "tris",
+            "value": 45740,
+            "limit": 4000000,
+            "verdict": "PASS"
+          },
+          {
+            "scene": "open_field",
+            "check": "hitches_gt_50ms",
+            "value": 2,
+            "limit": 2,
+            "verdict": "PASS"
+          },
+          {
+            "scene": "open_field",
+            "check": "gpu_ms.csm",
+            "value": null,
+            "limit": 2.2,
+            "verdict": "UNMEASURED"
+          },
+          {
+            "scene": "open_field",
+            "check": "gpu_ms.opaque",
+            "value": null,
+            "limit": 4,
+            "verdict": "UNMEASURED"
+          },
+          {
+            "scene": "open_field",
+            "check": "gpu_ms.transparent",
+            "value": null,
+            "limit": 0.7,
+            "verdict": "UNMEASURED"
+          },
+          {
+            "scene": "open_field",
+            "check": "gpu_ms.taa",
+            "value": null,
+            "limit": 0.8,
+            "verdict": "UNMEASURED"
+          },
+          {
+            "scene": "open_field",
+            "check": "gpu_ms.post",
+            "value": null,
+            "limit": 0.7,
+            "verdict": "UNMEASURED"
+          },
+          {
+            "scene": "open_field",
+            "check": "js_heap_mb+wasm_mb",
+            "value": null,
+            "limit": 1536,
+            "verdict": "UNMEASURED"
+          },
+          {
+            "scene": "open_field",
+            "check": "vram_mb_est",
+            "value": null,
+            "limit": 4096,
+            "verdict": "UNMEASURED"
+          },
+          {
+            "scene": "hedgerow",
+            "check": "frame_ms.p95",
+            "value": 16.70000000001164,
+            "limit": 16.7,
+            "verdict": "FAIL",
+            "over": 0
+          },
+          {
+            "scene": "hedgerow",
+            "check": "draw_calls",
+            "value": 144,
+            "limit": 1200,
+            "verdict": "PASS"
+          },
+          {
+            "scene": "hedgerow",
+            "check": "tris",
+            "value": 55410,
+            "limit": 4000000,
+            "verdict": "PASS"
+          },
+          {
+            "scene": "hedgerow",
+            "check": "hitches_gt_50ms",
+            "value": 9,
+            "limit": 2,
+            "verdict": "FAIL",
+            "over": 7
+          },
+          {
+            "scene": "hedgerow",
+            "check": "gpu_ms.csm",
+            "value": null,
+            "limit": 2.2,
+            "verdict": "UNMEASURED"
+          },
+          {
+            "scene": "hedgerow",
+            "check": "gpu_ms.opaque",
+            "value": null,
+            "limit": 4,
+            "verdict": "UNMEASURED"
+          },
+          {
+            "scene": "hedgerow",
+            "check": "gpu_ms.transparent",
+            "value": null,
+            "limit": 0.7,
+            "verdict": "UNMEASURED"
+          },
+          {
+            "scene": "hedgerow",
+            "check": "gpu_ms.taa",
+            "value": null,
+            "limit": 0.8,
+            "verdict": "UNMEASURED"
+          },
+          {
+            "scene": "hedgerow",
+            "check": "gpu_ms.post",
+            "value": null,
+            "limit": 0.7,
+            "verdict": "UNMEASURED"
+          },
+          {
+            "scene": "hedgerow",
+            "check": "js_heap_mb+wasm_mb",
+            "value": null,
+            "limit": 1536,
+            "verdict": "UNMEASURED"
+          },
+          {
+            "scene": "hedgerow",
+            "check": "vram_mb_est",
+            "value": null,
+            "limit": 4096,
+            "verdict": "UNMEASURED"
+          },
+          {
+            "scene": "old_town",
+            "check": "frame_ms.p95",
+            "value": 16.799999999995634,
+            "limit": 16.7,
+            "verdict": "FAIL",
+            "over": 0.1
+          },
+          {
+            "scene": "old_town",
+            "check": "draw_calls",
+            "value": 81,
+            "limit": 1200,
+            "verdict": "PASS"
+          },
+          {
+            "scene": "old_town",
+            "check": "tris",
+            "value": 61668,
+            "limit": 4000000,
+            "verdict": "PASS"
+          },
+          {
+            "scene": "old_town",
+            "check": "hitches_gt_50ms",
+            "value": 6,
+            "limit": 2,
+            "verdict": "FAIL",
+            "over": 4
+          },
+          {
+            "scene": "old_town",
+            "check": "gpu_ms.csm",
+            "value": null,
+            "limit": 2.2,
+            "verdict": "UNMEASURED"
+          },
+          {
+            "scene": "old_town",
+            "check": "gpu_ms.opaque",
+            "value": null,
+            "limit": 4,
+            "verdict": "UNMEASURED"
+          },
+          {
+            "scene": "old_town",
+            "check": "gpu_ms.transparent",
+            "value": null,
+            "limit": 0.7,
+            "verdict": "UNMEASURED"
+          },
+          {
+            "scene": "old_town",
+            "check": "gpu_ms.taa",
+            "value": null,
+            "limit": 0.8,
+            "verdict": "UNMEASURED"
+          },
+          {
+            "scene": "old_town",
+            "check": "gpu_ms.post",
+            "value": null,
+            "limit": 0.7,
+            "verdict": "UNMEASURED"
+          },
+          {
+            "scene": "old_town",
+            "check": "js_heap_mb+wasm_mb",
+            "value": null,
+            "limit": 1536,
+            "verdict": "UNMEASURED"
+          },
+          {
+            "scene": "old_town",
+            "check": "vram_mb_est",
+            "value": null,
+            "limit": 4096,
+            "verdict": "UNMEASURED"
+          }
+        ]
       },
-      "cam2": {
-        "interval_p50_ms": 3.2,
-        "interval_p50_range_pct": 78.1,
-        "interval_p99_ms_runs": [
-          19.1,
-          9,
-          22.4
-        ],
-        "cpu_p50_ms": 2.1,
-        "gpu_ms_runs": [
-          0.206848,
-          0.216064,
-          0.205824
-        ],
-        "draw_calls": 13,
-        "tris": 318492,
-        "veg_instances": 3197,
-        "js_heap_mb": 70.9
+      "variance_flags": [],
+      "capture_meta": {
+        "machine": "RTX3080-ws",
+        "cpu": "AMD EPYC 7402 24-Core Processor",
+        "cores": 96,
+        "mem_gb": 405,
+        "os": "Linux 7.0.0-14-generic",
+        "node": "v22.22.1",
+        "chromium": "153.0.8010.12",
+        "gpu_mode": "hardware",
+        "renderer_requested": "webgpu",
+        "viewport": "1920x1080",
+        "quality": "high",
+        "commit": "3985266",
+        "dirty": true,
+        "date": "2026-11-18T17:39:14.169Z",
+        "command": "node tools/perf/capture.mjs --m1 --gpu --renderer webgpu --viewport 1920x1080 --machine RTX3080-ws --veg 0 --out-dir reports/m1-perf-raw"
       }
     }
+  ],
+  "material_variants": {
+    "check": "material_variants",
+    "value": null,
+    "limit": 60,
+    "verdict": "UNMEASURED"
   }
 }

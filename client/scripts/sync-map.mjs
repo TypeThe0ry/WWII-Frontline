@@ -14,11 +14,14 @@ const src = join(repo, 'data', 'maps', mapId);
 const dst = join(here, '..', 'public', 'maps', mapId);
 
 /** Files the client fetches (M0-023 terrain; M0-022 appends the collision chunks it needs). */
-const FILES = ['meta.json', 'spawns.json', 'heightmap_1m.r16', 'heightmap_far_8m.r16']; // spawns.json: vegetation keep-out discs (M0-024)
+const FILES = ['meta.json', 'heightmap_1m.r16', 'heightmap_far_8m.r16']; // spawns.json: vegetation keep-out discs (M0-024)
 // M0-022: the whole M0 map (4 x 4 blocks of 64 m) is loaded into the prediction collision world at start-up (ARCHITECTURE 9.5).
-for (let bz = 0; bz < 4; bz++) for (let bx = 0; bx < 4; bx++) FILES.push(`chunks/c_${bx}_${bz}.bin`);
+if (mapId === 'm0') FILES.push('spawns.json');
+if (mapId === 'm0') for (let bz = 0; bz < 4; bz++) for (let bx = 0; bx < 4; bx++) FILES.push(`chunks/c_${bx}_${bz}.bin`);
+// M1-051b/052b: the Carentan world layers drawn by the client (hedgerows, buildings); no m0 chunk files for this map.
+if (mapId !== 'm0') for (const f of ['hedgerows.geojson', 'buildings.geojson']) if (existsSync(join(src, f))) FILES.push(f);
 
-if (FILES.some((f) => !existsSync(join(src, f)))) {
+if (mapId === 'm0' && FILES.some((f) => !existsSync(join(src, f)))) {
   console.log(`[sync-map] ${src} incomplete -> running the map pipeline (seed 1)`);
   const r = spawnSync('python3', ['-m', 'map_pipeline', mapId, '--seed', '1', '--out', src], {
     cwd: repo,
@@ -32,6 +35,7 @@ if (FILES.some((f) => !existsSync(join(src, f)))) {
 }
 mkdirSync(join(dst, 'chunks'), { recursive: true });
 for (const f of FILES) copyFileSync(join(src, f), join(dst, f));
+if (mapId !== 'm0' && existsSync(join(src, 'm1', 'spawns.json'))) copyFileSync(join(src, 'm1', 'spawns.json'), join(dst, 'spawns.json')); // vegetation keep-out discs
 console.log(`[sync-map] ${FILES.length} files -> ${dst}`);
 
 // M0-022: the sim-wasm package (git-ignored build output of `wasm-pack build crates/sim-wasm --target web --profile wasm-release`)
