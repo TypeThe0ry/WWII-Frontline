@@ -106,6 +106,8 @@ pub struct SchedStats {
     pub starved: u64,
     pub degraded_ticks: u64,
     pub encode_errors: u64,
+    /// Enemy records that broke the R3 rules (audit; must stay 0).
+    pub enemy_leaks: u64,
     /// Packet sizes in bytes.
     pub sizes: Vec<u16>,
     /// Per-client 1 s window rates (kbps): payload only / payload + 58 B per packet.
@@ -173,6 +175,7 @@ pub struct SnapshotScheduler {
     cand_ids: Vec<u8>,
     cands: Vec<Cand>,
     near: [bool; 128],
+    params: AoiParams,
 }
 
 fn snap_stance(s: frontline_sim::Stance) -> u8 {
@@ -199,6 +202,7 @@ impl SnapshotScheduler {
             cand_ids: Vec::new(),
             cands: Vec::new(),
             near: [false; 128],
+            params: AoiParams::from_rules(&frontline_sim::GameData::embedded().rules.aoi, TICK_HZ),
         }
     }
 
@@ -245,6 +249,8 @@ impl SnapshotScheduler {
             yaw: s.yaw,
             pitch: s.pitch,
             team: team as u8,
+            prev_yaw: s.yaw,
+            prev_pitch: s.pitch,
         })
     }
 
@@ -269,8 +275,25 @@ impl SnapshotScheduler {
                 .or_insert_with(|| ClientBook::new(now));
         }
         let mut obs: BTreeMap<PlayerId, Observer> = BTreeMap::new();
+        let union_ticks = self.params.turn_union_ticks;
         for c in clients {
-            if let Some(o) = Self::observer(world, c.player, c.team) {
+            if let Some(mut o) = Self::observer(world, c.player, c.team) {
+                if let Some(b) = self.clients.get_mut(&c.player) {
+                    // Orientation `turn_union_ms` ago: the newest sample at least that old.
+                    if let Some(&(_, y, p)) = b
+                        .view_hist
+                        .iter()
+                        .rev()
+                        .find(|(t, _, _)| now.wrapping_sub(*t) >= union_ticks)
+                    {
+                        o.prev_yaw = y;
+                        o.prev_pitch = p;
+                    }
+                    b.view_hist.push_back((now, o.yaw, o.pitch));
+                    while b.view_hist.len() > 2 * union_ticks as usize + 2 {
+                        b.view_hist.pop_front();
+                    }
+                }
                 obs.insert(c.player, o);
             }
         }
@@ -468,7 +491,7 @@ impl SnapshotScheduler {
                             continue;
                         };
                         let rel = relation(o, muzzle);
-                        if event_visible(c.team == steam, &rel) {
+                        if event_visible(&self.params, c.team == steam, &rel) {
                             if let Some(b) = self.clients.get_mut(&c.player) {
                                 b.events.push(entry);
                             }
@@ -575,8 +598,12 @@ impl SnapshotScheduler {
         book.prio.eval_counter = book.prio.eval_counter.wrapping_add(1);
         let ec = book.prio.eval_counter;
         self.cand_ids.clear();
-        self.grid
-            .query_radius(o.pos.x, o.pos.z, LEAVE_M, &mut self.cand_ids);
+        self.grid.query_radius(
+            o.pos.x,
+            o.pos.z,
+            self.params.leave_max_m,
+            &mut self.cand_ids,
+        );
         self.cands.clear();
         for &id in &self.cand_ids {
             if id == p {
@@ -589,7 +616,7 @@ impl SnapshotScheduler {
             let slot = &mut book.prio.slots[id as usize];
             let was = slot.state == SlotState::InRange;
             let rel = relation(o, f.pos);
-            if !is_candidate(f.team as u8 == o.team, &rel, was) {
+            if !is_candidate(&self.params, f.team as u8 == o.team, &rel, was) {
                 continue;
             }
             slot.touched = ec;
@@ -603,13 +630,13 @@ impl SnapshotScheduler {
             // makes them all deltas but measured 20 % MORE bytes than the spec rates with
             // keyframes (deltas of moving players are 8-10 B, keyframes 12.5 B, T1 is 10 Hz):
             // see `near_every_packet_policy_comparison`.
-            let rate = if self.near_every_packet && rel.dist <= CLOSE_M {
+            let rate = if self.near_every_packet && rel.dist <= self.params.enemy_close_m {
                 packet_hz
             } else {
                 rate_hz(&rel, f.firing, f.hurt_q).min(packet_hz)
             };
             slot.acc = (slot.acc + rate * dt).min(ACC_CAP);
-            self.near[id as usize] = rel.dist <= CLOSE_M;
+            self.near[id as usize] = rel.dist <= self.params.enemy_close_m;
             self.cands.push(Cand { id, acc: slot.acc });
         }
         for (id, slot) in book.prio.slots.iter_mut().enumerate() {
@@ -669,6 +696,26 @@ impl SnapshotScheduler {
         }
         let (kf, dl) = b.record_counts();
         let bytes = b.finish();
+
+        // ---- audit (R3): every enemy record must satisfy the rules, with the leave limits
+        // (hysteresis) as the hard bound ----
+        let mut leaks = 0u64;
+        for &id in &sent_ids[..n_sent] {
+            let f = &self.frames[id as usize];
+            if f.team as u8 == o.team {
+                continue;
+            }
+            let rel = relation(o, f.pos);
+            if !is_candidate(&self.params, false, &rel, true) {
+                leaks += 1;
+            }
+        }
+        if leaks > 0 {
+            self.stats.enemy_leaks += leaks;
+            if let Some(m) = &self.metrics {
+                m.aoi_enemy_leak_total.inc_by(leaks);
+            }
+        }
 
         // ---- bookkeeping ----
         for &id in &sent_ids[..n_sent] {

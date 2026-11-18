@@ -563,3 +563,7 @@ blocked / in-progress / todo：无。M0 的 33 个任务全部已提交（M0-033
 
 ### M1-023 载具武器与装甲 — done — 2026-11-18 — 提交见 git log
 - `vehicle/armor.rs`（GD §14.4.1 纯函数，手算夹具 `tests/fixtures/armor_cases.json`）、`turret.rs`、`gun.rs`、`modules.rs`（模块 HP/效果/殉爆）、`internal.rs`（车内路径与乘员/模块伤害）、`shell.rs`（装甲区与命中结算）、`shells.rs`（炮弹飞行、击毁、Burning、残骸）、`rocket.rs`（Panzerfaust 60 与后焰）；新增事件与 `Purpose::Armor`；测试 `armor_cases`、`vehicle_turret_gun`、`vehicle_modules`、`vehicle_armor_hits`、`vehicle_gunnery`、`panzerfaust`；bench `armor_hit`、`armor_pipeline`（PI-067..070）。
+
+
+### M1-024 服务端 AOI v1 — partial — 2026-11-18 — 提交见 git log
+- `data/rules/aoi.json`（+schema/校验）→ `AoiParams`；3D 视锥、转身并集、滞回；`aoi_enemy_leak_total` 指标与 `tests/aoi_audit.rs` 泄漏审计；`TeamChannel`（C3 1 Hz）；`vehicle_rate_hz`。余项见 PI-071。

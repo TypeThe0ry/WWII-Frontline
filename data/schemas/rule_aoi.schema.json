@@ -1,0 +1,138 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://frontline.invalid/schemas/rule_aoi.schema.json",
+  "title": "AOI v1 rules (ARCHITECTURE 6.5.4, R3; M1-024)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "enemy_max_m",
+    "enemy_close_m",
+    "friendly_max_m",
+    "leave_max_m",
+    "leave_close_m",
+    "frustum_half_deg",
+    "frustum_margin_deg",
+    "frustum_leave_extra_deg",
+    "turn_union_ms",
+    "los_check_s",
+    "los_min_dist_m",
+    "vehicle_importance_mult",
+    "team_channel_period_s",
+    "icon_quantum_m",
+    "icon_ttl_s",
+    "_meta"
+  ],
+  "properties": {
+    "enemy_max_m": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "enemy_close_m": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "friendly_max_m": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "leave_max_m": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "leave_close_m": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "frustum_half_deg": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "frustum_margin_deg": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "frustum_leave_extra_deg": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "turn_union_ms": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "los_check_s": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "los_min_dist_m": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "vehicle_importance_mult": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "team_channel_period_s": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "icon_quantum_m": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "icon_ttl_s": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "_meta": {
+      "$ref": "#/$defs/meta"
+    }
+  },
+  "$defs": {
+    "meta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "tunable"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "initial",
+            "reviewed",
+            "measured"
+          ]
+        },
+        "tunable": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "calibration_ref": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "unverified": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "deviation_reason": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  }
+}

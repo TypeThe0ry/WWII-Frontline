@@ -87,6 +87,8 @@ pub struct ClientBook {
     pub delta_records: u64,
     pub starved: u64,
     pub joined_tick: u32,
+    /// Recent view orientations `(tick, yaw, pitch)` for the turn-union cone test.
+    pub view_hist: VecDeque<(u32, f32, f32)>,
 }
 
 impl ClientBook {
@@ -96,6 +98,7 @@ impl ClientBook {
             prio: PriorityState::default(),
             events: EventWindow::default(),
             hist: VecDeque::new(),
+            view_hist: VecDeque::new(),
             corr: Corr {
                 pending: true, // the client's start position is a guess (PI-023)
                 first_sent: None,

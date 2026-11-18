@@ -18,6 +18,7 @@ pub mod events_out;
 pub mod priority;
 pub mod scheduler;
 pub mod self_state;
+pub mod team_channel;
 
 pub use scheduler::{
     ClientIn, LinkInfo, Outgoing, SchedStats, SnapshotScheduler, DEGRADE_HOLD_TICKS, PACKET_BUDGET,

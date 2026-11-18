@@ -42,6 +42,63 @@ pub struct Observer {
     pub yaw: f32,
     pub pitch: f32,
     pub team: u8,
+    /// Orientation `turn_union_ms` ago (equal to the current one without history): the cone
+    /// test uses the union of both so a fast turn does not make enemies pop in.
+    pub prev_yaw: f32,
+    pub prev_pitch: f32,
+}
+
+/// Tunables of the candidate rules (`data/rules/aoi.json`).
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct AoiParams {
+    pub enemy_max_m: f32,
+    pub enemy_close_m: f32,
+    pub friendly_max_m: f32,
+    pub leave_max_m: f32,
+    pub leave_close_m: f32,
+    /// Cosine of the enter / leave half angle (`frustum_half + margin`, `+ leave_extra`).
+    pub cos_enter: f32,
+    pub cos_leave: f32,
+    pub turn_union_ticks: u32,
+    pub vehicle_importance: f32,
+}
+
+impl Default for AoiParams {
+    fn default() -> Self {
+        AoiParams {
+            enemy_max_m: ENTER_M,
+            enemy_close_m: CLOSE_M,
+            friendly_max_m: ENTER_M,
+            leave_max_m: LEAVE_M,
+            leave_close_m: CLOSE_LEAVE_M,
+            cos_enter: COS_100,
+            cos_leave: COS_110,
+            turn_union_ticks: 3,
+            vehicle_importance: 1.5,
+        }
+    }
+}
+
+impl AoiParams {
+    pub fn from_rules(r: &frontline_sim::data::defs::AoiRulesDef, tick_hz: f32) -> Self {
+        let enter = (r.frustum_half_deg + r.frustum_margin_deg) as f32;
+        let leave = enter + r.frustum_leave_extra_deg as f32;
+        AoiParams {
+            enemy_max_m: r.enemy_max_m as f32,
+            enemy_close_m: r.enemy_close_m as f32,
+            friendly_max_m: r.friendly_max_m as f32,
+            leave_max_m: r.leave_max_m as f32,
+            leave_close_m: r.leave_close_m as f32,
+            cos_enter: enter.to_radians().cos(),
+            cos_leave: leave.to_radians().cos(),
+            turn_union_ticks: libm_round(r.turn_union_ms as f32 / 1000.0 * tick_hz),
+            vehicle_importance: r.vehicle_importance_mult as f32,
+        }
+    }
+}
+
+fn libm_round(x: f32) -> u32 {
+    x.round().max(0.0) as u32
 }
 
 impl Observer {
@@ -56,6 +113,9 @@ pub struct Relation {
     pub dist: f32,
     /// Cosine of the horizontal angle between the view direction and the target (1 = ahead).
     pub cos_h: f32,
+    /// Cosine of the 3D angle between the view direction and the target's aim point, the
+    /// larger of the current and the `turn_union` orientation (1 = dead ahead).
+    pub cos3: f32,
     /// Target aim point lies within 5 degrees of the crosshair.
     pub crosshair: bool,
 }
@@ -80,9 +140,19 @@ pub fn relation(o: &Observer, tpos: Vec3) -> Relation {
         let f = Vec3::new(o.yaw.sin() * cp, o.pitch.sin(), o.yaw.cos() * cp);
         f.dot(to) / l >= COS_5
     };
+    let cos3_at = |yaw: f32, pitch: f32| {
+        if l < 0.05 {
+            1.0
+        } else {
+            let cp = pitch.cos();
+            Vec3::new(yaw.sin() * cp, pitch.sin(), yaw.cos() * cp).dot(to) / l
+        }
+    };
+    let cos3 = cos3_at(o.yaw, o.pitch).max(cos3_at(o.prev_yaw, o.prev_pitch));
     Relation {
         dist,
         cos_h,
+        cos3,
         crosshair,
     }
 }
@@ -133,23 +203,38 @@ pub fn rate_hz(r: &Relation, firing: bool, hurt: bool) -> f32 {
         .clamp(MIN_RATE_HZ, MAX_RATE_HZ)
 }
 
+/// Rate of a vehicle: the player formula times the vehicle importance (1.5), still within
+/// `[2, 20]` Hz.
+pub fn vehicle_rate_hz(p: &AoiParams, r: &Relation, firing: bool, hurt: bool) -> f32 {
+    (base_rate(r.dist) * visibility(r) * importance(r, firing, hurt) * p.vehicle_importance)
+        .clamp(MIN_RATE_HZ, MAX_RATE_HZ)
+}
+
 /// Candidate test with hysteresis (`was`: the entity is currently in the client's view).
-pub fn is_candidate(same_team: bool, r: &Relation, was: bool) -> bool {
-    let max_d = if was { LEAVE_M } else { ENTER_M };
+pub fn is_candidate(p: &AoiParams, same_team: bool, r: &Relation, was: bool) -> bool {
+    let max_d = match (same_team, was) {
+        (true, false) => p.friendly_max_m,
+        (false, false) => p.enemy_max_m,
+        (_, true) => p.leave_max_m,
+    };
     if r.dist > max_d {
         return false;
     }
     if same_team {
         return true;
     }
-    let close = if was { CLOSE_LEAVE_M } else { CLOSE_M };
-    let cone = if was { COS_110 } else { COS_100 };
-    r.dist <= close || r.cos_h >= cone
+    let close = if was {
+        p.leave_close_m
+    } else {
+        p.enemy_close_m
+    };
+    let cone = if was { p.cos_leave } else { p.cos_enter };
+    r.dist <= close || r.cos3 >= cone
 }
 
 /// Visibility for event routing (no hysteresis).
-pub fn event_visible(same_team: bool, r: &Relation) -> bool {
-    is_candidate(same_team, r, false)
+pub fn event_visible(p: &AoiParams, same_team: bool, r: &Relation) -> bool {
+    is_candidate(p, same_team, r, false)
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -213,12 +298,26 @@ pub fn order(c: &mut Vec<Cand>) {
 mod tests {
     use super::*;
 
+    const P: AoiParams = AoiParams {
+        enemy_max_m: ENTER_M,
+        enemy_close_m: CLOSE_M,
+        friendly_max_m: ENTER_M,
+        leave_max_m: LEAVE_M,
+        leave_close_m: CLOSE_LEAVE_M,
+        cos_enter: COS_100,
+        cos_leave: COS_110,
+        turn_union_ticks: 3,
+        vehicle_importance: 1.5,
+    };
+
     fn obs() -> Observer {
         Observer {
             pos: Vec3::new(100.0, 0.0, 100.0),
             yaw: 0.0, // facing +z
             pitch: 0.0,
             team: 0,
+            prev_yaw: 0.0,
+            prev_pitch: 0.0,
         }
     }
 
@@ -261,16 +360,17 @@ mod tests {
     #[test]
     fn r3_enemy_needs_cone_or_closeness() {
         // ahead at 300 m: yes
-        assert!(is_candidate(false, &at(0.0, 300.0), false));
+        assert!(is_candidate(&P, false, &at(0.0, 300.0), false));
         // behind at 300 m: no
-        assert!(!is_candidate(false, &at(0.0, -300.0), false));
+        assert!(!is_candidate(&P, false, &at(0.0, -300.0), false));
         // behind at 80 m: yes (<= 96 m)
-        assert!(is_candidate(false, &at(0.0, -80.0), false));
+        assert!(is_candidate(&P, false, &at(0.0, -80.0), false));
         // behind at 120 m: no
-        assert!(!is_candidate(false, &at(0.0, -120.0), false));
+        assert!(!is_candidate(&P, false, &at(0.0, -120.0), false));
         // 95 deg to the side at 300 m: inside the +30 degree margin
         let a = 95f32.to_radians();
         assert!(is_candidate(
+            &P,
             false,
             &at(300.0 * a.sin(), 300.0 * a.cos()),
             false
@@ -278,20 +378,20 @@ mod tests {
         // 105 deg: outside for a new entity, still inside while already visible (hysteresis)
         let a = 105f32.to_radians();
         let r = at(300.0 * a.sin(), 300.0 * a.cos());
-        assert!(!is_candidate(false, &r, false));
-        assert!(is_candidate(false, &r, true));
+        assert!(!is_candidate(&P, false, &r, false));
+        assert!(is_candidate(&P, false, &r, true));
         // friends only need distance
-        assert!(is_candidate(true, &at(0.0, -399.0), false));
-        assert!(!is_candidate(true, &at(0.0, -401.0), false));
+        assert!(is_candidate(&P, true, &at(0.0, -399.0), false));
+        assert!(!is_candidate(&P, true, &at(0.0, -401.0), false));
     }
 
     #[test]
     fn distance_hysteresis_400_to_440() {
         let r = at(0.0, 420.0);
-        assert!(!is_candidate(true, &r, false));
-        assert!(is_candidate(true, &r, true));
+        assert!(!is_candidate(&P, true, &r, false));
+        assert!(is_candidate(&P, true, &r, true));
         let r = at(0.0, 445.0);
-        assert!(!is_candidate(true, &r, true));
+        assert!(!is_candidate(&P, true, &r, true));
     }
 
     #[test]
@@ -305,5 +405,79 @@ mod tests {
         ];
         order(&mut v);
         assert_eq!(v.iter().map(|c| c.id).collect::<Vec<_>>(), vec![7, 8, 2, 5]);
+    }
+
+    #[test]
+    fn cone_boundary_is_100_degrees_in_3d() {
+        let at_deg = |deg: f32, pitch_deg: f32| {
+            let a = deg.to_radians();
+            let p = pitch_deg.to_radians();
+            // target at 300 m on a ray `deg` away from facing (+z) in the horizontal plane,
+            // lifted by `pitch_deg`
+            let o = Observer { pitch: p, ..obs() };
+            let d = Vec3::new(a.sin(), 0.0, a.cos()) * 300.0;
+            relation(&o, o.pos + d - Vec3::new(0.0, EYE_H - AIM_H, 0.0))
+        };
+        assert!(is_candidate(&P, false, &at_deg(99.9, 0.0), false));
+        assert!(!is_candidate(&P, false, &at_deg(100.1, 0.0), false));
+        // Looking 60 degrees up the cone is a true 3D cone: a horizon target 105 deg off in
+        // yaw is only 97 deg away (in), 120 deg off is 104.5 deg away (out).
+        assert!(is_candidate(&P, false, &at_deg(105.0, 60.0), false));
+        assert!(!is_candidate(&P, false, &at_deg(120.0, 60.0), false));
+    }
+
+    #[test]
+    fn close_boundary_96m() {
+        let r = |d: f32| at(0.0, -d);
+        assert!(is_candidate(&P, false, &r(95.9), false));
+        assert!(!is_candidate(&P, false, &r(96.1), false));
+        // already visible: stays until 105.6 m
+        assert!(is_candidate(&P, false, &r(100.0), true));
+        assert!(!is_candidate(&P, false, &r(106.0), true));
+    }
+
+    #[test]
+    fn turn_union_keeps_what_was_in_view_100ms_ago() {
+        // Now facing away (yaw 180), 100 ms ago facing +z: an enemy at +z 300 m stays a
+        // candidate through the union.
+        let o = Observer {
+            yaw: core::f32::consts::PI,
+            prev_yaw: 0.0,
+            ..obs()
+        };
+        let r = relation(&o, o.pos + Vec3::new(0.0, 0.0, 300.0));
+        assert!(is_candidate(&P, false, &r, false));
+        let o2 = Observer {
+            prev_yaw: core::f32::consts::PI,
+            ..o
+        };
+        let r2 = relation(&o2, o2.pos + Vec3::new(0.0, 0.0, 300.0));
+        assert!(!is_candidate(&P, false, &r2, false));
+    }
+
+    #[test]
+    fn vehicles_update_at_least_1_4x_as_often_at_100m() {
+        let r = at(40.0, 92.0); // ~100 m, inside the cone, off the crosshair
+        let player = rate_hz(&r, false, false);
+        let vehicle = vehicle_rate_hz(&P, &r, false, false);
+        assert!(vehicle >= 1.4 * player, "{vehicle} vs {player}");
+    }
+
+    #[test]
+    fn oscillating_at_400m_flips_at_most_twice_in_a_minute() {
+        let mut was = false;
+        let mut flips = 0;
+        for i in 0..(60 * 20) {
+            let d = if i % 2 == 0 { 395.0 } else { 405.0 };
+            let now = is_candidate(&P, true, &at(0.0, d), was);
+            if now != was {
+                flips += 1;
+            }
+            was = now;
+        }
+        assert!(flips <= 2, "{flips} flips");
+        // leaving needs > 440 m
+        assert!(!is_candidate(&P, true, &at(0.0, 441.0), true));
+        assert!(is_candidate(&P, true, &at(0.0, 439.0), true));
     }
 }
