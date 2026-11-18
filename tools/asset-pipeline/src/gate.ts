@@ -37,6 +37,7 @@ export function assertStatusOk(row: LedgerRow, file?: string): void {
   const hints: Record<string, string> = {
     PENDING: 'status PENDING: licence terms unconfirmed; keep the file out of the build until the ledger row is OK',
     FLAGGED: 'status FLAGGED: waiting for the owner to accept or reject it (LICENSES §6.2); treated like PENDING',
+    INTERNAL: 'status INTERNAL (internal-only): excluded from ingest and public builds',
     REJECTED: 'status REJECTED: the asset is excluded; delete the file from assets/incoming/ (LICENSES §1 rule 2)',
   };
   throw new GateError(ExitCode.NotOk, `${row.asset_id}${where}: ${hints[row.status] ?? row.status} [LICENSES.md line ${row.line}]`, {

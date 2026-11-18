@@ -6,6 +6,7 @@ import {
   Codec, FpakWriter, buildManifest, checkBudgets, checkConsistency, checkPlaceholders, globToRegExp, manifestDigest, parseLedger, publishPath,
   serializeManifest, writeStats, bundleBytes, type Manifest, type Stats,
 } from '../src/index.ts';
+import { ExitCode } from '../src/errors.ts';
 import { ledgerText } from './helpers.ts';
 
 const tmp = mkdtempSync(join(tmpdir(), 'fl-manifest-test-'));
@@ -57,6 +58,16 @@ describe('manifest generation', () => {
     expect(m.assets.veh_us_pend!.placeholder).toBe(true);
     expect(await checkConsistency(m, w.packs)).toEqual([]);
     expect(checkPlaceholders(m, LEDGER)).toEqual([]);
+  });
+
+  it('blocks an INTERNAL pack even if its manifest entry is a placeholder', async () => {
+    const w = makeWorld('internal', [{ logical: 'veh_us_test', asset: 'AST-OK', lodBytes: 3000 }]);
+    const options = { ...w, bundles: BUNDLES, budgets: BUDGETS, overrides: { '*': { placeholder: true } } };
+    const m = await buildManifest({ ...options, ledger: LEDGER });
+    expect(m.assets.veh_us_test!.placeholder).toBe(true);
+    const ledger = parseLedger(ledgerText([{ asset_id: 'AST-OK', status: 'INTERNAL' }]));
+    expect(checkPlaceholders(m, ledger)).toEqual([expect.stringContaining('internal-only')]);
+    await expect(buildManifest({ ...options, ledger })).rejects.toMatchObject({ code: ExitCode.NotOk });
   });
 
   it('is byte-identical for equal inputs apart from the build timestamp (acceptance 5)', async () => {

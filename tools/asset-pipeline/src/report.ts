@@ -1,20 +1,22 @@
 /**
- * Missing-asset report (ASSET_GAPS §3.4): per requirement ID `real | placeholder | missing`, summed per milestone.
+ * Missing-asset report (ASSET_GAPS §3.4): per requirement ID `real | placeholder | missing | internal-only`, summed per milestone.
  *
  * Inputs
  *  - `assets/requirements.json`  {schema:1, requirements:[{id, milestone, kind}]}  (generated from ASSET_SHOPPING_LIST §4 by
  *    `gen-requirements`; minimal version, see PI-032)
  *  - the ledger (LICENSES.md §3)
  *  - the work dir (`work/{asset_id}/normalized.gltf` marks an asset as processed)
+ *  - optional free source index (alternative to work/manifest/placeholders): metadata-only coverage decisions
  *  - optional manifest draft: {assets:{<logical id>:{req_id, placeholder}}} or {entries:[{req_id, placeholder}]}
  *  - optional placeholder data dir: any JSON under it with a `requirement_id` string counts as a grey-box placeholder
  */
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { loadLedger, type Ledger } from './ledger.ts';
+import { isBlank, loadLedger, type Ledger, type LedgerRow } from './ledger.ts';
+import { checkSourceIndex } from './source-index.ts';
 import { ExitCode, GateError } from './errors.ts';
 
-export type ReqStatus = 'real' | 'placeholder' | 'missing';
+export type ReqStatus = 'real' | 'placeholder' | 'missing' | 'internal-only';
 
 export interface Requirement {
   id: string;
@@ -40,12 +42,14 @@ export interface Counts {
   real: number;
   placeholder: number;
   missing: number;
+  internal_only: number;
   total: number;
 }
 
 export interface Report {
   schema: 1;
   milestone: string | 'all';
+  coverage_basis?: 'source-metadata';
   summary: Counts;
   by_milestone: Record<string, Counts>;
   requirements: ReportRow[];
@@ -130,37 +134,66 @@ export interface ReportOptions {
   manifest?: string;
   placeholders?: string;
   milestone?: string;
+  /** Opt into source availability instead of processed/build coverage. */
+  sourceIndex?: string;
+}
+
+function requirementIds(row: LedgerRow): string[] {
+  if (isBlank(row.req_id)) return [];
+  return row.status === 'INTERNAL' ? row.req_id.split(',').map((id) => id.trim()) : [row.req_id];
 }
 
 export function buildReport(opts: ReportOptions): Report {
   const reqFile = typeof opts.requirements === 'string' ? loadRequirements(opts.requirements) : opts.requirements;
   const ledger = typeof opts.ledger === 'string' ? loadLedger(opts.ledger) : opts.ledger;
+  if (opts.sourceIndex && (opts.manifest || opts.placeholders)) {
+    throw new GateError(ExitCode.Usage, 'metadata-only reporting cannot be combined with a build manifest or placeholder directory');
+  }
+  const source = opts.sourceIndex ? checkSourceIndex(opts.sourceIndex, ledger) : undefined;
   const manifest = opts.manifest ? loadManifestDraft(opts.manifest) : [];
   const phIds = new Set<string>();
   if (opts.placeholders) for (const f of jsonFiles(opts.placeholders)) collectRequirementIds(JSON.parse(readFileSync(f, 'utf8')), phIds);
 
   const known = new Set(reqFile.requirements.map((r) => r.id));
+  if (source) {
+    for (const id of source.coverage.keys()) {
+      if (!known.has(id)) throw new GateError(ExitCode.Usage, `${id}: coverage is absent from requirements.json`);
+    }
+  }
   const violations: string[] = [];
   const rows: ReportRow[] = [];
   for (const r of reqFile.requirements) {
-    const rowsOfReq = ledger.rows.filter((l) => l.req_id === r.id);
+    const candidates = source?.candidates.get(r.id);
+    const rowsOfReq = ledger.rows.filter((l) => requirementIds(l).includes(r.id) || candidates?.has(l.asset_id));
+    const internal = rowsOfReq.some((l) => l.status === 'INTERNAL');
+    const sourceStatus = source?.coverage.get(r.id);
     const okRows = rowsOfReq.filter((l) => l.status === 'OK');
-    const processed = okRows.filter((l) => existsSync(join(opts.work, l.asset_id, 'normalized.gltf')));
+    const processed = source ? [] : okRows.filter((l) => existsSync(join(opts.work, l.asset_id, 'normalized.gltf')));
     const mEntries = manifest.filter((m) => m.req_id === r.id);
     const manifestReal = mEntries.some((m) => !m.placeholder);
     const manifestPh = mEntries.some((m) => m.placeholder);
 
     let status: ReqStatus;
     let detail: string;
-    if (processed.length > 0 || (manifestReal && okRows.length > 0)) {
+    if (sourceStatus === 'real') {
+      status = sourceStatus;
+      detail = 'matching free source registered (metadata only; not built)';
+    } else if (processed.length > 0 || (manifestReal && okRows.length > 0)) {
       status = 'real';
       detail = processed.length > 0 ? 'ledger OK, normalized' : 'ledger OK, manifest placeholder:false';
-    } else if (manifestPh || phIds.has(r.id)) {
+    } else if (internal) {
+      status = 'internal-only';
+      detail = sourceStatus === 'placeholder' || manifestPh || phIds.has(r.id)
+        ? 'internal playtest only; public placeholder remains'
+        : 'internal playtest only; excluded from public coverage';
+    } else if (sourceStatus === 'placeholder' || manifestPh || phIds.has(r.id)) {
       status = 'placeholder';
-      detail = rowsOfReq.length > 0 ? `grey-box; ledger ${rowsOfReq.map((l) => l.status).join('/')}, not processed` : 'grey-box';
+      const statuses = [...new Set(rowsOfReq.map((l) => l.status))];
+      detail = sourceStatus === 'placeholder' ? 'free proxy candidate' : statuses.length > 0 ? `grey-box; ledger ${statuses.join('/')}, not processed` : 'grey-box';
     } else {
       status = 'missing';
-      detail = rowsOfReq.length > 0 ? `ledger ${rowsOfReq.map((l) => l.status).join('/')}, not processed` : 'no input';
+      detail = rowsOfReq.length === 0 ? 'no input' : source ? 'ledger candidates; no matching free source or chosen proxy'
+        : `ledger ${[...new Set(rowsOfReq.map((l) => l.status))].join('/')}, not processed`;
     }
     if (manifestReal && okRows.length === 0) {
       violations.push(`${r.id}: manifest marks it real (placeholder:false) but no ledger row with status OK backs it (ASSET_GAPS §3.4 item 2)`);
@@ -169,7 +202,7 @@ export function buildReport(opts: ReportOptions): Report {
   }
 
   const unknown = new Set<string>();
-  for (const l of ledger.rows) if (/^[A-Z]-/.test(l.req_id) && !known.has(l.req_id)) unknown.add(l.req_id);
+  for (const l of ledger.rows) for (const id of requirementIds(l)) if (/^[A-Z]-/.test(id) && !known.has(id)) unknown.add(id);
   for (const m of manifest) if (!known.has(m.req_id)) unknown.add(m.req_id);
   for (const id of phIds) if (!known.has(id)) unknown.add(id);
 
@@ -178,6 +211,7 @@ export function buildReport(opts: ReportOptions): Report {
     real: rs.filter((r) => r.status === 'real').length,
     placeholder: rs.filter((r) => r.status === 'placeholder').length,
     missing: rs.filter((r) => r.status === 'missing').length,
+    internal_only: rs.filter((r) => r.status === 'internal-only').length,
     total: rs.length,
   });
   const by: Record<string, Counts> = {};
@@ -185,6 +219,7 @@ export function buildReport(opts: ReportOptions): Report {
   return {
     schema: 1,
     milestone: opts.milestone ?? 'all',
+    ...(source ? { coverage_basis: 'source-metadata' as const } : {}),
     summary: count(scoped),
     by_milestone: by,
     requirements: scoped,
@@ -196,17 +231,18 @@ export function buildReport(opts: ReportOptions): Report {
 /** Console rendering of a report. */
 export function formatReport(rep: Report, opts: { onlyGaps?: boolean } = {}): string {
   const lines: string[] = [];
+  if (rep.coverage_basis) lines.push('Coverage basis: source metadata (no build integration)');
   const rows = opts.onlyGaps ? rep.requirements.filter((r) => r.status !== 'real') : rep.requirements;
   const w = Math.max(14, ...rows.map((r) => r.id.length));
-  lines.push(`${'requirement'.padEnd(w)}  ms  ${'status'.padEnd(11)}  detail`);
-  for (const r of rows) lines.push(`${r.id.padEnd(w)}  ${r.milestone.padEnd(2)}  ${r.status.padEnd(11)}  ${r.detail}`);
+  lines.push(`${'requirement'.padEnd(w)}  ms  ${'status'.padEnd(13)}  detail`);
+  for (const r of rows) lines.push(`${r.id.padEnd(w)}  ${r.milestone.padEnd(2)}  ${r.status.padEnd(13)}  ${r.detail}`);
   lines.push('');
-  lines.push(`milestone   real  placeholder  missing  total`);
+  lines.push(`milestone   real  placeholder  missing  internal-only  total`);
   for (const [ms, c] of Object.entries(rep.by_milestone)) {
-    lines.push(`${ms.padEnd(10)}  ${String(c.real).padStart(4)}  ${String(c.placeholder).padStart(11)}  ${String(c.missing).padStart(7)}  ${String(c.total).padStart(5)}`);
+    lines.push(`${ms.padEnd(10)}  ${String(c.real).padStart(4)}  ${String(c.placeholder).padStart(11)}  ${String(c.missing).padStart(7)}  ${String(c.internal_only).padStart(13)}  ${String(c.total).padStart(5)}`);
   }
   const c = rep.summary;
-  lines.push(`${'ALL'.padEnd(10)}  ${String(c.real).padStart(4)}  ${String(c.placeholder).padStart(11)}  ${String(c.missing).padStart(7)}  ${String(c.total).padStart(5)}`);
+  lines.push(`${'ALL'.padEnd(10)}  ${String(c.real).padStart(4)}  ${String(c.placeholder).padStart(11)}  ${String(c.missing).padStart(7)}  ${String(c.internal_only).padStart(13)}  ${String(c.total).padStart(5)}`);
   for (const v of rep.violations) lines.push(`VIOLATION: ${v}`);
   if (rep.unknown_req_ids.length) lines.push(`requirement ids not in requirements.json: ${rep.unknown_req_ids.join(', ')}`);
   return lines.join('\n');

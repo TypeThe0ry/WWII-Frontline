@@ -1,8 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { ExitCode, GateError } from './errors.ts';
 
-/** Ledger status enum: LICENSES §1 (OK/PENDING/REJECTED) + FLAGGED (LICENSES §6.2, treated like PENDING by the gate). */
-export const STATUSES = ['OK', 'PENDING', 'REJECTED', 'FLAGGED'] as const;
+/** Ledger statuses from LICENSES §1 and §6.2. Only OK is build-eligible. */
+export const STATUSES = ['OK', 'PENDING', 'REJECTED', 'FLAGGED', 'INTERNAL'] as const;
 export type LedgerStatus = (typeof STATUSES)[number];
 
 /** D-MOD processing codes (LICENSES §2 `allowed_processing`). */

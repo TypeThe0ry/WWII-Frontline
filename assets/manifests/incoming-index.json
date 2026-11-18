@@ -1,0 +1,3529 @@
+{
+  "generated_at": "2026-11-17",
+  "license_policy": "CC0 1.0 (Poly Haven and Kenney) and SIL OFL 1.1 (Google Fonts) only.",
+  "file_count": 227,
+  "total_bytes": 559010223,
+  "files": [
+    {
+      "path": "assets/incoming/V-BLD-001/kenney-brick-kit.zip",
+      "req_ids": [
+        "V-BLD-001",
+        "V-BLD-002",
+        "V-BLD-003",
+        "V-BLD-004",
+        "V-BLD-005",
+        "V-BLD-006",
+        "V-BLD-007",
+        "V-BLD-008",
+        "V-BLD-009",
+        "V-BLD-010"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://kenney.nl/assets/brick-kit",
+      "name": "Kenney brick-kit",
+      "author_vendor": "Kenney",
+      "source_channel": "Kenney",
+      "asset_id": "brick-kit",
+      "size_bytes": 4668567,
+      "sha256": "b303d293c278fab713eed28395829b18513b171d2562f7f518c3355c2896861a"
+    },
+    {
+      "path": "assets/incoming/V-BLD-001/kenney-building-kit.zip",
+      "req_ids": [
+        "V-BLD-001",
+        "V-BLD-002",
+        "V-BLD-003",
+        "V-BLD-004",
+        "V-BLD-005",
+        "V-BLD-006",
+        "V-BLD-007",
+        "V-BLD-008",
+        "V-BLD-009",
+        "V-BLD-010"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://kenney.nl/assets/building-kit",
+      "name": "Kenney building-kit",
+      "author_vendor": "Kenney",
+      "source_channel": "Kenney",
+      "asset_id": "building-kit",
+      "size_bytes": 1598905,
+      "sha256": "2740ef5772fb5fb3d7aab881db22d129f6b68afe711b1a79e6d5e9e19cf3eec6"
+    },
+    {
+      "path": "assets/incoming/V-BLD-001/kenney-city-kit-suburban.zip",
+      "req_ids": [
+        "V-BLD-001",
+        "V-BLD-002",
+        "V-BLD-003",
+        "V-BLD-004",
+        "V-BLD-005",
+        "V-BLD-006",
+        "V-BLD-007",
+        "V-BLD-008",
+        "V-BLD-009",
+        "V-BLD-010"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://kenney.nl/assets/city-kit-suburban",
+      "name": "Kenney city-kit-suburban",
+      "author_vendor": "Kenney",
+      "source_channel": "Kenney",
+      "asset_id": "city-kit-suburban",
+      "size_bytes": 3038740,
+      "sha256": "5869c35cf30b1c87bdb2d197b6d325eebadd2ef08ea27f04797e8e08d77a9a39"
+    },
+    {
+      "path": "assets/incoming/V-BLD-001/kenney-modular-buildings.zip",
+      "req_ids": [
+        "V-BLD-001",
+        "V-BLD-002",
+        "V-BLD-003",
+        "V-BLD-004",
+        "V-BLD-005",
+        "V-BLD-006",
+        "V-BLD-007",
+        "V-BLD-008",
+        "V-BLD-009",
+        "V-BLD-010"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://kenney.nl/assets/modular-buildings",
+      "name": "Kenney modular-buildings",
+      "author_vendor": "Kenney",
+      "source_channel": "Kenney",
+      "asset_id": "modular-buildings",
+      "size_bytes": 1825490,
+      "sha256": "47e1614686b4c0fe55190e88b22ff2b8b10935edf61f37f478a9b6a99477edc6"
+    },
+    {
+      "path": "assets/incoming/V-BLD-001/kenney-tiny-farm.zip",
+      "req_ids": [
+        "V-BLD-001",
+        "V-BLD-002",
+        "V-PRP-001",
+        "V-PRP-002",
+        "V-PRP-003",
+        "V-PRP-006",
+        "V-PRP-009"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://kenney.nl/assets/tiny-farm",
+      "name": "Kenney tiny-farm",
+      "author_vendor": "Kenney",
+      "source_channel": "Kenney",
+      "asset_id": "tiny-farm",
+      "size_bytes": 191128,
+      "sha256": "a06f75f312c27eff15a2288475612e6f6699411be7259d408323cd15a790decc"
+    },
+    {
+      "path": "assets/incoming/V-BLD-001/polyhaven-clay_roof_tiles/clay_roof_tiles.bin",
+      "req_ids": [
+        "V-BLD-001"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/clay_roof_tiles",
+      "name": "Clay Roof Tiles",
+      "author_vendor": "Amal Kumar",
+      "source_channel": "Poly Haven",
+      "asset_id": "clay_roof_tiles",
+      "size_bytes": 2367060,
+      "sha256": "309f1651fee7d3d766078db161ef2a4d1f3cb97474ba0eb61886045201d32209",
+      "md5": "b5d10489a6f4a0bcf42ccd534672536b"
+    },
+    {
+      "path": "assets/incoming/V-BLD-001/polyhaven-clay_roof_tiles/clay_roof_tiles_1k.gltf",
+      "req_ids": [
+        "V-BLD-001"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/clay_roof_tiles",
+      "name": "Clay Roof Tiles",
+      "author_vendor": "Amal Kumar",
+      "source_channel": "Poly Haven",
+      "asset_id": "clay_roof_tiles",
+      "size_bytes": 2803,
+      "sha256": "72ad67c92bb844ef2af6f1594f67a9750844f4083c20bc04daa9e63d7c6bda70",
+      "md5": "590ad04b642423dadad52bbe5f8e4df9"
+    },
+    {
+      "path": "assets/incoming/V-BLD-001/polyhaven-clay_roof_tiles/textures/clay_roof_tiles_arm_1k.jpg",
+      "req_ids": [
+        "V-BLD-001"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/clay_roof_tiles",
+      "name": "Clay Roof Tiles",
+      "author_vendor": "Amal Kumar",
+      "source_channel": "Poly Haven",
+      "asset_id": "clay_roof_tiles",
+      "size_bytes": 644850,
+      "sha256": "dc86408a71ded3d94b1ff1a7bf2253647118b07b83b611fea37a528dc41791cb",
+      "md5": "1c85df2500d6d9ae720cad193e3a4cec"
+    },
+    {
+      "path": "assets/incoming/V-BLD-001/polyhaven-clay_roof_tiles/textures/clay_roof_tiles_diff_1k.jpg",
+      "req_ids": [
+        "V-BLD-001"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/clay_roof_tiles",
+      "name": "Clay Roof Tiles",
+      "author_vendor": "Amal Kumar",
+      "source_channel": "Poly Haven",
+      "asset_id": "clay_roof_tiles",
+      "size_bytes": 878367,
+      "sha256": "aac0f4e742a2cce21afb5dfb523b47c720c6a8e2782a312b823608fe3f80eae6",
+      "md5": "d862ac9932b09b0918b5971ddb77099c"
+    },
+    {
+      "path": "assets/incoming/V-BLD-001/polyhaven-clay_roof_tiles/textures/clay_roof_tiles_nor_gl_1k.jpg",
+      "req_ids": [
+        "V-BLD-001"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/clay_roof_tiles",
+      "name": "Clay Roof Tiles",
+      "author_vendor": "Amal Kumar",
+      "source_channel": "Poly Haven",
+      "asset_id": "clay_roof_tiles",
+      "size_bytes": 1101177,
+      "sha256": "e6b364661f6c3045bf5268f684047968fc6550e5fa9b22b4b1266df47b495faa",
+      "md5": "d861a708c94c824befc8aac668052776"
+    },
+    {
+      "path": "assets/incoming/V-BLD-001/polyhaven-grey_roof_tiles/grey_roof_tiles.bin",
+      "req_ids": [
+        "V-BLD-001"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/grey_roof_tiles",
+      "name": "Grey Roof Tiles",
+      "author_vendor": "Rob Tuytel",
+      "source_channel": "Poly Haven",
+      "asset_id": "grey_roof_tiles",
+      "size_bytes": 2367316,
+      "sha256": "61611b5157551f366202afd89c09ada1feb35db5ec390cf96135bb4357c94ce5",
+      "md5": "be15b411f2ed587aec0c468dd644a411"
+    },
+    {
+      "path": "assets/incoming/V-BLD-001/polyhaven-grey_roof_tiles/grey_roof_tiles_1k.gltf",
+      "req_ids": [
+        "V-BLD-001"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/grey_roof_tiles",
+      "name": "Grey Roof Tiles",
+      "author_vendor": "Rob Tuytel",
+      "source_channel": "Poly Haven",
+      "asset_id": "grey_roof_tiles",
+      "size_bytes": 3569,
+      "sha256": "871bf6bf7b94b8e754fe2c7b5ad1b25a0f0a053c0c0747b39ff7c90bddde5357",
+      "md5": "2b253857af85b544a112ea6ece81c370"
+    },
+    {
+      "path": "assets/incoming/V-BLD-001/polyhaven-grey_roof_tiles/textures/grey_roof_tiles_diff_1k.jpg",
+      "req_ids": [
+        "V-BLD-001"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/grey_roof_tiles",
+      "name": "Grey Roof Tiles",
+      "author_vendor": "Rob Tuytel",
+      "source_channel": "Poly Haven",
+      "asset_id": "grey_roof_tiles",
+      "size_bytes": 596156,
+      "sha256": "f61107b70cf56074c9db09384a332620c94c678ed2baabfae78029a8242e49a3",
+      "md5": "9a0d2c1ca66e79972c7c35cefa238cf7"
+    },
+    {
+      "path": "assets/incoming/V-BLD-001/polyhaven-grey_roof_tiles/textures/grey_roof_tiles_nor_gl_1k.jpg",
+      "req_ids": [
+        "V-BLD-001"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/grey_roof_tiles",
+      "name": "Grey Roof Tiles",
+      "author_vendor": "Rob Tuytel",
+      "source_channel": "Poly Haven",
+      "asset_id": "grey_roof_tiles",
+      "size_bytes": 522186,
+      "sha256": "99546fdc2978d0950a2c61fe94dbd4230bb7825944bb4e4e7ad586839fdc721d",
+      "md5": "95003919cdb2fcb2f499594bdf0ee827"
+    },
+    {
+      "path": "assets/incoming/V-BLD-001/polyhaven-grey_roof_tiles/textures/grey_roof_tiles_rough_1k.jpg",
+      "req_ids": [
+        "V-BLD-001"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/grey_roof_tiles",
+      "name": "Grey Roof Tiles",
+      "author_vendor": "Rob Tuytel",
+      "source_channel": "Poly Haven",
+      "asset_id": "grey_roof_tiles",
+      "size_bytes": 260780,
+      "sha256": "edc3185b560a71b2b5f5f568710b8674da41becb39ca374f5e8efeca15b5794f",
+      "md5": "19961a96ab55dfe97dd76981c59ccb1a"
+    },
+    {
+      "path": "assets/incoming/V-BLD-001/polyhaven-old_stone_wall/old_stone_wall.bin",
+      "req_ids": [
+        "V-BLD-001"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/old_stone_wall",
+      "name": "Old Stone Wall",
+      "author_vendor": "Charlotte Baglioni",
+      "source_channel": "Poly Haven",
+      "asset_id": "old_stone_wall",
+      "size_bytes": 2370100,
+      "sha256": "10f5761f27b2912e591368f25c2fd7743c3730333986af7c1c5bfc28fa1947af",
+      "md5": "aacc19915d594b8f05eb61870ec07000"
+    },
+    {
+      "path": "assets/incoming/V-BLD-001/polyhaven-old_stone_wall/old_stone_wall_1k.gltf",
+      "req_ids": [
+        "V-BLD-001"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/old_stone_wall",
+      "name": "Old Stone Wall",
+      "author_vendor": "Charlotte Baglioni",
+      "source_channel": "Poly Haven",
+      "asset_id": "old_stone_wall",
+      "size_bytes": 2797,
+      "sha256": "b217a3c8b6ac3f9fe6f249344a89148faf5c09979c1db550e32f6616fed34fca",
+      "md5": "c1f2fb7ccaf4d2ba49110e92cab3b41a"
+    },
+    {
+      "path": "assets/incoming/V-BLD-001/polyhaven-old_stone_wall/textures/old_stone_wall_arm_1k.jpg",
+      "req_ids": [
+        "V-BLD-001"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/old_stone_wall",
+      "name": "Old Stone Wall",
+      "author_vendor": "Charlotte Baglioni",
+      "source_channel": "Poly Haven",
+      "asset_id": "old_stone_wall",
+      "size_bytes": 563537,
+      "sha256": "2527086a398628049e457219658a2f6f4941f7df0664372d5608ee0e6c1bed00",
+      "md5": "35cbb9307f366299df4c4b34ae1cd688"
+    },
+    {
+      "path": "assets/incoming/V-BLD-001/polyhaven-old_stone_wall/textures/old_stone_wall_diff_1k.jpg",
+      "req_ids": [
+        "V-BLD-001"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/old_stone_wall",
+      "name": "Old Stone Wall",
+      "author_vendor": "Charlotte Baglioni",
+      "source_channel": "Poly Haven",
+      "asset_id": "old_stone_wall",
+      "size_bytes": 880453,
+      "sha256": "76210155ce0a17f006664f602305583e145a8a00be77bea8a0e3341df5148710",
+      "md5": "6cc7415f446cd7a04d86461ddbac0a28"
+    },
+    {
+      "path": "assets/incoming/V-BLD-001/polyhaven-old_stone_wall/textures/old_stone_wall_nor_gl_1k.jpg",
+      "req_ids": [
+        "V-BLD-001"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/old_stone_wall",
+      "name": "Old Stone Wall",
+      "author_vendor": "Charlotte Baglioni",
+      "source_channel": "Poly Haven",
+      "asset_id": "old_stone_wall",
+      "size_bytes": 1186893,
+      "sha256": "f847656c8f8e62dd78189ca6ff3ee2f42f9127cfa7834ebd3d313df1699e9c28",
+      "md5": "e4f02b4c5956e69719d2dafa002085e5"
+    },
+    {
+      "path": "assets/incoming/V-BLD-001/polyhaven-plastered_stone_wall/plastered_stone_wall.bin",
+      "req_ids": [
+        "V-BLD-001"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/plastered_stone_wall",
+      "name": "Plastered Stone Wall",
+      "author_vendor": "Rob Tuytel",
+      "source_channel": "Poly Haven",
+      "asset_id": "plastered_stone_wall",
+      "size_bytes": 2369396,
+      "sha256": "a8de045cf1f3c422112062d8df30782323cb6e75095ceb57c6d37a96e1406cf4",
+      "md5": "04ef8de24c0a93f4a08027168a34b197"
+    },
+    {
+      "path": "assets/incoming/V-BLD-001/polyhaven-plastered_stone_wall/plastered_stone_wall_1k.gltf",
+      "req_ids": [
+        "V-BLD-001"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/plastered_stone_wall",
+      "name": "Plastered Stone Wall",
+      "author_vendor": "Rob Tuytel",
+      "source_channel": "Poly Haven",
+      "asset_id": "plastered_stone_wall",
+      "size_bytes": 2846,
+      "sha256": "d61bd9a03977d72949d4af9ce6113f688852d06586abdf7a4e13617e884fd336",
+      "md5": "91061fa40873aac65ae6e1332af0c42f"
+    },
+    {
+      "path": "assets/incoming/V-BLD-001/polyhaven-plastered_stone_wall/textures/plastered_stone_wall_arm_1k.jpg",
+      "req_ids": [
+        "V-BLD-001"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/plastered_stone_wall",
+      "name": "Plastered Stone Wall",
+      "author_vendor": "Rob Tuytel",
+      "source_channel": "Poly Haven",
+      "asset_id": "plastered_stone_wall",
+      "size_bytes": 713786,
+      "sha256": "27add65291ceecd2f17a82b720054829a8d18b9fb16adebacf5d690982a1585e",
+      "md5": "198c21ecdfcca69b34ca554ebe577e6a"
+    },
+    {
+      "path": "assets/incoming/V-BLD-001/polyhaven-plastered_stone_wall/textures/plastered_stone_wall_diff_1k.jpg",
+      "req_ids": [
+        "V-BLD-001"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/plastered_stone_wall",
+      "name": "Plastered Stone Wall",
+      "author_vendor": "Rob Tuytel",
+      "source_channel": "Poly Haven",
+      "asset_id": "plastered_stone_wall",
+      "size_bytes": 680077,
+      "sha256": "b86e9a408aac5b493c31a4ec221e5022b0b704d2f51596006f7d6840a6a3300a",
+      "md5": "dfa5e68b2337761c887f995301272ac3"
+    },
+    {
+      "path": "assets/incoming/V-BLD-001/polyhaven-plastered_stone_wall/textures/plastered_stone_wall_nor_gl_1k.jpg",
+      "req_ids": [
+        "V-BLD-001"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/plastered_stone_wall",
+      "name": "Plastered Stone Wall",
+      "author_vendor": "Rob Tuytel",
+      "source_channel": "Poly Haven",
+      "asset_id": "plastered_stone_wall",
+      "size_bytes": 1041406,
+      "sha256": "c64dc8d1ad382b8832e430e738f099343ed959b7ae7d9390919a497536d1191e",
+      "md5": "8f38591716ec61172255880bff0dccec"
+    },
+    {
+      "path": "assets/incoming/V-BLD-001/polyhaven-rough_plaster_brick/rough_plaster_brick.bin",
+      "req_ids": [
+        "V-BLD-001"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/rough_plaster_brick",
+      "name": "Rough Plaster Brick",
+      "author_vendor": "Rob Tuytel",
+      "source_channel": "Poly Haven",
+      "asset_id": "rough_plaster_brick",
+      "size_bytes": 2369588,
+      "sha256": "f8b45d5c21ac2cb98e459770d534e87bbdd72045724bd0e4cd4cdab2874db611",
+      "md5": "179c79ae16ea6d20285c48eddd3e3ade"
+    },
+    {
+      "path": "assets/incoming/V-BLD-001/polyhaven-rough_plaster_brick/rough_plaster_brick_1k.gltf",
+      "req_ids": [
+        "V-BLD-001"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/rough_plaster_brick",
+      "name": "Rough Plaster Brick",
+      "author_vendor": "Rob Tuytel",
+      "source_channel": "Poly Haven",
+      "asset_id": "rough_plaster_brick",
+      "size_bytes": 2757,
+      "sha256": "b28a89eeb991c4ed96d7b04633f9ea3a8c69a5708b189f49541c3e53fe88b3cc",
+      "md5": "9308ee296258f0519dfba8274ce8c71b"
+    },
+    {
+      "path": "assets/incoming/V-BLD-001/polyhaven-rough_plaster_brick/textures/rough_plaster_brick_diff_1k.jpg",
+      "req_ids": [
+        "V-BLD-001"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/rough_plaster_brick",
+      "name": "Rough Plaster Brick",
+      "author_vendor": "Rob Tuytel",
+      "source_channel": "Poly Haven",
+      "asset_id": "rough_plaster_brick",
+      "size_bytes": 790072,
+      "sha256": "19573cc0394bab446d7e22b0cb53eeac6c06c56af81c82ffb9ff14b2c4f67174",
+      "md5": "a003346d3e8204c0a188d1c2c8188cf5"
+    },
+    {
+      "path": "assets/incoming/V-BLD-001/polyhaven-rough_plaster_brick/textures/rough_plaster_brick_nor_gl_1k.jpg",
+      "req_ids": [
+        "V-BLD-001"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/rough_plaster_brick",
+      "name": "Rough Plaster Brick",
+      "author_vendor": "Rob Tuytel",
+      "source_channel": "Poly Haven",
+      "asset_id": "rough_plaster_brick",
+      "size_bytes": 604789,
+      "sha256": "02991e6089c683d92af562ae46a9bc93e448290e9be6affa1508a9469035e910",
+      "md5": "a78c60e8b3536becc9bc38980c57faa9"
+    },
+    {
+      "path": "assets/incoming/V-BLD-001/polyhaven-rough_plaster_brick/textures/rough_plaster_brick_rough_1k.jpg",
+      "req_ids": [
+        "V-BLD-001"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/rough_plaster_brick",
+      "name": "Rough Plaster Brick",
+      "author_vendor": "Rob Tuytel",
+      "source_channel": "Poly Haven",
+      "asset_id": "rough_plaster_brick",
+      "size_bytes": 633239,
+      "sha256": "c1df3020e922acfd53288f2a18030802bb097c125b46adaef39e33500229eaa4",
+      "md5": "f37ac1e7629b080483c30721b0e608f0"
+    },
+    {
+      "path": "assets/incoming/V-BLD-001/polyhaven-stacked_stone_wall/stacked_stone_wall.bin",
+      "req_ids": [
+        "V-BLD-001"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/stacked_stone_wall",
+      "name": "Stacked Stone Wall",
+      "author_vendor": "Dimitrios Savva",
+      "source_channel": "Poly Haven",
+      "asset_id": "stacked_stone_wall",
+      "size_bytes": 2370292,
+      "sha256": "afcb43be111cd9708a38eca82438d5c6c59d190c5e1f0b6c8b546240bd440c71",
+      "md5": "9b222985eeb4923e2ef2af10cd6161a8"
+    },
+    {
+      "path": "assets/incoming/V-BLD-001/polyhaven-stacked_stone_wall/stacked_stone_wall_1k.gltf",
+      "req_ids": [
+        "V-BLD-001"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/stacked_stone_wall",
+      "name": "Stacked Stone Wall",
+      "author_vendor": "Dimitrios Savva",
+      "source_channel": "Poly Haven",
+      "asset_id": "stacked_stone_wall",
+      "size_bytes": 2829,
+      "sha256": "bae28ab7f4c809d08546956aeda0ba50e6cac63e3e9664235a05f20cab606784",
+      "md5": "7a25a28d96a2d0e9ab7eea9b3795f81e"
+    },
+    {
+      "path": "assets/incoming/V-BLD-001/polyhaven-stacked_stone_wall/textures/stacked_stone_wall_arm_1k.jpg",
+      "req_ids": [
+        "V-BLD-001"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/stacked_stone_wall",
+      "name": "Stacked Stone Wall",
+      "author_vendor": "Dimitrios Savva",
+      "source_channel": "Poly Haven",
+      "asset_id": "stacked_stone_wall",
+      "size_bytes": 807997,
+      "sha256": "971eef302ddca36381a4a365582e07eab13929bc37b32b49790cbcc7d93f31c7",
+      "md5": "ecf73b426ffd0d151d277b90d1ad7545"
+    },
+    {
+      "path": "assets/incoming/V-BLD-001/polyhaven-stacked_stone_wall/textures/stacked_stone_wall_diff_1k.jpg",
+      "req_ids": [
+        "V-BLD-001"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/stacked_stone_wall",
+      "name": "Stacked Stone Wall",
+      "author_vendor": "Dimitrios Savva",
+      "source_channel": "Poly Haven",
+      "asset_id": "stacked_stone_wall",
+      "size_bytes": 746206,
+      "sha256": "91217c3edf4f288eb8fa31ef208d8f6067d75320a8a66b32cd6f3965b763c45a",
+      "md5": "2cbffed522bb448211a3641fc6e5a9dc"
+    },
+    {
+      "path": "assets/incoming/V-BLD-001/polyhaven-stacked_stone_wall/textures/stacked_stone_wall_nor_gl_1k.jpg",
+      "req_ids": [
+        "V-BLD-001"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/stacked_stone_wall",
+      "name": "Stacked Stone Wall",
+      "author_vendor": "Dimitrios Savva",
+      "source_channel": "Poly Haven",
+      "asset_id": "stacked_stone_wall",
+      "size_bytes": 1131732,
+      "sha256": "5115f1f61a790a582f7e5713e84f1752591bf2d26229557b418c3afcd99406c3",
+      "md5": "a3d3d79fba43a5114431521cfc40dbdc"
+    },
+    {
+      "path": "assets/incoming/V-BLD-010/polyhaven-broken_brick_wall/broken_brick_wall.bin",
+      "req_ids": [
+        "V-BLD-010"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/broken_brick_wall",
+      "name": "Broken Brick Wall",
+      "author_vendor": "Amal Kumar",
+      "source_channel": "Poly Haven",
+      "asset_id": "broken_brick_wall",
+      "size_bytes": 2369332,
+      "sha256": "895f11e2701949b1cf8a084300c624392aa0f97d26fc6d1cacbe0dd1a59289a8",
+      "md5": "62506336326bd73b5921dbbd396387ed"
+    },
+    {
+      "path": "assets/incoming/V-BLD-010/polyhaven-broken_brick_wall/broken_brick_wall_1k.gltf",
+      "req_ids": [
+        "V-BLD-010"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/broken_brick_wall",
+      "name": "Broken Brick Wall",
+      "author_vendor": "Amal Kumar",
+      "source_channel": "Poly Haven",
+      "asset_id": "broken_brick_wall",
+      "size_bytes": 2822,
+      "sha256": "c52acd0680b1c39967263696f93edcca17e0e3afb20e17abf00d24d68f8afaf1",
+      "md5": "d060e56f27c4a7afeb2d8c2019f98fef"
+    },
+    {
+      "path": "assets/incoming/V-BLD-010/polyhaven-broken_brick_wall/textures/broken_brick_wall_arm_1k.jpg",
+      "req_ids": [
+        "V-BLD-010"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/broken_brick_wall",
+      "name": "Broken Brick Wall",
+      "author_vendor": "Amal Kumar",
+      "source_channel": "Poly Haven",
+      "asset_id": "broken_brick_wall",
+      "size_bytes": 671362,
+      "sha256": "1e9a3371477fd830d335f1a1ac2fd9d0a4c943b7370bb47ac0ff945114afa18d",
+      "md5": "02e60c0addb6a0fd216838afb19d9527"
+    },
+    {
+      "path": "assets/incoming/V-BLD-010/polyhaven-broken_brick_wall/textures/broken_brick_wall_diff_1k.jpg",
+      "req_ids": [
+        "V-BLD-010"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/broken_brick_wall",
+      "name": "Broken Brick Wall",
+      "author_vendor": "Amal Kumar",
+      "source_channel": "Poly Haven",
+      "asset_id": "broken_brick_wall",
+      "size_bytes": 740797,
+      "sha256": "9d011dfc8364e9925a3bab418b53f35755badebd289149a7b2b3dae9c2e02fea",
+      "md5": "5f6a252fe6353183ca86f7314cb77cab"
+    },
+    {
+      "path": "assets/incoming/V-BLD-010/polyhaven-broken_brick_wall/textures/broken_brick_wall_nor_gl_1k.jpg",
+      "req_ids": [
+        "V-BLD-010"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/broken_brick_wall",
+      "name": "Broken Brick Wall",
+      "author_vendor": "Amal Kumar",
+      "source_channel": "Poly Haven",
+      "asset_id": "broken_brick_wall",
+      "size_bytes": 1199972,
+      "sha256": "46c78b105db0ef8b01c3f5386b261cccd397155a4886178b38a34ed22c80d9f3",
+      "md5": "4da30f0f7ba1a5bf9fcb4602638fab11"
+    },
+    {
+      "path": "assets/incoming/V-BLD-010/polyhaven-concrete_debris/concrete_debris.bin",
+      "req_ids": [
+        "V-BLD-010"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/concrete_debris",
+      "name": "Concrete Debris",
+      "author_vendor": "Amal Kumar",
+      "source_channel": "Poly Haven",
+      "asset_id": "concrete_debris",
+      "size_bytes": 2369300,
+      "sha256": "a34542be139a8ce055768a6e42932b299d2ce279a814275788b470d42212eeb9",
+      "md5": "4510cdd38c2e54fb7a83f4c735601dc8"
+    },
+    {
+      "path": "assets/incoming/V-BLD-010/polyhaven-concrete_debris/concrete_debris_1k.gltf",
+      "req_ids": [
+        "V-BLD-010"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/concrete_debris",
+      "name": "Concrete Debris",
+      "author_vendor": "Amal Kumar",
+      "source_channel": "Poly Haven",
+      "asset_id": "concrete_debris",
+      "size_bytes": 2805,
+      "sha256": "e3718b9b62ce312fea94ac10ecabc0584154af79b2329701c55c60959e2ce927",
+      "md5": "aea4d4257d2d0d1ec53de8a8e6a21736"
+    },
+    {
+      "path": "assets/incoming/V-BLD-010/polyhaven-concrete_debris/textures/concrete_debris_arm_1k.jpg",
+      "req_ids": [
+        "V-BLD-010"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/concrete_debris",
+      "name": "Concrete Debris",
+      "author_vendor": "Amal Kumar",
+      "source_channel": "Poly Haven",
+      "asset_id": "concrete_debris",
+      "size_bytes": 996477,
+      "sha256": "c1cb50cfa95bc56b71a50a6e745698924405ef4968d615cab415a5317e683e36",
+      "md5": "b44c54a9b2f0f7e38436a96123c32c64"
+    },
+    {
+      "path": "assets/incoming/V-BLD-010/polyhaven-concrete_debris/textures/concrete_debris_diff_1k.jpg",
+      "req_ids": [
+        "V-BLD-010"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/concrete_debris",
+      "name": "Concrete Debris",
+      "author_vendor": "Amal Kumar",
+      "source_channel": "Poly Haven",
+      "asset_id": "concrete_debris",
+      "size_bytes": 811730,
+      "sha256": "5d30b24d4e01a784f521f0f78486e41e94bd2397a2743dacec543494852954f9",
+      "md5": "fcad77ded806a6eda1921457cf7e2abe"
+    },
+    {
+      "path": "assets/incoming/V-BLD-010/polyhaven-concrete_debris/textures/concrete_debris_nor_gl_1k.jpg",
+      "req_ids": [
+        "V-BLD-010"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/concrete_debris",
+      "name": "Concrete Debris",
+      "author_vendor": "Amal Kumar",
+      "source_channel": "Poly Haven",
+      "asset_id": "concrete_debris",
+      "size_bytes": 1462829,
+      "sha256": "39cdf70225f4f09780af88b6ab0637c4346f429ae3db2ce900a158041ddfdceb",
+      "md5": "0fabaf2cb4a0c68528635ac1443915e2"
+    },
+    {
+      "path": "assets/incoming/V-BLD-010/polyhaven-damaged_plaster/damaged_plaster.bin",
+      "req_ids": [
+        "V-BLD-010"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/damaged_plaster",
+      "name": "Damaged Plaster",
+      "author_vendor": "Amal Kumar",
+      "source_channel": "Poly Haven",
+      "asset_id": "damaged_plaster",
+      "size_bytes": 2369428,
+      "sha256": "9b30a936fa3dc93c34276fd866597848a6248cce34ab53ebe866c870616c18e4",
+      "md5": "09edb0f5578ce85693547fbe486da2c1"
+    },
+    {
+      "path": "assets/incoming/V-BLD-010/polyhaven-damaged_plaster/damaged_plaster_1k.gltf",
+      "req_ids": [
+        "V-BLD-010"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/damaged_plaster",
+      "name": "Damaged Plaster",
+      "author_vendor": "Amal Kumar",
+      "source_channel": "Poly Haven",
+      "asset_id": "damaged_plaster",
+      "size_bytes": 2806,
+      "sha256": "4c93f69c58ab0009a6f7411302b7ae30a598a09915b481a9d52865d083485f58",
+      "md5": "4ef37e97a2d9c6a20a5b57baa7d0ba3b"
+    },
+    {
+      "path": "assets/incoming/V-BLD-010/polyhaven-damaged_plaster/textures/damaged_plaster_arm_1k.jpg",
+      "req_ids": [
+        "V-BLD-010"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/damaged_plaster",
+      "name": "Damaged Plaster",
+      "author_vendor": "Amal Kumar",
+      "source_channel": "Poly Haven",
+      "asset_id": "damaged_plaster",
+      "size_bytes": 575588,
+      "sha256": "78f228161cc3c37cf4a335d8ea0f2a6b4dd5ff7bef50a8aa9fa0397d7ff4de13",
+      "md5": "b87917884ffc658b904d9982b3559467"
+    },
+    {
+      "path": "assets/incoming/V-BLD-010/polyhaven-damaged_plaster/textures/damaged_plaster_diff_1k.jpg",
+      "req_ids": [
+        "V-BLD-010"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/damaged_plaster",
+      "name": "Damaged Plaster",
+      "author_vendor": "Amal Kumar",
+      "source_channel": "Poly Haven",
+      "asset_id": "damaged_plaster",
+      "size_bytes": 850524,
+      "sha256": "391649dbb391c978b0d95cdd2351617fe3b7a577e432b94171208e576c9b2c63",
+      "md5": "a8df39b93ebece3c1c84290e3e916ec1"
+    },
+    {
+      "path": "assets/incoming/V-BLD-010/polyhaven-damaged_plaster/textures/damaged_plaster_nor_gl_1k.jpg",
+      "req_ids": [
+        "V-BLD-010"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/damaged_plaster",
+      "name": "Damaged Plaster",
+      "author_vendor": "Amal Kumar",
+      "source_channel": "Poly Haven",
+      "asset_id": "damaged_plaster",
+      "size_bytes": 959148,
+      "sha256": "9d2e4c261211c951fc424fe695483596e821f86b13d1d05485551ef0240d6b67",
+      "md5": "f51f2fb57309e9d1974b9841f9b605ea"
+    },
+    {
+      "path": "assets/incoming/V-BLD-010/polyhaven-rough_plaster_broken/rough_plaster_broken.bin",
+      "req_ids": [
+        "V-BLD-010"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/rough_plaster_broken",
+      "name": "Rough Plaster Broken",
+      "author_vendor": "Rob Tuytel",
+      "source_channel": "Poly Haven",
+      "asset_id": "rough_plaster_broken",
+      "size_bytes": 2369108,
+      "sha256": "21265bad9a2873fd2dedfe97ae52ab90d9dd7ea0ddd196c7d0e8a81f2f19c329",
+      "md5": "7c976e0d863bb54fd5e77e0e5b90584a"
+    },
+    {
+      "path": "assets/incoming/V-BLD-010/polyhaven-rough_plaster_broken/rough_plaster_broken_1k.gltf",
+      "req_ids": [
+        "V-BLD-010"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/rough_plaster_broken",
+      "name": "Rough Plaster Broken",
+      "author_vendor": "Rob Tuytel",
+      "source_channel": "Poly Haven",
+      "asset_id": "rough_plaster_broken",
+      "size_bytes": 2767,
+      "sha256": "cb1e350ddb08c4aed87ea42d13055c1f0305f8cdd3e2872d2721800b4f0561c4",
+      "md5": "ee9ff4b57f11fec374726822de04c1b0"
+    },
+    {
+      "path": "assets/incoming/V-BLD-010/polyhaven-rough_plaster_broken/textures/rough_plaster_broken_diff_1k.jpg",
+      "req_ids": [
+        "V-BLD-010"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/rough_plaster_broken",
+      "name": "Rough Plaster Broken",
+      "author_vendor": "Rob Tuytel",
+      "source_channel": "Poly Haven",
+      "asset_id": "rough_plaster_broken",
+      "size_bytes": 624815,
+      "sha256": "ef13cbf8529f8b4b6a5b9628111a96f262f30c68d265964277b1976336885db1",
+      "md5": "11b6e87b563107494d240649cdb04d1a"
+    },
+    {
+      "path": "assets/incoming/V-BLD-010/polyhaven-rough_plaster_broken/textures/rough_plaster_broken_nor_gl_1k.jpg",
+      "req_ids": [
+        "V-BLD-010"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/rough_plaster_broken",
+      "name": "Rough Plaster Broken",
+      "author_vendor": "Rob Tuytel",
+      "source_channel": "Poly Haven",
+      "asset_id": "rough_plaster_broken",
+      "size_bytes": 348380,
+      "sha256": "f0534b35c0304a0c7f969095a014bea616bcb4b4eb0646a669e9062692ae16f6",
+      "md5": "96ded53e7da9852a2db46eeb52912cb2"
+    },
+    {
+      "path": "assets/incoming/V-BLD-010/polyhaven-rough_plaster_broken/textures/rough_plaster_broken_rough_1k.jpg",
+      "req_ids": [
+        "V-BLD-010"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/rough_plaster_broken",
+      "name": "Rough Plaster Broken",
+      "author_vendor": "Rob Tuytel",
+      "source_channel": "Poly Haven",
+      "asset_id": "rough_plaster_broken",
+      "size_bytes": 524447,
+      "sha256": "8f7e33101489424eb2979b3367d0f22ff2dbc804d054f19102d324731ae8239c",
+      "md5": "2a0d225d7342180811a682ba95ed5910"
+    },
+    {
+      "path": "assets/incoming/V-CHR-001/kenney-mini-characters.zip",
+      "req_ids": [
+        "V-CHR-001",
+        "V-CHR-002",
+        "V-CHR-003",
+        "V-CHR-004",
+        "V-CHR-005",
+        "V-CHR-006",
+        "V-CHR-007",
+        "V-CHR-008",
+        "V-CHR-009"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://kenney.nl/assets/mini-characters",
+      "name": "Kenney mini-characters",
+      "author_vendor": "Kenney",
+      "source_channel": "Kenney",
+      "asset_id": "mini-characters",
+      "size_bytes": 4024187,
+      "sha256": "add348e98ab9e23d9973c4740ef2c5cceb229c742106aca2d56b30a8f1241bb7"
+    },
+    {
+      "path": "assets/incoming/V-FNT-001/google-fonts-blackopsone/BlackOpsOne-Regular.ttf",
+      "req_ids": [
+        "V-FNT-001"
+      ],
+      "license": "SIL OFL 1.1",
+      "source_url": "https://github.com/google/fonts/tree/main/ofl/blackopsone",
+      "name": "Black Ops One",
+      "author_vendor": "James Grieshaber, Eben Sorkin",
+      "source_channel": "Google Fonts GitHub",
+      "asset_id": "blackopsone",
+      "size_bytes": 166532,
+      "sha256": "282a825b5f294377387e3969f765408157dbea8da0f5d0aae68c6bc704b145b3"
+    },
+    {
+      "path": "assets/incoming/V-FNT-002/google-fonts-sairastencilone/SairaStencilOne-Regular.ttf",
+      "req_ids": [
+        "V-FNT-002"
+      ],
+      "license": "SIL OFL 1.1",
+      "source_url": "https://github.com/google/fonts/tree/main/ofl/sairastencilone",
+      "name": "Saira Stencil One",
+      "author_vendor": "Hector Gatti, Omnibus-Type",
+      "source_channel": "Google Fonts GitHub",
+      "asset_id": "sairastencilone",
+      "size_bytes": 109944,
+      "sha256": "781496fdaf8e04cf6741b31025f6b4ba84f66021b097a8e0d85cbea2180cf223"
+    },
+    {
+      "path": "assets/incoming/V-FNT-003/google-fonts-allertastencil/AllertaStencil-Regular.ttf",
+      "req_ids": [
+        "V-FNT-003"
+      ],
+      "license": "SIL OFL 1.1",
+      "source_url": "https://github.com/google/fonts/tree/main/ofl/allertastencil",
+      "name": "Allerta Stencil",
+      "author_vendor": "Matt McInerney",
+      "source_channel": "Google Fonts GitHub",
+      "asset_id": "allertastencil",
+      "size_bytes": 20260,
+      "sha256": "8c504d1be20768941ab04251a389ad82d5782d647fa1c4029c811dc5bc2abd59"
+    },
+    {
+      "path": "assets/incoming/V-FNT-004/google-fonts-notosanssc/NotoSansSC[wght].ttf",
+      "req_ids": [
+        "V-FNT-004"
+      ],
+      "license": "SIL OFL 1.1",
+      "source_url": "https://github.com/google/fonts/tree/main/ofl/notosanssc",
+      "name": "Noto Sans SC",
+      "author_vendor": "Google",
+      "source_channel": "Google Fonts GitHub",
+      "asset_id": "notosanssc",
+      "size_bytes": 17772300,
+      "sha256": "a3041811a78c361b1de50f953c805e0244951c21c5bd412f7232ef0d899af0da"
+    },
+    {
+      "path": "assets/incoming/V-NAT-001/kenney-mini-forest.zip",
+      "req_ids": [
+        "V-NAT-001",
+        "V-NAT-002",
+        "V-NAT-003",
+        "V-NAT-004",
+        "V-NAT-005",
+        "V-NAT-006",
+        "V-NAT-007",
+        "V-NAT-008"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://kenney.nl/assets/mini-forest",
+      "name": "Kenney mini-forest",
+      "author_vendor": "Kenney",
+      "source_channel": "Kenney",
+      "asset_id": "mini-forest",
+      "size_bytes": 1118081,
+      "sha256": "8691614018075a66458e35915b8c358c2e6178648aedadafcdf313b924aa6581"
+    },
+    {
+      "path": "assets/incoming/V-NAT-001/polyhaven-grass_medium_01/grass_medium_01.bin",
+      "req_ids": [
+        "V-NAT-001",
+        "V-NAT-004"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/grass_medium_01",
+      "name": "Grass Medium 01",
+      "author_vendor": "Rob Tuytel, Rico Cilliers",
+      "source_channel": "Poly Haven",
+      "asset_id": "grass_medium_01",
+      "size_bytes": 1006632,
+      "sha256": "f4587cabdb96a2e96d8be644923dc954a248edfaaa717a0ff224cacb898bee1f",
+      "md5": "e0527a0561c2dae5b7b5c1b478d8c6bf"
+    },
+    {
+      "path": "assets/incoming/V-NAT-001/polyhaven-grass_medium_01/grass_medium_01_2k.gltf",
+      "req_ids": [
+        "V-NAT-001",
+        "V-NAT-004"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/grass_medium_01",
+      "name": "Grass Medium 01",
+      "author_vendor": "Rob Tuytel, Rico Cilliers",
+      "source_channel": "Poly Haven",
+      "asset_id": "grass_medium_01",
+      "size_bytes": 27110,
+      "sha256": "aed63929a83fb694e6884e3a5c0fdb962ab8cf9153830247c8201a482ff02664",
+      "md5": "784c287f7828f8e30c4d28ebcbd90f6e"
+    },
+    {
+      "path": "assets/incoming/V-NAT-001/polyhaven-grass_medium_01/textures/grass_medium_01_arm_2k.jpg",
+      "req_ids": [
+        "V-NAT-001",
+        "V-NAT-004"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/grass_medium_01",
+      "name": "Grass Medium 01",
+      "author_vendor": "Rob Tuytel, Rico Cilliers",
+      "source_channel": "Poly Haven",
+      "asset_id": "grass_medium_01",
+      "size_bytes": 2256355,
+      "sha256": "7b593b1c470c1817b937bb3ca00da7e4b27ca00120e98b06b43bb3a7d5810aa1",
+      "md5": "a530c693ba3d08be15fcbce33dc5dabe"
+    },
+    {
+      "path": "assets/incoming/V-NAT-001/polyhaven-grass_medium_01/textures/grass_medium_01_diff_2k.jpg",
+      "req_ids": [
+        "V-NAT-001",
+        "V-NAT-004"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/grass_medium_01",
+      "name": "Grass Medium 01",
+      "author_vendor": "Rob Tuytel, Rico Cilliers",
+      "source_channel": "Poly Haven",
+      "asset_id": "grass_medium_01",
+      "size_bytes": 1166527,
+      "sha256": "f768aa68daf14f37a92dd96621628a5252b169f4d94b4d1cc830d62cd3ac9e68",
+      "md5": "000814eb2149add70695cf71bfb52c4b"
+    },
+    {
+      "path": "assets/incoming/V-NAT-001/polyhaven-grass_medium_01/textures/grass_medium_01_nor_gl_2k.jpg",
+      "req_ids": [
+        "V-NAT-001",
+        "V-NAT-004"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/grass_medium_01",
+      "name": "Grass Medium 01",
+      "author_vendor": "Rob Tuytel, Rico Cilliers",
+      "source_channel": "Poly Haven",
+      "asset_id": "grass_medium_01",
+      "size_bytes": 3530394,
+      "sha256": "245349ce6d1910b3b7474da6013452a5be993f9058be78e17171a0866a6889e9",
+      "md5": "7c75ce52a121de1fc00422672584f757"
+    },
+    {
+      "path": "assets/incoming/V-NAT-001/polyhaven-shrub_01/shrub_01.bin",
+      "req_ids": [
+        "V-NAT-001",
+        "V-NAT-004"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/shrub_01",
+      "name": "Shrub 01",
+      "author_vendor": "Rico Cilliers",
+      "source_channel": "Poly Haven",
+      "asset_id": "shrub_01",
+      "size_bytes": 5239664,
+      "sha256": "a8646f51386c84b12a6be8324dd0c2357c393c9108aac911847a203cf490b426",
+      "md5": "baf77d162f397f43fa4737b545d73e1a"
+    },
+    {
+      "path": "assets/incoming/V-NAT-001/polyhaven-shrub_01/shrub_01_2k.gltf",
+      "req_ids": [
+        "V-NAT-001",
+        "V-NAT-004"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/shrub_01",
+      "name": "Shrub 01",
+      "author_vendor": "Rico Cilliers",
+      "source_channel": "Poly Haven",
+      "asset_id": "shrub_01",
+      "size_bytes": 2895,
+      "sha256": "21f6db42b2e8948b44f635cfc26bdd8c00b91f11c6a3bd46c7c27d789168009b",
+      "md5": "b4dba9051ffc1eae61780af528973499"
+    },
+    {
+      "path": "assets/incoming/V-NAT-001/polyhaven-shrub_01/textures/shrub_01_arm_2k.jpg",
+      "req_ids": [
+        "V-NAT-001",
+        "V-NAT-004"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/shrub_01",
+      "name": "Shrub 01",
+      "author_vendor": "Rico Cilliers",
+      "source_channel": "Poly Haven",
+      "asset_id": "shrub_01",
+      "size_bytes": 1232008,
+      "sha256": "0c984bae6f587aba20eadc44e5a4de8c950c8246d1c0da234a4d6043d5a688e4",
+      "md5": "94b1eac99e9f949487d49243d19f70e4"
+    },
+    {
+      "path": "assets/incoming/V-NAT-001/polyhaven-shrub_01/textures/shrub_01_diff_2k.jpg",
+      "req_ids": [
+        "V-NAT-001",
+        "V-NAT-004"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/shrub_01",
+      "name": "Shrub 01",
+      "author_vendor": "Rico Cilliers",
+      "source_channel": "Poly Haven",
+      "asset_id": "shrub_01",
+      "size_bytes": 1651989,
+      "sha256": "d464a823982b28832a92d3edacc62461adfb3f99117829127e79eb253051e940",
+      "md5": "cd89f941ba9e5c60cbeee50e0b269e2c"
+    },
+    {
+      "path": "assets/incoming/V-NAT-001/polyhaven-shrub_01/textures/shrub_01_nor_gl_2k.jpg",
+      "req_ids": [
+        "V-NAT-001",
+        "V-NAT-004"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/shrub_01",
+      "name": "Shrub 01",
+      "author_vendor": "Rico Cilliers",
+      "source_channel": "Poly Haven",
+      "asset_id": "shrub_01",
+      "size_bytes": 2628947,
+      "sha256": "1b2f8631a66ef35c876238d6269f2cd2d1603102b7422f2cc57e3ec9ab209b62",
+      "md5": "ba76e790f9346ad2366585b57095c214"
+    },
+    {
+      "path": "assets/incoming/V-NAT-002/polyhaven-tree_small_02/textures/tree_small_02_arm_2k.jpg",
+      "req_ids": [
+        "V-NAT-002",
+        "V-NAT-004"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/tree_small_02",
+      "name": "Tree Small 02",
+      "author_vendor": "Rico Cilliers",
+      "source_channel": "Poly Haven",
+      "asset_id": "tree_small_02",
+      "size_bytes": 2586815,
+      "sha256": "e96b4e84e9786b982d01562e0d249f6e58db1b656dd511db7c034d6ed60b1c92",
+      "md5": "038ad0c1968be6802b20d084cdf30603"
+    },
+    {
+      "path": "assets/incoming/V-NAT-002/polyhaven-tree_small_02/textures/tree_small_02_branch_arm_2k.jpg",
+      "req_ids": [
+        "V-NAT-002",
+        "V-NAT-004"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/tree_small_02",
+      "name": "Tree Small 02",
+      "author_vendor": "Rico Cilliers",
+      "source_channel": "Poly Haven",
+      "asset_id": "tree_small_02",
+      "size_bytes": 1147503,
+      "sha256": "82da928cc4e8a45c559f6abe8053227c7ae6cc14eb8d026a30c203aedd087042",
+      "md5": "d6a0921ec6dbeaaf22a4b91d68fe16d1"
+    },
+    {
+      "path": "assets/incoming/V-NAT-002/polyhaven-tree_small_02/textures/tree_small_02_branch_diff_2k.jpg",
+      "req_ids": [
+        "V-NAT-002",
+        "V-NAT-004"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/tree_small_02",
+      "name": "Tree Small 02",
+      "author_vendor": "Rico Cilliers",
+      "source_channel": "Poly Haven",
+      "asset_id": "tree_small_02",
+      "size_bytes": 1425692,
+      "sha256": "9032de9e063ee7e3763a6b10d19d89302f5776e85a966b6dd1c3a5634b2a80e1",
+      "md5": "5ba327fc166360fcbb44f2eb04fbd8d8"
+    },
+    {
+      "path": "assets/incoming/V-NAT-002/polyhaven-tree_small_02/textures/tree_small_02_branch_nor_gl_2k.jpg",
+      "req_ids": [
+        "V-NAT-002",
+        "V-NAT-004"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/tree_small_02",
+      "name": "Tree Small 02",
+      "author_vendor": "Rico Cilliers",
+      "source_channel": "Poly Haven",
+      "asset_id": "tree_small_02",
+      "size_bytes": 1781975,
+      "sha256": "368505992d867bb50eccc00d77940a7a3eaf32f42de9f536d105407b0d6df3fd",
+      "md5": "12286d5b329b4fb4203fc155a01b0a04"
+    },
+    {
+      "path": "assets/incoming/V-NAT-002/polyhaven-tree_small_02/textures/tree_small_02_diff_2k.jpg",
+      "req_ids": [
+        "V-NAT-002",
+        "V-NAT-004"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/tree_small_02",
+      "name": "Tree Small 02",
+      "author_vendor": "Rico Cilliers",
+      "source_channel": "Poly Haven",
+      "asset_id": "tree_small_02",
+      "size_bytes": 3170612,
+      "sha256": "4ab3210b6ec6bb1181145500bca71d1c1f81ead6baaa8600f5979c2cec50c6a4",
+      "md5": "ff4d82640b7e0daaec0b71bfc1cef76c"
+    },
+    {
+      "path": "assets/incoming/V-NAT-002/polyhaven-tree_small_02/textures/tree_small_02_leaves_arm_2k.jpg",
+      "req_ids": [
+        "V-NAT-002",
+        "V-NAT-004"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/tree_small_02",
+      "name": "Tree Small 02",
+      "author_vendor": "Rico Cilliers",
+      "source_channel": "Poly Haven",
+      "asset_id": "tree_small_02",
+      "size_bytes": 2191542,
+      "sha256": "a126c0d92b60c44c0664e4d3651831970e259b0d5a1fb39ebb67081cbecaca96",
+      "md5": "4b88d67947fe214f2afc65beb83bee02"
+    },
+    {
+      "path": "assets/incoming/V-NAT-002/polyhaven-tree_small_02/textures/tree_small_02_leaves_diff_2k.jpg",
+      "req_ids": [
+        "V-NAT-002",
+        "V-NAT-004"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/tree_small_02",
+      "name": "Tree Small 02",
+      "author_vendor": "Rico Cilliers",
+      "source_channel": "Poly Haven",
+      "asset_id": "tree_small_02",
+      "size_bytes": 961870,
+      "sha256": "6c984a46861562f2a20381c54106aa5e07ce0d3fce785907f8d263157e7561af",
+      "md5": "021ddc0cf1d94b99716a106cede576c7"
+    },
+    {
+      "path": "assets/incoming/V-NAT-002/polyhaven-tree_small_02/textures/tree_small_02_leaves_nor_gl_2k.jpg",
+      "req_ids": [
+        "V-NAT-002",
+        "V-NAT-004"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/tree_small_02",
+      "name": "Tree Small 02",
+      "author_vendor": "Rico Cilliers",
+      "source_channel": "Poly Haven",
+      "asset_id": "tree_small_02",
+      "size_bytes": 2395771,
+      "sha256": "40c956e345430562cdb4d0470c7d499aa160f1fa3dd7555d88be2dedf0d7ff2e",
+      "md5": "ab509e55b5d763f68195e0eb257bb5e3"
+    },
+    {
+      "path": "assets/incoming/V-NAT-002/polyhaven-tree_small_02/textures/tree_small_02_nor_gl_2k.jpg",
+      "req_ids": [
+        "V-NAT-002",
+        "V-NAT-004"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/tree_small_02",
+      "name": "Tree Small 02",
+      "author_vendor": "Rico Cilliers",
+      "source_channel": "Poly Haven",
+      "asset_id": "tree_small_02",
+      "size_bytes": 4555311,
+      "sha256": "cb7897fc0aea602964836116ecf631614ece2970f579647fe1070bccb428fe89",
+      "md5": "064c3e1d08f010c732e7af6395a66769"
+    },
+    {
+      "path": "assets/incoming/V-NAT-002/polyhaven-tree_small_02/tree_small_02.bin",
+      "req_ids": [
+        "V-NAT-002",
+        "V-NAT-004"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/tree_small_02",
+      "name": "Tree Small 02",
+      "author_vendor": "Rico Cilliers",
+      "source_channel": "Poly Haven",
+      "asset_id": "tree_small_02",
+      "size_bytes": 95102324,
+      "sha256": "8da6c3c389ad8748286d1b7488cd827f75ebdad9d8f59ef7dfb0916df5edc634",
+      "md5": "7a7019a87e6fe0d7475c0fa2e08d8962"
+    },
+    {
+      "path": "assets/incoming/V-NAT-002/polyhaven-tree_small_02/tree_small_02_2k.gltf",
+      "req_ids": [
+        "V-NAT-002",
+        "V-NAT-004"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/tree_small_02",
+      "name": "Tree Small 02",
+      "author_vendor": "Rico Cilliers",
+      "source_channel": "Poly Haven",
+      "asset_id": "tree_small_02",
+      "size_bytes": 9075,
+      "sha256": "a1a7c8a145c811392457c111bff8192146f655a75b5de163ec659cd32af17726",
+      "md5": "7b77f2ca02edf5d7964ca3514e66c6b7"
+    },
+    {
+      "path": "assets/incoming/V-NAT-003/polyhaven-fir_sapling/fir_sapling.bin",
+      "req_ids": [
+        "V-NAT-003",
+        "V-NAT-004"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/fir_sapling",
+      "name": "Fir Sapling",
+      "author_vendor": "Rob Tuytel, Rico Cilliers",
+      "source_channel": "Poly Haven",
+      "asset_id": "fir_sapling",
+      "size_bytes": 21677180,
+      "sha256": "efdebfae6ee4b3ea20c7a85eb9f798ff4953259a3616bcff0b7e580b00f34f40",
+      "md5": "b329143a90d95201891afc52daeb9698"
+    },
+    {
+      "path": "assets/incoming/V-NAT-003/polyhaven-fir_sapling/fir_sapling_2k.gltf",
+      "req_ids": [
+        "V-NAT-003",
+        "V-NAT-004"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/fir_sapling",
+      "name": "Fir Sapling",
+      "author_vendor": "Rob Tuytel, Rico Cilliers",
+      "source_channel": "Poly Haven",
+      "asset_id": "fir_sapling",
+      "size_bytes": 10979,
+      "sha256": "093fd4af3f76044afe36ebf572fdbe6c38bed2874b7b920ac86561e33359bd5c",
+      "md5": "7d513103567f55260a28f203db1cd835"
+    },
+    {
+      "path": "assets/incoming/V-NAT-003/polyhaven-fir_sapling/textures/fir_sapling_branches_arm_2k.jpg",
+      "req_ids": [
+        "V-NAT-003",
+        "V-NAT-004"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/fir_sapling",
+      "name": "Fir Sapling",
+      "author_vendor": "Rob Tuytel, Rico Cilliers",
+      "source_channel": "Poly Haven",
+      "asset_id": "fir_sapling",
+      "size_bytes": 2798227,
+      "sha256": "2d6fc027508952d703cb9b59dd7b9e2727841bac0199a1bb0ad2d9efc09ff74d",
+      "md5": "5effd466021fa7300d596e09996b3ef1"
+    },
+    {
+      "path": "assets/incoming/V-NAT-003/polyhaven-fir_sapling/textures/fir_sapling_branches_diff_2k.jpg",
+      "req_ids": [
+        "V-NAT-003",
+        "V-NAT-004"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/fir_sapling",
+      "name": "Fir Sapling",
+      "author_vendor": "Rob Tuytel, Rico Cilliers",
+      "source_channel": "Poly Haven",
+      "asset_id": "fir_sapling",
+      "size_bytes": 2839348,
+      "sha256": "e2cbeab3fae3b3c059b084e28773ce16da99994de019db7b1f6738a50bd77a75",
+      "md5": "83c6029f4e7c124c68a6b5269e6d214a"
+    },
+    {
+      "path": "assets/incoming/V-NAT-003/polyhaven-fir_sapling/textures/fir_sapling_branches_nor_gl_2k.jpg",
+      "req_ids": [
+        "V-NAT-003",
+        "V-NAT-004"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/fir_sapling",
+      "name": "Fir Sapling",
+      "author_vendor": "Rob Tuytel, Rico Cilliers",
+      "source_channel": "Poly Haven",
+      "asset_id": "fir_sapling",
+      "size_bytes": 3921063,
+      "sha256": "9fcb580665cff5c06ea77056f29b4b74fd54b046dd1371eda71814dbbc501aef",
+      "md5": "71ed83f58a42d1d896de0e58e0ab630d"
+    },
+    {
+      "path": "assets/incoming/V-NAT-003/polyhaven-fir_sapling/textures/fir_sapling_twigs_arm_2k.jpg",
+      "req_ids": [
+        "V-NAT-003",
+        "V-NAT-004"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/fir_sapling",
+      "name": "Fir Sapling",
+      "author_vendor": "Rob Tuytel, Rico Cilliers",
+      "source_channel": "Poly Haven",
+      "asset_id": "fir_sapling",
+      "size_bytes": 921388,
+      "sha256": "3b3bfbc5f5b19834afb9c3dda9edd5c3fcf7b3f36c2f4da2bee7368b011b1986",
+      "md5": "5ccdd7aa2c40e20bd7647a66d3306825"
+    },
+    {
+      "path": "assets/incoming/V-NAT-003/polyhaven-fir_sapling/textures/fir_sapling_twigs_diff_2k.jpg",
+      "req_ids": [
+        "V-NAT-003",
+        "V-NAT-004"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/fir_sapling",
+      "name": "Fir Sapling",
+      "author_vendor": "Rob Tuytel, Rico Cilliers",
+      "source_channel": "Poly Haven",
+      "asset_id": "fir_sapling",
+      "size_bytes": 751844,
+      "sha256": "cf1e9852128dc6a6825fd4e40025dfa53b01c9ed049ae3431dbfe7420fde9547",
+      "md5": "8f4dc0996acb0fa5082e5841407ffde9"
+    },
+    {
+      "path": "assets/incoming/V-NAT-003/polyhaven-fir_sapling/textures/fir_sapling_twigs_nor_gl_2k.jpg",
+      "req_ids": [
+        "V-NAT-003",
+        "V-NAT-004"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/fir_sapling",
+      "name": "Fir Sapling",
+      "author_vendor": "Rob Tuytel, Rico Cilliers",
+      "source_channel": "Poly Haven",
+      "asset_id": "fir_sapling",
+      "size_bytes": 1641253,
+      "sha256": "bbeffa70891cc0a4ec8571f443cbb915b0d4d4d5ac079cea0d21a22183ded825",
+      "md5": "76329d0fbef7976c898c768b1dff38d1"
+    },
+    {
+      "path": "assets/incoming/V-NAT-004/polyhaven-fern_02/fern_02.bin",
+      "req_ids": [
+        "V-NAT-004"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/fern_02",
+      "name": "Fern 02",
+      "author_vendor": "Rob Tuytel, Rico Cilliers",
+      "source_channel": "Poly Haven",
+      "asset_id": "fern_02",
+      "size_bytes": 176176,
+      "sha256": "fe1abb762bcbbc7ad9e86925c8080437a62add257d9280e9142fdc85c226e64c",
+      "md5": "c061e9255f7d36ae9ce0e92ef3e100b2"
+    },
+    {
+      "path": "assets/incoming/V-NAT-004/polyhaven-fern_02/fern_02_2k.gltf",
+      "req_ids": [
+        "V-NAT-004"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/fern_02",
+      "name": "Fern 02",
+      "author_vendor": "Rob Tuytel, Rico Cilliers",
+      "source_channel": "Poly Haven",
+      "asset_id": "fern_02",
+      "size_bytes": 6899,
+      "sha256": "50540d37531f93fd693d5340d5b3095c9d6d2834fa05c74bea797d54f290cb6a",
+      "md5": "904c73900125e017f5e76ac1cdd906fe"
+    },
+    {
+      "path": "assets/incoming/V-NAT-004/polyhaven-fern_02/textures/fern_02_arm_2k.jpg",
+      "req_ids": [
+        "V-NAT-004"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/fern_02",
+      "name": "Fern 02",
+      "author_vendor": "Rob Tuytel, Rico Cilliers",
+      "source_channel": "Poly Haven",
+      "asset_id": "fern_02",
+      "size_bytes": 850856,
+      "sha256": "1eaf9bd29e2d83a77ca5d89bdddebcd9216b8b4ba244644580fe5b89bbe713f1",
+      "md5": "7f7b46e813a3cb4811405191de0ecdce"
+    },
+    {
+      "path": "assets/incoming/V-NAT-004/polyhaven-fern_02/textures/fern_02_diff_2k.jpg",
+      "req_ids": [
+        "V-NAT-004"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/fern_02",
+      "name": "Fern 02",
+      "author_vendor": "Rob Tuytel, Rico Cilliers",
+      "source_channel": "Poly Haven",
+      "asset_id": "fern_02",
+      "size_bytes": 993703,
+      "sha256": "9ee18172170728050871772e2cd6d8d37b52f9138e61b49b04486623f9caf84b",
+      "md5": "ba8bbb9dc9ff55bdc081565cd926d776"
+    },
+    {
+      "path": "assets/incoming/V-NAT-004/polyhaven-fern_02/textures/fern_02_nor_gl_2k.jpg",
+      "req_ids": [
+        "V-NAT-004"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/fern_02",
+      "name": "Fern 02",
+      "author_vendor": "Rob Tuytel, Rico Cilliers",
+      "source_channel": "Poly Haven",
+      "asset_id": "fern_02",
+      "size_bytes": 1365615,
+      "sha256": "dfe1ac4a428d21f7c134411500177d66b8dd800c8fec6f0040c50f44414a777b",
+      "md5": "00936dff4661dc9fe1f2fbe6c000615a"
+    },
+    {
+      "path": "assets/incoming/V-NAT-005/polyhaven-boulder_01/boulder_01.bin",
+      "req_ids": [
+        "V-NAT-005"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/boulder_01",
+      "name": "Boulder 01",
+      "author_vendor": "Rico Cilliers",
+      "source_channel": "Poly Haven",
+      "asset_id": "boulder_01",
+      "size_bytes": 2938808,
+      "sha256": "7f5b06503d62bd95bfe9c6b8a354a5cc8ff04a4d271a8cf87a3e3125db4232d7",
+      "md5": "27a19fa031d8b4c3a09261f19c444dc5"
+    },
+    {
+      "path": "assets/incoming/V-NAT-005/polyhaven-boulder_01/boulder_01_2k.gltf",
+      "req_ids": [
+        "V-NAT-005"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/boulder_01",
+      "name": "Boulder 01",
+      "author_vendor": "Rico Cilliers",
+      "source_channel": "Poly Haven",
+      "asset_id": "boulder_01",
+      "size_bytes": 2773,
+      "sha256": "52d118b56748a18509e4ec0075d07b254d72a0401793f22363c0bb3a682e7361",
+      "md5": "3ef4b3c88c898e12b096eeb40f1edbb9"
+    },
+    {
+      "path": "assets/incoming/V-NAT-005/polyhaven-boulder_01/textures/boulder_01_arm_2k.jpg",
+      "req_ids": [
+        "V-NAT-005"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/boulder_01",
+      "name": "Boulder 01",
+      "author_vendor": "Rico Cilliers",
+      "source_channel": "Poly Haven",
+      "asset_id": "boulder_01",
+      "size_bytes": 2273068,
+      "sha256": "ab52859dde519b4822111aa60916b6d21f8a6966c67b6cec44d1cd0775b8a86a",
+      "md5": "94c796dfd73f72b11e557cb2c05ff51e"
+    },
+    {
+      "path": "assets/incoming/V-NAT-005/polyhaven-boulder_01/textures/boulder_01_diff_2k.jpg",
+      "req_ids": [
+        "V-NAT-005"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/boulder_01",
+      "name": "Boulder 01",
+      "author_vendor": "Rico Cilliers",
+      "source_channel": "Poly Haven",
+      "asset_id": "boulder_01",
+      "size_bytes": 3672483,
+      "sha256": "90bbaa17c1fe0254d2b0b6e5148264fa834953a72724d566f14af029eebe3ca3",
+      "md5": "63571077317c9a2d1db95894e0268a07"
+    },
+    {
+      "path": "assets/incoming/V-NAT-005/polyhaven-boulder_01/textures/boulder_01_nor_gl_2k.jpg",
+      "req_ids": [
+        "V-NAT-005"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/boulder_01",
+      "name": "Boulder 01",
+      "author_vendor": "Rico Cilliers",
+      "source_channel": "Poly Haven",
+      "asset_id": "boulder_01",
+      "size_bytes": 4649207,
+      "sha256": "5174b318712ac7725cbcb55d422607f9c66d7f8d035c5412ab897b5939e2db6b",
+      "md5": "73ee1783fca7605fd454f0af3e5b85fa"
+    },
+    {
+      "path": "assets/incoming/V-NAT-005/polyhaven-coast_rocks_01/coast_rocks_01.bin",
+      "req_ids": [
+        "V-NAT-005"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/coast_rocks_01",
+      "name": "Coast Rocks 01",
+      "author_vendor": "Rob Tuytel, Rico Cilliers",
+      "source_channel": "Poly Haven",
+      "asset_id": "coast_rocks_01",
+      "size_bytes": 19320352,
+      "sha256": "3d1c33b18fdcf0efebab46526e94d17efccbc3c9a06dc14b89b04b93109fa3d2",
+      "md5": "4cf9d5009388434a0520e1643127a725"
+    },
+    {
+      "path": "assets/incoming/V-NAT-005/polyhaven-coast_rocks_01/coast_rocks_01_2k.gltf",
+      "req_ids": [
+        "V-NAT-005"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/coast_rocks_01",
+      "name": "Coast Rocks 01",
+      "author_vendor": "Rob Tuytel, Rico Cilliers",
+      "source_channel": "Poly Haven",
+      "asset_id": "coast_rocks_01",
+      "size_bytes": 2810,
+      "sha256": "9e75ec94594ce0a2e7625ed4339e2f2b35da192eb41630c59aaa8ccaa9e49240",
+      "md5": "d763b6ff59061342a2e0b85c43abecf6"
+    },
+    {
+      "path": "assets/incoming/V-NAT-005/polyhaven-coast_rocks_01/textures/coast_rocks_01_arm_2k.jpg",
+      "req_ids": [
+        "V-NAT-005"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/coast_rocks_01",
+      "name": "Coast Rocks 01",
+      "author_vendor": "Rob Tuytel, Rico Cilliers",
+      "source_channel": "Poly Haven",
+      "asset_id": "coast_rocks_01",
+      "size_bytes": 2284440,
+      "sha256": "3bccfb7e593a7944b1a3564170206765a98f0669a78ba9167b483fb3a6b109f0",
+      "md5": "e29f84556de4da79f3c08ddee3b7ad42"
+    },
+    {
+      "path": "assets/incoming/V-NAT-005/polyhaven-coast_rocks_01/textures/coast_rocks_01_diff_2k.jpg",
+      "req_ids": [
+        "V-NAT-005"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/coast_rocks_01",
+      "name": "Coast Rocks 01",
+      "author_vendor": "Rob Tuytel, Rico Cilliers",
+      "source_channel": "Poly Haven",
+      "asset_id": "coast_rocks_01",
+      "size_bytes": 3153413,
+      "sha256": "6c0f25720f0fa2142a569b5516a3539cd2cb3f02dc2312b3c1d2a9ae156d42fc",
+      "md5": "3f00b2ef63ccea7952236f1c6e32fa58"
+    },
+    {
+      "path": "assets/incoming/V-NAT-005/polyhaven-coast_rocks_01/textures/coast_rocks_01_nor_gl_2k.jpg",
+      "req_ids": [
+        "V-NAT-005"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/coast_rocks_01",
+      "name": "Coast Rocks 01",
+      "author_vendor": "Rob Tuytel, Rico Cilliers",
+      "source_channel": "Poly Haven",
+      "asset_id": "coast_rocks_01",
+      "size_bytes": 3846383,
+      "sha256": "eb65a0b9f916825538471777f12c42ce20fd3fe59849d582d1557ea410e66dae",
+      "md5": "1a06be557b5709d355e20a3fea390c2a"
+    },
+    {
+      "path": "assets/incoming/V-NAT-005/polyhaven-rock_04/rock_04.bin",
+      "req_ids": [
+        "V-NAT-005"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/rock_04",
+      "name": "Rock 04",
+      "author_vendor": "Rob Tuytel",
+      "source_channel": "Poly Haven",
+      "asset_id": "rock_04",
+      "size_bytes": 2369524,
+      "sha256": "656806fc95f97e16f19b9395d0ed33a3512176fafa9d340f4a29a570e43165e1",
+      "md5": "2f442fdf46435d4e64908513bc7a4e0f"
+    },
+    {
+      "path": "assets/incoming/V-NAT-005/polyhaven-rock_04/rock_04_2k.gltf",
+      "req_ids": [
+        "V-NAT-005"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/rock_04",
+      "name": "Rock 04",
+      "author_vendor": "Rob Tuytel",
+      "source_channel": "Poly Haven",
+      "asset_id": "rock_04",
+      "size_bytes": 2660,
+      "sha256": "2d2d9450a5ad63aabd7dfa4a1b25305b98c1744bb2ad9825689d68697323eaba",
+      "md5": "1cfdf4eaae31815ad62b3ce7ea9d0bca"
+    },
+    {
+      "path": "assets/incoming/V-NAT-005/polyhaven-rock_04/textures/rock_04_diff_2k.jpg",
+      "req_ids": [
+        "V-NAT-005"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/rock_04",
+      "name": "Rock 04",
+      "author_vendor": "Rob Tuytel",
+      "source_channel": "Poly Haven",
+      "asset_id": "rock_04",
+      "size_bytes": 2980194,
+      "sha256": "c5956655dbc6dd7f72569ed318fdacd88b8efe1a7a9958d13e54a23397defef2",
+      "md5": "89573333315e9539188b94e5fdb4908d"
+    },
+    {
+      "path": "assets/incoming/V-NAT-005/polyhaven-rock_04/textures/rock_04_nor_gl_2k.jpg",
+      "req_ids": [
+        "V-NAT-005"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/rock_04",
+      "name": "Rock 04",
+      "author_vendor": "Rob Tuytel",
+      "source_channel": "Poly Haven",
+      "asset_id": "rock_04",
+      "size_bytes": 4025772,
+      "sha256": "c2f299ad32c36f66a5ef1075d71f7143b5e2662fda1fb86a4dd964e5c1e252b2",
+      "md5": "224105d9a4730d1351459286065f2d5b"
+    },
+    {
+      "path": "assets/incoming/V-NAT-005/polyhaven-rock_04/textures/rock_04_rough_2k.jpg",
+      "req_ids": [
+        "V-NAT-005"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/rock_04",
+      "name": "Rock 04",
+      "author_vendor": "Rob Tuytel",
+      "source_channel": "Poly Haven",
+      "asset_id": "rock_04",
+      "size_bytes": 1291280,
+      "sha256": "886f4f20829a650e748ae0151a6f7aa95912be73189545c2db5fd280a9d66fcd",
+      "md5": "4be21bcd3aa8d0153dae6ce561d4eae6"
+    },
+    {
+      "path": "assets/incoming/V-NAT-005/polyhaven-rock_05/rock_05.bin",
+      "req_ids": [
+        "V-NAT-005"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/rock_05",
+      "name": "Rock 05",
+      "author_vendor": "Rob Tuytel",
+      "source_channel": "Poly Haven",
+      "asset_id": "rock_05",
+      "size_bytes": 2368916,
+      "sha256": "53bf37afc5db40654086c1becfea4452cf52c0e9d4a23e8a8f3d607ea21d847a",
+      "md5": "b25a9cd7db736e6c906a9ee868917d25"
+    },
+    {
+      "path": "assets/incoming/V-NAT-005/polyhaven-rock_05/rock_05_2k.gltf",
+      "req_ids": [
+        "V-NAT-005"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/rock_05",
+      "name": "Rock 05",
+      "author_vendor": "Rob Tuytel",
+      "source_channel": "Poly Haven",
+      "asset_id": "rock_05",
+      "size_bytes": 2661,
+      "sha256": "1333722e1845c1b1f94337087e0d0374719207d1009065aaf7c04d398e19a265",
+      "md5": "0fa9eacd5e48564c333466bce178c048"
+    },
+    {
+      "path": "assets/incoming/V-NAT-005/polyhaven-rock_05/textures/rock_05_diff_2k.jpg",
+      "req_ids": [
+        "V-NAT-005"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/rock_05",
+      "name": "Rock 05",
+      "author_vendor": "Rob Tuytel",
+      "source_channel": "Poly Haven",
+      "asset_id": "rock_05",
+      "size_bytes": 3115501,
+      "sha256": "5681891240b82184103c7310bd07da93dd438126df69bfe6a19b5d9816b748a8",
+      "md5": "9e9398175c503701571b19d727aa3532"
+    },
+    {
+      "path": "assets/incoming/V-NAT-005/polyhaven-rock_05/textures/rock_05_nor_gl_2k.jpg",
+      "req_ids": [
+        "V-NAT-005"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/rock_05",
+      "name": "Rock 05",
+      "author_vendor": "Rob Tuytel",
+      "source_channel": "Poly Haven",
+      "asset_id": "rock_05",
+      "size_bytes": 2979378,
+      "sha256": "2cb734957c95762c02dce843ca6cf7b75cf5dd47de215372f8f2c9f3aa512580",
+      "md5": "861ed1876f0bdca9465226f229f5ebbf"
+    },
+    {
+      "path": "assets/incoming/V-NAT-005/polyhaven-rock_05/textures/rock_05_rough_2k.jpg",
+      "req_ids": [
+        "V-NAT-005"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/rock_05",
+      "name": "Rock 05",
+      "author_vendor": "Rob Tuytel",
+      "source_channel": "Poly Haven",
+      "asset_id": "rock_05",
+      "size_bytes": 1256189,
+      "sha256": "7d41012958b4a3c0fba902e6cf91f1f35f56322de73b26453c7559f5502ba2d1",
+      "md5": "379116c46ff044e1cea039ecbecf8fc4"
+    },
+    {
+      "path": "assets/incoming/V-NAT-007/polyhaven-burned_ground_01/burned_ground_01.bin",
+      "req_ids": [
+        "V-NAT-007"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/burned_ground_01",
+      "name": "Burned Ground 01",
+      "author_vendor": "Rob Tuytel",
+      "source_channel": "Poly Haven",
+      "asset_id": "burned_ground_01",
+      "size_bytes": 2370068,
+      "sha256": "1678fe74feac2694b1d9aa32696169ebfb8286b78b6833a80f33438766d0319c",
+      "md5": "36cacf93b819e42e9f28d3fc4f367104"
+    },
+    {
+      "path": "assets/incoming/V-NAT-007/polyhaven-burned_ground_01/burned_ground_01_1k.gltf",
+      "req_ids": [
+        "V-NAT-007"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/burned_ground_01",
+      "name": "Burned Ground 01",
+      "author_vendor": "Rob Tuytel",
+      "source_channel": "Poly Haven",
+      "asset_id": "burned_ground_01",
+      "size_bytes": 2736,
+      "sha256": "034ba469e5956820ea400acd80bf7b55da0b553a8d560dab238cc08290b5fa2b",
+      "md5": "f7d05468afddf969b4c47339a567111b"
+    },
+    {
+      "path": "assets/incoming/V-NAT-007/polyhaven-burned_ground_01/textures/burned_ground_01_diff_1k.jpg",
+      "req_ids": [
+        "V-NAT-007"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/burned_ground_01",
+      "name": "Burned Ground 01",
+      "author_vendor": "Rob Tuytel",
+      "source_channel": "Poly Haven",
+      "asset_id": "burned_ground_01",
+      "size_bytes": 1033112,
+      "sha256": "be83310cad64d23539e628f14525af651a03646f5a1cc6029bd19a9446ea72f9",
+      "md5": "dade07575754ec311051ff7be8c10af6"
+    },
+    {
+      "path": "assets/incoming/V-NAT-007/polyhaven-burned_ground_01/textures/burned_ground_01_nor_gl_1k.jpg",
+      "req_ids": [
+        "V-NAT-007"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/burned_ground_01",
+      "name": "Burned Ground 01",
+      "author_vendor": "Rob Tuytel",
+      "source_channel": "Poly Haven",
+      "asset_id": "burned_ground_01",
+      "size_bytes": 366727,
+      "sha256": "86125af02b64b05b0079dd6fa08ffae11878a3f9f50326a265e94c7a64cba865",
+      "md5": "00ae59e7246e32e0a4e73de49a20f829"
+    },
+    {
+      "path": "assets/incoming/V-NAT-007/polyhaven-burned_ground_01/textures/burned_ground_01_rough_1k.jpg",
+      "req_ids": [
+        "V-NAT-007"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/burned_ground_01",
+      "name": "Burned Ground 01",
+      "author_vendor": "Rob Tuytel",
+      "source_channel": "Poly Haven",
+      "asset_id": "burned_ground_01",
+      "size_bytes": 319073,
+      "sha256": "4dbbb69dc3391d5b98b4346ffe5f2b46340ad0307c3d1d7311b59407146753f5",
+      "md5": "e1cc30718a442cd254932da13a0930f1"
+    },
+    {
+      "path": "assets/incoming/V-NAT-007/polyhaven-cobblestone_floor_02/cobblestone_floor_02.bin",
+      "req_ids": [
+        "V-NAT-007"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/cobblestone_floor_02",
+      "name": "Cobblestone Floor 02",
+      "author_vendor": "Rob Tuytel",
+      "source_channel": "Poly Haven",
+      "asset_id": "cobblestone_floor_02",
+      "size_bytes": 2368564,
+      "sha256": "bd75be837c9ee873a0381094c1a3f3a492f7dcd35140a24d89d267ba4d8d5b71",
+      "md5": "4804715baf933318c5f6681cc4baab7f"
+    },
+    {
+      "path": "assets/incoming/V-NAT-007/polyhaven-cobblestone_floor_02/cobblestone_floor_02_1k.gltf",
+      "req_ids": [
+        "V-NAT-007"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/cobblestone_floor_02",
+      "name": "Cobblestone Floor 02",
+      "author_vendor": "Rob Tuytel",
+      "source_channel": "Poly Haven",
+      "asset_id": "cobblestone_floor_02",
+      "size_bytes": 3606,
+      "sha256": "352650df6ac49dbb093c81a458f58e9ccd11050bac8a927d114fbcf96f51e795",
+      "md5": "45d9965db1581e407a4c879add314fc8"
+    },
+    {
+      "path": "assets/incoming/V-NAT-007/polyhaven-cobblestone_floor_02/textures/cobblestone_floor_02_diff_1k.jpg",
+      "req_ids": [
+        "V-NAT-007"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/cobblestone_floor_02",
+      "name": "Cobblestone Floor 02",
+      "author_vendor": "Rob Tuytel",
+      "source_channel": "Poly Haven",
+      "asset_id": "cobblestone_floor_02",
+      "size_bytes": 221882,
+      "sha256": "b1be7866d908135276ae6bdb566cf81789caf3092d12ad1c1915131fc747fd53",
+      "md5": "59e545f5aefa797ae8bf69fcee7c97c7"
+    },
+    {
+      "path": "assets/incoming/V-NAT-007/polyhaven-cobblestone_floor_02/textures/cobblestone_floor_02_nor_gl_1k.jpg",
+      "req_ids": [
+        "V-NAT-007"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/cobblestone_floor_02",
+      "name": "Cobblestone Floor 02",
+      "author_vendor": "Rob Tuytel",
+      "source_channel": "Poly Haven",
+      "asset_id": "cobblestone_floor_02",
+      "size_bytes": 208641,
+      "sha256": "838f9f169956fceac4996967ff14dfcbc47b658bbedf1e60c0cd4536977aa064",
+      "md5": "f77017e6de48e5e9d98a7bc08284126d"
+    },
+    {
+      "path": "assets/incoming/V-NAT-007/polyhaven-cobblestone_floor_02/textures/cobblestone_floor_02_rough_1k.jpg",
+      "req_ids": [
+        "V-NAT-007"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/cobblestone_floor_02",
+      "name": "Cobblestone Floor 02",
+      "author_vendor": "Rob Tuytel",
+      "source_channel": "Poly Haven",
+      "asset_id": "cobblestone_floor_02",
+      "size_bytes": 163268,
+      "sha256": "39d802084263449216d7467c7d8a2134939a165eb8581f033048bfb1344ba2a1",
+      "md5": "4acdc1ec3e095c2c45831fa640ba7e2e"
+    },
+    {
+      "path": "assets/incoming/V-NAT-007/polyhaven-farm_furrows/farm_furrows.bin",
+      "req_ids": [
+        "V-NAT-007"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/farm_furrows",
+      "name": "Farm Furrows",
+      "author_vendor": "Amal Kumar",
+      "source_channel": "Poly Haven",
+      "asset_id": "farm_furrows",
+      "size_bytes": 2369428,
+      "sha256": "67281af4b5d3e7cfcfe94b5606b0e1a63b87ecf0f2bd4009bfde690aeff579f1",
+      "md5": "f1d2b8871bb0b951206bf4a155f922b6"
+    },
+    {
+      "path": "assets/incoming/V-NAT-007/polyhaven-farm_furrows/farm_furrows_1k.gltf",
+      "req_ids": [
+        "V-NAT-007"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/farm_furrows",
+      "name": "Farm Furrows",
+      "author_vendor": "Amal Kumar",
+      "source_channel": "Poly Haven",
+      "asset_id": "farm_furrows",
+      "size_bytes": 2780,
+      "sha256": "abeb226fca9ca740fd122d7b4df1e2115c37d779e486c8429e0e0da36dd49d5b",
+      "md5": "fa9de86f632444a1f6791faf6fac7930"
+    },
+    {
+      "path": "assets/incoming/V-NAT-007/polyhaven-farm_furrows/textures/farm_furrows_arm_1k.jpg",
+      "req_ids": [
+        "V-NAT-007"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/farm_furrows",
+      "name": "Farm Furrows",
+      "author_vendor": "Amal Kumar",
+      "source_channel": "Poly Haven",
+      "asset_id": "farm_furrows",
+      "size_bytes": 802555,
+      "sha256": "fee69ce8660796e1eb30d3244cb75d9d92b928b7b58389c3c119cfc2f82b242a",
+      "md5": "0ad477ab736a71e59c09f63ad17f88b7"
+    },
+    {
+      "path": "assets/incoming/V-NAT-007/polyhaven-farm_furrows/textures/farm_furrows_diff_1k.jpg",
+      "req_ids": [
+        "V-NAT-007"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/farm_furrows",
+      "name": "Farm Furrows",
+      "author_vendor": "Amal Kumar",
+      "source_channel": "Poly Haven",
+      "asset_id": "farm_furrows",
+      "size_bytes": 717703,
+      "sha256": "991caba24cc555a968b98092bd0dd3a35da849e553012830062eab158c32bb22",
+      "md5": "758240d6d0c7608caf20507498c382b9"
+    },
+    {
+      "path": "assets/incoming/V-NAT-007/polyhaven-farm_furrows/textures/farm_furrows_nor_gl_1k.jpg",
+      "req_ids": [
+        "V-NAT-007"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/farm_furrows",
+      "name": "Farm Furrows",
+      "author_vendor": "Amal Kumar",
+      "source_channel": "Poly Haven",
+      "asset_id": "farm_furrows",
+      "size_bytes": 1247756,
+      "sha256": "5e65f903ca3c4ab6199cb31b47fc76dbb247ea6e76027cc0708d72c166b20268",
+      "md5": "92b1de02166804ade573eb8179efc5f5"
+    },
+    {
+      "path": "assets/incoming/V-NAT-007/polyhaven-farm_soil/farm_soil.bin",
+      "req_ids": [
+        "V-NAT-007"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/farm_soil",
+      "name": "Farm Soil",
+      "author_vendor": "Amal Kumar",
+      "source_channel": "Poly Haven",
+      "asset_id": "farm_soil",
+      "size_bytes": 2369716,
+      "sha256": "3867edc745c793af470a23d6afcf725b8f91121662169a400c16524a370083c0",
+      "md5": "7acdb03f2981fc40e35cf0e26097b384"
+    },
+    {
+      "path": "assets/incoming/V-NAT-007/polyhaven-farm_soil/farm_soil_1k.gltf",
+      "req_ids": [
+        "V-NAT-007"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/farm_soil",
+      "name": "Farm Soil",
+      "author_vendor": "Amal Kumar",
+      "source_channel": "Poly Haven",
+      "asset_id": "farm_soil",
+      "size_bytes": 2755,
+      "sha256": "ae29b59907b94f5083387c093881b45535643e54091cd3e29781e747caffb6de",
+      "md5": "d4f23dcb15aaa0163c8a4aeb53c0d92e"
+    },
+    {
+      "path": "assets/incoming/V-NAT-007/polyhaven-farm_soil/textures/farm_soil_arm_1k.jpg",
+      "req_ids": [
+        "V-NAT-007"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/farm_soil",
+      "name": "Farm Soil",
+      "author_vendor": "Amal Kumar",
+      "source_channel": "Poly Haven",
+      "asset_id": "farm_soil",
+      "size_bytes": 1008744,
+      "sha256": "77612d6d3ebd9229843d1e277c87a5f63583d5cbfa9e92a79f39730b8ac468a5",
+      "md5": "3d2efa4faa31d28deb0a35643af09774"
+    },
+    {
+      "path": "assets/incoming/V-NAT-007/polyhaven-farm_soil/textures/farm_soil_diff_1k.jpg",
+      "req_ids": [
+        "V-NAT-007"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/farm_soil",
+      "name": "Farm Soil",
+      "author_vendor": "Amal Kumar",
+      "source_channel": "Poly Haven",
+      "asset_id": "farm_soil",
+      "size_bytes": 735837,
+      "sha256": "bfa2850109d1018ecb25342d9f17a5a81e826f7c67edfcaa7c878b60e62cc010",
+      "md5": "29fad1e29469e644759032c3ade249fa"
+    },
+    {
+      "path": "assets/incoming/V-NAT-007/polyhaven-farm_soil/textures/farm_soil_nor_gl_1k.jpg",
+      "req_ids": [
+        "V-NAT-007"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/farm_soil",
+      "name": "Farm Soil",
+      "author_vendor": "Amal Kumar",
+      "source_channel": "Poly Haven",
+      "asset_id": "farm_soil",
+      "size_bytes": 1541114,
+      "sha256": "d67b68bf19c1176af28b19cbc55e13365ef4653faa7a00650fe9ffed5e03b35a",
+      "md5": "e0afe5e537ed2869ddd4d0cfe1b529b5"
+    },
+    {
+      "path": "assets/incoming/V-NAT-007/polyhaven-forest_floor/forest_floor.bin",
+      "req_ids": [
+        "V-NAT-007"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/forest_floor",
+      "name": "Forest Floor",
+      "author_vendor": "eye-candy.xyz",
+      "source_channel": "Poly Haven",
+      "asset_id": "forest_floor",
+      "size_bytes": 2369940,
+      "sha256": "475fa6da2d54c6b8d1e010b2daad36a253a51f89c50586653b74c10e42a9babe",
+      "md5": "1693973471c566567f4e6aca37d8b2a9"
+    },
+    {
+      "path": "assets/incoming/V-NAT-007/polyhaven-forest_floor/forest_floor_1k.gltf",
+      "req_ids": [
+        "V-NAT-007"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/forest_floor",
+      "name": "Forest Floor",
+      "author_vendor": "eye-candy.xyz",
+      "source_channel": "Poly Haven",
+      "asset_id": "forest_floor",
+      "size_bytes": 2782,
+      "sha256": "ba85ae843a7fa0cf711cd3001fc51d28363777adb2f72cf29d840d03d79176b9",
+      "md5": "a252b3b2e618145a570de61708d70693"
+    },
+    {
+      "path": "assets/incoming/V-NAT-007/polyhaven-forest_floor/textures/forest_floor_arm_1k.jpg",
+      "req_ids": [
+        "V-NAT-007"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/forest_floor",
+      "name": "Forest Floor",
+      "author_vendor": "eye-candy.xyz",
+      "source_channel": "Poly Haven",
+      "asset_id": "forest_floor",
+      "size_bytes": 931479,
+      "sha256": "b9443866b317194651550d6d961413f529a17e85a87e3e0a8289ec022cc39090",
+      "md5": "85b0c5f36a11f981dc7e6256bc23161a"
+    },
+    {
+      "path": "assets/incoming/V-NAT-007/polyhaven-forest_floor/textures/forest_floor_diff_1k.jpg",
+      "req_ids": [
+        "V-NAT-007"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/forest_floor",
+      "name": "Forest Floor",
+      "author_vendor": "eye-candy.xyz",
+      "source_channel": "Poly Haven",
+      "asset_id": "forest_floor",
+      "size_bytes": 1329853,
+      "sha256": "f12e5adea1741f9eb7a528bfc621f8267885b9530b74c3a8afdb823899bdbf0b",
+      "md5": "d67f308e4b8be6a65989e8dc76ec40fe"
+    },
+    {
+      "path": "assets/incoming/V-NAT-007/polyhaven-forest_floor/textures/forest_floor_nor_gl_1k.jpg",
+      "req_ids": [
+        "V-NAT-007"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/forest_floor",
+      "name": "Forest Floor",
+      "author_vendor": "eye-candy.xyz",
+      "source_channel": "Poly Haven",
+      "asset_id": "forest_floor",
+      "size_bytes": 1380104,
+      "sha256": "681f3de8c756c4d19bcda33039f953295498f38b1425ce9d56b37d6f97f6e518",
+      "md5": "7cb480d082527766acdf3b6c8cba50f4"
+    },
+    {
+      "path": "assets/incoming/V-NAT-007/polyhaven-grass_ground/grass_ground.bin",
+      "req_ids": [
+        "V-NAT-007"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/grass_ground",
+      "name": "Grass Ground",
+      "author_vendor": "Charlotte Baglioni",
+      "source_channel": "Poly Haven",
+      "asset_id": "grass_ground",
+      "size_bytes": 2370836,
+      "sha256": "7022b58c4470e2dae0f4274c1ec111e2d7fd2aa60afc950814b5a0f3bf8f92a3",
+      "md5": "9c205b42519f40d33bf4c164c9bd5fe8"
+    },
+    {
+      "path": "assets/incoming/V-NAT-007/polyhaven-grass_ground/grass_ground_1k.gltf",
+      "req_ids": [
+        "V-NAT-007"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/grass_ground",
+      "name": "Grass Ground",
+      "author_vendor": "Charlotte Baglioni",
+      "source_channel": "Poly Haven",
+      "asset_id": "grass_ground",
+      "size_bytes": 2782,
+      "sha256": "25eed995a96729eeaa581ace7e2f4234538c643d34c37a02ed9db67ec3e84fe1",
+      "md5": "3e92928d6821effcadafb41f0130cb04"
+    },
+    {
+      "path": "assets/incoming/V-NAT-007/polyhaven-grass_ground/textures/grass_ground_arm_1k.jpg",
+      "req_ids": [
+        "V-NAT-007"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/grass_ground",
+      "name": "Grass Ground",
+      "author_vendor": "Charlotte Baglioni",
+      "source_channel": "Poly Haven",
+      "asset_id": "grass_ground",
+      "size_bytes": 896135,
+      "sha256": "b8c13e5972827dda6465fc98bbb8b3a0e67215bf8e864c729072fc9c1cc502ef",
+      "md5": "e0499d084eaddc110671ebfee26bd941"
+    },
+    {
+      "path": "assets/incoming/V-NAT-007/polyhaven-grass_ground/textures/grass_ground_diff_1k.jpg",
+      "req_ids": [
+        "V-NAT-007"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/grass_ground",
+      "name": "Grass Ground",
+      "author_vendor": "Charlotte Baglioni",
+      "source_channel": "Poly Haven",
+      "asset_id": "grass_ground",
+      "size_bytes": 876584,
+      "sha256": "a79cc5ed65af0f80261b39a383b64a8c5272c5144d724deb43dbc29f0e4cd19b",
+      "md5": "299047258586c762735b7284d3c662c3"
+    },
+    {
+      "path": "assets/incoming/V-NAT-007/polyhaven-grass_ground/textures/grass_ground_nor_gl_1k.jpg",
+      "req_ids": [
+        "V-NAT-007"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/grass_ground",
+      "name": "Grass Ground",
+      "author_vendor": "Charlotte Baglioni",
+      "source_channel": "Poly Haven",
+      "asset_id": "grass_ground",
+      "size_bytes": 1310516,
+      "sha256": "7000e2ccd479bb7b66dcdf4faef7b47554324566886314ca620cbf03e274e826",
+      "md5": "d518c5b2af6f2c0297bc807b351f511f"
+    },
+    {
+      "path": "assets/incoming/V-NAT-007/polyhaven-muddy_tracks/muddy_tracks.bin",
+      "req_ids": [
+        "V-NAT-007"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/muddy_tracks",
+      "name": "Muddy Tracks",
+      "author_vendor": "Amal Kumar",
+      "source_channel": "Poly Haven",
+      "asset_id": "muddy_tracks",
+      "size_bytes": 2369044,
+      "sha256": "b1bc228827b71ac06df782e983b9e7be3d652ccf3c82db9996c43311313c2e01",
+      "md5": "ee5e4b1c8588583f37886bbacd03a218"
+    },
+    {
+      "path": "assets/incoming/V-NAT-007/polyhaven-muddy_tracks/muddy_tracks_1k.gltf",
+      "req_ids": [
+        "V-NAT-007"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/muddy_tracks",
+      "name": "Muddy Tracks",
+      "author_vendor": "Amal Kumar",
+      "source_channel": "Poly Haven",
+      "asset_id": "muddy_tracks",
+      "size_bytes": 2780,
+      "sha256": "d6e9ea5e7885476769c94b8c7feb996288a79cb887aeb34d7d24d1bc81a82b84",
+      "md5": "f92d4d20584448d379dbe2495f9262af"
+    },
+    {
+      "path": "assets/incoming/V-NAT-007/polyhaven-muddy_tracks/textures/muddy_tracks_arm_1k.jpg",
+      "req_ids": [
+        "V-NAT-007"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/muddy_tracks",
+      "name": "Muddy Tracks",
+      "author_vendor": "Amal Kumar",
+      "source_channel": "Poly Haven",
+      "asset_id": "muddy_tracks",
+      "size_bytes": 998069,
+      "sha256": "c99bad686d5285a73d3278e227d4dd115193b4394f223bf764850879ef2a939c",
+      "md5": "013434bc7166a9bc9bb50693da9b3667"
+    },
+    {
+      "path": "assets/incoming/V-NAT-007/polyhaven-muddy_tracks/textures/muddy_tracks_diff_1k.jpg",
+      "req_ids": [
+        "V-NAT-007"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/muddy_tracks",
+      "name": "Muddy Tracks",
+      "author_vendor": "Amal Kumar",
+      "source_channel": "Poly Haven",
+      "asset_id": "muddy_tracks",
+      "size_bytes": 717431,
+      "sha256": "7867c9bfc6f6e85d51debddda3974ed68225e96b2cdb385a5518616102710730",
+      "md5": "a0d904939720504810f60377c6463deb"
+    },
+    {
+      "path": "assets/incoming/V-NAT-007/polyhaven-muddy_tracks/textures/muddy_tracks_nor_gl_1k.jpg",
+      "req_ids": [
+        "V-NAT-007"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/muddy_tracks",
+      "name": "Muddy Tracks",
+      "author_vendor": "Amal Kumar",
+      "source_channel": "Poly Haven",
+      "asset_id": "muddy_tracks",
+      "size_bytes": 1311155,
+      "sha256": "ebb1916209e64efac44ac5f74316ee27a960fc483ed242ac0a8b565495ce4997",
+      "md5": "73598ec70cab540080a0521ac839435d"
+    },
+    {
+      "path": "assets/incoming/V-NAT-007/polyhaven-snow_01/snow_01.bin",
+      "req_ids": [
+        "V-NAT-007",
+        "V-NAT-003"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/snow_01",
+      "name": "Snow 01",
+      "author_vendor": "Rob Tuytel",
+      "source_channel": "Poly Haven",
+      "asset_id": "snow_01",
+      "size_bytes": 2369620,
+      "sha256": "ea6c917d9c950af0e09394ac75217643c6816bf991509af799789eeeb0a31256",
+      "md5": "59c97354995c6eb6e2a57a6b598ab485"
+    },
+    {
+      "path": "assets/incoming/V-NAT-007/polyhaven-snow_01/snow_01_1k.gltf",
+      "req_ids": [
+        "V-NAT-007",
+        "V-NAT-003"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/snow_01",
+      "name": "Snow 01",
+      "author_vendor": "Rob Tuytel",
+      "source_channel": "Poly Haven",
+      "asset_id": "snow_01",
+      "size_bytes": 2660,
+      "sha256": "5b44ee9d62b79ad15e64dafb33e8aa73a5bfdf265817b5c766505d4efcd56510",
+      "md5": "8c999fff2b6d805a5538277cde6222dd"
+    },
+    {
+      "path": "assets/incoming/V-NAT-007/polyhaven-snow_01/textures/snow_01_diff_1k.jpg",
+      "req_ids": [
+        "V-NAT-007",
+        "V-NAT-003"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/snow_01",
+      "name": "Snow 01",
+      "author_vendor": "Rob Tuytel",
+      "source_channel": "Poly Haven",
+      "asset_id": "snow_01",
+      "size_bytes": 356249,
+      "sha256": "bf71d93b7e47fe29bfb6ae11626439535b647da041b979ba5303ce8b0a862d53",
+      "md5": "1e1ad483b74fddd3be67cfb638d42460"
+    },
+    {
+      "path": "assets/incoming/V-NAT-007/polyhaven-snow_01/textures/snow_01_nor_gl_1k.jpg",
+      "req_ids": [
+        "V-NAT-007",
+        "V-NAT-003"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/snow_01",
+      "name": "Snow 01",
+      "author_vendor": "Rob Tuytel",
+      "source_channel": "Poly Haven",
+      "asset_id": "snow_01",
+      "size_bytes": 1370735,
+      "sha256": "ce806bc45cae729a211b16c94239018d58570b9a796a8cc890cf8cbce2c8f050",
+      "md5": "8f703c74553d494f9e0bb4543431dba5"
+    },
+    {
+      "path": "assets/incoming/V-NAT-007/polyhaven-snow_01/textures/snow_01_rough_1k.jpg",
+      "req_ids": [
+        "V-NAT-007",
+        "V-NAT-003"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/snow_01",
+      "name": "Snow 01",
+      "author_vendor": "Rob Tuytel",
+      "source_channel": "Poly Haven",
+      "asset_id": "snow_01",
+      "size_bytes": 195503,
+      "sha256": "c008cd329bda1127d8c6ff2ed8772e563419fbfb836648b2f05e07ab893be1aa",
+      "md5": "d2b2033f9f4c0eb299cf4e75c2c0289a"
+    },
+    {
+      "path": "assets/incoming/V-PRP-001/kenney-prototype-kit.zip",
+      "req_ids": [
+        "V-PRP-001",
+        "V-PRP-002",
+        "V-PRP-003",
+        "V-PRP-004",
+        "V-PRP-005",
+        "V-PRP-006",
+        "V-PRP-007",
+        "V-PRP-008",
+        "V-PRP-009",
+        "V-PRP-010"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://kenney.nl/assets/prototype-kit",
+      "name": "Kenney prototype-kit",
+      "author_vendor": "Kenney",
+      "source_channel": "Kenney",
+      "asset_id": "prototype-kit",
+      "size_bytes": 2961396,
+      "sha256": "213b522fb12bcc9b9ac66c4f7581f7c74623293272212e40a70c39936ad3da95"
+    },
+    {
+      "path": "assets/incoming/V-PRP-004/polyhaven-ammo_box/ammo_box.bin",
+      "req_ids": [
+        "V-PRP-004"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/ammo_box",
+      "name": "Ammo Box",
+      "author_vendor": "DanKit",
+      "source_channel": "Poly Haven",
+      "asset_id": "ammo_box",
+      "size_bytes": 153588,
+      "sha256": "7f7211c643fe5fc4e7ec033e644e4fdea18188e15bc55a27972b72e6ff7e1d03",
+      "md5": "f2a5108dc8a9ddd8b60283d6a9d30c9a"
+    },
+    {
+      "path": "assets/incoming/V-PRP-004/polyhaven-ammo_box/ammo_box_2k.gltf",
+      "req_ids": [
+        "V-PRP-004"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/ammo_box",
+      "name": "Ammo Box",
+      "author_vendor": "DanKit",
+      "source_channel": "Poly Haven",
+      "asset_id": "ammo_box",
+      "size_bytes": 8802,
+      "sha256": "f8dfec6fbc95e3cb86aa87e28333cda6fec0a89aa9d6d47425f34da44030672b",
+      "md5": "eda5b37048bf85a67cc9a6b54cb1bfd6"
+    },
+    {
+      "path": "assets/incoming/V-PRP-004/polyhaven-ammo_box/textures/ammo_box_arm_2k.jpg",
+      "req_ids": [
+        "V-PRP-004"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/ammo_box",
+      "name": "Ammo Box",
+      "author_vendor": "DanKit",
+      "source_channel": "Poly Haven",
+      "asset_id": "ammo_box",
+      "size_bytes": 2013349,
+      "sha256": "26b0ae21903beadd4c85957774e4bf0269fafdd62142e57dc415bf9f2ede688d",
+      "md5": "6706ca5b13e01dd5b7a279fe1e3cc240"
+    },
+    {
+      "path": "assets/incoming/V-PRP-004/polyhaven-ammo_box/textures/ammo_box_diff_2k.jpg",
+      "req_ids": [
+        "V-PRP-004"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/ammo_box",
+      "name": "Ammo Box",
+      "author_vendor": "DanKit",
+      "source_channel": "Poly Haven",
+      "asset_id": "ammo_box",
+      "size_bytes": 1628874,
+      "sha256": "a5782ad5b5466e9586b5ed2cbb5cd8db37d6527fafcd2adbdfde4d1aa7e29572",
+      "md5": "48532e7e5cb2c2584cb2e052ab13e8da"
+    },
+    {
+      "path": "assets/incoming/V-PRP-004/polyhaven-ammo_box/textures/ammo_box_nor_gl_2k.jpg",
+      "req_ids": [
+        "V-PRP-004"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/ammo_box",
+      "name": "Ammo Box",
+      "author_vendor": "DanKit",
+      "source_channel": "Poly Haven",
+      "asset_id": "ammo_box",
+      "size_bytes": 1162417,
+      "sha256": "34cd0856aeeeadca304ad8cc229ab847c4cedb824f728a10d482f4c8d11463e3",
+      "md5": "79311592e98a4beef35601cfb65faa44"
+    },
+    {
+      "path": "assets/incoming/V-PRP-004/polyhaven-old_military_crate/old_military_crate.bin",
+      "req_ids": [
+        "V-PRP-004"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/old_military_crate",
+      "name": "Old Military Crate",
+      "author_vendor": "Jack Mava",
+      "source_channel": "Poly Haven",
+      "asset_id": "old_military_crate",
+      "size_bytes": 329004,
+      "sha256": "80eb5ad690aaa6f4f401df0f8e323666bf8f3f9943c7cb703eb37002f5084ce1",
+      "md5": "4aa204ebcc401c38206677a808aebea6"
+    },
+    {
+      "path": "assets/incoming/V-PRP-004/polyhaven-old_military_crate/old_military_crate_2k.gltf",
+      "req_ids": [
+        "V-PRP-004"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/old_military_crate",
+      "name": "Old Military Crate",
+      "author_vendor": "Jack Mava",
+      "source_channel": "Poly Haven",
+      "asset_id": "old_military_crate",
+      "size_bytes": 10126,
+      "sha256": "ef7f99f44965ba06f96f9e3269dddd0f7f5e945f4b375d5693d5bb038074d1c5",
+      "md5": "38a0dbf05a8086e54978fa5f3f45ba49"
+    },
+    {
+      "path": "assets/incoming/V-PRP-004/polyhaven-old_military_crate/textures/old_military_crate_arm_2k.jpg",
+      "req_ids": [
+        "V-PRP-004"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/old_military_crate",
+      "name": "Old Military Crate",
+      "author_vendor": "Jack Mava",
+      "source_channel": "Poly Haven",
+      "asset_id": "old_military_crate",
+      "size_bytes": 2808924,
+      "sha256": "9ebf54402762793d4b95165702be28c3579a9f2ed7a75865a8be3cd1931099dc",
+      "md5": "84727b16aef55f262d04dd1ebd265dc6"
+    },
+    {
+      "path": "assets/incoming/V-PRP-004/polyhaven-old_military_crate/textures/old_military_crate_diff_2k.jpg",
+      "req_ids": [
+        "V-PRP-004"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/old_military_crate",
+      "name": "Old Military Crate",
+      "author_vendor": "Jack Mava",
+      "source_channel": "Poly Haven",
+      "asset_id": "old_military_crate",
+      "size_bytes": 2968985,
+      "sha256": "ebc666e42a5d276195f2589243e2c202f3cd166216c96e7d6a776feada85002d",
+      "md5": "141e3163cfd56a2654440a4f4fac9bfa"
+    },
+    {
+      "path": "assets/incoming/V-PRP-004/polyhaven-old_military_crate/textures/old_military_crate_nor_gl_2k.jpg",
+      "req_ids": [
+        "V-PRP-004"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/old_military_crate",
+      "name": "Old Military Crate",
+      "author_vendor": "Jack Mava",
+      "source_channel": "Poly Haven",
+      "asset_id": "old_military_crate",
+      "size_bytes": 3184154,
+      "sha256": "121a513b6d70be49f6ff17ddb0a04e8ff217f7a580ed93cacebae907e4907c98",
+      "md5": "d7fc7062b059c6f99ae5de99af6c33b6"
+    },
+    {
+      "path": "assets/incoming/V-PRP-004/polyhaven-wooden_military_crate/textures/wooden_military_crate_arm_2k.jpg",
+      "req_ids": [
+        "V-PRP-004"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/wooden_military_crate",
+      "name": "Wooden Military Crate",
+      "author_vendor": "Prabhjinder Singh",
+      "source_channel": "Poly Haven",
+      "asset_id": "wooden_military_crate",
+      "size_bytes": 2970344,
+      "sha256": "e56692c52460d0b29cf9675c5edacca4d1760c27955f01495c961e5786f5b1ea",
+      "md5": "1b926ab999f8afaaae0bf52e55fbe429"
+    },
+    {
+      "path": "assets/incoming/V-PRP-004/polyhaven-wooden_military_crate/textures/wooden_military_crate_diff_2k.jpg",
+      "req_ids": [
+        "V-PRP-004"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/wooden_military_crate",
+      "name": "Wooden Military Crate",
+      "author_vendor": "Prabhjinder Singh",
+      "source_channel": "Poly Haven",
+      "asset_id": "wooden_military_crate",
+      "size_bytes": 3301328,
+      "sha256": "4ee1f3a07071d2b58296c140f6e1cd0e897bf49a5c909022fe49d481d94b60da",
+      "md5": "0cb09af655abcaea6e6b53a7a96a487c"
+    },
+    {
+      "path": "assets/incoming/V-PRP-004/polyhaven-wooden_military_crate/textures/wooden_military_crate_nor_gl_2k.jpg",
+      "req_ids": [
+        "V-PRP-004"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/wooden_military_crate",
+      "name": "Wooden Military Crate",
+      "author_vendor": "Prabhjinder Singh",
+      "source_channel": "Poly Haven",
+      "asset_id": "wooden_military_crate",
+      "size_bytes": 3257305,
+      "sha256": "5c687629f2b05b6acdf8b6a022e24e545765ea167cae7d2dff5bbd4b6c383499",
+      "md5": "37626f706e87708ee2e3acd3d0e77c2c"
+    },
+    {
+      "path": "assets/incoming/V-PRP-004/polyhaven-wooden_military_crate/wooden_military_crate.bin",
+      "req_ids": [
+        "V-PRP-004"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/wooden_military_crate",
+      "name": "Wooden Military Crate",
+      "author_vendor": "Prabhjinder Singh",
+      "source_channel": "Poly Haven",
+      "asset_id": "wooden_military_crate",
+      "size_bytes": 687548,
+      "sha256": "cf6fd469a476d834f9724f8b8f762630040d8e785e8697c5d7994ae3e840e727",
+      "md5": "fb5dbf4aed842eb45f2e18e62683d34a"
+    },
+    {
+      "path": "assets/incoming/V-PRP-004/polyhaven-wooden_military_crate/wooden_military_crate_2k.gltf",
+      "req_ids": [
+        "V-PRP-004"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/wooden_military_crate",
+      "name": "Wooden Military Crate",
+      "author_vendor": "Prabhjinder Singh",
+      "source_channel": "Poly Haven",
+      "asset_id": "wooden_military_crate",
+      "size_bytes": 6002,
+      "sha256": "fad7b7456afe90d095aabb2b29fc4cd27ade014408e04d4313295cdf1640d066",
+      "md5": "2c84491b19099a64bda9b5bd8b45b310"
+    },
+    {
+      "path": "assets/incoming/V-PRP-006/polyhaven-metal_jerrycan_green/metal_jerrycan_green.bin",
+      "req_ids": [
+        "V-PRP-006"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/metal_jerrycan_green",
+      "name": "Metal Jerrycan Green",
+      "author_vendor": "Ulan Cabanilla",
+      "source_channel": "Poly Haven",
+      "asset_id": "metal_jerrycan_green",
+      "size_bytes": 273368,
+      "sha256": "386534027d20514402c05d68115f4bff7b466db0b02022f9ab51ac6a576bb3fa",
+      "md5": "d413746af56ec6ed4b2b532eda0c4800"
+    },
+    {
+      "path": "assets/incoming/V-PRP-006/polyhaven-metal_jerrycan_green/metal_jerrycan_green_2k.gltf",
+      "req_ids": [
+        "V-PRP-006"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/metal_jerrycan_green",
+      "name": "Metal Jerrycan Green",
+      "author_vendor": "Ulan Cabanilla",
+      "source_channel": "Poly Haven",
+      "asset_id": "metal_jerrycan_green",
+      "size_bytes": 9539,
+      "sha256": "e620aeea499506ef4e9df47f866bd1bbaf8ffe9667bb2af40270fa7b89187824",
+      "md5": "1859a183b07c6b10ff6e83bb0ea6df5c"
+    },
+    {
+      "path": "assets/incoming/V-PRP-006/polyhaven-metal_jerrycan_green/textures/metal_jerrycan_green_arm_2k.jpg",
+      "req_ids": [
+        "V-PRP-006"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/metal_jerrycan_green",
+      "name": "Metal Jerrycan Green",
+      "author_vendor": "Ulan Cabanilla",
+      "source_channel": "Poly Haven",
+      "asset_id": "metal_jerrycan_green",
+      "size_bytes": 3930892,
+      "sha256": "d478891b516d9f36d0e293cdeb588e79d90bc85cdbb90a6ceaf3ece206c137f6",
+      "md5": "05de4231d9c4109dc2a4cc95f15e9715"
+    },
+    {
+      "path": "assets/incoming/V-PRP-006/polyhaven-metal_jerrycan_green/textures/metal_jerrycan_green_diff_2k.jpg",
+      "req_ids": [
+        "V-PRP-006"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/metal_jerrycan_green",
+      "name": "Metal Jerrycan Green",
+      "author_vendor": "Ulan Cabanilla",
+      "source_channel": "Poly Haven",
+      "asset_id": "metal_jerrycan_green",
+      "size_bytes": 2155082,
+      "sha256": "5e47ec99fc041f4795c62a872eda401b26ba8df580a742ae56fc54245008db35",
+      "md5": "500b0639e58a66d638feb6e8b67b6e1c"
+    },
+    {
+      "path": "assets/incoming/V-PRP-006/polyhaven-metal_jerrycan_green/textures/metal_jerrycan_green_nor_gl_2k.jpg",
+      "req_ids": [
+        "V-PRP-006"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/metal_jerrycan_green",
+      "name": "Metal Jerrycan Green",
+      "author_vendor": "Ulan Cabanilla",
+      "source_channel": "Poly Haven",
+      "asset_id": "metal_jerrycan_green",
+      "size_bytes": 3015642,
+      "sha256": "747279ee26b5b506c4d5310bab8b6a101d72fea524a7a436787d16d89223adc6",
+      "md5": "0a2cbae4d1a70ef08c64704144873762"
+    },
+    {
+      "path": "assets/incoming/V-PRP-006/polyhaven-wooden_barrels_01/textures/wooden_barrels_01_barrel01_arm_2k.jpg",
+      "req_ids": [
+        "V-PRP-006"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/wooden_barrels_01",
+      "name": "Wooden Barrels 01",
+      "author_vendor": "James Ray Cock",
+      "source_channel": "Poly Haven",
+      "asset_id": "wooden_barrels_01",
+      "size_bytes": 3030842,
+      "sha256": "f6b51c989a84179c63f04f63382019087ead88b55d28569df2879101c76cd730",
+      "md5": "1d8558cb80b7149830d0280fe3d00e4a"
+    },
+    {
+      "path": "assets/incoming/V-PRP-006/polyhaven-wooden_barrels_01/textures/wooden_barrels_01_barrel01_diff_2k.jpg",
+      "req_ids": [
+        "V-PRP-006"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/wooden_barrels_01",
+      "name": "Wooden Barrels 01",
+      "author_vendor": "James Ray Cock",
+      "source_channel": "Poly Haven",
+      "asset_id": "wooden_barrels_01",
+      "size_bytes": 2233903,
+      "sha256": "9712db80b6ce8e8afc85fa67855abef7261339cb5efc6d366e1ffd96476f7089",
+      "md5": "1d8995e5d365cf1bf2e0a13037bdbb70"
+    },
+    {
+      "path": "assets/incoming/V-PRP-006/polyhaven-wooden_barrels_01/textures/wooden_barrels_01_barrel01_nor_gl_2k.jpg",
+      "req_ids": [
+        "V-PRP-006"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/wooden_barrels_01",
+      "name": "Wooden Barrels 01",
+      "author_vendor": "James Ray Cock",
+      "source_channel": "Poly Haven",
+      "asset_id": "wooden_barrels_01",
+      "size_bytes": 2012613,
+      "sha256": "1688fe3dd19beef088ed5880bc4c5ff82ad3dcee468a94ef89a43ba01fbcccb0",
+      "md5": "768e5019fe35fd211eb9e7b927a6bccd"
+    },
+    {
+      "path": "assets/incoming/V-PRP-006/polyhaven-wooden_barrels_01/textures/wooden_barrels_01_barrel02_arm_2k.jpg",
+      "req_ids": [
+        "V-PRP-006"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/wooden_barrels_01",
+      "name": "Wooden Barrels 01",
+      "author_vendor": "James Ray Cock",
+      "source_channel": "Poly Haven",
+      "asset_id": "wooden_barrels_01",
+      "size_bytes": 2998260,
+      "sha256": "35b90d35093550357db30f66ff92373c5d9dd2d4dad8290c0b7e1ee554422af8",
+      "md5": "c5c552040e5c709f87c9f8e2e3ff572a"
+    },
+    {
+      "path": "assets/incoming/V-PRP-006/polyhaven-wooden_barrels_01/textures/wooden_barrels_01_barrel02_diff_2k.jpg",
+      "req_ids": [
+        "V-PRP-006"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/wooden_barrels_01",
+      "name": "Wooden Barrels 01",
+      "author_vendor": "James Ray Cock",
+      "source_channel": "Poly Haven",
+      "asset_id": "wooden_barrels_01",
+      "size_bytes": 2266264,
+      "sha256": "82ef7f7c95f46205d08bf1b357d73ceee0d41857c7c8e4bf1f5c50ce40372357",
+      "md5": "f52090af8d894a5891ff1bcac3dfe6ab"
+    },
+    {
+      "path": "assets/incoming/V-PRP-006/polyhaven-wooden_barrels_01/textures/wooden_barrels_01_barrel02_nor_gl_2k.jpg",
+      "req_ids": [
+        "V-PRP-006"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/wooden_barrels_01",
+      "name": "Wooden Barrels 01",
+      "author_vendor": "James Ray Cock",
+      "source_channel": "Poly Haven",
+      "asset_id": "wooden_barrels_01",
+      "size_bytes": 2065462,
+      "sha256": "6b38d0c9be7ac930e688cf3d34e455bcc54ed39efa045406c4d43a8980531a56",
+      "md5": "078bd5e0a880421c97fbc1107aa53163"
+    },
+    {
+      "path": "assets/incoming/V-PRP-006/polyhaven-wooden_barrels_01/textures/wooden_barrels_01_pieces_arm_2k.jpg",
+      "req_ids": [
+        "V-PRP-006"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/wooden_barrels_01",
+      "name": "Wooden Barrels 01",
+      "author_vendor": "James Ray Cock",
+      "source_channel": "Poly Haven",
+      "asset_id": "wooden_barrels_01",
+      "size_bytes": 3200774,
+      "sha256": "90685b98ab179dd7bb410563ccd7ace601a2f9a9a3bf09ec7d15f63f9b1de169",
+      "md5": "077e57586d5b8a8e1a974a2e762904f8"
+    },
+    {
+      "path": "assets/incoming/V-PRP-006/polyhaven-wooden_barrels_01/textures/wooden_barrels_01_pieces_diff_2k.jpg",
+      "req_ids": [
+        "V-PRP-006"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/wooden_barrels_01",
+      "name": "Wooden Barrels 01",
+      "author_vendor": "James Ray Cock",
+      "source_channel": "Poly Haven",
+      "asset_id": "wooden_barrels_01",
+      "size_bytes": 2423770,
+      "sha256": "de4a266727e4c1beda7f4a2d5d508fffebd66419cfb77a3eef16d7ff1f490431",
+      "md5": "ac2d0edb2112fb882fed76a98710c636"
+    },
+    {
+      "path": "assets/incoming/V-PRP-006/polyhaven-wooden_barrels_01/textures/wooden_barrels_01_pieces_nor_gl_2k.jpg",
+      "req_ids": [
+        "V-PRP-006"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/wooden_barrels_01",
+      "name": "Wooden Barrels 01",
+      "author_vendor": "James Ray Cock",
+      "source_channel": "Poly Haven",
+      "asset_id": "wooden_barrels_01",
+      "size_bytes": 2293610,
+      "sha256": "9b0a16897b4f8cefb427dff47591c8cfd8dba894b5e3027f600dd523a1636c88",
+      "md5": "7b663e4ab9499cf1ef62e53ed2058264"
+    },
+    {
+      "path": "assets/incoming/V-PRP-006/polyhaven-wooden_barrels_01/wooden_barrels_01.bin",
+      "req_ids": [
+        "V-PRP-006"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/wooden_barrels_01",
+      "name": "Wooden Barrels 01",
+      "author_vendor": "James Ray Cock",
+      "source_channel": "Poly Haven",
+      "asset_id": "wooden_barrels_01",
+      "size_bytes": 1243556,
+      "sha256": "7de8294b07ecb6bd57ea3542760fa45bbefc296a47dd044723eb599ffc56084f",
+      "md5": "6c1dbd45bc5f0b1e726a7343fae0fbdb"
+    },
+    {
+      "path": "assets/incoming/V-PRP-006/polyhaven-wooden_barrels_01/wooden_barrels_01_2k.gltf",
+      "req_ids": [
+        "V-PRP-006"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/wooden_barrels_01",
+      "name": "Wooden Barrels 01",
+      "author_vendor": "James Ray Cock",
+      "source_channel": "Poly Haven",
+      "asset_id": "wooden_barrels_01",
+      "size_bytes": 31017,
+      "sha256": "6df3e8e0c056ba12b0f560ab464119e8e9c04f0b6da8dfe4faa55fb6ab3eeffe",
+      "md5": "9a236366609ec9a3c5abe4da41a63a5c"
+    },
+    {
+      "path": "assets/incoming/V-PRP-006/polyhaven-wooden_crate_02/textures/wooden_crate_02_arm_2k.jpg",
+      "req_ids": [
+        "V-PRP-006"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/wooden_crate_02",
+      "name": "Wooden Crate 02",
+      "author_vendor": "James Ray Cock, Jurita Burger",
+      "source_channel": "Poly Haven",
+      "asset_id": "wooden_crate_02",
+      "size_bytes": 2983795,
+      "sha256": "c426597684b4e86bc2189bfaaf9d162118b54a01523ed4eec625cdbe2f1e52c8",
+      "md5": "204ec1fd40b1d2f0662c1ffafa8a2a43"
+    },
+    {
+      "path": "assets/incoming/V-PRP-006/polyhaven-wooden_crate_02/textures/wooden_crate_02_diff_2k.jpg",
+      "req_ids": [
+        "V-PRP-006"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/wooden_crate_02",
+      "name": "Wooden Crate 02",
+      "author_vendor": "James Ray Cock, Jurita Burger",
+      "source_channel": "Poly Haven",
+      "asset_id": "wooden_crate_02",
+      "size_bytes": 2739157,
+      "sha256": "e39ab2f122698069f4ee7d56f22624349eaf587dc9af51109d450f632d25f7ae",
+      "md5": "7a33065ca4727aec5b6d0c01434159f5"
+    },
+    {
+      "path": "assets/incoming/V-PRP-006/polyhaven-wooden_crate_02/textures/wooden_crate_02_nor_gl_2k.jpg",
+      "req_ids": [
+        "V-PRP-006"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/wooden_crate_02",
+      "name": "Wooden Crate 02",
+      "author_vendor": "James Ray Cock, Jurita Burger",
+      "source_channel": "Poly Haven",
+      "asset_id": "wooden_crate_02",
+      "size_bytes": 2280942,
+      "sha256": "04274163275dc16b9dbd829aa45145796bd129cf980c916280fcad352cf5542e",
+      "md5": "c3ea9a69401a666d7410cfc8173414f3"
+    },
+    {
+      "path": "assets/incoming/V-PRP-006/polyhaven-wooden_crate_02/wooden_crate_02.bin",
+      "req_ids": [
+        "V-PRP-006"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/wooden_crate_02",
+      "name": "Wooden Crate 02",
+      "author_vendor": "James Ray Cock, Jurita Burger",
+      "source_channel": "Poly Haven",
+      "asset_id": "wooden_crate_02",
+      "size_bytes": 150064,
+      "sha256": "e68e272641f704e5241e4108894f0b97363d511944db8b991a48787d0160ea5e",
+      "md5": "08d98507231cdeda1070d1a2d0646254"
+    },
+    {
+      "path": "assets/incoming/V-PRP-006/polyhaven-wooden_crate_02/wooden_crate_02_2k.gltf",
+      "req_ids": [
+        "V-PRP-006"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/wooden_crate_02",
+      "name": "Wooden Crate 02",
+      "author_vendor": "James Ray Cock, Jurita Burger",
+      "source_channel": "Poly Haven",
+      "asset_id": "wooden_crate_02",
+      "size_bytes": 4150,
+      "sha256": "0cedea3c3942fa2cd6896235f2d704ebdabcf9b1490fd451cef79c94da9cb782",
+      "md5": "4f403fad26973a4c59f8f0f76df882e8"
+    },
+    {
+      "path": "assets/incoming/V-PRP-006/polyhaven-wooden_ladder/textures/wooden_ladder_arm_2k.jpg",
+      "req_ids": [
+        "V-PRP-006"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/wooden_ladder",
+      "name": "Wooden Ladder",
+      "author_vendor": "Miroslav Turura",
+      "source_channel": "Poly Haven",
+      "asset_id": "wooden_ladder",
+      "size_bytes": 3090590,
+      "sha256": "a8c5bf86cd03f27d96dc75c0b0df7ebb5013c1db43ba2ef5624eea9e18e10e97",
+      "md5": "9b98f79b36157464f87a75891ad469bd"
+    },
+    {
+      "path": "assets/incoming/V-PRP-006/polyhaven-wooden_ladder/textures/wooden_ladder_diff_2k.jpg",
+      "req_ids": [
+        "V-PRP-006"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/wooden_ladder",
+      "name": "Wooden Ladder",
+      "author_vendor": "Miroslav Turura",
+      "source_channel": "Poly Haven",
+      "asset_id": "wooden_ladder",
+      "size_bytes": 2917245,
+      "sha256": "e18c8bba0498791b9b987ef9152ac90c77e39a39b7a579a1aedf7599298f2c27",
+      "md5": "cb48ea1ee50b5f1925cc996ecbe593e6"
+    },
+    {
+      "path": "assets/incoming/V-PRP-006/polyhaven-wooden_ladder/textures/wooden_ladder_nor_gl_2k.jpg",
+      "req_ids": [
+        "V-PRP-006"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/wooden_ladder",
+      "name": "Wooden Ladder",
+      "author_vendor": "Miroslav Turura",
+      "source_channel": "Poly Haven",
+      "asset_id": "wooden_ladder",
+      "size_bytes": 2624568,
+      "sha256": "5152428a6ce81ea4071e6a7dc152493c96904bb3e9a138635572578067a246dd",
+      "md5": "514523d8c8fde68ba55750e6df36969a"
+    },
+    {
+      "path": "assets/incoming/V-PRP-006/polyhaven-wooden_ladder/wooden_ladder.bin",
+      "req_ids": [
+        "V-PRP-006"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/wooden_ladder",
+      "name": "Wooden Ladder",
+      "author_vendor": "Miroslav Turura",
+      "source_channel": "Poly Haven",
+      "asset_id": "wooden_ladder",
+      "size_bytes": 282184,
+      "sha256": "a86818f7a4a6fbedf147d413cc761983fa03b2d5b88dfdda346ffb3ed71698ef",
+      "md5": "058aa183bf6ea324a181d003dabe84c9"
+    },
+    {
+      "path": "assets/incoming/V-PRP-006/polyhaven-wooden_ladder/wooden_ladder_2k.gltf",
+      "req_ids": [
+        "V-PRP-006"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/wooden_ladder",
+      "name": "Wooden Ladder",
+      "author_vendor": "Miroslav Turura",
+      "source_channel": "Poly Haven",
+      "asset_id": "wooden_ladder",
+      "size_bytes": 4390,
+      "sha256": "dadf9b89d209f6f8531ccdf4e86e3780e4164ec10e9029693bfa9a630f480fc7",
+      "md5": "3e68ad46a2c48536c4cc0c459bced8b3"
+    },
+    {
+      "path": "assets/incoming/V-PRP-009/polyhaven-modular_chainlink_fence/modular_chainlink_fence.bin",
+      "req_ids": [
+        "V-PRP-009"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/modular_chainlink_fence",
+      "name": "Modular Chainlink Fence",
+      "author_vendor": "James Ray Cock, Amal Kumar",
+      "source_channel": "Poly Haven",
+      "asset_id": "modular_chainlink_fence",
+      "size_bytes": 3168016,
+      "sha256": "be9ea1817089fd35b0927a8271358f6abd2ec80b306a085de435613d936fcb9a",
+      "md5": "953d32ee509142cf2ceb1e6b278b2430"
+    },
+    {
+      "path": "assets/incoming/V-PRP-009/polyhaven-modular_chainlink_fence/modular_chainlink_fence_2k.gltf",
+      "req_ids": [
+        "V-PRP-009"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/modular_chainlink_fence",
+      "name": "Modular Chainlink Fence",
+      "author_vendor": "James Ray Cock, Amal Kumar",
+      "source_channel": "Poly Haven",
+      "asset_id": "modular_chainlink_fence",
+      "size_bytes": 41838,
+      "sha256": "9c9c3e7301beff0a0ec8d8f16ba386d7c7aecf3c0c0e75131e4f6077bb064444",
+      "md5": "f81323a83d2ae1e7b99a3ec156aa8da5"
+    },
+    {
+      "path": "assets/incoming/V-PRP-009/polyhaven-modular_chainlink_fence/textures/modular_chainlink_fence_posts_arm_2k.jpg",
+      "req_ids": [
+        "V-PRP-009"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/modular_chainlink_fence",
+      "name": "Modular Chainlink Fence",
+      "author_vendor": "James Ray Cock, Amal Kumar",
+      "source_channel": "Poly Haven",
+      "asset_id": "modular_chainlink_fence",
+      "size_bytes": 3004035,
+      "sha256": "54da8887d80d86057e1b94818e374515ae8ee585cfe2a0f5351ed45826a14891",
+      "md5": "21a14ec9e416a3606a808139d0639c80"
+    },
+    {
+      "path": "assets/incoming/V-PRP-009/polyhaven-modular_chainlink_fence/textures/modular_chainlink_fence_posts_diff_2k.jpg",
+      "req_ids": [
+        "V-PRP-009"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/modular_chainlink_fence",
+      "name": "Modular Chainlink Fence",
+      "author_vendor": "James Ray Cock, Amal Kumar",
+      "source_channel": "Poly Haven",
+      "asset_id": "modular_chainlink_fence",
+      "size_bytes": 2425889,
+      "sha256": "f710dbfd637feb60e69a1c24e04fd6cd03e67684e31511fa5c907929d230c122",
+      "md5": "e474fe890146a4c48e8497b238efe4f0"
+    },
+    {
+      "path": "assets/incoming/V-PRP-009/polyhaven-modular_chainlink_fence/textures/modular_chainlink_fence_posts_nor_gl_2k.jpg",
+      "req_ids": [
+        "V-PRP-009"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/modular_chainlink_fence",
+      "name": "Modular Chainlink Fence",
+      "author_vendor": "James Ray Cock, Amal Kumar",
+      "source_channel": "Poly Haven",
+      "asset_id": "modular_chainlink_fence",
+      "size_bytes": 1869713,
+      "sha256": "36e6f6c16e13dad18224b1c97a8dd388fd7519b3ee29cff901bd3bdfc206d5d8",
+      "md5": "4b4b4d3d4d61d9e27141f5ffe2abe872"
+    },
+    {
+      "path": "assets/incoming/V-PRP-009/polyhaven-modular_chainlink_fence/textures/modular_chainlink_fence_wire_arm_2k.jpg",
+      "req_ids": [
+        "V-PRP-009"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/modular_chainlink_fence",
+      "name": "Modular Chainlink Fence",
+      "author_vendor": "James Ray Cock, Amal Kumar",
+      "source_channel": "Poly Haven",
+      "asset_id": "modular_chainlink_fence",
+      "size_bytes": 2082073,
+      "sha256": "d3e8f0ac72d9177f442d6e2906537f5b4166e50a2dbf74cae9349e7724da2a54",
+      "md5": "de230984104a87345c4aa8e78111f1e2"
+    },
+    {
+      "path": "assets/incoming/V-PRP-009/polyhaven-modular_chainlink_fence/textures/modular_chainlink_fence_wire_diff_2k.jpg",
+      "req_ids": [
+        "V-PRP-009"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/modular_chainlink_fence",
+      "name": "Modular Chainlink Fence",
+      "author_vendor": "James Ray Cock, Amal Kumar",
+      "source_channel": "Poly Haven",
+      "asset_id": "modular_chainlink_fence",
+      "size_bytes": 1746959,
+      "sha256": "6d4906f5676f32f53a5089915d5272340d9a33c52659bbdcf7104ab80e830307",
+      "md5": "4d99da51818311cff741329a3cbc912c"
+    },
+    {
+      "path": "assets/incoming/V-PRP-009/polyhaven-modular_chainlink_fence/textures/modular_chainlink_fence_wire_nor_gl_2k.jpg",
+      "req_ids": [
+        "V-PRP-009"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/modular_chainlink_fence",
+      "name": "Modular Chainlink Fence",
+      "author_vendor": "James Ray Cock, Amal Kumar",
+      "source_channel": "Poly Haven",
+      "asset_id": "modular_chainlink_fence",
+      "size_bytes": 1882329,
+      "sha256": "a1b853c5639319d10493aba0e04b67e39186ea5fd98ffde49df6093d29ce4cc0",
+      "md5": "ba604a876a3b0ef5af11fd49b1482ee4"
+    },
+    {
+      "path": "assets/incoming/V-SKY-001/kenney-skyboxes.zip",
+      "req_ids": [
+        "V-SKY-001",
+        "V-SKY-003"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://kenney.nl/assets/skyboxes",
+      "name": "Kenney skyboxes",
+      "author_vendor": "Kenney",
+      "source_channel": "Kenney",
+      "asset_id": "skyboxes",
+      "size_bytes": 4972122,
+      "sha256": "ff339713105fe1b777ecafa0b66094e8fb1431cfcf88df761b9ad015aadf4028"
+    },
+    {
+      "path": "assets/incoming/V-SKY-001/polyhaven-belfast_farmhouse/belfast_farmhouse_2k.hdr",
+      "req_ids": [
+        "V-SKY-001"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/belfast_farmhouse",
+      "name": "Belfast Farmhouse",
+      "author_vendor": "Dimitrios Savva, Jarod Guest",
+      "source_channel": "Poly Haven",
+      "asset_id": "belfast_farmhouse",
+      "size_bytes": 6102951,
+      "sha256": "bd63b9283e6777f98cf433b18f3f50bd4f75aed6c4c464af577808202a46a6b7",
+      "md5": "e5b33ba0ace94a5af4924e3ec67e86ce"
+    },
+    {
+      "path": "assets/incoming/V-SKY-001/polyhaven-evening_field/evening_field_2k.hdr",
+      "req_ids": [
+        "V-SKY-001"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/evening_field",
+      "name": "Evening Field",
+      "author_vendor": "Sergej Majboroda",
+      "source_channel": "Poly Haven",
+      "asset_id": "evening_field",
+      "size_bytes": 6452315,
+      "sha256": "53d86ba493334b860a3b33efbfd3da738c70c33697d934096c595d4d6063059f",
+      "md5": "87a0af8d4a23c0656be77c3c077d6f38"
+    },
+    {
+      "path": "assets/incoming/V-SKY-001/polyhaven-farm_field/farm_field_2k.hdr",
+      "req_ids": [
+        "V-SKY-001"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/farm_field",
+      "name": "Farm Field",
+      "author_vendor": "Dimitrios Savva, Jarod Guest",
+      "source_channel": "Poly Haven",
+      "asset_id": "farm_field",
+      "size_bytes": 6459236,
+      "sha256": "d5d5ea57e929a3b938b44a9f7788d08d2ae85f1849ae0b4cd6eb538be1475b52",
+      "md5": "582a8f86968e5df6066da8b689921def"
+    },
+    {
+      "path": "assets/incoming/V-SKY-001/polyhaven-farmland_overcast/farmland_overcast_2k.hdr",
+      "req_ids": [
+        "V-SKY-001"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/farmland_overcast",
+      "name": "Farmland Overcast",
+      "author_vendor": "Grzegorz Wronkowski",
+      "source_channel": "Poly Haven",
+      "asset_id": "farmland_overcast",
+      "size_bytes": 6529738,
+      "sha256": "26401f43d605bb4c96bdd76a624251a0ebdbef55735488852511ad1c6a88c41a",
+      "md5": "2a2d209d4329d68c8bb7eacc7b6ea5e1"
+    },
+    {
+      "path": "assets/incoming/V-SKY-001/polyhaven-kloofendal_misty_morning/kloofendal_misty_morning_2k.hdr",
+      "req_ids": [
+        "V-SKY-001"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/kloofendal_misty_morning",
+      "name": "Kloofendal Misty Morning",
+      "author_vendor": "Greg Zaal",
+      "source_channel": "Poly Haven",
+      "asset_id": "kloofendal_misty_morning",
+      "size_bytes": 5908968,
+      "sha256": "ea614884df1cb73321b1a387f755a588593af8a60da694fceb07e929afe1d7eb",
+      "md5": "4c5e20e488be5e6ae04965a7473fe877"
+    },
+    {
+      "path": "assets/incoming/V-SKY-001/polyhaven-kloofendal_overcast/kloofendal_overcast_2k.hdr",
+      "req_ids": [
+        "V-SKY-001"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/kloofendal_overcast",
+      "name": "Kloofendal Overcast",
+      "author_vendor": "Greg Zaal",
+      "source_channel": "Poly Haven",
+      "asset_id": "kloofendal_overcast",
+      "size_bytes": 6286056,
+      "sha256": "32941541ce8d10701436798be07ab595ad57b5216f14ec231b083f537e617754",
+      "md5": "69d4466c74c4d62704db12a6a20dd434"
+    },
+    {
+      "path": "assets/incoming/V-SKY-001/polyhaven-misty_farm_road/misty_farm_road_2k.hdr",
+      "req_ids": [
+        "V-SKY-001"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/misty_farm_road",
+      "name": "Misty Farm Road",
+      "author_vendor": "Alexander Scholten",
+      "source_channel": "Poly Haven",
+      "asset_id": "misty_farm_road",
+      "size_bytes": 6024320,
+      "sha256": "476b4ab5c3229b3a4fb2eb092bcdec80a499db30ddf9d4fe8d2ed6dde929795d",
+      "md5": "879aed77ec02a05de85bf783a31cd14b"
+    },
+    {
+      "path": "assets/incoming/V-SKY-001/polyhaven-sunset_meadow_path/sunset_meadow_path_2k.hdr",
+      "req_ids": [
+        "V-SKY-001"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/sunset_meadow_path",
+      "name": "Sunset Meadow Path",
+      "author_vendor": "Elvis Posa",
+      "source_channel": "Poly Haven",
+      "asset_id": "sunset_meadow_path",
+      "size_bytes": 6686330,
+      "sha256": "e92a380638fadc8bc6c382fb60acf6fd07eaba3099c686aefa1084d4bf211602",
+      "md5": "6a38ad6f71b05335553131c4db7115ac"
+    },
+    {
+      "path": "assets/incoming/V-SKY-002/polyhaven-snow_field/snow_field_2k.hdr",
+      "req_ids": [
+        "V-SKY-002"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/snow_field",
+      "name": "Snow Field",
+      "author_vendor": "Sergej Majboroda",
+      "source_channel": "Poly Haven",
+      "asset_id": "snow_field",
+      "size_bytes": 5428008,
+      "sha256": "b805424b9703b826cf86b9b35a3935ee1fcd824af0b15b50654df028fe68780d",
+      "md5": "020cbb8aafeeb1504414b92d5c0e2ad7"
+    },
+    {
+      "path": "assets/incoming/V-SKY-002/polyhaven-snowy_forest/snowy_forest_2k.hdr",
+      "req_ids": [
+        "V-SKY-002"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/snowy_forest",
+      "name": "Snowy Forest",
+      "author_vendor": "Adrian Kubasa",
+      "source_channel": "Poly Haven",
+      "asset_id": "snowy_forest",
+      "size_bytes": 7490780,
+      "sha256": "89ded17d370c75a8e0b4a352d99337b10b77efa6e877414dc88a75b00d41b766",
+      "md5": "7b4affcfca6722f99988efa09ad29cd0"
+    },
+    {
+      "path": "assets/incoming/V-SKY-002/polyhaven-snowy_hillside/snowy_hillside_2k.hdr",
+      "req_ids": [
+        "V-SKY-002"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/snowy_hillside",
+      "name": "Snowy Hillside",
+      "author_vendor": "Andreas Mischok",
+      "source_channel": "Poly Haven",
+      "asset_id": "snowy_hillside",
+      "size_bytes": 6356734,
+      "sha256": "a850cef293a99994ff6ea061557460c34f252a15e7a41b4922bc2a52d0745537",
+      "md5": "907c45f71d16dd331cb4f7dbb8c2ee2e"
+    },
+    {
+      "path": "assets/incoming/V-SKY-003/polyhaven-cloud_layers/cloud_layers_2k.hdr",
+      "req_ids": [
+        "V-SKY-003"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/cloud_layers",
+      "name": "Cloud Layers",
+      "author_vendor": "Greg Zaal",
+      "source_channel": "Poly Haven",
+      "asset_id": "cloud_layers",
+      "size_bytes": 6985914,
+      "sha256": "66f8fbaf7452c332d05ce607e2c785a2f99578e2b3a095a11cfe9fde7e82c275",
+      "md5": "4f0d6e3d46dd31e8bff222ba3b9c9eed"
+    },
+    {
+      "path": "assets/incoming/V-SKY-003/polyhaven-wasteland_clouds/wasteland_clouds_2k.hdr",
+      "req_ids": [
+        "V-SKY-003"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/wasteland_clouds",
+      "name": "Wasteland Clouds",
+      "author_vendor": "Sergej Majboroda",
+      "source_channel": "Poly Haven",
+      "asset_id": "wasteland_clouds",
+      "size_bytes": 6482846,
+      "sha256": "43e8096d488ff5b5be6c4a8cdca512d76fa2f141b222648d1a280b95ae082c70",
+      "md5": "d89743669fe0d1a036035bfc236693ce"
+    },
+    {
+      "path": "assets/incoming/V-WPN-GE-001/polyhaven-bolt_action_rifle_7_62/bolt_action_rifle_7_62.bin",
+      "req_ids": [
+        "V-WPN-GE-001"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/bolt_action_rifle_7_62",
+      "name": "Bolt Action Rifle 7.62",
+      "author_vendor": "Mateusz Sadek",
+      "source_channel": "Poly Haven",
+      "asset_id": "bolt_action_rifle_7_62",
+      "size_bytes": 736616,
+      "sha256": "c9a32b6471ef08b6d901f9c1865a31c22d37b254a3f772a3c3348d0fa8203ed0",
+      "md5": "8fe1b75cc0ffe2e527dd9b66bc0d9517"
+    },
+    {
+      "path": "assets/incoming/V-WPN-GE-001/polyhaven-bolt_action_rifle_7_62/bolt_action_rifle_7_62_2k.gltf",
+      "req_ids": [
+        "V-WPN-GE-001"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/bolt_action_rifle_7_62",
+      "name": "Bolt Action Rifle 7.62",
+      "author_vendor": "Mateusz Sadek",
+      "source_channel": "Poly Haven",
+      "asset_id": "bolt_action_rifle_7_62",
+      "size_bytes": 15369,
+      "sha256": "d9e9290e531c9a04ddfe3281ba73501a4f2a640f1ff150a12d2cb879b8d43ae3",
+      "md5": "81de79907f764e957e90c763259f123a"
+    },
+    {
+      "path": "assets/incoming/V-WPN-GE-001/polyhaven-bolt_action_rifle_7_62/textures/bolt_action_rifle_7_62_accesories_arm_2k.jpg",
+      "req_ids": [
+        "V-WPN-GE-001"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/bolt_action_rifle_7_62",
+      "name": "Bolt Action Rifle 7.62",
+      "author_vendor": "Mateusz Sadek",
+      "source_channel": "Poly Haven",
+      "asset_id": "bolt_action_rifle_7_62",
+      "size_bytes": 3784622,
+      "sha256": "39f7a89d3617903948a97bcc7c339b285edbc727c1d265066ed43f85b6658538",
+      "md5": "ef935481c60516ab5d1179b4ab4bf949"
+    },
+    {
+      "path": "assets/incoming/V-WPN-GE-001/polyhaven-bolt_action_rifle_7_62/textures/bolt_action_rifle_7_62_accesories_diff_2k.jpg",
+      "req_ids": [
+        "V-WPN-GE-001"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/bolt_action_rifle_7_62",
+      "name": "Bolt Action Rifle 7.62",
+      "author_vendor": "Mateusz Sadek",
+      "source_channel": "Poly Haven",
+      "asset_id": "bolt_action_rifle_7_62",
+      "size_bytes": 3369952,
+      "sha256": "92e851b49dd7352e0a22c6c643f61a8bcb64c92877e4fcdfab26811fa5dbcbd2",
+      "md5": "9ea79aa2f29b7407be9a7d55408b1b7c"
+    },
+    {
+      "path": "assets/incoming/V-WPN-GE-001/polyhaven-bolt_action_rifle_7_62/textures/bolt_action_rifle_7_62_accesories_nor_gl_2k.jpg",
+      "req_ids": [
+        "V-WPN-GE-001"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/bolt_action_rifle_7_62",
+      "name": "Bolt Action Rifle 7.62",
+      "author_vendor": "Mateusz Sadek",
+      "source_channel": "Poly Haven",
+      "asset_id": "bolt_action_rifle_7_62",
+      "size_bytes": 4148604,
+      "sha256": "384c30a68b6d26c06520aca240782e1d1c6a8242c6821eceb1cda3bfdfcced5b",
+      "md5": "52447c39e8d34d88e9e7ab68a357765e"
+    },
+    {
+      "path": "assets/incoming/V-WPN-GE-001/polyhaven-bolt_action_rifle_7_62/textures/bolt_action_rifle_7_62_arm_2k.jpg",
+      "req_ids": [
+        "V-WPN-GE-001"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/bolt_action_rifle_7_62",
+      "name": "Bolt Action Rifle 7.62",
+      "author_vendor": "Mateusz Sadek",
+      "source_channel": "Poly Haven",
+      "asset_id": "bolt_action_rifle_7_62",
+      "size_bytes": 3442254,
+      "sha256": "8a542b1488d21ed66042b0e632217cd2aa1fda6fa75fd4936467ed1205ee397b",
+      "md5": "46ebb7c87ed459c8650220201639d6c9"
+    },
+    {
+      "path": "assets/incoming/V-WPN-GE-001/polyhaven-bolt_action_rifle_7_62/textures/bolt_action_rifle_7_62_diff_2k.jpg",
+      "req_ids": [
+        "V-WPN-GE-001"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/bolt_action_rifle_7_62",
+      "name": "Bolt Action Rifle 7.62",
+      "author_vendor": "Mateusz Sadek",
+      "source_channel": "Poly Haven",
+      "asset_id": "bolt_action_rifle_7_62",
+      "size_bytes": 3415930,
+      "sha256": "dffc7b47305ca8d0d6e813ca8284d118e78dec4db27f98baee249401da081af3",
+      "md5": "ceb54adfb834f0db86118f0ccc11fc99"
+    },
+    {
+      "path": "assets/incoming/V-WPN-GE-001/polyhaven-bolt_action_rifle_7_62/textures/bolt_action_rifle_7_62_nor_gl_2k.jpg",
+      "req_ids": [
+        "V-WPN-GE-001"
+      ],
+      "license": "CC0 1.0",
+      "source_url": "https://polyhaven.com/a/bolt_action_rifle_7_62",
+      "name": "Bolt Action Rifle 7.62",
+      "author_vendor": "Mateusz Sadek",
+      "source_channel": "Poly Haven",
+      "asset_id": "bolt_action_rifle_7_62",
+      "size_bytes": 2610578,
+      "sha256": "fe3725ff044b4001d322a177c3d5d2738c0bc3a9c1b432bd0febc7cccf8f99d1",
+      "md5": "ab4948c5fe878f99c7b78d459d8ce810"
+    }
+  ],
+  "coverage": {
+    "V-BLD-001": "placeholder",
+    "V-BLD-002": "placeholder",
+    "V-BLD-003": "placeholder",
+    "V-BLD-004": "placeholder",
+    "V-BLD-010": "placeholder",
+    "V-FNT-001": "real",
+    "V-FNT-002": "real",
+    "V-FNT-003": "real",
+    "V-FNT-004": "real",
+    "V-NAT-001": "placeholder",
+    "V-NAT-002": "real",
+    "V-NAT-003": "placeholder",
+    "V-NAT-004": "real",
+    "V-NAT-005": "real",
+    "V-NAT-007": "real",
+    "V-PRP-001": "placeholder",
+    "V-PRP-002": "placeholder",
+    "V-PRP-003": "placeholder",
+    "V-PRP-004": "real",
+    "V-PRP-006": "real",
+    "V-PRP-009": "placeholder",
+    "V-SKY-001": "real",
+    "V-SKY-002": "real",
+    "V-SKY-003": "placeholder",
+    "V-WPN-GE-001": "placeholder"
+  },
+  "coverage_basis": "Local assessment of sources for canonical requirement IDs, not build coverage. Files list source pages; direct download URLs are omitted."
+}

@@ -3,6 +3,7 @@ import { dirname, join, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 import { ExitCode, GateError } from './errors.ts';
 import { ingest } from './ingest.ts';
+import { checkSourceIndex } from './source-index.ts';
 import { loadLedger, isBlank } from './ledger.ts';
 import type { Axis } from './math.ts';
 import { assertArchives, repoRootOf } from './gate.ts';
@@ -29,21 +30,21 @@ const USAGE = `asset-pipeline <command> [options]
   audio-pack        audio items JSON -> loudnorm + Opus/AAC -> .fpak (@opus/@aac entries), work/audio-report.json, probe.json (M1-004)
   assert-no-standalone  fail when the output directory holds .glb/.ktx2/.ogg/... files
   check-size-ratio  LOD0 bytes / source bytes from stats.json (fails above --max, default 0.25)
-  report            per requirement ID real/placeholder/missing (ASSET_GAPS 3.4)
+  report            per requirement ID real/placeholder/missing/internal-only (ASSET_GAPS 3.4)
   ledger-check      LICENSES.md 4.4 validation: counts per status, missing archive files
   manifest          .fpak files + stats + ledger -> assets/manifests/manifest.json (+ missing-report.json) (M1-005)
   manifest-budget   per-bundle size budgets (1 % over fails, > 20 % growth needs budget-approved), pack consistency, placeholder rule
   gen-requirements  build assets/requirements.json from docs/ASSET_SHOPPING_LIST.md
 
 common:  --ledger LICENSES.md   --work work   --root <repo root, default cwd>
-ingest:  --incoming assets/incoming
+ingest:  [--incoming assets/incoming | --metadata-only INDEX.json]
 normalize: --asset AST-... --id <logical_id> [--input rel/in/raw] [--unit-scale m] [--up Y|Z] [--forward +Z|-Y|...] [--origin bottom-center|center|none]
 process: --asset AST-... --id <logical_id> --class asset-class.json [--no-collision]
 pack:    [--assets AST-a,AST-b] [--out assets/processed] [--max-bytes 16777216]
 audio-pack: --items items.json [--out assets/processed]   items: [{logical_id, src, cls, loop?, loop_start_ms?, loop_end_ms?, asset_id?}], src relative to --root
 assert-no-standalone: [--out assets/processed]
 check-size-ratio: --asset AST-... [--max 0.25] [--suffix _fp]
-report:  [--requirements assets/requirements.json] [--manifest draft.json] [--placeholders data/placeholders] [--milestone M1] [--out report.json] [--gaps] [--strict]
+report:  [--requirements assets/requirements.json] [--manifest draft.json] [--placeholders data/placeholders] [--metadata-only INDEX.json] [--milestone M1] [--out report.json] [--gaps] [--strict]
 manifest: [--packs assets/processed] [--out assets/manifests/manifest.json] [--bundles assets/manifests/bundles.json] [--budgets assets/manifests/budgets.json] [--overrides f.json] [--game-version 0.1.0] [--data-hash h] [--requirements assets/requirements.json]
 manifest-budget: [--manifest assets/manifests/manifest.json] [--budgets ...] [--base base-manifest.json] [--packs assets/processed] [--core-size-file client/dist/size-report.json] [--approved | env BUDGET_APPROVED=1]
 gen-requirements: [--shopping-list docs/ASSET_SHOPPING_LIST.md] [--out assets/requirements.json]
@@ -70,6 +71,7 @@ export async function main(argv: string[], out: (s: string) => void = console.lo
       forward: { type: 'string' },
       origin: { type: 'string' },
       requirements: { type: 'string' },
+      'metadata-only': { type: 'string' },
       manifest: { type: 'string' },
       placeholders: { type: 'string' },
       milestone: { type: 'string' },
@@ -101,6 +103,12 @@ export async function main(argv: string[], out: (s: string) => void = console.lo
   try {
     switch (cmd) {
       case 'ingest': {
+        if (v['metadata-only']) {
+          if (v.incoming) throw new GateError(ExitCode.Usage, 'use either --metadata-only or --incoming');
+          const index = checkSourceIndex(resolve(root, v['metadata-only']), loadLedger(ledger), root);
+          out(`ingest (metadata-only): ${index.files} file record(s) passed the ledger gate; no files copied`);
+          return ExitCode.Ok;
+        }
         const r = ingest({ incoming: resolve(root, v.incoming ?? 'assets/incoming'), ledger, work, repoRoot: root });
         out(`ingest: ${r.files.length} file(s) from ${r.assets.length} asset(s) copied to ${work}`);
         for (const f of r.files) out(`  ${f.assetId}  ${f.sha256}  ${f.logicalPath}`);
@@ -181,6 +189,7 @@ export async function main(argv: string[], out: (s: string) => void = console.lo
           manifest: v.manifest ? resolve(root, v.manifest) : undefined,
           placeholders: v.placeholders ? resolve(root, v.placeholders) : undefined,
           milestone: v.milestone,
+          sourceIndex: v['metadata-only'] ? resolve(root, v['metadata-only']) : undefined,
         });
         if (v.out) {
           mkdirSync(dirname(resolve(root, v.out)), { recursive: true });
@@ -191,9 +200,9 @@ export async function main(argv: string[], out: (s: string) => void = console.lo
       }
       case 'ledger-check': {
         const l = loadLedger(ledger);
-        const counts: Record<string, number> = { OK: 0, PENDING: 0, FLAGGED: 0, REJECTED: 0 };
+        const counts: Record<string, number> = { OK: 0, PENDING: 0, FLAGGED: 0, REJECTED: 0, INTERNAL: 0 };
         for (const r of l.rows) counts[r.status] = (counts[r.status] ?? 0) + 1;
-        out(`ledger-check: ${l.rows.length} row(s): OK ${counts.OK}, PENDING ${counts.PENDING}, FLAGGED ${counts.FLAGGED}, REJECTED ${counts.REJECTED}`);
+        out(`ledger-check: ${l.rows.length} row(s): OK ${counts.OK}, PENDING ${counts.PENDING}, FLAGGED ${counts.FLAGGED}, REJECTED ${counts.REJECTED}, INTERNAL ${counts.INTERNAL}`);
         let bad = 0;
         for (const r of l.rows) {
           try {
