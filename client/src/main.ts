@@ -38,6 +38,8 @@ declare global {
     __post?: import('./render/post/post-chain').PostHandle;
     /** `?csm=custom`: custom cascaded shadow maps sampled by terrain/PBR shaders (PI-117). */
     __csm?: import('./render/lighting/custom-csm').CustomCsm;
+    /** `?scene=taa`: deterministic ghosting test scene (M1-044b). */
+    __taa?: import('./render/post/taa-scene').TaaSceneHandle;
     /** `?vehicle=demo`: placeholder tank (M1-048b). */
     __vehicle?: import('./render/vehicles/vehicle-demo').VehicleDemoHandle;
     /** `?vfx=stress`: particle stress hook (M1-047b). */
@@ -73,8 +75,12 @@ async function boot(): Promise<void> {
   const ctx = await createRenderer(canvas, {
     renderer: parseRendererParam(params.get('renderer')),
     fly: params.get('fly') === '1' || terrainScene,
-    empty: params.get('empty') === '1' || terrainScene || sceneParam === 'pbr',
+    empty: params.get('empty') === '1' || terrainScene || sceneParam === 'pbr' || sceneParam === 'taa',
   });
+  if (sceneParam === 'taa') {
+    const { attachTaaScene } = await import('./render/post/taa-scene');
+    window.__taa = attachTaaScene(ctx);
+  }
   if (sceneParam === 'pbr') {
     const { attachPbrScene } = await import('./render/materials/pbr-scene');
     window.__pbr = await attachPbrScene(ctx, params);
@@ -157,7 +163,7 @@ async function boot(): Promise<void> {
     const { attachPost } = await import('./render/post/post-chain');
     const t = params.get('post');
     const flag = (k: string): boolean | undefined => (params.has(k) ? params.get(k) === '1' : undefined);
-    const post = attachPost(ctx.scene, ctx.scene.activeCamera, { tier: t === 'low' || t === 'medium' ? t : 'high', taa: flag('taa'), bloom: flag('bloom'), fxaa: flag('fxaa'), tonemap: flag('tonemap') });
+    const post = attachPost(ctx.scene, ctx.scene.activeCamera, { tier: t === 'low' || t === 'medium' ? t : 'high', taa: flag('taa'), bloom: flag('bloom'), fxaa: flag('fxaa'), tonemap: flag('tonemap'), clamp: flag('taa_clamp'), taaFactor: params.has('taa_factor') ? Number(params.get('taa_factor')) : undefined, guardMs: params.has('post_guard') ? Number(params.get('post_guard')) : undefined });
     window.__post = post;
     ctx.onFrame((dtMs) => post.update(dtMs / 1000), 'first', 'post_update');
   }
