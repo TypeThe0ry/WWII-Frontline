@@ -32,6 +32,8 @@ declare global {
     __vegetation?: VegetationHandle;
     /** `?scene=world` (terrain + vegetation + hedgerows + buildings, M1-051b/052b): load stats and meshes. */
     __world?: WorldHandle;
+    /** `?vehicle=demo`: placeholder tank (M1-048b). */
+    __vehicle?: import('./render/vehicles/vehicle-demo').VehicleDemoHandle;
     /** `?vfx=stress`: particle stress hook (M1-047b). */
     __vfx?: import('./render/vfx/vfx-scene').VfxHandle;
     /** `?server=`: networked play (M0-022); diagnostics and e2e. */
@@ -118,6 +120,14 @@ async function boot(): Promise<void> {
       heightAt: terrainHandle ? (x, z) => terrainHandle!.terrain.heightAt(x, z) : undefined,
     });
     window.__actors = actors;
+  }
+
+  if (params.get('vehicle') === 'demo') {
+    const { attachVehicleDemo } = await import('./render/vehicles/vehicle-demo');
+    const { PlaceholderRegistry } = await import('./render/actors/names');
+    const reg = actors ? actors.manager.registry : new PlaceholderRegistry();
+    window.__vehicle = await attachVehicleDemo(ctx, params, actors?.manager.fx ?? null, terrainHandle ? (x, z) => terrainHandle!.terrain.heightAt(x, z) : () => 0, reg);
+    if (!actors) reg.install(window);
   }
 
   const overlay = new DebugOverlay(params.get('debug') === '1');

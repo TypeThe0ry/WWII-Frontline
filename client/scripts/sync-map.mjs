@@ -51,6 +51,11 @@ if (WASM_FILES.every((f) => existsSync(join(pkg, f)))) {
   console.warn('[sync-map] crates/sim-wasm/pkg missing: networked play (?server=) needs `wasm-pack build crates/sim-wasm --target web --profile wasm-release`');
 }
 
+// M1-048b: vehicle data the placeholder tank is sized from (data/vehicles/*.json -> /data/vehicles/).
+const vehDst = join(here, '..', 'public', 'data', 'vehicles');
+mkdirSync(vehDst, { recursive: true });
+for (const f of ['us_m4a1_75.json']) if (existsSync(join(repo, 'data', 'vehicles', f))) copyFileSync(join(repo, 'data', 'vehicles', f), join(vehDst, f));
+
 // M0-025: grey-box weapon sizes and first-person view placement (data/placeholders/weapon_models.json) -> /data/placeholders/.
 {
   const f = join(repo, 'data', 'placeholders', 'weapon_models.json');

@@ -1100,3 +1100,6 @@ H-021（RTX 3060 参考机）尚未到位。经总控指示，在本工作站（
 
 ## PI-111 M1-047b：粒子事件接线与 /data 字段缺口（2026-11-19）
 已接：`fire.local/remote` → 炮口焰粒子（寿命取武器 `fx.muzzle_flash_ms`，来自 /data）+ 本地弹壳（**Low 档不弹壳**）；`impact` → 尘土；新增 `explosion {pos, radius, own}` 事件 → 爆炸 + 烟，规模按 `damage_radius_m / 8`（8 = `us_mk2` 的 `damage_radius_m`，/data）。/data **没有**的字段仍是 [tbd] 常量（`vfx/emitters.ts`、`PARTICLE_SIZE_M`）：每种效果的粒子数/寿命/扩散、烟的数量与寿命、弹壳寿命、尘土按材质区分（`materials/*.json` 有 `impact_fx_class`，但 `impact` 事件只给材质序号，客户端还没有序号→类的映射）。`explosion` 事件**目前没有生产者**（网络层没发爆炸事件，需 C 端/网关消息），只有消费者与单测。
+
+## PI-112 M1-048b：坦克占位与接线缺口（2026-11-19）
+`render/vehicles/tank-model.ts`：车体/左右履带/炮塔/炮管盒子（尺寸取 `us_m4a1_75.json` 的 `dimensions_m`，误差 <1 %，单测），名称 `PH_V-VEH-US-003__*`（需求 ID 取 ASSET_GAPS 的 M4 Sherman）；炮塔按数据回转速率 24°/s 跟随、炮管俯仰夹到 [-10, 25]°、履带按各自线速度滚动 UV；`?vehicle=demo` 演示（30 Hz 权威状态 + `vehicle-interp.ts` 的速度外推）。炮口焰：`FxManager.emitTankShot()` 走 047b 粒子（`tank_shot` 预设）。**缺口**：(1) 数据文件的 `gameplay.sockets` 是 `socket_gun_muzzle / socket_turret / socket_hatch`，任务卡/`tank-math.ts` 的 9 个是 `socket_muzzle` 等；两套名都建了（别名），需要总控裁定统一；(2) 客户端状态（`GameState`/快照解码）里还没有载具实体，所以真实的远端坦克没有数据源，演示是合成状态；(3) `Damage.ts` 损伤视觉、与 M1-041b 预测的接线、截图基线未做；(4) 履带用 4×8 程序纹理，不是真素材。

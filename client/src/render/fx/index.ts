@@ -191,7 +191,12 @@ export class FxManager {
     if (this.particles && cam) this.particles.update(cam, dtS);
   }
 
-  private emitParticles(name: 'muzzle' | 'impact_dust' | 'explosion' | 'shell', x: number, y: number, z: number, own: boolean, life: number | undefined, scale: number, seed: number): void {
+  /** Tank main-gun muzzle blast + smoke at (x, y, z) (M1-048b); priority follows the camera distance. */
+  emitTankShot(x: number, y: number, z: number, own = false): void {
+    this.emitParticles('tank_shot', x, y, z, own, undefined, 1, this.o.scene.getEngine().frameId);
+  }
+
+  private emitParticles(name: 'muzzle' | 'impact_dust' | 'explosion' | 'shell' | 'tank_shot', x: number, y: number, z: number, own: boolean, life: number | undefined, scale: number, seed: number): void {
     const pool = this.particlePool;
     if (!pool) return;
     const cam = this.o.scene.activeCamera;
