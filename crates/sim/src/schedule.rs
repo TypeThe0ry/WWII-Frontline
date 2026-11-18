@@ -190,7 +190,7 @@ pub fn weapons(
             let v = wt.ballistics(weapon).map_or(0.0, |b| b.muzzle_velocity_mps);
             let pid = projs.spawn(id, *team, weapon, shot.muzzle, shot.dir * v);
             if lag.enabled {
-                let (r, _) = crate::combat::lagcomp::rewind_ticks(tick.0 .0, cmd.view_tick);
+                let (r, _) = crate::combat::lagcomp::rewind_ticks(cmd.view_tick);
                 if r > 0 {
                     projs.set_rewind(pid, r);
                 }

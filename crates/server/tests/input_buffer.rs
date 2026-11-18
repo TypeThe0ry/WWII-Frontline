@@ -652,11 +652,11 @@ fn lagcomp_clamp_counts_fire_commands_seen_more_than_8_ticks_back() {
     let m = with_player(ValidateCfg::default(), |br, _w| {
         let mut c = cmd(100, 1);
         c.buttons = buttons::FIRE;
-        c.view_tick = 92; // 8 ticks back: not clamped
+        c.view_tick = 8; // 8 ticks back: not clamped
         br.ingest_cmd(3, &c, 100);
         c.seq = 2;
         c.tick = 101;
-        c.view_tick = 88; // 13 ticks back: clamped
+        c.view_tick = 13; // 13 ticks back: clamped
         br.ingest_cmd(3, &c, 101);
         c.seq = 3;
         c.tick = 102;

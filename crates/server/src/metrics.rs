@@ -85,6 +85,12 @@ pub struct Metrics {
     /// Enemies sent outside the R3 rules (must stay 0; audit).
     pub aoi_enemy_leak_total: IntCounter,
     pub c0_rate_limited_total: IntCounterVec,
+    /// Look-direction changes clamped to the turn-rate limit (M1-027).
+    pub view_rate_clamped_total: IntCounter,
+    /// Trigger pulls the sim refused because the weapon was still cycling (M1-027).
+    pub fire_rate_rejected_total: IntCounter,
+    /// Movement commands faster than the character can go (clamped or invalid; M1-027).
+    pub suspicion_move_total: IntCounter,
     pub deploy_requests_total: IntCounterVec,
     pub squad_ops_total: IntCounterVec,
     pub chat_rejected_total: IntCounterVec,
@@ -251,6 +257,15 @@ impl Metrics {
                 &["type"],
             )
             .expect("c0 rate"),
+            view_rate_clamped_total: counter("view_rate_clamped_total", "Turn-rate clamps"),
+            fire_rate_rejected_total: counter(
+                "fire_rate_rejected_total",
+                "Trigger pulls refused while the weapon was cycling",
+            ),
+            suspicion_move_total: counter(
+                "suspicion_move_total",
+                "Movement commands beyond the speed limit",
+            ),
             deploy_requests_total: IntCounterVec::new(
                 Opts::new("deploy_requests_total", "Deploy requests by result"),
                 &["result"],
@@ -368,6 +383,9 @@ impl Metrics {
             Box::new(m.aoi_enemy_leak_total.clone()),
             Box::new(m.lagcomp_clamped_total.clone()),
             Box::new(m.c0_rate_limited_total.clone()),
+            Box::new(m.view_rate_clamped_total.clone()),
+            Box::new(m.fire_rate_rejected_total.clone()),
+            Box::new(m.suspicion_move_total.clone()),
             Box::new(m.deploy_requests_total.clone()),
             Box::new(m.squad_ops_total.clone()),
             Box::new(m.chat_rejected_total.clone()),

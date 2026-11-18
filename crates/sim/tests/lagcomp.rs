@@ -38,8 +38,7 @@ fn trial(seed: u64, rewind: u32, enabled: bool) -> bool {
             if zs[seen_idx - 1] < 100.0 && zs[seen_idx] >= 100.0 {
                 shooter.buttons = BTN_FIRE;
                 // zs[i] is the pose after the step of tick base+i.
-                let view = now - rewind;
-                shooter.view_tick = view as u16;
+                shooter.view_tick = rewind as u16;
                 fired = true;
             }
         }
