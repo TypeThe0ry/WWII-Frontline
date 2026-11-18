@@ -75,5 +75,12 @@
   "ui.officer.err.notAlive": "必须存活",
   "ui.officer.tool.needOfficer": "需要军官兵种",
   "ui.officer.tool.needSquad": "小队至少需要 2 人",
-  "ui.officer.tool.needSupport": "需要支援兵种"
+  "ui.officer.tool.needSupport": "需要支援兵种",
+  "ui.settings.controls.reserved": "该按键被浏览器或游戏保留",
+  "ui.settings.controls.conflict": "已被其他操作使用",
+  "ui.pause.inProgress": "对局进行中——你的角色仍在战场",
+  "ui.pause.continue": "继续",
+  "ui.pause.leave": "离开对局",
+  "ui.pause.leaveConfirm": "确定离开对局？",
+  "ui.pause.clickToContinue": "点击继续"
 }

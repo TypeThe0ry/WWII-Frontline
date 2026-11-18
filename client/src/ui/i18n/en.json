@@ -75,5 +75,12 @@
   "ui.officer.err.notAlive": "You must be alive",
   "ui.officer.tool.needOfficer": "Officer role required",
   "ui.officer.tool.needSquad": "Your squad needs at least 2 players",
-  "ui.officer.tool.needSupport": "Support role required"
+  "ui.officer.tool.needSupport": "Support role required",
+  "ui.settings.controls.reserved": "This key is reserved by the browser or the game",
+  "ui.settings.controls.conflict": "Already used by another action",
+  "ui.pause.inProgress": "Match in progress — your character is still on the battlefield",
+  "ui.pause.continue": "Continue",
+  "ui.pause.leave": "Leave match",
+  "ui.pause.leaveConfirm": "Leave the match?",
+  "ui.pause.clickToContinue": "Click to continue"
 }
