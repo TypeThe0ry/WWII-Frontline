@@ -60,5 +60,20 @@
   "ui.downed.tag.friendlyFire": "Friendly fire",
   "ui.dead.title": "Killed",
   "ui.dead.killedBy": "Killed by {name} with {weapon} · {dist} m",
-  "ui.dead.redeploy": "Redeploy (Enter)"
+  "ui.dead.redeploy": "Redeploy (Enter)",
+  "ui.officer.err.wrongRole": "Only an Officer can place this",
+  "ui.officer.err.tooCloseHq": "Too close to HQ",
+  "ui.officer.err.tooCloseOwnGarrison": "Too close to a friendly Garrison",
+  "ui.officer.err.tooCloseEnemyGarrison": "Too close to an enemy Garrison",
+  "ui.officer.err.tooCloseObjective": "Too close to an objective",
+  "ui.officer.err.slope": "Ground is too steep",
+  "ui.officer.err.water": "Cannot build on water",
+  "ui.officer.err.enemyNear": "Enemies nearby",
+  "ui.officer.err.noSupplies": "Not enough Supplies",
+  "ui.officer.err.teamCap": "Team Garrison limit reached",
+  "ui.officer.err.sectorCap": "Sector Garrison limit reached",
+  "ui.officer.err.notAlive": "You must be alive",
+  "ui.officer.tool.needOfficer": "Officer role required",
+  "ui.officer.tool.needSquad": "Your squad needs at least 2 players",
+  "ui.officer.tool.needSupport": "Support role required"
 }
