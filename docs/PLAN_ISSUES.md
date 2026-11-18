@@ -1061,3 +1061,6 @@ GD 9.2 只给了俯冲站→趴 0.7 s；非俯冲的站→趴本任务按经过�
 
 ## PI-099 M1-047a：驱逐是线性扫描（2026-11-18）
 满池驱逐对 ≤1600 槽线性扫描，3 000 请求/s 下约 5M 次比较/s（<2 ms/s 级），M1 可接受；若实测占用主线程预算再换成按优先级分桶的空闲链。优先级数值（255/128/32）与 100 m 合并距离为 `initial`。
+
+## PI-100 M1-048a：socket 命名不一致（2026-11-18）
+任务书要求 socket 名 `socket_muzzle`/`socket_seat_*`/`socket_hatch`…，而 `data/vehicles/us_m4a1_75.json` 的 `gameplay.sockets` 只有 `socket_gun_muzzle`/`socket_turret`/`socket_hatch`。渲染侧先按任务书的 9 个名字做名单；数据里的 `socket_gun_muzzle` 需在 M1-048b 映射为 `socket_muzzle`，或由数据侧补齐（M1-070 复核时一并处理）。履带轨距 = 车宽 − 履带宽的具体数值待真模型，当前由调用方传入。
