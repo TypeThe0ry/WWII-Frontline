@@ -360,5 +360,5 @@ pub fn basis(rot: Quat) -> Mat3 {
 }
 
 /// Per-tick driver of every vehicle: input mapping, physics, collisions, seat timers, crushing.
-pub use system::step_vehicles;
+pub use system::{ctrl_from_cmd, step_vehicles};
 mod system;
