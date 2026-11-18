@@ -215,6 +215,9 @@ impl SimThreadConfig {
 }
 
 pub struct SimLoop<C: Clock> {
+    /// Per-phase wall time (ms) of the last tick, filled only with `FRONTLINE_TICK_TRACE=1`:
+    /// inputs, step, post-step, bots, aoi+snapshot, send.
+    phase_ms: [f64; 6],
     clock: C,
     schedule: TickSchedule,
     world: World,
@@ -335,6 +338,7 @@ pub fn build_loop_with_bots<C: Clock>(
         bridge,
         c0: crate::c0::C0Handler::default(),
         consecutive: 0,
+        phase_ms: [0.0; 6],
         ticks: 0,
         tick_ns: Samples::new(),
         err_ns: Samples::new(),
@@ -391,6 +395,20 @@ pub fn spawn_with_bots(
     })
 }
 
+/// (on-CPU ns, run-queue wait ns) of the calling thread from `/proc/thread-self/schedstat` (Linux only).
+fn thread_sched() -> Option<(u64, u64)> {
+    let t = std::fs::read_to_string("/proc/thread-self/schedstat").ok()?;
+    let mut it = t.split_whitespace();
+    Some((it.next()?.parse().ok()?, it.next()?.parse().ok()?))
+}
+
+/// `FRONTLINE_TICK_TRACE=1`: every overrun log line also says how much of the tick the thread spent on a CPU and how long it waited
+/// in the run queue (M1-068b: tells a slow tick from a descheduled one). Read once; off by default.
+fn tick_trace_enabled() -> bool {
+    static ON: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+    *ON.get_or_init(|| std::env::var_os("FRONTLINE_TICK_TRACE").is_some())
+}
+
 impl<C: Clock> SimLoop<C> {
     pub fn world(&self) -> &World {
         &self.world
@@ -434,7 +452,17 @@ impl<C: Clock> SimLoop<C> {
             .tick_interval_error_ms
             .observe(err.as_secs_f64() * 1e3);
 
+        let sched0 = if tick_trace_enabled() {
+            thread_sched()
+        } else {
+            None
+        };
         work(self);
+        let sched1 = if sched0.is_some() {
+            thread_sched()
+        } else {
+            None
+        };
 
         let t1 = self.clock.now();
         let dur = t1.saturating_duration_since(t0);
@@ -461,9 +489,25 @@ impl<C: Clock> SimLoop<C> {
                 }
                 self.snap.degrade(DEGRADE_HOLD_TICKS);
             }
+            let (cpu_ms, runq_wait_ms) = match (sched0, sched1) {
+                (Some(a), Some(b)) => (
+                    b.0.saturating_sub(a.0) as f64 / 1e6,
+                    b.1.saturating_sub(a.1) as f64 / 1e6,
+                ),
+                _ => (-1.0, -1.0),
+            };
             tracing::warn!(
                 event = "tick_overrun",
                 tick_ms = dur.as_secs_f64() * 1e3,
+                cpu_ms,
+                runq_wait_ms,
+                phase_inputs_ms = self.phase_ms[0],
+                phase_step_ms = self.phase_ms[1],
+                phase_post_step_ms = self.phase_ms[2],
+                phase_bots_ms = self.phase_ms[3],
+                phase_snapshot_ms = self.phase_ms[4],
+                phase_send_ms = self.phase_ms[5],
+                tick = self.ticks,
                 consecutive = self.consecutive,
                 "tick exceeded its budget"
             );
@@ -485,6 +529,15 @@ impl<C: Clock> SimLoop<C> {
     // ---- ARCHITECTURE §6.1 steps 1-7 ----
 
     fn tick_body(&mut self) {
+        let trace = tick_trace_enabled();
+        let mut t = trace.then(std::time::Instant::now);
+        let mut lap = |slot: usize, phase: &mut [f64; 6]| {
+            if let Some(prev) = t {
+                let n = std::time::Instant::now();
+                phase[slot] = n.duration_since(prev).as_secs_f64() * 1e3;
+                t = Some(n);
+            }
+        };
         self.handle_commands();
         // `now` is the tick this step will simulate; input windows are relative to it.
         let now = self.world.tick().0 + 1;
@@ -495,7 +548,9 @@ impl<C: Clock> SimLoop<C> {
         }
         self.bridge.resolve(now);
         self.bridge.anticheat_before_step(&self.world);
+        lap(0, &mut self.phase_ms);
         let out = self.world.step(self.bridge.resolved());
+        lap(1, &mut self.phase_ms);
         self.step_events = out.events;
         self.bridge.anticheat_after_step(&self.step_events);
         self.bridge
@@ -503,9 +558,13 @@ impl<C: Clock> SimLoop<C> {
             .report_if_due(std::time::Instant::now());
         CURRENT_TICK.store(self.world.tick().0, Ordering::Relaxed);
         self.record_lag_comp();
+        lap(2, &mut self.phase_ms);
         self.bots_think();
+        lap(3, &mut self.phase_ms);
         self.aoi_and_snapshot();
+        lap(4, &mut self.phase_ms);
         self.send();
+        lap(5, &mut self.phase_ms);
     }
 
     fn handle_commands(&mut self) {
