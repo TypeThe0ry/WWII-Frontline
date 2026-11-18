@@ -1115,3 +1115,6 @@ H-021（RTX 3060 参考机）尚未到位。经总控指示，在本工作站（
 
 ## PI-116 M1-042b：PBR 着色器的范围（2026-11-19）
 `render/materials/pbr-shader.ts/pbr-material.ts/prewarm.ts/pbr-scene.ts`：GLSL/WGSL 双语言 GGX 着色器（4 个宏展开为源码文本，变体数仍 32/Low 20）、`MaterialFactory` 接 `ShaderMaterial`、预热计时、`?scene=pbr` 测试场景。法线用屏幕空间导数构造切线框架（没有切线顶点属性），一盏平行光 + 半球环境光；IBL、CSM 阴影采样、TAA 抖动留给 043b/044b。数字见 `reports/m1-pbr.md`。ΔE 与冻结数字只是单次测量；没有任务卡阈值，不判 PASS。
+
+## PI-117 M1-043b：CSM 的范围与限制（2026-11-19）
+CSM 用 Babylon `CascadedShadowGenerator`（`lighting/csm.ts`）：没有显式分割表，只能用 `shadowMaxZ` 和 `lambda=0.85` 近似数据里的分割；只有 `StandardMaterial` 网格接收阴影，**地形与 PBR `ShaderMaterial` 不接收**（要在各自着色器里采样级联图，留给后续）；`CascadeScheduler` 未接 Babylon 重绘控制。实测 +0.2 ms GPU（WebGPU）/ +6.4 ms（WebGL2，计时口径未查）、CPU +3–4 ms（draw call 81→600–780），见 `reports/m1-csm.md`。室内外亮度、大气 LUT/云、IBL KTX2、`/data` 光照预设与 `probes.bin` 未做（缺资源/数据）。

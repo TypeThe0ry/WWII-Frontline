@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 // M1-042b: WGSL vs GLSL visual regression. Renders `?scene=pbr` with WebGPU and with WebGL2 (real GPU), decodes both
 // screenshots and reports the CIE76 delta E between them. Usage:
-//   node tools/perf/delta-e.mjs [--out reports/m1-pbr-delta-e.json] [--keep DIR]
+//   node tools/perf/delta-e.mjs [--out reports/m1-pbr-delta-e.json] [--keep DIR] [--query "scene=world&map=carentan&cam=old_town&..."] [--wait world|pbr]
+// Default: `?scene=pbr` (M1-042b). With --query any page can be compared (e.g. the CSM scene, M1-043b); keep it free of time-dependent content.
 import { createRequire } from 'node:module';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { inflateSync } from 'node:zlib';
@@ -89,6 +90,8 @@ async function main() {
   const opt = (k, d) => (a.includes(k) ? a[a.indexOf(k) + 1] : d);
   const out = path.resolve(ROOT, opt('--out', 'reports/m1-pbr-delta-e.json'));
   const keep = opt('--keep', null);
+  const query = opt('--query', 'scene=pbr');
+  const waitFor = opt('--wait', query.includes('scene=world') ? 'world' : 'pbr');
   const CLIENT = path.join(ROOT, 'client');
   const require = createRequire(path.join(CLIENT, 'package.json'));
   const { chromium } = require('@playwright/test');
@@ -102,10 +105,10 @@ async function main() {
   try {
     for (const r of ['webgpu', 'webgl2']) {
       const page = await (await browser.newContext({ viewport: { width: 1280, height: 720 }, deviceScaleFactor: 1 })).newPage();
-      await page.goto(`http://localhost:${port}/?renderer=${r}&scene=pbr`);
-      await page.waitForFunction(() => window.__pbr && (window.__perf?.frames() ?? 0) >= 10, undefined, { timeout: 120000 });
+      await page.goto(`http://localhost:${port}/?renderer=${r}&${query}`);
+      await page.waitForFunction((k) => window[`__${k}`] && (window.__perf?.frames() ?? 0) >= 10, waitFor, { timeout: 120000 });
       await page.waitForTimeout(1500);
-      meta[r] = await page.evaluate(() => ({ renderer: window.__perf.dump().renderer, prewarm: { variants: window.__pbr.prewarm.variants, total_ms: window.__pbr.prewarm.totalMs, max_ms: window.__pbr.prewarm.maxMs, failed: window.__pbr.prewarm.failed } }));
+      meta[r] = await page.evaluate(() => ({ renderer: window.__perf.dump().renderer, prewarm: window.__pbr ? { variants: window.__pbr.prewarm.variants, total_ms: window.__pbr.prewarm.totalMs, max_ms: window.__pbr.prewarm.maxMs, failed: window.__pbr.prewarm.failed } : null }));
       shots[r] = await page.screenshot();
       if (keep) { mkdirSync(keep, { recursive: true }); writeFileSync(path.join(keep, `pbr-${r}.png`), shots[r]); }
     }
@@ -116,7 +119,7 @@ async function main() {
   }
   if (meta.webgpu.renderer !== 'webgpu' || meta.webgl2.renderer !== 'webgl2') throw new Error(`unexpected renderers ${JSON.stringify(meta)}`);
   const stats = compareImages(decodePng(shots.webgpu), decodePng(shots.webgl2));
-  const doc = { task: 'M1-042b', date: new Date().toISOString(), scene: '?scene=pbr (10 spheres metallic x roughness, normal-mapped + detail plane, alpha-tested plane, blended plane)', viewport: '1280x720', metric: 'CIE76 delta E, WebGPU (WGSL) vs WebGL2 (GLSL) screenshots', stats, meta };
+  const doc = { task: query === 'scene=pbr' ? 'M1-042b' : 'M1-043b', date: new Date().toISOString(), scene: query === 'scene=pbr' ? '?scene=pbr (10 spheres metallic x roughness, normal-mapped + detail plane, alpha-tested plane, blended plane)' : `?${query}`, viewport: '1280x720', metric: 'CIE76 delta E, WebGPU (WGSL) vs WebGL2 (GLSL) screenshots', stats, meta };
   writeFileSync(out, JSON.stringify(doc, null, 2) + '\n');
   console.log(JSON.stringify({ stats, prewarm: { webgpu: meta.webgpu.prewarm, webgl2: meta.webgl2.prewarm } }, null, 1));
 }
