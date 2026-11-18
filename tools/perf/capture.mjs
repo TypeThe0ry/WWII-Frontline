@@ -9,7 +9,8 @@
 // Options: --renderer webgl2|webgpu (default webgl2)  --cams 0,1,2  --repeats N (3)  --warmup S (5)  --duration S (30)
 //          --viewport WxH (640x360 without --gpu, 1920x1080 with)  --quality high|low  --machine NAME (default: hostname)
 //          --out-dir DIR (reports/m0/perf)  --gpu (use the machine's GPU: no SwiftShader flags)  --headed
-//          --novsync (uncap the frame rate: --disable-frame-rate-limit --disable-gpu-vsync)
+//          --m1 (M1-069: the three M1 scenes of tools/perf/m1-scenes.json on ?scene=world&map=carentan with 60 demo entities; warm-up/capture/repeats from that file unless given; writes perf-<machine>-<renderer>-<scene>.json)
+//          --veg 0|1 (with --m1: vegetation scatter on the world scene; default 1)  --novsync (uncap the frame rate: --disable-frame-rate-limit --disable-gpu-vsync)
 //          --url URL (an already running client instead of starting a Vite dev server)
 // Output: <out-dir>/perf-<machine>-<renderer>-cam<N>.json  { meta, runs: [PerfDump + meta], aggregate }
 // Without a usable WebGPU adapter a webgpu request is skipped and written as { skipped: reason } (reported "未测").
@@ -19,14 +20,15 @@ import { createRequire } from 'node:module';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { aggregateRuns } from './lib.mjs';
+import { readFileSync } from 'node:fs';
+import { aggregateRuns, percentile } from './lib.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const CLIENT = path.join(ROOT, 'client');
 const require = createRequire(path.join(CLIENT, 'package.json'));
 
 function parseArgs(argv) {
-  const o = { renderer: 'webgl2', cams: '0,1,2', repeats: 3, warmup: 5, duration: 30, viewport: null, quality: 'high', machine: os.hostname(), outDir: path.join(ROOT, 'reports/m0/perf'), gpu: false, headed: false, url: null };
+  const o = { renderer: 'webgl2', cams: '0,1,2', repeats: 3, warmup: 5, duration: 30, viewport: null, quality: 'high', machine: os.hostname(), outDir: path.join(ROOT, 'reports/m0/perf'), gpu: false, headed: false, url: null, m1: false, veg: '1' };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     const next = () => argv[++i];
@@ -41,6 +43,8 @@ function parseArgs(argv) {
     else if (a === '--out-dir') o.outDir = path.resolve(next());
     else if (a === '--gpu') o.gpu = true;
     else if (a === '--headed') o.headed = true;
+    else if (a === '--m1') o.m1 = true;
+    else if (a === '--veg') o.veg = next();
     else if (a === '--novsync') o.novsync = true;
     else if (a === '--url') o.url = next();
     else if (a === '-h' || a === '--help') {
@@ -53,7 +57,7 @@ function parseArgs(argv) {
   const m = /^(\d+)x(\d+)$/.exec(o.viewport);
   if (!m) throw new Error('--viewport must be WxH');
   o.size = { width: Number(m[1]), height: Number(m[2]) };
-  o.camList = o.cams.split(',').map(Number);
+  o.camList = o.m1 ? (o.cams === '0,1,2' ? [] : o.cams.split(',')) : o.cams.split(',').map(Number);
   return o;
 }
 
@@ -136,9 +140,64 @@ async function runOnce(browser, o, baseUrl, cam, runIndex) {
   };
 }
 
+
+/** M1-069: one run of an M1 scene (soldier-eye camera, 60 demo entities); also samples every frame interval (rAF) for P95 and hitches. */
+async function runOnceM1(browser, o, baseUrl, scene, runIndex, cfg) {
+  const context = await browser.newContext({ viewport: o.size, deviceScaleFactor: 1 });
+  const page = await context.newPage();
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
+  await page.addInitScript(() => {
+    window.__ivl = { on: false, samples: [] };
+    let last = 0;
+    const tick = (t) => {
+      if (window.__ivl.on && last) window.__ivl.samples.push(t - last);
+      last = t;
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  });
+  const q = new URLSearchParams({ renderer: o.renderer, scene: 'world', map: 'carentan', cam: scene, actors: 'demo', entities: String(cfg.entities), debug: '1', quality: o.quality, veg: o.veg });
+  const t0 = Date.now();
+  await page.goto(`${baseUrl}?${q}`);
+  await page.waitForFunction(() => window.__world !== undefined && window.__terrain !== undefined && window.__actors !== undefined && (window.__perf?.frames() ?? 0) >= 2, undefined, { timeout: 240_000 });
+  const loadMs = Date.now() - t0;
+  await page.waitForTimeout(o.warmup * 1000);
+  await page.evaluate(() => {
+    window.__perf.reset?.();
+    window.__ivl.samples.length = 0;
+    window.__ivl.on = true;
+  });
+  const c0 = Date.now();
+  await page.waitForTimeout(o.duration * 1000);
+  const captured = (Date.now() - c0) / 1000;
+  const res = await page.evaluate(() => {
+    window.__ivl.on = false;
+    const mem = performance.memory;
+    const caps = window.__caps ?? {};
+    return { dump: window.__perf.dump(), samples: window.__ivl.samples, heap: mem ? mem.usedJSHeapSize / 1048576 : null, world: window.__world.stats, caps: { kind: caps.kind, fallbackReason: caps.fallbackReason, gpuTimerSource: caps.gpuTimerSource } };
+  });
+  await context.close();
+  const iv = res.samples;
+  return {
+    ...res.dump,
+    frame_ms: { count: iv.length, p50: percentile(iv, 0.5), p95: percentile(iv, 0.95), p99: percentile(iv, 0.99), max: iv.length ? Math.max(...iv) : 0 },
+    hitches_gt_50ms: iv.filter((v) => v > 50).length,
+    meta: { scene, run: runIndex, load_ms: loadMs, warmup_s: o.warmup, captured_s: captured, js_heap_mb: res.heap, world: res.world, page_errors: errors, caps: res.caps },
+  };
+}
+
 async function main() {
   const o = parseArgs(process.argv.slice(2));
   mkdirSync(o.outDir, { recursive: true });
+  const m1cfg = o.m1 ? JSON.parse(readFileSync(path.join(ROOT, 'tools/perf/m1-scenes.json'), 'utf8')) : null;
+  if (m1cfg) {
+    const given = (f) => process.argv.includes(f);
+    if (!given('--warmup')) o.warmup = m1cfg.warmup_s;
+    if (!given('--duration')) o.duration = m1cfg.capture_s;
+    if (!given('--repeats')) o.repeats = m1cfg.repeats;
+    if (!o.camList.length) o.camList = m1cfg.scenes.map((x) => x.id);
+  }
   // pnpm does not hoist `playwright`; the client only depends on @playwright/test (re-exports chromium).
   let chromium;
   try {
@@ -169,18 +228,18 @@ async function main() {
   let exit = 0;
   try {
     for (const cam of o.camList) {
-      const file = path.join(o.outDir, `perf-${o.machine}-${o.renderer}-cam${cam}.json`);
+      const file = path.join(o.outDir, `perf-${o.machine}-${o.renderer}-${m1cfg ? '' : 'cam'}${cam}${m1cfg && o.veg === '0' ? '-noveg' : ''}.json`);
       const runs = [];
       let skipped = null;
       for (let r = 0; r < o.repeats; r++) {
         try {
-          const d = await runOnce(browser, o, server.url, cam, r);
+          const d = m1cfg ? await runOnceM1(browser, o, server.url, cam, r, m1cfg) : await runOnce(browser, o, server.url, cam, r);
           if (d.renderer !== o.renderer) {
             skipped = `requested ${o.renderer} but the page ran ${d.renderer} (${d.fallback_reason ?? 'no reason reported'})`;
             break;
           }
           runs.push(d);
-          console.log(`[perf] cam ${cam} run ${r + 1}/${o.repeats}: ${d.frames} frames, fps ${d.fps.toFixed(2)}, cpu p50 ${d.cpu_ms.p50.toFixed(1)} ms, draw calls ${d.draw_calls}, tris ${d.triangles}, veg instances ${d.vegetation.instances}`);
+          console.log(`[perf] cam ${cam} run ${r + 1}/${o.repeats}: ${d.frames} frames, fps ${d.fps.toFixed(2)}, cpu p50 ${d.cpu_ms.p50.toFixed(1)} ms${m1cfg ? `, frame p95 ${d.frame_ms.p95.toFixed(1)} ms, hitches>50ms ${d.hitches_gt_50ms}` : ''}, draw calls ${d.draw_calls}, tris ${d.triangles}, veg instances ${d.vegetation.instances}`);
         } catch (e) {
           skipped = `run failed: ${e instanceof Error ? e.message.split('\n')[0] : String(e)}`;
           break;

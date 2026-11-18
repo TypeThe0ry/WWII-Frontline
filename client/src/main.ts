@@ -6,6 +6,8 @@ import { createRenderer, parseRendererParam, DebugOverlay, buildPerfDump, instal
 import type { PerfApi } from './render';
 import type { TerrainHandle } from './render/terrain/terrain-scene';
 import type { VegetationHandle } from './render/vegetation/vegetation-scene';
+import type { WorldHandle } from './render/world/world-scene';
+import { M1_PERF_CAMERAS, poseYaw } from './render/perf-cameras';
 
 declare global {
   interface Window {
@@ -28,6 +30,8 @@ declare global {
     };
     /** `?scene=vegetation` (terrain + vegetation): vegetation diagnostics for e2e/M0-030. */
     __vegetation?: VegetationHandle;
+    /** `?scene=world` (terrain + vegetation + hedgerows + buildings, M1-051b/052b): load stats and meshes. */
+    __world?: WorldHandle;
     /** `?server=`: networked play (M0-022); diagnostics and e2e. */
     __netGame?: NetGameHandle;
     /** `?server=` or `?actors=demo`: placeholder actors, first-person camera and fx (M0-025); diagnostics and e2e. */
@@ -48,7 +52,14 @@ async function boot(): Promise<void> {
   app.appendChild(canvas);
 
   const sceneParam = params.get('scene');
-  const terrainScene = sceneParam === 'terrain' || sceneParam === 'vegetation'; // 'vegetation' = terrain + vegetation (M0-024)
+  const terrainScene = sceneParam === 'terrain' || sceneParam === 'vegetation' || sceneParam === 'world'; // 'vegetation' = terrain + vegetation (M0-024); 'world' = + hedgerows + buildings (M1-051b/052b)
+  // M1 camera scenes (`cam=open_field|hedgerow|old_town`): the pose also places the demo player (soldier eye view) unless `local=` is given.
+  const m1cam = M1_PERF_CAMERAS.find((c) => c.name === params.get('cam'));
+  if (m1cam) {
+    if (!params.has('pos')) params.set('pos', m1cam.pos.join(','));
+    if (!params.has('target')) params.set('target', m1cam.target.join(','));
+    if (!params.has('local')) params.set('local', `${m1cam.pos[0]},${m1cam.pos[2]},${poseYaw(m1cam)}`);
+  }
   const ctx = await createRenderer(canvas, {
     renderer: parseRendererParam(params.get('renderer')),
     fly: params.get('fly') === '1' || terrainScene,
@@ -63,10 +74,15 @@ async function boot(): Promise<void> {
   }
 
   let vegHandle: VegetationHandle | null = null;
-  if (terrainHandle && sceneParam === 'vegetation') {
+  if (terrainHandle && (sceneParam === 'vegetation' || (sceneParam === 'world' && params.get('veg') !== '0'))) {
     const { attachVegetation } = await import('./render/vegetation/vegetation-scene');
     vegHandle = await attachVegetation(ctx, terrainHandle.terrain, params);
     window.__vegetation = vegHandle;
+  }
+
+  if (terrainHandle && sceneParam === 'world') {
+    const { attachWorld } = await import('./render/world/world-scene');
+    window.__world = await attachWorld(ctx, terrainHandle.terrain, params);
   }
 
   // M0-022: networked play (`?server=host:port`): prediction, reconciliation, interpolation (client/src/game).
