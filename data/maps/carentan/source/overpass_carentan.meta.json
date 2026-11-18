@@ -1,0 +1,17 @@
+{
+  "bbox_s_w_n_e": [
+    49.29555,
+    -1.2638,
+    49.31803,
+    -1.22938
+  ],
+  "bbox_basis": "UTM30N E 626332..628580, N 5461916..5464164 (playable box + ~100 m margin) via map_pipeline.geo.from_utm; 100 m margin added in lat/lon",
+  "query": "[out:json][timeout:120];\n(\nway[\"highway\"](49.29555,-1.26380,49.31803,-1.22938);\nway[\"railway\"](49.29555,-1.26380,49.31803,-1.22938);\nway[\"waterway\"](49.29555,-1.26380,49.31803,-1.22938);\nway[\"natural\"~\"^(water|wetland|tree_row|scrub|wood)$\"](49.29555,-1.26380,49.31803,-1.22938);\nway[\"landuse\"~\"^(forest|orchard|meadow|farmland|retail|residential|industrial|commercial)$\"](49.29555,-1.26380,49.31803,-1.22938);\nway[\"barrier\"~\"^(hedge|wall|fence)$\"](49.29555,-1.26380,49.31803,-1.22938);\nway[\"building\"](49.29555,-1.26380,49.31803,-1.22938);\nway[\"bridge\"](49.29555,-1.26380,49.31803,-1.22938);\nrelation[\"natural\"~\"^(water|wetland)$\"](49.29555,-1.26380,49.31803,-1.22938);\nrelation[\"landuse\"~\"^(forest|orchard)$\"](49.29555,-1.26380,49.31803,-1.22938);\nrelation[\"building\"](49.29555,-1.26380,49.31803,-1.22938);\n);\nout geom;\n",
+  "retrieved": "2026-11-18",
+  "timestamp_osm_base": "2026-11-18T06:59:26Z",
+  "source": "OpenStreetMap via Overpass API (overpass-api.de)",
+  "license": "ODbL 1.0, (c) OpenStreetMap contributors",
+  "bytes": 3816125,
+  "sha256": "68879a739f0c7826c3249c2b175ba3f42aa3f346b2372f41e6cf32780d6727c3",
+  "elements": 4457
+}
