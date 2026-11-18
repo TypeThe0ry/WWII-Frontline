@@ -63,6 +63,9 @@
               },
               "species": {
                 "type": "string"
+              },
+              "verified": {
+                "type": "boolean"
               }
             },
             "required": [

@@ -971,3 +971,12 @@
 - **树篱稀疏**：OSM 仅 2 条 hedge + 31 条 tree_row，真实树篱需 M1-033 描摹。
 - **受影响任务**：M1-033、M1-034、M1-035。
 - **裁决（Fable 填写）**：
+
+
+## PI-082 M1-033 脚本先行、人工输入缺失
+- 人工描摹/洪泛多边形/剔除清单不存在，不用 OSM 或自动生成冒充；`edits-1944` 以退出码 4 报告 partial，M1-034/035 用 OSM 初稿灰盒继续。
+- 栅格化不用 GDAL：纯 numpy 偶奇规则 + 到边距离 smoothstep 羽化（`transition_m` 在多边形外侧），无需工作站。
+- 洪泛多边形入库时 `depth_m` 0.8、`walkable_depth_m` 1.0（≤1.4）、`vehicle_blocking:true`，为暂定值待人工修正。
+- 自动现代剔除 63 项写入 `removed_modern.json`；`remove_ids.txt` 仅作用于 roads/buildings。
+- **受影响任务**：M1-034、M1-035。
+- **裁决（Fable 填写）**：

@@ -100,6 +100,7 @@ def normalise(data: dict, origin) -> list[dict]:
 def _feat(props, geom, osm_id):
     p = dict(props)
     p["_osm_id"] = osm_id
+    p["verified"] = False
     p["_derived"] = sorted(p.get("_derived", []))
     return {"type": "Feature", "properties": p, "geometry": geom}
 

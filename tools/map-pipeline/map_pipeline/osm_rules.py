@@ -121,7 +121,7 @@ def hedge_props(tags: dict) -> dict:
         h = HEDGE_HEIGHT_M
         derived.append("height_m")
     return {"height_m": h, "mound_width_m": HEDGE_MOUND_M, "gap": False,
-            "vehicle_blocking": h >= 1.8, "kind": tags.get("barrier") or tags.get("natural"), "_derived": derived + ["vehicle_blocking"]}
+            "vehicle_blocking": h >= 1.8, "source": "osm_draft", "kind": tags.get("barrier") or tags.get("natural"), "_derived": derived + ["vehicle_blocking"]}
 
 
 def building_props(tags: dict) -> dict:
