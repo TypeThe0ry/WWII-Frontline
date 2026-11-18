@@ -28,9 +28,10 @@
       "properties": {
         "res_m": { "type": "number", "exclusiveMinimum": 0 },
         "samples": { "type": "integer", "minimum": 2 },
-        "hmin_m": { "type": "number" },
-        "hmax_m": { "type": "number" },
-        "datum": { "type": "string", "minLength": 1 }
+        "hmin_m": { "type": ["number", "null"] },
+        "hmax_m": { "type": ["number", "null"] },
+        "datum": { "type": "string", "minLength": 1 },
+        "status": { "type": "string", "minLength": 1 }
       }
     },
     "far_ring": {
@@ -43,6 +44,9 @@
         "extent_m": { "type": "number", "exclusiveMinimum": 0 }
       }
     },
+    "credits": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+    "m1_sources_checked": { "type": "boolean" },
+    "tool_version": { "type": "string", "minLength": 1 },
     "dequant": { "type": "string", "minLength": 1 },
     "layout": { "type": "string", "minLength": 1 },
     "chunks": {
@@ -77,7 +81,9 @@
           "e": { "type": "number" },
           "n": { "type": "number" },
           "design": { "type": "array", "minItems": 2, "maxItems": 2, "items": { "type": "number" } },
-          "confidence_m": { "type": "number", "minimum": 0 }
+          "confidence_m": { "type": "number", "minimum": 0 },
+          "source": { "type": "string", "minLength": 1 },
+          "provisional": { "type": "boolean" }
         }
       }
     },
@@ -89,7 +95,9 @@
         "dx": { "type": "number" },
         "dy": { "type": "number" },
         "rot_deg": { "type": "number" },
-        "applied": { "type": "boolean" }
+        "applied": { "type": "boolean" },
+        "mode": { "enum": ["translate", "rotate"] },
+        "rms_m": { "type": "number", "minimum": 0 }
       }
     },
     "sources": {
@@ -101,7 +109,9 @@
         "properties": {
           "id": { "type": "string", "minLength": 1 },
           "license": { "type": "string", "minLength": 1 },
-          "verified": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" }
+          "asset_id": { "type": "string", "pattern": "^AST-" },
+          "archive": { "type": "string", "minLength": 1 },
+          "verified": { "type": ["string", "null"], "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" }
         }
       }
     },
