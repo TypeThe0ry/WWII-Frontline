@@ -152,3 +152,7 @@ required-features = ["test-util"]
 name = "supply"
 harness = false
 required-features = ["test-util"]
+
+[[bench]]
+name = "armor_hit"
+harness = false
