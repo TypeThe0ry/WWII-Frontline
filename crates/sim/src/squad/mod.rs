@@ -179,6 +179,8 @@ pub struct RosterEntry {
     pub last_role_change: Option<Tick>,
     /// The current role no longer fits the squad: it must change on the next deploy.
     pub role_invalid: bool,
+    /// Loadout index chosen at the last deploy (`GameData::loadouts`).
+    pub loadout: Option<u8>,
 }
 
 /// What changed in the roster (carried by `SimEvent::Roster`, feeds `RosterDelta`).
@@ -348,6 +350,7 @@ impl SquadManager {
                 last_switch: None,
                 last_role_change: None,
                 role_invalid: false,
+                loadout: None,
             },
         );
         Ok(vec![RosterDelta::TeamJoined { player: p, team }])
@@ -409,6 +412,12 @@ impl SquadManager {
     pub fn set_dead_since(&mut self, p: PlayerId, t: Option<Tick>) {
         if let Some(e) = self.roster.get_mut(&p) {
             e.dead_since = t;
+        }
+    }
+
+    pub fn set_loadout(&mut self, p: PlayerId, loadout: Option<u8>) {
+        if let Some(e) = self.roster.get_mut(&p) {
+            e.loadout = loadout;
         }
     }
 
@@ -530,6 +539,7 @@ impl SquadManager {
             h.write_u16(e.squad.unwrap_or(0));
             h.write_bytes(e.role.unwrap_or("").as_bytes());
             h.write_u8(e.role_invalid as u8);
+            h.write_u8(e.loadout.map_or(0xFF, |l| l));
             h.write_u32(e.score as u32);
         }
         for s in self.squads.values() {
@@ -561,8 +571,9 @@ impl SquadManager {
 
     pub(crate) fn alloc_id(&mut self) -> SquadId {
         loop {
+            // Ids fit the wire's `squad:u8`; 0 means Unassigned.
             let id = self.next_id;
-            self.next_id = self.next_id.wrapping_add(1).max(1);
+            self.next_id = if id >= 255 { 1 } else { id + 1 };
             if !self.squads.contains_key(&id) {
                 return id;
             }

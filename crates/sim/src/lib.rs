@@ -10,6 +10,7 @@ pub mod collision;
 pub mod combat;
 pub mod components;
 pub mod data;
+pub mod deploy;
 pub mod hash;
 pub mod health;
 pub mod ids;
