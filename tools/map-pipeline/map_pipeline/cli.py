@@ -66,6 +66,11 @@ def main(argv=None) -> int:
     m0.add_argument("--window", help="E,N of the window's south-west sample point (DEM CRS)")
     v = sub.add_parser("validate", help="validate a generated map directory")
     v.add_argument("dir")
+    v.add_argument("--slice", default=None, help="m1: validate the Carentan slice data (M1-034)")
+    v.add_argument("--repo", default=".")
+    zb = sub.add_parser("zones-m1", help="generate M1 slice zones/spawns/routes/landmarks (M1-034)")
+    zb.add_argument("--repo", default=".")
+    zb.add_argument("--out", default="data/maps/carentan")
     cm = sub.add_parser("carentan-meta", help="write data/maps/carentan/meta.json + draft ledger rows (M1-030)")
     cm.add_argument("--repo", default=".")
     cm.add_argument("--out", default="data/maps/carentan")
@@ -88,6 +93,20 @@ def main(argv=None) -> int:
     ed.add_argument("--incoming", default="assets/incoming/maps/carentan/traced")
     a = ap.parse_args(argv)
 
+    if a.cmd == "zones-m1":
+        from . import zones
+
+        print(json.dumps(zones.build(Path(a.repo), Path(a.out)), ensure_ascii=False))
+        return 0
+    if a.cmd == "validate" and a.slice:
+        from . import zones
+
+        rep, ok = zones.validate_slice(Path(a.repo), Path(a.dir))
+        rp = Path(a.repo) / "reports" / "m1-zones-validate.json"
+        rp.write_text(json.dumps(rep, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        for k, v in rep["rules"].items():
+            print(("PASS " if v["pass"] else "FAIL ") + k, v["detail"])
+        return 0 if ok else 1
     if a.cmd == "edits-1944":
         from . import edits_1944
 

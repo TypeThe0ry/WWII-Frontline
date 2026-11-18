@@ -1,0 +1,143 @@
+{
+ "landmarks": [
+  {
+   "asset_ref": "V-BLD-CHURCH",
+   "design": [
+    1277,
+    897
+   ],
+   "doors": [
+    {
+     "center": [
+      1288.15,
+      885.1
+     ],
+     "width_m": 1.2
+    }
+   ],
+   "fidelity": "A",
+   "floors": [
+    {
+     "level": 0,
+     "z_m": 0.0
+    },
+    {
+     "level": 1,
+     "z_m": 3.0
+    },
+    {
+     "level": 2,
+     "z_m": 6.0
+    },
+    {
+     "level": 3,
+     "z_m": 9.0
+    },
+    {
+     "level": 4,
+     "z_m": 12.0
+    },
+    {
+     "level": 5,
+     "z_m": 15.0
+    },
+    {
+     "level": 6,
+     "z_m": 18.0
+    },
+    {
+     "level": 7,
+     "z_m": 21.0
+    },
+    {
+     "level": 8,
+     "z_m": 24.0
+    }
+   ],
+   "found_in_osm": true,
+   "id": "church_notre_dame",
+   "kind": "church",
+   "name": "Notre-Dame de Carentan",
+   "offset_from_design_m": 2.9,
+   "osm_id": "way/154020387",
+   "placeholder_dims_m": {
+    "h": 28.0,
+    "l": 70.0,
+    "w": 35.2
+   },
+   "pos_e": 1277.36,
+   "pos_n": 894.11,
+   "state_1944": "intact"
+  },
+  {
+   "asset_ref": "V-BLD-FARM",
+   "design": [
+    900,
+    1450
+   ],
+   "fidelity": "B",
+   "found_in_osm": false,
+   "id": "farm_ingouf",
+   "kind": "farm",
+   "name": "Ferme Ingouf"
+  },
+  {
+   "asset_ref": "V-BLD-ARCADE",
+   "design": [
+    1380,
+    990
+   ],
+   "doors": [
+    {
+     "center": [
+      1375.09,
+      996.24
+     ],
+     "width_m": 1.2
+    }
+   ],
+   "fidelity": "B",
+   "floors": [
+    {
+     "level": 0,
+     "z_m": 0.0
+    },
+    {
+     "level": 1,
+     "z_m": 3.0
+    },
+    {
+     "level": 2,
+     "z_m": 6.0
+    }
+   ],
+   "found_in_osm": true,
+   "id": "arcade_square",
+   "kind": "arcade",
+   "name": "Place de la République (unverified)",
+   "offset_from_design_m": 8.4,
+   "osm_id": "way/154020386",
+   "placeholder_dims_m": {
+    "h": 9.0,
+    "l": 19.0,
+    "w": 24.5
+   },
+   "pos_e": 1372.81,
+   "pos_n": 985.61,
+   "state_1944": "intact"
+  },
+  {
+   "asset_ref": "V-BLD-BRIDGE",
+   "design": [
+    560,
+    1700
+   ],
+   "fidelity": "A",
+   "found_in_osm": false,
+   "id": "bridge_south",
+   "kind": "bridge",
+   "name": "Southern Bridge (L1b)"
+  }
+ ],
+ "schema": "frontline.map.landmarks/1"
+}

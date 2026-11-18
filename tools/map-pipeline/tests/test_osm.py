@@ -144,7 +144,7 @@ def test_real_data_acceptance():
     assert s["slice_m1"]["buildings"] >= 50
     assert "© OpenStreetMap contributors" in (d / "ATTRIBUTION_OSM.txt").read_text(encoding="utf-8")
     assert "ODbL" in (d / "LICENSE_NOTICE.md").read_text(encoding="utf-8")
-    for k in osm.LAYERS:
+    for k in [k for k in osm.LAYERS if k != 'buildings']:  # buildings are annotated later (M1-034)
         import hashlib
         assert hashlib.sha256((d / f"{k}.geojson").read_bytes()).hexdigest() == s["layer_sha256"][k]
     for layer in osm.LAYERS:

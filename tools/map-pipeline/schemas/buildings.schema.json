@@ -58,6 +58,25 @@
               "destructible": {
                 "type": "boolean"
               },
+              "door": {
+                "properties": {
+                  "center": {
+                    "items": {
+                      "type": "number"
+                    },
+                    "maxItems": 2,
+                    "minItems": 2,
+                    "type": "array"
+                  },
+                  "width_m": {
+                    "type": "number"
+                  }
+                },
+                "type": [
+                  "object",
+                  "null"
+                ]
+              },
               "enterable": {
                 "type": "boolean"
               },
