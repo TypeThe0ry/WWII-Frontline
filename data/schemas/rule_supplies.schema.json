@@ -116,7 +116,12 @@
             "smg_mag",
             "rifle_clip",
             "grenade",
-            "bandage"
+            "bandage",
+            "bar_mag",
+            "mg_belt",
+            "rocket",
+            "mine",
+            "vehicle_shell"
           ],
           "properties": {
             "pistol_mag": {
@@ -136,6 +141,26 @@
               "minimum": 0
             },
             "bandage": {
+              "type": "number",
+              "minimum": 0
+            },
+            "bar_mag": {
+              "type": "number",
+              "minimum": 0
+            },
+            "mg_belt": {
+              "type": "number",
+              "minimum": 0
+            },
+            "rocket": {
+              "type": "number",
+              "minimum": 0
+            },
+            "mine": {
+              "type": "number",
+              "minimum": 0
+            },
+            "vehicle_shell": {
               "type": "number",
               "minimum": 0
             }

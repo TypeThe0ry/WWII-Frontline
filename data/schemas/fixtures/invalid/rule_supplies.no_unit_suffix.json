@@ -26,7 +26,12 @@
       "smg_mag": 3,
       "rifle_clip": 4,
       "grenade": 6,
-      "bandage": 2
+      "bandage": 2,
+      "bar_mag": 5,
+      "mg_belt": 12,
+      "rocket": 20,
+      "mine": 10,
+      "vehicle_shell": 40
     }
   },
   "_meta": {
@@ -49,7 +54,12 @@
       "ammo_crate.price_points.smg_mag",
       "ammo_crate.price_points.rifle_clip",
       "ammo_crate.price_points.grenade",
-      "ammo_crate.price_points.bandage"
+      "ammo_crate.price_points.bandage",
+      "ammo_crate.price_points.bar_mag",
+      "ammo_crate.price_points.mg_belt",
+      "ammo_crate.price_points.rocket",
+      "ammo_crate.price_points.mine",
+      "ammo_crate.price_points.vehicle_shell"
     ],
     "calibration_ref": "GAMEDESIGN §12.2, §12.3"
   }

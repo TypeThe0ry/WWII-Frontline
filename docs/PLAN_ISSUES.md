@@ -822,3 +822,12 @@
 - **做法**：①拆 020a / 020b。②`SupplyProvider::available/consume` 只有位置与半径，不带队伍，故 15 m 内**任一队**的地面箱都计入（双方箱在 15 m 内同时出现的情形极少，M2 若要区分再扩接口）；携带中的箱不计入。③搬运交互：持 USE 满 1.5 s 触发一次，需松开才能再次触发；优先拾取 2 m 内己方地面箱，其次 HQ Depot，再次己方据点补给点；放下位置为脚下。④Support 用 `Support(bool)` 标记（默认 false，`set_support`），M1-021 换兵种。⑤携箱移速 ×0.75 通过摇杆轴缩放（与压制同法）；“仅手枪/拒绝切换主武器”需要武器槽（M1-013c），本任务只暴露 `World::carrying`。⑥地面箱上限 40 按队计、每 tick 淘汰最早放下的；携带中的不计。⑦携带者倒地/死亡时箱落在原地。⑧新事件 `CratePlaced/CrateDestroyed/SupplyNotice{code}`（代码 1=此处不可放置）。⑨`supplies.json` 现已类型化（deny_unknown_fields），Ammo 单价表补充（MG/火箭/地雷/载具炮弹）随 020b。
 - **受影响任务**：M1-020b、M1-021、M1-024（箱体下发）、M1-057/060。
 - **裁决（Fable 填写）**：
+
+### PI-063 M1-020b：补弹与 Ammo Crate 的取舍
+
+- **状态**：resolved（实现者裁决，待 Fable 复核）
+- **类别**：sim
+- **提出者 / 日期**：M1 线程 / 2026-11-18
+- **做法**：①补弹目标=玩家默认兵种 loadout 的初始量（备弹 = 弹匣容量 × (弹匣数−1)，手雷 2/烟 1、绷带 2）；缺口按“夹”向上取整计价，点数不够则只补买得起的整夹（补进的发数不超过缺口）。②价格按主武器 class 映射：pistol→pistol_mag、smg→smg_mag、bar→bar_mag、mg*/hmg→mg_belt、其余步枪/卡宾→rifle_clip；`supplies.json` 与 schema 新增 bar_mag 5、mg_belt 12、rocket 20、mine 10、vehicle_shell 40（后四项暂无对应物品）。③顺序：主武器 → 手雷 → 烟雾 → 绷带；“副武器”待武器槽（M1-013c）。④Ammo Crate 立即放置（无 1.5 s 动画，客户端动画属 M1-057）；每命计数在 Support 死亡时清零，冷却跨命保留；同队友军 4 m 内持 USE 满 1.5 s 补弹，中途松开重计；空箱/到期移除并发 `CrateDestroyed`。⑤箱 HP 100，枪弹 ×0.1/爆炸 ×1（同补给箱）。⑥新事件 `Resupplied{player,crate_id,points}`、`SupplyNotice` 代码 2（无可补）。⑦数据变化后重生成 sim-wasm `native.json` 的 dataHash。
+- **受影响任务**：M1-021、M1-024、M1-057/060、M1-013c。
+- **裁决（Fable 填写）**：

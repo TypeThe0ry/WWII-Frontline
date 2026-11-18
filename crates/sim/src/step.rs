@@ -29,6 +29,12 @@ pub enum SimEvent {
     CrateDestroyed {
         id: u32,
     },
+    /// A player refilled from an Ammo Crate (M1-020b).
+    Resupplied {
+        player: PlayerId,
+        crate_id: u32,
+        points: u32,
+    },
     /// A message for one player ("cannot place here" etc.); `code` per `supply::system`.
     SupplyNotice {
         player: PlayerId,
