@@ -108,6 +108,7 @@ impl World {
             draws: 0,
         });
         ecs.insert_resource(TestJitter::default());
+        ecs.insert_resource(crate::vehicle::Vehicles::default());
         ecs.insert_resource(MoveParamsRes(
             cfg.data
                 .role(DEFAULT_ROLE)
@@ -288,6 +289,7 @@ impl World {
             crate::spawn::garrison::Officer::default(),
             crate::supply::Carrying::default(),
             crate::supply::Support::default(),
+            crate::vehicle::seats::InVehicle::default(),
         ));
         if let Some(w) = weapon {
             self.ecs.entity_mut(e).insert(w);
@@ -318,6 +320,273 @@ impl World {
             entity: eid,
         });
         self.refresh_views();
+    }
+
+    // ---- vehicles (M1-022) ----
+
+    /// Spawns a vehicle of `def_id` (a `data/vehicles/` id) resting on the ground at `pos`.
+    pub fn spawn_vehicle(
+        &mut self,
+        def_id: &str,
+        team: Team,
+        pos: Vec3,
+        yaw: f32,
+    ) -> Result<EntityId, crate::vehicle::VehicleSpawnError> {
+        use crate::vehicle::*;
+        let def = self
+            .cfg
+            .data
+            .vehicle(def_id)
+            .ok_or(VehicleSpawnError::UnknownVehicle)?;
+        let params = VehicleParams::from_def(def).map_err(VehicleSpawnError::Data)?;
+        let id = self.alloc.alloc().ok_or(VehicleSpawnError::NoFreeSlot)?;
+        let hp = params.hull_hp;
+        let seat_count = params.seat_count;
+        self.ecs.resource_mut::<Vehicles>().list.insert(
+            id,
+            Vehicle {
+                id,
+                team,
+                params,
+                pos,
+                vel: Vec3::ZERO,
+                rot: yaw_quat(yaw),
+                ang_vel: Vec3::ZERO,
+                ctrl: VehicleCtrl::default(),
+                speed_target: 0.0,
+                grounded_rays: 0,
+                hull_hp: hp,
+                seats: vec![None; seat_count],
+                scripted: false,
+                in_contact: false,
+                crushed: Default::default(),
+                flip_ticks: 0,
+                overturned: false,
+            },
+        );
+        Ok(id)
+    }
+
+    pub fn vehicle(&self, id: EntityId) -> Option<&crate::vehicle::Vehicle> {
+        self.ecs
+            .resource::<crate::vehicle::Vehicles>()
+            .list
+            .get(&id)
+    }
+
+    pub fn vehicle_ids(&self) -> Vec<EntityId> {
+        self.ecs
+            .resource::<crate::vehicle::Vehicles>()
+            .list
+            .keys()
+            .copied()
+            .collect()
+    }
+
+    /// Sets the driver input of a vehicle (seat logic in M1-022b feeds this from `InputCmd`).
+    pub fn set_vehicle_ctrl(&mut self, id: EntityId, ctrl: crate::vehicle::VehicleCtrl) {
+        if let Some(v) = self
+            .ecs
+            .resource_mut::<crate::vehicle::Vehicles>()
+            .list
+            .get_mut(&id)
+        {
+            v.ctrl = ctrl;
+            v.scripted = true;
+        }
+    }
+
+    /// Test-only (feature `test-util`): moves and re-orients a vehicle, zeroing its motion.
+    #[cfg(feature = "test-util")]
+    pub fn debug_place_vehicle(&mut self, id: EntityId, pos: Vec3, rot: glam::Quat) {
+        if let Some(v) = self
+            .ecs
+            .resource_mut::<crate::vehicle::Vehicles>()
+            .list
+            .get_mut(&id)
+        {
+            v.pos = pos;
+            v.rot = rot;
+            v.vel = Vec3::ZERO;
+            v.ang_vel = Vec3::ZERO;
+            v.speed_target = 0.0;
+        }
+    }
+
+    /// Current hit points of a player's body.
+    pub fn player_hp(&self, p: PlayerId) -> Option<f32> {
+        let &(_, e) = self.ecs.resource::<PlayerIndex>().map.get(&p)?;
+        self.ecs.entity(e).get::<Health>().map(|h| h.hp)
+    }
+
+    /// Where `p` sits: `(vehicle, seat)`.
+    pub fn seat_of(&self, p: PlayerId) -> Option<(EntityId, u8)> {
+        let &(_, e) = self.ecs.resource::<PlayerIndex>().map.get(&p)?;
+        self.ecs
+            .entity(e)
+            .get::<crate::vehicle::seats::InVehicle>()
+            .and_then(|i| i.0)
+    }
+
+    /// Board `seat` of `vehicle` (M1: any living Crewman of the team within reach).
+    pub fn seat_enter(
+        &mut self,
+        p: PlayerId,
+        vehicle: EntityId,
+        seat: u8,
+    ) -> Result<(), crate::vehicle::seats::SeatError> {
+        use crate::vehicle::seats::*;
+        let role = self.squads.entry(p).map(|e| e.role);
+        match role {
+            None => return Err(SeatError::NotOnRoster),
+            Some(r) if r != Some("crewman") => return Err(SeatError::NotCrewman),
+            _ => {}
+        }
+        let &(_, e) = self
+            .ecs
+            .resource::<PlayerIndex>()
+            .map
+            .get(&p)
+            .ok_or(SeatError::NotAlive)?;
+        let (team, pos, alive, aboard) = {
+            let er = self.ecs.entity(e);
+            (
+                *er.get::<Team>().unwrap(),
+                er.get::<Transform>().unwrap().pos,
+                matches!(er.get::<LifeState>().unwrap(), LifeState::Alive),
+                er.get::<InVehicle>().is_some_and(|i| i.0.is_some()),
+            )
+        };
+        if !alive {
+            return Err(SeatError::NotAlive);
+        }
+        if aboard {
+            return Err(SeatError::AlreadyAboard);
+        }
+        let mut vs = self.ecs.resource_mut::<crate::vehicle::Vehicles>();
+        let veh = vs.list.get_mut(&vehicle).ok_or(SeatError::NoSuchVehicle)?;
+        if veh.team != team {
+            return Err(SeatError::WrongTeam);
+        }
+        if (veh.pos - pos).length() > BOARD_RANGE_M + veh.params.half_extents.z {
+            return Err(SeatError::TooFar);
+        }
+        let slot = veh
+            .seats
+            .get_mut(usize::from(seat))
+            .ok_or(SeatError::NoSuchSeat)?;
+        if slot.is_some() {
+            return Err(SeatError::Occupied);
+        }
+        *slot = Some(Occupant {
+            player: p,
+            switch: None,
+            exit_at: None,
+        });
+        self.ecs
+            .entity_mut(e)
+            .insert(InVehicle(Some((vehicle, seat))));
+        self.pending_events.push(SimEvent::SeatChanged {
+            player: p,
+            vehicle,
+            seat: Some(seat),
+        });
+        Ok(())
+    }
+
+    /// Move to another seat: at once below 5 km/h, else after 2 s (the seat must still be free).
+    pub fn seat_switch(
+        &mut self,
+        p: PlayerId,
+        seat: u8,
+    ) -> Result<(), crate::vehicle::seats::SeatError> {
+        use crate::vehicle::seats::*;
+        let (vid, from) = self.seat_of(p).ok_or(SeatError::NotAboard)?;
+        let now = self.tick().0;
+        let hz = u32::from(self.cfg.tick_hz);
+        let mut vs = self.ecs.resource_mut::<crate::vehicle::Vehicles>();
+        let veh = vs.list.get_mut(&vid).ok_or(SeatError::NoSuchVehicle)?;
+        if usize::from(seat) >= veh.seats.len() {
+            return Err(SeatError::NoSuchSeat);
+        }
+        if seat == from {
+            return Ok(());
+        }
+        if veh.seats[usize::from(seat)].is_some() {
+            return Err(SeatError::Occupied);
+        }
+        let mut o = veh.seats[usize::from(from)].expect("seated");
+        if o.exit_at.is_some() {
+            return Err(SeatError::Exiting);
+        }
+        let speed = veh.vel.length();
+        if speed < SWITCH_FREE_MPS {
+            veh.seats[usize::from(from)] = None;
+            o.switch = None;
+            veh.seats[usize::from(seat)] = Some(o);
+            let &(_, e) = self.ecs.resource::<PlayerIndex>().map.get(&p).unwrap();
+            self.ecs.entity_mut(e).insert(InVehicle(Some((vid, seat))));
+            self.pending_events.push(SimEvent::SeatChanged {
+                player: p,
+                vehicle: vid,
+                seat: Some(seat),
+            });
+        } else {
+            o.switch = Some((seat, now + (SWITCH_S * hz as f32).round() as u32));
+            veh.seats[usize::from(from)] = Some(o);
+        }
+        Ok(())
+    }
+
+    /// Starts the 0.8 s exit hold; the player leaves when it completes.
+    pub fn seat_exit_begin(&mut self, p: PlayerId) -> Result<(), crate::vehicle::seats::SeatError> {
+        use crate::vehicle::seats::*;
+        let (vid, seat) = self.seat_of(p).ok_or(SeatError::NotAboard)?;
+        let due = self.tick().0 + (EXIT_HOLD_S * f32::from(self.cfg.tick_hz)).round() as u32;
+        let mut vs = self.ecs.resource_mut::<crate::vehicle::Vehicles>();
+        let veh = vs.list.get_mut(&vid).ok_or(SeatError::NoSuchVehicle)?;
+        if let Some(o) = veh.seats[usize::from(seat)].as_mut() {
+            o.exit_at.get_or_insert(due);
+        }
+        Ok(())
+    }
+
+    /// Releases the exit button before the hold completes.
+    pub fn seat_exit_cancel(&mut self, p: PlayerId) {
+        if let Some((vid, seat)) = self.seat_of(p) {
+            if let Some(o) = self
+                .ecs
+                .resource_mut::<crate::vehicle::Vehicles>()
+                .list
+                .get_mut(&vid)
+                .and_then(|v| v.seats[usize::from(seat)].as_mut())
+            {
+                o.exit_at = None;
+            }
+        }
+    }
+
+    pub fn vehicle_views(&self) -> Vec<crate::vehicle::snapshot::VehicleView> {
+        self.ecs
+            .resource::<crate::vehicle::Vehicles>()
+            .list
+            .values()
+            .map(|v| v.view())
+            .collect()
+    }
+
+    /// Test-only (feature `test-util`): sets a vehicle's velocity (heading unchanged).
+    #[cfg(feature = "test-util")]
+    pub fn debug_set_vehicle_velocity(&mut self, id: EntityId, vel: Vec3) {
+        if let Some(v) = self
+            .ecs
+            .resource_mut::<crate::vehicle::Vehicles>()
+            .list
+            .get_mut(&id)
+        {
+            v.vel = vel;
+            v.speed_target = vel.dot(v.forward());
+        }
     }
 
     // ---- roster / squads (M1-021) ----
@@ -965,6 +1234,10 @@ impl World {
         }
         if !self.squads.is_empty() {
             self.squads.hash_into(&mut h);
+        }
+        let veh = self.ecs.resource::<crate::vehicle::Vehicles>();
+        if !veh.list.is_empty() {
+            veh.hash_into(&mut h);
         }
         let sw = self.ecs.resource::<crate::supply::SupplyWorld>();
         if sw.active() {

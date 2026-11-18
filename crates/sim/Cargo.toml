@@ -123,6 +123,14 @@ name = "deploy_validate"
 required-features = ["test-util"]
 
 [[test]]
+name = "vehicle_seats"
+required-features = ["test-util"]
+
+[[test]]
+name = "vehicle_physics"
+required-features = ["test-util"]
+
+[[test]]
 name = "supply_crates"
 required-features = ["test-util"]
 
@@ -132,6 +140,11 @@ required-features = ["test-util"]
 
 [[bench]]
 name = "deploy_validate"
+harness = false
+required-features = ["test-util"]
+
+[[bench]]
+name = "vehicle_step"
 harness = false
 required-features = ["test-util"]
 
