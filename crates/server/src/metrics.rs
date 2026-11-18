@@ -82,6 +82,8 @@ pub struct Metrics {
     pub snapshot_budget_utilization: Histogram,
     /// Entities that did not fit a packet (budget or record limit).
     pub aoi_starved_total: IntCounter,
+    /// Enemies sent outside the R3 rules (must stay 0; audit).
+    pub aoi_enemy_leak_total: IntCounter,
     /// Wall time of steps 6+7 (AOI + encode) per tick (ms).
     pub aoi_encode_ms: Histogram,
     pub snapshots_sent_total: IntCounter,
@@ -229,6 +231,10 @@ impl Metrics {
                 "aoi_starved_total",
                 "Candidate entities that did not fit into a snapshot packet",
             ),
+            aoi_enemy_leak_total: counter(
+                "aoi_enemy_leak_total",
+                "Enemy records sent outside the R3 view-cone / 96 m rule (audit; must be 0)",
+            ),
             aoi_encode_ms: hist(
                 "aoi_encode_ms",
                 "AOI selection + snapshot encoding per tick (ms)",
@@ -312,6 +318,7 @@ impl Metrics {
             Box::new(m.snapshot_bytes.clone()) as Box<dyn prometheus::core::Collector>,
             Box::new(m.snapshot_budget_utilization.clone()),
             Box::new(m.aoi_starved_total.clone()),
+            Box::new(m.aoi_enemy_leak_total.clone()),
             Box::new(m.aoi_encode_ms.clone()),
             Box::new(m.snapshots_sent_total.clone()),
             Box::new(m.snapshot_keyframe_records_total.clone()),

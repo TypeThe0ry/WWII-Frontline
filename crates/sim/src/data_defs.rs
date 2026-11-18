@@ -993,4 +993,28 @@ pub struct RulesDef {
     pub match_m1: MatchRulesDef,
     pub supplies: SuppliesRulesDef,
     pub squads: SquadsRulesDef,
+    pub aoi: AoiRulesDef,
+}
+
+/// `data/rules/aoi.json` (ARCHITECTURE 6.5.4, R3; M1-024).
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct AoiRulesDef {
+    pub enemy_max_m: f64,
+    pub enemy_close_m: f64,
+    pub friendly_max_m: f64,
+    pub leave_max_m: f64,
+    pub leave_close_m: f64,
+    pub frustum_half_deg: f64,
+    pub frustum_margin_deg: f64,
+    pub frustum_leave_extra_deg: f64,
+    pub turn_union_ms: f64,
+    pub los_check_s: f64,
+    pub los_min_dist_m: f64,
+    pub vehicle_importance_mult: f64,
+    pub team_channel_period_s: f64,
+    pub icon_quantum_m: f64,
+    pub icon_ttl_s: f64,
+    #[serde(rename = "_meta")]
+    pub meta: Meta,
 }

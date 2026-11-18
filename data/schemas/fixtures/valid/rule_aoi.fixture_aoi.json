@@ -1,0 +1,38 @@
+{
+  "enemy_max_m": 400,
+  "enemy_close_m": 96,
+  "friendly_max_m": 400,
+  "leave_max_m": 440,
+  "leave_close_m": 105.6,
+  "frustum_half_deg": 70,
+  "frustum_margin_deg": 30,
+  "frustum_leave_extra_deg": 10,
+  "turn_union_ms": 100,
+  "los_check_s": 0.25,
+  "los_min_dist_m": 20,
+  "vehicle_importance_mult": 1.5,
+  "team_channel_period_s": 1,
+  "icon_quantum_m": 5,
+  "icon_ttl_s": 4,
+  "_meta": {
+    "status": "initial",
+    "tunable": [
+      "enemy_max_m",
+      "enemy_close_m",
+      "friendly_max_m",
+      "leave_max_m",
+      "leave_close_m",
+      "frustum_half_deg",
+      "frustum_margin_deg",
+      "frustum_leave_extra_deg",
+      "turn_union_ms",
+      "los_check_s",
+      "los_min_dist_m",
+      "vehicle_importance_mult",
+      "team_channel_period_s",
+      "icon_quantum_m",
+      "icon_ttl_s"
+    ],
+    "calibration_ref": "ARCHITECTURE §6.5.4, §15.2; GAMEDESIGN §17.2 (R3)"
+  }
+}
