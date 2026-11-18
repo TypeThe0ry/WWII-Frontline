@@ -899,6 +899,51 @@ pub struct MatchRulesDef {
     pub meta: Meta,
 }
 
+/// `data/rules/squads.json` (GAMEDESIGN 2.4, 4.1, 4.4; M1-021).
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct SquadsRulesDef {
+    pub team_max_players: u32,
+    pub infantry: SquadKindDef,
+    pub armor_crew: SquadKindDef,
+    pub recon: SquadKindDef,
+    pub rate_window_s: f64,
+    pub create_limit_squads: u32,
+    pub kick_limit_players: u32,
+    pub kick_ban_s: f64,
+    pub handover_confirm_s: f64,
+    pub leader_absent_s: f64,
+    pub role_switch_cooldown_s: f64,
+    pub balance: BalanceDef,
+    pub m1_override: SquadsM1Override,
+    #[serde(rename = "_meta")]
+    pub meta: Meta,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct SquadKindDef {
+    pub max_players: u32,
+    #[serde(default)]
+    pub max_squads: Option<u32>,
+    #[serde(default)]
+    pub crewman_max_players: Option<u32>,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct BalanceDef {
+    pub max_diff_players: u32,
+    pub switch_min_after_join_s: f64,
+    pub switch_interval_s: f64,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct SquadsM1Override {
+    pub armor_crew_leader_role: String,
+}
+
 /// `data/rules/supplies.json` (GAMEDESIGN 12; M1-020).
 #[derive(Debug, Clone, PartialEq, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -947,4 +992,5 @@ pub struct RulesDef {
     pub capture: CaptureRulesDef,
     pub match_m1: MatchRulesDef,
     pub supplies: SuppliesRulesDef,
+    pub squads: SquadsRulesDef,
 }

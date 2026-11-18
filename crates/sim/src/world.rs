@@ -67,6 +67,7 @@ pub struct World {
     players: Vec<PlayerView>,
     objective_views: Vec<ObjectiveView>,
     pending_events: Vec<SimEvent>,
+    squads: crate::squad::SquadManager,
     supply: Box<dyn crate::supply_iface::SupplyProvider>,
 }
 
@@ -149,6 +150,7 @@ impl World {
             pos: [None, None],
             center: collision_center(collision),
         });
+        let squads = crate::squad::SquadManager::new(cfg.data, cfg.tick_hz);
         World {
             cfg,
             ecs,
@@ -157,6 +159,7 @@ impl World {
             players: Vec::new(),
             objective_views: Vec::new(),
             pending_events: Vec::new(),
+            squads,
             supply: Box::new(crate::supply_iface::NoSupply),
         }
     }
@@ -183,6 +186,7 @@ impl World {
         }
         self.apply_warmup_wait();
         self.schedule.run(&mut self.ecs);
+        self.sync_squads();
         self.refresh_views();
         let produced = std::mem::take(&mut self.ecs.resource_mut::<EventBuf>().0);
         self.pending_events.extend(produced);
@@ -314,6 +318,96 @@ impl World {
             entity: eid,
         });
         self.refresh_views();
+    }
+
+    // ---- roster / squads (M1-021) ----
+
+    pub fn squads(&self) -> &crate::squad::SquadManager {
+        &self.squads
+    }
+
+    fn push_roster(&mut self, deltas: Vec<crate::squad::RosterDelta>) {
+        self.pending_events
+            .extend(deltas.into_iter().map(SimEvent::Roster));
+    }
+
+    /// Puts a human player on a team's roster (balance and 50-player cap apply).
+    pub fn roster_add(
+        &mut self,
+        p: PlayerId,
+        team: Team,
+    ) -> Result<(), crate::team::balance::TeamError> {
+        let now = self.tick();
+        let d = self.squads.roster_add(p, team, now)?;
+        self.push_roster(d);
+        Ok(())
+    }
+
+    pub fn roster_remove(&mut self, p: PlayerId) {
+        let now = self.tick();
+        let d = self.squads.roster_remove(p, now);
+        self.push_roster(d);
+    }
+
+    pub fn squad_op(
+        &mut self,
+        p: PlayerId,
+        op: crate::squad::SquadOp,
+    ) -> Result<(), crate::squad::SquadError> {
+        let now = self.tick();
+        let d = self.squads.apply(p, op, now)?;
+        self.push_roster(d);
+        Ok(())
+    }
+
+    pub fn switch_team(&mut self, p: PlayerId) -> Result<(), crate::team::balance::TeamError> {
+        let now = self.tick();
+        let d = self.squads.switch_team(p, now)?;
+        self.push_roster(d);
+        Ok(())
+    }
+
+    pub fn set_roster_online(&mut self, p: PlayerId, online: bool) {
+        self.squads.set_online(p, online);
+    }
+
+    pub fn set_roster_score(&mut self, p: PlayerId, score: i32) {
+        self.squads.set_score(p, score);
+    }
+
+    /// Takes a role after the quota check (also keeps the Officer / Support abilities in step).
+    pub fn set_role(
+        &mut self,
+        p: PlayerId,
+        role: Option<&str>,
+    ) -> Result<(), crate::roles::quota::RoleError> {
+        let now = self.tick();
+        let d = self.squads.set_role(p, role, now)?;
+        self.push_roster(d);
+        self.set_officer(p, role == Some("officer"));
+        self.set_support(p, role == Some("support"));
+        Ok(())
+    }
+
+    /// Feeds KIA state to the squads and runs their upkeep (once per tick).
+    fn sync_squads(&mut self) {
+        if self.squads.is_empty() {
+            return;
+        }
+        let now = self.tick();
+        let ids: Vec<PlayerId> = self.squads.roster().map(|(p, _)| p).collect();
+        for p in ids {
+            let Some(&(_, e)) = self.ecs.resource::<PlayerIndex>().map.get(&p) else {
+                continue;
+            };
+            let dead = match self.ecs.entity(e).get::<LifeState>() {
+                Some(LifeState::Dead { t_kia, .. }) => Some(*t_kia),
+                _ => None,
+            };
+            self.squads.set_dead_since(p, dead);
+        }
+        let d = self.squads.update(now);
+        self.push_roster(d);
     }
 
     /// Movement state of a player (what `self_state` / `Predictor.reset` carry).
@@ -795,6 +889,9 @@ impl World {
                 h.write_u8(*p);
                 h.write_u32(*t);
             }
+        }
+        if !self.squads.is_empty() {
+            self.squads.hash_into(&mut h);
         }
         let sw = self.ecs.resource::<crate::supply::SupplyWorld>();
         if sw.active() {

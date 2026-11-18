@@ -831,3 +831,13 @@
 - **做法**：①补弹目标=玩家默认兵种 loadout 的初始量（备弹 = 弹匣容量 × (弹匣数−1)，手雷 2/烟 1、绷带 2）；缺口按“夹”向上取整计价，点数不够则只补买得起的整夹（补进的发数不超过缺口）。②价格按主武器 class 映射：pistol→pistol_mag、smg→smg_mag、bar→bar_mag、mg*/hmg→mg_belt、其余步枪/卡宾→rifle_clip；`supplies.json` 与 schema 新增 bar_mag 5、mg_belt 12、rocket 20、mine 10、vehicle_shell 40（后四项暂无对应物品）。③顺序：主武器 → 手雷 → 烟雾 → 绷带；“副武器”待武器槽（M1-013c）。④Ammo Crate 立即放置（无 1.5 s 动画，客户端动画属 M1-057）；每命计数在 Support 死亡时清零，冷却跨命保留；同队友军 4 m 内持 USE 满 1.5 s 补弹，中途松开重计；空箱/到期移除并发 `CrateDestroyed`。⑤箱 HP 100，枪弹 ×0.1/爆炸 ×1（同补给箱）。⑥新事件 `Resupplied{player,crate_id,points}`、`SupplyNotice` 代码 2（无可补）。⑦数据变化后重生成 sim-wasm `native.json` 的 dataHash。
 - **受影响任务**：M1-021、M1-024、M1-057/060、M1-013c。
 - **裁决（Fable 填写）**：
+
+### PI-064 M1-021a：小队、名册与平衡的取舍
+
+- **状态**：resolved（实现者裁决，待 Fable 复核）
+- **类别**：sim
+- **提出者 / 日期**：M1 线程 / 2026-11-18
+- **做法**：①拆 021a（名册/小队/名额/平衡）与 021b（`validate_deploy`、loadout、换兵种冷却、bench）。②`SquadManager` 是不碰 ECS 的纯状态，持有 `PlayerRoster`（队伍、小队、兵种、得分、在线、阵亡时刻）；`World` 提供包装并发 `SimEvent::Roster(RosterDelta)`；名册为空时不参与哈希，旧 golden 不变。③平衡规则 `H_t − H_other ≤ 2` 按“加入后”差值保守解读（已领先 2 人的队不可再进人；换队同理按移动后计算）。④名册上限每队 50（`team_max_players`）。⑤兵种规则：Armor Crew 内只能是 `m1_override.armor_crew_leader_role`（crewman，每车组 ≤2）；Recon 内 M1 只有 Rifleman（Spotter/Sniper 属 M3）；步兵队不可选 Crewman；Unassigned 仅 Rifleman；Medic 补全队上限 12（GD §4.4）。⑥队长离线或 KIA 后 120 s 才换人（离队/被踢立即换）；AFK 检测需输入时间戳，留给 M1-026；无继任者则解散。⑦主动移交：队长 `Promote`，被选者 10 s 内 `AcceptLead`。⑧速率窗口按滚动 tick：60 s 前的记录恰在满 60 s 时失效。⑨小队名由类型+序号生成（Alpha…Zulu 之后 `Squad-N`、`Armor-N`、`Recon-N`）+ ≤16 字符后缀，敏感词过滤在 M1-026。⑩单位后缀白名单新增 `_squads`。
+- **受影响任务**：M1-021b、M1-026、M1-039、M1-056。
+- **裁决（Fable 填写）**：
+

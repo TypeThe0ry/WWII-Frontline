@@ -111,6 +111,7 @@
       "capsule.eye_height_stand_m",
       "capsule.eye_height_crouch_m",
       "max_per_squad",
+      "max_per_team",
       "unlock.squad_size_min",
       "movement.prone_fast_mps",
       "movement.prone_fast_cost_per_s",
@@ -150,6 +151,7 @@
     "calibration_ref": "GAMEDESIGN §4.4 / §9.1"
   },
   "max_per_squad": 2,
+  "max_per_team": 12,
   "unlock": {
     "squad_size_min": 2,
     "requires_squad_leader": false

@@ -75,6 +75,8 @@ impl GameData {
                     .expect("embedded data parsed at build time"),
                 supplies: serde_json::from_str(embedded::SUPPLIES_JSON)
                     .expect("embedded data parsed at build time"),
+                squads: serde_json::from_str(embedded::SQUADS_JSON)
+                    .expect("embedded data parsed at build time"),
             })),
             hash: DATA_HASH,
         })
