@@ -35,7 +35,7 @@ pub mod self_state;
 pub use baseline::{ClientBaselines, BASELINE_RING};
 pub use decoder::{DecodedSnapshot, EntitiesSoA, SnapshotDecoder};
 pub use encoder::{ClientId, SnapshotBuilder, SnapshotEncoder, Tick};
-pub use entity::{EntityKind, EntityState, QPos, QVel, VehicleExtra};
+pub use entity::{EntityKind, EntityState, QPos, QVel, VehicleExtra, VEL_STEP};
 pub use events::{Event, EventEntry};
 pub use self_state::SelfState;
 
