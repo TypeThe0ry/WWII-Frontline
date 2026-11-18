@@ -16,6 +16,8 @@ import { VertexData } from '@babylonjs/core/Meshes/mesh.vertexData';
 import { MeshBuilder } from '@babylonjs/core/Meshes/meshBuilder';
 import '@babylonjs/core/Meshes/thinInstanceMesh'; // Mesh.thinInstance* augmentation (not pulled in when vegetation is off)
 import type { RenderContext } from '../engine';
+import { attachCsm, type CsmHandle } from '../lighting/csm';
+import type { ShadowTier } from '../lighting/csm-math';
 import { extrudeBuilding, newArrays, type BuildingInput, type BuildingStats, type MeshArrays } from './building-mesh';
 import { polylineToSegments, type HedgeProps, type HedgeSegment } from './hedge-geometry';
 
@@ -50,6 +52,8 @@ export interface WorldHandle {
   stats: WorldStats;
   hedges: Mesh | null;
   buildingMeshes: Mesh[];
+  /** Cascaded shadow maps when `?csm=1` (M1-043b). */
+  csm: CsmHandle | null;
   dispose(): void;
 }
 
@@ -173,12 +177,26 @@ export async function attachWorld(ctx: RenderContext, terrain: { heightAt(x: num
     stats.building_triangles = bs.triangles;
     stats.building_roof_failures = bs.roofFailures;
   }
+  // M1-043b: `?csm=1` puts cascaded shadow maps on the scene's directional light; buildings and hedges cast and receive
+  let csm: CsmHandle | null = null;
+  if (params.get('csm') === '1') {
+    const sun = scene.lights.find((l): l is DirectionalLight => l instanceof DirectionalLight);
+    if (sun) {
+      const tier = (params.get('csm_tier') ?? 'high') as ShadowTier;
+      const casc = params.get('csm_cascades');
+      csm = attachCsm(sun, tier, ctx.kind === 'webgl2', casc ? { cascades: Number(casc) | 0 } : {});
+      for (const m of buildingMeshes) csm.add(m);
+      if (hedges) csm.add(hedges);
+    }
+  }
   stats.load_ms = performance.now() - t0;
   return {
     stats,
     hedges,
     buildingMeshes,
+    csm,
     dispose() {
+      csm?.dispose();
       for (const m of buildingMeshes) m.dispose();
       for (const d of disposables) d.dispose();
     },
