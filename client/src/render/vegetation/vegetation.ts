@@ -29,7 +29,7 @@ import { IMPOSTOR_FRAGMENT_GLSL, IMPOSTOR_VERTEX_GLSL } from './impostor-materia
 import { IMPOSTOR_FRAGMENT_WGSL, IMPOSTOR_VERTEX_WGSL } from './impostor-material.wgsl';
 import { ATLAS_CELLS, CELL_PX, bakeImpostorAtlas, type ImpostorAtlas } from './impostor-bake';
 import { boundsOf, buildGrass, buildShrub, buildTree, type MeshBounds, type MeshData } from './placeholder-meshes';
-import { POS_STEPS_PER_M, scatterChunk, unpackInstance, hash4, type ScatterPoint } from './scatter';
+import { POS_STEPS_PER_M, scatterChunk, unpackInstance, hash4, type ScatterInput, type ScatterPoint } from './scatter';
 import { CHUNK_SIZE_M, INSTANCE_BYTES, SPECIES, SPECIES_GRASS, SPECIES_SHRUB, SPECIES_TREE, rotYaw, speciesScale, type SpeciesInfo } from './species';
 import { LodBuckets, makeCompact, writeInstanceMatrix, type Box } from './thin-instances';
 import { SWAY_OMEGA, defaultWind, windUniform, type WindState } from './wind';
@@ -55,6 +55,12 @@ export interface VegetationOptions {
   wind?: WindState;
   /** CPU budget for LOD re-bucketing per frame (ms); buckets over budget are served next frame. Infinity = unbounded. */
   rebucketBudgetMs?: number;
+  /**
+   * Draw-call grouping: the instance tables stay 64 m chunks, but `groupChunks` x `groupChunks` chunks share one set of
+   * LOD meshes (default 1 = one per chunk). Babylon's per-draw CPU cost dominates on a fast GPU, and bigger groups cut the
+   * number of draws and meshes (M1-069b: 400-800 draws -> ~100) at the price of coarser frustum culling.
+   */
+  groupChunks?: number;
 }
 
 export interface VegetationStats {
@@ -217,12 +223,18 @@ export class Vegetation {
   }
 
   /** Scatter instance tables for every chunk of a `sizeM` square block (M0 runtime scatter; M1 bakes them offline). */
-  static scatterTables(sizeM: number, seed: number, height: HeightSource, exclusions: readonly ScatterPoint[] = []): ChunkTable[] {
+  static scatterTables(
+    sizeM: number,
+    seed: number,
+    height: HeightSource,
+    exclusions: readonly ScatterPoint[] = [],
+    extra: Pick<ScatterInput, 'mask' | 'grassScale'> = {},
+  ): ChunkTable[] {
     const n = Math.ceil(sizeM / CHUNK_SIZE_M);
     const out: ChunkTable[] = [];
     for (let cz = 0; cz < n; cz++) {
       for (let cx = 0; cx < n; cx++) {
-        out.push({ cx, cz, bytes: scatterChunk({ chunkX: cx, chunkZ: cz, seed, heightAt: (x, z) => height.heightAt(x, z), exclusions }) });
+        out.push({ cx, cz, bytes: scatterChunk({ chunkX: cx, chunkZ: cz, seed, heightAt: (x, z) => height.heightAt(x, z), exclusions, ...extra }) });
       }
     }
     return out;
@@ -296,26 +308,37 @@ export class Vegetation {
   }
 
   private buildChunks(height: HeightSource, tables: readonly ChunkTable[]): void {
+    const g = Math.max(1, Math.floor(this.opts.groupChunks ?? 1));
+    const groups = new Map<number, ChunkTable[]>();
     for (const t of tables) {
       if (t.bytes.length % INSTANCE_BYTES !== 0) throw new Error(`vegetation: table (${t.cx},${t.cz}) is not a multiple of ${INSTANCE_BYTES} bytes`);
-      const n = t.bytes.length / INSTANCE_BYTES;
-      const perSpecies: number[][] = [[], [], [], []];
-      for (let i = 0; i < n; i++) {
-        const sp = t.bytes[i * INSTANCE_BYTES + 3]!;
-        if (sp < SPECIES.length) perSpecies[sp]!.push(i);
+      const key = Math.floor(t.cz / g) * 100000 + Math.floor(t.cx / g);
+      const list = groups.get(key);
+      if (list) list.push(t);
+      else groups.set(key, [t]);
+    }
+    for (const [, members] of groups) {
+      const first = members[0]!;
+      const gx = Math.floor(first.cx / g);
+      const gz = Math.floor(first.cz / g);
+      const perSpecies: { t: ChunkTable; id: number }[][] = [[], [], [], []];
+      for (const t of members) {
+        const n = t.bytes.length / INSTANCE_BYTES;
+        for (let i = 0; i < n; i++) {
+          const sp = t.bytes[i * INSTANCE_BYTES + 3]!;
+          if (sp < SPECIES.length) perSpecies[sp]!.push({ t, id: i });
+        }
       }
-      const ox = t.cx * CHUNK_SIZE_M;
-      const oz = t.cz * CHUNK_SIZE_M;
       for (const info of SPECIES) {
-        const ids = perSpecies[info.id]!;
-        if (ids.length === 0) continue;
-        const g = this.gfx[info.id]!;
-        const comp = makeCompact(ids.length);
+        const items = perSpecies[info.id]!;
+        if (items.length === 0) continue;
+        const gfx = this.gfx[info.id]!;
+        const comp = makeCompact(items.length);
         const box: Box = { minX: Infinity, maxX: -Infinity, minY: Infinity, maxY: -Infinity, minZ: Infinity, maxZ: -Infinity };
-        ids.forEach((id, k) => {
+        items.forEach(({ t, id }, k) => {
           const d = unpackInstance(t.bytes, id * INSTANCE_BYTES);
-          const x = ox + d.x;
-          const z = oz + d.z;
+          const x = t.cx * CHUNK_SIZE_M + d.x;
+          const z = t.cz * CHUNK_SIZE_M + d.z;
           const y = height.heightAt(x, z);
           const yaw = rotYaw(d.rotByte);
           comp.pos[k * 3] = x;
@@ -332,15 +355,15 @@ export class Vegetation {
           box.minY = Math.min(box.minY, y);
           box.maxY = Math.max(box.maxY, y);
         });
-        const lodCount = g.masters.length;
+        const lodCount = gfx.masters.length;
         const lb = new LodBuckets(comp, lodCount, box);
-        const ext = g.bounds.radius * info.scaleMax + 1;
-        const bb = new BoundingInfo(new Vector3(box.minX - ext, box.minY - 1, box.minZ - ext), new Vector3(box.maxX + ext, box.maxY + (g.bounds.maxY + 1) * info.scaleMax, box.maxZ + ext));
+        const ext = gfx.bounds.radius * info.scaleMax + 1;
+        const bb = new BoundingInfo(new Vector3(box.minX - ext, box.minY - 1, box.minZ - ext), new Vector3(box.maxX + ext, box.maxY + (gfx.bounds.maxY + 1) * info.scaleMax, box.maxZ + ext));
         const meshes: Mesh[] = [];
         for (let l = 0; l < lodCount; l++) {
-          const m = g.masters[l]!.clone(`PH_${info.reqId}__${info.key}_c${t.cx}_${t.cz}_${l === lodCount - 1 && lodCount === 3 ? 'imp' : `lod${l}`}`, null, true);
+          const m = gfx.masters[l]!.clone(`PH_${info.reqId}__${info.key}_c${gx}_${gz}_${l === lodCount - 1 && lodCount === 3 ? 'imp' : `lod${l}`}`, null, true);
           m.makeGeometryUnique(); // thin-instance buffers are attached to the geometry: clones must not share it
-          m.material = g.materials[l]!;
+          m.material = gfx.materials[l]!;
           m.setEnabled(false);
           m.thinInstanceSetBuffer('matrix', lb.buffers[l]!, 16, false);
           m.thinInstanceCount = 0;
@@ -353,9 +376,9 @@ export class Vegetation {
           this.meshes.push(m);
           this.stats.bufferBytes += lb.buffers[l]!.byteLength;
         }
-        this.buckets.push({ species: info.id, cx: t.cx, cz: t.cz, buckets: lb, meshes });
+        this.buckets.push({ species: info.id, cx: gx, cz: gz, buckets: lb, meshes });
         const key = info.key as 'grass' | 'shrub' | 'tree';
-        this.stats.total[key] += ids.length;
+        this.stats.total[key] += items.length;
       }
     }
   }

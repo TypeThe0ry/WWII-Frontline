@@ -5,6 +5,7 @@ import type { RenderContext } from '../engine';
 import { parseQuality } from '../quality-m0';
 import { Vegetation, type ChunkTable, type VegetationStats } from './vegetation';
 import type { ScatterPoint } from './scatter';
+import { loadVegMask } from '../world/veg-mask';
 
 export interface VegetationHandle {
   veg: Vegetation;
@@ -51,11 +52,17 @@ export async function attachVegetation(
   const meta = (await (await fetch(`${base}meta.json`)).json()) as { crs: { size_m: number } };
   const blockSizeM = meta.crs.size_m;
   const seed = Number(params.get('veg_seed') ?? 1) | 0;
-  const tables: ChunkTable[] = Vegetation.scatterTables(blockSizeM, seed, terrain, spawns);
+  // Non-M0 maps (Carentan, M1-051b): keep vegetation off buildings/roads/hedges/water and put trees in forests; thin the grass
+  // (`veg_grass`, default 0.4 [tbd]) and draw 4 x 4 chunks per mesh set (`veg_group`) to bound memory and per-draw CPU.
+  const mask = mapId === 'm0' || params.get('veg_mask') === '0' ? null : await loadVegMask(base, blockSizeM);
+  const grassScale = mask ? Number(params.get('veg_grass') ?? 0.4) : 1;
+  const groupChunks = Number(params.get('veg_group') ?? (mask ? 4 : 1)) | 0;
+  const tables: ChunkTable[] = Vegetation.scatterTables(blockSizeM, seed, terrain, spawns, mask ? { mask, grassScale } : {});
   const budget = params.get('veg_budget');
   const veg = await Vegetation.create(ctx.scene, terrain, tables, {
     kind: ctx.kind,
     quality: parseQuality(params.get('quality')),
+    groupChunks,
     cellPx: params.get('impostor') === 'lowres' ? 64 : 128,
     rebucketBudgetMs: budget === 'inf' ? Infinity : budget ? Number(budget) : undefined,
   });

@@ -24,7 +24,16 @@ export interface ScatterInput {
   /** Spawn points: nothing grows within `exclusionRadius` of them. */
   exclusions?: readonly ScatterPoint[];
   exclusionRadius?: number;
+  /** Map-derived placement mask (M1-051b): nothing grows on blocked cells; trees concentrate in forest cells. */
+  mask?: { blocked(x: number, z: number): boolean; forest(x: number, z: number): boolean };
+  /** Multiplier on the grass keep probability (default 1; the M1 world scene thins grass to bound memory). */
+  grassScale?: number;
 }
+
+/** Probability multiplier for trees outside forest cells when a mask is given (single trees, hedgerow trees come later). */
+export const TREE_OUTSIDE_FOREST = 0.12;
+/** Keep probability of a tree candidate inside a forest cell when a mask is given. */
+export const TREE_IN_FOREST_P = 0.9;
 
 export const MAX_SLOPE_DEG = 30;
 export const SPAWN_EXCLUSION_M = 6;
@@ -121,6 +130,8 @@ interface Candidate {
 export interface SlopeTester {
   /** True when the terrain at (x,z) is flatter than MAX_SLOPE_DEG and not near a spawn point. */
   ok(x: number, z: number): boolean;
+  forest?(x: number, z: number): boolean;
+  grassScale?: number;
 }
 
 function makeTester(input: ScatterInput): SlopeTester {
@@ -128,8 +139,12 @@ function makeTester(input: ScatterInput): SlopeTester {
   const r = input.exclusionRadius ?? SPAWN_EXCLUSION_M;
   const r2 = r * r;
   const h = input.heightAt;
+  const mask = input.mask;
   return {
+    forest: mask ? (x, z) => mask.forest(x, z) : undefined,
+    grassScale: input.grassScale,
     ok(x, z) {
+      if (mask && mask.blocked(x, z)) return false;
       for (const p of ex) {
         const dx = x - p.x;
         const dz = z - p.z;
@@ -153,11 +168,12 @@ function candidateAt(species: number, cs: number, cx: number, cz: number, seed: 
   if (species === SPECIES_GRASS) {
     // clustered meadows: patches ~14 m wide with bare gaps
     const d = smooth((fbm(x, z, 14, seed, 11) - 0.32) / 0.38);
-    p = 0.06 + 0.5 * d;
+    p = (0.06 + 0.5 * d) * (tester.grassScale ?? 1);
   } else if (species === SPECIES_TREE) {
     // copses: ~35 m wide, a few scattered singles elsewhere
     const d = smooth((fbm(x, z, 35, seed, 21) - 0.5) / 0.2);
     p = 0.05 + 0.85 * d;
+    if (tester.forest) p = tester.forest(x, z) ? TREE_IN_FOREST_P : p * TREE_OUTSIDE_FOREST;
   } else {
     // shrubs: loose scatter, denser at copse edges
     const d = smooth((fbm(x, z, 18, seed, 31) - 0.4) / 0.3);

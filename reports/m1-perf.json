@@ -12,23 +12,23 @@
           "tier": "high",
           "runs": 3,
           "frame_ms": {
-            "p50": 33.30000000000291,
-            "p95": 33.40000000000873,
-            "p99": 33.5
+            "p50": 16.69999999999709,
+            "p95": 33.400000000001455,
+            "p99": 66.59999999999854
           },
           "frame_p95_runs": [
-            33.40000000000873,
+            16.80000000000291,
             33.400000000001455,
-            33.40000000000873
+            50
           ],
-          "range_pct": 2.1784304234076417e-11,
-          "draw_calls": 402,
-          "tris": 658110,
-          "cpu_ms_p50": 27.699999999254942,
-          "gpu_ms_total": 0.48128,
-          "hitches_gt_50ms": 7,
-          "js_heap_mb": 968.625147819519,
-          "vegetation_instances": 45472,
+          "range_pct": 99.40119760477737,
+          "draw_calls": 84,
+          "tris": 449163,
+          "cpu_ms_p50": 14.200000001117587,
+          "gpu_ms_total": 0.395264,
+          "hitches_gt_50ms": 95,
+          "js_heap_mb": 287.44019317626953,
+          "vegetation_instances": 49655,
           "world": {
             "hedge_segments": 424,
             "hedge_length_m": 2394.498662871738,
@@ -38,7 +38,7 @@
             "building_triangles": 56572,
             "building_roof_failures": 0,
             "enterable": 70,
-            "load_ms": 267.19999999925494
+            "load_ms": 193.59999999962747
           }
         },
         "hedgerow": {
@@ -47,23 +47,23 @@
           "tier": "high",
           "runs": 3,
           "frame_ms": {
-            "p50": 33.30000000000291,
-            "p95": 33.5,
-            "p99": 50
+            "p50": 16.69999999999709,
+            "p95": 50.09999999999127,
+            "p99": 133.29999999998836
           },
           "frame_p95_runs": [
-            33.5,
-            33.40000000000873,
+            50.09999999999127,
+            100,
             50
           ],
-          "range_pct": 49.552238805944086,
-          "draw_calls": 814,
-          "tris": 590378,
-          "cpu_ms_p50": 30.09999999962747,
-          "gpu_ms_total": 0.611328,
-          "hitches_gt_50ms": 43,
-          "js_heap_mb": 992.6422328948975,
-          "vegetation_instances": 59376,
+          "range_pct": 99.8003992016142,
+          "draw_calls": 205,
+          "tris": 352351,
+          "cpu_ms_p50": 17.90000000037253,
+          "gpu_ms_total": 0.369664,
+          "hitches_gt_50ms": 238,
+          "js_heap_mb": 306.0729093551636,
+          "vegetation_instances": 40284,
           "world": {
             "hedge_segments": 424,
             "hedge_length_m": 2394.498662871738,
@@ -73,7 +73,7 @@
             "building_triangles": 56572,
             "building_roof_failures": 0,
             "enterable": 70,
-            "load_ms": 164.59999999962747
+            "load_ms": 151.39999999850988
           }
         },
         "old_town": {
@@ -82,23 +82,23 @@
           "tier": "high",
           "runs": 3,
           "frame_ms": {
-            "p50": 33.30000000000291,
-            "p95": 50,
-            "p99": 50.10000000000582
+            "p50": 16.69999999999709,
+            "p95": 33.400000000001455,
+            "p99": 83.30000000000291
           },
           "frame_p95_runs": [
-            50,
-            50.09999999999127,
-            50
+            33.40000000000873,
+            33.400000000001455,
+            16.799999999995634
           ],
-          "range_pct": 0.1999999999825377,
-          "draw_calls": 696,
-          "tris": 604962,
-          "cpu_ms_p50": 35.69999999925494,
-          "gpu_ms_total": 0.47616,
-          "hitches_gt_50ms": 88,
-          "js_heap_mb": 983.0997667312622,
-          "vegetation_instances": 56334,
+          "range_pct": 49.70059880243225,
+          "draw_calls": 145,
+          "tris": 344578,
+          "cpu_ms_p50": 14.599999999627471,
+          "gpu_ms_total": 0.331776,
+          "hitches_gt_50ms": 70,
+          "js_heap_mb": 297.50083923339844,
+          "vegetation_instances": 47993,
           "world": {
             "hedge_segments": 424,
             "hedge_length_m": 2394.498662871738,
@@ -108,7 +108,7 @@
             "building_triangles": 56572,
             "building_roof_failures": 0,
             "enterable": 70,
-            "load_ms": 271.3999999985099
+            "load_ms": 210.30000000074506
           }
         }
       },
@@ -120,7 +120,7 @@
           {
             "scene": "open_field",
             "check": "frame_ms.p95",
-            "value": 33.40000000000873,
+            "value": 33.400000000001455,
             "limit": 16.7,
             "verdict": "FAIL",
             "over": 16.7
@@ -128,24 +128,24 @@
           {
             "scene": "open_field",
             "check": "draw_calls",
-            "value": 402,
+            "value": 84,
             "limit": 1200,
             "verdict": "PASS"
           },
           {
             "scene": "open_field",
             "check": "tris",
-            "value": 658110,
+            "value": 449163,
             "limit": 4000000,
             "verdict": "PASS"
           },
           {
             "scene": "open_field",
             "check": "hitches_gt_50ms",
-            "value": 7,
+            "value": 95,
             "limit": 2,
             "verdict": "FAIL",
-            "over": 5
+            "over": 93
           },
           {
             "scene": "open_field",
@@ -199,32 +199,32 @@
           {
             "scene": "hedgerow",
             "check": "frame_ms.p95",
-            "value": 33.5,
+            "value": 50.09999999999127,
             "limit": 16.7,
             "verdict": "FAIL",
-            "over": 16.8
+            "over": 33.4
           },
           {
             "scene": "hedgerow",
             "check": "draw_calls",
-            "value": 814,
+            "value": 205,
             "limit": 1200,
             "verdict": "PASS"
           },
           {
             "scene": "hedgerow",
             "check": "tris",
-            "value": 590378,
+            "value": 352351,
             "limit": 4000000,
             "verdict": "PASS"
           },
           {
             "scene": "hedgerow",
             "check": "hitches_gt_50ms",
-            "value": 43,
+            "value": 238,
             "limit": 2,
             "verdict": "FAIL",
-            "over": 41
+            "over": 236
           },
           {
             "scene": "hedgerow",
@@ -278,32 +278,32 @@
           {
             "scene": "old_town",
             "check": "frame_ms.p95",
-            "value": 50,
+            "value": 33.400000000001455,
             "limit": 16.7,
             "verdict": "FAIL",
-            "over": 33.3
+            "over": 16.7
           },
           {
             "scene": "old_town",
             "check": "draw_calls",
-            "value": 696,
+            "value": 145,
             "limit": 1200,
             "verdict": "PASS"
           },
           {
             "scene": "old_town",
             "check": "tris",
-            "value": 604962,
+            "value": 344578,
             "limit": 4000000,
             "verdict": "PASS"
           },
           {
             "scene": "old_town",
             "check": "hitches_gt_50ms",
-            "value": 88,
+            "value": 70,
             "limit": 2,
             "verdict": "FAIL",
-            "over": 86
+            "over": 68
           },
           {
             "scene": "old_town",
@@ -357,7 +357,9 @@
         ]
       },
       "variance_flags": [
-        "hedgerow"
+        "open_field",
+        "hedgerow",
+        "old_town"
       ],
       "capture_meta": {
         "machine": "RTX3080-ws",
@@ -371,9 +373,9 @@
         "renderer_requested": "webgpu",
         "viewport": "1920x1080",
         "quality": "high",
-        "commit": "3985266",
+        "commit": "fda21e6",
         "dirty": true,
-        "date": "2026-11-18T17:25:13.450Z",
+        "date": "2026-11-18T18:07:54.748Z",
         "command": "node tools/perf/capture.mjs --m1 --gpu --renderer webgpu --viewport 1920x1080 --machine RTX3080-ws --veg 1 --out-dir reports/m1-perf-raw"
       }
     },

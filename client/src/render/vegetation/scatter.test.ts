@@ -147,3 +147,29 @@ describe('instance entry packing', () => {
     expect(POS_STEPS_PER_M * CHUNK_SIZE_M).toBe(4096);
   });
 });
+
+describe('scatter with a map mask (M1-051b)', () => {
+  // blocked: the strip x in [10, 30); forest: the square [32, 60) x [0, 64)
+  const mask = { blocked: (x: number) => x >= 10 && x < 30, forest: (x: number) => x >= 32 && x < 60 };
+  const base = { chunkX: 0, chunkZ: 0, seed: 5, heightAt: () => 0 };
+  const decode = (b: Uint8Array) => Array.from({ length: b.length / INSTANCE_BYTES }, (_, i) => unpackInstance(b, i * INSTANCE_BYTES));
+
+  it('places nothing on blocked cells and keeps a no-mask run unchanged', () => {
+    const withMask = decode(scatterChunk({ ...base, mask }));
+    expect(withMask.length).toBeGreaterThan(100);
+    expect(withMask.filter((d) => d.x >= 10 && d.x < 30)).toHaveLength(0);
+    expect(scatterChunk({ ...base })).toEqual(scatterChunk({ ...base, mask: undefined }));
+  });
+  it('concentrates trees in forest cells and thins grass with grassScale', () => {
+    const d = decode(scatterChunk({ ...base, mask }));
+    const trees = d.filter((x) => x.species === 2);
+    const inForest = trees.filter((x) => x.x >= 32 && x.x < 60).length;
+    expect(trees.length).toBeGreaterThan(5);
+    expect(inForest / trees.length).toBeGreaterThan(0.8);
+    const grass = (s: number) => decode(scatterChunk({ ...base, mask, grassScale: s })).filter((x) => x.species === 0).length;
+    expect(grass(0.4)).toBeLessThan(grass(1) * 0.6);
+  });
+  it('is deterministic', () => {
+    expect(scatterChunk({ ...base, mask, grassScale: 0.4 })).toEqual(scatterChunk({ ...base, mask, grassScale: 0.4 }));
+  });
+});
