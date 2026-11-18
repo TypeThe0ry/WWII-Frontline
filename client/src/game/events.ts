@@ -10,6 +10,10 @@ export const EV_SHOT = 1;
 export const EV_IMPACT = 2;
 export const EV_HIT_CONFIRM = 3;
 export const EV_DAMAGE_DIR = 4;
+export const EV_EXPLOSION = 5;
+export const EV_SUPPRESS = 6;
+/** Explosion radius code: 1/8 m per step (crates/server/src/snapshot/events_out.rs `EXPLOSION_RADIUS_STEP_M`). */
+export const EXPLOSION_RADIUS_STEP_M = 0.125;
 
 /**
  * Metres per code of the 14-bit position fields of Shot / Impact. The protocol leaves their metric
@@ -29,6 +33,8 @@ export class EventDecoder {
   private readonly shot: GameEvents['fire.remote'] = { shooter: 0, weapon: 0, muzzlePos: this.muzzle, dir: this.dir, distance: 0 };
   private readonly impact: GameEvents['impact'] = { pos: this.pos, normal: 0, material: 0 };
   private readonly hit: GameEvents['hit.confirm'] = { target: 0, zone: 0, damage: 0, killed: false };
+  private readonly boom: GameEvents['explosion'] = { pos: this.pos, radius: 0, own: false };
+  private readonly suppress: GameEvents['suppress'] = { angle: 0, intensity: 0 };
   private readonly dmg: GameEvents['damage.taken'] = { angle: 0, amount: 0 };
   /** Records dropped as duplicates (diagnostic). */
   duplicates = 0;
@@ -106,6 +112,21 @@ export class EventDecoder {
           this.dmg.angle = ((events[p] as number) / 256) * TAU;
           this.dmg.amount = (events[p + 1] as number) / 255;
           this.bus.emit('damage.taken', this.dmg);
+          break;
+        }
+        case EV_EXPLOSION: {
+          this.pos.x = u16(events, p) * EVENT_POS_STEP_M;
+          this.pos.y = u16(events, p + 2) * EVENT_POS_STEP_M;
+          this.pos.z = u16(events, p + 4) * EVENT_POS_STEP_M;
+          // payload byte p + 6 is the explosive kind; the radius is what the consumers need.
+          this.boom.radius = (events[p + 7] as number) * EXPLOSION_RADIUS_STEP_M;
+          this.bus.emit('explosion', this.boom);
+          break;
+        }
+        case EV_SUPPRESS: {
+          this.suppress.angle = ((events[p] as number) / 256) * TAU;
+          this.suppress.intensity = (events[p + 1] as number) / 255;
+          this.bus.emit('suppress', this.suppress);
           break;
         }
         default:
