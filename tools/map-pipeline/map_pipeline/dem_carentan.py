@@ -68,7 +68,7 @@ def build(incoming: Path, out: Path, root: Path) -> dict:
         "res_m": 1, "samples": NEAR_N, "hmin_m": hmin, "hmax_m": hmax, "datum": "IGN69",
         "offset_m": round(offset, 3), "offset_method": "p0.1 of the 1 m DEM (no water mask yet)",
         "source": "ign_lidar_hd", "row_order": "south_to_north",
-        "nodata_filled_cells": filled, "far_ring_lidar_coverage": round(far_cov, 4),
+        "nodata_filled_points": filled, "far_ring_lidar_coverage_pct": round(far_cov * 100, 2),
         "inputs": dem_prep.input_manifest(files),
     }
     meta["far_ring"] = {"res_m": 8, "samples": FAR_N, "extent_m": 8192}

@@ -53,7 +53,7 @@ def test_far_upsample_hits_far_samples_exactly():
 
 def test_blocker_polygon_is_a_4m_band():
     b = sl.blocker_polygon()
-    assert b["outer"][0] == [380.0, 520.0] and b["inner"][0] == [384.0, 524.0]
+    assert b["outer_m"][0] == [380.0, 520.0] and b["inner_m"][0] == [384.0, 524.0]
 
 
 def test_fill_nodata_counts_and_blends_neighbours():
