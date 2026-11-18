@@ -296,9 +296,13 @@ impl World {
                 },
             ))
             .id();
+        let rocket = self.loadout_rockets(req.player);
         self.ecs.entity_mut(e).insert((
             crate::weapon::MeleeState::default(),
-            crate::throwables::Gadgets::default(),
+            crate::throwables::Gadgets {
+                rocket,
+                ..Default::default()
+            },
             crate::combat::credit::RecentDamage::default(),
             crate::medical::ReviveHistory::default(),
             crate::medical::ReviveAction::default(),
@@ -781,6 +785,54 @@ impl World {
         })
     }
 
+    /// Rockets carried by the loadout chosen at the last deploy (0 without one).
+    fn loadout_rockets(&self, p: PlayerId) -> u8 {
+        use crate::data::defs::ExplosiveClass;
+        let Some(l) = self
+            .squads
+            .entry(p)
+            .and_then(|e| e.loadout)
+            .and_then(|i| self.cfg.data.loadouts.get(usize::from(i)))
+        else {
+            return 0;
+        };
+        [&l.gadget_1, &l.gadget_2]
+            .into_iter()
+            .flatten()
+            .filter(|g| {
+                self.cfg
+                    .data
+                    .explosive(&g.id)
+                    .is_some_and(|e| e.class == ExplosiveClass::AtRocket)
+            })
+            .map(|g| g.count as u8)
+            .sum()
+    }
+
+    /// Test-only (feature `test-util`): sets the rockets a player carries.
+    #[cfg(feature = "test-util")]
+    pub fn debug_set_rockets(&mut self, p: PlayerId, n: u8) {
+        if let Some(&(_, e)) = self.ecs.resource::<PlayerIndex>().map.get(&p) {
+            if let Some(mut g) = self
+                .ecs
+                .entity_mut(e)
+                .get_mut::<crate::throwables::Gadgets>()
+            {
+                g.rocket = n;
+            }
+        }
+    }
+
+    /// Shells and rockets in flight: `(owner, position)` in spawn order.
+    pub fn shell_positions(&self) -> Vec<(EntityId, Vec3)> {
+        self.ecs
+            .resource::<crate::vehicle::shells::Shells>()
+            .list
+            .iter()
+            .map(|s| (s.owner, s.pos))
+            .collect()
+    }
+
     /// Feeds KIA state to the squads and runs their upkeep (once per tick).
     fn sync_squads(&mut self) {
         if self.squads.is_empty() {
@@ -1203,6 +1255,10 @@ impl World {
             // M1-015: grenade counts and cooking, written only once a grenade was used.
             if let Some(g) = er.get::<crate::throwables::Gadgets>() {
                 use crate::throwables::system::{START_FRAG, START_SMOKE};
+                if g.rocket > 0 {
+                    h.write_u8(0xF3);
+                    h.write_u8(g.rocket);
+                }
                 if g.frag != START_FRAG || g.smoke != START_SMOKE || g.cook.is_some() {
                     h.write_u8(0xF0);
                     h.write_u8(g.frag);

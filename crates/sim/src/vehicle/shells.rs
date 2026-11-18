@@ -68,6 +68,8 @@ pub struct Shell {
     /// Smoke cloud (radius, seconds) for WP.
     pub smoke_radius: f32,
     pub smoke_s: f32,
+    /// The shell is removed past this distance from `origin` (0 = unlimited).
+    pub max_range_m: f32,
     pub origin: Vec3,
     pub pos: Vec3,
     pub vel: Vec3,
@@ -146,6 +148,7 @@ pub fn shell_from_def(
         blast_radius: def.explosion_radius_m,
         smoke_radius: def.cloud_radius_m,
         smoke_s: def.duration_s,
+        max_range_m: 0.0,
         origin,
         pos: origin,
         vel: dir * def.muzzle_velocity_mps,
@@ -395,7 +398,10 @@ pub fn shell_flight(
             let seg = s.vel * h;
             let len = seg.length();
             s.substeps += 1;
-            if len <= 1e-6 || s.substeps > max_sub {
+            if len <= 1e-6
+                || s.substeps > max_sub
+                || (s.max_range_m > 0.0 && (s.pos - s.origin).length() > s.max_range_m)
+            {
                 continue 'shells;
             }
             let dir = seg / len;

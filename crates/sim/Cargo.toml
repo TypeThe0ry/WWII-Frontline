@@ -156,3 +156,8 @@ required-features = ["test-util"]
 [[bench]]
 name = "armor_hit"
 harness = false
+
+[[bench]]
+name = "armor_pipeline"
+harness = false
+required-features = ["test-util"]

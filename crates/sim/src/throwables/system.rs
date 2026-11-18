@@ -128,6 +128,10 @@ pub struct Gadgets {
     pub frag: u8,
     pub smoke: u8,
     pub cook: Option<Cook>,
+    /// One-shot anti-tank rockets left (Panzerfaust, M1-023).
+    pub rocket: u8,
+    /// FIRE was held last tick (rockets fire on the rising edge).
+    pub fire_held: bool,
 }
 
 impl Default for Gadgets {
@@ -136,6 +140,8 @@ impl Default for Gadgets {
             frag: START_FRAG,
             smoke: START_SMOKE,
             cook: None,
+            rocket: 0,
+            fire_held: false,
         }
     }
 }

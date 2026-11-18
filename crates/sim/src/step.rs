@@ -47,6 +47,10 @@ pub enum SimEvent {
         vehicle: EntityId,
         shell: u8,
     },
+    /// A Panzerfaust was launched.
+    RocketFired {
+        shooter: EntityId,
+    },
     VehicleKnockedOut {
         vehicle: EntityId,
     },

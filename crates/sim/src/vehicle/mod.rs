@@ -7,6 +7,7 @@ pub mod collision;
 pub mod gun;
 pub mod internal;
 pub mod modules;
+pub mod rocket;
 pub mod seats;
 pub mod shell;
 pub mod shells;
@@ -25,6 +26,7 @@ use crate::data::defs::VehicleDef;
 use crate::hash::HashWriter;
 use crate::ids::EntityId;
 
+pub use rocket::rockets;
 pub use shells::shell_flight;
 
 pub const GRAVITY: f32 = 9.81;
