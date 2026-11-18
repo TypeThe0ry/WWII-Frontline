@@ -12,6 +12,8 @@ from .dem import _warp, require_gdal, window_bounds
 
 DST_SRS = "EPSG:32630"
 NEAR_N, FAR_N, FAR_RES = sl.NEAR_N, sl.FAR_N, sl.FAR_RES
+# Fixed extra check points inside the 1 m rectangle (local metres) so the check has >= 10 points.
+CHECK_GRID = [(500, 600), (900, 900), (1300, 1300), (700, 1500), (1500, 700), (1100, 1600)]
 
 
 def fill_far_outside_coverage(far: np.ndarray, nodata: np.ndarray) -> np.ndarray:
@@ -74,12 +76,13 @@ def build(incoming: Path, out: Path, root: Path) -> dict:
     carentan.dump(meta_path, meta)
     # Self-consistency check at the anchors (NOT an independent DEM; see PI-080).
     pts = []
-    for a in meta["anchors"]:
-        x, y = a["e"] - ox, a["n"] - oy
+    spots = [(a["id"], a["e"] - ox, a["n"] - oy) for a in meta["anchors"]]
+    spots += [(f"grid_{x}_{y}", float(x), float(y)) for x, y in CHECK_GRID]
+    for sid, x, y in spots:
         if 0 <= x < 2048 and 0 <= y < 2048:
-            pts.append({"id": a["id"], "e": a["e"], "n": a["n"],
+            pts.append({"id": sid, "e": ox + x, "n": oy + y,
                         "h_a": float(heights[int(round(y)), int(round(x))]),
-                        "h_b": float(_point(gdal, vrt, a["e"], a["n"]) - offset)})
+                        "h_b": float(_point(gdal, vrt, ox + x, oy + y) - offset)})
     stats = qa.compare(pts) if len(pts) >= qa.MIN_POINTS else {"n": len(pts), "ok": None}
     qa.write_csv(root / "reports" / "m1-dem-check.csv", pts)
     return {"hmin": hmin, "hmax": hmax, "offset": offset, "filled": filled, "qa": stats,
