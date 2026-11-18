@@ -34,6 +34,8 @@ declare global {
     __world?: WorldHandle;
     /** `?scene=pbr`: PBR material test scene and prewarm result (M1-042b). */
     __pbr?: import('./render/materials/pbr-scene').PbrSceneHandle;
+    /** `?post=high|medium|low`: post chain (M1-044b). */
+    __post?: import('./render/post/post-chain').PostHandle;
     /** `?vehicle=demo`: placeholder tank (M1-048b). */
     __vehicle?: import('./render/vehicles/vehicle-demo').VehicleDemoHandle;
     /** `?vfx=stress`: particle stress hook (M1-047b). */
@@ -134,6 +136,15 @@ async function boot(): Promise<void> {
     const reg = actors ? actors.manager.registry : new PlaceholderRegistry();
     window.__vehicle = await attachVehicleDemo(ctx, params, actors?.manager.fx ?? null, terrainHandle ? (x, z) => terrainHandle!.terrain.heightAt(x, z) : () => 0, reg);
     if (!actors) reg.install(window);
+  }
+
+  if (params.has('post') && ctx.scene.activeCamera) {
+    const { attachPost } = await import('./render/post/post-chain');
+    const t = params.get('post');
+    const flag = (k: string): boolean | undefined => (params.has(k) ? params.get(k) === '1' : undefined);
+    const post = attachPost(ctx.scene, ctx.scene.activeCamera, { tier: t === 'low' || t === 'medium' ? t : 'high', taa: flag('taa'), bloom: flag('bloom'), fxaa: flag('fxaa'), tonemap: flag('tonemap') });
+    window.__post = post;
+    ctx.onFrame((dtMs) => post.update(dtMs / 1000), 'first', 'post_update');
   }
 
   const overlay = new DebugOverlay(params.get('debug') === '1');
