@@ -1,0 +1,17 @@
+{
+  "_meta": { "task": "M1-069", "status": "initial", "note": "camera poses are placeholders until M1-051/052 map placement is final; changing any value invalidates baselines" },
+  "warmup_s": 10,
+  "capture_s": 60,
+  "repeats": 3,
+  "entities": 60,
+  "hud": "all_on",
+  "scenes": [
+    { "id": "open_field", "map": "p1", "pos_m": [0, 0, 0], "yaw_deg": 0, "time_of_day": "10:00", "weather": "clear", "script": "firefight_open" },
+    { "id": "hedgerow", "map": "p1", "pos_m": [0, 0, 0], "yaw_deg": 0, "time_of_day": "10:00", "weather": "clear", "script": "firefight_hedgerow" },
+    { "id": "old_town", "map": "p1", "pos_m": [0, 0, 0], "yaw_deg": 0, "time_of_day": "10:00", "weather": "clear", "script": "firefight_town" }
+  ],
+  "machines": [
+    { "id": "RTX3060-1080p", "tier": "high", "renderer": "webgpu", "viewport": "1920x1080" },
+    { "id": "IrisXe-720p", "tier": "low_webgl2_medium", "renderer": "webgl2", "viewport": "1280x720" }
+  ]
+}
