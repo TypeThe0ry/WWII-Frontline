@@ -1136,3 +1136,6 @@ CSM 用 Babylon `CascadedShadowGenerator`（`lighting/csm.ts`）：没有显式�
 
 ## PI-117 续：自写 CSM（2026-11-19）
 地形与 PBR 光照变体现在通过 `?csm=custom` 接收级联阴影（自写级联拟合 + RGBA32F 深度目标 + GLSL/WGSL 接收片段）。CPU 射线验真：地面阴影 WebGPU 97.2 %、WebGL2 96.3 % 一致；两后端截图 ΔE 均值 0.024。开销 WebGPU +0.5 ms GPU / +3.8–4.4 ms CPU，WebGL2 +0.2 ms GPU / +2.2–2.7 ms CPU（主要是阴影 pass 的 draw call）。投射体只有建筑与树篱；角色/坦克/植被不投射；太阳方向统一为 (0.45,-0.8,0.35)。
+
+## PI-118 续（2026-11-19）
+TAA 历史夹取默认开启（拖影 trail |ΔL| 4.67 → 3.11，FXAA 基线 2.08）；TAA→FXAA 回退已做（创建失败/帧预算 P95>25 ms×90 帧/手动，两后端实机验证）。**运动向量没有做**：Babylon PrePass 重投影在本管线里卡死渲染循环且不覆盖自定义着色器；正确做法是为地形/植被/PBR 各加速度变体 + 自写 TAA 解析（见 `reports/m1-post.md`），工作量大，另开任务。

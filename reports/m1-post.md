@@ -19,3 +19,26 @@
 - **没有自动曝光的亮度测量**（64-bin 直方图、2 EV 阶跃 ≤2 s 的实机验证）：`ExposureController` 只由 `setTargetEv` 手动给目标，实机阶跃响应没测。
 - 色调映射接在已经是 LDR 的光照输出之上，画面偏灰（`ip.exposure=1`、ACES）；真正的 HDR 光照要等 PBR 材质铺开。
 - FXAA 在 TAA 关闭的档位启用，没有做“TAA 失败回退 FXAA”的运行时判断；变体不增长门禁(6)、静止闪烁/拖影截图基线、Bloom 的单独 GPU 分项（Babylon 管线内部）没做。
+
+---
+
+# PI-118 续：TAA 拖影实测与 TAA→FXAA 运行时回退（2026-11-19，工作站 RTX 3080）
+
+## 拖影（`node tools/perf/taa-ghost.mjs`，`?scene=taa`）
+相机静止，棋盘格地面 + 一个亮盒每个循环帧移动约 3 px（位置是帧序号的函数，渲染循环跑到第 60 帧后停下截图）；参照图是同一条后处理管线里所有效果都关掉的同一帧（颜色空间一致），`trail` = 盒子最近 14 帧扫过的带状区域（不含盒子本身）里的平均 |ΔL|，`outside` = 其余区域（AA 本身带来的差，噪声底）。原始数据 `reports/m1-taa-ghost.json`，WebGPU 与 WebGL2 的数字一致到小数点后两位：
+
+| 配置 | trail |ΔL| | outside |ΔL| |
+| --- | --- | --- |
+| 仅 FXAA | 2.08 / 2.01（WebGPU / WebGL2） | 0.84 |
+| TAA，无历史夹取 | **4.67** | 0.84 |
+| **TAA + 3×3 历史夹取（现在默认）** | **3.11** | 0.83 |
+| 同上，factor 0.8 / 0.95 / 0.5 | 3.25 / 3.09 / 3.98 | 0.81 / 0.85 / 0.79 |
+
+历史夹取把拖影从 4.67 降到 3.11（-33 %），仍比 FXAA 的 2.08 多一点（多出的是运动物体后面的残影）。`factor` 取 0.9（0.95 几乎相同，0.5 更差）。
+
+## 运动向量：没有做出来（PI-118）
+Babylon 的 `reprojectHistory` 用 PrePass 的速度纹理：本管线里开启它会让渲染循环卡死（WebGPU 与 WebGL2 都试过，已去掉该选项），而且 PrePass 只会让 StandardMaterial/PBRMaterial 写速度，地形、植被和 PBR `ShaderMaterial` 这些自定义着色器不写。要做对需要：每个自定义着色器各加一个“速度”变体（地形要复刻顶点位移与 LOD 形变、植被要复刻摆动与 thin-instance 上一帧矩阵、PBR 要上一帧世界矩阵），渲染到一张 RG16F 目标，再自写 TAA 解析着色器（YCoCg 夹取、速度重投影、`motion_mask`）。相机移动时 Babylon 的 TAA 本来就自动关闭累积（`disableOnCameraMove`），所以静态场景的相机运动没有拖影；残留问题只是“相机静止但物体在动”。
+
+## TAA→FXAA 运行时回退（`post-chain.ts`、`post-guard.ts`，2 项单测）
+- 触发：(1) TAA 管线创建抛错（例如不支持）；(2) 帧预算守卫：连续 90 帧窗口的帧间隔 P95 超过 25 ms（默认，`?post_guard=ms`，`0` 关闭）；(3) 手动 `fallbackToFxaa(reason)`。回退后释放 TAA 管线、打开 FXAA，`fallbackReason()` 给出原因，重复调用无副作用。
+- 实机验证（WebGPU 与 WebGL2）：60 fps 下默认守卫不触发；`post_guard=1`（人为把上限降到 1 ms）90 帧后触发并切到 FXAA，渲染循环继续（271 帧）；手动回退第二次调用返回 false。
