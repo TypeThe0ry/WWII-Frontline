@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { EventBus, type GameEvents } from './event-bus';
-import { EV_DAMAGE_DIR, EV_HIT_CONFIRM, EV_IMPACT, EV_SHOT, EVENT_POS_STEP_M, EventDecoder } from './events';
+import { EV_DAMAGE_DIR, EV_EXPLOSION, EV_HIT_CONFIRM, EV_IMPACT, EV_SHOT, EV_SUPPRESS, EVENT_POS_STEP_M, EventDecoder } from './events';
 import { GameLoop, type ClockPort } from './game-loop';
 import { ScriptInput, HAVE_WASM, loadWasm } from './test-harness';
 import { LAYOUT_EVENT_RECORD_BYTES } from '../net/wasm';
@@ -52,6 +52,19 @@ describe('EventDecoder', () => {
     const dm = data['damage.taken'] as { angle: number; amount: number };
     expect(dm.angle).toBeCloseTo(Math.PI / 2, 6);
     expect(dm.amount).toBeCloseTo(128 / 255, 6);
+  });
+
+  it('decodes Explosion (type 5) and Suppress (type 6)', () => {
+    const bus = new EventBus<GameEvents>();
+    const got: Array<[string, unknown]> = [];
+    for (const k of ['explosion', 'suppress'] as const) bus.on(k, (p) => got.push([k, JSON.parse(JSON.stringify(p))]));
+    const d = new EventDecoder(bus, () => ({ x: 0, y: 0, z: 0 }));
+    d.decode(Uint8Array.from([...rec(1, EV_EXPLOSION, [...u16(640), ...u16(64), ...u16(1280), 0, 40]), ...rec(2, EV_SUPPRESS, [128, 255])]));
+    expect(got[0]).toEqual(['explosion', { pos: { x: 640 * EVENT_POS_STEP_M, y: 64 * EVENT_POS_STEP_M, z: 1280 * EVENT_POS_STEP_M }, radius: 5, own: false }]);
+    const sp = got[1]?.[1] as { angle: number; intensity: number };
+    expect(got[1]?.[0]).toBe('suppress');
+    expect(sp.angle).toBeCloseTo(Math.PI, 6);
+    expect(sp.intensity).toBe(1);
   });
 
   it('redundant copies (the server resends for up to 3 packets) are emitted once; unknown types are ignored', () => {

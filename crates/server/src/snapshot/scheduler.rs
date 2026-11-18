@@ -22,7 +22,7 @@ use frontline_sim::{EntityId, PlayerId, SimEvent, Team, Vec3, World};
 
 use super::aoi_grid::AoiGrid;
 use super::baseline_book::ClientBook;
-use super::events_out::{damage_angle, impact_event, shot_event};
+use super::events_out::{damage_angle, explosion_event, impact_event, shot_event};
 use super::priority::*;
 use super::self_state;
 use crate::metrics::Metrics;
@@ -516,6 +516,48 @@ impl SnapshotScheduler {
                             if let Some(b) = self.clients.get_mut(&c.player) {
                                 b.events.push(entry);
                             }
+                        }
+                    }
+                }
+                SimEvent::Explosion {
+                    pos,
+                    radius_m,
+                    kind,
+                } => {
+                    let id = self.event_id();
+                    let entry = EventEntry {
+                        id,
+                        event: explosion_event(pos, radius_m, kind),
+                    };
+                    for c in clients {
+                        let Some(o) = obs.get(&c.player) else {
+                            continue;
+                        };
+                        if o.pos.distance(pos) <= ENTER_M {
+                            if let Some(b) = self.clients.get_mut(&c.player) {
+                                b.events.push(entry);
+                            }
+                        }
+                    }
+                }
+                SimEvent::Suppress {
+                    target,
+                    source_dir,
+                    intensity,
+                } => {
+                    let Some(&tp) = self.player_of.get(&target) else {
+                        continue;
+                    };
+                    if clients.iter().any(|c| c.player == tp) {
+                        let id = self.event_id();
+                        if let Some(b) = self.clients.get_mut(&tp) {
+                            b.events.push(EventEntry {
+                                id,
+                                event: Event::Suppress {
+                                    source_dir,
+                                    intensity,
+                                },
+                            });
                         }
                     }
                 }
