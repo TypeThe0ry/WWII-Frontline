@@ -9,6 +9,8 @@ import { ShaderMaterial } from '@babylonjs/core/Materials/shaderMaterial';
 import type { Texture } from '@babylonjs/core/Materials/Textures/texture';
 import type { Scene } from '@babylonjs/core/scene';
 import { pbrGlsl, pbrWgsl } from './pbr-shader';
+import { dummyShadowTexture } from '../lighting/custom-csm';
+import { SHADOW_SAMPLERS } from '../lighting/csm-shader';
 import { MaterialFactory, type MaterialDesc } from './variants';
 
 export interface Lighting {
@@ -18,7 +20,14 @@ export interface Lighting {
   ambient: Color3;
 }
 
-export const DEFAULT_LIGHTING: Lighting = { dir: new Vector3(-0.45, -0.8, -0.35).normalize(), color: new Color3(3.0, 2.9, 2.7), ambient: new Color3(0.35, 0.4, 0.5) };
+export const DEFAULT_LIGHTING: Lighting = { dir: new Vector3(0.45, -0.8, 0.35).normalize(), color: new Color3(3.0, 2.9, 2.7), ambient: new Color3(0.35, 0.4, 0.5) };
+
+const dummies = new WeakMap<Scene, ReturnType<typeof dummyShadowTexture>>();
+function dummyForScene(scene: Scene): ReturnType<typeof dummyShadowTexture> {
+  let d = dummies.get(scene);
+  if (!d) dummies.set(scene, (d = dummyShadowTexture(scene)));
+  return d;
+}
 
 export function createPbrMaterial(scene: Scene, d: MaterialDesc, key: string, wgsl: boolean): ShaderMaterial {
   const src = wgsl ? pbrWgsl(d) : pbrGlsl(d);
@@ -33,6 +42,12 @@ export function createPbrMaterial(scene: Scene, d: MaterialDesc, key: string, wg
   if (d.pass === 'alpha') {
     m.alphaMode = 2; // ALPHA_COMBINE
     m.needAlphaBlending = () => true;
+  }
+  if (src.samplers.includes('shadow0')) {
+    // shadow contract: depth-1 dummies and `uShadowInfo.x = 0` until `CustomCsm.attach` binds real maps
+    const dummy = dummyForScene(scene);
+    for (const nme of SHADOW_SAMPLERS) m.setTexture(nme, dummy);
+    m.setVector4('uShadowInfo', new Vector4(0, 0, 0, 0));
   }
   m.setVector4('uAlbedo', new Vector4(1, 1, 1, 1));
   m.setVector4('uPbr', new Vector4(0, 0.6, 0.5, 0)); // metallic, roughness, alpha cutoff

@@ -25,6 +25,8 @@ import { frustumPlanes } from './frustum';
 import { buildGridMesh } from './grid-mesh';
 import { NEAR_BLEND_M, type TerrainData } from './terrain-data';
 import type { SplatMaps } from './terrain-splat';
+import { dummyShadowTexture } from '../lighting/custom-csm';
+import { SHADOW_SAMPLERS, SHADOW_UNIFORMS } from '../lighting/csm-shader';
 import { TERRAIN_FRAGMENT_GLSL, TERRAIN_VERTEX_GLSL } from './terrain-material.glsl';
 import { TERRAIN_FRAGMENT_WGSL, TERRAIN_VERTEX_WGSL } from './terrain-material.wgsl';
 
@@ -130,8 +132,8 @@ export class Terrain {
       wgsl ? { vertexSource: TERRAIN_VERTEX_WGSL, fragmentSource: TERRAIN_FRAGMENT_WGSL } : { vertexSource: TERRAIN_VERTEX_GLSL, fragmentSource: TERRAIN_FRAGMENT_GLSL },
       {
         attributes: [VertexBuffer.PositionKind, 'inst0', 'inst1'],
-        uniforms: ['viewProjection', 'uCam', 'uHeightRange', 'uMap', 'uMap2', 'uDebug', 'uYScale', 'uSplat'],
-        samplers: ['heightNear', 'heightFar', 'splatA', 'splatB'],
+        uniforms: ['viewProjection', 'uCam', 'uHeightRange', 'uMap', 'uMap2', 'uDebug', 'uYScale', 'uSplat', ...SHADOW_UNIFORMS],
+        samplers: ['heightNear', 'heightFar', 'splatA', 'splatB', ...SHADOW_SAMPLERS],
         shaderLanguage: wgsl ? ShaderLanguage.WGSL : ShaderLanguage.GLSL,
       },
     );
@@ -158,6 +160,12 @@ export class Terrain {
     mat.setTexture('splatA', sa);
     mat.setTexture('splatB', sb);
     mat.setVector4('uSplat', new Vector4(sp ? sp.sizeM : 1, sp ? 1 : 0, 0, 0));
+    // shadow contract (custom CSM, PI-117): dummy depth-1 maps and `uShadowInfo.x = 0` until `CustomCsm.attach` binds the real ones
+    const dummy = dummyShadowTexture(scene);
+    this.textures.push(dummy);
+    for (const nme of SHADOW_SAMPLERS) mat.setTexture(nme, dummy);
+    mat.setVector4('uShadowInfo', new Vector4(0, 0, 0, 0));
+    mat.setVector3('uCam', new Vector3());
     mesh.material = mat;
     this.material = mat;
 

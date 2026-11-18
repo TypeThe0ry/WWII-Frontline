@@ -6,6 +6,7 @@
  * position-only (+ alpha test / wind). The GLSL and WGSL sources implement the same maths; `pbr-delta-e` checks them against
  * each other on the GPU.
  */
+import { SHADOW_RECEIVER_GLSL, SHADOW_RECEIVER_WGSL, SHADOW_SAMPLERS, SHADOW_UNIFORMS } from '../lighting/csm-shader';
 import type { MaterialDesc } from './variants';
 
 export interface PbrSource {
@@ -26,11 +27,12 @@ function interface_(d: MaterialDesc): Pick<PbrSource, 'attributes' | 'uniforms' 
   const needUv = lit(d) || f.alphaTest;
   if (lit(d)) attributes.push('normal');
   if (needUv) attributes.push('uv');
-  if (lit(d)) uniforms.push('uCam', 'uAlbedo', 'uPbr', 'uLightDir', 'uLightColor', 'uAmbient');
+  if (lit(d)) uniforms.push('uCam', 'uAlbedo', 'uPbr', 'uLightDir', 'uLightColor', 'uAmbient', ...SHADOW_UNIFORMS);
   if (f.alphaTest && !lit(d)) uniforms.push('uPbr');
   if (needUv) samplers.push('albedoTex');
   if (f.normalMap && lit(d)) samplers.push('normalTex');
   if (f.detail && lit(d)) samplers.push('detailTex');
+  if (lit(d)) samplers.push(...SHADOW_SAMPLERS); // cascade shadow maps (read with a texel fetch, no sampler object)
   return { attributes, uniforms, samplers };
 }
 
@@ -73,6 +75,7 @@ uniform vec3 uLightDir;
 uniform vec3 uLightColor;
 uniform vec3 uAmbient;
 uniform sampler2D albedoTex;
+${SHADOW_RECEIVER_GLSL}
 ${f.normalMap ? 'uniform sampler2D normalTex;' : ''}
 ${f.detail ? 'uniform sampler2D detailTex;' : ''}
 const float PI = 3.14159265;
@@ -107,7 +110,8 @@ void main() {
   vec3 spec = D * G * F / max(4.0 * nl * nv, 1e-4);
   vec3 diff = (1.0 - F) * (1.0 - uPbr.x) * base.rgb / PI;
   vec3 amb = uAmbient * (0.5 + 0.5 * n.y) * mix(base.rgb, f0, uPbr.x);
-  gl_FragColor = vec4((diff + spec) * uLightColor * nl + amb, ${d.pass === 'alpha' ? 'base.a' : '1.0'});
+  float sh = shadowFactor(vPos, n, uCam);
+  gl_FragColor = vec4((diff + spec) * uLightColor * nl * sh + amb, ${d.pass === 'alpha' ? 'base.a' : '1.0'});
 }
 `;
   } else {
@@ -162,6 +166,7 @@ uniform uLightColor: vec3f;
 uniform uAmbient: vec3f;
 var albedoTex: texture_2d<f32>;
 var albedoTexSampler: sampler;
+${SHADOW_RECEIVER_WGSL}
 ${f.normalMap ? 'var normalTex: texture_2d<f32>;\nvar normalTexSampler: sampler;' : ''}
 ${f.detail ? 'var detailTex: texture_2d<f32>;\nvar detailTexSampler: sampler;' : ''}
 const PI: f32 = 3.14159265;
@@ -199,7 +204,8 @@ fn main(input: FragmentInputs) -> FragmentOutputs {
   let spec = D * G * F / max(4.0 * nl * nv, 1e-4);
   let diff = (vec3f(1.0) - F) * (1.0 - uniforms.uPbr.x) * base.rgb / PI;
   let amb = uniforms.uAmbient * (0.5 + 0.5 * n.y) * mix(base.rgb, f0, uniforms.uPbr.x);
-  fragmentOutputs.color = vec4f((diff + spec) * uniforms.uLightColor * nl + amb, ${d.pass === 'alpha' ? 'base.a' : '1.0'});
+  let sh = shadowFactor(wpos, n, uniforms.uCam);
+  fragmentOutputs.color = vec4f((diff + spec) * uniforms.uLightColor * nl * sh + amb, ${d.pass === 'alpha' ? 'base.a' : '1.0'});
 }
 `;
   } else {
