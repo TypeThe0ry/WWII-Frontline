@@ -201,3 +201,81 @@ d('data driven sizes', () => {
     }
   });
 });
+
+d('M1-045b: footsteps, prone, LOD, recoil layer', () => {
+  it('entity.footstep: ~10 alternating steps over 8 m of walking, none while prone, teleports ignored', async () => {
+    const { bus, state, mgr: m } = await setup(1);
+    const steps: { foot: string; stance: number }[] = [];
+    bus.on('entity.footstep', (e) => steps.push({ foot: e.foot, stance: e.stance }));
+    m.update(1, 16); // first frame only records the position
+    for (let i = 1; i <= 80; i++) {
+      state.entities.pos[0] = i * 0.1;
+      m.update(1, 16);
+    }
+    expect(steps.length).toBeGreaterThanOrEqual(9);
+    expect(steps.length).toBeLessThanOrEqual(11);
+    steps.forEach((s, i) => expect(s.foot).toBe(i % 2 === 0 ? 'left' : 'right'));
+    steps.length = 0;
+    state.entities.stance[0] = 2;
+    for (let i = 1; i <= 40; i++) {
+      state.entities.pos[0] = 8 + i * 0.1;
+      m.update(1, 16);
+    }
+    expect(steps.length).toBe(0); // prone: no footsteps
+    state.entities.stance[0] = 0;
+    state.entities.pos[0] = 500; // teleport
+    m.update(1, 16);
+    expect(steps.length).toBe(0);
+  });
+
+  it('prone lowers the body below crouch and the GD 9.2 transition time applies (stand->prone is not instant)', async () => {
+    const { state, mgr: m, data } = await setup(1);
+    m.update(1, 16);
+    const a = m.actor(10)!;
+    expect(a.height).toBeCloseTo(data.capsule.heightStand, 6);
+    state.entities.stance[0] = 2;
+    m.update(1, 100); // 100 ms into a 0.9 s transition: still tall
+    expect(a.height).toBeGreaterThan(data.capsule.heightCrouch);
+    for (let i = 0; i < 200; i++) m.update(1, 16); // 3.2 s: settled
+    expect(a.height).toBeLessThan(data.capsule.heightCrouch);
+    expect(a.height).toBeGreaterThan(0.2);
+    state.entities.stance[0] = 0;
+    for (let i = 0; i < 200; i++) m.update(1, 16);
+    expect(a.height).toBeCloseTo(data.capsule.heightStand, 6);
+  });
+
+  it('LOD by camera distance with hysteresis: markers go beyond 40 m, head and weapon beyond 120 m', async () => {
+    const { state, mgr: m, ts: scene } = await setup(1);
+    const cam = scene.scene.activeCamera!;
+    const place = (dist: number) => {
+      state.entities.pos[0] = cam.globalPosition.x + dist;
+      state.entities.pos[1] = cam.globalPosition.y;
+      state.entities.pos[2] = cam.globalPosition.z;
+      m.update(1, 16);
+    };
+    place(10);
+    const a = m.actor(10)!;
+    expect(a.lod).toBe(0);
+    place(60);
+    expect(a.lod).toBe(1);
+    place(42); // inside the 5 m hysteresis band of the 40 m threshold: stays
+    expect(a.lod).toBe(1);
+    place(200);
+    expect(a.lod).toBe(2);
+    place(20);
+    expect(a.lod).toBe(0);
+  });
+
+  it('fire.remote kicks the shooter aim pivot up and it decays', async () => {
+    const { bus, state, mgr: m } = await setup(1);
+    m.update(1, 16);
+    const a = m.actor(10)!;
+    state.entities.pitch[0] = 0;
+    bus.emit('fire.remote', { shooter: 10, weapon: 0, muzzlePos: { x: 0, y: 1, z: 0 }, dir: { x: 0, y: 0, z: 1 }, distance: 5 });
+    m.update(1, 16);
+    expect(a.kick).toBeGreaterThan(0.05);
+    expect(a.aim.rotation.x).toBeLessThan(-0.04);
+    for (let i = 0; i < 60; i++) m.update(1, 16);
+    expect(a.kick).toBe(0);
+  });
+});

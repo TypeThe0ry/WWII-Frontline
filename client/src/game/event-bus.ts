@@ -28,6 +28,8 @@ export interface GameEvents {
   /** The local player fired (prediction): never carries a hit result. `dir` is a unit vector. */
   'fire.local': { weapon: number; muzzlePos: Vec3; dir: Vec3 };
   'fire.remote': { shooter: number; weapon: number; muzzlePos: Vec3; dir: Vec3; distance: number };
+  /** A remote or local character's foot lands (M1-045b): from the stride phase of its movement, alternating feet. Read inside the handler (the payload is reused). */
+  'entity.footstep': { entity: number; foot: 'left' | 'right'; pos: Vec3; stance: number };
   'impact': { pos: Vec3; normal: number; material: number };
   /** An explosion at `pos` with damage radius `radius` (m, from the explosive's `damage_radius_m`); `own` = caused by the local player. Decoded from C2 type 5 (`own` is always false: the wire does not say who threw it). */
   'explosion': { pos: Vec3; radius: number; own: boolean };

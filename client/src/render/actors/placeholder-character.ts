@@ -96,6 +96,10 @@ export class PlaceholderCharacter {
   /** Current body height (metres), eased towards the stance height. */
   height: number;
   dead = false;
+  /** Detail level 0 (all parts) .. 2 (capsule only), set by the manager from the camera distance with hysteresis. */
+  lod = 0;
+  /** Upper-body recoil kick (rad), added to the aim pitch and decayed by `update`. */
+  kick = 0;
 
   private readonly body: InstancedMesh;
   private readonly hip: InstancedMesh;
@@ -164,15 +168,30 @@ export class PlaceholderCharacter {
 
   update(p: CharacterPose, dtMs: number, stanceMs: number): void {
     const { caps } = this.src;
-    const target = p.stance === 0 ? caps.heightStand : caps.heightCrouch;
-    const step = ((caps.heightStand - caps.heightCrouch) * dtMs) / Math.max(1, stanceMs);
+    // stance 0 stand, 1 crouch, 2 prone (lying: about twice the capsule radius high [tbd], no data field yet)
+    const target = p.stance === 0 ? caps.heightStand : p.stance === 2 ? Math.min(caps.heightCrouch, caps.radius * 2.2) : caps.heightCrouch;
+    const step = ((caps.heightStand - Math.min(caps.heightCrouch, caps.radius * 2.2)) * dtMs) / Math.max(1, stanceMs);
     if (this.height < target) this.height = Math.min(target, this.height + step);
     else if (this.height > target) this.height = Math.max(target, this.height - step);
     this.layout();
     this.root.position.set(p.x, p.y, p.z);
     this.root.rotation.y = p.yaw;
-    this.aim.rotation.x = -p.pitch;
+    this.kick = Math.max(0, this.kick - (dtMs / 1000) * 0.5);
+    this.aim.rotation.x = -p.pitch - this.kick;
     this.setDead(p.health === 0);
+  }
+
+  /** Switches the detail level: 1 hides the small markers (nose, shoulders, hip), 2 also the head and the weapon. */
+  setLod(lod: number): void {
+    if (lod === this.lod) return;
+    this.lod = lod;
+    for (const i of this.instances) {
+      const n = i.name;
+      const small = n.endsWith('_nose') || n.endsWith('_shoulders') || n.endsWith('_hip');
+      const head = n.endsWith('_head');
+      i.setEnabled(lod === 0 || (lod === 1 && !small) || (lod >= 2 && !small && !head));
+    }
+    this.weapon?.root.setEnabled(lod < 2);
   }
 
   /** Dead: lies on its side, half transparent. (Death animation proper is M1.) */
