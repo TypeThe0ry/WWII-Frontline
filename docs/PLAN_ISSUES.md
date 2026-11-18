@@ -1034,3 +1034,6 @@ M1-038 体量为 L。先交付与场景无关的引擎（行为树、效用、�
 
 ## PI-090 M1-039b：先补指标与常量统一（2026-11-18）
 `bots_active{team}` 与 `[BOT]` 前缀共用已落地；FillManager 接入 `sim_thread` 需要动态 spawn/移除 bot 的部署路径（M1-026 处理器）及 20 人无头局，留 039c，与 Officer/Support 行为合做。
+
+## PI-091 M1-040a：先做纯状态模块（2026-11-18）
+部署状态机、去重、击杀信息环、roster 合并先作为与 signals/协议解码无关的纯类落地并测试；roster 增量采用 per-player `seq` 取最大（假定 M1-010 的 `PlayerRoster` 增量带可比较序号，若实际字段不同按 protocol 为准再改）。`apply.ts` 与 EventMap 扩展留 040b。
