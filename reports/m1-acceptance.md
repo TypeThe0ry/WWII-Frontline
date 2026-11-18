@@ -5,10 +5,10 @@
 | E# | 标准 | 目标 | 实测 | 方法/命令/报告 | 结论 | 遗留(PI-xxx) |
 | --- | --- | --- | --- | --- | --- | --- |
 | E1-1 | 真人测试局 | ≥20 min、≥20 真人每队 10 | 无真人测试局；仅 headless 20 客户端 + 12 bot 300 s | `reports/m1-playtest-log.md`；人类 H-054/H-056 | 未测 | PI-104 |
-| E1-2 | 服务器 tick | P99 ≤ 28 ms，稳态 ≤ 18 ms | 20 客户端 + 12 bot：P50 1.626 / P99 3.54 / max 38.256 ms，超时 1 次（连续 1） | `scripts/loadtest-m0.sh --transport ws --count 20 --bots 12 --duration 300`；`reports/m1-loadtest-20-ws-lossless.json` | partial | M1-068b |
-| E1-3 | 带宽 | P50 ≤ 128、P99 ≤ 400 kbps，上行 ≤ 32 kbps | 下行 P50 15.96 / P99 26.6 kbps，上行 P50 20.5 kbps（无损、同机） | 同上 | partial | M1-068b（netem 未测） |
+| E1-2 | 服务器 tick | P99 ≤ 28 ms，稳态 ≤ 18 ms | 工作站（EPYC 7402，共享，非 VM）：20 客户端 + 12 bot，ws 300 s 四组（无损/丢包+抖动 A、B/150 ms RTT）P99 4.8–5.6 ms、max ≤29 ms、超时 0；WT 30 分钟 P99 5.8 ms、P50 2.46 ms，**但出现一次 201 ms 尖峰（3 次超时，连续 1）**——P99 与稳态 PASS，尖峰未归因 | `reports/m1-loadtest-netem.md`、`reports/loadtest-1119/*.json` | **partial（P99/稳态 PASS；30 分钟尖峰待查）** | M1-068b 余项 |
+| E1-3 | 带宽 | P50 ≤ 128、P99 ≤ 400 kbps，上行 ≤ 32 kbps | 各运行（含 2 %/5 % 丢包+抖动与 150 ms RTT、WT 30 分钟）下行 P50 14–21 / P99 22–30 kbps，上行 P50 20.5 kbps | 同上 | **PASS（工作站）** | — |
 | E1-4 | AOI | 视锥外且 >96 m 敌人下发 = 0 | `aoi_audit.rs::no_enemy_is_sent_outside_the_r3_rules`（20 人 10v10 移动/转向场景，独立复述 R3 界限）通过；loadtest 20+12 bot 路径未接审计；aoi_encode P99 ≤ 0.5 ms | `cargo test -p frontline-server --test aoi_audit`（M1-024a） | partial | PI-071 |
-| E1-5 | 延迟补偿 | 150 ms RTT 命中率差 ≤ 5% | 未测（无 netem、无对照场景） | M1-068b | 未测 | M1-068b |
+| E1-5 | 延迟补偿 | 150 ms RTT 命中率差 ≤ 5% | 服务器事件命中率 无损 17.9 %（111/621）vs 150 ms RTT 22.5 %（130/577），差 4.6 pp；**不是有效检验**（含 bot、无客户端瞄准、每组约 600 发、标准误约 1.6 pp），需瞄准射击对照场景 | `reports/m1-loadtest-netem.md` | **未判定** | M1-068b 余项（m1_loadtest20.rs） |
 | E1-6 | High 性能 | P95 ≤ 16.7 ms、≤1200 draw call、≤4.0 M 三角形 | **工作站数字（RTX 3080，非 3060 参考机，PI-109）：draw call/三角形通过，CPU 通过，P95/卡顿无法判定**。draw call 84/205/145（PASS）、三角形 ≤0.45 M（PASS）、提高优先级后 CPU P50 8.2–9.3 ms（目标约 10.4，PASS）；帧 P95 16.8–83 ms、卡顿帧 6–169/60 s（限 2）但**已查明来自共享 GPU 被其它任务占满（93–100 %）**，与植被上传无关（对照实验，PI-114）：该项需空闲 GPU/参考机重测，**不记 PASS**。分 pass GPU 预算、wasm 内存未测 | `reports/m1-perf.md`（E1-6 复查节）、`reports/m1-perf.json`、`reports/m1-perf-raw/` | **未判定（工作站被占用）；参考机未测** | H-021、空闲 GPU 复测 |
 | E1-7 | Low 性能 | ≥30 fps，draw call ≤900/500 | 未测（无 Iris Xe 级机器，且渲染器没有 Low 档运行路径的 M1 采集；High 档工作站 draw call 84–205 仅供参考） | `reports/m1-perf.md` | 未测 | M1-069b、H-021 |
 | E1-8 | 材质变体 | ≤ 60 | 运行时场景实际使用的材质 18 种（≤60，**代理量**：材质数，不是 CI `variant-count` 的着色器变体数；含 M0 灰盒占位）；`variant-count` 的 M1 数字仍未产出 | `reports/m1-perf.md`（材质节） | 部分（代理 PASS；变体数未测） | M1-069b |

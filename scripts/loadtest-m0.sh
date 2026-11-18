@@ -5,6 +5,7 @@
 #   scripts/loadtest-m0.sh --transport ws --duration 600             # acceptance 2
 #   scripts/loadtest-m0.sh --count 100 --bots 0 --duration 120 --out reports/m0/loadtest-wt-100.json
 #
+# Env: LOADTEST_SERVER_CPUS / LOADTEST_CLIENT_CPUS (default 0,1 / 2,3) pick the pinned CPUs on big shared machines.
 # Options: --transport wt|ws  --duration S  --count N  --bots N  --seed N  --warmup S
 #          --sample-interval S (default 10)  --out FILE  --debug (use the debug build)  --no-build
 #          --no-pin (by default, with `taskset` and >= 4 CPUs, the server is pinned to CPUs 0-1 and the
@@ -49,8 +50,8 @@ HEADLESS="target/$PROFILE/headless-client"
 
 SRV_PIN=() HL_PIN=()
 if [ "$PIN" = 1 ] && command -v taskset >/dev/null && [ "$(nproc)" -ge 4 ]; then
-  SRV_PIN=(taskset -c 0,1); HL_PIN=(taskset -c 2,3)
-  echo "pinning: server -> CPUs 0,1; headless-client -> CPUs 2,3"
+  SRV_PIN=(taskset -c "${LOADTEST_SERVER_CPUS:-0,1}"); HL_PIN=(taskset -c "${LOADTEST_CLIENT_CPUS:-2,3}")
+  echo "pinning: server -> CPUs ${LOADTEST_SERVER_CPUS:-0,1}; headless-client -> CPUs ${LOADTEST_CLIENT_CPUS:-2,3} (override with LOADTEST_SERVER_CPUS / LOADTEST_CLIENT_CPUS)"
 else
   echo "pinning: off (server and clients share all CPUs)"
 fi
