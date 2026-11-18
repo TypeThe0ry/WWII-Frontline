@@ -41,6 +41,8 @@ pub struct Projectile {
     pub vel: Vec3,
     /// Sub-steps flown so far (lifetime).
     pub substeps: u32,
+    /// Lag-compensation rewind of the targets, in ticks (M1-025); 0 = live positions.
+    pub rewind: u8,
 }
 
 /// All projectiles in spawn order.
@@ -70,8 +72,16 @@ impl Projectiles {
             pos: origin,
             vel,
             substeps: 0,
+            rewind: 0,
         });
         id
+    }
+
+    /// Sets the rewind of projectile `id` (just spawned).
+    pub fn set_rewind(&mut self, id: u32, rewind: u8) {
+        if let Some(p) = self.list.iter_mut().rev().find(|p| p.id == id) {
+            p.rewind = rewind;
+        }
     }
 
     pub fn as_slice(&self) -> &[Projectile] {
@@ -137,6 +147,7 @@ pub fn projectile_system(
     mut events: ResMut<EventBuf>,
     mut hitlog: ResMut<HitLog>,
     tick: Res<CurrentTick>,
+    lag: Res<crate::combat::lagcomp::LagComp>,
     mut seen: ResMut<SuppressSeen>,
     mut sq: Query<&mut SuppressionState>,
     mut q: Query<(&Transform, &Motion, &Team, &mut Health)>,
@@ -175,6 +186,13 @@ pub fn projectile_system(
         let bp = wt
             .ballistics(pr.weapon)
             .unwrap_or_else(|| BallisticsParams::from_def(def));
+        let frame = if pr.rewind > 0 && lag.enabled {
+            lag.history.frame(crate::ids::Tick(
+                tick.0 .0.saturating_sub(u32::from(pr.rewind)),
+            ))
+        } else {
+            None
+        };
         let fate = advance(
             &mut pr,
             def,
@@ -191,6 +209,7 @@ pub fn projectile_system(
             (tick.0 .0, cfg.hz),
             &mut seen,
             &mut sq,
+            frame,
         );
         if matches!(fate, Fate::Alive) {
             keep.push(pr);
@@ -221,6 +240,7 @@ fn advance(
     (tick, hz): (u32, u8),
     seen: &mut SuppressSeen,
     sq: &mut Query<&mut SuppressionState>,
+    frame: Option<&crate::combat::lagcomp_history::HitboxFrame>,
 ) -> Fate {
     for _ in 0..SUBSTEPS {
         let p0 = pr.pos;
@@ -242,10 +262,19 @@ fn advance(
             if !t.alive || t.id == pr.owner {
                 continue;
             }
-            if !hitbox::seg_aabb_overlap(p0, p1, t.foot) {
+            // Lag compensation: the shooter saw this target where the history says.
+            let (foot, blend) = frame
+                .and_then(|f| {
+                    f.players
+                        .binary_search_by_key(&t.id, |p| p.id)
+                        .ok()
+                        .map(|k| (f.players[k].foot, f.players[k].blend))
+                })
+                .unwrap_or((t.foot, t.blend));
+            if !hitbox::seg_aabb_overlap(p0, p1, foot) {
                 continue;
             }
-            if let Some(hit) = hitbox::segment_hit(t.foot, t.blend, p0, p1) {
+            if let Some(hit) = hitbox::segment_hit(foot, blend, p0, p1) {
                 if body.is_none_or(|b| hit.t < b.0) {
                     body = Some((hit.t, hit.zone, i));
                 }

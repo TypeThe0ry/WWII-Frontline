@@ -130,6 +130,7 @@ pub fn weapons(
     rng: Res<SimRng>,
     table: Res<EntityTable>,
     mut projs: ResMut<Projectiles>,
+    lag: Res<crate::combat::lagcomp::LagComp>,
     mut events: ResMut<EventBuf>,
     mut q: Query<(
         &Transform,
@@ -187,7 +188,13 @@ pub fn weapons(
         if let Some(shot) = out.shot {
             let weapon = w.def_id;
             let v = wt.ballistics(weapon).map_or(0.0, |b| b.muzzle_velocity_mps);
-            projs.spawn(id, *team, weapon, shot.muzzle, shot.dir * v);
+            let pid = projs.spawn(id, *team, weapon, shot.muzzle, shot.dir * v);
+            if lag.enabled {
+                let (r, _) = crate::combat::lagcomp::rewind_ticks(tick.0 .0, cmd.view_tick);
+                if r > 0 {
+                    projs.set_rewind(pid, r);
+                }
+            }
             events.0.push(SimEvent::Shot {
                 shooter: id,
                 weapon,

@@ -567,3 +567,7 @@ blocked / in-progress / todo：无。M0 的 33 个任务全部已提交（M0-033
 
 ### M1-024 服务端 AOI v1 — partial — 2026-11-18 — 提交见 git log
 - `data/rules/aoi.json`（+schema/校验）→ `AoiParams`；3D 视锥、转身并集、滞回；`aoi_enemy_leak_total` 指标与 `tests/aoi_audit.rs` 泄漏审计；`TeamChannel`（C3 1 Hz）；`vehicle_rate_hz`。余项见 PI-071。
+
+
+### M1-025 延迟补偿 025a — partial — 2026-11-18 — 提交见 git log
+- `combat/lagcomp.rs`（`rewind_ticks`/`resolve_fire`/`LagComp` 资源）、世界每 tick 写 16 帧历史、弹丸 `rewind` 字段（非零才入哈希）、弹丸阶段对回溯目标用历史帧；服务器 `lagcomp_clamped_total`。余项见 PI-072。

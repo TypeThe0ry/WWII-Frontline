@@ -129,6 +129,7 @@ impl World {
         ecs.insert_resource(crate::throwables::Throwables::default());
         ecs.insert_resource(crate::throwables::Smokes::default());
         ecs.insert_resource(Projectiles::default());
+        ecs.insert_resource(crate::combat::lagcomp::LagComp::default());
         ecs.insert_resource(crate::suppression::SuppressSeen::default());
         ecs.insert_resource(crate::spawn::SpawnRules::default());
         ecs.insert_resource(crate::spawn::garrison::Garrisons::default());
@@ -188,6 +189,7 @@ impl World {
         }
         self.apply_warmup_wait();
         self.schedule.run(&mut self.ecs);
+        self.record_lagcomp();
         self.reap_wrecks();
         self.sync_squads();
         self.refresh_views();
@@ -199,6 +201,45 @@ impl World {
                 &mut self.ecs.resource_mut::<crate::rules::RuleChangeBuf>().0,
             ),
         }
+    }
+
+    /// Writes this tick's player hitbox frame (M1-025), ascending entity id.
+    fn record_lagcomp(&mut self) {
+        use crate::combat::lagcomp_history::PlayerHitboxes;
+        let tick = self.tick();
+        let ids: Vec<(EntityId, bevy_ecs::entity::Entity)> =
+            self.ecs.resource::<EntityTable>().sorted().collect();
+        let mut frame: Vec<PlayerHitboxes> = Vec::with_capacity(ids.len());
+        for (id, e) in ids {
+            let er = self.ecs.entity(e);
+            let (Some(t), Some(m), Some(h)) = (
+                er.get::<crate::components::Transform>(),
+                er.get::<crate::components::Motion>(),
+                er.get::<crate::health::Health>(),
+            ) else {
+                continue;
+            };
+            if h.hp > 0.0 {
+                frame.push(PlayerHitboxes {
+                    id,
+                    foot: t.pos,
+                    blend: m.stance_blend,
+                    head_dx: 0.0,
+                    head_dz: 0.0,
+                });
+            }
+        }
+        self.ecs
+            .resource_mut::<crate::combat::lagcomp::LagComp>()
+            .history
+            .record(tick, &frame);
+    }
+
+    /// Switches lag compensation on or off (off is the control for hit-rate comparisons).
+    pub fn set_lagcomp_enabled(&mut self, on: bool) {
+        self.ecs
+            .resource_mut::<crate::combat::lagcomp::LagComp>()
+            .enabled = on;
     }
 
     /// Removes wrecks whose timer ran out and frees their entity ids.
@@ -1440,6 +1481,10 @@ impl World {
                 h.write_f32(v.z);
             }
             h.write_u32(p.substeps);
+            if p.rewind > 0 {
+                h.write_u8(0xF4);
+                h.write_u8(p.rewind);
+            }
         }
         h.finish()
     }

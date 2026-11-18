@@ -7,6 +7,7 @@
 
 pub mod credit;
 pub mod damage;
+pub mod lagcomp;
 pub mod lagcomp_history;
 
 pub use damage::{
