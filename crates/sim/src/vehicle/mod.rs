@@ -2,6 +2,7 @@
 //! spring suspension with a track drive model. No general vehicle controller and no Rapier
 //! body (PI-066): one small deterministic integrator, bodies visited in ascending `EntityId`.
 
+pub mod armor;
 pub mod collision;
 pub mod seats;
 pub mod snapshot;

@@ -1,0 +1,254 @@
+{
+ "shell": {
+  "kind": "ap",
+  "caliber_mm": 75.0,
+  "p100_mm": 82.0,
+  "drop_pct_per_100m": 3.5,
+  "structure_damage_hp": 400
+ },
+ "geometry": "n=(0,0,1); v_hat=(sin(phi),0,-cos(phi))",
+ "cases": [
+  {
+   "id": "c01",
+   "note": "flush front plate, close",
+   "thickness_mm": 51,
+   "phi_deg": 0,
+   "dist_m": 100,
+   "expect": {
+    "phi_eff_deg": 0,
+    "t_eff_mm": 51.0,
+    "p_mm": 82.0,
+    "result": "pen"
+   },
+   "steps": [
+    "phi_eff = max(0,0-5) = 0",
+    "t_eff = min(51/cos(0), 153) = 51.00",
+    "P(100) = 82.00; P >= t_eff -> pen"
+   ]
+  },
+  {
+   "id": "c02",
+   "note": "pen at 30deg",
+   "thickness_mm": 51,
+   "phi_deg": 30,
+   "dist_m": 300,
+   "expect": {
+    "phi_eff_deg": 25,
+    "t_eff_mm": 56.27,
+    "p_mm": 76.26,
+    "result": "pen"
+   },
+   "steps": [
+    "phi_eff = max(0,30-5) = 25",
+    "t_eff = min(51/cos(25), 153) = 56.27",
+    "P(300) = 76.26; P >= t_eff -> pen"
+   ]
+  },
+  {
+   "id": "c03",
+   "note": "sloped glacis far: no pen",
+   "thickness_mm": 51,
+   "phi_deg": 56,
+   "dist_m": 600,
+   "expect": {
+    "phi_eff_deg": 51,
+    "t_eff_mm": 81.04,
+    "p_mm": 67.65,
+    "result": "nopen"
+   },
+   "steps": [
+    "phi_eff = max(0,56-5) = 51",
+    "t_eff = min(51/cos(51), 153) = 81.04",
+    "P(600) = 67.65; P < t_eff -> nopen"
+   ]
+  },
+  {
+   "id": "c04",
+   "note": "turret mantlet 76 normal, pen",
+   "thickness_mm": 76,
+   "phi_deg": 0,
+   "dist_m": 100,
+   "expect": {
+    "phi_eff_deg": 0,
+    "t_eff_mm": 76.0,
+    "p_mm": 82.0,
+    "result": "pen"
+   },
+   "steps": [
+    "phi_eff = max(0,0-5) = 0",
+    "t_eff = min(76/cos(0), 228) = 76.00",
+    "P(100) = 82.00; P >= t_eff -> pen"
+   ]
+  },
+  {
+   "id": "c05",
+   "note": "76 at 30deg far: no pen",
+   "thickness_mm": 76,
+   "phi_deg": 30,
+   "dist_m": 300,
+   "expect": {
+    "phi_eff_deg": 25,
+    "t_eff_mm": 83.86,
+    "p_mm": 76.26,
+    "result": "nopen"
+   },
+   "steps": [
+    "phi_eff = max(0,30-5) = 25",
+    "t_eff = min(76/cos(25), 228) = 83.86",
+    "P(300) = 76.26; P < t_eff -> nopen"
+   ]
+  },
+  {
+   "id": "c06",
+   "note": "76 sloped far: no pen",
+   "thickness_mm": 76,
+   "phi_deg": 56,
+   "dist_m": 600,
+   "expect": {
+    "phi_eff_deg": 51,
+    "t_eff_mm": 120.77,
+    "p_mm": 67.65,
+    "result": "nopen"
+   },
+   "steps": [
+    "phi_eff = max(0,56-5) = 51",
+    "t_eff = min(76/cos(51), 228) = 120.77",
+    "P(600) = 67.65; P < t_eff -> nopen"
+   ]
+  },
+  {
+   "id": "c07",
+   "note": "side plate sloped, pen",
+   "thickness_mm": 38,
+   "phi_deg": 56,
+   "dist_m": 300,
+   "expect": {
+    "phi_eff_deg": 51,
+    "t_eff_mm": 60.38,
+    "p_mm": 76.26,
+    "result": "pen"
+   },
+   "steps": [
+    "phi_eff = max(0,56-5) = 51",
+    "t_eff = min(38/cos(51), 114) = 60.38",
+    "P(300) = 76.26; P >= t_eff -> pen"
+   ]
+  },
+  {
+   "id": "c08",
+   "note": "side plate normal 600 m, pen",
+   "thickness_mm": 38,
+   "phi_deg": 0,
+   "dist_m": 600,
+   "expect": {
+    "phi_eff_deg": 0,
+    "t_eff_mm": 38.0,
+    "p_mm": 67.65,
+    "result": "pen"
+   },
+   "steps": [
+    "phi_eff = max(0,0-5) = 0",
+    "t_eff = min(38/cos(0), 114) = 38.00",
+    "P(600) = 67.65; P >= t_eff -> pen"
+   ]
+  },
+  {
+   "id": "c09",
+   "note": "overmatch thin plate, cap 45deg, pen",
+   "thickness_mm": 19,
+   "phi_deg": 56,
+   "dist_m": 100,
+   "expect": {
+    "phi_eff_deg": 45,
+    "t_eff_mm": 26.87,
+    "p_mm": 82.0,
+    "result": "pen"
+   },
+   "steps": [
+    "phi_eff = max(0,56-5) = 51",
+    "overmatch: 75 >= 3*19=57 -> phi_eff = min(.,45) = 45",
+    "t_eff = min(19/cos(45), 57) = 26.87",
+    "P(100) = 82.00; P >= t_eff -> pen"
+   ]
+  },
+  {
+   "id": "c10",
+   "note": "ricochet at 70 phi_eff",
+   "thickness_mm": 51,
+   "phi_deg": 75,
+   "dist_m": 100,
+   "expect": {
+    "phi_eff_deg": 70,
+    "t_eff_mm": null,
+    "p_mm": 82.0,
+    "result": "ricochet"
+   },
+   "steps": [
+    "phi_eff = max(0,75-5) = 70",
+    "phi_eff 70 >= 68 -> ricochet"
+   ]
+  },
+  {
+   "id": "c11",
+   "note": "phi_eff exactly 68: ricochet",
+   "thickness_mm": 76,
+   "phi_deg": 73,
+   "dist_m": 300,
+   "expect": {
+    "phi_eff_deg": 68,
+    "t_eff_mm": null,
+    "p_mm": 76.26,
+    "result": "ricochet"
+   },
+   "steps": [
+    "phi_eff = max(0,73-5) = 68",
+    "phi_eff 68 >= 68 -> ricochet"
+   ]
+  },
+  {
+   "id": "c12",
+   "note": "phi_eff 67.9 just under: no ricochet; no pen",
+   "thickness_mm": 38,
+   "phi_deg": 72.9,
+   "dist_m": 300,
+   "expect": {
+    "phi_eff_deg": 67.9,
+    "t_eff_mm": 101.0,
+    "p_mm": 76.26,
+    "result": "nopen"
+   },
+   "steps": [
+    "phi_eff = max(0,72.9-5) = 67.9",
+    "t_eff = min(38/cos(67.9), 114) = 101.00",
+    "P(300) = 76.26; P < t_eff -> nopen"
+   ]
+  },
+  {
+   "id": "c13",
+   "note": "critical: margin ~1.2%",
+   "thickness_mm": 51,
+   "phi_deg": 56,
+   "dist_m": 100,
+   "expect": {
+    "phi_eff_deg": 51,
+    "t_eff_mm": 81.04,
+    "p_mm": 82.0,
+    "result": "pen"
+   },
+   "steps": [
+    "phi_eff = max(0,56-5) = 51",
+    "t_eff = min(51/cos(51), 153) = 81.04",
+    "P(100) = 82.00; P >= t_eff -> pen"
+   ]
+  }
+ ],
+ "critical": [
+  {
+   "id": "c13",
+   "factor_lo": 0.95,
+   "result_lo": "nopen",
+   "factor_hi": 1.05,
+   "result_hi": "pen"
+  }
+ ]
+}

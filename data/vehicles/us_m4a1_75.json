@@ -202,6 +202,7 @@
         "shells": [
           {
             "id": "us_75mm_m61_apcbc",
+            "caliber_mm": 75,
             "type": "ap",
             "muzzle_velocity_mps": 619,
             "p100_mm": 82,
@@ -210,6 +211,7 @@
           },
           {
             "id": "us_75mm_m48_he",
+            "caliber_mm": 75,
             "type": "he",
             "muzzle_velocity_mps": 619,
             "he_pen_mm": 15,
@@ -218,6 +220,7 @@
           },
           {
             "id": "us_75mm_wp_smoke",
+            "caliber_mm": 75,
             "type": "smoke",
             "muzzle_velocity_mps": 619,
             "cloud_radius_m": 12,
