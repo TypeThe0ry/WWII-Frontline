@@ -613,3 +613,7 @@ blocked / in-progress / todo：无。M0 的 33 个任务全部已提交（M0-033
 
 ### M1-035 区块烘焙 035a — partial — 2026-11-18 — 提交见 git log
 - `splat.py`、`vegetation.py`、`chunker.py`、CLI `chunks-m1`、`tests/test_chunker.py`；`data/maps/carentan/m1/chunks/{index.json,FORMAT.txt}`、`reports/m1-chunk-bake.json`；区块二进制输出到 `assets/processed/maps/carentan/m1/chunks/`（不入库）。
+
+
+### M1-036 导航网格烘焙 036a — partial — 2026-11-18 — 提交见 git log
+- `tools/nav-bake`（pnpm 工作区包，recast-navigation 0.44.0，MIT）、`tools/map-pipeline/nav/{inputs,offmesh,run}.py`、CLI `nav`、`tests/test_nav.py`；`data/maps/carentan/m1/{navmesh.bin,navmesh_vehicle.bin,navmesh_params.json,offmesh.json}`、`reports/m1-navmesh.json`；LICENSES.md §5 登记依赖。

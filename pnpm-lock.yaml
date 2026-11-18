@@ -100,6 +100,12 @@ importers:
         specifier: 8.20.0
         version: 8.20.0
 
+  tools/nav-bake:
+    dependencies:
+      recast-navigation:
+        specifier: 0.44.0
+        version: 0.44.0
+
 packages:
 
   '@babylonjs/core@8.56.2':
@@ -381,6 +387,15 @@ packages:
     resolution: {integrity: sha512-Rb+5RPo9gWSaHtzJeauhHxiC8KP/IF2DEPkHPEOGOnuy2wnJzRqyeLRankUCYd6ADqtxS6GnWGv6Ie343d8aYw==}
     peerDependencies:
       preact: '>= 10.25.0 || >=11.0.0-0'
+
+  '@recast-navigation/core@0.44.0':
+    resolution: {integrity: sha512-N4YO9JBXrGFf3LkrhXmABa7pEwLHvq/gq6o7pLKKu5A4JAp+A5y/9424ps3cVpO1m7ibh3zlXmeewTut9LeXQw==}
+
+  '@recast-navigation/generators@0.44.0':
+    resolution: {integrity: sha512-i2N/sCfuq7IJcSuMmHuX2Uer6oonr9PzFZTrPpwS/e2t+ZpVLHb3DHFY9evKrL2X8diO7sDUDBOpTfW/4Nwucw==}
+
+  '@recast-navigation/wasm@0.44.0':
+    resolution: {integrity: sha512-VNv7xv50cFCdsGd2LdQWZqtLcWXB7nyi4Ilq9t5GMn3GEfCmJEbbeZWSXX5Mgdc4yj71QueTv15V7hPDAQ9gaw==}
 
   '@rolldown/binding-android-arm-eabi@1.2.19':
     resolution: {integrity: sha512-e+Ebe0WT+9tbXmNKPIiC8YrWAHYwug3m6i4p3rZGGulfZri1jtI4HslT+OZnFf/OIHowWF71DTlHwXBP2SiA7A==}
@@ -984,6 +999,9 @@ packages:
     resolution: {integrity: sha512-+Owyggi9IxT1ePKGafcI87ubSmxol6smwJ+RAHDQlx9+9cPwFWDiKFFCPuWhr9ignlGpZ9vDQLw67N4dcTVFEA==}
     engines: {node: '>=20'}
 
+  recast-navigation@0.44.0:
+    resolution: {integrity: sha512-Qu5ETIZZo69uk3lvjJpdgopPUFp95dTmKljckjpSdL1IbdX26837R8j4nC2oHT6tEKViVwkIvy9Zbzyxr27GiQ==}
+
   require-from-string@2.0.2:
     resolution: {integrity: sha512-Xf0nWe6RseziFMu+Ap9biiUbmplq6S9/p+7w7YXP/JBHhrUDDUhwa+vANyubuqfZWTveU//DYVGsDG7RKL/vEw==}
     engines: {node: '>=0.10.0'}
@@ -1421,6 +1439,17 @@ snapshots:
     dependencies:
       '@preact/signals-core': 1.14.5
       preact: 11.2.0
+
+  '@recast-navigation/core@0.44.0':
+    dependencies:
+      '@recast-navigation/wasm': 0.44.0
+
+  '@recast-navigation/generators@0.44.0':
+    dependencies:
+      '@recast-navigation/core': 0.44.0
+      '@recast-navigation/wasm': 0.44.0
+
+  '@recast-navigation/wasm@0.44.0': {}
 
   '@rolldown/binding-android-arm-eabi@1.2.19':
     optional: true
@@ -1970,6 +1999,11 @@ snapshots:
   qified@0.10.1:
     dependencies:
       hookified: 2.2.0
+
+  recast-navigation@0.44.0:
+    dependencies:
+      '@recast-navigation/core': 0.44.0
+      '@recast-navigation/generators': 0.44.0
 
   require-from-string@2.0.2: {}
 

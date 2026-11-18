@@ -96,8 +96,20 @@ def main(argv=None) -> int:
     ch.add_argument("--out", default="data/maps/carentan")
     ch.add_argument("--dest", default="assets/processed/maps/carentan/m1/chunks")
     ch.add_argument("--workers", type=int, default=4)
+    nv = sub.add_parser("nav", help="bake the M1 slice navmeshes (M1-036, needs tools/nav-bake deps)")
+    nv.add_argument("--slice", default="m1")
+    nv.add_argument("--repo", default=".")
+    nv.add_argument("--out", default="data/maps/carentan")
+    nv.add_argument("--tmp", default="assets/processed/maps/carentan/m1/nav")
     a = ap.parse_args(argv)
 
+    if a.cmd == "nav":
+        import sys as _s
+        _s.path.insert(0, str(Path(__file__).resolve().parent.parent))
+        from nav import run as nav_run
+
+        root = Path(a.repo)
+        return nav_run.run(root, Path(a.out), root / "tools" / "nav-bake", root / a.tmp)
     if a.cmd == "chunks-m1":
         return _chunks(a)
     if a.cmd == "zones-m1":
