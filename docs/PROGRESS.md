@@ -617,3 +617,8 @@ blocked / in-progress / todo：无。M0 的 33 个任务全部已提交（M0-033
 
 ### M1-036 导航网格烘焙 036a — partial — 2026-11-18 — 提交见 git log
 - `tools/nav-bake`（pnpm 工作区包，recast-navigation 0.44.0，MIT）、`tools/map-pipeline/nav/{inputs,offmesh,run}.py`、CLI `nav`、`tests/test_nav.py`；`data/maps/carentan/m1/{navmesh.bin,navmesh_vehicle.bin,navmesh_params.json,offmesh.json}`、`reports/m1-navmesh.json`；LICENSES.md §5 登记依赖。
+
+
+### M1-036 修正与 M1-037 bots 寻路 037a — partial — 2026-11-18 — 提交见 git log
+- 修正 M1-036 连通性检查（终点须到达目标 3 m 内；Detour 查询节点上限提高），网格 `max_edge_len_m` 24 m（多边形 22,243→17,839），门洞缺口 3.2 m；重新烘焙并更新 `reports/m1-navmesh.json`。
+- 新增 `crates/bots/src/nav/*`、`tests/nav_mesh.rs`、`benches/nav_query.rs`、`reports/m1-bots-nav.json`。

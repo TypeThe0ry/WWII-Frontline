@@ -19,6 +19,7 @@ pub mod brain;
 pub mod ctx;
 pub mod difficulty;
 pub mod grid_nav;
+pub mod nav;
 pub mod perception;
 pub mod soldier;
 

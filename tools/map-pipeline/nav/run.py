@@ -16,8 +16,8 @@ from . import inputs, offmesh
 ARCH = {"cell_size": 0.3, "cell_height": 0.2, "agent_radius": 0.4, "agent_height": 1.8, "max_climb": 0.5, "max_slope": 45}
 PARAMS = {
     "schema": "frontline.map.navmesh_params/1", "tile_size_m": 128, "origin": [380.0, 0.0, 520.0],
-    "walk": dict(ARCH),
-    "vehicle": {"cell_size": 0.5, "cell_height": 0.25, "agent_radius": 2.0, "agent_height": 2.6, "max_climb": 0.6, "max_slope": 25},
+    "walk": {**ARCH, "max_edge_len_m": 24.0},
+    "vehicle": {"cell_size": 0.5, "cell_height": 0.25, "agent_radius": 2.0, "agent_height": 2.6, "max_climb": 0.6, "max_slope": 25, "max_edge_len_m": 24.0},
     "areas": {"ground": 1, "wade": 2, "door": 3, "water": 0},
     "kcc_walk_slope_limit_deg": 35,
     "note": "walk params follow ARCHITECTURE 16.2 (MAPS 6.2 differs: PI-085); wade/door areas are not marked yet (PI-085)",
@@ -63,8 +63,12 @@ def points(out: Path, h, seed=7) -> dict:
             ring = f["geometry"]["coordinates"][0]
             cx, cy = ba.centroid(ring)
             d = pr["door"]["center"]
-            ox, oy = d[0] + (d[0] - cx) * 0.0, d[1]
-            blds.append({"id": pr["_osm_id"], "from": [d[0], _y(h, *d), d[1]], "to": [cx, _y(h, cx, cy), cy]})
+            # inside target: 2.5 m from the door towards the centroid (the centroid itself can lie outside a concave footprint)
+            L = max(1e-6, ((cx - d[0]) ** 2 + (cy - d[1]) ** 2) ** 0.5)
+            k = min(1.0, 2.5 / L)
+            ix, iy = d[0] + (cx - d[0]) * k, d[1] + (cy - d[1]) * k
+            ox, oy = d[0], d[1]
+            blds.append({"id": pr["_osm_id"], "from": [ox, _y(h, ox, oy), oy], "to": [ix, _y(h, ix, iy), iy]})
     return {"paths": paths, "water": [[x, _y(h, x, y), y] for x, y in water], "road": [[x, _y(h, x, y), y] for x, y in road],
             "buildings": blds}
 
@@ -82,6 +86,8 @@ def run(repo: Path, out: Path, node_dir: Path, tmp: Path) -> int:
         v, t, st, h = inputs.build(out, mode == "vehicle")
         inputs.write(tmp / f"{mode}.bin", v, t)
         pts = points(out, h)
+        if mode == "vehicle":
+            pts.pop("buildings")
         (tmp / f"pts_{mode}.json").write_text(json.dumps(pts), encoding="utf-8")
         binp = m1 / ("navmesh.bin" if mode == "walk" else "navmesh_vehicle.bin")
         cmd = ["node", "src/bake.mjs", "--in", str(tmp / f"{mode}.bin"), "--params", str(pj), "--mode", mode, "--out", str(binp),
