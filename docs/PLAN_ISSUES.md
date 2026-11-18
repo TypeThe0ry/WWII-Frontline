@@ -1127,3 +1127,6 @@ CSM 用 Babylon `CascadedShadowGenerator`（`lighting/csm.ts`）：没有显式�
 
 ## PI-120 M1-046b：FP 武器 pass 与贴墙（2026-11-19）
 武器相机 + 层掩码（`fp/fp-pass.ts`）替代 M0 的 renderingGroup 深度清除；贴墙只对世界场景的建筑网格有效（树篱 thin-instance 不拾取，没有碰撞世界接线），枪口前伸取占位枪 socket 的距离而不是 /data 的 `length_m`（该字段不存在）。`ads.state` 是新总线事件，目前没有消费者。数字见 `reports/m1-fp.md`。
+
+## PI-115 续：E1-5 改为 sim 级瞄准射击检验（2026-11-19）
+`crates/sim/tests/lagcomp_hitrate.rs`：每组 600 发，目标随机速度/方向/折返，射手按显示位姿（`view_tick` 个 tick 之前）瞄准并带 ±0.2 m 瞄准误差；0 ms（3 tick 插值）与 150 ms RTT（3+2 tick）命中率均为 90.7 %，差 0.0 pp；视图延迟估计抖动 ±1 tick 时 -4.3 pp；关闭补偿的对照 36.2 % / 21.0 %。这是**没有网络栈**的检验（回溯 tick 数代替 RTT），不能替代带 netem 的端到端射击对照（需要 headless 客户端真正按插值位姿瞄准开火，`m1_loadtest20.rs` 仍未做）。上一版的“服务器事件命中率 17.9 % vs 22.5 %”不再作为 E1-5 的依据。
