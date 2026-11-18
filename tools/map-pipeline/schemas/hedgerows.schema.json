@@ -45,7 +45,17 @@
                 "pattern": "^(way|relation)/[0-9]+$",
                 "type": "string"
               },
+              "confidence": {
+                "enum": [
+                  "A",
+                  "B",
+                  "C"
+                ]
+              },
               "gap": {
+                "type": "boolean"
+              },
+              "has_gap": {
                 "type": "boolean"
               },
               "height_m": {
@@ -63,7 +73,16 @@
                 "minimum": 0,
                 "type": "number"
               },
+              "source": {
+                "enum": [
+                  "osm_draft",
+                  "traced"
+                ]
+              },
               "vehicle_blocking": {
+                "type": "boolean"
+              },
+              "verified": {
                 "type": "boolean"
               }
             },

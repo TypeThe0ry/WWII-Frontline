@@ -76,6 +76,9 @@
               "vehicle_ok": {
                 "type": "boolean"
               },
+              "verified": {
+                "type": "boolean"
+              },
               "width_m": {
                 "exclusiveMinimum": 0,
                 "type": "number"

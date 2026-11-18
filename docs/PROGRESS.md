@@ -600,3 +600,8 @@ blocked / in-progress / todo：无。M0 的 33 个任务全部已提交（M0-033
 ### M1-032 OSM 矢量提取与清洗 032a — partial — 2026-11-18 — 提交见 git log
 - `map_pipeline/{osm,osm_rules,clean,modern_filter}.py`、CLI `osm` / `validate-vectors`、`tools/map-pipeline/schemas/*.schema.json`（5 层）、`tests/test_osm.py`；`data/maps/carentan/{roads,water,hedgerows,buildings,forests}.geojson`、`ATTRIBUTION_OSM.txt`、`reports/m1-osm-summary.json`；本地门槛 map 组增加 `validate-vectors`。
 - 真实数据：764 条道路 / 2,839 栋建筑 / 32 段树篱；结果见 STATUS。
+
+
+### M1-033 1944 修正 033a — partial — 2026-11-18 — 提交见 git log
+- `apply_edits.py`、`hedgerow_tools.py`、`edits_1944.py`、CLI `edits-1944`、`tests/test_apply_edits.py`；`data/maps/carentan/{terrain_edits.geojson,removed_modern.json,slice_m1_targets.json}`、`reports/m1-{1944-edits,heightmap-diff}.json`；M1-032 图层增加 `verified:false`，树篱 `source:"osm_draft"`。
+- 缺人工输入，退出码 4（partial），见 STATUS。

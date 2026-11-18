@@ -86,6 +86,12 @@
               "kind": {
                 "type": "string"
               },
+              "vehicle_blocking": {
+                "type": "boolean"
+              },
+              "verified": {
+                "type": "boolean"
+              },
               "walkable_depth_m": {
                 "minimum": 0,
                 "type": "number"

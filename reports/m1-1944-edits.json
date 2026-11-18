@@ -1,0 +1,21 @@
+{
+  "flood_marsh_polygons": 0,
+  "hedgerow_deviation_pct": null,
+  "hedgerow_slice_total_m": 708.0,
+  "hedgerow_sources": {
+    "osm_draft": 32,
+    "traced": 0
+  },
+  "hedgerow_target_m": null,
+  "missing_inputs": [
+    "traced hedgerows",
+    "flood polygons",
+    "remove_ids list",
+    "hedgerow_total_m_target"
+  ],
+  "removed_by_human_list": 0,
+  "removed_modern": 63,
+  "schema": 1,
+  "status": "partial",
+  "terrain_edits": 0
+}

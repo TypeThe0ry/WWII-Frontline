@@ -82,8 +82,16 @@ def main(argv=None) -> int:
     om.add_argument("--out", default="data/maps/carentan")
     vv = sub.add_parser("validate-vectors", help="schema + range check of a map's vector layers")
     vv.add_argument("dir")
+    ed = sub.add_parser("edits-1944", help="merge human 1944 inputs into the OSM draft (M1-033)")
+    ed.add_argument("--repo", default=".")
+    ed.add_argument("--out", default="data/maps/carentan")
+    ed.add_argument("--incoming", default="assets/incoming/maps/carentan/traced")
     a = ap.parse_args(argv)
 
+    if a.cmd == "edits-1944":
+        from . import edits_1944
+
+        return edits_1944.run(Path(a.repo), Path(a.out), Path(a.incoming))
     if a.cmd == "osm":
         return _osm(a)
     if a.cmd == "validate-vectors":
