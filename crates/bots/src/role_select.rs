@@ -137,7 +137,7 @@ mod tests {
             let s = SquadSnapshot {
                 kind,
                 size: 1 + next(&mut rng) % 6,
-                is_leader: next(&mut rng) % 2 == 0,
+                is_leader: next(&mut rng).is_multiple_of(2),
                 held: &held,
                 crewman_cap: 3,
             };
