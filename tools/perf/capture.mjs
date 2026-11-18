@@ -9,6 +9,7 @@
 // Options: --renderer webgl2|webgpu (default webgl2)  --cams 0,1,2  --repeats N (3)  --warmup S (5)  --duration S (30)
 //          --viewport WxH (640x360 without --gpu, 1920x1080 with)  --quality high|low  --machine NAME (default: hostname)
 //          --out-dir DIR (reports/m0/perf)  --gpu (use the machine's GPU: no SwiftShader flags)  --headed
+//          --novsync (uncap the frame rate: --disable-frame-rate-limit --disable-gpu-vsync)
 //          --url URL (an already running client instead of starting a Vite dev server)
 // Output: <out-dir>/perf-<machine>-<renderer>-cam<N>.json  { meta, runs: [PerfDump + meta], aggregate }
 // Without a usable WebGPU adapter a webgpu request is skipped and written as { skipped: reason } (reported "未测").
@@ -40,6 +41,7 @@ function parseArgs(argv) {
     else if (a === '--out-dir') o.outDir = path.resolve(next());
     else if (a === '--gpu') o.gpu = true;
     else if (a === '--headed') o.headed = true;
+    else if (a === '--novsync') o.novsync = true;
     else if (a === '--url') o.url = next();
     else if (a === '-h' || a === '--help') {
       console.log(readHelp());
@@ -85,11 +87,13 @@ async function startVite() {
 }
 
 function chromiumArgs(o) {
-  const args = ['--enable-precise-memory-info', '--disable-background-timer-throttling', '--disable-renderer-backgrounding', '--disable-backgrounding-occluded-windows'];
+  const args = [...(o.novsync ? ['--disable-frame-rate-limit', '--disable-gpu-vsync'] : []), '--enable-precise-memory-info', '--disable-background-timer-throttling', '--disable-renderer-backgrounding', '--disable-backgrounding-occluded-windows'];
   if (!o.gpu) args.push('--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist');
   if (o.renderer === 'webgpu') {
     args.push('--enable-unsafe-webgpu', '--enable-features=Vulkan,WebGPU');
     if (!o.gpu) args.push('--use-webgpu-adapter=swiftshader');
+    // Linux + NVIDIA: without these the browser reports no WebGPU adapter (blocklist / non-Vulkan ANGLE backend).
+    else if (process.platform === 'linux') args.push('--use-angle=vulkan', '--ignore-gpu-blocklist');
   }
   return args;
 }
@@ -135,7 +139,13 @@ async function runOnce(browser, o, baseUrl, cam, runIndex) {
 async function main() {
   const o = parseArgs(process.argv.slice(2));
   mkdirSync(o.outDir, { recursive: true });
-  const { chromium } = require('playwright');
+  // pnpm does not hoist `playwright`; the client only depends on @playwright/test (re-exports chromium).
+  let chromium;
+  try {
+    ({ chromium } = require('playwright'));
+  } catch {
+    ({ chromium } = require('@playwright/test'));
+  }
   const server = o.url ? { url: o.url.endsWith('/') ? o.url : `${o.url}/`, close: async () => {} } : await startVite();
   const browser = await chromium.launch({ headless: !o.headed, args: chromiumArgs(o) });
   const meta = {
