@@ -547,3 +547,6 @@ blocked / in-progress / todo：无。M0 的 33 个任务全部已提交（M0-033
 
 ### M1-020a Supplies — partial（020b Ammo Crate 待做）— 2026-11-18 — 提交见 git log
 - 新模块 `supply/`（crates/depot/limits/provider/system）：Supply Crate、HQ Depot、据点补给点、Support 搬运、80 m 反滥用、40 箱 FIFO、`SupplyProvider` 真实实现；`data/rules/supplies.json` 类型化解析；Garrison 放置接入；测试 `supply_crates` 8 项（PI-062）。
+
+### M1-020b Ammo Crate 与补弹 — done（M1-020 完成）— 2026-11-18 — 提交见 git log
+- `supply/ammo.rs`：Ammo Crate（600 点/150 s/每命 2 个/冷却 30 s/同点 ≤3）、`resupply()` 单价补弹（主武器→手雷→绷带）、按住 USE 1.5 s 补弹；`supplies.json` 补单价；测试 `supply_ammo` 8 项（含 e2e 闭环）、bench `supply`（PI-063）。

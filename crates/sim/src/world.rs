@@ -131,6 +131,10 @@ impl World {
         ecs.insert_resource(crate::spawn::garrison::Garrisons::default());
         ecs.insert_resource(crate::supply::SupplyWorld::default());
         ecs.insert_resource(crate::supply::SupplyCfg::from_data(cfg.data, cfg.tick_hz));
+        ecs.insert_resource(crate::supply::ammo::AmmoCfg::from_data(
+            cfg.data,
+            cfg.tick_hz,
+        ));
         ecs.insert_resource(crate::rules::Objectives::default());
         ecs.insert_resource(crate::rules::MatchState::default());
         ecs.insert_resource(crate::rules::MatchCfg::from_data(cfg.data, cfg.tick_hz));
@@ -805,6 +809,12 @@ impl World {
                 h.write_u32(p.stock);
                 h.write_u32(p.timer);
             }
+            for c in sw.ammo.values() {
+                h.write_u32(c.id);
+                h.write_u32(c.points);
+                h.write_f32(c.hp);
+                h.write_u32(c.expires_at);
+            }
             for c in sw.crates.values() {
                 h.write_u32(c.id);
                 h.write_u32(c.supplies);
@@ -1422,6 +1432,138 @@ impl World {
             self.pending_events.push(SimEvent::CrateDestroyed { id });
         }
         broke
+    }
+
+    /// A Support places an Ammo Crate at its feet (2 per life, 30 s cooldown, 3 per spot).
+    pub fn place_ammo_crate(
+        &mut self,
+        who: PlayerId,
+    ) -> Result<u32, crate::supply::ammo::AmmoPlaceError> {
+        use crate::supply::ammo::*;
+        let now = self.tick().0;
+        let &(_, e) = self
+            .ecs
+            .resource::<PlayerIndex>()
+            .map
+            .get(&who)
+            .ok_or(AmmoPlaceError::NotAlive)?;
+        let (team, pos, ok_life, support) = {
+            let er = self.ecs.entity(e);
+            let life = er.get::<LifeState>().unwrap();
+            (
+                *er.get::<Team>().unwrap(),
+                er.get::<Transform>().unwrap().pos,
+                !life.is_dead() && !life.is_downed(),
+                er.get::<crate::supply::Support>().is_some_and(|s| s.0),
+            )
+        };
+        if !ok_life {
+            return Err(AmmoPlaceError::NotAlive);
+        }
+        if !support {
+            return Err(AmmoPlaceError::NotSupport);
+        }
+        let cfg = self.ecs.resource::<AmmoCfg>().clone();
+        let mut sw = self.ecs.resource_mut::<crate::supply::SupplyWorld>();
+        if sw.ammo_count.get(&who).copied().unwrap_or(0) >= cfg.max_uses {
+            return Err(AmmoPlaceError::LimitPerLife);
+        }
+        if sw
+            .ammo_last
+            .get(&who)
+            .is_some_and(|&t| now.saturating_sub(t) < cfg.cooldown_ticks)
+        {
+            return Err(AmmoPlaceError::Cooldown);
+        }
+        let stacked = sw
+            .ammo
+            .values()
+            .filter(|c| crate::supply::dist_xz(c.pos, pos) <= STACK_RADIUS_M)
+            .count();
+        if stacked >= MAX_STACK {
+            return Err(AmmoPlaceError::Stacked);
+        }
+        let id = sw.next_id;
+        sw.next_id += 1;
+        sw.ammo.insert(
+            id,
+            AmmoCrate {
+                id,
+                team,
+                pos,
+                points: cfg.content_points,
+                hp: cfg.hp,
+                expires_at: now + cfg.lifetime_ticks,
+                owner: who,
+            },
+        );
+        *sw.ammo_count.entry(who).or_insert(0) += 1;
+        sw.ammo_last.insert(who, now);
+        self.pending_events
+            .push(SimEvent::CratePlaced { id, team, pos });
+        Ok(id)
+    }
+
+    pub fn ammo_crates(&self) -> Vec<crate::supply::ammo::AmmoCrate> {
+        self.ecs
+            .resource::<crate::supply::SupplyWorld>()
+            .ammo
+            .values()
+            .cloned()
+            .collect()
+    }
+
+    /// Damages an Ammo Crate (HP 100; small arms x0.1 like Supply Crates); `true` if it broke.
+    pub fn damage_ammo_crate(
+        &mut self,
+        id: u32,
+        nominal: f32,
+        kind: crate::supply::CrateDamage,
+    ) -> bool {
+        let broke = {
+            let mut sw = self.ecs.resource_mut::<crate::supply::SupplyWorld>();
+            let Some(c) = sw.ammo.get_mut(&id) else {
+                return false;
+            };
+            c.hp -= nominal * kind.mult();
+            if c.hp <= 0.0 {
+                sw.ammo.remove(&id);
+                true
+            } else {
+                false
+            }
+        };
+        if broke {
+            self.pending_events.push(SimEvent::CrateDestroyed { id });
+        }
+        broke
+    }
+
+    /// Test-only (feature `test-util`): sets a player's spare rounds and grenades / bandages.
+    #[cfg(feature = "test-util")]
+    pub fn debug_set_ammo(&mut self, id: PlayerId, reserve: u16, frag: u8, bandages: u8) {
+        if let Some(&(_, e)) = self.ecs.resource::<PlayerIndex>().map.get(&id) {
+            let mut er = self.ecs.entity_mut(e);
+            if let Some(mut w) = er.get_mut::<WeaponState>() {
+                w.reserve = reserve;
+            }
+            if let Some(mut g) = er.get_mut::<crate::throwables::system::Gadgets>() {
+                g.frag = frag;
+            }
+            if let Some(mut v) = er.get_mut::<crate::medical::Vitals>() {
+                v.bandages = bandages;
+            }
+        }
+    }
+
+    pub fn ammo_state(&self, id: PlayerId) -> Option<(u16, u8, u8)> {
+        let &(_, e) = self.ecs.resource::<PlayerIndex>().map.get(&id)?;
+        let er = self.ecs.entity(e);
+        Some((
+            er.get::<WeaponState>()?.reserve,
+            er.get::<crate::throwables::system::Gadgets>()?.frag,
+            er.get::<crate::medical::Vitals>()?.bandages,
+        ))
     }
 
     /// Test-only (feature `test-util`): sets the stock of Depot `i`.

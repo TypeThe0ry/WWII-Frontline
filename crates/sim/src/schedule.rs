@@ -651,6 +651,7 @@ pub fn build_schedule() -> Schedule {
             (
                 crate::spawn::garrison::garrisons,
                 crate::supply::system::supply,
+                crate::supply::ammo::ammo,
             )
                 .chain(),
             respawns,
@@ -683,6 +684,7 @@ pub fn build_schedule() -> Schedule {
             (
                 crate::spawn::garrison::garrisons,
                 crate::supply::system::supply,
+                crate::supply::ammo::ammo,
             )
                 .chain(),
             respawns,

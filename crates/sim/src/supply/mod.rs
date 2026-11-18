@@ -12,6 +12,7 @@ use crate::components::Team;
 use crate::data::GameData;
 use crate::ids::PlayerId;
 
+pub mod ammo;
 pub mod crates;
 pub mod depot;
 pub mod limits;
@@ -77,6 +78,13 @@ pub struct SupplyWorld {
     pub points: Vec<SupplyPoint>,
     /// Ticks each player has held USE.
     pub hold: BTreeMap<PlayerId, u32>,
+    pub ammo: BTreeMap<u32, ammo::AmmoCrate>,
+    /// Ticks each player has held USE next to an Ammo Crate.
+    pub ammo_hold: BTreeMap<PlayerId, u32>,
+    /// Ammo Crates each player placed this life.
+    pub ammo_count: BTreeMap<PlayerId, u8>,
+    /// Tick each player last placed an Ammo Crate.
+    pub ammo_last: BTreeMap<PlayerId, u32>,
 }
 
 impl SupplyWorld {

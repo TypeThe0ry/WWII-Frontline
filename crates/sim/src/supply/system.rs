@@ -16,6 +16,7 @@ use super::{
 
 /// Notice codes of `SimEvent::SupplyNotice`.
 pub const NOTICE_NO_PLACE: u8 = 1;
+pub const NOTICE_NOTHING_TO_RESUPPLY: u8 = 2;
 
 #[allow(clippy::type_complexity)]
 pub fn supply(
