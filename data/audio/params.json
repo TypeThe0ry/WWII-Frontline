@@ -1,0 +1,29 @@
+{
+  "layer_near_fade_start_m": 30,
+  "layer_near_fade_end_m": 90,
+  "layer_mid_in_start_m": 30,
+  "layer_mid_in_end_m": 60,
+  "layer_mid_out_start_m": 200,
+  "layer_mid_out_end_m": 300,
+  "layer_far_in_start_m": 200,
+  "layer_far_peak_m": 600,
+  "speed_of_sound_mps": 343,
+  "shot_delay_min_distance_m": 150,
+  "shot_delay_max_s": 3,
+  "merge_window_ms": 50,
+  "merge_max_rounds": 4,
+  "footstep_max_slots": 8,
+  "footstep_audible_walk_m": 20,
+  "footstep_audible_run_m": 35,
+  "footstep_audible_crouch_m": 8,
+  "suppress_lowpass_recover_ms": 400,
+  "_meta": {
+    "status": "initial",
+    "tunable": [
+      "layer_near_fade_start_m", "layer_near_fade_end_m", "layer_mid_in_start_m", "layer_mid_in_end_m", "layer_mid_out_start_m", "layer_mid_out_end_m",
+      "layer_far_in_start_m", "layer_far_peak_m", "shot_delay_min_distance_m", "shot_delay_max_s", "merge_window_ms", "merge_max_rounds",
+      "footstep_max_slots", "footstep_audible_walk_m", "footstep_audible_run_m", "footstep_audible_crouch_m", "suppress_lowpass_recover_ms"
+    ],
+    "calibration_ref": "ARCHITECTURE §12.2; REFERENCE_MEASUREMENTS §4.12 (AU-01/02/04, to be measured)"
+  }
+}

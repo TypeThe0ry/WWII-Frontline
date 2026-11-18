@@ -1,0 +1,153 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://frontline.invalid/schemas/audio_params.schema.json",
+  "title": "Audio parameters (ARCHITECTURE 12.2; M1-063)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "layer_near_fade_start_m",
+    "layer_near_fade_end_m",
+    "layer_mid_in_start_m",
+    "layer_mid_in_end_m",
+    "layer_mid_out_start_m",
+    "layer_mid_out_end_m",
+    "layer_far_in_start_m",
+    "layer_far_peak_m",
+    "speed_of_sound_mps",
+    "shot_delay_min_distance_m",
+    "shot_delay_max_s",
+    "merge_window_ms",
+    "merge_max_rounds",
+    "footstep_max_slots",
+    "footstep_audible_walk_m",
+    "footstep_audible_run_m",
+    "footstep_audible_crouch_m",
+    "suppress_lowpass_recover_ms",
+    "_meta"
+  ],
+  "properties": {
+    "layer_near_fade_start_m": {
+      "type": "number",
+      "minimum": 0
+    },
+    "layer_near_fade_end_m": {
+      "type": "number",
+      "minimum": 0
+    },
+    "layer_mid_in_start_m": {
+      "type": "number",
+      "minimum": 0
+    },
+    "layer_mid_in_end_m": {
+      "type": "number",
+      "minimum": 0
+    },
+    "layer_mid_out_start_m": {
+      "type": "number",
+      "minimum": 0
+    },
+    "layer_mid_out_end_m": {
+      "type": "number",
+      "minimum": 0
+    },
+    "layer_far_in_start_m": {
+      "type": "number",
+      "minimum": 0
+    },
+    "layer_far_peak_m": {
+      "type": "number",
+      "minimum": 0
+    },
+    "speed_of_sound_mps": {
+      "type": "number",
+      "minimum": 0
+    },
+    "shot_delay_min_distance_m": {
+      "type": "number",
+      "minimum": 0
+    },
+    "shot_delay_max_s": {
+      "type": "number",
+      "minimum": 0
+    },
+    "merge_window_ms": {
+      "type": "number",
+      "minimum": 0
+    },
+    "merge_max_rounds": {
+      "type": "number",
+      "minimum": 0
+    },
+    "footstep_max_slots": {
+      "type": "number",
+      "minimum": 0
+    },
+    "footstep_audible_walk_m": {
+      "type": "number",
+      "minimum": 0
+    },
+    "footstep_audible_run_m": {
+      "type": "number",
+      "minimum": 0
+    },
+    "footstep_audible_crouch_m": {
+      "type": "number",
+      "minimum": 0
+    },
+    "suppress_lowpass_recover_ms": {
+      "type": "number",
+      "minimum": 0
+    },
+    "_meta": {
+      "$ref": "#/$defs/meta"
+    }
+  },
+  "$defs": {
+    "meta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "tunable"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "initial",
+            "reviewed",
+            "measured"
+          ]
+        },
+        "tunable": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "calibration_ref": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "unverified": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "deviation_reason": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  }
+}
