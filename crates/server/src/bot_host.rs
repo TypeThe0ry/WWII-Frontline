@@ -20,7 +20,7 @@ use crate::sim_bridge::SimBridge;
 use crate::world_loader::LoadedMap;
 
 /// Nickname prefix of every bot (GAMEDESIGN 20.2).
-pub const BOT_NAME_PREFIX: &str = "[BOT]";
+pub use frontline_bots::fill::BOT_NAME_PREFIX;
 /// Cap on stored timing samples (one per tick; ~37 h at 30 Hz).
 const MAX_SAMPLES: usize = 4_000_000;
 

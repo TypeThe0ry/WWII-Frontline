@@ -52,6 +52,8 @@ pub struct Metrics {
     pub session_kicked_total: IntCounter,
     pub players: IntGaugeVec,
     pub bots: IntGauge,
+    /// Active bots per team (M1-039).
+    pub bots_active: IntGaugeVec,
     /// Wall time of one tick's bot step: all `think` calls + input ingestion (ms; M0-026).
     pub bot_think_ms: Histogram,
     /// Time of that step spent in path queries (ms).
@@ -186,6 +188,11 @@ impl Metrics {
             players: IntGaugeVec::new(Opts::new("server_players", "Connected players"), &["team"])
                 .expect("players"),
             bots: gauge("server_bots", "Active bots"),
+            bots_active: IntGaugeVec::new(
+                Opts::new("bots_active", "Active bots per team"),
+                &["team"],
+            )
+            .expect("bots_active"),
             bot_think_ms: hist(
                 "bot_think_ms",
                 "Bot step wall time per tick: think + input ingestion (ms)",
@@ -377,6 +384,7 @@ impl Metrics {
         }
         r.register(Box::new(m.players.clone())).unwrap();
         r.register(Box::new(m.bots.clone())).unwrap();
+        r.register(Box::new(m.bots_active.clone())).unwrap();
         r.register(Box::new(m.bot_think_ms.clone())).unwrap();
         r.register(Box::new(m.bot_path_ms.clone())).unwrap();
         r.register(Box::new(m.uptime_seconds.clone())).unwrap();
@@ -438,6 +446,8 @@ impl Metrics {
         // Make both team series visible from the start.
         m.players.with_label_values(&["us"]).set(0);
         m.players.with_label_values(&["ger"]).set(0);
+        m.bots_active.with_label_values(&["us"]).set(0);
+        m.bots_active.with_label_values(&["ger"]).set(0);
         Arc::new(m)
     }
 
@@ -516,6 +526,7 @@ mod tests {
             "server_input_queue_full_total",
             "server_players{team=\"us\"}",
             "server_bots",
+            "bots_active{team=\"us\"}",
             "server_uptime_seconds",
             "net_connections",
             "net_rejects_total{reason=\"version\"}",

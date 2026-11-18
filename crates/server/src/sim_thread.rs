@@ -574,6 +574,14 @@ impl<C: Clock> SimLoop<C> {
                 .count_team(Team::Ger)
                 .saturating_sub(bots(Team::Ger)) as i64,
         );
+        self.metrics
+            .bots_active
+            .with_label_values(&["us"])
+            .set(bots(Team::Us) as i64);
+        self.metrics
+            .bots_active
+            .with_label_values(&["ger"])
+            .set(bots(Team::Ger) as i64);
     }
 
     /// Step 1: drain the network->sim channels (bounded by their capacity) into the per-player

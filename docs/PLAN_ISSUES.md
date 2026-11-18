@@ -1031,3 +1031,6 @@ M1-038 体量为 L。先交付与场景无关的引擎（行为树、效用、�
 
 ## PI-089 M1-039a：纯逻辑先行（2026-11-18）
 兵种选择直接复用 sim 的 `role_available`（不重复校验，符合任务备注）；填充/让位/重连宽限与小队长选点做成纯函数，host 接线与 Officer/Support 行为留 039b。`SquadOrder` 暂定义在 `bots::squad_leader`，接线时再决定是否上移到 sim/protocol。
+
+## PI-090 M1-039b：先补指标与常量统一（2026-11-18）
+`bots_active{team}` 与 `[BOT]` 前缀共用已落地；FillManager 接入 `sim_thread` 需要动态 spawn/移除 bot 的部署路径（M1-026 处理器）及 20 人无头局，留 039c，与 Officer/Support 行为合做。
