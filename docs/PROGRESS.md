@@ -591,3 +591,7 @@ blocked / in-progress / todo：无。M0 的 33 个任务全部已提交（M0-033
 
 ### M1-030 Carentan 数据源许可证与锚点 030a — partial — 2026-11-18 — 提交见 git log
 - `map_pipeline/{geo,anchors,licenses,carentan}.py`、CLI `carentan-meta` / `validate-sources`；`data/maps/carentan/{meta.json,LICENSE_NOTICE.md}`、`reports/m1-map-licenses.json`、`reports/m1-map-license-rows.md`（给人类粘贴的 PENDING 台账草稿行）；纯 Python UTM（Krüger），不引入 pyproj 依赖。人工项见 PI-077。
+
+
+### M1-031 Carentan 高度图 031a — partial — 2026-11-18 — 提交见 git log
+- `slice_m1/dem_prep/qa/dem_carentan`（GDAL 阶段）与 CLI `dem`；工作站用真实 LiDAR HD 生成 `data/maps/carentan/{heightmap_1m,heightmap_far_8m}.r16` 与更新后的 `meta.json`（height/far_ring/slice_m1/inputs）、`reports/m1-dem-check.csv`。余项见 PI-080。

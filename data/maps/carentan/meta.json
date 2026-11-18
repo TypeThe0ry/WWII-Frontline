@@ -172,7 +172,7 @@
   },
   "height": {
     "datum": "IGN69",
-    "far_ring_lidar_coverage": 0.2237,
+    "far_ring_lidar_coverage_pct": 22.37,
     "hmax_m": 29.9,
     "hmin_m": -7.0,
     "inputs": [
@@ -237,7 +237,7 @@
         "sha256": "eda8c840f55a214dda0af8040c078ff2a3e60bce43ded832893ccd806307fc48"
       }
     ],
-    "nodata_filled_cells": 0,
+    "nodata_filled_points": 0,
     "offset_m": 0.616,
     "offset_method": "p0.1 of the 1 m DEM (no water mask yet)",
     "res_m": 1,
@@ -261,7 +261,7 @@
   },
   "slice_m1": {
     "blocker_polygon": {
-      "inner": [
+      "inner_m": [
         [
           384.0,
           524.0
@@ -279,7 +279,7 @@
           1696.0
         ]
       ],
-      "outer": [
+      "outer_m": [
         [
           380.0,
           520.0
@@ -300,13 +300,13 @@
       "width_m": 4.0
     },
     "feather_m": 32.0,
-    "rect_design": [
+    "rect_design_m": [
       380.0,
       520.0,
       1560.0,
       1700.0
     ],
-    "rect_local": [
+    "rect_local_m": [
       380.0,
       520.0,
       1560.0,

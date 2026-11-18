@@ -52,16 +52,16 @@ def blocker_polygon(rect=RECT_DESIGN, inset_m: float = BLOCKER_INSET_M) -> dict:
     x0, y0, x1, y1 = rect
     ring = lambda a, b, c, d: [[a, b], [c, b], [c, d], [a, d]]  # noqa: E731
     return {
-        "outer": ring(x0, y0, x1, y1),
-        "inner": ring(x0 + inset_m, y0 + inset_m, x1 - inset_m, y1 - inset_m),
+        "outer_m": ring(x0, y0, x1, y1),
+        "inner_m": ring(x0 + inset_m, y0 + inset_m, x1 - inset_m, y1 - inset_m),
         "width_m": inset_m,
     }
 
 
 def meta_block(rect=RECT_DESIGN, feather_m: float = FEATHER_M) -> dict:
     return {
-        "rect_design": list(rect),
-        "rect_local": list(rect),  # the frame is the local system until the similarity is applied
+        "rect_design_m": list(rect),
+        "rect_local_m": list(rect),  # the frame is the local system until the similarity is applied
         "feather_m": feather_m,
         "blocker_polygon": blocker_polygon(rect),
     }

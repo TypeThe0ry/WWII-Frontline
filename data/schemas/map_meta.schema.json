@@ -31,7 +31,25 @@
         "hmin_m": { "type": ["number", "null"] },
         "hmax_m": { "type": ["number", "null"] },
         "datum": { "type": "string", "minLength": 1 },
-        "status": { "type": "string", "minLength": 1 }
+        "status": { "type": "string", "minLength": 1 },
+        "offset_m": { "type": "number" },
+        "offset_method": { "type": "string", "minLength": 1 },
+        "source": { "type": "string", "minLength": 1 },
+        "row_order": { "enum": ["south_to_north", "north_to_south"] },
+        "nodata_filled_points": { "type": "integer", "minimum": 0 },
+        "far_ring_lidar_coverage_pct": { "type": "number", "minimum": 0, "maximum": 100 },
+        "inputs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["file", "sha256"],
+            "properties": {
+              "file": { "type": "string", "minLength": 1 },
+              "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+            }
+          }
+        }
       }
     },
     "far_ring": {
@@ -42,6 +60,26 @@
         "res_m": { "type": "number", "exclusiveMinimum": 0 },
         "samples": { "type": "integer", "minimum": 2 },
         "extent_m": { "type": "number", "exclusiveMinimum": 0 }
+      }
+    },
+    "slice_m1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["rect_design_m", "rect_local_m", "feather_m", "blocker_polygon"],
+      "properties": {
+        "rect_design_m": { "type": "array", "minItems": 4, "maxItems": 4, "items": { "type": "number" } },
+        "rect_local_m": { "type": "array", "minItems": 4, "maxItems": 4, "items": { "type": "number" } },
+        "feather_m": { "type": "number", "exclusiveMinimum": 0 },
+        "blocker_polygon": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["outer_m", "inner_m", "width_m"],
+          "properties": {
+            "outer_m": { "type": "array", "minItems": 3, "items": { "type": "array", "minItems": 2, "maxItems": 2, "items": { "type": "number" } } },
+            "inner_m": { "type": "array", "minItems": 3, "items": { "type": "array", "minItems": 2, "maxItems": 2, "items": { "type": "number" } } },
+            "width_m": { "type": "number", "exclusiveMinimum": 0 }
+          }
+        }
       }
     },
     "credits": { "type": "array", "items": { "type": "string", "minLength": 1 } },
