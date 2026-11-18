@@ -37,5 +37,17 @@
   "ui.reject.banned": "你已被此服务器封禁",
   "ui.reject.ticket": "加入凭证无效或已过期",
   "ui.reject.dataHash": "游戏数据不匹配，请刷新页面",
-  "ui.reject.unknown": "无法加入服务器"
+  "ui.reject.unknown": "无法加入服务器",
+  "ui.deploy.role.full": "本小队该兵种已满",
+  "ui.deploy.role.teamFull": "本队该兵种已满",
+  "ui.deploy.role.squadTooSmall": "小队人数不足，无法选择该兵种",
+  "ui.deploy.role.leaderOnly": "仅限小队队长",
+  "ui.deploy.role.notInArmor": "装甲兵只能在装甲组中服役",
+  "ui.deploy.role.wrongSquadKind": "该小队类型不可用",
+  "ui.deploy.role.unassigned": "加入小队以解锁该兵种",
+  "ui.deploy.spawn.blocked": "出生点被封锁",
+  "ui.deploy.spawn.cooldown": "出生点冷却中",
+  "ui.deploy.spawn.destroyed": "出生点已被摧毁",
+  "ui.deploy.spawn.full": "出生点已满",
+  "ui.deploy.spawn.locked": "出生点未解锁"
 }
