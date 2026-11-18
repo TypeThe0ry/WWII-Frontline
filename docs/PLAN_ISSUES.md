@@ -1142,3 +1142,6 @@ TAA 历史夹取默认开启（拖影 trail |ΔL| 4.67 → 3.11，FXAA 基线 2.
 ## PI-122 M1-041b：载具预测接线的真实前置（2026-11-19）
 - 发现：服务器快照调度器（`crates/server/src/snapshot/scheduler.rs`）目前只输出 `EntityKind::Player`，`vehicle: None`；sim-wasm 快照解码器（`WasmSnapshotDecoder`）也没有载具实体接口。因此 `VehiclePredictor` 在 PR #111 之后仍没有权威运动学来源，接线（输入环、对账、远端插值）无法端到端验证。
 - 决定：把剩余工作拆为 M1-041c，顺序为 ① 服务器调度器输出载具实体（`VehicleExtra`：四元数、炮塔/炮管、座位位图）及其 AOI/优先级；② sim-wasm 解码器暴露载具实体数组；③ `net-game` 接线（进出座切换 `VehiclePredictor`、未确认指令回放、远端载具用 `vehicle-interp.ts` 采样）；④ headless 驾驶 + netem 验收。041b 状态保持 partial，不声称完成。
+
+## PI-115 续二：WT 30 分钟 + netem 与尖峰归因（2026-11-19）
+服务器新增 `FRONTLINE_TICK_TRACE=1`（默认关）：超时 tick 的日志带 on-CPU / 运行队列等待 / 六阶段耗时。WT 30 分钟 + netem ALL OK（P99 5.30 ms、最大 34.5 ms）；无损 trace 组抓到 153.8 ms 的 tick：on-CPU 2.35 ms、运行队列等待 151.3 ms，归因为共享工作站的调度饥饿（机器平均负载 136，固定核 90–99 % 忙）；`taskset` 不能阻止别的进程使用这几个核，独占需要 cpuset/isolcpus。较安静时的 34.5 ms 尖峰是真实计算（on-CPU 32.3 ms），当时没有阶段拆分，原因未明。
