@@ -108,6 +108,7 @@ impl World {
             draws: 0,
         });
         ecs.insert_resource(TestJitter::default());
+        ecs.insert_resource(crate::vehicle::Vehicles::default());
         ecs.insert_resource(MoveParamsRes(
             cfg.data
                 .role(DEFAULT_ROLE)
@@ -318,6 +319,89 @@ impl World {
             entity: eid,
         });
         self.refresh_views();
+    }
+
+    // ---- vehicles (M1-022) ----
+
+    /// Spawns a vehicle of `def_id` (a `data/vehicles/` id) resting on the ground at `pos`.
+    pub fn spawn_vehicle(
+        &mut self,
+        def_id: &str,
+        team: Team,
+        pos: Vec3,
+        yaw: f32,
+    ) -> Result<EntityId, crate::vehicle::VehicleSpawnError> {
+        use crate::vehicle::*;
+        let def = self
+            .cfg
+            .data
+            .vehicle(def_id)
+            .ok_or(VehicleSpawnError::UnknownVehicle)?;
+        let params = VehicleParams::from_def(def).map_err(VehicleSpawnError::Data)?;
+        let id = self.alloc.alloc().ok_or(VehicleSpawnError::NoFreeSlot)?;
+        let hp = params.hull_hp;
+        self.ecs.resource_mut::<Vehicles>().list.insert(
+            id,
+            Vehicle {
+                id,
+                team,
+                params,
+                pos,
+                vel: Vec3::ZERO,
+                rot: yaw_quat(yaw),
+                ang_vel: Vec3::ZERO,
+                ctrl: VehicleCtrl::default(),
+                speed_target: 0.0,
+                grounded_rays: 0,
+                hull_hp: hp,
+            },
+        );
+        Ok(id)
+    }
+
+    pub fn vehicle(&self, id: EntityId) -> Option<&crate::vehicle::Vehicle> {
+        self.ecs
+            .resource::<crate::vehicle::Vehicles>()
+            .list
+            .get(&id)
+    }
+
+    pub fn vehicle_ids(&self) -> Vec<EntityId> {
+        self.ecs
+            .resource::<crate::vehicle::Vehicles>()
+            .list
+            .keys()
+            .copied()
+            .collect()
+    }
+
+    /// Sets the driver input of a vehicle (seat logic in M1-022b feeds this from `InputCmd`).
+    pub fn set_vehicle_ctrl(&mut self, id: EntityId, ctrl: crate::vehicle::VehicleCtrl) {
+        if let Some(v) = self
+            .ecs
+            .resource_mut::<crate::vehicle::Vehicles>()
+            .list
+            .get_mut(&id)
+        {
+            v.ctrl = ctrl;
+        }
+    }
+
+    /// Test-only (feature `test-util`): moves and re-orients a vehicle, zeroing its motion.
+    #[cfg(feature = "test-util")]
+    pub fn debug_place_vehicle(&mut self, id: EntityId, pos: Vec3, rot: glam::Quat) {
+        if let Some(v) = self
+            .ecs
+            .resource_mut::<crate::vehicle::Vehicles>()
+            .list
+            .get_mut(&id)
+        {
+            v.pos = pos;
+            v.rot = rot;
+            v.vel = Vec3::ZERO;
+            v.ang_vel = Vec3::ZERO;
+            v.speed_target = 0.0;
+        }
     }
 
     // ---- roster / squads (M1-021) ----
@@ -965,6 +1049,10 @@ impl World {
         }
         if !self.squads.is_empty() {
             self.squads.hash_into(&mut h);
+        }
+        let veh = self.ecs.resource::<crate::vehicle::Vehicles>();
+        if !veh.list.is_empty() {
+            veh.hash_into(&mut h);
         }
         let sw = self.ecs.resource::<crate::supply::SupplyWorld>();
         if sw.active() {

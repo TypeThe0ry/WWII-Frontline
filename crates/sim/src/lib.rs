@@ -32,6 +32,7 @@ pub mod supply_iface;
 pub mod suppression;
 pub mod team;
 pub mod throwables;
+pub mod vehicle;
 pub mod view;
 pub mod weapon;
 pub mod world;

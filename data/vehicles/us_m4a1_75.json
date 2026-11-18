@@ -262,8 +262,8 @@
     "suspension": {
       "rays_per_side": 6,
       "rest_length_m": 0.6,
-      "stiffness_n_per_m": 38000,
-      "damping_ns_per_m": 3800
+      "stiffness_n_per_m": 100000,
+      "damping_ns_per_m": 25000
     },
     "tracks": {
       "max_torque_nm": 22000,

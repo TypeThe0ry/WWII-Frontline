@@ -123,6 +123,10 @@ name = "deploy_validate"
 required-features = ["test-util"]
 
 [[test]]
+name = "vehicle_physics"
+required-features = ["test-util"]
+
+[[test]]
 name = "supply_crates"
 required-features = ["test-util"]
 
