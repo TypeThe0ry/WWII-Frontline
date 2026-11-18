@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BPP, dominantLayer, LAYER_BUDGET_BYTES, layerArrayBytes, normalizeSplat, slopeDeg, tileUv, triplanarWeight } from './splat-math';
+import { terrainLayerBytes, BPP, dominantLayer, LAYER_BUDGET_BYTES, layerArrayBytes, normalizeSplat, slopeDeg, tileUv, triplanarWeight } from './splat-math';
 
 describe('splat', () => {
   it('normalises to sum 1 and falls back to layer 0 for all-zero', () => {
@@ -49,5 +49,10 @@ describe('layer VRAM (acceptance 4)', () => {
     expect(layerArrayBytes(8, 1024, 3, 'etc2') / MiB).toBeCloseTo(16, 0);
     expect(layerArrayBytes(8, 1024, 3, 'bc7') / MiB).toBeCloseTo(32, 0);
     expect(layerArrayBytes(8, 1024, 3, 'bc7')).toBeGreaterThan(LAYER_BUDGET_BYTES);
+  });
+
+  it('PI-102 decision: every format fits 24 MB (BC7 uses 512^2 normal/ORM = 16 MiB)', () => {
+    for (const f of Object.keys(BPP) as (keyof typeof BPP)[]) expect(terrainLayerBytes(f)).toBeLessThanOrEqual(LAYER_BUDGET_BYTES);
+    expect(terrainLayerBytes('bc7') / MiB).toBeCloseTo(16, 0);
   });
 });

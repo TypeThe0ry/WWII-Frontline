@@ -57,3 +57,12 @@ export function layerArrayBytes(layers: number, size: number, maps: number, fmt:
 }
 
 export const LAYER_BUDGET_BYTES = 24 * 1024 * 1024;
+
+/**
+ * PI-102 decision: 8-bpp formats (BC7, ASTC 4x4) keep albedo at 1024^2 but store normal and ORM at 512^2 (one mip
+ * less); ASTC 6x6 / ETC2 devices keep all three at 1024^2. Returns the 8-layer array size in bytes.
+ */
+export function terrainLayerBytes(fmt: LayerFormat, layers = LAYERS): number {
+  if (BPP[fmt] < 8) return layerArrayBytes(layers, 1024, 3, fmt);
+  return layerArrayBytes(layers, 1024, 1, fmt) + layerArrayBytes(layers, 512, 2, fmt);
+}
