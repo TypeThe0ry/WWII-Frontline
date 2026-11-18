@@ -73,6 +73,8 @@ impl GameData {
                     .expect("embedded data parsed at build time"),
                 match_m1: serde_json::from_str(embedded::MATCH_M1_JSON)
                     .expect("embedded data parsed at build time"),
+                supplies: serde_json::from_str(embedded::SUPPLIES_JSON)
+                    .expect("embedded data parsed at build time"),
             })),
             hash: DATA_HASH,
         })

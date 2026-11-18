@@ -899,6 +899,46 @@ pub struct MatchRulesDef {
     pub meta: Meta,
 }
 
+/// `data/rules/supplies.json` (GAMEDESIGN 12; M1-020).
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct SuppliesRulesDef {
+    #[serde(rename = "crate")]
+    pub supply_crate: SupplyCrateDef,
+    pub depot: DepotDef,
+    pub point_depot: DepotDef,
+    pub ammo_crate: AmmoCrateDef,
+    #[serde(rename = "_meta")]
+    pub meta: Meta,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct SupplyCrateDef {
+    pub content_supplies: u32,
+    pub health_hp: f64,
+    pub ground_max_crates: u32,
+    pub place_s: f64,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct DepotDef {
+    pub interval_s: f64,
+    pub stock_max_crates: u32,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct AmmoCrateDef {
+    pub content_points: u32,
+    pub max_uses: u32,
+    pub place_cooldown_s: f64,
+    pub lifetime_s: f64,
+    pub health_hp: f64,
+    pub price_points: std::collections::BTreeMap<String, u32>,
+}
+
 /// All rule families under `data/rules/`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct RulesDef {
@@ -906,4 +946,5 @@ pub struct RulesDef {
     pub bots: BotsRulesDef,
     pub capture: CaptureRulesDef,
     pub match_m1: MatchRulesDef,
+    pub supplies: SuppliesRulesDef,
 }

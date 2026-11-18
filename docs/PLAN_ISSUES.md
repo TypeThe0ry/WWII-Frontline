@@ -813,3 +813,12 @@
 - **做法**：①放置者兵种：M1 尚无兵种系统，用 `Officer(bool)` 组件（默认 false，`World::set_officer`），M1-021 换成真实兵种校验。②“Sector”=离放置点最近的据点；该据点归敌方则花 100，否则 50；每 Sector 2 个、全队 6 个（先判队伍上限）；无据点时全部算同一 Sector。③建造：持 USE 且在 6 m 内的己方玩家算施工者，速率 1+0.6(n−1)，n≤3；生命值随进度从 20 % 线性增至 100 %。④伤害：Garrison 暂无弹丸/爆炸碰撞体，经 `World::damage_garrison(nominal, Bullet|Explosion)`（×0.05/×1.0）；后续碰撞接入随 M1-020/M1-056。⑤封锁/Overrun 以“存活且未倒地”的玩家 XZ 距离判断；封锁=最近一次有敌人 30 m 内后 3 s。⑥出生：`request_spawn` 校验后把玩家重新排队到 `max(t_kia+8 s+惩罚, now)`；到期时若点失效（毁/封锁/换队）则回落 HQ，无槽位则顺延到下一个槽回复；吞吐 ≤2 人/s=同一点相邻出生至少间隔 hz/2 tick；Garrison 出生无保护。⑦推迟：个人冷却 8 s、拆除返还（`SupplyProvider` 只有 available/consume 两个函数，返还随 M1-020 扩接口）、`DeployResult`/重新部署（M1-021/026）。⑧新增事件 `SimEvent::SpawnPointState`（建成/摧毁）。
 - **受影响任务**：M1-020、M1-021、M1-026、M1-056、M1-060。
 - **裁决（Fable 填写）**：
+
+### PI-062 M1-020：拆为 a（箱/Depot/搬运/Provider）与 b（Ammo Crate/补弹/e2e）；若干取舍
+
+- **状态**：resolved（实现者裁决，待 Fable 复核）
+- **类别**：sim
+- **提出者 / 日期**：M1 线程 / 2026-11-18
+- **做法**：①拆 020a / 020b。②`SupplyProvider::available/consume` 只有位置与半径，不带队伍，故 15 m 内**任一队**的地面箱都计入（双方箱在 15 m 内同时出现的情形极少，M2 若要区分再扩接口）；携带中的箱不计入。③搬运交互：持 USE 满 1.5 s 触发一次，需松开才能再次触发；优先拾取 2 m 内己方地面箱，其次 HQ Depot，再次己方据点补给点；放下位置为脚下。④Support 用 `Support(bool)` 标记（默认 false，`set_support`），M1-021 换兵种。⑤携箱移速 ×0.75 通过摇杆轴缩放（与压制同法）；“仅手枪/拒绝切换主武器”需要武器槽（M1-013c），本任务只暴露 `World::carrying`。⑥地面箱上限 40 按队计、每 tick 淘汰最早放下的；携带中的不计。⑦携带者倒地/死亡时箱落在原地。⑧新事件 `CratePlaced/CrateDestroyed/SupplyNotice{code}`（代码 1=此处不可放置）。⑨`supplies.json` 现已类型化（deny_unknown_fields），Ammo 单价表补充（MG/火箭/地雷/载具炮弹）随 020b。
+- **受影响任务**：M1-020b、M1-021、M1-024（箱体下发）、M1-057/060。
+- **裁决（Fable 填写）**：
