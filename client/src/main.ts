@@ -117,6 +117,14 @@ async function boot(): Promise<void> {
     for (const m of window.__world.buildingMeshes) csm.addCaster(m);
     if (window.__world.hedges) csm.addCaster(window.__world.hedges, true);
     csm.attach(terrainHandle.terrain.material);
+    // dynamic casters (PI-117 follow-up): soldiers (instances of hidden source meshes), the tank, and visible tree LODs (thin instances)
+    csm.addDynamicCasters((m) => {
+      const n = m.name;
+      if (n.startsWith('PH_V-CHR-') && m.getClassName() === 'InstancedMesh') return 'instanced';
+      if (n.startsWith('PH_V-VEH-') && m.getTotalVertices() > 0) return 'plain';
+      if (n.startsWith('PH_V-NAT-002__tree_') && !n.endsWith('_imp') && params.get('csm_trees') !== '0') return 'instanced';
+      return null;
+    }, 150);
     ctx.onFrame(() => {
       if (ctx.scene.activeCamera) csm.update(ctx.scene.activeCamera);
     }, 'first', 'csm_update');

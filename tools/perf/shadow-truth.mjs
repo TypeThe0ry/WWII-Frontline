@@ -72,9 +72,13 @@ async function main() {
           if (maxX < c.x - radius - 80 || minX > c.x + radius + 80 || maxZ < c.z - radius - 80 || minZ > c.z + radius + 80) continue;
           prisms.push({ ring, minX, maxX, minZ, maxZ, base: lo - 0.4, top: hi + Math.max(1, f.properties.levels ?? 2) * 3 });
         }
-        return { cam: [c.x, c.y, c.z], toSun, prisms };
+        // dynamic casters: the demo soldiers as 0.6 m square columns, 1.8 m tall (their capsule is 0.35 m radius)
+        const chars = [];
+        const e = window.__actors?.state?.entities;
+        if (e) for (let k = 0; k < e.count; k++) { if (e.health[k] === 0) continue; const x = e.pos[k * 3], y = e.pos[k * 3 + 1], z = e.pos[k * 3 + 2]; const r = 0.32; chars.push({ ring: [[x - r, z - r], [x + r, z - r], [x + r, z + r], [x - r, z + r]], minX: x - r, maxX: x + r, minZ: z - r, maxZ: z + r, base: y, top: y + 1.8, cx: x, cz: z }); }
+        return { cam: [c.x, c.y, c.z], toSun, prisms: prisms.concat(chars), nChars: chars.length };
       }, { radius, step });
-      const { cam, toSun, prisms } = pts;
+      const { cam, toSun, prisms, nChars } = pts;
       const samples = await page.evaluate(({ cam, radius, step, toSun, prisms }) => {
         const T = window.__terrain; const res = [];
         const pip = (x, z, ring) => { let inside = false; for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) { const [xi, zi] = ring[i], [xj, zj] = ring[j]; if (zi > z !== zj > z && x < ((xj - xi) * (z - zi)) / (zj - zi) + xi) inside = !inside; } return inside; };
@@ -87,7 +91,7 @@ async function main() {
           if (hitPrism(cam[0], cam[1], cam[2], vdir, vl - 0.6)) continue;
           // not inside a building footprint
           if (prisms.some((b) => x >= b.minX && x <= b.maxX && z >= b.minZ && z <= b.maxZ && pip(x, z, b.ring))) continue;
-          res.push({ x, z, sx: p.x, sy: p.y, shadow: hitPrism(x, y + 0.05, z, toSun, 120) });
+          res.push({ x, z, sx: p.x, sy: p.y, shadow: hitPrism(x, y + 0.05, z, toSun, 120), nearChar: prisms.some((b) => b.cx !== undefined && Math.hypot(x - b.cx, z - b.cz) < 7) });
         }
         return res;
       }, { cam, radius, step, toSun, prisms });
@@ -103,7 +107,8 @@ async function main() {
         if (dark === s.shadow) agree++;
         if (s.shadow && dark) tp++; else if (!s.shadow && dark) fp++; else if (s.shadow && !dark) fn++; else tn++;
       }
-      out[r] = { points: inView.length, shadow_truth: inView.filter((s) => s.shadow).length, agreement: agree / Math.max(1, inView.length), tp, fp, fn, tn };
+      const sub = (arr) => { let a2 = 0, t1 = 0, f1 = 0, n1 = 0, m1 = 0; for (const s of arr) { const dark = lum(s.sx, s.sy) < 0.55 * med; if (dark === s.shadow) a2++; if (s.shadow && dark) t1++; else if (!s.shadow && dark) f1++; else if (s.shadow && !dark) n1++; else m1++; } return { points: arr.length, shadow_truth: arr.filter((s) => s.shadow).length, agreement: a2 / Math.max(1, arr.length), tp: t1, fp: f1, fn: n1, tn: m1 }; };
+      out[r] = { points: inView.length, shadow_truth: inView.filter((s) => s.shadow).length, agreement: agree / Math.max(1, inView.length), tp, fp, fn, tn, characters: nChars, near_characters: sub(inView.filter((s) => s.nearChar)) };
       await page.close();
     }
   } finally {
