@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 import time
 from pathlib import Path
@@ -65,7 +66,45 @@ def main(argv=None) -> int:
     m0.add_argument("--window", help="E,N of the window's south-west sample point (DEM CRS)")
     v = sub.add_parser("validate", help="validate a generated map directory")
     v.add_argument("dir")
+    cm = sub.add_parser("carentan-meta", help="write data/maps/carentan/meta.json + draft ledger rows (M1-030)")
+    cm.add_argument("--repo", default=".")
+    cm.add_argument("--out", default="data/maps/carentan")
+    vs = sub.add_parser("validate-sources", help="check a map's data sources against LICENSES.md §3")
+    vs.add_argument("dir")
+    vs.add_argument("--repo", default=".")
+    vs.add_argument("--report", default=None)
     a = ap.parse_args(argv)
+
+    if a.cmd == "carentan-meta":
+        from . import carentan, licenses
+
+        root = Path(a.repo)
+        meta = carentan.build_meta(root)
+        carentan.dump(Path(a.out) / "meta.json", meta)
+        rows = root / "reports" / "m1-map-license-rows.md"
+        rows.parent.mkdir(parents=True, exist_ok=True)
+        rows.write_text(licenses.draft_rows(carentan.SOURCES), encoding="utf-8")
+        print(f"wrote {Path(a.out) / 'meta.json'} and {rows}")
+        return 0
+    if a.cmd == "validate-sources":
+        from . import carentan, licenses
+
+        root = Path(a.repo)
+        meta = json.loads((Path(a.dir) / "meta.json").read_text(encoding="utf-8"))
+        errs = carentan.validate_meta(meta)
+        report = licenses.check_sources(meta, licenses.parse_ledger(carentan._ledger(root)), root)
+        if a.report:
+            licenses.write_report(Path(a.report), report)
+        for e in errs:
+            print(e)
+        for r in report:
+            print(f"{r['status']:8} {r['id']}: {'; '.join(r['reasons']) or 'ledger OK + archive present'}")
+        gaps = any(r["status"] != licenses.OK for r in report)
+        # Gaps only fail the build once the human has marked the sources as checked (PI-077).
+        enforce = bool(meta.get("m1_sources_checked"))
+        bad = bool(errs) or (gaps and enforce)
+        print("validate-sources:", "FAILED" if bad else ("ok" if not gaps else "ok (source gaps not enforced yet)"))
+        return 1 if bad else 0
 
     if a.cmd == "m0":
         window = None

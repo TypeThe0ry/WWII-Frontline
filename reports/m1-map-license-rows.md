@@ -1,0 +1,12 @@
+# 地图数据源台账草稿行（M1-030，给人类粘贴到 LICENSES.md §3）
+
+全部为 `PENDING`：许可证来自搜索摘要/第三方目录，**未经官方页面核实**（MAPS §2.1/§2.5）。
+H-052 核实后：存档许可证全文到 `license_text_path`，把 `chk_*` 与 `status` 改为实际结论、
+补 `purchase_date`（= 核实日期）。执行者不得自行写 OK。
+
+| asset_id | req_id | name | type | source_channel | author_vendor | url | license_name_version | license_text_path | chk_engine | chk_web | chk_commercial | chk_attribution | chk_seats | order_id | purchase_date | purchaser | confirmation_path | raw_path | processed_package | allowed_processing | status | notes | credit_text |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| AST-M-LIDAR-01 | M-CAR-001 | IGN LiDAR HD (MNT/MNS 0.5 m) | other | IGN / cartes.gouv.fr | IGN | https://cartes.gouv.fr/rechercher-une-donnee/dataset/IGNF_NUAGES-DE-POINTS-LIDAR-HD | Licence Ouverte / Etalab 2.0 | licenses/texts/AST-M-LIDAR-01.txt | PENDING | PENDING | PENDING | REQUIRED | PENDING | PENDING-H-052 | — | — | — | — | — | — | PENDING | 待 H-052 核实：门户页抓取为空壳，许可证来自搜索摘要；须确认 Calvados/Manche 覆盖年份 | Source : IGN, LiDAR HD (Licence Ouverte Etalab 2.0) |
+| AST-M-ALTI-01 | M-CAR-002 | IGN RGE ALTI 1 m | other | IGN / cartes.gouv.fr | IGN | https://cartes.gouv.fr/rechercher-une-donnee/dataset/IGNF_RGE-ALTI | Licence Ouverte / Etalab 2.0 | licenses/texts/AST-M-ALTI-01.txt | PENDING | PENDING | PENDING | REQUIRED | PENDING | PENDING-H-052 | — | — | — | — | — | — | PENDING | 待 H-052 核实：LiDAR 覆盖缺口备选；许可证来自第三方目录与搜索摘要 | Source : IGN, RGE ALTI (Licence Ouverte Etalab 2.0) |
+| AST-M-GLO30-01 | M-CAR-003 | Copernicus DEM GLO-30 | other | Copernicus Data Space | DLR e.V. / Airbus | https://documentation.dataspace.copernicus.eu/APIs/SentinelHub/Data/DEM/resources/license/License-COPDEM-30.pdf | Copernicus DEM licence (Full, Free & Open) | licenses/texts/AST-M-GLO30-01.txt | PENDING | PENDING | PENDING | REQUIRED | PENDING | PENDING-H-052 | — | — | — | — | — | — | PENDING | 待 H-052 核实：远景环外圈兜底；须读许可证原文与国家例外清单 | Copernicus DEM GLO-30 (Copernicus WorldDEM-30) © DLR e.V. |
+| AST-M-OSM-01 | M-CAR-004 | OpenStreetMap extract (roads/buildings/water) | other | OpenStreetMap | OpenStreetMap contributors | https://www.openstreetmap.org/copyright | ODbL 1.0 | licenses/texts/AST-M-OSM-01.txt | PENDING | PENDING | PENDING | REQUIRED | PENDING | PENDING-H-052 | — | — | — | — | — | — | PENDING | 待 H-052/H-004：衍生矢量层按 ODbL 公开（BRIEF R9 默认），入库前需法律确认 | © OpenStreetMap contributors |

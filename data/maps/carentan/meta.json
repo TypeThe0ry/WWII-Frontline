@@ -1,0 +1,169 @@
+{
+  "anchors": [
+    {
+      "confidence_m": 40,
+      "design": [
+        1277,
+        897
+      ],
+      "e": 627709,
+      "id": "church_notre_dame",
+      "n": 5462913,
+      "provisional": false,
+      "source": "cirkwi+merimee:PA00110352"
+    },
+    {
+      "confidence_m": 120,
+      "design": [
+        1380,
+        990
+      ],
+      "e": 627812,
+      "id": "place_republique",
+      "n": 5463006,
+      "provisional": true,
+      "source": "maps_s3.4_provisional"
+    },
+    {
+      "confidence_m": 120,
+      "design": [
+        1200,
+        1350
+      ],
+      "e": 627632,
+      "id": "canal_lock",
+      "n": 5463366,
+      "provisional": true,
+      "source": "maps_s3.4_provisional"
+    },
+    {
+      "confidence_m": 150,
+      "design": [
+        900,
+        1150
+      ],
+      "e": 627332,
+      "id": "n13_town_entry",
+      "n": 5463166,
+      "provisional": true,
+      "source": "maps_s3.4_provisional"
+    },
+    {
+      "confidence_m": 300,
+      "design": [
+        0,
+        1980
+      ],
+      "e": 626432,
+      "id": "n13_nw_corner",
+      "n": 5463996,
+      "provisional": true,
+      "source": "maps_s3.4_provisional"
+    },
+    {
+      "confidence_m": 250,
+      "design": [
+        1500,
+        520
+      ],
+      "e": 627932,
+      "id": "railway_station",
+      "n": 5462536,
+      "provisional": true,
+      "source": "maps_s3.4_provisional"
+    },
+    {
+      "confidence_m": 250,
+      "design": [
+        900,
+        1450
+      ],
+      "e": 627332,
+      "id": "ingouf_farm",
+      "n": 5463466,
+      "provisional": true,
+      "source": "maps_s3.4_provisional"
+    },
+    {
+      "confidence_m": 300,
+      "design": [
+        1650,
+        1500
+      ],
+      "e": 628082,
+      "id": "flood_east_edge",
+      "n": 5463516,
+      "provisional": true,
+      "source": "maps_s3.4_provisional"
+    }
+  ],
+  "credits": [
+    "Source : IGN, LiDAR HD (Licence Ouverte Etalab 2.0)",
+    "Source : IGN, RGE ALTI (Licence Ouverte Etalab 2.0)",
+    "Copernicus DEM GLO-30 (Copernicus WorldDEM-30) © DLR e.V.",
+    "© OpenStreetMap contributors"
+  ],
+  "crs": {
+    "epsg": 32630,
+    "origin_e": 626432,
+    "origin_n": 5462016,
+    "size_m": 2048
+  },
+  "date_setting": "1944-06-11",
+  "display_name": "Carentan",
+  "far_ring": {
+    "extent_m": 8192,
+    "res_m": 8,
+    "samples": 1025
+  },
+  "height": {
+    "datum": "IGN69",
+    "hmax_m": null,
+    "hmin_m": null,
+    "res_m": 1,
+    "samples": 2049,
+    "status": "placeholder (M1-031)"
+  },
+  "m1_sources_checked": false,
+  "map_id": "carentan",
+  "schema": "frontline.map.meta/1",
+  "similarity": {
+    "applied": false,
+    "dx": 0.0,
+    "dy": 0.0,
+    "mode": "translate",
+    "rms_m": 0.0,
+    "rot_deg": 0.0
+  },
+  "sources": [
+    {
+      "archive": "licenses/texts/AST-M-LIDAR-01.txt",
+      "asset_id": "AST-M-LIDAR-01",
+      "id": "ign_lidar_hd",
+      "license": "Etalab-2.0",
+      "verified": null
+    },
+    {
+      "archive": "licenses/texts/AST-M-ALTI-01.txt",
+      "asset_id": "AST-M-ALTI-01",
+      "id": "ign_rge_alti",
+      "license": "Etalab-2.0",
+      "verified": null
+    },
+    {
+      "archive": "licenses/texts/AST-M-GLO30-01.txt",
+      "asset_id": "AST-M-GLO30-01",
+      "id": "copernicus_glo30",
+      "license": "Copernicus-GLO-30",
+      "verified": null
+    },
+    {
+      "archive": "licenses/texts/AST-M-OSM-01.txt",
+      "asset_id": "AST-M-OSM-01",
+      "id": "osm",
+      "license": "ODbL-1.0",
+      "verified": null
+    }
+  ],
+  "tool_version": "0.1.0"
+}

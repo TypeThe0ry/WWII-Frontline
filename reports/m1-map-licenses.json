@@ -1,0 +1,37 @@
+{
+  "schema": "frontline.map.license_report/1",
+  "sources": [
+    {
+      "asset_id": "AST-M-LIDAR-01",
+      "id": "ign_lidar_hd",
+      "reasons": [
+        "no ledger row in LICENSES.md §3"
+      ],
+      "status": "MISSING"
+    },
+    {
+      "asset_id": "AST-M-ALTI-01",
+      "id": "ign_rge_alti",
+      "reasons": [
+        "no ledger row in LICENSES.md §3"
+      ],
+      "status": "MISSING"
+    },
+    {
+      "asset_id": "AST-M-GLO30-01",
+      "id": "copernicus_glo30",
+      "reasons": [
+        "no ledger row in LICENSES.md §3"
+      ],
+      "status": "MISSING"
+    },
+    {
+      "asset_id": "AST-M-OSM-01",
+      "id": "osm",
+      "reasons": [
+        "no ledger row in LICENSES.md §3"
+      ],
+      "status": "MISSING"
+    }
+  ]
+}
