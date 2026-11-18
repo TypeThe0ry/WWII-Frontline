@@ -1,0 +1,39 @@
+# Staging templates (M1-067a). Placeholders only: domains, ports and image tags come from the host environment.
+# Match host runs `server`; gateway host runs `gateway` + `caddy`. Credentials are never stored here (env/secret store only).
+services:
+  server:
+    image: ${SERVER_IMAGE:-frontline-server:staging}
+    restart: unless-stopped
+    network_mode: host # UDP (WebTransport) port range is opened in the host firewall, see runbook.md
+    environment:
+      - MATCH_HOST_DOMAIN
+      - SERVER_UDP_PORT_RANGE
+      - CERT_DIR=/certs
+    volumes:
+      - ${CERT_DIR:-/etc/frontline/certs}:/certs:ro
+
+  gateway:
+    image: ${GATEWAY_IMAGE:-frontline-gateway:staging}
+    restart: unless-stopped
+    environment:
+      - GATEWAY_DOMAIN
+      - GATEWAY_SIGNING_KEY_FILE=/run/secrets/gateway_signing_key
+    secrets:
+      - gateway_signing_key
+    expose:
+      - '8080'
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - '443:443/tcp'
+    environment:
+      - GATEWAY_DOMAIN
+    command: caddy reverse-proxy --from ${GATEWAY_DOMAIN} --to gateway:8080
+    depends_on:
+      - gateway
+
+secrets:
+  gateway_signing_key:
+    file: ${GATEWAY_SIGNING_KEY_PATH:-/etc/frontline/secrets/gateway_signing_key}
