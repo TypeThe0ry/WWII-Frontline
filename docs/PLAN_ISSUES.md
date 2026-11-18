@@ -1001,3 +1001,14 @@
 - **splat**：dirt 占 21%（建筑 2 m 缓冲 + 小径/铁路），偏高，待 M1-035b 与美术调参。
 - **受影响任务**：M1-036、M1-049、M1-050、M1-051。
 - **裁决（Fable 填写）**：
+
+
+## PI-085 M1-036 导航网格取舍
+- **依赖**：选 `recast-navigation` 0.44.0（npm，MIT，WASM 内含 Recast/Detour），放在 pnpm 工作区包 `tools/nav-bake`（任务书写的 `tools/map-pipeline/nav/bake.ts` 无法放进 `tools/*` 工作区，Python 侧入口仍是 `map-pipeline nav --slice m1`）；仅构建机使用，已登记 LICENSES.md §5。
+- **参数**：步行取 ARCH §16.2（cell 0.3、radius 0.4、climb 0.5、slope 45°），MAPS §6.2（坡度 35°、台阶 0.4）差异在此登记；KCC 实际步行坡度 35° 记在 `navmesh_params.json`。载具网格 cell 取 0.5 m（半径 2.0 m）以提速。
+- **建筑**：非可进入建筑在 1 m 地形上挖洞（实心）；可进入建筑保留地面并加 0.3 m 厚、3 m 高的墙，门洞处留 2.4 m 缺口（门宽 1.2 m 不足以通过 Recast 腐蚀后的 0.8 m 直径，1.6 m 缺口有 8/70 栋不可达，2.4 m 全部可达）。只有地面层，楼层/楼梯待灰盒。
+- **水**：深水格（`build_grid` 的水体掩膜）从地形三角网中挖洞；涉水区未单独标区域（recast-navigation 的生成器不提供按多边形标区域，需自写 tile 构建，留 M1-036b）。
+- **树篱**：`vehicle_blocking` 树篱用 0.6 m 宽、2.5 m 高的盒体整段阻挡（步兵/载具同），无 vault 链接（草稿树篱全是 2.0 m）。
+- **header**：`params_hash` 为 `navmesh_params.json` 内容哈希前 8 字节，由 Python 传给烘焙脚本。
+- **受影响任务**：M1-037（加载器需 Detour 兼容反序列化）、M1-034b、M1-052。
+- **裁决（Fable 填写）**：

@@ -1,0 +1,13 @@
+{
+  "name": "@frontline/nav-bake",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "M1-036: Recast/Detour navmesh bake + connectivity check (build-time only, not shipped)",
+  "scripts": {
+    "bake": "node src/bake.mjs"
+  },
+  "dependencies": {
+    "recast-navigation": "0.44.0"
+  }
+}

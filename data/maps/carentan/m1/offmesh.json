@@ -1,0 +1,6 @@
+{
+ "schema": "frontline.map.offmesh/1",
+ "format": "{id, kind: window|ladder|stairs|vault, start:[x,y,z], end:[x,y,z], radius, bidirectional, cost}",
+ "offmesh": [],
+ "note": "M1 initial set is empty: ground-floor doors are walkable gaps in the bake (PI-085); stairs/windows/vaults arrive with the grey-box interiors (M1-052) and M1-034b"
+}
