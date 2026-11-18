@@ -198,6 +198,17 @@ impl Sessions {
         g.team_count[team as usize] += 1;
     }
 
+    /// Gives a bot's id back (counterpart of [`Self::reserve_bot`]); the seat leaves the team count. Idempotent.
+    pub fn unreserve_bot(&self, id: PlayerId) {
+        let i = id as usize;
+        let mut g = self.lock();
+        if i < 128 && g.players[i].is_none() && g.cooling_until[i].is_some() {
+            g.cooling_until[i] = None;
+            let t = g.team_of[i] as usize;
+            g.team_count[t] = g.team_count[t].saturating_sub(1);
+        }
+    }
+
     /// [`Self::alloc_player_team`] without the team.
     pub fn alloc_player(&self, handle: &ClientHandle) -> Option<PlayerId> {
         self.alloc_player_team(handle).map(|(id, _)| id)

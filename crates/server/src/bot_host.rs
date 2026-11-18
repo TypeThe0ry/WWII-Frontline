@@ -10,6 +10,7 @@
 use std::sync::Arc;
 use std::time::Instant;
 
+use frontline_bots::fill::{BotInfo, BotState, FillAction, FillManager};
 use frontline_bots::{BotBrain, BotCtx, BotMap, Difficulty, SoldierBrain, Tuning};
 use frontline_protocol::msg::input::InputCmd;
 use frontline_sim::{GameData, PlayerId, Team, WeaponState, World, WorldView};
@@ -70,6 +71,10 @@ pub struct BotHost {
     record_hashes: bool,
     hashes: Vec<u64>,
     stuck_total: u64,
+    /// Shared nav data for soldier bots spawned by [`reconcile`](Self::reconcile).
+    soldier_map: Option<Arc<BotMap>>,
+    sessions: Option<Arc<Sessions>>,
+    fill: [FillManager; 2],
 }
 
 impl BotHost {
@@ -85,6 +90,9 @@ impl BotHost {
             record_hashes: false,
             hashes: Vec::new(),
             stuck_total: 0,
+            soldier_map: None,
+            sessions: None,
+            fill: [FillManager::new(), FillManager::new()],
         }
     }
 
@@ -128,6 +136,8 @@ impl BotHost {
                 Box::new(SoldierBrain::new(bot_map.clone())),
             );
         }
+        host.soldier_map = Some(bot_map);
+        host.sessions = sessions.cloned();
         metrics.bots.set(host.len() as i64);
         host
     }
@@ -141,6 +151,82 @@ impl BotHost {
             brain,
         });
         self.metrics.bots.set(self.slots.len() as i64);
+    }
+
+    /// Highest free id counting down from 127 that no session or bot uses.
+    fn free_bot_id(&self, bridge: &SimBridge) -> Option<PlayerId> {
+        (0..=127u8)
+            .rev()
+            .find(|&i| bridge.session(i).is_none() && !self.is_bot(i))
+    }
+
+    /// Fill-to-target for both teams (M1-039c, GAMEDESIGN 2.4): spawns bots through the normal join path
+    /// when a team is short, removes them (deploy screen first, then alive) when humans joined.
+    /// `target` is the per-team size. Returns `(spawned, removed)`. Needs a host built by
+    /// [`with_soldiers`](Self::with_soldiers) (it owns the nav data); otherwise it does nothing.
+    pub fn reconcile(
+        &mut self,
+        tick: u32,
+        world: &mut World,
+        bridge: &mut SimBridge,
+        target: u8,
+    ) -> (usize, usize) {
+        let Some(map) = self.soldier_map.clone() else {
+            return (0, 0);
+        };
+        let (mut spawned, mut removed) = (0, 0);
+        for (ti, team) in [Team::Us, Team::Ger].into_iter().enumerate() {
+            let humans: Vec<(PlayerId, bool)> = bridge
+                .sessions()
+                .filter(|(id, s)| s.team == team && !self.is_bot(**id))
+                .map(|(id, _)| (*id, true))
+                .collect();
+            let bots: Vec<BotInfo> = self
+                .slots
+                .iter()
+                .filter(|b| b.team == team)
+                .map(|b| BotInfo {
+                    id: b.player,
+                    state: BotState::Alive,
+                })
+                .collect();
+            for a in self.fill[ti].reconcile(tick, &humans, &bots, target) {
+                match a {
+                    FillAction::SpawnBot => {
+                        let Some(id) = self.free_bot_id(bridge) else {
+                            continue;
+                        };
+                        if let Some(s) = &self.sessions {
+                            s.reserve_bot(id, team);
+                        }
+                        if bridge.join(world, id, team).is_err() {
+                            if let Some(s) = &self.sessions {
+                                s.unreserve_bot(id);
+                            }
+                            continue;
+                        }
+                        let n = self.slots.len() as u16;
+                        self.add(
+                            id,
+                            team,
+                            bot_nickname(n),
+                            Box::new(SoldierBrain::new(map.clone())),
+                        );
+                        spawned += 1;
+                    }
+                    FillAction::RemoveBot { id, .. } => {
+                        bridge.leave(world, id);
+                        if let Some(s) = &self.sessions {
+                            s.unreserve_bot(id);
+                        }
+                        self.slots.retain(|b| b.player != id);
+                        self.metrics.bots.set(self.slots.len() as i64);
+                        removed += 1;
+                    }
+                }
+            }
+        }
+        (spawned, removed)
     }
 
     pub fn len(&self) -> usize {
@@ -273,4 +359,66 @@ fn fold(mut h: u64, p: PlayerId, c: &InputCmd) -> u64 {
     put(u64::from(c.yaw) | (c.pitch as u16 as u64) << 16);
     put(u64::from(c.buttons) | u64::from(c.aux) << 16 | u64::from(c.weapon_slot) << 24);
     h
+}
+
+#[cfg(test)]
+mod fill_tests {
+    use super::*;
+    use crate::validate::ValidateCfg;
+    use frontline_sim::{CollisionData, GameMode, MapId, SimConfig};
+
+    fn setup(bots: u16) -> (World, SimBridge, BotHost) {
+        let cfg = SimConfig {
+            tick_hz: 30,
+            match_seed: 1,
+            map: MapId(0),
+            mode: GameMode::Sandbox,
+            data: GameData::embedded(),
+        };
+        let empty = CollisionData::empty();
+        let mut world = World::new(cfg, &empty);
+        let metrics = Metrics::new();
+        let mut bridge = SimBridge::new(metrics.clone(), None, None, ValidateCfg::default());
+        let host = BotHost::with_soldiers(bots, 1, &mut world, &mut bridge, None, None, metrics);
+        (world, bridge, host)
+    }
+
+    /// 2 bots at start (one per team) topped up to 3 per team, then a human joins a full team and one bot leaves.
+    #[test]
+    fn reconcile_tops_up_and_makes_room_for_humans() {
+        let (mut world, mut bridge, mut host) = setup(2);
+        assert_eq!(host.reconcile(0, &mut world, &mut bridge, 3), (4, 0));
+        assert_eq!(
+            (host.count_team(Team::Us), host.count_team(Team::Ger)),
+            (3, 3)
+        );
+        assert_eq!(
+            host.reconcile(1, &mut world, &mut bridge, 3),
+            (0, 0),
+            "stable at target"
+        );
+        bridge.join(&mut world, 5, Team::Us).unwrap();
+        assert_eq!(host.reconcile(2, &mut world, &mut bridge, 3), (0, 1));
+        assert_eq!(
+            (host.count_team(Team::Us), host.count_team(Team::Ger)),
+            (2, 3)
+        );
+        assert!(bridge.session(5).is_some(), "the human keeps their seat");
+        assert!(host.players().all(|p| p != 5), "no bot took the human's id");
+    }
+
+    #[test]
+    fn spawned_bots_carry_the_prefix_and_unique_ids() {
+        let (mut world, mut bridge, mut host) = setup(0);
+        // a host without nav data (no `with_soldiers` map) does nothing; with 0 bots it still owns a map
+        host.reconcile(0, &mut world, &mut bridge, 2);
+        let ids: Vec<_> = host.players().collect();
+        let mut u = ids.clone();
+        u.sort();
+        u.dedup();
+        assert_eq!(ids.len(), u.len());
+        assert!(ids
+            .iter()
+            .all(|i| host.nickname(*i).unwrap().starts_with(BOT_NAME_PREFIX)));
+    }
 }

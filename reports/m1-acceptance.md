@@ -7,7 +7,7 @@
 | E1-1 | 真人测试局 | ≥20 min、≥20 真人每队 10 | 无真人测试局；仅 headless 20 客户端 + 12 bot 300 s | `reports/m1-playtest-log.md`；人类 H-054/H-056 | 未测 | PI-104 |
 | E1-2 | 服务器 tick | P99 ≤ 28 ms，稳态 ≤ 18 ms | 20 客户端 + 12 bot：P50 1.626 / P99 3.54 / max 38.256 ms，超时 1 次（连续 1） | `scripts/loadtest-m0.sh --transport ws --count 20 --bots 12 --duration 300`；`reports/m1-loadtest-20-ws-lossless.json` | partial | M1-068b |
 | E1-3 | 带宽 | P50 ≤ 128、P99 ≤ 400 kbps，上行 ≤ 32 kbps | 下行 P50 15.96 / P99 26.6 kbps，上行 P50 20.5 kbps（无损、同机） | 同上 | partial | M1-068b（netem 未测） |
-| E1-4 | AOI | 视锥外且 >96 m 敌人下发 = 0 | AOI 审计未做；aoi_encode P99 ≤ 0.5 ms | `audit.rs` 未实现 | 未测 | M1-068b |
+| E1-4 | AOI | 视锥外且 >96 m 敌人下发 = 0 | `aoi_audit.rs::no_enemy_is_sent_outside_the_r3_rules`（20 人 10v10 移动/转向场景，独立复述 R3 界限）通过；loadtest 20+12 bot 路径未接审计；aoi_encode P99 ≤ 0.5 ms | `cargo test -p frontline-server --test aoi_audit`（M1-024a） | partial | PI-071 |
 | E1-5 | 延迟补偿 | 150 ms RTT 命中率差 ≤ 5% | 未测（无 netem、无对照场景） | M1-068b | 未测 | M1-068b |
 | E1-6 | High 性能 | P95 ≤ 16.7 ms、≤1200 draw call、≤4.0 M 三角形 | 未测（判定工具已就绪；三机位未采集） | `tools/perf/budget.mjs`、`reports/m1-perf.md` | 未测 | M1-069b（工作站） |
 | E1-7 | Low 性能 | ≥30 fps，draw call ≤900/500 | 未测（无 Iris Xe 级机器） | 同上 | 未测 | M1-069b、H-021 |
