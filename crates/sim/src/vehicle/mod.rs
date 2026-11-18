@@ -4,10 +4,12 @@
 
 pub mod armor;
 pub mod collision;
+pub mod gun;
 pub mod seats;
 pub mod snapshot;
 pub mod suspension;
 pub mod tracks;
+pub mod turret;
 
 use std::collections::BTreeMap;
 

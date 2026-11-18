@@ -63,10 +63,20 @@ fn hand_calculated_cases_match() {
         );
         let e = &c["expect"];
         assert_eq!(kind(&s.result), e["result"].as_str().unwrap(), "{id}");
-        assert!((s.phi_eff_deg - e["phi_eff_deg"].as_f64().unwrap() as f32).abs() < 0.01, "{id} phi_eff");
-        assert!((s.p_mm - e["p_mm"].as_f64().unwrap() as f32).abs() < 0.01, "{id} P");
+        assert!(
+            (s.phi_eff_deg - e["phi_eff_deg"].as_f64().unwrap() as f32).abs() < 0.01,
+            "{id} phi_eff"
+        );
+        assert!(
+            (s.p_mm - e["p_mm"].as_f64().unwrap() as f32).abs() < 0.01,
+            "{id} P"
+        );
         if let Some(t) = e["t_eff_mm"].as_f64() {
-            assert!((s.t_eff - t as f32).abs() < 0.01, "{id} t_eff {} vs {t}", s.t_eff);
+            assert!(
+                (s.t_eff - t as f32).abs() < 0.01,
+                "{id} t_eff {} vs {t}",
+                s.t_eff
+            );
         }
         seen.insert(e["result"].as_str().unwrap().to_string());
         if c["note"].as_str().unwrap().contains("overmatch") {
@@ -84,12 +94,31 @@ fn critical_cases_flip_across_luck_band() {
     let v = load();
     for crit in v["critical"].as_array().unwrap() {
         let id = crit["id"].as_str().unwrap();
-        let c = v["cases"].as_array().unwrap().iter().find(|c| c["id"] == id).unwrap();
+        let c = v["cases"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|c| c["id"] == id)
+            .unwrap();
         let (n, vh) = geom(c["phi_deg"].as_f64().unwrap() as f32);
         let d = c["dist_m"].as_f64().unwrap() as f32;
         let t = c["thickness_mm"].as_f64().unwrap() as f32;
-        let lo = armor_hit(&ap(), d, n, vh, t, crit["factor_lo"].as_f64().unwrap() as f32);
-        let hi = armor_hit(&ap(), d, n, vh, t, crit["factor_hi"].as_f64().unwrap() as f32);
+        let lo = armor_hit(
+            &ap(),
+            d,
+            n,
+            vh,
+            t,
+            crit["factor_lo"].as_f64().unwrap() as f32,
+        );
+        let hi = armor_hit(
+            &ap(),
+            d,
+            n,
+            vh,
+            t,
+            crit["factor_hi"].as_f64().unwrap() as f32,
+        );
         assert_eq!(kind(&lo), crit["result_lo"].as_str().unwrap());
         assert_eq!(kind(&hi), crit["result_hi"].as_str().unwrap());
     }
@@ -109,14 +138,26 @@ fn m61_penetration_table() {
 fn ricochet_thresholds() {
     // AP: phi_eff = phi - 5.
     let (n, v) = geom(72.9);
-    assert!(!matches!(armor_hit(&ap(), 100.0, n, v, 76.0, 1.0), ArmorResult::Ricochet));
+    assert!(!matches!(
+        armor_hit(&ap(), 100.0, n, v, 76.0, 1.0),
+        ArmorResult::Ricochet
+    ));
     let (n, v) = geom(73.05);
-    assert!(matches!(armor_hit(&ap(), 100.0, n, v, 76.0, 1.0), ArmorResult::Ricochet));
+    assert!(matches!(
+        armor_hit(&ap(), 100.0, n, v, 76.0, 1.0),
+        ArmorResult::Ricochet
+    ));
     // HEAT: no normalization, limit 75.
     let (n, v) = geom(74.9);
-    assert!(!matches!(armor_hit(&heat(), 50.0, n, v, 51.0, 1.0), ArmorResult::Ricochet));
+    assert!(!matches!(
+        armor_hit(&heat(), 50.0, n, v, 51.0, 1.0),
+        ArmorResult::Ricochet
+    ));
     let (n, v) = geom(75.05);
-    assert!(matches!(armor_hit(&heat(), 50.0, n, v, 51.0, 1.0), ArmorResult::Ricochet));
+    assert!(matches!(
+        armor_hit(&heat(), 50.0, n, v, 51.0, 1.0),
+        ArmorResult::Ricochet
+    ));
 }
 
 #[test]

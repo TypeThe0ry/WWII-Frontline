@@ -21,11 +21,21 @@ fn main() {
     for i in 0..iters {
         let a = (i % 80) as f32 * 0.0174;
         let v = Vec3::new(a.sin(), 0.0, -a.cos());
-        let r = armor_hit(&shell, black_box(100.0 + (i % 500) as f32), n, v, black_box(51.0), 1.0);
+        let r = armor_hit(
+            &shell,
+            black_box(100.0 + (i % 500) as f32),
+            n,
+            v,
+            black_box(51.0),
+            1.0,
+        );
         if matches!(r, frontline_sim::vehicle::armor::ArmorResult::Pen { .. }) {
             pens += 1;
         }
     }
     let dt = t0.elapsed();
-    println!("armor_hit: {:.1} ns/call ({pens} pens)", dt.as_nanos() as f64 / iters as f64);
+    println!(
+        "armor_hit: {:.1} ns/call ({pens} pens)",
+        dt.as_nanos() as f64 / iters as f64
+    );
 }

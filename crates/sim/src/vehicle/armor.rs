@@ -44,8 +44,13 @@ pub struct ShellParams {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum ArmorResult {
     /// Penetrated: `p_rem` mm of penetration left after the plate.
-    Pen { p_rem: f32, t_eff: f32 },
-    NoPen { t_eff: f32 },
+    Pen {
+        p_rem: f32,
+        t_eff: f32,
+    },
+    NoPen {
+        t_eff: f32,
+    },
     Ricochet,
 }
 
