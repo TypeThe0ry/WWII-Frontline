@@ -1,0 +1,8 @@
+IGN LiDAR HD (MNT) - licence verification note (2026-11-18)
+Source page read: https://www.data.gouv.fr/datasets/mnt-lidar-hd
+ - Licence stated: Licence Ouverte / Open Licence version 2.0; producer IGN; page "Derniere mise a jour" 30 septembre 2026.
+Licence text read: https://www.data.gouv.fr/pages/legal/licences/etalab-2-0
+ - Free, non-exclusive, worldwide, unlimited-duration right to reuse "a des fins commerciales ou non", incl. inclusion in your own product.
+ - Obligation: credit the source (at least the licensor's name = IGN, the source/URL, and the date of last update).
+ - Licensor guarantees no third-party IP blocking these rights. Not legal advice.
+NOT verified: LiDAR HD coverage/flight year for Calvados/Manche (Carentan) - check before baking (M1-031).

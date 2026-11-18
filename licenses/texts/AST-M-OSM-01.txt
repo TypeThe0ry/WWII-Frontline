@@ -1,0 +1,6 @@
+OpenStreetMap - licence verification note (2026-11-18)
+Pages read: https://www.openstreetmap.org/copyright ; https://osmfoundation.org/wiki/Licence/Attribution_Guidelines
+ - Data licensed under the Open Data Commons Open Database License (ODbL) 1.0 (full text: https://opendatacommons.org/licenses/odbl/1-0/, not archived here).
+ - Required: credit OpenStreetMap and make clear the data is under ODbL; accepted forms: "(c) OpenStreetMap contributors", "(c) OpenStreetMap". Games may show it on splash, in-game, credits or menu.
+ - Guidance: a Produced Work used to extract/copy substantial parts of OSM data counts as a Derivative Database; shipped databases need attribution plus the ODbL text or a link, e.g. in a readme/metadata.
+Decision H-004 (2026-11-18, executor under BRIEF R9 default, project owner's delegation): accept; vector layers under data/maps/*/ are declared ODbL (LICENSE_NOTICE.md) and published as such. Not legal advice; a legal review before public release stays recommended.

@@ -943,3 +943,11 @@
 - **做法**：①`.github/workflows/*.yml` 的所有自动触发（pull_request/push/schedule）已去掉，只保留 `workflow_dispatch`（需要时可手动跑；文件保留作为检查清单的权威定义）；②新增 `scripts/local-ci.sh [组…]`（lint / rust / ts / data / determinism / wasm / assets / map），复刻各工作流的步骤；缺工具的组报告 `SKIPPED` 并以退出码 3 结束（不算绿）；③合并前门槛：本次改动涉及的组必须通过（Rust 改动 → lint+rust+ts，数据/schema → data，地图工具 → map，sim/wasm → determinism+wasm，素材 → assets）；云端容器没有 wasm-pack/cargo-deny，determinism 与 wasm 两组需在 Linux 工作站上跑（Remote Control），在那之前凡改动 sim/sim-wasm 的任务必须先在工作站跑过再合并；④`manifest-budget` 依赖客户端构建产物，已并入 assets 组（有 `client/dist/size-report.json` 时才跑）；⑤CI 实跑里程碑相关的 H-102 事项就此失效（改为本地基线）。
 - **受影响任务**：M1-001–004（CI 墙钟判据）、所有后续任务的合并流程。
 - **裁决（Fable 填写）**：
+
+### PI-079 H-052 / H-004 / H-051 由执行者处理的结果（用户委托“100% 由你处理”，2026-11-18）
+- **提出者 / 日期**：M1 线程 / 2026-11-18（经协调会话转达）
+- **H-052 许可证核实**（读了官方页面，存档说明在 `licenses/texts/AST-M-*.txt`，台账行已写入 LICENSES.md §3）：①IGN LiDAR HD：data.gouv 数据集页标注 Licence Ouverte 2.0、生产者 IGN；Etalab 2.0 官方页确认可商用、须署名（至少署名人/来源/最近更新日期）→ `OK`；②OSM：ODbL，署名 “© OpenStreetMap contributors”，署名指南明确游戏可在 splash/游戏内/Credits 署名，且提取 OSM 数据的作品可构成 Derivative Database → `OK`（见 H-004）；③Copernicus GLO-30：官方许可 PDF 已读，授权复制/分发/改作、免费、全球、无国家例外，署名文本与责任声明见存档，但**未写明商用**→ `FLAGGED`（仅远景环兜底用，只有真用到才需决定）；④IGN RGE ALTI：只查到 Occitanie 的再利用页（许可 Other (Attribution)），并非 IGN 官方页 → 保持 `PENDING`，不使用；⑤**仍未核实**：LiDAR HD 在 Calvados/Manche（Carentan）的覆盖与飞行年份（M1-031 取数时核对）、历史影像/老图的条款（只作参考，不入库，无需核实）。以上不是法律意见，公开发布前仍建议一次法律复核。
+- **H-004 OSM/ODbL**：按 BRIEF R9 默认执行并确认——接受衍生矢量层按 ODbL 公开、游戏内署名；`data/maps/*/` 矢量层在 `LICENSE_NOTICE.md` 声明 ODbL。若用户日后否决，退路是只作视觉参考、从历史图重新描摹（工时 +30–50%）。
+- **H-051 锚点校验：未完成**。云端容器代理拦截了 Overpass/Nominatim（robots 与 403），维基页面不含坐标，所以除教堂（Mérimée PA00110352，±40 m）外的锚点仍是 `provisional`。可行解：在 Linux 工作站（有直连网络）用 Overpass 查教堂/广场/火车站/闸口/N13 桥的 OSM 坐标，填进 `carentan.py` 的 ANCHORS 后重跑 `carentan-meta`；这一步我会在工作站会话里做，不需要用户。
+- **受影响任务**：M1-031（取数前核对 Manche 覆盖）、M1-032、M1-034。
+- **裁决（Fable 填写）**：
