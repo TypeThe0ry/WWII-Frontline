@@ -951,3 +951,12 @@
 - **H-051 锚点校验：未完成**。云端容器代理拦截了 Overpass/Nominatim（robots 与 403），维基页面不含坐标，所以除教堂（Mérimée PA00110352，±40 m）外的锚点仍是 `provisional`。可行解：在 Linux 工作站（有直连网络）用 Overpass 查教堂/广场/火车站/闸口/N13 桥的 OSM 坐标，填进 `carentan.py` 的 ANCHORS 后重跑 `carentan-meta`；这一步我会在工作站会话里做，不需要用户。
 - **受影响任务**：M1-031（取数前核对 Manche 覆盖）、M1-032、M1-034。
 - **裁决（Fable 填写）**：
+
+### PI-080 M1-030/031：真实锚点（H-051）与 DEM 阶段取舍
+- **提出者 / 日期**：M1 线程 / 2026-11-18
+- **H-051 结果**（OSM Overpass 坐标，工作站查询，`reports/m1-anchor-osm.json`，ODbL）：教堂 OSM 位置与 MAPS 目录坐标相差 3.4 m（设计框架成立，恒等变换以教堂平移 dx=3.13 m、dy=−1.36 m 为准，`applied:false`）；共和国广场设计偏差 255 m（>2×±120，标 `design_revised`）、火车站 344 m（±250 内，不参与拟合）；运河闸口真实位置在框外约 (2434, 2211) m，与设计 (1200,1350) 差 1.5 km，说明 MAPS 此处的暂定坐标有误，N13 桥（OSM way 94251398/403）也在框东约 300 m 外，框内没有 N13 桥。**据点/出生点设计应以真实地标（本表）重新校准**，由 M1-034 处理；Augustines 修道院与 Pont de Verdun 的真实位置已入表，作为“真实地标”（无独立设计位置，不参与拟合）。
+- **拟合规则细化**：仅 `confidence_m ≤ 150`、设计位置独立且偏差 ≤ 2×confidence 的锚点参与拟合；少于 2 个时用单点平移。避免了让 250 m 级的暂定位置把相似变换拽出虚假旋转。
+- **DEM（H-052 补充）**：LiDAR HD 覆盖 Carentan：任务 22LHDFD，飞行 2022-08-29–09-12，MNT 0.5 m（IGN69），15 块、约 229 MB，在工作站 `assets/incoming/maps/carentan/dem/`（不入库）。
+- **M1-031 取舍**：①`heightmap_1m.r16` 存的是已切片混合后的 2049² 高度（矩形内原样 1 m，外侧 32 m 羽化到 8 m 远景环上采样）；②LiDAR 瓦片只覆盖约 ±1.5 km，远景环其余区域用“最近有效样本外延”填充（不使用许可证 FLAGGED 的 GLO-30），`meta.height.far_ring_lidar_coverage` 记录覆盖率；③基准偏移暂取 1 m DEM 的 0.1 百分位（尚无水体掩膜，`offset_method` 已标注），待 M1-032 的水体矢量出来后改为最低水面；④验收 1 需要独立 DEM（RGE ALTI 官方页未核实，不用）：`reports/m1-dem-check.csv` 目前是锚点处“重采样 vs 原始 0.5 m 点值”的自洽检查，不是独立来源核对，STATUS 如实标 partial；⑤2049² 不含 256 m 缓冲区（缓冲只用于远景环，已由 8 m 环覆盖）。
+- **受影响任务**：M1-031、M1-032、M1-034。
+- **裁决（Fable 填写）**：

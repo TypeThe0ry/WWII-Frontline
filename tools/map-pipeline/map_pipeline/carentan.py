@@ -13,17 +13,23 @@ from . import TOOL_VERSION, anchors as an, geo, licenses as lic
 
 ORIGIN_E, ORIGIN_N, SIZE_M, EPSG, ZONE = 626432, 5462016, 2048, 32630, 30
 
-# id, design (x, y), confidence_m, source, real (E, N) or None (= provisional frame value)
+# id, design (x, y), design confidence_m, source, OSM key in reports/m1-anchor-osm.json (or None).
+# `design` is where MAPS §3.4 put the landmark; the real position comes from OSM (H-051). Landmarks
+# MAPS gave no design position for take their real local position as design.
 ANCHORS = [
-    ("church_notre_dame", (1277, 897), 40, "cirkwi+merimee:PA00110352", (627709, 5462913)),
-    ("place_republique", (1380, 990), 120, "maps_s3.4_provisional", None),
-    ("canal_lock", (1200, 1350), 120, "maps_s3.4_provisional", None),
+    ("church_notre_dame", (1277, 897), 40, "osm", "eglise_notre_dame"),
+    ("place_republique", (1380, 990), 120, "osm", "place_de_la_republique"),
+    ("railway_station", (1500, 520), 250, "osm", "gare_carentan"),
+    ("canal_lock", (1200, 1350), 120, "osm", "ecluse_canal_gate_a"),
+    ("pont_de_verdun", None, 20, "osm", "pont_de_verdun_d974"),
+    ("couvent_augustines", None, 20, "osm", "couvent_augustines"),
     ("n13_town_entry", (900, 1150), 150, "maps_s3.4_provisional", None),
     ("n13_nw_corner", (0, 1980), 300, "maps_s3.4_provisional", None),
-    ("railway_station", (1500, 520), 250, "maps_s3.4_provisional", None),
     ("ingouf_farm", (900, 1450), 250, "maps_s3.4_provisional", None),
     ("flood_east_edge", (1650, 1500), 300, "maps_s3.4_provisional", None),
 ]
+FIT_MAX_CONF_M = 150  # only main anchors drive the transform (MAPS §0.4)
+OUTLIER_FACTOR = 2.0  # design further than this many confidences from reality = design is wrong
 
 SOURCES = [
     dict(
@@ -60,24 +66,66 @@ SOURCES = [
 ]
 
 
-def anchor_list() -> list[an.Anchor]:
-    out = []
-    for aid, (dx, dy), conf, _src, real in ANCHORS:
-        r = geo.to_local(*real, ORIGIN_E, ORIGIN_N) if real else (float(dx), float(dy))
-        out.append(an.Anchor(aid, (float(dx), float(dy)), r, float(conf)))
-    return out
+def _osm(root: Path) -> dict:
+    p = root / "reports" / "m1-anchor-osm.json"
+    return json.loads(p.read_text(encoding="utf-8"))["anchors"] if p.is_file() else {}
+
+
+def resolve_anchors(root: Path) -> list[dict]:
+    """Anchor rows with design (x, y), real local (x, y) and the design deviation."""
+    osm = _osm(root)
+    rows = []
+    for aid, design, conf, src, key in ANCHORS:
+        o = osm.get(key) if key else None
+        if o:
+            e, n = o["utm30n_e"], o["utm30n_n"]
+            source = f"osm:{o['osm']}"
+            real = geo.to_local(e, n, ORIGIN_E, ORIGIN_N)
+            d = design or (round(real[0], 2), round(real[1], 2))
+            prov = False
+        else:
+            d = design
+            if d is None:  # real-only landmark and no OSM report available
+                continue
+            e, n = ORIGIN_E + d[0], ORIGIN_N + d[1]
+            real, source, prov = (float(d[0]), float(d[1])), src, True
+        dev = ((real[0] - d[0]) ** 2 + (real[1] - d[1]) ** 2) ** 0.5
+        rows.append({"id": aid, "e": round(e, 2), "n": round(n, 2), "design": [float(d[0]), float(d[1])],
+                     "confidence_m": conf, "source": source, "provisional": prov,
+                     "design_deviation_m": round(dev, 1), "design_revised": (not prov) and design is not None and dev > OUTLIER_FACTOR * conf,
+                     "design_independent": design is not None and not prov,
+                     "_real": real})
+    return rows
+
+
+def fit_set(rows: list[dict]) -> list[dict]:
+    """Main anchors with a real position whose design is not an outlier."""
+    return [r for r in rows if r["design_independent"] and r["confidence_m"] <= FIT_MAX_CONF_M and not r["design_revised"]]
+
+
+def anchor_list(root: Path = Path(".")) -> list[an.Anchor]:
+    return [an.Anchor(r["id"], tuple(r["design"]), r["_real"], float(r["confidence_m"])) for r in resolve_anchors(root)]
+
+
+def similarity(rows: list[dict]) -> dict:
+    use = fit_set(rows)
+    if len(use) >= 2:
+        sim = an.fit_similarity([an.Anchor(r["id"], tuple(r["design"]), r["_real"], float(r["confidence_m"])) for r in use])
+    elif len(use) == 1:
+        r = use[0]
+        dx, dy = r["_real"][0] - r["design"][0], r["_real"][1] - r["design"][1]
+        sim = {"dx": dx, "dy": dy, "rot_deg": 0.0, "mode": "translate", "rms_m": 0.0}
+    else:
+        sim = {"dx": 0.0, "dy": 0.0, "rot_deg": 0.0, "mode": "translate", "rms_m": 0.0}
+    sim["fit_anchors"] = [r["id"] for r in use]
+    return sim
 
 
 def build_meta(root: Path, ledger_text: str | None = None) -> dict:
     ledger = lic.parse_ledger(ledger_text if ledger_text is not None else _ledger(root))
-    anchors = []
-    for aid, design, conf, src, real in ANCHORS:
-        e, n = real if real else (ORIGIN_E + design[0], ORIGIN_N + design[1])
-        anchors.append(
-            {"id": aid, "e": e, "n": n, "design": list(design), "confidence_m": conf, "source": src,
-             "provisional": real is None}
-        )
-    sim = an.fit_similarity(anchor_list())
+    rows = resolve_anchors(root)
+    sim = similarity(rows)
+    anchors = [{k: v for k, v in r.items() if k != "_real"} for r in rows]
     sources = []
     for s in SOURCES:
         archive = f"licenses/texts/{s['asset_id']}.txt"
@@ -101,7 +149,8 @@ def build_meta(root: Path, ledger_text: str | None = None) -> dict:
         "anchors": anchors,
         "similarity": {"dx": round(sim["dx"], 3), "dy": round(sim["dy"], 3),
                        "rot_deg": round(sim["rot_deg"], 4), "applied": False,
-                       "mode": sim["mode"], "rms_m": round(sim["rms_m"], 3)},
+                       "mode": sim["mode"], "rms_m": round(sim["rms_m"], 3),
+                       "fit_anchors": sim["fit_anchors"]},
         "sources": sources,
         "credits": [s["credit_text"] for s in SOURCES],
         "m1_sources_checked": False,

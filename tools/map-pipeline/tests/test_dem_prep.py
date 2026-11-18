@@ -132,3 +132,13 @@ def test_dem_command_refuses_unverified_sources(tmp_path):
         {"id": "ign_lidar_hd", "asset_id": "AST-M-LIDAR-01", "archive": "a"},
         {"id": "ign_rge_alti", "asset_id": "AST-M-ALTI-01", "archive": "b"}]}))
     assert main(["dem", "--incoming", str(inc), "--out", str(tmp_path), "--repo", str(tmp_path)]) == dp.EXIT_SOURCES_NOT_OK
+
+
+def test_far_fill_extends_nearest_valid_sample_outward():
+    from map_pipeline.dem_carentan import fill_far_outside_coverage
+
+    far = np.full((9, 9), -9999.0)
+    far[3:6, 3:6] = np.arange(9).reshape(3, 3)
+    out = fill_far_outside_coverage(far, far <= -9998)
+    assert not (out <= -9998).any()
+    assert out[4, 4] == 4 and out[0, 0] == out[3, 3] == 0 and out[8, 8] == 8

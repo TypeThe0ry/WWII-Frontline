@@ -96,14 +96,21 @@ def test_utm_agrees_with_pyproj_when_available():
     assert math.hypot(e - ge, n - gn) < 0.001
 
 
-def test_carentan_meta_is_deterministic_and_identity_for_now():
+def test_carentan_meta_is_deterministic_and_church_drives_a_tiny_translation():
     a = carentan.build_meta(ROOT, "")
-    b = carentan.build_meta(ROOT, "")
-    assert a == b
-    assert a["similarity"]["applied"] is False and a["similarity"]["rot_deg"] == 0
-    # The church anchor's real UTM equals the provisional frame position (MAPS §3.4).
+    assert a == carentan.build_meta(ROOT, "")
+    sim = a["similarity"]
+    assert sim["applied"] is False and sim["rot_deg"] == 0 and sim["fit_anchors"] == ["church_notre_dame"]
+    assert math.hypot(sim["dx"], sim["dy"]) < 5  # OSM church vs MAPS catalogue position
     church = next(x for x in a["anchors"] if x["id"] == "church_notre_dame")
-    assert (church["e"] - 626432, church["n"] - 5462016) == tuple(church["design"])
+    assert church["source"].startswith("osm:") and church["design_deviation_m"] < 5
+
+
+def test_wrong_design_positions_are_flagged_not_fitted():
+    rows = {r["id"]: r for r in carentan.resolve_anchors(ROOT)}
+    assert rows["canal_lock"]["design_revised"] and rows["place_republique"]["design_revised"]
+    assert not rows["pont_de_verdun"]["design_independent"]  # no independent design position
+    assert all(r["id"] == "church_notre_dame" for r in carentan.fit_set(list(rows.values())))
 
 
 def test_cli_writes_identical_meta_twice(tmp_path):

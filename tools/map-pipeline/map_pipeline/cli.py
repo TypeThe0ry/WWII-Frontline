@@ -169,5 +169,12 @@ def _dem(a) -> int:
     except Exception as e:  # GdalMissing
         print(f"error: {e}", file=sys.stderr)
         return 1
-    print("error: the GDAL mosaic/resample stage is wired in M1-031b once real tiles are on disk", file=sys.stderr)
-    return 1
+    from .dem_carentan import build
+
+    try:
+        info = build(Path(a.incoming), Path(a.out), root)
+    except ValueError as e:
+        print(f"error: {e}", file=sys.stderr)
+        return dem_prep.EXIT_TOO_MUCH_NODATA if "no-data" in str(e) else 1
+    print(json.dumps(info, indent=2))
+    return 0

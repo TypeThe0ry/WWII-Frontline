@@ -3,45 +3,102 @@
     {
       "confidence_m": 40,
       "design": [
-        1277,
-        897
+        1277.0,
+        897.0
       ],
-      "e": 627709,
+      "design_deviation_m": 3.4,
+      "design_independent": true,
+      "design_revised": false,
+      "e": 627712.13,
       "id": "church_notre_dame",
-      "n": 5462913,
+      "n": 5462911.64,
       "provisional": false,
-      "source": "cirkwi+merimee:PA00110352"
+      "source": "osm:way/154020387"
     },
     {
       "confidence_m": 120,
       "design": [
-        1380,
-        990
+        1380.0,
+        990.0
       ],
-      "e": 627812,
+      "design_deviation_m": 254.6,
+      "design_independent": true,
+      "design_revised": true,
+      "e": 627677.93,
       "id": "place_republique",
-      "n": 5463006,
-      "provisional": true,
-      "source": "maps_s3.4_provisional"
+      "n": 5462789.55,
+      "provisional": false,
+      "source": "osm:node/1801130625"
+    },
+    {
+      "confidence_m": 250,
+      "design": [
+        1500.0,
+        520.0
+      ],
+      "design_deviation_m": 344.1,
+      "design_independent": true,
+      "design_revised": false,
+      "e": 627588.32,
+      "id": "railway_station",
+      "n": 5462553.61,
+      "provisional": false,
+      "source": "osm:way/198292010"
     },
     {
       "confidence_m": 120,
       "design": [
-        1200,
-        1350
+        1200.0,
+        1350.0
       ],
-      "e": 627632,
+      "design_deviation_m": 1504.6,
+      "design_independent": true,
+      "design_revised": true,
+      "e": 628866.16,
       "id": "canal_lock",
-      "n": 5463366,
-      "provisional": true,
-      "source": "maps_s3.4_provisional"
+      "n": 5464226.66,
+      "provisional": false,
+      "source": "osm:node/2192310455"
+    },
+    {
+      "confidence_m": 20,
+      "design": [
+        1930.52,
+        550.01
+      ],
+      "design_deviation_m": 0.0,
+      "design_independent": false,
+      "design_revised": false,
+      "e": 628362.52,
+      "id": "pont_de_verdun",
+      "n": 5462566.01,
+      "provisional": false,
+      "source": "osm:way/81647005"
+    },
+    {
+      "confidence_m": 20,
+      "design": [
+        1071.63,
+        636.14
+      ],
+      "design_deviation_m": 0.0,
+      "design_independent": false,
+      "design_revised": false,
+      "e": 627503.63,
+      "id": "couvent_augustines",
+      "n": 5462652.14,
+      "provisional": false,
+      "source": "osm:way/154020588"
     },
     {
       "confidence_m": 150,
       "design": [
-        900,
-        1150
+        900.0,
+        1150.0
       ],
+      "design_deviation_m": 0.0,
+      "design_independent": false,
+      "design_revised": false,
       "e": 627332,
       "id": "n13_town_entry",
       "n": 5463166,
@@ -51,9 +108,12 @@
     {
       "confidence_m": 300,
       "design": [
-        0,
-        1980
+        0.0,
+        1980.0
       ],
+      "design_deviation_m": 0.0,
+      "design_independent": false,
+      "design_revised": false,
       "e": 626432,
       "id": "n13_nw_corner",
       "n": 5463996,
@@ -63,21 +123,12 @@
     {
       "confidence_m": 250,
       "design": [
-        1500,
-        520
+        900.0,
+        1450.0
       ],
-      "e": 627932,
-      "id": "railway_station",
-      "n": 5462536,
-      "provisional": true,
-      "source": "maps_s3.4_provisional"
-    },
-    {
-      "confidence_m": 250,
-      "design": [
-        900,
-        1450
-      ],
+      "design_deviation_m": 0.0,
+      "design_independent": false,
+      "design_revised": false,
       "e": 627332,
       "id": "ingouf_farm",
       "n": 5463466,
@@ -87,9 +138,12 @@
     {
       "confidence_m": 300,
       "design": [
-        1650,
-        1500
+        1650.0,
+        1500.0
       ],
+      "design_deviation_m": 0.0,
+      "design_independent": false,
+      "design_revised": false,
       "e": 628082,
       "id": "flood_east_edge",
       "n": 5463516,
@@ -129,8 +183,11 @@
   "schema": "frontline.map.meta/1",
   "similarity": {
     "applied": false,
-    "dx": 0.0,
-    "dy": 0.0,
+    "dx": 3.13,
+    "dy": -1.36,
+    "fit_anchors": [
+      "church_notre_dame"
+    ],
     "mode": "translate",
     "rms_m": 0.0,
     "rot_deg": 0.0

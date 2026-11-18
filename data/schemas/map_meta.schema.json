@@ -83,7 +83,10 @@
           "design": { "type": "array", "minItems": 2, "maxItems": 2, "items": { "type": "number" } },
           "confidence_m": { "type": "number", "minimum": 0 },
           "source": { "type": "string", "minLength": 1 },
-          "provisional": { "type": "boolean" }
+          "provisional": { "type": "boolean" },
+          "design_deviation_m": { "type": "number", "minimum": 0 },
+          "design_revised": { "type": "boolean" },
+          "design_independent": { "type": "boolean" }
         }
       }
     },
@@ -97,7 +100,8 @@
         "rot_deg": { "type": "number" },
         "applied": { "type": "boolean" },
         "mode": { "enum": ["translate", "rotate"] },
-        "rms_m": { "type": "number", "minimum": 0 }
+        "rms_m": { "type": "number", "minimum": 0 },
+        "fit_anchors": { "type": "array", "items": { "type": "string" } }
       }
     },
     "sources": {
