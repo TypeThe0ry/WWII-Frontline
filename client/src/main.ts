@@ -32,6 +32,8 @@ declare global {
     __vegetation?: VegetationHandle;
     /** `?scene=world` (terrain + vegetation + hedgerows + buildings, M1-051b/052b): load stats and meshes. */
     __world?: WorldHandle;
+    /** `?vfx=stress`: particle stress hook (M1-047b). */
+    __vfx?: import('./render/vfx/vfx-scene').VfxHandle;
     /** `?server=`: networked play (M0-022); diagnostics and e2e. */
     __netGame?: NetGameHandle;
     /** `?server=` or `?actors=demo`: placeholder actors, first-person camera and fx (M0-025); diagnostics and e2e. */
@@ -83,6 +85,11 @@ async function boot(): Promise<void> {
   if (terrainHandle && sceneParam === 'world') {
     const { attachWorld } = await import('./render/world/world-scene');
     window.__world = await attachWorld(ctx, terrainHandle.terrain, params);
+  }
+
+  if (params.get('vfx') === 'stress') {
+    const { attachVfxStress } = await import('./render/vfx/vfx-scene');
+    window.__vfx = attachVfxStress(ctx, params);
   }
 
   // M0-022: networked play (`?server=host:port`): prediction, reconciliation, interpolation (client/src/game).
