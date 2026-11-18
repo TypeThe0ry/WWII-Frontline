@@ -1028,3 +1028,6 @@ M1-038 体量为 L。先交付与场景无关的引擎（行为树、效用、�
 
 ## PI-088 M1-038b：战术逻辑纯函数化，接入延后（2026-11-18）
 目标打分与战斗树做成与世界无关的纯函数(`bots::tactics`)，用 Situation 输入做场景测试；接入 `SoldierBrain` 会改变 M0 golden 回放哈希，且需要 M1-039 的 `SquadOrder`，故合并到 038c/M1-039 一起做并重钉哈希。参数(阈值/曲线)均为 `initial`。
+
+## PI-089 M1-039a：纯逻辑先行（2026-11-18）
+兵种选择直接复用 sim 的 `role_available`（不重复校验，符合任务备注）；填充/让位/重连宽限与小队长选点做成纯函数，host 接线与 Officer/Support 行为留 039b。`SquadOrder` 暂定义在 `bots::squad_leader`，接线时再决定是否上移到 sim/protocol。
