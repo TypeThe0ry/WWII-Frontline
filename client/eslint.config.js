@@ -12,8 +12,9 @@ export default tseslint.config(
   },
   {
     // Node-side helper scripts (scripts/sync-map.mjs).
-    files: ['scripts/**/*.mjs'],
-    languageOptions: { globals: { console: 'readonly', process: 'readonly' } },
+    files: ['scripts/**/*.mjs', 'src/**/*.mjs'],
+    rules: { '@typescript-eslint/no-unused-expressions': 'off' },
+    languageOptions: { globals: { console: 'readonly', process: 'readonly', URL: 'readonly' } },
   },
   {
     files: ['**/*.js'],

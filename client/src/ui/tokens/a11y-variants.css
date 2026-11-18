@@ -1,0 +1,4 @@
+/* Placeholder (full implementation M2-041): colour-blind / high-contrast variants (UI_SPEC §2.2.3). */
+:root[data-a11y='deuter'] { --pl-friend: #4fa8ff; --pl-enemy: #ffb000; --pl-squad: #d6b6ff; }
+:root[data-a11y='tritan'] { --pl-friend: #2ec4b6; --pl-enemy: #e5326e; --pl-squad: #f2f2f2; }
+:root[data-a11y='contrast'] { --pl-friend: #00b7ff; --pl-enemy: #ff8a00; --pl-bg-0: #000; --pl-hud-scrim: #000; }
