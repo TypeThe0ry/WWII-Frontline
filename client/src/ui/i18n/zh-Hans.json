@@ -60,5 +60,20 @@
   "ui.downed.tag.friendlyFire": "友军误伤",
   "ui.dead.title": "阵亡",
   "ui.dead.killedBy": "被 {name} 的 {weapon} 击杀 · {dist} 米",
-  "ui.dead.redeploy": "重新部署（Enter）"
+  "ui.dead.redeploy": "重新部署（Enter）",
+  "ui.officer.err.wrongRole": "只有军官可以放置",
+  "ui.officer.err.tooCloseHq": "距离总部过近",
+  "ui.officer.err.tooCloseOwnGarrison": "距离己方驻点过近",
+  "ui.officer.err.tooCloseEnemyGarrison": "距离敌方驻点过近",
+  "ui.officer.err.tooCloseObjective": "距离据点过近",
+  "ui.officer.err.slope": "地面坡度过大",
+  "ui.officer.err.water": "不能在水面上放置",
+  "ui.officer.err.enemyNear": "附近有敌人",
+  "ui.officer.err.noSupplies": "补给不足",
+  "ui.officer.err.teamCap": "已达全队驻点上限",
+  "ui.officer.err.sectorCap": "已达本区域驻点上限",
+  "ui.officer.err.notAlive": "必须存活",
+  "ui.officer.tool.needOfficer": "需要军官兵种",
+  "ui.officer.tool.needSquad": "小队至少需要 2 人",
+  "ui.officer.tool.needSupport": "需要支援兵种"
 }
