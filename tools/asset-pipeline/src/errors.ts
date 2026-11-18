@@ -5,7 +5,7 @@ export const ExitCode = {
   Usage: 1,
   /** A file under assets/incoming/ matches no ledger row (LICENSES §1 rule 1). */
   Unregistered: 2,
-  /** The matching ledger row is not OK (PENDING / FLAGGED / REJECTED). */
+  /** The matching ledger row is not OK (PENDING / FLAGGED / REJECTED / INTERNAL). */
   NotOk: 3,
   /** D-LIC channel without a confirmation_path (ARCHITECTURE §11.7). */
   ConfirmationMissing: 4,

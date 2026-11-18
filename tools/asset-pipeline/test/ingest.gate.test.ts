@@ -58,6 +58,16 @@ describe('ingest gate (acceptance 1)', () => {
     expect(e.message).toContain('FLAGGED');
   });
 
+  it('INTERNAL package refuses binary ingest before any file is copied', () => {
+    const dir = 'assets/incoming/ue-purchased/internal-pack';
+    const r = repo([{ asset_id: 'AST-INT', raw_path: dir, status: 'INTERNAL' }]);
+    r.put(`${dir}/nested/model.glb`, 'dummy GLB');
+    const e = gate(r);
+    expect(e.code).toBe(ExitCode.NotOk);
+    expect(e.message).toContain('INTERNAL (internal-only)');
+    expect(existsSync(r.work)).toBe(false);
+  });
+
   it('unregistered file -> exit 2 naming the file', () => {
     const r = repo([{ asset_id: 'AST-V-TEST-001-01' }]);
     const f = r.put('assets/incoming/V-OTHER-009/Fab-123/model.glb', 'x');
