@@ -29,6 +29,10 @@ pub struct Config {
     /// down from 127 and are reserved against human joins.
     #[arg(long, env = "FRONTLINE_BOTS", default_value_t = 0)]
     pub bots: u16,
+    /// Keep each team at this many players by adding/removing bots as humans come and go (M1-039c). 0 = off
+    /// (static `--bots N`). Needs `--bots` > 0 so the bot host exists.
+    #[arg(long, env = "FRONTLINE_BOT_FILL", default_value_t = 0)]
+    pub bot_fill: u8,
     /// WebSocket port. 0 = ephemeral.
     #[arg(long, env = "FRONTLINE_WS_PORT", default_value_t = 7000)]
     pub ws_port: u16,

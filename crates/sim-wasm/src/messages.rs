@@ -345,6 +345,79 @@ pub fn decode_c0(bytes: &[u8]) -> Result<ServerC0, JsError> {
     decode_server_c0(bytes)
 }
 
+/// JSON string literal (quotes, backslash, control characters escaped) for a nickname.
+fn json_str(s: &str) -> String {
+    let mut o = String::with_capacity(s.len() + 2);
+    o.push('"');
+    for c in s.chars() {
+        match c {
+            '"' => o.push_str("\\\""),
+            '\\' => o.push_str("\\\\"),
+            c if (c as u32) < 0x20 => o.push_str(&format!("\\u{:04x}", c as u32)),
+            c => o.push(c),
+        }
+    }
+    o.push('"');
+    o
+}
+
+/// A C4 event as one JSON object whose `type` and field names are the TS `C4Event` of
+/// `client/src/game/state/c4.ts` (M1-040c). The roster entry carries no `seq`: the receiver numbers them.
+pub(crate) fn decode_c4_core(bytes: &[u8]) -> Result<String, String> {
+    use frontline_protocol::msg::c4::{decode_c4, roster_flags, ServerEventC4 as E};
+    let ev = decode_c4(bytes).map_err(|e| format!("bad C4 event: {e}"))?;
+    Ok(match ev {
+        E::Kill(k) => format!(
+            r#"{{"type":"kill","victim":{},"killer":{},"weapon":{},"headshot":{},"distQ":{}}}"#,
+            k.victim, k.killer, k.weapon, k.headshot, k.dist_q
+        ),
+        E::Death(d) => format!(
+            r#"{{"type":"death","victim":{},"respawnAfter":{},"canBeRevived":{}}}"#,
+            d.victim, d.respawn_after, d.can_be_revived
+        ),
+        E::Revive(r) => format!(
+            r#"{{"type":"revive","medic":{},"target":{}}}"#,
+            r.medic, r.target
+        ),
+        E::ScoreDelta(s) => format!(
+            r#"{{"type":"score","player":{},"kind":{},"value":{}}}"#,
+            s.player, s.kind, s.value
+        ),
+        E::ObjectiveChange(o) => format!(
+            r#"{{"type":"objective","objective":{},"owner":{},"reason":{}}}"#,
+            o.objective, o.owner, o.reason
+        ),
+        E::SpawnPointState(p) => format!(
+            r#"{{"type":"spawnpoint","id":{},"kind":{},"team":{},"pos":[{},{}],"state":{}}}"#,
+            p.id, p.kind as u8, p.team, p.pos[0], p.pos[1], p.state
+        ),
+        E::PlayerRoster(r) => format!(
+            r#"{{"type":"roster","player":{},"nick":{},"team":{},"squad":{},"role":{},"flags":{},"left":{}}}"#,
+            r.player,
+            json_str(&r.nick),
+            r.team,
+            r.squad,
+            r.role,
+            r.flags,
+            r.flags & roster_flags::LEFT != 0
+        ),
+        E::Notice(n) => format!(
+            r#"{{"type":"notice","code":{},"args":[{},{},{}]}}"#,
+            n.code, n.args[0], n.args[1], n.args[2]
+        ),
+        E::MatchPhase(m) => format!(
+            r#"{{"type":"phase","phase":{},"endsAt":{}}}"#,
+            m.phase as u8, m.ends_at
+        ),
+    })
+}
+
+/// Decodes one C4 payload to JSON (see [`decode_c4_core`]); throws on malformed bytes.
+#[wasm_bindgen(js_name = decodeC4)]
+pub fn decode_c4_js(bytes: &[u8]) -> Result<String, JsError> {
+    decode_c4_core(bytes).map_err(js_err)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -365,6 +438,52 @@ mod tests {
         assert!(bundle_core(&mk(0), &[], 70_000, 0).is_err());
         let gap: Vec<u8> = [mk(0), mk(2)].concat();
         assert!(bundle_core(&gap, &[], 0, 0).is_err());
+    }
+
+    #[test]
+    fn c4_events_decode_to_ts_shaped_json() {
+        use frontline_protocol::msg::c4::{
+            encode_c4, Kill, Notice, PlayerRoster, ServerEventC4 as E,
+        };
+        let k = encode_c4(&E::Kill(Kill {
+            victim: 3,
+            killer: 4,
+            weapon: 1,
+            headshot: true,
+            dist_q: 400,
+            assist1: 0,
+            assist2: 0,
+        }))
+        .unwrap();
+        assert_eq!(
+            decode_c4_core(&k).unwrap(),
+            r#"{"type":"kill","victim":3,"killer":4,"weapon":1,"headshot":true,"distQ":400}"#
+        );
+        let n = encode_c4(&E::Notice(Notice {
+            code: 7,
+            args: [1, -2, 3],
+        }))
+        .unwrap();
+        assert_eq!(
+            decode_c4_core(&n).unwrap(),
+            r#"{"type":"notice","code":7,"args":[1,-2,3]}"#
+        );
+        let r = encode_c4(&E::PlayerRoster(PlayerRoster {
+            player: 5,
+            nick: "A\"b\\c".into(),
+            team: 1,
+            squad: 2,
+            role: 3,
+            flags: 8,
+        }))
+        .unwrap();
+        let j = decode_c4_core(&r).unwrap();
+        assert!(
+            j.contains(r#""nick":"A\"b\\c""#) && j.ends_with(r#""left":true}"#),
+            "{j}"
+        );
+        assert!(decode_c4_core(&[0xff]).is_err());
+        assert!(decode_c4_core(&k[..2]).is_err());
     }
 
     #[test]

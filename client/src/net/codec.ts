@@ -8,6 +8,7 @@
  * Message bodies are encoded/decoded by sim-wasm (`NetCodec`); nothing here touches bits.
  * `codec.test.ts` pins the byte layout against the golden bytes of `protocol::framing`.
  */
+import type { C4Event } from '../game/state/c4';
 import { LAYOUT_C0_DISCONNECT, LAYOUT_C0_PONG, LAYOUT_C0_REJECT, LAYOUT_C0_WELCOME, type SimWasmModule } from './wasm';
 
 export const Channel = { C0: 0, C1: 1, C2: 2, C3: 3, C4: 4, C5: 5 } as const;
@@ -177,6 +178,18 @@ export class NetCodec {
 
   encodeDisconnect(reason: number): Uint8Array {
     return this.wasm.encodeDisconnect(reason);
+  }
+
+  private rosterSeq = 0;
+
+  /**
+   * Decodes one C4 payload (M1-040c). Roster entries get a receipt sequence number so stale incremental entries can be
+   * told from fresh ones (`Roster` keeps the highest `seq`). Throws on malformed bytes or unknown event types.
+   */
+  decodeC4(bytes: Uint8Array): C4Event {
+    const e = JSON.parse(this.wasm.decodeC4(bytes)) as C4Event;
+    if (e.type === 'roster') return { ...e, seq: ++this.rosterSeq };
+    return e;
   }
 
   /** Decodes a server C0 payload; throws on malformed bytes. The wasm object is freed before returning. */

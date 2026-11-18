@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { Channel, decodeDatagram, decodeWsFrame, encodeDatagram, encodeStreamFrame, encodeWsFrame, FrameError, NetCodec, StreamFrameReader } from './codec';
 import { HAVE_WASM, loadWasm, WASM_HOW } from './test-support';
+import type { SimWasmModule } from './wasm';
 
 const hex = (s: string): Uint8Array => Uint8Array.from(s.match(/../g) ?? [], (b) => parseInt(b, 16));
 const GOLDEN_DIR = fileURLToPath(new URL('../../../crates/protocol/tests/golden/', import.meta.url));
@@ -102,3 +103,29 @@ describe.skipIf(!HAVE_WASM)('message codec over sim-wasm (golden messages of cra
 });
 
 if (!HAVE_WASM) console.warn(`[net] sim-wasm package missing, message codec tests skipped: ${WASM_HOW}`);
+
+describe('C4 decode glue', () => {
+  const stub = (json: string): NetCodec => new NetCodec({ decodeC4: () => json } as unknown as SimWasmModule);
+  it('passes events through and numbers roster entries in receipt order', () => {
+    const roster = '{"type":"roster","player":5,"nick":"A\\"b","team":1,"squad":2,"role":3,"flags":8,"left":true}';
+    const c = stub(roster);
+    expect(c.decodeC4(new Uint8Array(1))).toMatchObject({ type: 'roster', nick: 'A"b', left: true, seq: 1 });
+    expect(c.decodeC4(new Uint8Array(1))).toMatchObject({ seq: 2 });
+    expect(stub('{"type":"kill","victim":3,"killer":4,"weapon":1,"headshot":true,"distQ":400}').decodeC4(new Uint8Array(1))).toEqual({
+      type: 'kill',
+      victim: 3,
+      killer: 4,
+      weapon: 1,
+      headshot: true,
+      distQ: 400,
+    });
+  });
+  it('propagates decode failures', () => {
+    const bad = new NetCodec({
+      decodeC4: () => {
+        throw new Error('bad C4 event');
+      },
+    } as unknown as SimWasmModule);
+    expect(() => bad.decodeC4(new Uint8Array(0))).toThrow('bad C4 event');
+  });
+});
