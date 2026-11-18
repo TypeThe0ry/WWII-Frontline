@@ -23,6 +23,7 @@ pub mod grid_nav;
 pub mod nav;
 pub mod perception;
 pub mod soldier;
+pub mod tactics;
 pub mod utility;
 
 pub use brain::{BotBrain, BrainStats};
