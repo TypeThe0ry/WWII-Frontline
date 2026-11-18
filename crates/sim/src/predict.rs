@@ -105,6 +105,31 @@ impl PredictSim {
         self.vehicle = v;
     }
 
+    /// Sets the driven vehicle from an authoritative kinematic state: a fresh vehicle of `def_id` with the
+    /// given pose, velocity and yaw rate; the slewed speed target starts at the current forward speed.
+    pub fn reset_vehicle_kinematics(
+        &mut self,
+        def_id: &str,
+        pos: crate::Vec3,
+        vel: crate::Vec3,
+        rot: glam::Quat,
+        yaw_rate: f32,
+    ) -> Result<(), crate::vehicle::VehicleSpawnError> {
+        let mut v = crate::vehicle::Vehicle::from_def(
+            self.data,
+            def_id,
+            0,
+            crate::components::Team::Us,
+            pos,
+            rot,
+        )?;
+        v.vel = vel;
+        v.ang_vel = crate::Vec3::new(0.0, yaw_rate, 0.0);
+        v.speed_target = v.forward_speed();
+        self.vehicle = Some(v);
+        Ok(())
+    }
+
     pub fn vehicle(&self) -> Option<&crate::vehicle::Vehicle> {
         self.vehicle.as_ref()
     }

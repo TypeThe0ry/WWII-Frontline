@@ -281,6 +281,52 @@ pub struct Vehicle {
 }
 
 impl Vehicle {
+    /// A fresh, undamaged vehicle of data definition `def_id` at rest (used by the client predictor, which
+    /// then overwrites the kinematic state from the authoritative snapshot).
+    pub fn from_def(
+        data: &crate::data::GameData,
+        def_id: &str,
+        id: EntityId,
+        team: crate::components::Team,
+        pos: Vec3,
+        rot: Quat,
+    ) -> Result<Self, VehicleSpawnError> {
+        let def = data
+            .vehicle(def_id)
+            .ok_or(VehicleSpawnError::UnknownVehicle)?;
+        let params = VehicleParams::from_def(def).map_err(VehicleSpawnError::Data)?;
+        let hp = params.hull_hp;
+        let modules = modules::Modules::new(&params.module_specs);
+        let gun = gun::Gun::new(&params.gun);
+        Ok(Vehicle {
+            id,
+            team,
+            seats: vec![None; params.seat_count],
+            params,
+            pos,
+            vel: Vec3::ZERO,
+            rot,
+            ang_vel: Vec3::ZERO,
+            ctrl: VehicleCtrl::default(),
+            speed_target: 0.0,
+            grounded_rays: 0,
+            hull_hp: hp,
+            scripted: false,
+            in_contact: false,
+            crushed: Default::default(),
+            flip_ticks: 0,
+            overturned: false,
+            modules,
+            turret: Default::default(),
+            gun,
+            knocked_out: false,
+            burn_left: 0,
+            wreck_left: 0,
+            gone: false,
+            swap_held: false,
+        })
+    }
+
     pub fn forward(&self) -> Vec3 {
         self.rot * Vec3::Z
     }

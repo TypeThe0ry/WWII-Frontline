@@ -119,7 +119,11 @@ pub(crate) fn parse_cmd(bytes: &[u8]) -> Result<InputCmd, String> {
 pub struct Predictor {
     sim: PredictSim,
     out: [f32; layout::STATE_LEN],
+    vout: [f32; VEHICLE_STATE_LEN],
 }
+
+/// Driven-vehicle state array: `pos[3] vel[3] quat[4] (xyzw) yaw_rate forward_speed`.
+pub const VEHICLE_STATE_LEN: usize = 12;
 
 impl Predictor {
     pub fn new_core(match_seed: u64, map_id: u16, my_player_id: u8) -> Result<Self, String> {
@@ -136,6 +140,7 @@ impl Predictor {
         let mut p = Self {
             sim: PredictSim::new(cfg, &CollisionData::empty(), my_player_id),
             out: [0.0; layout::STATE_LEN],
+            vout: [0.0; VEHICLE_STATE_LEN],
         };
         p.refresh();
         Ok(p)
@@ -213,6 +218,53 @@ impl Predictor {
     /// Sim terrain height (`CollisionData::height_at`, bilinear over the loaded chunks).
     pub fn height_at_core(&mut self, x: f32, z: f32) -> Option<f32> {
         self.sim.collision_mut().height_at(x, z)
+    }
+
+    /// Starts / resets vehicle prediction from an authoritative kinematic state
+    /// (`pos[3] vel[3] quat[4] yaw_rate`, 11 floats).
+    pub fn reset_vehicle_core(&mut self, def_id: &str, kin: &[f32]) -> Result<(), String> {
+        if kin.len() != 11 || kin.iter().any(|f| !f.is_finite()) {
+            return Err("vehicle state must be 11 finite floats".into());
+        }
+        let q = frontline_sim::Quat::from_xyzw(kin[6], kin[7], kin[8], kin[9]);
+        if q.length_squared() < 1e-6 {
+            return Err("vehicle quaternion is zero".into());
+        }
+        self.sim
+            .reset_vehicle_kinematics(
+                def_id,
+                frontline_sim::Vec3::new(kin[0], kin[1], kin[2]),
+                frontline_sim::Vec3::new(kin[3], kin[4], kin[5]),
+                q.normalize(),
+                kin[10],
+            )
+            .map_err(|e| format!("cannot predict vehicle {def_id:?}: {e:?}"))?;
+        self.refresh_vehicle();
+        Ok(())
+    }
+
+    pub fn clear_vehicle_core(&mut self) {
+        self.sim.reset_vehicle(None);
+    }
+
+    pub fn step_vehicle_core(&mut self, cmd: &[u8]) -> Result<bool, String> {
+        let c = parse_cmd(cmd)?;
+        let stepped = self.sim.step_vehicle_driver(&c).is_some();
+        if stepped {
+            self.refresh_vehicle();
+        }
+        Ok(stepped)
+    }
+
+    fn refresh_vehicle(&mut self) {
+        if let Some(v) = self.sim.vehicle() {
+            let o = &mut self.vout;
+            o[0..3].copy_from_slice(&v.pos.to_array());
+            o[3..6].copy_from_slice(&v.vel.to_array());
+            o[6..10].copy_from_slice(&v.rot.to_array());
+            o[10] = v.ang_vel.y;
+            o[11] = v.forward_speed();
+        }
     }
 
     pub fn state_slice(&self) -> &[f32] {
@@ -398,6 +450,28 @@ impl Predictor {
         unsafe { Float32Array::view(&self.out) }
     }
 
+    /// Starts or resets prediction of the vehicle the local player drives from the authoritative
+    /// kinematic state (`pos[3] vel[3] quat[4] yaw_rate`, 11 floats, quat as x y z w).
+    #[wasm_bindgen(js_name = resetVehicle)]
+    pub fn reset_vehicle(&mut self, def_id: &str, kin: &[f32]) -> Result<(), JsError> {
+        self.reset_vehicle_core(def_id, kin).map_err(js_err)
+    }
+
+    /// Stops vehicle prediction (left the driver seat).
+    #[wasm_bindgen(js_name = clearVehicle)]
+    pub fn clear_vehicle(&mut self) {
+        self.clear_vehicle_core();
+    }
+
+    /// Advances the driven vehicle one tick with an 18-byte `InputCmd`; returns the 12-float
+    /// vehicle state (`pos vel quat yaw_rate forward_speed`), or `undefined` without a vehicle.
+    #[wasm_bindgen(js_name = stepVehicle)]
+    pub fn step_vehicle(&mut self, cmd: &[u8]) -> Result<Option<Float32Array>, JsError> {
+        let stepped = self.step_vehicle_core(cmd).map_err(js_err)?;
+        // SAFETY: as `state`: consumed before the next call into wasm.
+        Ok(stepped.then(|| unsafe { Float32Array::view(&self.vout) }))
+    }
+
     /// Copy of the predicted `WeaponState` bytes (33), or empty without a weapon.
     #[wasm_bindgen(js_name = weaponState)]
     pub fn weapon_state(&self) -> Vec<u8> {
@@ -448,6 +522,30 @@ mod tests {
         p.step_core(&cmd_bytes(127, 0)).unwrap();
         assert_eq!(p.sim.tick().0, 1);
         assert_eq!(p.state_slice()[layout::TICK], 1.0);
+    }
+
+    #[test]
+    fn vehicle_prediction_drives_forward_and_resets() {
+        let mut p = Predictor::new_core(1, 0, 3).unwrap();
+        // Flat 5-chunk-free world: no collision chunks, so the hull has no ground; only check plumbing.
+        let kin = [0.0, 5.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0];
+        assert!(
+            !p.step_vehicle_core(&cmd_bytes(0, 0)).unwrap(),
+            "no vehicle yet"
+        );
+        assert!(p.reset_vehicle_core("no_such_tank", &kin).is_err());
+        assert!(p.reset_vehicle_core("us_m4a1_75", &kin[..5]).is_err());
+        p.reset_vehicle_core("us_m4a1_75", &kin).unwrap();
+        assert!(p.step_vehicle_core(&cmd_bytes(127, 0)).unwrap());
+        let t0 = p.sim.tick().0;
+        assert_eq!(t0, 1);
+        let out = p.vout;
+        assert!(out.iter().all(|f| f.is_finite()));
+        // Quaternion stays unit length.
+        let ql = out[6..10].iter().map(|f| f * f).sum::<f32>();
+        assert!((ql - 1.0).abs() < 1e-3);
+        p.clear_vehicle_core();
+        assert!(!p.step_vehicle_core(&cmd_bytes(0, 0)).unwrap());
     }
 
     #[test]

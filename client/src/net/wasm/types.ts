@@ -8,6 +8,11 @@ export interface WasmPredictor {
   reset(authState: Uint8Array, tick: number, weapon?: Uint8Array): void;
   resetWeapon(weapon?: Uint8Array): void;
   equipWeapon(weaponId: string, reserve: number): void;
+  /** Starts/resets prediction of the driven vehicle: `pos[3] vel[3] quat[4] (xyzw) yawRate` (11 floats). */
+  resetVehicle(defId: string, kin: Float32Array): void;
+  clearVehicle(): void;
+  /** One vehicle tick: `pos vel quat yawRate forwardSpeed` (12 floats), or `undefined` without a vehicle. */
+  stepVehicle(cmd: Uint8Array): Float32Array | undefined;
   step(cmd: Uint8Array): Float32Array;
   state(): Float32Array;
   weaponState(): Uint8Array;
