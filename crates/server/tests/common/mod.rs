@@ -77,6 +77,15 @@ impl Harness {
     }
 
     pub async fn start_kind(kind: Kind, handshake_timeout: Duration, per_ip: usize) -> Harness {
+        Self::start_full(kind, handshake_timeout, per_ip, None).await
+    }
+
+    pub async fn start_full(
+        kind: Kind,
+        handshake_timeout: Duration,
+        per_ip: usize,
+        tickets: Option<frontline_server::gateway_link::SharedGate>,
+    ) -> Harness {
         let metrics = Metrics::new();
         let (ctx_tx, commands) = crossbeam_channel::bounded(256);
         let inbound = InboundQueue::new();
@@ -101,6 +110,7 @@ impl Harness {
             server_tick: tick,
             started: Instant::now(),
             handshake_timeout,
+            tickets,
         });
         let (listener, wt, target) = match kind {
             Kind::Ws => {

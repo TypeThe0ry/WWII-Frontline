@@ -60,6 +60,12 @@ pub struct Metrics {
     // ---- net (M0-016) ----
     pub net_connections: IntGauge,
     pub net_rejects_total: IntCounterVec,
+    /// Join tickets refused by the verifier (M1-029), by reason.
+    pub ticket_rejected_total: IntCounterVec,
+    /// 1 once the gateway accepted this match's registration.
+    pub gateway_registered: IntGauge,
+    /// Heartbeats sent to the gateway, by `result` (`ok`/`error`).
+    pub gateway_heartbeat_total: IntCounterVec,
     pub net_bytes_in_total: IntCounter,
     pub net_bytes_out_total: IntCounter,
     pub net_frames_malformed_total: IntCounter,
@@ -197,6 +203,20 @@ impl Metrics {
                 &["reason"],
             )
             .expect("rejects"),
+            ticket_rejected_total: IntCounterVec::new(
+                Opts::new("ticket_rejected_total", "Join tickets refused, by reason"),
+                &["reason"],
+            )
+            .expect("ticket_rejected"),
+            gateway_registered: gauge(
+                "gateway_registered",
+                "1 once the gateway accepted the registration",
+            ),
+            gateway_heartbeat_total: IntCounterVec::new(
+                Opts::new("gateway_heartbeat_total", "Heartbeats sent to the gateway"),
+                &["result"],
+            )
+            .expect("gateway_heartbeat"),
             net_bytes_in_total: counter("net_bytes_in_total", "Bytes received from clients"),
             net_bytes_out_total: counter("net_bytes_out_total", "Bytes sent to clients"),
             net_frames_malformed_total: counter(
@@ -363,6 +383,9 @@ impl Metrics {
         for c in [
             Box::new(m.net_connections.clone()) as Box<dyn prometheus::core::Collector>,
             Box::new(m.net_rejects_total.clone()),
+            Box::new(m.ticket_rejected_total.clone()),
+            Box::new(m.gateway_registered.clone()),
+            Box::new(m.gateway_heartbeat_total.clone()),
             Box::new(m.net_bytes_in_total.clone()),
             Box::new(m.net_bytes_out_total.clone()),
             Box::new(m.net_frames_malformed_total.clone()),
@@ -402,6 +425,12 @@ impl Metrics {
         }
         for kind in ["ws", "wt"] {
             m.net_transport_connections.with_label_values(&[kind]);
+        }
+        for reason in crate::gateway_link::ticket_verify::TicketReject::LABELS {
+            m.ticket_rejected_total.with_label_values(&[reason]);
+        }
+        for r in ["ok", "error"] {
+            m.gateway_heartbeat_total.with_label_values(&[r]);
         }
         for reason in REJECT_REASONS {
             m.net_rejects_total.with_label_values(&[reason]);

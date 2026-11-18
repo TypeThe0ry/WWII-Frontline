@@ -78,6 +78,30 @@ pub struct Config {
     /// Write a metrics summary JSON here on exit.
     #[arg(long, env = "FRONTLINE_REPORT")]
     pub report: Option<std::path::PathBuf>,
+    /// Base URL of the gateway's internal API (`http://host:port`). Enables registration, the
+    /// 1 s heartbeat and join-ticket verification (M1-029).
+    #[arg(long, env = "GATEWAY_URL")]
+    pub gateway_url: Option<String>,
+    /// Bearer token of the gateway's internal API.
+    #[arg(long, env = "INTERNAL_API_TOKEN", hide_env_values = true)]
+    pub internal_api_token: Option<String>,
+    /// Pin the gateway's ticket public key (base64url, 32 bytes): registration is refused when the
+    /// gateway announces another key.
+    #[arg(long, env = "TICKET_PUBLIC_KEY_FILE")]
+    pub ticket_public_key_file: Option<std::path::PathBuf>,
+    /// Run without a gateway: no registration and no join tickets. Development builds only.
+    #[arg(long, env = "FRONTLINE_DEV_NO_GATEWAY", default_value_t = false)]
+    pub dev_no_gateway: bool,
+    /// Advertised address / region / name for the gateway's server list.
+    #[arg(long, env = "FRONTLINE_PUBLIC_ADDR", default_value = "127.0.0.1")]
+    pub public_addr: String,
+    #[arg(long, env = "FRONTLINE_REGION", default_value = "local")]
+    pub region: String,
+    #[arg(long, env = "FRONTLINE_SERVER_NAME", default_value = "Frontline")]
+    pub server_name: String,
+    /// Where a result that could not be delivered is kept.
+    #[arg(long, env = "FRONTLINE_SPOOL_DIR", default_value = "spool")]
+    pub spool_dir: std::path::PathBuf,
     /// Pin the sim thread to this CPU core (deployment item M1-067; accepted, not applied).
     #[arg(long, env = "FRONTLINE_PIN_SIM_CORE")]
     pub pin_sim_core: Option<usize>,
@@ -192,6 +216,18 @@ impl Config {
                 ));
             }
         }
+        if self.dev_no_gateway && self.gateway_url.is_some() {
+            return Err("--dev-no-gateway cannot be combined with GATEWAY_URL".into());
+        }
+        if self.gateway_url.is_some() && self.internal_api_token.as_deref().unwrap_or("").is_empty()
+        {
+            return Err("GATEWAY_URL needs INTERNAL_API_TOKEN".into());
+        }
+        if !cfg!(debug_assertions) && self.dev_no_gateway {
+            // Release builds only ever run without a gateway by omitting GATEWAY_URL (which logs a
+            // loud warning); the explicit development switch does not exist there (PI-076).
+            return Err("--dev-no-gateway is not available in release builds".into());
+        }
         match &self.match_id {
             Some(id) if !is_uuid(id) => {
                 return Err(format!(
@@ -215,6 +251,11 @@ impl Config {
             .iter()
             .position(|m| *m == self.mode)
             .unwrap_or(0) as u8
+    }
+
+    /// Join tickets are enforced exactly when a gateway is configured.
+    pub fn gateway_enabled(&self) -> bool {
+        self.gateway_url.is_some()
     }
 
     pub fn match_id(&self) -> &str {
@@ -270,6 +311,25 @@ mod tests {
         assert!(parse(&["--match-id", "abc"]).unwrap_err().contains("UUID"));
         assert!(parse(&["--log-rate-limit", "0"]).is_err());
         assert!(parse(&["--bogus"]).is_err());
+    }
+
+    #[test]
+    fn gateway_options_are_cross_checked() {
+        assert!(parse(&["--gateway-url", "http://g:1"])
+            .unwrap_err()
+            .contains("INTERNAL_API_TOKEN"));
+        let ok = parse(&["--gateway-url", "http://g:1", "--internal-api-token", "t"]).unwrap();
+        assert!(ok.gateway_enabled());
+        assert!(parse(&[
+            "--dev-no-gateway",
+            "--gateway-url",
+            "http://g:1",
+            "--internal-api-token",
+            "t"
+        ])
+        .is_err());
+        // Debug builds (these tests) accept --dev-no-gateway; release builds refuse it.
+        assert_eq!(parse(&["--dev-no-gateway"]).is_ok(), cfg!(debug_assertions));
     }
 
     #[test]

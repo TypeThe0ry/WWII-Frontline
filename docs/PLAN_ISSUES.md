@@ -925,3 +925,9 @@
 - **做法**：①首个切片用内存注册表/结果表，SQLite（sqlx）迁移、`guests` 表与指标拆 M1-028b（sqlx/libsqlite3 编译体量大，先验证 HTTP 面）；②游客 token 手写 HS256 JWT（hmac+sha2+base64，不引 `jsonwebtoken`），ticket 为 Ed25519（`ed25519-dalek`）；③`ServerInfo`/`TicketClaims` 在 `protocol::dto`，JSON 形态由 gateway 自带镜像结构，protocol 保持无 serde；④`ticket::verify`+`JtiCache` 目前在 gateway，M1-029 需要同样的验签：优先复制到 server（避免 server 依赖 gateway，§4.5），或抽出共享小 crate，待 Fable 裁定；⑤ticket 的 `player_id` 由 gateway 按对局轮转分配（0..127），与 server 的 `alloc_player_team` 需在 M1-029 对账；⑥所有鉴权先于请求体解析（未认证返回 401 而非 422）；⑦内部 API 的传输安全属部署（M1-066/067）。
 - **受影响任务**：M1-029、M1-028b、M1-055。
 - **裁决（Fable 填写）**：
+
+### PI-076 M1-029 范围与实现选择
+- **提出者 / 日期**：M1 线程 / 2026-11-18
+- **做法**：①gateway 在注册时分配 `match_id` 并随响应下发 ticket 公钥，server 以此装载验签器（`TICKET_PUBLIC_KEY_FILE` 仅作“钉住”校验：不一致则拒绝启动），server 自己的 `--match-id` 只用于日志；注册完成前到达的连接以 `not_ready` 拒绝；②ticket 无 `kid` 字段，多公钥时逐个尝试（轮换期 ≤2 把，验签 <0.1 ms 量级），不改 ticket 格式；③验收写“容忍时钟偏差 ±2 s”与“61 s 必须过期”互相矛盾：默认偏差容忍为 0（`with_skew` 可配），exp 严格判定；④`Reject.reason` 线上仍只有 `InvalidTicket`（协议码表不改），细分原因（expired/replayed/bad_signature/malformed/wrong_match/not_ready）只进 `ticket_rejected_total{reason}`；⑤server↔gateway 链路用明文 HTTP（reqwest 不开 TLS 特性，避免 webpki-roots 的 CDLA 许可证与 deny 清单冲突），传输安全交部署层（内网/反代，M1-066/067），`https://` 的 GATEWAY_URL 被拒绝；⑥JSON 体（注册/心跳/结果）由 server 自带结构，与 gateway 的 `RegisterReq` 镜像，`MatchRegister` 未放进 protocol（protocol 保持无 serde）；⑦发布构建不强制配置 gateway（M0 压测脚本在 release 下无 gateway 运行），仅 `--dev-no-gateway` 在 release 下为配置错误；未配置 GATEWAY_URL 时启动日志 warn 且不验 ticket；M1-066 部署必须传 GATEWAY_URL；⑧ticket 的 `player_id`/`nick`/`is_admin` 暂不写入会话（server 仍按 `alloc_player_team` 分配 PlayerId，与 PI-075⑤对账结论：以 server 为准），写入会话与重连令牌拆 M1-029b；⑨局终 result 目前只含人数/bot 数/时长/tick，据点数在沙盒图恒为 0，击杀/死亡/得分行待 M1 模式任务。
+- **受影响任务**：M1-029b、M1-055、M1-066/067。
+- **裁决（Fable 填写）**：

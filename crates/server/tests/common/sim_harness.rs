@@ -125,6 +125,7 @@ pub async fn start_listeners(
         server_tick: &frontline_server::logging::CURRENT_TICK,
         started: Instant::now(),
         handshake_timeout: HANDSHAKE_TIMEOUT,
+        tickets: None,
     });
     let ws = WsListener::bind(("127.0.0.1", 0), ctx.clone())
         .await

@@ -583,3 +583,7 @@ blocked / in-progress / todo：无。M0 的 33 个任务全部已提交（M0-033
 
 ### M1-028 gateway 028a — partial — 2026-11-18 — 提交见 git log
 - `crates/gateway`：axum 路由（guest/servers/ticket/internal）、HS256 游客 token、Ed25519 join ticket（+`JtiCache`）、滑动窗口限速、内存注册表与心跳超时、CORS/no-store；`protocol::dto::TicketClaims` 规范编码。新增依赖 axum/ed25519-dalek/hmac/sha2/base64/rand（均 MIT/Apache）。余项见 PI-075。
+
+
+### M1-029 server 注册/心跳/验签 029a — partial — 2026-11-18 — 提交见 git log
+- `gateway_link/{ticket_verify,client,heartbeat,result}`：Ed25519 验签（多公钥、`jti` 缓存 4096/120 s）、`GatewayClient`（reqwest，2 s 超时，注册 3 次指数退避）、1 s 心跳任务、局终 result（失败落盘 spool）；握手接入 `NetCtx.tickets`；配置 `GATEWAY_URL`/`INTERNAL_API_TOKEN`/`TICKET_PUBLIC_KEY_FILE`/`--dev-no-gateway`；新指标 `ticket_rejected_total`/`gateway_registered`/`gateway_heartbeat_total`。新增依赖 reqwest（仅 http，无 TLS）、ed25519-dalek/base64/sha2；axum 仅作 dev-dependency（假 gateway）。余项见 PI-076。
