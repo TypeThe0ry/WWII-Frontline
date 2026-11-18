@@ -41,6 +41,10 @@ export interface WasmSnapshotDecoder {
   health(): Uint8Array;
   removed(): Uint8Array;
   events(): Uint8Array;
+  /** Vehicle entities of the last decode (wire ids 128..255): ids, `VEHICLE_STRIDE` floats and `VEHICLE_META_BYTES` bytes each. */
+  vehicleIds(): Uint8Array;
+  vehicleState(): Float32Array;
+  vehicleMeta(): Uint8Array;
   free(): void;
 }
 

@@ -23,7 +23,7 @@ export interface GameEvents {
   // --- M0-022 (game): snapshot / entity / combat events. Payload objects of the hot events are
   // reused by the publisher: read them inside the handler, never keep a reference. ---
   'snapshot.applied': { tick: number; entityCount: number };
-  'entity.spawned': { id: number; kind: 'player'; pos: Vec3 };
+  'entity.spawned': { id: number; kind: 'player' | 'vehicle'; pos: Vec3 };
   'entity.removed': { id: number; reason: 'removed' | 'timeout' };
   /** The local player fired (prediction): never carries a hit result. `dir` is a unit vector. */
   'fire.local': { weapon: number; muzzlePos: Vec3; dir: Vec3 };
