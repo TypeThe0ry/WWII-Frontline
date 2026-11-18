@@ -1064,3 +1064,6 @@ GD 9.2 只给了俯冲站→趴 0.7 s；非俯冲的站→趴本任务按经过�
 
 ## PI-100 M1-048a：socket 命名不一致（2026-11-18）
 任务书要求 socket 名 `socket_muzzle`/`socket_seat_*`/`socket_hatch`…，而 `data/vehicles/us_m4a1_75.json` 的 `gameplay.sockets` 只有 `socket_gun_muzzle`/`socket_turret`/`socket_hatch`。渲染侧先按任务书的 9 个名字做名单；数据里的 `socket_gun_muzzle` 需在 M1-048b 映射为 `socket_muzzle`，或由数据侧补齐（M1-070 复核时一并处理）。履带轨距 = 车宽 − 履带宽的具体数值待真模型，当前由调用方传入。
+
+## PI-101 M1-049a：解码视为 fetch 后立即完成（2026-11-18）
+核心把 `fetched()` 之后直接置 `uploading`，省略独立的 `decoding` 状态（解码在 Worker 池内、对主线程状态机不可见）；`ChunkState` 类型仍保留 `decoding`/`requested`/`evicting` 以便与任务书接口一致。上传耗时估计系数（2 ms/MB）为 `initial`，M1-049b 用 `stream_upload_ms` 实测后替换。
