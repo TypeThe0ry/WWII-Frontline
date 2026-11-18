@@ -28,6 +28,8 @@ export interface GameEvents {
   /** The local player fired (prediction): never carries a hit result. `dir` is a unit vector. */
   'fire.local': { weapon: number; muzzlePos: Vec3; dir: Vec3 };
   'fire.remote': { shooter: number; weapon: number; muzzlePos: Vec3; dir: Vec3; distance: number };
+  /** Local aim-down-sights state machine (M1-046b): `t` = blend 0..1. */
+  'ads.state': { state: 'hip' | 'entering' | 'ads' | 'leaving'; t: number };
   /** A remote or local character's foot lands (M1-045b): from the stride phase of its movement, alternating feet. Read inside the handler (the payload is reused). */
   'entity.footstep': { entity: number; foot: 'left' | 'right'; pos: Vec3; stance: number };
   'impact': { pos: Vec3; normal: number; material: number };
