@@ -49,5 +49,16 @@
   "ui.deploy.spawn.cooldown": "出生点冷却中",
   "ui.deploy.spawn.destroyed": "出生点已被摧毁",
   "ui.deploy.spawn.full": "出生点已满",
-  "ui.deploy.spawn.locked": "出生点未解锁"
+  "ui.deploy.spawn.locked": "出生点未解锁",
+  "ui.downed.title": "被击倒",
+  "ui.downed.noMedic": "附近没有医疗兵",
+  "ui.downed.callMedic": "呼叫医疗",
+  "ui.downed.giveUp": "放弃（按住）",
+  "ui.downed.reason.reconnecting": "重连中，状态可能不同步",
+  "ui.downed.reason.giveUpWait": "{seconds} 秒后可用",
+  "ui.downed.tag.ai": "AI 控制",
+  "ui.downed.tag.friendlyFire": "友军误伤",
+  "ui.dead.title": "阵亡",
+  "ui.dead.killedBy": "被 {name} 的 {weapon} 击杀 · {dist} 米",
+  "ui.dead.redeploy": "重新部署（Enter）"
 }

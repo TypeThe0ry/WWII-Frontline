@@ -49,5 +49,16 @@
   "ui.deploy.spawn.cooldown": "Spawn point is on cooldown",
   "ui.deploy.spawn.destroyed": "Spawn point was destroyed",
   "ui.deploy.spawn.full": "Spawn point is full",
-  "ui.deploy.spawn.locked": "Spawn point is not unlocked"
+  "ui.deploy.spawn.locked": "Spawn point is not unlocked",
+  "ui.downed.title": "Downed",
+  "ui.downed.noMedic": "No medic nearby",
+  "ui.downed.callMedic": "Call medic",
+  "ui.downed.giveUp": "Give up (hold)",
+  "ui.downed.reason.reconnecting": "Reconnecting — state may be out of sync",
+  "ui.downed.reason.giveUpWait": "Available in {seconds}s",
+  "ui.downed.tag.ai": "AI controlled",
+  "ui.downed.tag.friendlyFire": "Friendly fire",
+  "ui.dead.title": "Killed",
+  "ui.dead.killedBy": "Killed by {name} with {weapon} · {dist} m",
+  "ui.dead.redeploy": "Redeploy (Enter)"
 }
