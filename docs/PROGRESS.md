@@ -560,3 +560,6 @@ blocked / in-progress / todo：无。M0 的 33 个任务全部已提交（M0-033
 ### M1-022 载具物理 — done — 2026-11-18 — 提交见 git log
 - `vehicle/`：`VehicleParams`（取自 `data/vehicles`）、射线悬挂（每侧 6 条，弹簧-阻尼）、履带驱动（每侧速度目标 + 摩擦椭圆、坡度切断）、座位（进入/换座/离车/离车伤害）、车体撞地形与碾压、翻覆事件、`VehicleExtra`（12 B）；`World::{spawn_vehicle,set_vehicle_ctrl,seat_enter,seat_switch,seat_exit_begin,seat_exit_cancel,vehicle_views}`；`InVehicle` 组件使 `movement` 跳过乘员；测试 `vehicle_physics` 8 项、`vehicle_seats` 8 项；bench `vehicle_step`（PI-066）。
 
+
+### M1-023 载具武器与装甲 — done — 2026-11-18 — 提交见 git log
+- `vehicle/armor.rs`（GD §14.4.1 纯函数，手算夹具 `tests/fixtures/armor_cases.json`）、`turret.rs`、`gun.rs`、`modules.rs`（模块 HP/效果/殉爆）、`internal.rs`（车内路径与乘员/模块伤害）、`shell.rs`（装甲区与命中结算）、`shells.rs`（炮弹飞行、击毁、Burning、残骸）、`rocket.rs`（Panzerfaust 60 与后焰）；新增事件与 `Purpose::Armor`；测试 `armor_cases`、`vehicle_turret_gun`、`vehicle_modules`、`vehicle_armor_hits`、`vehicle_gunnery`、`panzerfaust`；bench `armor_hit`、`armor_pipeline`（PI-067..070）。

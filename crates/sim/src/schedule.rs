@@ -635,7 +635,12 @@ pub fn build_schedule() -> Schedule {
             ingest_inputs,
             test_jitter,
             movement,
-            crate::vehicle::step_vehicles,
+            (
+                crate::vehicle::step_vehicles,
+                crate::vehicle::rockets,
+                crate::vehicle::shell_flight,
+            )
+                .chain(),
             falls,
             melee,
             weapons,
@@ -669,7 +674,12 @@ pub fn build_schedule() -> Schedule {
         (
             ingest_inputs,
             movement,
-            crate::vehicle::step_vehicles,
+            (
+                crate::vehicle::step_vehicles,
+                crate::vehicle::rockets,
+                crate::vehicle::shell_flight,
+            )
+                .chain(),
             falls,
             melee,
             weapons,

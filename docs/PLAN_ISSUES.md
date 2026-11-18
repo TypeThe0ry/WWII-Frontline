@@ -876,3 +876,22 @@
 - **做法**：①炮塔 `Turret{yaw,pitch}`（相对车体）以目标方向逼近，水平速率 24°/s×模块倍率，传动损坏（≤50%）×0.5，卡死 3°/s；走最短路径。②俯仰限位取数据 −10/+25°，俯仰速率数据里没有，取水平速率的 50%（`ELEVATION_RATE_FRACTION`，待调）。③`Gun` 弹药按 AP/HE/WP 计数；开火后装填 `reload_s×倍率`，切换弹种 `switch_reload_s×倍率`（同弹种不计）；车长缺位倍率 1.3（3.9 s）；换弹种与装填均四舍五入到 tick。④本批只提供纯状态机与单测；与 `Vehicle` 的接线（炮手输入、弹丸发射、命中结算）在 023c。
 - **受影响任务**：M1-023c、M1-060。
 - **裁决（Fable 填写）**：
+
+### PI-069 M1-023c：模块与车内路径
+
+- **状态**：resolved（实现者裁决，待 Fable 复核）
+- **类别**：sim
+- **提出者 / 日期**：M1 线程 / 2026-11-18
+- **做法**：①`ModuleSpecs` 直接读 `vehicles/*.json` 的 `modules`（HP、`at_50pct`/`at_0` 数值与布尔），`Modules::effects` 合并为速度/加速/履带推力/炮塔倍率、装填/散布倍率、`can_fire`、`immobilized`、炮塔卡死；多模块取最不利值。②殉爆与引擎起火的概率读 `cookoff_chance_pct`/`fire_chance_pct`，随机数由调用方给（新增 `Purpose::Armor=7`）。③数据没有车内几何：模块盒、乘员位置与舱室（车体/炮塔）作为 Sherman 占位常量放在 `vehicle/internal.rs`，待数据补充（另议）。④内部路径 `0.6 + P_rem/40`（≤3 m）；沿线段的模块 ×1.0、乘员直接 ×0.25（球半径 0.3 m）、同舱室其他乘员 ×0.08、车体 `0.5×dmg_pen + 0.2×模块伤害`。⑤Track L 毁后"只能转圈 ×0.3"通过 `speed_mult=0.3` 暴露，物理接线在后续批次。
+- **受影响任务**：M1-023d、M1-060。
+- **裁决（Fable 填写）**：
+
+### PI-070 M1-023c/d：炮弹、击毁与 Panzerfaust 的取舍
+
+- **状态**：resolved（实现者裁决，待 Fable 复核）
+- **类别**：sim
+- **提出者 / 日期**：M1 线程 / 2026-11-18
+- **做法**：①载具炮弹独立于步兵弹丸：`Shells` 资源，每 tick 3 子步、仅重力（穿深衰减已含空气阻力的效果），段扫描同时测地形与敌方载具，同队载具不受击；命中后 HE/HEAT/WP 就地起爆（`explode` 抽出为 `pub(crate)`，参数 `dmax/radius/kind`，Explosion kind 1 HE、2 殉爆、3 烧毁、4 HEAT）。②载具外形碰撞体 = 车体盒（至顶甲高度 0.35 m）+ 随炮塔旋转的炮塔盒（±1.1×±1.2 m）；命中面→装甲区：车体前（以 −0.3 m 分上/下前甲）/侧/后/顶、炮塔前/侧/后/顶；板法线 = 面法线按 `slope_deg`（自竖直）向上倾。③HE 以 `he_pen_mm`（15）当穿深、`explosion_damage_max_hp` 当结构伤害走同一条判定；WP 在落点放烟（扩 3 s、衰 8 s，沿用手榴弹烟云）。④炮手输入：炮塔朝向跟踪世界 yaw/pitch，FIRE 开火，SWAP 上升沿轮换 AP→HE→WP；炮手缺位炮塔不动，车长缺位装填 ×1.3。⑤击毁：车体 HP ≤ 0 或引擎 0 HP 起火（引擎 `fire_chance_pct` 判定）→ `VehicleKnockedOut`，Burning 8 s（乘员每秒 20 HP）后爆炸 R8/Dmax200，残骸 60 s 后移除（`reap_wrecks` 回收实体 id）；殉爆（弹药架 0 HP 且 60% 判定）→ 乘员全灭、爆炸 R12/Dmax350、残骸立即计时。⑥乘员在车内由玩家身体承担伤害（直接 ×0.25、同舱 ×0.08），经 `HitLog` 记 `DamageKind::Tank`；车内伤害不分友军（同队载具本就不被击中）。⑦Panzerfaust：`Gadgets.rocket`（由部署所选 loadout 的 `at_rocket` 小工具数量决定，`spawn_player` 读取），FIRE 上升沿发射（车内不可），结构伤害取数据 1000（任务文写 900，以数据为准），爆炸 Dmax150/R5，后焰 5 m 30°半角锥、30 HP（对全部非射手生效），超过 `max_range_m`（80 m）移除；弹道无推力，60 m 有效射程需玩家自行抬高，未做瞄具补偿。⑧新增事件 `ArmorHit/VehicleDamaged/VehicleFired/VehicleKnockedOut/VehicleAmmoExplosion/CrewKilled/RocketFired`，`Purpose::Armor=7`。⑨未做（拆续）：车载 M1919/M2HB 的弹丸接线（沿用步兵自动武器，待 M1-013c）、乘员死亡后换座补位、车内几何入数据、同轴 MG 对载具/步兵的伤害（小口径对装甲 `t≥12 mm` 不击穿）、重生波次上的 rocket 授予（仅 `spawn_player` 路径）。
+- **受影响任务**：M1-024、M1-026、M1-041、M1-048、M1-060、M1-071。
+- **裁决（Fable 填写）**：
+

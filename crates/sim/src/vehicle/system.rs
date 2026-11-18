@@ -43,6 +43,7 @@ pub fn step_vehicles(
     tick: Res<CurrentTick>,
     index: Res<PlayerIndex>,
     mut log: ResMut<HitLog>,
+    mut shells: ResMut<super::shells::Shells>,
     mut events: ResMut<EventBuf>,
     mut q: Query<(
         &mut Transform,
@@ -74,6 +75,26 @@ pub fn step_vehicles(
             }
             None => parked(),
         };
+        // 1b. Gunnery.
+        if !v.knocked_out {
+            let seat_cmd = |seat: usize| {
+                let o = v.seats.get(seat).copied().flatten()?;
+                let &(_, e) = index.map.get(&o.player)?;
+                let (_, _, last, hp, life, _) = q.get(e).ok()?;
+                (life.is_alive() && hp.hp > 0.0).then_some(last.cmd)
+            };
+            let gunner = seat_cmd(1);
+            let commander = seat_cmd(2).is_some();
+            let input = gunner.map(|c| super::shells::GunnerInput {
+                yaw: f32::from(c.yaw) / 65536.0 * core::f32::consts::TAU,
+                pitch: f32::from(c.pitch) / 32768.0 * core::f32::consts::FRAC_PI_2,
+                fire: c.buttons & buttons::FIRE != 0,
+                swap: c.buttons & buttons::SWAP != 0,
+            });
+            super::shells::gunnery(v, input, commander, cfg.hz, &mut shells, &mut events.0);
+        } else {
+            v.ctrl = parked();
+        }
         // 2. Physics.
         step_one(v, &col.0, dt);
         // 3. Hull vs terrain.

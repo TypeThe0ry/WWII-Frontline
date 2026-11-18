@@ -128,6 +128,10 @@ pub struct Gadgets {
     pub frag: u8,
     pub smoke: u8,
     pub cook: Option<Cook>,
+    /// One-shot anti-tank rockets left (Panzerfaust, M1-023).
+    pub rocket: u8,
+    /// FIRE was held last tick (rockets fire on the rising edge).
+    pub fire_held: bool,
 }
 
 impl Default for Gadgets {
@@ -136,6 +140,8 @@ impl Default for Gadgets {
             frag: START_FRAG,
             smoke: START_SMOKE,
             cook: None,
+            rocket: 0,
+            fire_held: false,
         }
     }
 }
@@ -164,9 +170,11 @@ pub struct Smokes {
 /// Blast at `center`: damages every living player in range. Returns nothing; writes events and
 /// the hit log. `owner` takes the full damage, teammates `FF_MULT`.
 #[allow(clippy::too_many_arguments)]
-fn explode(
+pub(crate) fn explode(
     center: Vec3,
-    p: &ThrowableParams,
+    dmax: f32,
+    radius_m: f32,
+    kind: u8,
     owner: EntityId,
     team: Team,
     col: &crate::collision::CollisionData,
@@ -177,8 +185,8 @@ fn explode(
 ) {
     events.push(SimEvent::Explosion {
         pos: center,
-        radius_m: p.radius_m,
-        kind: 0,
+        radius_m,
+        kind,
     });
     for (id, e) in table.sorted() {
         let Ok((t, vteam, life, mut hp)) = q.get_mut(e) else {
@@ -189,7 +197,7 @@ fn explode(
         }
         let chest = t.pos + Vec3::Y * CHEST_HEIGHT_M;
         let r = (chest - center).length();
-        if r >= p.radius_m {
+        if r >= radius_m {
             continue;
         }
         let occ = if col.los(center + Vec3::Y * 0.05, chest) {
@@ -197,7 +205,7 @@ fn explode(
         } else {
             Occlusion::Solid
         };
-        let mut d = explosion_damage(p.dmax, r, p.radius_m, occ);
+        let mut d = explosion_damage(dmax, r, radius_m, occ);
         if id != owner && *vteam == team {
             d *= FF_MULT;
         }
@@ -321,7 +329,9 @@ pub fn throwables(
     for (center, p, owner, team) in hand_blasts {
         explode(
             center,
-            &p,
+            p.dmax,
+            p.radius_m,
+            0,
             owner,
             team,
             &col.0,
@@ -347,7 +357,9 @@ pub fn throwables(
         match (gr.kind, p.smoke) {
             (Kind::Frag, _) => explode(
                 gr.flight.pos,
-                &p,
+                p.dmax,
+                p.radius_m,
+                0,
                 gr.owner,
                 gr.team,
                 &col.0,

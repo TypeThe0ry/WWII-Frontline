@@ -109,6 +109,7 @@ impl World {
         });
         ecs.insert_resource(TestJitter::default());
         ecs.insert_resource(crate::vehicle::Vehicles::default());
+        ecs.insert_resource(crate::vehicle::shells::Shells::default());
         ecs.insert_resource(MoveParamsRes(
             cfg.data
                 .role(DEFAULT_ROLE)
@@ -187,6 +188,7 @@ impl World {
         }
         self.apply_warmup_wait();
         self.schedule.run(&mut self.ecs);
+        self.reap_wrecks();
         self.sync_squads();
         self.refresh_views();
         let produced = std::mem::take(&mut self.ecs.resource_mut::<EventBuf>().0);
@@ -196,6 +198,25 @@ impl World {
             rule_changes: std::mem::take(
                 &mut self.ecs.resource_mut::<crate::rules::RuleChangeBuf>().0,
             ),
+        }
+    }
+
+    /// Removes wrecks whose timer ran out and frees their entity ids.
+    fn reap_wrecks(&mut self) {
+        let gone: Vec<EntityId> = self
+            .ecs
+            .resource::<crate::vehicle::Vehicles>()
+            .list
+            .values()
+            .filter(|v| v.gone)
+            .map(|v| v.id)
+            .collect();
+        for id in gone {
+            self.ecs
+                .resource_mut::<crate::vehicle::Vehicles>()
+                .list
+                .remove(&id);
+            self.alloc.free(id);
         }
     }
 
@@ -275,9 +296,13 @@ impl World {
                 },
             ))
             .id();
+        let rocket = self.loadout_rockets(req.player);
         self.ecs.entity_mut(e).insert((
             crate::weapon::MeleeState::default(),
-            crate::throwables::Gadgets::default(),
+            crate::throwables::Gadgets {
+                rocket,
+                ..Default::default()
+            },
             crate::combat::credit::RecentDamage::default(),
             crate::medical::ReviveHistory::default(),
             crate::medical::ReviveAction::default(),
@@ -342,6 +367,8 @@ impl World {
         let id = self.alloc.alloc().ok_or(VehicleSpawnError::NoFreeSlot)?;
         let hp = params.hull_hp;
         let seat_count = params.seat_count;
+        let modules = modules::Modules::new(&params.module_specs);
+        let gun = gun::Gun::new(&params.gun);
         self.ecs.resource_mut::<Vehicles>().list.insert(
             id,
             Vehicle {
@@ -362,6 +389,14 @@ impl World {
                 crushed: Default::default(),
                 flip_ticks: 0,
                 overturned: false,
+                modules,
+                turret: Default::default(),
+                gun,
+                knocked_out: false,
+                burn_left: 0,
+                wreck_left: 0,
+                gone: false,
+                swap_held: false,
             },
         );
         Ok(id)
@@ -411,6 +446,25 @@ impl World {
             v.ang_vel = Vec3::ZERO;
             v.speed_target = 0.0;
         }
+    }
+
+    /// Test-only (feature `test-util`): resolves one AP-type hit of `shell` (index into the
+    /// vehicle's shell list) with fixed random draws.
+    #[cfg(feature = "test-util")]
+    #[allow(clippy::too_many_arguments)]
+    pub fn debug_ap_hit(
+        &mut self,
+        id: EntityId,
+        shell: usize,
+        origin: Vec3,
+        dir: Vec3,
+        dist_m: f32,
+        rolls: crate::vehicle::shell::HitRolls,
+    ) -> Option<crate::vehicle::shell::HitReport> {
+        let mut vs = self.ecs.resource_mut::<crate::vehicle::Vehicles>();
+        let v = vs.list.get_mut(&id)?;
+        let sp = crate::vehicle::shell::ap_params(v.params.shells.get(shell)?);
+        crate::vehicle::shell::resolve_ap_hit(v, &sp, origin, dir, dist_m, [true; 3], rolls, 1000.0)
     }
 
     /// Current hit points of a player's body.
@@ -729,6 +783,54 @@ impl World {
             role: ok.role,
             spawn_in_ticks: wait,
         })
+    }
+
+    /// Rockets carried by the loadout chosen at the last deploy (0 without one).
+    fn loadout_rockets(&self, p: PlayerId) -> u8 {
+        use crate::data::defs::ExplosiveClass;
+        let Some(l) = self
+            .squads
+            .entry(p)
+            .and_then(|e| e.loadout)
+            .and_then(|i| self.cfg.data.loadouts.get(usize::from(i)))
+        else {
+            return 0;
+        };
+        [&l.gadget_1, &l.gadget_2]
+            .into_iter()
+            .flatten()
+            .filter(|g| {
+                self.cfg
+                    .data
+                    .explosive(&g.id)
+                    .is_some_and(|e| e.class == ExplosiveClass::AtRocket)
+            })
+            .map(|g| g.count as u8)
+            .sum()
+    }
+
+    /// Test-only (feature `test-util`): sets the rockets a player carries.
+    #[cfg(feature = "test-util")]
+    pub fn debug_set_rockets(&mut self, p: PlayerId, n: u8) {
+        if let Some(&(_, e)) = self.ecs.resource::<PlayerIndex>().map.get(&p) {
+            if let Some(mut g) = self
+                .ecs
+                .entity_mut(e)
+                .get_mut::<crate::throwables::Gadgets>()
+            {
+                g.rocket = n;
+            }
+        }
+    }
+
+    /// Shells and rockets in flight: `(owner, position)` in spawn order.
+    pub fn shell_positions(&self) -> Vec<(EntityId, Vec3)> {
+        self.ecs
+            .resource::<crate::vehicle::shells::Shells>()
+            .list
+            .iter()
+            .map(|s| (s.owner, s.pos))
+            .collect()
     }
 
     /// Feeds KIA state to the squads and runs their upkeep (once per tick).
@@ -1153,6 +1255,10 @@ impl World {
             // M1-015: grenade counts and cooking, written only once a grenade was used.
             if let Some(g) = er.get::<crate::throwables::Gadgets>() {
                 use crate::throwables::system::{START_FRAG, START_SMOKE};
+                if g.rocket > 0 {
+                    h.write_u8(0xF3);
+                    h.write_u8(g.rocket);
+                }
                 if g.frag != START_FRAG || g.smoke != START_SMOKE || g.cook.is_some() {
                     h.write_u8(0xF0);
                     h.write_u8(g.frag);
@@ -1238,6 +1344,10 @@ impl World {
         let veh = self.ecs.resource::<crate::vehicle::Vehicles>();
         if !veh.list.is_empty() {
             veh.hash_into(&mut h);
+        }
+        let shells = self.ecs.resource::<crate::vehicle::shells::Shells>();
+        if !shells.list.is_empty() {
+            shells.hash_into(&mut h);
         }
         let sw = self.ecs.resource::<crate::supply::SupplyWorld>();
         if sw.active() {
