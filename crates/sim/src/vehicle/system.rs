@@ -25,7 +25,11 @@ fn seat_offset(seat: usize) -> Vec3 {
 }
 
 fn driver_ctrl(last: &LastInput) -> VehicleCtrl {
-    let c = last.cmd;
+    ctrl_from_cmd(&last.cmd)
+}
+
+/// Driver controls of one input command (shared by the server step and client prediction, PI-066 item 10).
+pub fn ctrl_from_cmd(c: &frontline_protocol::msg::input::InputCmd) -> VehicleCtrl {
     VehicleCtrl {
         throttle: f32::from(c.move_z) / 127.0,
         steer: f32::from(c.move_x) / 127.0,

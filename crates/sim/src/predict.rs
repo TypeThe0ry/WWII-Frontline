@@ -26,6 +26,8 @@ pub struct PredictSim {
     entity: EntityId,
     weapon: Option<(WeaponState, WeaponParams)>,
     last_weapon_out: WeaponOut,
+    /// The vehicle this player drives, when seated in the driver seat (M1-041b).
+    vehicle: Option<crate::vehicle::Vehicle>,
 }
 
 impl PredictSim {
@@ -50,6 +52,7 @@ impl PredictSim {
             entity: 0,
             weapon: None,
             last_weapon_out: WeaponOut::default(),
+            vehicle: None,
         }
     }
 
@@ -94,6 +97,45 @@ impl PredictSim {
     pub fn reset_to(&mut self, auth: &PlayerAuthState, tick: Tick) {
         self.state = *auth;
         self.tick = tick;
+    }
+
+    /// Sets the authoritative state of the driven vehicle (reconciliation / entering the driver seat);
+    /// `None` leaves vehicle prediction off.
+    pub fn reset_vehicle(&mut self, v: Option<crate::vehicle::Vehicle>) {
+        self.vehicle = v;
+    }
+
+    pub fn vehicle(&self) -> Option<&crate::vehicle::Vehicle> {
+        self.vehicle.as_ref()
+    }
+
+    /// Predicts one tick of the driven vehicle with the driver's command: the same `ctrl_from_cmd`, `step_one` and
+    /// hull-vs-terrain response as `step_vehicles` (hull damage, crush and gunnery stay server-only). `None` when
+    /// no vehicle is set.
+    pub fn step_vehicle_driver(&mut self, cmd: &InputCmd) -> Option<&crate::vehicle::Vehicle> {
+        use crate::vehicle::{collision, ctrl_from_cmd, step_one, VehicleCtrl};
+        let v = self.vehicle.as_mut()?;
+        v.ctrl = if v.knocked_out {
+            VehicleCtrl {
+                brake: true,
+                ..Default::default()
+            }
+        } else {
+            ctrl_from_cmd(cmd)
+        };
+        step_one(v, &self.collision, 1.0 / f32::from(self.hz));
+        match collision::probe(v, &self.collision) {
+            Some(hit) => {
+                let vn = v.vel.dot(hit.normal);
+                if vn < 0.0 {
+                    v.vel -= hit.normal * vn;
+                }
+                v.in_contact = true;
+            }
+            None => v.in_contact = false,
+        }
+        self.tick = self.tick.next();
+        self.vehicle.as_ref()
     }
 
     /// Predicts one tick.

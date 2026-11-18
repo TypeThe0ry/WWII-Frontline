@@ -38,6 +38,10 @@ name = "movement_world_vs_predict"
 required-features = ["client-predict"]
 
 [[test]]
+name = "vehicle_predict"
+required-features = ["client-predict"]
+
+[[test]]
 name = "weapon_duel"
 required-features = ["client-predict"]
 
