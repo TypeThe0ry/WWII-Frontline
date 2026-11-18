@@ -1,0 +1,53 @@
+{
+  "team_max_players": 50,
+  "infantry": {
+    "max_players": 6
+  },
+  "armor_crew": {
+    "max_players": 3,
+    "max_squads": 4,
+    "crewman_max_players": 2
+  },
+  "recon": {
+    "max_players": 2,
+    "max_squads": 2
+  },
+  "rate_window_s": 60,
+  "create_limit_squads": 2,
+  "kick_limit_players": 3,
+  "kick_ban_s": 300,
+  "handover_confirm_s": 10,
+  "leader_absent_s": 120,
+  "role_switch_cooldown_s": 30,
+  "balance": {
+    "max_diff_players": 2,
+    "switch_min_after_join_s": 180,
+    "switch_interval_s": 600
+  },
+  "m1_override": {
+    "armor_crew_leader_role": "crewman"
+  },
+  "_meta": {
+    "status": "initial",
+    "tunable": [
+      "team_max_players",
+      "infantry.max_players",
+      "armor_crew.max_players",
+      "armor_crew.max_squads",
+      "armor_crew.crewman_max_players",
+      "recon.max_players",
+      "recon.max_squads",
+      "rate_window_s",
+      "create_limit_squads",
+      "kick_limit_players",
+      "kick_ban_s",
+      "handover_confirm_s",
+      "leader_absent_s",
+      "role_switch_cooldown_s",
+      "balance.max_diff_players",
+      "balance.switch_min_after_join_s",
+      "balance.switch_interval_s"
+    ],
+    "calibration_ref": "GAMEDESIGN §2.4, §4.1, §4.4"
+  }
+}

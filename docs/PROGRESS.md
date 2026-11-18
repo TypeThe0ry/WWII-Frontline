@@ -550,3 +550,6 @@ blocked / in-progress / todo：无。M0 的 33 个任务全部已提交（M0-033
 
 ### M1-020b Ammo Crate 与补弹 — done（M1-020 完成）— 2026-11-18 — 提交见 git log
 - `supply/ammo.rs`：Ammo Crate（600 点/150 s/每命 2 个/冷却 30 s/同点 ≤3）、`resupply()` 单价补弹（主武器→手雷→绷带）、按住 USE 1.5 s 补弹；`supplies.json` 补单价；测试 `supply_ammo` 8 项（含 e2e 闭环）、bench `supply`（PI-063）。
+
+### M1-021a 小队、兵种名额与平衡 — partial（021b 部署校验待做）— 2026-11-18 — 提交见 git log
+- 新模块 `squad/`（`SquadManager`：名册、小队、创建/加入/离开/踢/移交/锁/邀请、速率窗口、禁入、队长继任与离线接管）、`roles/quota.rs`（`role_available`）、`team/balance.rs`（加入/换队）；`data/rules/squads.json` + schema + `SquadsRulesDef`；Medic 加全队上限 12；`World::{roster_add,roster_remove,squad_op,set_role,switch_team,...}`、`SimEvent::Roster`；名册为空时哈希不变（golden 仅 dataHash 重生成）；测试 `squads_ops` 20 项（PI-064）。

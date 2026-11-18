@@ -1,0 +1,198 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://frontline.invalid/schemas/rule_squads.schema.json",
+  "title": "Squad / roster rules (GAMEDESIGN 2.4, 4.1, 4.4; M1-021)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "team_max_players",
+    "infantry",
+    "armor_crew",
+    "recon",
+    "rate_window_s",
+    "create_limit_squads",
+    "kick_limit_players",
+    "kick_ban_s",
+    "handover_confirm_s",
+    "leader_absent_s",
+    "role_switch_cooldown_s",
+    "balance",
+    "m1_override",
+    "_meta"
+  ],
+  "properties": {
+    "team_max_players": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "infantry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "max_players"
+      ],
+      "properties": {
+        "max_players": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "armor_crew": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "max_players",
+        "max_squads",
+        "crewman_max_players"
+      ],
+      "properties": {
+        "max_players": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "max_squads": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "crewman_max_players": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "recon": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "max_players",
+        "max_squads"
+      ],
+      "properties": {
+        "max_players": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "max_squads": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "rate_window_s": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "create_limit_squads": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "kick_limit_players": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "kick_ban_s": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "handover_confirm_s": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "leader_absent_s": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "role_switch_cooldown_s": {
+      "type": "number",
+      "minimum": 0
+    },
+    "balance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "max_diff_players",
+        "switch_min_after_join_s",
+        "switch_interval_s"
+      ],
+      "properties": {
+        "max_diff_players": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "switch_min_after_join_s": {
+          "type": "number",
+          "minimum": 0
+        },
+        "switch_interval_s": {
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    },
+    "m1_override": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "armor_crew_leader_role"
+      ],
+      "properties": {
+        "armor_crew_leader_role": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        }
+      }
+    },
+    "_meta": {
+      "$ref": "#/$defs/meta"
+    }
+  },
+  "$defs": {
+    "meta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "tunable"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "initial",
+            "reviewed",
+            "measured"
+          ]
+        },
+        "tunable": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "calibration_ref": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "unverified": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "deviation_reason": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  }
+}
