@@ -919,3 +919,9 @@
 - **做法**：①协议文档把 `view_tick` 定义为相对 tick 的差值，M1-025a 误按绝对 tick 实现，本次改为差值（`rewind_ticks(delta)`，0 = 未上报，>8 夹紧）；②8000°/s 限幅在 30 Hz 下永远不会触发（单 tick 最大转角 180° = 5400°/s），验收 3 的“180° 瞬转被钳制到 266.7°/tick”自相矛盾；限幅保持可配置，测试用 3600°/s，建议 Fable 裁定新的默认值（合法甩枪峰值 3000°/s = 100°/tick）；③“射速拒绝”定义为武器仍在冷却/拉栓时的扳机上升沿且 sim 未发射（连发持枪不计）；④`suspicion_move` 计移动向量超限（`move_clamped`/`bad_move`），因协议不含位置；⑤`anticheat.json` 数据化、`pred_hash` 统计、origin_hint 校正计数、分级断开、headless 注入器、20 客户端混合与 criterion 拆为 M1-027b。
 - **受影响任务**：M1-025b、M1-027b、M1-040。
 - **裁决（Fable 填写）**：
+
+### PI-075 M1-028 范围与实现选择
+- **提出者 / 日期**：M1 线程 / 2026-11-18
+- **做法**：①首个切片用内存注册表/结果表，SQLite（sqlx）迁移、`guests` 表与指标拆 M1-028b（sqlx/libsqlite3 编译体量大，先验证 HTTP 面）；②游客 token 手写 HS256 JWT（hmac+sha2+base64，不引 `jsonwebtoken`），ticket 为 Ed25519（`ed25519-dalek`）；③`ServerInfo`/`TicketClaims` 在 `protocol::dto`，JSON 形态由 gateway 自带镜像结构，protocol 保持无 serde；④`ticket::verify`+`JtiCache` 目前在 gateway，M1-029 需要同样的验签：优先复制到 server（避免 server 依赖 gateway，§4.5），或抽出共享小 crate，待 Fable 裁定；⑤ticket 的 `player_id` 由 gateway 按对局轮转分配（0..127），与 server 的 `alloc_player_team` 需在 M1-029 对账；⑥所有鉴权先于请求体解析（未认证返回 401 而非 422）；⑦内部 API 的传输安全属部署（M1-066/067）。
+- **受影响任务**：M1-029、M1-028b、M1-055。
+- **裁决（Fable 填写）**：
