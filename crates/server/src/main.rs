@@ -121,6 +121,11 @@ fn run(cfg: Config) -> Result<(), String> {
         stop.clone(),
     )
     .map_err(|e| format!("cannot start sim thread: {e}"))?;
+    if cfg.bot_fill > 0 {
+        let _ = handle
+            .commands_tx
+            .send(sim_thread::Command::SetBotFill(cfg.bot_fill));
+    }
 
     let gate = cfg.gateway_enabled().then(|| {
         frontline_server::gateway_link::TicketGate::new(
