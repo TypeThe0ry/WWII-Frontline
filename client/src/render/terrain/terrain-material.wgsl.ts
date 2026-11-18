@@ -5,6 +5,8 @@
  * Heights come from RG8 textures holding the raw little-endian u16 (R = low byte, G = high byte), read with
  * `textureLoad` and filtered by hand.
  */
+import { SHADOW_RECEIVER_WGSL } from '../lighting/csm-shader';
+
 export const TERRAIN_VERTEX_WGSL = /* wgsl */ `
 attribute position: vec3f;
 attribute inst0: vec4f;
@@ -123,6 +125,8 @@ export const TERRAIN_FRAGMENT_WGSL = /* wgsl */ `
 uniform uHeightRange: vec2f;
 uniform uDebug: f32;
 uniform uSplat: vec4f;
+uniform uCam: vec3f;
+${SHADOW_RECEIVER_WGSL}
 
 var splatA: texture_2d<f32>;
 var splatASampler: sampler;
@@ -220,7 +224,7 @@ fn main(input: FragmentInputs) -> FragmentOutputs {
   }
 
   let sun = normalize(vec3f(-0.45, 0.80, -0.35));
-  let diff = max(dot(n, sun), 0.0);
+  let diff = max(dot(n, sun), 0.0) * shadowFactor(world, n, uniforms.uCam);
   var lit = base * (0.32 + 0.78 * diff);
   lit = mix(lit, vec3f(0.85), l16 * 0.10);
   lit = mix(lit, vec3f(1.0, 0.92, 0.55), l64 * 0.30);

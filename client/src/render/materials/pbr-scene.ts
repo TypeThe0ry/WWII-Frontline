@@ -103,6 +103,19 @@ export async function attachPbrScene(ctx: RenderContext, params: URLSearchParams
     }
   }
 
+  // `?csm=custom`: a ground plane receives the spheres' shadows through the PBR shadow contract (PI-117)
+  if (params.get('csm') === 'custom') {
+    const { attachCustomCsm } = await import('../lighting/custom-csm');
+    const ground = MeshBuilder.CreateGround('PH_V-GEN-001__ground', { width: 40, height: 40 }, scene);
+    ground.position.y = -2.4;
+    ground.material = mk({ shading: 'pbr', pass: 'opaque', flags: {} }, new Color3(0.55, 0.55, 0.5), 0, 0.8);
+    const csm = attachCustomCsm(ctx, { tier: 'high', lightDir: [0.45, -0.8, 0.35], webgl2Config: params.get('csm_cfg') === 'webgl2' || undefined });
+    for (const m of scene.meshes) if (m.name.startsWith('PH_V-GEN-001__s')) csm.addCaster(m);
+    for (const m of scene.materials) if (m.getClassName() === 'ShaderMaterial' && m.name.includes('PBR_') || m.name.startsWith('PH_V-GEN-001__m')) csm.attach(m as ShaderMaterial);
+    ctx.onFrame(() => csm.update(cam), 'first', 'csm_update');
+    (window as unknown as { __csm?: typeof csm }).__csm = csm;
+  }
+
   ctx.onFrame(() => {
     for (const m of scene.materials) if (m.getClassName() === 'ShaderMaterial') setLighting(m as ShaderMaterial, cam.position, DEFAULT_LIGHTING);
   }, 'first', 'material_update');

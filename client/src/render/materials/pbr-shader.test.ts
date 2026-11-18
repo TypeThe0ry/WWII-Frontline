@@ -19,7 +19,7 @@ describe('PBR shader sources (M1-042b)', () => {
         expect(used, `GLSL ${u} ${JSON.stringify(d)}`).toBe(true);
         expect(w.vertex.includes(u) || w.fragment.includes(u), `WGSL ${u}`).toBe(true);
       }
-      for (const s of g.samplers) {
+      for (const s of g.samplers.filter((x) => !x.startsWith('shadow'))) {
         expect(g.fragment.includes(`sampler2D ${s}`), `GLSL sampler ${s}`).toBe(true);
         expect(w.fragment.includes(`var ${s}: texture_2d<f32>`), `WGSL texture ${s}`).toBe(true);
         expect(w.fragment.includes(`${s}Sampler`), `WGSL sampler ${s}`).toBe(true);
@@ -29,6 +29,10 @@ describe('PBR shader sources (M1-042b)', () => {
   it('macros expand to source text only when the flag is on', () => {
     const base = { shading: 'pbr' as const, pass: 'opaque' as const, flags: {} };
     expect(pbrGlsl(base).fragment).not.toMatch(/dFdx|discard|detailTex/);
+    for (const nme of ['shadow0', 'shadow3']) {
+      expect(pbrGlsl(base).fragment).toContain(`sampler2D ${nme}`);
+      expect(pbrWgsl(base).fragment).toContain(`var ${nme}: texture_2d<f32>`);
+    }
     expect(pbrGlsl({ ...base, flags: { normalMap: true } }).fragment).toMatch(/dFdx/);
     expect(pbrGlsl({ ...base, flags: { alphaTest: true } }).fragment).toMatch(/discard/);
     expect(pbrGlsl({ ...base, flags: { detail: true } }).fragment).toMatch(/detailTex/);

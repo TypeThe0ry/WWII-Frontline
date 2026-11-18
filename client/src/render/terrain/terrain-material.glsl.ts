@@ -7,6 +7,8 @@
  * Heights are stored as the raw little-endian u16 of the .r16 files uploaded as an RG8 texture
  * (R = low byte, G = high byte), decoded exactly and bilinearly filtered by hand (no float-texture filtering needed).
  */
+import { SHADOW_RECEIVER_GLSL } from '../lighting/csm-shader';
+
 export const TERRAIN_VERTEX_GLSL = /* glsl */ `
 precision highp float;
 precision highp int;
@@ -128,6 +130,8 @@ uniform float uDebug; // 0 shaded, 1 lod, 2 morph, 3 normal, 4 height, 5 flat
 uniform vec4 uSplat; // (map size m, splat enabled, 0, 0)
 uniform sampler2D splatA;
 uniform sampler2D splatB;
+uniform vec3 uCam;
+${SHADOW_RECEIVER_GLSL}
 
 vec3 lodColor(int l) {
   if (l == 0) return vec3(0.90, 0.25, 0.25);
@@ -212,7 +216,7 @@ void main() {
   }
 
   vec3 sun = normalize(vec3(-0.45, 0.80, -0.35));
-  float diff = max(dot(n, sun), 0.0);
+  float diff = max(dot(n, sun), 0.0) * shadowFactor(vWorld, n, uCam);
   vec3 lit = base * (0.32 + 0.78 * diff);
   lit = mix(lit, vec3(0.85), l16 * 0.10);
   lit = mix(lit, vec3(1.0, 0.92, 0.55), l64 * 0.30);

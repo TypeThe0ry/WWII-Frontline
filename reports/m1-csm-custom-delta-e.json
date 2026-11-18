@@ -1,0 +1,27 @@
+{
+  "task": "M1-043b",
+  "date": "2026-11-18T21:50:06.663Z",
+  "scene": "?scene=world&map=carentan&cam=old_town&veg=0&actors=demo&entities=0&speed=0&csm=custom&csm_cfg=webgl2",
+  "viewport": "1280x720",
+  "metric": "CIE76 delta E, WebGPU (WGSL) vs WebGL2 (GLSL) screenshots",
+  "stats": {
+    "pixels": 921600,
+    "mean": 0.023585523961278727,
+    "p99": 0.5433305697897098,
+    "p9999": 12.268759746050474,
+    "max": 16.720752806151513,
+    "over1": 0.002514105902777778,
+    "over2": 0.002248263888888889,
+    "over5": 0.0015147569444444444
+  },
+  "meta": {
+    "webgpu": {
+      "renderer": "webgpu",
+      "prewarm": null
+    },
+    "webgl2": {
+      "renderer": "webgl2",
+      "prewarm": null
+    }
+  }
+}

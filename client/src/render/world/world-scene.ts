@@ -104,7 +104,7 @@ export async function attachWorld(ctx: RenderContext, terrain: { heightAt(x: num
   // The scene may already carry a directional light; walls facing away from it would be black without an ambient term.
   if (!scene.getLightByName('PH_world_sky')) {
     if (scene.lights.length === 0) {
-      const sun = new DirectionalLight('PH_world_sun', new Vector3(-0.4, -1, -0.3), scene);
+      const sun = new DirectionalLight('PH_world_sun', new Vector3(0.45, -0.8, 0.35), scene);
       sun.intensity = 0.9;
     }
     const sky = new HemisphericLight('PH_world_sky', new Vector3(0, 1, 0), scene);

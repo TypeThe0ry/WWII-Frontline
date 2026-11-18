@@ -36,6 +36,8 @@ declare global {
     __pbr?: import('./render/materials/pbr-scene').PbrSceneHandle;
     /** `?post=high|medium|low`: post chain (M1-044b). */
     __post?: import('./render/post/post-chain').PostHandle;
+    /** `?csm=custom`: custom cascaded shadow maps sampled by terrain/PBR shaders (PI-117). */
+    __csm?: import('./render/lighting/custom-csm').CustomCsm;
     /** `?vehicle=demo`: placeholder tank (M1-048b). */
     __vehicle?: import('./render/vehicles/vehicle-demo').VehicleDemoHandle;
     /** `?vfx=stress`: particle stress hook (M1-047b). */
@@ -100,6 +102,19 @@ async function boot(): Promise<void> {
   if (params.get('vfx') === 'stress') {
     const { attachVfxStress } = await import('./render/vfx/vfx-scene');
     window.__vfx = attachVfxStress(ctx, params);
+  }
+
+  if (terrainHandle && window.__world && params.get('csm') === 'custom') {
+    const { attachCustomCsm } = await import('./render/lighting/custom-csm');
+    const tier = (params.get('csm_tier') ?? 'high') as import('./render/lighting/csm-math').ShadowTier;
+    const csm = attachCustomCsm(ctx, { tier, lightDir: [0.45, -0.8, 0.35], webgl2Config: params.get('csm_cfg') === 'webgl2' || undefined, flipY: params.has('csm_flipy') ? params.get('csm_flipy') === '1' : undefined, halfZ: params.has('csm_halfz') ? params.get('csm_halfz') === '1' : undefined });
+    for (const m of window.__world.buildingMeshes) csm.addCaster(m);
+    if (window.__world.hedges) csm.addCaster(window.__world.hedges, true);
+    csm.attach(terrainHandle.terrain.material);
+    ctx.onFrame(() => {
+      if (ctx.scene.activeCamera) csm.update(ctx.scene.activeCamera);
+    }, 'first', 'csm_update');
+    window.__csm = csm;
   }
 
   // M0-022: networked play (`?server=host:port`): prediction, reconciliation, interpolation (client/src/game).

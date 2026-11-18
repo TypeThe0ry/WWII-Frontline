@@ -1,0 +1,20 @@
+{
+ "webgpu": {
+  "points": 107,
+  "shadow_truth": 31,
+  "agreement": 0.9719626168224299,
+  "tp": 28,
+  "fp": 0,
+  "fn": 3,
+  "tn": 76
+ },
+ "webgl2": {
+  "points": 107,
+  "shadow_truth": 31,
+  "agreement": 0.9626168224299065,
+  "tp": 27,
+  "fp": 0,
+  "fn": 4,
+  "tn": 76
+ }
+}
