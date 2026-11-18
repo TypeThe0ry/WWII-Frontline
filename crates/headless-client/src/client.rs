@@ -157,6 +157,11 @@ pub async fn run_client(ctx: Arc<Ctx>, id: u32) -> (ClientReport, Series) {
     );
     let mut synth = SynthInput::new(ctx.seed, id, &ctx.waypoints);
     let mut dec = SnapshotDecoder::new();
+    // team 0 = US, 1 = GER; the snapshot's `flags` bit 7 is the faction (PI-024). Tolerances: see audit.rs.
+    let mut audit = crate::audit::AoiAudit::new(welcome.team & 1, 4.0, 5.0);
+    // the client's predicted position is only trustworthy for the audit while it agrees with the server: skip 2 s after a death, a
+    // respawn or a server position correction of more than 5 m (a teleport of the player makes the predicted pose stale)
+    let mut audit_skip_until = Instant::now() + Duration::from_secs(3); // also the first seconds after joining (spawn pose not yet confirmed)
     let mut life = Life {
         alive: true,
         last_death: None,
@@ -233,7 +238,11 @@ pub async fn run_client(ctx: Arc<Ctx>, id: u32) -> (ClientReport, Series) {
                                     if !life.alive && alive_now { rep.respawns += 1; life.last_respawn = Some(now); }
                                     life.alive = alive_now;
                                     corr = ss.pos_corr.map(|q| q.to_meters());
+                                    let jump = match (corr, pred.pos()) { (Some(c), Some(p)) => (frontline_sim::Vec3::new(c[0], c[1], c[2]) - p).length() > 5.0, _ => false };
+                                    if jump || life.last_death == Some(now) || life.last_respawn == Some(now) { audit_skip_until = now + Duration::from_secs(2); }
                                 }
+                                audit.tick = s.tick;
+                                if life.alive && now >= audit_skip_until { if let Some(p) = pred.pos() { audit.check(p, &s.entities); } else { audit.skipped += 1; } } else { audit.skipped += 1; }
                                 let before = pred.stats.total;
                                 report_hash = pred.on_self(s.ack_input_seq, corr, life.alive, life.death_window(now));
                                 if ctx.trace && pred.stats.total != before {
@@ -271,6 +280,7 @@ pub async fn run_client(ctx: Arc<Ctx>, id: u32) -> (ClientReport, Series) {
                     let pose = Pose { xz: pred.pos().map(|p| (p.x, p.z)), alive: life.alive };
                     let cmd = synth.next(seq, t, pose);
                     pred.push(&cmd);
+                    audit.push_orientation(frontline_protocol::quant::dequant_yaw(cmd.yaw, 16), frontline_protocol::quant::pitch_i16_to_rad(cmd.pitch));
                     if let (Some(a), Some(b)) = (last_pos, pred.pos()) { rep.distance_m += f64::from((a - b).length()); }
                     last_pos = pred.pos();
                     if history.len() == 3 { history.pop_front(); }
@@ -327,6 +337,10 @@ pub async fn run_client(ctx: Arc<Ctx>, id: u32) -> (ClientReport, Series) {
         rep.keyframe_records as f64 / rep.records as f64
     };
     rep.corrections = pred.stats;
+    rep.aoi_records_checked = audit.records_checked;
+    rep.aoi_beyond_close = audit.beyond_close;
+    rep.aoi_leaks = audit.leaks;
+    rep.aoi_worst_leak_m = audit.worst_leak_m;
     rep.final_health = last_health;
     rep.final_pos = pred.pos().map(|p| [p.x, p.y, p.z]);
     rep.input_hash = format!("{:016x}", synth.input_hash());

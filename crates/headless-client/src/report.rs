@@ -66,6 +66,15 @@ pub struct ClientReport {
     pub deaths: u64,
     pub respawns: u64,
     pub shots_fired: u64,
+    /// Client-side R3 audit (`audit.rs`): enemy records checked / beyond 105.6 m / outside the rule.
+    #[serde(default)]
+    pub aoi_records_checked: u64,
+    #[serde(default)]
+    pub aoi_beyond_close: u64,
+    #[serde(default)]
+    pub aoi_leaks: u64,
+    #[serde(default)]
+    pub aoi_worst_leak_m: f32,
     /// Last `self_state` health (0..=255) and ammo, for sanity checks.
     pub final_health: Option<u8>,
     /// Final predicted position, metres.
@@ -96,6 +105,14 @@ pub struct Aggregate {
     pub deaths: u64,
     pub respawns: u64,
     pub shots_fired: u64,
+    #[serde(default)]
+    pub aoi_records_checked: u64,
+    #[serde(default)]
+    pub aoi_beyond_close: u64,
+    #[serde(default)]
+    pub aoi_leaks: u64,
+    #[serde(default)]
+    pub aoi_worst_leak_m: f32,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -157,6 +174,10 @@ pub fn aggregate(
         a.deaths += c.deaths;
         a.respawns += c.respawns;
         a.shots_fired += c.shots_fired;
+        a.aoi_records_checked += c.aoi_records_checked;
+        a.aoi_beyond_close += c.aoi_beyond_close;
+        a.aoi_leaks += c.aoi_leaks;
+        a.aoi_worst_leak_m = a.aoi_worst_leak_m.max(c.aoi_worst_leak_m);
         let k = &c.corrections;
         let t = &mut a.corrections;
         t.total += k.total;

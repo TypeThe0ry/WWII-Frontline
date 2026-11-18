@@ -104,6 +104,7 @@ export function summarize(opts) {
   const gauge = (name, labels = {}) =>
     last.find((s) => s.name === name && Object.entries(labels).every(([k, v]) => s.labels[k] === v))?.value;
 
+  const aoiLeakServer = last.find((x) => x.name === 'aoi_enemy_leak_total')?.value;
   const rows = existsRss(opts.rss);
   const agg = headless.aggregate;
   const isWt = opts.transport === 'wt';
@@ -140,10 +141,13 @@ export function summarize(opts) {
     up_p50_each_client: { value: r3(agg.up_kbps_p50_worst_client), limit: th.up_p50_kbps, ok: agg.up_kbps_p50_worst_client <= th.up_p50_kbps },
     disconnects: { value: agg.disconnects, limit: 0, ok: agg.disconnects === 0 && agg.clients_failed === 0 },
     decode_errors: { value: agg.decode_errors, limit: 0, ok: agg.decode_errors === 0 },
+    // M1-068b / E1-4: no enemy record outside the R3 rule, by the server's own audit counter and by the clients' independent audit
+    aoi_leaks_server: { value: aoiLeakServer ?? null, limit: 0, ok: (aoiLeakServer ?? 0) === 0 },
+    aoi_leaks_client_audit: { value: agg.aoi_leaks ?? null, limit: 0, ok: (agg.aoi_leaks ?? 0) === 0, records_checked: agg.aoi_records_checked ?? 0, beyond_close: agg.aoi_beyond_close ?? 0 },
     client_cpu_pct_of_one_core: { value: r3(headless.env.client_cpu_pct_of_one_core), limit: 50, ok: headless.env.client_cpu_pct_of_one_core < 50 },
     server_rss_growth_pct: rss.growth_pct == null ? { value: null, limit: 2, ok: true, note: rss.note } : { value: rss.growth_pct, limit: 2, ok: rss.growth_pct < 2, window_s: rss.window_s },
   };
-  const hard = ['tick_p99', 'overrun_consecutive_max', 'down_p50_each_client', 'up_p50_each_client', 'disconnects', 'decode_errors'];
+  const hard = ['tick_p99', 'overrun_consecutive_max', 'down_p50_each_client', 'up_p50_each_client', 'disconnects', 'decode_errors', 'aoi_leaks_server', 'aoi_leaks_client_audit'];
   const verdict = {
     all_ok: Object.values(checks).every((c) => c.ok),
     hard_ok: hard.every((k) => checks[k].ok),
@@ -189,6 +193,7 @@ export function summarize(opts) {
       deaths_observed: agg.deaths,
       respawns_observed: agg.respawns,
       shots_fired_observed: agg.shots_fired,
+      aoi_audit: { records_checked: agg.aoi_records_checked ?? 0, beyond_close_records: agg.aoi_beyond_close ?? 0, leaks: agg.aoi_leaks ?? 0, worst_leak_m: r3(agg.aoi_worst_leak_m ?? 0), server_enemy_leak_total: aoiLeakServer ?? null, note: 'client-side audit uses the client predicted position and a 24-tick orientation history with +4 m / +5 deg tolerance: looser than the server, so a reported leak is a real violation (audit.rs)' },
       client_cpu_pct_of_one_core: r3(headless.env.client_cpu_pct_of_one_core),
     },
     reference: {
