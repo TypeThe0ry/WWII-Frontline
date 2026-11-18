@@ -29,6 +29,8 @@ export interface GameEvents {
   'fire.local': { weapon: number; muzzlePos: Vec3; dir: Vec3 };
   'fire.remote': { shooter: number; weapon: number; muzzlePos: Vec3; dir: Vec3; distance: number };
   'impact': { pos: Vec3; normal: number; material: number };
+  /** An explosion at `pos` with damage radius `radius` (m, from the explosive's `damage_radius_m`); `own` = caused by the local player. Not produced by the net layer yet (M1-047b wires the consumer). */
+  'explosion': { pos: Vec3; radius: number; own: boolean };
   /** Server-confirmed hit by the local player (the only place hits are ever reported). */
   'hit.confirm': { target: number; zone: number; damage: number; killed: boolean };
   /** `angle` in radians (0 = ahead of the player's view, clockwise), `amount` 0..1. */
