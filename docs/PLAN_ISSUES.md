@@ -1139,3 +1139,6 @@ CSM 用 Babylon `CascadedShadowGenerator`（`lighting/csm.ts`）：没有显式�
 
 ## PI-118 续（2026-11-19）
 TAA 历史夹取默认开启（拖影 trail |ΔL| 4.67 → 3.11，FXAA 基线 2.08）；TAA→FXAA 回退已做（创建失败/帧预算 P95>25 ms×90 帧/手动，两后端实机验证）。**运动向量没有做**：Babylon PrePass 重投影在本管线里卡死渲染循环且不覆盖自定义着色器；正确做法是为地形/植被/PBR 各加速度变体 + 自写 TAA 解析（见 `reports/m1-post.md`），工作量大，另开任务。
+## PI-122 M1-041b：载具预测接线的真实前置（2026-11-19）
+- 发现：服务器快照调度器（`crates/server/src/snapshot/scheduler.rs`）目前只输出 `EntityKind::Player`，`vehicle: None`；sim-wasm 快照解码器（`WasmSnapshotDecoder`）也没有载具实体接口。因此 `VehiclePredictor` 在 PR #111 之后仍没有权威运动学来源，接线（输入环、对账、远端插值）无法端到端验证。
+- 决定：把剩余工作拆为 M1-041c，顺序为 ① 服务器调度器输出载具实体（`VehicleExtra`：四元数、炮塔/炮管、座位位图）及其 AOI/优先级；② sim-wasm 解码器暴露载具实体数组；③ `net-game` 接线（进出座切换 `VehiclePredictor`、未确认指令回放、远端载具用 `vehicle-interp.ts` 采样）；④ headless 驾驶 + netem 验收。041b 状态保持 partial，不声称完成。
