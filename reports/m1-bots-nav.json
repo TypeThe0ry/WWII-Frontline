@@ -1,0 +1,26 @@
+{
+  "all_60_in_one_tick_ms": 11.77524,
+  "bots": 60,
+  "budget_ms_per_tick": 1.0,
+  "expanded": {
+    "max": 6638,
+    "median": 1455
+  },
+  "mesh_polys": 17839,
+  "ms_per_tick_at_2hz_replan": 0.785016,
+  "note": "single thread, release profile; machine is the cloud container (4 cores), not the reference machine",
+  "pairs": 60,
+  "query_ms": {
+    "max": 1.039351,
+    "median": 0.196254,
+    "p99": 0.975525
+  },
+  "replans_per_bot_per_s": 2,
+  "results": {
+    "found": 60,
+    "none": 0,
+    "partial": 0
+  },
+  "schema": 1,
+  "tick_hz": 30.0
+}

@@ -26,7 +26,7 @@ const config = {
   walkableHeight: Math.ceil(P.agent_height / ch),
   walkableClimb: Math.floor(P.max_climb / ch),
   walkableRadius: Math.ceil(P.agent_radius / cs),
-  maxEdgeLen: 12, maxSimplificationError: 1.3, minRegionArea: 8, mergeRegionArea: 20,
+  maxEdgeLen: Math.round((P.max_edge_len_m ?? 3.6) / cs), maxSimplificationError: 1.3, minRegionArea: 8, mergeRegionArea: 20,
   maxVertsPerPoly: 6, detailSampleDist: 6, detailSampleMaxError: 1,
   tileSize: Math.round(params.tile_size_m / cs),
   borderSize: Math.ceil(P.agent_radius / cs) + 3,
@@ -70,7 +70,7 @@ const bin = Buffer.concat(parts);
 fs.writeFileSync(args.out, bin);
 
 // ---- queries
-const query = new NavMeshQuery(navMesh);
+const query = new NavMeshQuery(navMesh, { maxNodes: 65535 });
 const he = { x: 3, y: 12, z: 3 };
 const report = {
   mode: args.mode, params_hash: paramsHash.toString('hex'), tris_in: nt, verts_in: nv,
@@ -89,7 +89,10 @@ if (args.points) {
     const r = query.computePath({ x: a[0], y: a[1], z: a[2] }, { x: b[0], y: b[1], z: b[2] }, { halfExtents: he, maxPathPolys: 4096, maxStraightPathPoints: 4096 });
     let len = 0;
     if (r.success) for (let i = 1; i < r.path.length; i++) len += dist(r.path[i - 1], r.path[i]);
-    report.paths[name] = { ok: !!r.success && r.path.length > 1, length_m: Math.round(len * 10) / 10 };
+    // computePath succeeds for *partial* paths too: require the end of the path to reach the goal
+    const end = r.success && r.path.length ? r.path[r.path.length - 1] : null;
+    const gap = end ? Math.hypot(end.x - b[0], end.z - b[2]) : 1e9;
+    report.paths[name] = { ok: !!r.success && r.path.length > 1 && gap < 3.0, length_m: Math.round(len * 10) / 10, end_gap_m: Math.round(gap * 10) / 10 };
   }
   const probe = (list) => list.map(([x, y, z]) => {
     const r = near({ x, y, z });
@@ -99,7 +102,8 @@ if (args.points) {
     const bad = [];
     for (const b of pts.buildings) {
       const r = query.computePath({ x: b.from[0], y: b.from[1], z: b.from[2] }, { x: b.to[0], y: b.to[1], z: b.to[2] }, { halfExtents: { x: 1.5, y: 6, z: 1.5 }, maxPathPolys: 512, maxStraightPathPoints: 512 });
-      if (!(r.success && r.path.length > 1)) bad.push(b.id);
+      const e = r.success && r.path.length ? r.path[r.path.length - 1] : null;
+      if (!(e && Math.hypot(e.x - b.to[0], e.z - b.to[2]) < 2.0)) bad.push(b.id);
     }
     report.buildings = { n: pts.buildings.length, unreachable: bad.length, unreachable_ids: bad.slice(0, 50) };
   }

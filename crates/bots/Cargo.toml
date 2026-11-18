@@ -21,3 +21,7 @@ serde_json = "1"
 [[bench]]
 name = "think"
 harness = false
+
+[[bench]]
+name = "nav_query"
+harness = false

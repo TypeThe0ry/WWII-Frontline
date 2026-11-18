@@ -12,7 +12,7 @@
   0.0,
   520.0
  ],
- "params_hash": "e7517d1ea681a332",
+ "params_hash": "5e51a297f244b87d",
  "schema": "frontline.map.navmesh_params/1",
  "tile_size_m": 128,
  "vehicle": {
@@ -21,6 +21,7 @@
   "cell_height": 0.25,
   "cell_size": 0.5,
   "max_climb": 0.6,
+  "max_edge_len_m": 24.0,
   "max_slope": 25
  },
  "walk": {
@@ -29,6 +30,7 @@
   "cell_height": 0.2,
   "cell_size": 0.3,
   "max_climb": 0.5,
+  "max_edge_len_m": 24.0,
   "max_slope": 45
  }
 }

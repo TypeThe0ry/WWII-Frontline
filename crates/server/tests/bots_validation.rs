@@ -119,9 +119,23 @@ fn bots_crate_does_not_depend_on_server() {
         .collect();
     assert_eq!(deps.len(), 2, "{deps:?}");
     // Source-level check: the bots crate never names a mutable world API.
-    let src = std::fs::read_dir(concat!(env!("CARGO_MANIFEST_DIR"), "/../bots/src")).unwrap();
-    for f in src.filter_map(|e| e.ok()) {
-        let text = std::fs::read_to_string(f.path()).unwrap();
+    fn rs_files(dir: &std::path::Path, out: &mut Vec<std::path::PathBuf>) {
+        for e in std::fs::read_dir(dir).unwrap().filter_map(|e| e.ok()) {
+            let p = e.path();
+            if p.is_dir() {
+                rs_files(&p, out);
+            } else if p.extension().is_some_and(|x| x == "rs") {
+                out.push(p);
+            }
+        }
+    }
+    let mut files = Vec::new();
+    rs_files(
+        std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../bots/src")),
+        &mut files,
+    );
+    for path in files {
+        let text = std::fs::read_to_string(&path).unwrap();
         for forbidden in [
             "&mut World",
             "World::step",
@@ -132,7 +146,7 @@ fn bots_crate_does_not_depend_on_server() {
             assert!(
                 !text.contains(forbidden),
                 "{} mentions {forbidden}",
-                f.path().display()
+                path.display()
             );
         }
     }

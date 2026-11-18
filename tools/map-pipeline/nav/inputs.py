@@ -13,7 +13,7 @@ import numpy as np
 from map_pipeline import buildings_annotate as ba, export, zones
 
 RECT = ba.RECT
-WALL_H, WALL_T, DOOR_GAP = 3.0, 0.3, 2.4
+WALL_H, WALL_T, DOOR_GAP = 3.0, 0.3, 3.2
 HEDGE_T, HEDGE_H = 0.6, 2.5
 
 

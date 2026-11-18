@@ -1,153 +1,109 @@
 {
   "connectivity_all_ok": true,
-  "params_hash": "e7517d1ea681a332",
+  "params_hash": "5e51a297f244b87d",
   "schema": 1,
   "vehicle": {
-    "bake_ms": 19979,
+    "bake_ms": 19958,
     "bin_file": "data/maps/carentan/m1/navmesh_vehicle.bin",
-    "buildings": {
-      "n": 70,
-      "unreachable": 57,
-      "unreachable_ids": [
-        "relation/2073920",
-        "way/154019572",
-        "way/154019580",
-        "way/154019745",
-        "way/154019761",
-        "way/154019818",
-        "way/154019974",
-        "way/154020007",
-        "way/154020056",
-        "way/154020139",
-        "way/154020206",
-        "way/154020233",
-        "way/154020258",
-        "way/154020300",
-        "way/154020387",
-        "way/154020459",
-        "way/154020464",
-        "way/154020477",
-        "way/154020520",
-        "way/154020641",
-        "way/154021608",
-        "way/154022225",
-        "way/154022476",
-        "way/154022526",
-        "way/154023225",
-        "way/154023227",
-        "way/154023302",
-        "way/154023435",
-        "way/154023515",
-        "way/154023605",
-        "way/154023654",
-        "way/154023980",
-        "way/154024346",
-        "way/154024393",
-        "way/154024759",
-        "way/154024874",
-        "way/154024894",
-        "way/154024923",
-        "way/154024927",
-        "way/154025022",
-        "way/154025029",
-        "way/154025082",
-        "way/154025283",
-        "way/154025285",
-        "way/154025403",
-        "way/154025457",
-        "way/154025470",
-        "way/154025557",
-        "way/154025613",
-        "way/154025614"
-      ]
-    },
-    "bytes": 2210396,
+    "bytes": 1853896,
     "inputs": {
       "hedge_boxes": 22,
       "tris": 2381180,
       "walls": 0
     },
     "mode": "vehicle",
-    "params_hash": "e7517d1ea681a332",
+    "params_hash": "5e51a297f244b87d",
     "paths": {
       "us_hq_to_L1a": {
+        "end_gap_m": 0,
         "length_m": 641.6,
         "ok": true
       },
       "us_hq_to_L2a": {
-        "length_m": 927.2,
+        "end_gap_m": 0.7,
+        "length_m": 928.3,
         "ok": true
       },
       "us_hq_to_L3a": {
-        "length_m": 1083.8,
+        "end_gap_m": 2,
+        "length_m": 1168.9,
         "ok": true
       },
       "us_hq_to_ger_hq": {
-        "length_m": 1036.5,
+        "end_gap_m": 0,
+        "length_m": 1720.9,
         "ok": true
       }
     },
-    "polys": 13040,
+    "polys": 10692,
     "road": {
       "covered": 846,
       "n": 852
     },
     "roads_narrower_than_4m_excluded": [],
-    "sha256": "5b51955bab6b090c28333c678d935dadf2774c8ae50e63e08bb9303b2dd37d99",
+    "sha256": "f7dad5903098ab1952407938fcbfc517dd9e3b6583bc9d1e94555b8aab40c7a3",
     "tiles": 100,
     "tris_in": 2381180,
     "verts_in": 1394937,
-    "wall_seconds": 24.4,
+    "wall_seconds": 23.8,
     "water": {
       "covered": 0,
-      "min_dist_m": 5.541780035184648,
+      "min_dist_m": 5.545512965704468,
       "n": 1000
     }
   },
   "walk": {
-    "bake_ms": 34971,
+    "bake_ms": 33920,
     "bin_file": "data/maps/carentan/m1/navmesh.bin",
     "buildings": {
       "n": 70,
-      "unreachable": 0,
-      "unreachable_ids": []
+      "unreachable": 3,
+      "unreachable_ids": [
+        "way/154024874",
+        "way/154024894",
+        "way/154025700"
+      ]
     },
-    "bytes": 4064396,
+    "bytes": 3379088,
     "inputs": {
       "hedge_boxes": 22,
-      "tris": 2424698,
-      "walls": 916
+      "tris": 2424542,
+      "walls": 903
     },
     "mode": "walk",
-    "params_hash": "e7517d1ea681a332",
+    "params_hash": "5e51a297f244b87d",
     "paths": {
       "us_hq_to_L1a": {
+        "end_gap_m": 0,
         "length_m": 628.2,
         "ok": true
       },
       "us_hq_to_L2a": {
+        "end_gap_m": 0.2,
         "length_m": 905.8,
         "ok": true
       },
       "us_hq_to_L3a": {
-        "length_m": 1017.7,
+        "end_gap_m": 0.8,
+        "length_m": 1245.2,
         "ok": true
       },
       "us_hq_to_ger_hq": {
-        "length_m": 894.3,
+        "end_gap_m": 0,
+        "length_m": 1641.5,
         "ok": true
       }
     },
-    "polys": 22243,
+    "polys": 17839,
     "road": {
       "covered": 852,
       "n": 852
     },
-    "sha256": "26f22da565dcfca4d9c9eeff6d667b770ed87b19e604f84a3b70c060120d6029",
+    "sha256": "2e3c1d9f1f4f8e01967e6cfcf8190d614107a62d79be8ee8d5e88687a1103df1",
     "tiles": 100,
-    "tris_in": 2424698,
-    "verts_in": 1402265,
-    "wall_seconds": 39.4,
+    "tris_in": 2424542,
+    "verts_in": 1402161,
+    "wall_seconds": 38.2,
     "water": {
       "covered": 0,
       "min_dist_m": 4.689730711478148,

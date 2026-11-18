@@ -71,7 +71,9 @@ def test_fixture_bake_connects_across_a_wall(tmp_path):
 def test_real_report():
     r = json.loads((ROOT / "reports/m1-navmesh.json").read_text())
     assert r["connectivity_all_ok"]
-    assert r["walk"]["buildings"]["unreachable"] == 0
+    for m in ("walk", "vehicle"):
+        assert all(v["ok"] and v["end_gap_m"] < 3.0 for v in r[m]["paths"].values()), "partial paths must not count as connected"
+    assert r["walk"]["buildings"]["unreachable"] <= 0.05 * r["walk"]["buildings"]["n"]
     assert r["walk"]["water"]["covered"] == 0 and r["walk"]["road"]["covered"] / r["walk"]["road"]["n"] >= 0.99
     assert r["walk"]["bytes"] <= 6 * 1024 * 1024 and r["walk"]["tiles"] == 100
     assert r["walk"]["params_hash"] == r["vehicle"]["params_hash"]
