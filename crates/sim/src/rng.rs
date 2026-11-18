@@ -20,6 +20,8 @@ pub enum Purpose {
     Penetration = 5,
     /// Suppression camera / ray shake (M1-017).
     SuppressShake = 6,
+    /// Armour luck factor, cook-off and fire rolls (M1-023).
+    Armor = 7,
 }
 
 const GOLDEN: u64 = 0x9e37_79b9_7f4a_7c15;

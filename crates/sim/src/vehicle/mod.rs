@@ -5,6 +5,8 @@
 pub mod armor;
 pub mod collision;
 pub mod gun;
+pub mod internal;
+pub mod modules;
 pub mod seats;
 pub mod snapshot;
 pub mod suspension;
