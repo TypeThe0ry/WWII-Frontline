@@ -1121,3 +1121,6 @@ CSM 用 Babylon `CascadedShadowGenerator`（`lighting/csm.ts`）：没有显式�
 
 ## PI-118 M1-044b：后处理链用 Babylon 管线（2026-11-19）
 `post-chain.ts` 直接用 `DefaultRenderingPipeline` + `TAARenderingPipeline`（不是自写着色器）；自定义材质没有运动向量，TAA 只有抖动 + 累积，运动物体会拖影；自动曝光的亮度直方图读回没接（`setTargetEv` 手动）；色调映射作用于 LDR 输入，画面偏灰。数字见 `reports/m1-post.md`（WebGPU 整帧 GPU +0.10–0.23 ms、WebGL2 +0.06–0.13 ms，静止闪烁指标无区分度）。
+
+## PI-119 M1-045b：只做了占位角色的无素材部分（2026-11-19）
+045b 的骨架/重定向/GPU 蒙皮/真实动画依赖 M1-064 的素材，跳过。已做：`entity.footstep` 事件、趴下姿态与 GD 9.2 切换时间、距离 LOD（滞回）、远端开火的上半身后坐（`render/actors/`，数字见 `reports/m1-characters.md`）。趴下高度（约 2.2×胶囊半径）、LOD 距离 40/120 m 是 [tbd]（数据里没有）；`entity.footstep` 目前没有消费者（音频 M1-063b 的脚步声还没接）。

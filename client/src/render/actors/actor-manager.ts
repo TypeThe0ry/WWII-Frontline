@@ -12,6 +12,7 @@ import type { EventBus, GameEvents } from '../../game/event-bus';
 import type { GameState } from '../../game/state';
 import { FirstPersonRig, FxManager } from '../fx';
 import type { ActorData, WeaponActorDef } from './actor-data';
+import { FootstepClock, lodFor, stanceTransitionS, type Stance } from './anim-graph';
 import { type Faction, PlaceholderRegistry } from './names';
 import { CharacterSources, type CharacterPose, PlaceholderCharacter } from './placeholder-character';
 import { WeaponSources, buildFirstPersonWeapon } from './placeholder-weapon';
@@ -37,11 +38,21 @@ export interface ActorManagerOptions {
   thirdPersonScale?: number;
 }
 
+/** Wire stance value -> anim-graph stance name. */
+const STANCE_NAMES: readonly Stance[] = ['stand', 'crouch', 'prone'];
+/** Character LOD distance thresholds (m): beyond the first the small markers go, beyond the second the head and weapon [tbd]. */
+export const LOD_THRESHOLDS_M = [40, 120] as const;
+
 /** Scale of the third-person weapon (a size smaller than the first-person one). */
 export const THIRD_PERSON_WEAPON_SCALE = 0.9;
 
 interface ActorSlot {
   actor: PlaceholderCharacter;
+  foot: FootstepClock;
+  lastX: number;
+  lastZ: number;
+  hasLast: boolean;
+  stance: number;
   faction: Faction;
   weapon: number;
   stamp: number;
@@ -89,6 +100,11 @@ export class ActorManager {
         if (k >= 0) this.ensure(e.id, o.state.entities.weapon[k] as number, o.state.entities.flags[k] as number);
       }),
       o.bus.on('entity.removed', (e) => this.remove(e.id)),
+      // upper-body layer: a remote shot kicks the shooter's aim pivot up (decays in `PlaceholderCharacter.update`)
+      o.bus.on('fire.remote', (e) => {
+        const a = this.actors.get(e.shooter);
+        if (a) a.actor.kick = Math.min(0.12, a.actor.kick + 0.06);
+      }),
     );
   }
 
@@ -123,7 +139,7 @@ export class ActorManager {
     }
     if (!s) {
       const actor = new PlaceholderCharacter(this.o.scene, id, this.chars.get(faction) as CharacterSources, this.registry);
-      s = { actor, faction, weapon: -1, stamp: this.stamp };
+      s = { actor, foot: new FootstepClock(), lastX: 0, lastZ: 0, hasLast: false, stance: 0, faction, weapon: -1, stamp: this.stamp };
       this.actors.set(id, s);
     }
     if (s.weapon !== weapon) {
@@ -132,6 +148,31 @@ export class ActorManager {
       s.actor.setWeapon(src ? src.instantiate(`tp_${id}`, this.o.thirdPersonScale ?? THIRD_PERSON_WEAPON_SCALE) : null);
     }
     return s;
+  }
+
+  private readonly stepPayload = { entity: 0, foot: 'left' as 'left' | 'right', pos: { x: 0, y: 0, z: 0 }, stance: 0 };
+
+  /** `entity.footstep` from the stride phase (M1-045b): none while prone, shorter stride while crouched, teleports (> 5 m / frame) ignored. */
+  private footsteps(s: ActorSlot, id: number, p: { x: number; y: number; z: number; stance: number }): void {
+    if (s.hasLast) {
+      const d = Math.hypot(p.x - s.lastX, p.z - s.lastZ);
+      if (d < 5 && p.stance !== 2) {
+        const foot = s.foot.advance(d, p.stance === 1 ? 1.2 : 1.6);
+        if (foot) {
+          const e = this.stepPayload;
+          e.entity = id;
+          e.foot = foot;
+          e.pos.x = p.x;
+          e.pos.y = p.y;
+          e.pos.z = p.z;
+          e.stance = p.stance;
+          this.o.bus.emit('entity.footstep', e);
+        }
+      }
+    }
+    s.lastX = p.x;
+    s.lastZ = p.z;
+    s.hasLast = true;
   }
 
   private remove(id: number): void {
@@ -158,6 +199,7 @@ export class ActorManager {
 
     const e = state.entities;
     const stamp = ++this.stamp;
+    const cam = this.o.scene.activeCamera?.globalPosition;
     const p = this.pose;
     for (let k = 0; k < e.count; k++) {
       const id = e.ids[k] as number;
@@ -170,7 +212,15 @@ export class ActorManager {
       p.pitch = e.pitch[k] as number;
       p.stance = e.stance[k] as number;
       p.health = e.health[k] as number;
-      s.actor.update(p, dtMs, data.stanceTransitionMs);
+      // stance change time from the GD 9.2 table (anim-graph), footsteps from the horizontal distance walked, LOD from the camera distance
+      let stanceMs = data.stanceTransitionMs;
+      if (p.stance !== s.stance) {
+        stanceMs = stanceTransitionS(STANCE_NAMES[s.stance] ?? 'crouch', STANCE_NAMES[p.stance] ?? 'crouch') * 1000 || stanceMs;
+        s.stance = p.stance;
+      }
+      s.actor.update(p, dtMs, stanceMs);
+      this.footsteps(s, id, p);
+      if (cam) s.actor.setLod(lodFor(Math.hypot(p.x - cam.x, p.y - cam.y, p.z - cam.z), s.actor.lod, LOD_THRESHOLDS_M));
     }
     for (const [id, s] of this.actors) if (s.stamp !== stamp) this.remove(id);
     this.lastUpdate.entities = e.count;
