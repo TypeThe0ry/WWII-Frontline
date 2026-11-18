@@ -1,0 +1,3 @@
+IGN RGE ALTI 1 m - NOT verified (2026-11-18)
+The only data.gouv page reached (https://www.data.gouv.fr/datasets/rge-alti-1) is a regional reuse by another producer (Occitanie) with licence "Other (Attribution)": it is NOT the IGN dataset and proves nothing about IGN's RGE ALTI.
+Official IGN page still to be read (cartes.gouv.fr dataset IGNF_RGE-ALTI). Third-party catalogues say Etalab 2.0. Only a backup for LiDAR gaps; stays PENDING.

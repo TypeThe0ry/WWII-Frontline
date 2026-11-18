@@ -141,7 +141,7 @@
       "asset_id": "AST-M-LIDAR-01",
       "id": "ign_lidar_hd",
       "license": "Etalab-2.0",
-      "verified": null
+      "verified": "2026-11-18"
     },
     {
       "archive": "licenses/texts/AST-M-ALTI-01.txt",
@@ -162,7 +162,7 @@
       "asset_id": "AST-M-OSM-01",
       "id": "osm",
       "license": "ODbL-1.0",
-      "verified": null
+      "verified": "2026-11-18"
     }
   ],
   "tool_version": "0.1.0"

@@ -10,11 +10,15 @@ def _meta(root=ROOT):
     return carentan.build_meta(root, "")
 
 
-def test_repo_ledger_has_no_row_for_any_source_so_all_missing():
-    meta = _meta()
-    rep = lic.check_sources(meta, lic.parse_ledger((ROOT / "LICENSES.md").read_text(encoding="utf-8")), ROOT)
-    assert {r["status"] for r in rep} == {lic.MISSING}
-    assert len(rep) == len(carentan.SOURCES)
+def test_repo_ledger_state_matches_the_h052_verification():
+    ledger = lic.parse_ledger((ROOT / "LICENSES.md").read_text(encoding="utf-8"))
+    rep = {r["id"]: r for r in lic.check_sources(carentan.build_meta(ROOT), ledger, ROOT)}
+    assert rep["ign_lidar_hd"]["status"] == lic.OK and rep["osm"]["status"] == lic.OK
+    # Commercial use unspecified (GLO-30) and official page unread (RGE ALTI): never OK.
+    assert rep["copernicus_glo30"]["status"] == lic.PENDING
+    assert rep["ign_rge_alti"]["status"] == lic.PENDING
+    assert lic.MISSING not in {r["status"] for r in rep.values()}
+    assert lic.false_ok(list(rep.values())) == []
 
 
 def test_example_rows_are_ignored():

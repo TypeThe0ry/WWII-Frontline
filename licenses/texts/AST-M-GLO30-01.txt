@@ -1,0 +1,6 @@
+Copernicus DEM GLO-30 - licence verification note (2026-11-18)
+Licence PDF read: https://documentation.dataspace.copernicus.eu/APIs/SentinelHub/Data/DEM/resources/license/License-COPDEM-30.pdf
+ - Art.4 non-exclusive rights: reproduction, distribution, communication to the public, adaptation/modification/combination; Art.5 free of charge; Art.3 worldwide, unlimited in time.
+ - The text does not mention commercial use either way. No country exclusions stated.
+ - Art.6(a) notice for distribution: "(c) DLR e.V. 2010-2014 and (c) Airbus Defence and Space GmbH 2014-2018 provided under COPERNICUS by the European Union and ESA; all rights reserved". Modified data (6(b)): begin with "produced using Copernicus WorldDEM-30". Art.6(c): liability disclaimer must be passed on. Art.9: breach may terminate the licence.
+Status FLAGGED: commercial use not written either way (LICENSES 6.2: unspecified -> FLAGGED). Only needed for the far-ring fallback outside LiDAR coverage. Not legal advice.
