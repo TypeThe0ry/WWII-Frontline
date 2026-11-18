@@ -74,6 +74,22 @@ pub fn impact_event(pos: Vec3, normal: Vec3, material: u8) -> Event {
     }
 }
 
+/// Radius code of Explosion events: 1/8 m steps, clamped to 255 (31.9 m).
+pub const EXPLOSION_RADIUS_STEP_M: f32 = 0.125;
+
+pub fn explosion_event(pos: Vec3, radius_m: f32, kind: u8) -> Event {
+    let r = if radius_m.is_finite() {
+        (radius_m / EXPLOSION_RADIUS_STEP_M + 0.5).clamp(0.0, 255.0) as u8
+    } else {
+        0
+    };
+    Event::Explosion {
+        pos: [pos_code(pos.x), pos_code(pos.y), pos_code(pos.z)],
+        kind,
+        radius_q: r,
+    }
+}
+
 /// Bearing of the attacker relative to the victim's facing, `[0, 2pi) -> 0..=255`
 /// (0 = in front, growing clockwise seen from above).
 pub fn damage_angle(victim_yaw: f32, from: Vec3, victim: Vec3) -> u8 {
@@ -163,6 +179,20 @@ mod tests {
             id,
             event: Event::DamageDir { angle: 1, dmg_q: 2 },
         }
+    }
+
+    #[test]
+    fn explosion_radius_is_eighth_metre_and_clamped() {
+        let q = |r| match explosion_event(Vec3::new(1.0, 0.0, 0.0), r, 0) {
+            Event::Explosion { radius_q, pos, .. } => {
+                assert_eq!(pos[0], 64);
+                radius_q
+            }
+            _ => unreachable!(),
+        };
+        assert_eq!(q(8.0), 64);
+        assert_eq!(q(500.0), 255);
+        assert_eq!(q(f32::NAN), 0);
     }
 
     #[test]
