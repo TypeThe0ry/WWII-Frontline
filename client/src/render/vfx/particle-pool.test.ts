@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  DecalRing, dustPreset, ParticlePool, PARTICLE_CAP, PRIORITY_FAR, PRIORITY_NEAR, PRIORITY_SELF, TracerCadence, vfxPriority, type VfxEmitRequest,
+  DecalRing, dustPreset, ParticlePool, PARTICLE_CAP, PARTICLE_SIZE_M, PRIORITY_FAR, PRIORITY_NEAR, PRIORITY_SELF, TracerCadence, vfxPriority, type VfxEmitRequest,
 } from './particle-pool';
 
 const req = (priority: number, life = 10, kind: VfxEmitRequest['kind'] = 'dust'): VfxEmitRequest => ({ kind, x: 0, y: 0, z: 0, life, priority, seed: 1 });
@@ -78,5 +78,24 @@ describe('cadence and mapping', () => {
     expect(vfxPriority(false, 150)).toBe(PRIORITY_FAR);
     expect(dustPreset(2)).toBe('wood');
     expect(dustPreset(99)).toBe('earth');
+  });
+});
+
+describe('writeInstances (M1-047b)', () => {
+  it('writes size/kind/age and position of the live particles only', () => {
+    const p = new ParticlePool('low');
+    p.emit({ kind: 'smoke', x: 1, y: 2, z: 3, life: 2, priority: 128, seed: 0 });
+    p.emit({ kind: 'dust', x: 4, y: 5, z: 6, life: 1, priority: 128, seed: 0 });
+    p.update(0.5);
+    const out = new Float32Array(16 * 8);
+    const n = p.writeInstances(out);
+    expect(n).toBe(2);
+    expect(out[0]).toBeCloseTo(PARTICLE_SIZE_M[2]!, 6);
+    expect(Array.from(out.subarray(1, 4))).toEqual([2, 0.25, 0]);
+    expect(Array.from(out.subarray(12, 16))).toEqual([1, 2, 3, 1]);
+    expect(out[16 + 1]).toBe(4);
+    expect(out[16 + 2]).toBe(0.5);
+    p.update(0.6); // dust (life 1) expires
+    expect(p.writeInstances(out)).toBe(1);
   });
 });

@@ -7,6 +7,9 @@ export type VfxKind = 'muzzle_flash' | 'tracer' | 'smoke' | 'explosion' | 'dust'
 
 export const KIND_ID: Record<VfxKind, number> = { muzzle_flash: 0, tracer: 1, smoke: 2, explosion: 3, dust: 4, shell: 5 };
 
+/** Billboard edge (m) per kind id (muzzle_flash, tracer, smoke, explosion, dust, shell) [tbd]. */
+export const PARTICLE_SIZE_M: readonly number[] = [0.35, 0.12, 1.2, 2.5, 0.5, 0.06];
+
 /** Active-particle caps per quality tier (ARCHITECTURE 13.5.3). */
 export const PARTICLE_CAP = { high: 1600, medium: 800, low: 300 } as const;
 export type VfxTier = keyof typeof PARTICLE_CAP;
@@ -108,6 +111,30 @@ export class ParticlePool {
         this.active--;
       } else this.age[i] = a;
     }
+  }
+
+  /**
+   * Writes the live particles as thin-instance matrices (16 floats each, no allocation) for `ParticleRenderer`:
+   * world0 = (size m, kind id, age / life, 0), world3 = (position, 1); the other rows stay zero (billboarding is done
+   * in the vertex shader). Returns the instance count.
+   */
+  writeInstances(out: Float32Array): number {
+    let n = 0;
+    for (let i = 0; i < this.capacity; i++) {
+      if (this.alive[i] === 0) continue;
+      const o = n * 16;
+      const k = this.kind[i] as number;
+      out[o] = PARTICLE_SIZE_M[k] as number;
+      out[o + 1] = k;
+      out[o + 2] = (this.age[i] as number) / (this.life[i] as number);
+      out[o + 3] = 0;
+      out[o + 12] = this.pos[i * 3] as number;
+      out[o + 13] = this.pos[i * 3 + 1] as number;
+      out[o + 14] = this.pos[i * 3 + 2] as number;
+      out[o + 15] = 1;
+      n++;
+    }
+    return n;
   }
 
   stats(): { active: number; dropped: number } {
