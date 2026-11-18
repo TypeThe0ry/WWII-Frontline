@@ -91,7 +91,7 @@ pub struct InputEnvelope {
     pub cmd: InputCmd,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub enum Command {
     /// Handshake finished: put the player into the world and open its input session. The team
     /// was chosen by the net layer (it is already in `Welcome`); the join position comes from the
@@ -103,6 +103,11 @@ pub enum Command {
     RemovePlayer(PlayerId),
     /// The client's connection closed (published by the net layer). Idempotent.
     ClientGone(PlayerId),
+    /// A rate-limited C0 gameplay message from a connected client (M1-026).
+    C0 {
+        player: PlayerId,
+        msg: frontline_protocol::msg::c0::ClientMsgC0,
+    },
 }
 
 /// Network-side sender for inputs. Drops the new input when the channel is full and counts it.
@@ -216,6 +221,7 @@ pub struct SimLoop<C: Clock> {
     commands_rx: Receiver<Command>,
     stop: StopFlag,
     bridge: SimBridge,
+    c0: crate::c0::C0Handler,
     consecutive: i64,
     ticks: u64,
     tick_ns: Samples,
@@ -323,6 +329,7 @@ pub fn build_loop_with_bots<C: Clock>(
         commands_rx: crx,
         stop,
         bridge,
+        c0: crate::c0::C0Handler::default(),
         consecutive: 0,
         ticks: 0,
         tick_ns: Samples::new(),
@@ -514,10 +521,36 @@ impl<C: Clock> SimLoop<C> {
                         "spawn_player rejected"
                     ),
                 },
+                Command::C0 { player, msg } => {
+                    let mut out = Vec::new();
+                    self.c0
+                        .handle(&mut self.world, &self.metrics, player, msg, &mut out);
+                    self.send_c0(out);
+                }
                 Command::RemovePlayer(p) | Command::ClientGone(p) => {
+                    self.c0.forget(p);
                     self.bridge.leave(&mut self.world, p);
                     self.update_player_gauges();
                 }
+            }
+        }
+    }
+
+    /// Delivers C0 replies / routed chat over each recipient's reliable stream.
+    fn send_c0(&self, out: crate::c0::Outbox) {
+        let Some(link) = self.bridge.net() else {
+            return;
+        };
+        for (p, m) in out {
+            let Some(h) = link.sessions.handle_of(p) else {
+                continue;
+            };
+            if let Ok(b) = frontline_protocol::msg::c0::encode_c0_server(&m) {
+                h.send(
+                    frontline_protocol::Channel::C0,
+                    bytes::Bytes::from(b),
+                    crate::net::transport::Rel::Reliable,
+                );
             }
         }
     }

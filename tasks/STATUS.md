@@ -8,7 +8,7 @@
 
 - **当前里程碑**：M0 技术验证——**验收已执行（M0-033，2026-11-17）：M0 记 `partial`，可带条件关闭**，等 Fable 审阅检查点 0（H-038）；验收报告 `reports/m0/ACCEPTANCE.md`，进度总览与任务日志见 `docs/PROGRESS.md`。
 - **M0 统计（2026-11-17）**：33 个任务——done 19、partial 14（含 M0-033 自身）、blocked 0；M1–M4 共 230 个全部 todo。退出标准 E0-1…E0-12：通过 5（E0-1/2/4/9/11）、部分 5（E0-3/6/7/8/10）、需参考机或人工 2（E0-5/12）、未通过 0。
-- **下一个任务**：`M1-026`（M1-013c 副武器切换需武器槽，推迟）（M1-006 已 partial，余项拆 M1-006b；M1-005 已 partial：PI-036；M1-001–004 已 partial：CI 墙钟待 H-102，PI-032/033/034/035 待确认）。M1 前置待办（须在对应任务前解除）：H-102（CI 实跑）、H-021（参考机，M1 渲染任务前）、H-011/025/026（录像，M1 退出前）、PI-030（KCC 判据，待 Fable 裁决）。
+- **下一个任务**：`M1-027`（M1-013c 副武器切换需武器槽，推迟）（M1-006 已 partial，余项拆 M1-006b；M1-005 已 partial：PI-036；M1-001–004 已 partial：CI 墙钟待 H-102，PI-032/033/034/035 待确认）。M1 前置待办（须在对应任务前解除）：H-102（CI 实跑）、H-021（参考机，M1 渲染任务前）、H-011/025/026（录像，M1 退出前）、PI-030（KCC 判据，待 Fable 裁决）。
 - **blocked 清单**：（无）
   - 格式：`任务 ID — 所缺条目 — 登记日期 — 谁来解除（人类/素材/其它任务）`
   - 人工侧待办（不阻塞任务，但卡退出标准）：GitHub 无 main 分支/无法开 PR（H-102）、参考机（H-021）、对标录像（H-011/H-025/H-026，汇总 H-104）、受信任 TLS 证书（H-017）、Firefox/Safari 手工互通（H-103）、受限网络台（H-022）、Fable M0 审阅（H-038）。
@@ -103,7 +103,7 @@
 | M1-023 | sim：载具武器与装甲判定（含 Panzerfaust 60 发射与 HEAT 判定） | done（023a–d；MG/M2HB 车载自动武器接线与炮塔遮挡见 PI-070） | `armor_cases.json` 13 组手算全一致，临界例 ±5% 两端结果相反；M61 穿深 100/300/600 m = 82.0/76.3/67.7；跳弹 AP 67.9/68、HEAT 74.9/75、过匹配不跳；炮塔 24°/s（±2%）、损坏 12°/s、卡死 3°/s、俯仰 −10/+25° 钳制；装填 3.0 s、换弹 1.0 s、无车长 3.9 s（117 tick@30 Hz）；Engine 150 HP ×0.6、Track L 毁 ×0.3、殉爆 60%（1000 次 580–620）；Panzerfaust 60 m 侧甲 38 mm 与前上 51/56° 均击穿，60 m 零点的抛物线 78 m 处已下坠 >1.5 m 且 80 m 后移除；GER 步兵 6 发击毁 Sherman（`VehicleKnockedOut`），炮手击中→击毁→Burning 8 s→爆炸事件链；`bench armor_hit` 66.5 ns/次、整条命中链 0.24 µs/次（预算 2/10 µs）；sim-wasm 金哈希未变 | PI-067/068/069/070 | 车载 MG 弹丸、车内几何数据化、友军载具伤害、乘员补位见 PI-070 |
 | M1-024 | server：AOI v1（敌友规则、团队通道） | partial（024a：规则/审计/团队通道；余项见 PI-071） | `data/rules/aoi.json` 参数化；3D 视锥 70°+30°、转身并集 100 ms（3 tick）、滞回；泄漏审计 900 tick/15083 条记录/0 泄漏；20 客户端筛选 pass p50 85 µs/p99 207 µs（release）；团队通道 C3 ≤200 B/30 tick；载具 ×1.5 单元测试；sim-wasm 金哈希已重钉（DATA_HASH 变） | PI-071 | 载具快照实体与 24 B 记录接入调度、LoS 缓存、netem 30 分钟带宽、`reports/m1-aoi.json`、criterion `aoi_select`、传输接线（M1-026/029）→ 拆 M1-024b |
 | M1-025 | server：延迟补偿 | partial（025a：回溯与夹紧；余项见 PI-072） | 弹丸携带 rewind（≤8 tick，view_tick=0 不补偿），目标命中体取历史帧 `tick−rewind`；固定靶横穿测试 6 tick 视角：补偿命中 12/12、无补偿 0/12（差 ≥15% 判据满足）；视角落后 12 tick 仅回溯 8 tick（0/8 命中，8 tick 为 8/8）；`rewind_ticks` 夹紧/回绕/未来、起点 0.49/0.51 m 边界单测；`lagcomp_clamped_total` 指标测试；sim-wasm 金哈希未变 | PI-072 | 墙体保护/`lagcomp_wall_reject`、`lagcomp.json`、起点校正指标、载具历史、150 ms netem 命中率场景、criterion、20 客户端 P99 → 拆 M1-025b |
-| M1-026 | server：部署/小队处理与可靠事件 | todo | | | |
+| M1-026 | server：部署/小队处理与可靠事件 | partial（026a：C0 处理；C4 见 PI-073） | 聊天 8 s 内第 6 条丢弃、部署 1/s、举报 1/min 且 10/局（单测）；聊天过滤单测 8 项（201 字符/RLO/控制字符/全角折叠）；部署 10 种非法请求 `reason` 与 sim `DeployError::code()` 一一对应、2 种合法回 `ok` 且 `spawn_tick ≥ 当前`；小队创建/加入/踢人与 sim 名册一致；聊天按 all/team/squad 路由；指标 `c0_rate_limited_total{type}`、`deploy_requests_total{result}`、`chat_rejected_total{reason}`、`squad_ops_total`、`reports_total` | PI-073 | `ReliableEventBus`/C4 SimEvent 映射与 `PlayerRoster` 增量、重连恢复、C4 5% 丢包、背压、`scripts/check-no-rules-in-server.sh`、C0 criterion、`/metrics` 端到端断言、MarkerPlace → 拆 M1-026b |
 | M1-027 | server：基础校验（速度/射速/视角） | todo | | | |
 | M1-028 | gateway：服务器列表、游客鉴权与 ticket | todo | | | |
 | M1-029 | server：注册、心跳与 ticket 验证 | todo | | | |

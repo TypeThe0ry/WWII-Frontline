@@ -84,6 +84,12 @@ pub struct Metrics {
     pub aoi_starved_total: IntCounter,
     /// Enemies sent outside the R3 rules (must stay 0; audit).
     pub aoi_enemy_leak_total: IntCounter,
+    pub c0_rate_limited_total: IntCounterVec,
+    pub deploy_requests_total: IntCounterVec,
+    pub squad_ops_total: IntCounterVec,
+    pub chat_rejected_total: IntCounterVec,
+    pub chat_routed_total: IntCounter,
+    pub reports_total: IntCounter,
     /// Fire commands whose view tick lay more than 8 ticks back (rewind clamped; M1-025).
     pub lagcomp_clamped_total: IntCounter,
     /// Wall time of steps 6+7 (AOI + encode) per tick (ms).
@@ -237,6 +243,31 @@ impl Metrics {
                 "aoi_enemy_leak_total",
                 "Enemy records sent outside the R3 view-cone / 96 m rule (audit; must be 0)",
             ),
+            c0_rate_limited_total: IntCounterVec::new(
+                Opts::new(
+                    "c0_rate_limited_total",
+                    "C0 messages dropped by the rate limiter",
+                ),
+                &["type"],
+            )
+            .expect("c0 rate"),
+            deploy_requests_total: IntCounterVec::new(
+                Opts::new("deploy_requests_total", "Deploy requests by result"),
+                &["result"],
+            )
+            .expect("deploy"),
+            squad_ops_total: IntCounterVec::new(
+                Opts::new("squad_ops_total", "Squad operations by result"),
+                &["result"],
+            )
+            .expect("squad ops"),
+            chat_rejected_total: IntCounterVec::new(
+                Opts::new("chat_rejected_total", "Chat lines rejected, by reason"),
+                &["reason"],
+            )
+            .expect("chat rejected"),
+            chat_routed_total: counter("chat_routed_total", "Chat lines routed to recipients"),
+            reports_total: counter("reports_total", "Player reports accepted"),
             lagcomp_clamped_total: counter(
                 "lagcomp_clamped_total",
                 "Fire commands whose lag-compensation rewind was clamped to 8 ticks",
@@ -296,6 +327,16 @@ impl Metrics {
         ] {
             r.register(c).unwrap();
         }
+        for l in crate::c0::C0Kind::LABELS {
+            m.c0_rate_limited_total.with_label_values(&[l]);
+        }
+        for l in ["ok", "rejected"] {
+            m.deploy_requests_total.with_label_values(&[l]);
+            m.squad_ops_total.with_label_values(&[l]);
+        }
+        for l in crate::text::ChatReject::LABELS {
+            m.chat_rejected_total.with_label_values(&[l]);
+        }
         for reason in crate::validate::Reject::LABELS {
             m.input_rejected_total.with_label_values(&[reason]);
         }
@@ -326,6 +367,12 @@ impl Metrics {
             Box::new(m.aoi_starved_total.clone()),
             Box::new(m.aoi_enemy_leak_total.clone()),
             Box::new(m.lagcomp_clamped_total.clone()),
+            Box::new(m.c0_rate_limited_total.clone()),
+            Box::new(m.deploy_requests_total.clone()),
+            Box::new(m.squad_ops_total.clone()),
+            Box::new(m.chat_rejected_total.clone()),
+            Box::new(m.chat_routed_total.clone()),
+            Box::new(m.reports_total.clone()),
             Box::new(m.aoi_encode_ms.clone()),
             Box::new(m.snapshots_sent_total.clone()),
             Box::new(m.snapshot_keyframe_records_total.clone()),
