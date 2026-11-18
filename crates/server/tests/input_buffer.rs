@@ -644,3 +644,24 @@ fn undecodable_bytes_are_not_this_layers_business_but_never_reach_it_as_panics()
     }
     let _ = (ok, Vec3::ZERO);
 }
+
+// ------------------------------------------------------------------ M1-025: lagcomp clamp metric
+
+#[test]
+fn lagcomp_clamp_counts_fire_commands_seen_more_than_8_ticks_back() {
+    let m = with_player(ValidateCfg::default(), |br, _w| {
+        let mut c = cmd(100, 1);
+        c.buttons = buttons::FIRE;
+        c.view_tick = 92; // 8 ticks back: not clamped
+        br.ingest_cmd(3, &c, 100);
+        c.seq = 2;
+        c.tick = 101;
+        c.view_tick = 88; // 13 ticks back: clamped
+        br.ingest_cmd(3, &c, 101);
+        c.seq = 3;
+        c.tick = 102;
+        c.buttons = 0; // not firing: ignored
+        br.ingest_cmd(3, &c, 102);
+    });
+    assert_eq!(m.lagcomp_clamped_total.get(), 1);
+}

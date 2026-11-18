@@ -143,6 +143,11 @@ impl SimBridge {
             self.count(Reject::NoSession);
             return PushResult::Invalid(Reject::NoSession);
         };
+        if cmd.buttons & frontline_protocol::msg::input::buttons::FIRE != 0
+            && frontline_sim::combat::lagcomp::rewind_ticks(now, cmd.view_tick).1
+        {
+            self.metrics.lagcomp_clamped_total.inc();
+        }
         let out = s.input.ingest(cmd, now);
         let kick = s.input.state.should_kick();
         if out.result.is_accepted() {
