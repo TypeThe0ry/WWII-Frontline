@@ -172,11 +172,78 @@
   },
   "height": {
     "datum": "IGN69",
-    "hmax_m": null,
-    "hmin_m": null,
+    "far_ring_lidar_coverage": 0.2237,
+    "hmax_m": 29.9,
+    "hmin_m": -7.0,
+    "inputs": [
+      {
+        "file": "LHD_FXX_0389_6920_MNT_O_0M50_LAMB93_IGN69.tif",
+        "sha256": "40e20b6fcb7f37e87db7eb5fb424ca4ff3307330ffa13cadb6a8877f7f8f608d"
+      },
+      {
+        "file": "LHD_FXX_0389_6921_MNT_O_0M50_LAMB93_IGN69.tif",
+        "sha256": "6162bd217a72603c9b92b0a5a352175c7006d06192f84d2ff53efc095b72e493"
+      },
+      {
+        "file": "LHD_FXX_0389_6922_MNT_O_0M50_LAMB93_IGN69.tif",
+        "sha256": "8deb291ac946262b6e7e0c79fb21cf6245d901651bd23d530a86c807fa0f241d"
+      },
+      {
+        "file": "LHD_FXX_0390_6919_MNT_O_0M50_LAMB93_IGN69.tif",
+        "sha256": "e3fdcfc0dd6357db9f343e227a7ce82e2badc21c367941926b104b4381a947d8"
+      },
+      {
+        "file": "LHD_FXX_0390_6920_MNT_O_0M50_LAMB93_IGN69.tif",
+        "sha256": "20f7677c8fe1ecfc9d824fa0842e2b0c69a46945ee3554dc9442ee0dc9834a56"
+      },
+      {
+        "file": "LHD_FXX_0390_6921_MNT_O_0M50_LAMB93_IGN69.tif",
+        "sha256": "9981c8a3b3ea6cfa6c1eef22035eb90aabe645ba566c48569027bf542c1b60a9"
+      },
+      {
+        "file": "LHD_FXX_0390_6922_MNT_O_0M50_LAMB93_IGN69.tif",
+        "sha256": "e3000d1d388d2390ceed03642e62fa82729e38e9794112cbc3ae52843a10cfbc"
+      },
+      {
+        "file": "LHD_FXX_0391_6919_MNT_O_0M50_LAMB93_IGN69.tif",
+        "sha256": "9af803d5ab5464d2432fb17c1fc43ff698a07e90227a52bea0b13c82671161d4"
+      },
+      {
+        "file": "LHD_FXX_0391_6920_MNT_O_0M50_LAMB93_IGN69.tif",
+        "sha256": "fbc1be6a7ea4bb86e39b4f1114e4c02e92350a2a8ac465414e614f8627608e3c"
+      },
+      {
+        "file": "LHD_FXX_0391_6921_MNT_O_0M50_LAMB93_IGN69.tif",
+        "sha256": "3c3959d1cff93b29adc34cc3e4dc2159fcb3d846782ae6f481deba49934b0f14"
+      },
+      {
+        "file": "LHD_FXX_0391_6922_MNT_O_0M50_LAMB93_IGN69.tif",
+        "sha256": "6beb1a6f019fbcd73c651ced1782f6b106a39c2e8f57393d062f48aea3c26b87"
+      },
+      {
+        "file": "LHD_FXX_0392_6919_MNT_O_0M50_LAMB93_IGN69.tif",
+        "sha256": "5328123e2beb82a81f71439f855f606f778668791259b1285a7e94daeb62a69d"
+      },
+      {
+        "file": "LHD_FXX_0392_6920_MNT_O_0M50_LAMB93_IGN69.tif",
+        "sha256": "38eca81cbc28660852fe36adc2478f640c590b1327181788b022ad68e10a9b13"
+      },
+      {
+        "file": "LHD_FXX_0392_6921_MNT_O_0M50_LAMB93_IGN69.tif",
+        "sha256": "8e33dbe72fb845d64e125e4aa94282c9e425e70ec6cff7d7d23b5e818fc1545c"
+      },
+      {
+        "file": "LHD_FXX_0392_6922_MNT_O_0M50_LAMB93_IGN69.tif",
+        "sha256": "eda8c840f55a214dda0af8040c078ff2a3e60bce43ded832893ccd806307fc48"
+      }
+    ],
+    "nodata_filled_cells": 0,
+    "offset_m": 0.616,
+    "offset_method": "p0.1 of the 1 m DEM (no water mask yet)",
     "res_m": 1,
+    "row_order": "south_to_north",
     "samples": 2049,
-    "status": "placeholder (M1-031)"
+    "source": "ign_lidar_hd"
   },
   "m1_sources_checked": false,
   "map_id": "carentan",
@@ -191,6 +258,60 @@
     "mode": "translate",
     "rms_m": 0.0,
     "rot_deg": 0.0
+  },
+  "slice_m1": {
+    "blocker_polygon": {
+      "inner": [
+        [
+          384.0,
+          524.0
+        ],
+        [
+          1556.0,
+          524.0
+        ],
+        [
+          1556.0,
+          1696.0
+        ],
+        [
+          384.0,
+          1696.0
+        ]
+      ],
+      "outer": [
+        [
+          380.0,
+          520.0
+        ],
+        [
+          1560.0,
+          520.0
+        ],
+        [
+          1560.0,
+          1700.0
+        ],
+        [
+          380.0,
+          1700.0
+        ]
+      ],
+      "width_m": 4.0
+    },
+    "feather_m": 32.0,
+    "rect_design": [
+      380.0,
+      520.0,
+      1560.0,
+      1700.0
+    ],
+    "rect_local": [
+      380.0,
+      520.0,
+      1560.0,
+      1700.0
+    ]
   },
   "sources": [
     {
