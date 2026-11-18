@@ -37,6 +37,8 @@ pub struct SimBridge {
     cfg: ValidateCfg,
     resolved: Vec<(PlayerId, InputCmd)>,
     kicks: Vec<PlayerId>,
+    /// Per-player violation counts (M1-027).
+    pub anticheat: crate::anticheat::AntiCheat,
     /// Bundles of players the sim has not joined yet (their `Join` command raced the first C1
     /// by less than a tick): retried once on the next tick, then counted as `no_session`.
     parked: Vec<Inbound>,
@@ -57,6 +59,7 @@ impl SimBridge {
             cfg,
             resolved: Vec::new(),
             kicks: Vec::new(),
+            anticheat: crate::anticheat::AntiCheat::new(std::time::Instant::now()),
             parked: Vec::new(),
         }
     }
@@ -88,6 +91,33 @@ impl SimBridge {
 
     pub fn count_team(&self, t: Team) -> usize {
         self.table.values().filter(|s| s.team == t).count()
+    }
+
+    /// The commands of the last [`Self::resolve`].
+    pub fn resolved(&self) -> &[(PlayerId, InputCmd)] {
+        &self.resolved
+    }
+
+    /// Anti-cheat look at the commands about to be stepped (call after `resolve`).
+    pub fn anticheat_before_step(&mut self, world: &World) {
+        self.anticheat.before_step(world, &self.resolved);
+    }
+
+    /// Anti-cheat look at the events of the step just run.
+    pub fn anticheat_after_step(&mut self, events: &[frontline_sim::SimEvent]) {
+        self.anticheat.after_step(events, &self.metrics);
+    }
+
+    /// Per-player and per-kind bookkeeping of a rejection or clamp (M1-027).
+    fn suspect(&mut self, p: PlayerId, r: Reject) {
+        match r {
+            Reject::YawRate | Reject::PitchRate => self.metrics.view_rate_clamped_total.inc(),
+            Reject::MoveClamped | Reject::BadMove => self.metrics.suspicion_move_total.inc(),
+            _ => {}
+        }
+        if let Some(v) = crate::anticheat::Violation::of(r) {
+            self.anticheat.note(p, v);
+        }
     }
 
     fn count(&self, r: Reject) {
@@ -144,7 +174,7 @@ impl SimBridge {
             return PushResult::Invalid(Reject::NoSession);
         };
         if cmd.buttons & frontline_protocol::msg::input::buttons::FIRE != 0
-            && frontline_sim::combat::lagcomp::rewind_ticks(now, cmd.view_tick).1
+            && frontline_sim::combat::lagcomp::rewind_ticks(cmd.view_tick).1
         {
             self.metrics.lagcomp_clamped_total.inc();
         }
@@ -155,9 +185,11 @@ impl SimBridge {
         }
         if let Some(r) = out.result.reject() {
             self.count(r);
+            self.suspect(player, r);
         }
         for r in out.clamps.reasons() {
             self.count(r);
+            self.suspect(player, r);
         }
         if kick && !self.kicks.contains(&player) {
             self.kicks.push(player);

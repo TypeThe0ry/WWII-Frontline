@@ -575,3 +575,7 @@ blocked / in-progress / todo：无。M0 的 33 个任务全部已提交（M0-033
 
 ### M1-026 服务端 C0 处理 026a — partial — 2026-11-18 — 提交见 git log
 - `c0.rs`（限速门 `C0Gate`、`C0Handler`：部署/小队/聊天/举报）、`text.rs`（聊天净化、重复检测）、连接层限速并经 `Command::C0` 交给 sim 线程，回复/聊天走各连接 C0 可靠流；新增 5 个 C0 指标。余项见 PI-073。
+
+
+### M1-027 基础校验 027a — partial — 2026-11-18 — 提交见 git log
+- `anticheat.rs`（按玩家分类计数、扳机上升沿拒绝检测、前 5 名日志）、新增 `view_rate_clamped_total`/`fire_rate_rejected_total`/`suspicion_move_total`；速度/射速/视角注入测试与字段审计；修正 `view_tick` 为差值语义（`rewind_ticks(delta)`）。余项见 PI-074。

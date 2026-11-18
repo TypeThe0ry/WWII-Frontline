@@ -913,3 +913,9 @@
 - **做法**：①NFKC 需要未列入依赖白名单（ARCHITECTURE §4.5）的表 crate，M1 只折叠全角 ASCII 与全角空格，其余 Unicode 原样保留，待白名单决定后换成完整 NFKC；②`Command::C0` 经 sim 线程串行处理，回复直接写连接句柄；③`Command` 不再 `Copy`；④聊天 `Command` 频道与 `MarkerPlace` 暂丢弃（记 `chat_rejected{channel}`）；⑤小队操作失败暂无线上错误码（仅计数），`DeployResult.reason` 即 sim 码；⑥C4 总线/名册增量/重连/丢包测试/背压/规则泄漏脚本拆为 M1-026b。
 - **受影响任务**：M1-026b、M1-040、M1-056。
 - **裁决（Fable 填写）**：
+
+### PI-074 M1-027 范围、视角限幅与 view_tick 语义
+- **提出者 / 日期**：M1 线程 / 2026-11-18
+- **做法**：①协议文档把 `view_tick` 定义为相对 tick 的差值，M1-025a 误按绝对 tick 实现，本次改为差值（`rewind_ticks(delta)`，0 = 未上报，>8 夹紧）；②8000°/s 限幅在 30 Hz 下永远不会触发（单 tick 最大转角 180° = 5400°/s），验收 3 的“180° 瞬转被钳制到 266.7°/tick”自相矛盾；限幅保持可配置，测试用 3600°/s，建议 Fable 裁定新的默认值（合法甩枪峰值 3000°/s = 100°/tick）；③“射速拒绝”定义为武器仍在冷却/拉栓时的扳机上升沿且 sim 未发射（连发持枪不计）；④`suspicion_move` 计移动向量超限（`move_clamped`/`bad_move`），因协议不含位置；⑤`anticheat.json` 数据化、`pred_hash` 统计、origin_hint 校正计数、分级断开、headless 注入器、20 客户端混合与 criterion 拆为 M1-027b。
+- **受影响任务**：M1-025b、M1-027b、M1-040。
+- **裁决（Fable 填写）**：

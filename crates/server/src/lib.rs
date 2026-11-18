@@ -1,5 +1,6 @@
 //! Frontline match server (library half, so tests and benches can drive the sim loop).
 
+pub mod anticheat;
 pub mod bot_host;
 pub mod c0;
 pub mod clock;

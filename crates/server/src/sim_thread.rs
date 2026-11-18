@@ -488,9 +488,14 @@ impl<C: Clock> SimLoop<C> {
         if !kicked.is_empty() {
             self.update_player_gauges();
         }
-        let inputs = self.bridge.resolve(now);
-        let out = self.world.step(inputs);
+        self.bridge.resolve(now);
+        self.bridge.anticheat_before_step(&self.world);
+        let out = self.world.step(self.bridge.resolved());
         self.step_events = out.events;
+        self.bridge.anticheat_after_step(&self.step_events);
+        self.bridge
+            .anticheat
+            .report_if_due(std::time::Instant::now());
         CURRENT_TICK.store(self.world.tick().0, Ordering::Relaxed);
         self.record_lag_comp();
         self.bots_think();
@@ -529,6 +534,7 @@ impl<C: Clock> SimLoop<C> {
                 }
                 Command::RemovePlayer(p) | Command::ClientGone(p) => {
                     self.c0.forget(p);
+                    self.bridge.anticheat.forget(p);
                     self.bridge.leave(&mut self.world, p);
                     self.update_player_gauges();
                 }
