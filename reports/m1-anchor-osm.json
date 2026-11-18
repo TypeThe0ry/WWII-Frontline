@@ -1,0 +1,105 @@
+{
+  "_meta": {
+    "source": "OSM Overpass (ODbL), fetched 2026-11-18",
+    "crs": "EPSG:32630 via map_pipeline.geo.to_utm",
+    "playable_box_utm": [
+      626176,
+      5461760,
+      628736,
+      5464320
+    ],
+    "note": "in_box=false anchors lie outside the E/N box"
+  },
+  "anchors": {
+    "eglise_notre_dame": {
+      "osm": "way/154020387",
+      "name": "Église Notre-Dame",
+      "lat": 49.3055825,
+      "lon": -1.243114,
+      "utm30n_e": 627712.13,
+      "utm30n_n": 5462911.64,
+      "in_box": true
+    },
+    "place_de_la_republique": {
+      "osm": "node/1801130625",
+      "name": "Place de la République",
+      "lat": 49.3044919,
+      "lon": -1.2436232,
+      "utm30n_e": 627677.93,
+      "utm30n_n": 5462789.55,
+      "in_box": true
+    },
+    "gare_carentan": {
+      "osm": "way/198292010",
+      "name": "Carentan",
+      "lat": 49.3023893,
+      "lon": -1.2449307,
+      "utm30n_e": 627588.32,
+      "utm30n_n": 5462553.61,
+      "in_box": true
+    },
+    "ecluse_canal_gate_a": {
+      "osm": "node/2192310455",
+      "name": null,
+      "lat": 49.3171632,
+      "lon": -1.2268219,
+      "utm30n_e": 628866.16,
+      "utm30n_n": 5464226.66,
+      "in_box": false
+    },
+    "ecluse_canal_gate_b": {
+      "osm": "node/2192310470",
+      "name": null,
+      "lat": 49.3174537,
+      "lon": -1.226491,
+      "utm30n_e": 628889.45,
+      "utm30n_n": 5464259.52,
+      "in_box": false
+    },
+    "ecluse_canal_footbridge": {
+      "osm": "way/176786593",
+      "name": "Ecluse",
+      "lat": 49.3171729,
+      "lon": -1.2268286,
+      "utm30n_e": 628865.65,
+      "utm30n_n": 5464227.73,
+      "in_box": false
+    },
+    "n13_bridge_1": {
+      "osm": "way/94251398",
+      "name": null,
+      "lat": 49.3115405,
+      "lon": -1.2247088,
+      "utm30n_e": 629034.41,
+      "utm30n_n": 5463605.23,
+      "in_box": false
+    },
+    "n13_bridge_2": {
+      "osm": "way/94251403",
+      "name": null,
+      "lat": 49.3114654,
+      "lon": -1.2247842,
+      "utm30n_e": 629029.13,
+      "utm30n_n": 5463596.75,
+      "in_box": false
+    },
+    "pont_de_verdun_d974": {
+      "osm": "way/81647005",
+      "name": "Pont de Verdun",
+      "lat": 49.3023386,
+      "lon": -1.2342823,
+      "utm30n_e": 628362.52,
+      "utm30n_n": 5462566.01,
+      "in_box": true
+    },
+    "couvent_augustines": {
+      "osm": "way/154020588",
+      "name": "Ancien Couvent des Augustines",
+      "lat": 49.3032929,
+      "lon": -1.2460636,
+      "utm30n_e": 627503.63,
+      "utm30n_n": 5462652.14,
+      "in_box": true
+    }
+  }
+}

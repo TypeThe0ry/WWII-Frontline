@@ -73,7 +73,14 @@ def main(argv=None) -> int:
     vs.add_argument("dir")
     vs.add_argument("--repo", default=".")
     vs.add_argument("--report", default=None)
+    dm = sub.add_parser("dem", help="Carentan DEM -> heightmaps (M1-031)")
+    dm.add_argument("--incoming", default="assets/incoming/maps/carentan/dem")
+    dm.add_argument("--out", default="data/maps/carentan")
+    dm.add_argument("--repo", default=".")
     a = ap.parse_args(argv)
+
+    if a.cmd == "dem":
+        return _dem(a)
 
     if a.cmd == "carentan-meta":
         from . import carentan, licenses
@@ -131,3 +138,43 @@ def main(argv=None) -> int:
         print(e)
     print("validate:", "FAILED" if errs else "ok")
     return 1 if errs else 0
+
+
+def _dem(a) -> int:
+    """Exit codes: 3 = no DEM raster, 4 = a needed source is not OK in the ledger, 5 = too much
+    no-data, 1 = other failure. The GDAL stage itself needs the ``osgeo`` bindings."""
+    from . import carentan, dem_prep, licenses
+
+    root = Path(a.repo)
+    files = dem_prep.find_inputs(Path(a.incoming))
+    if not files:
+        print(
+            f"error: no DEM raster (*.tif/*.vrt) in {a.incoming}.\n"
+            "  missing: IGN LiDAR HD MNT (0.5 m) or RGE ALTI 1 m tiles covering the Carentan area\n"
+            "  fix: download them into that folder (see tasks/M1-031 and PLAN_ISSUES PI-079)",
+            file=sys.stderr,
+        )
+        return dem_prep.EXIT_MISSING_DEM
+    meta = json.loads((Path(a.out) / "meta.json").read_text(encoding="utf-8"))
+    ledger = licenses.parse_ledger(carentan._ledger(root))
+    rep = {r["id"]: r for r in licenses.check_sources(meta, ledger, root)}
+    if rep["ign_lidar_hd"]["status"] != licenses.OK and rep["ign_rge_alti"]["status"] != licenses.OK:
+        print("error: neither ign_lidar_hd nor ign_rge_alti is OK in LICENSES.md §3; refusing to use the raster", file=sys.stderr)
+        return dem_prep.EXIT_SOURCES_NOT_OK
+    print(f"found {len(files)} raster(s); inputs: {dem_prep.input_manifest(files)}")
+    try:
+        from .dem import require_gdal
+
+        require_gdal()
+    except Exception as e:  # GdalMissing
+        print(f"error: {e}", file=sys.stderr)
+        return 1
+    from .dem_carentan import build
+
+    try:
+        info = build(Path(a.incoming), Path(a.out), root)
+    except ValueError as e:
+        print(f"error: {e}", file=sys.stderr)
+        return dem_prep.EXIT_TOO_MUCH_NODATA if "no-data" in str(e) else 1
+    print(json.dumps(info, indent=2))
+    return 0
