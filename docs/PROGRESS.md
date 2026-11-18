@@ -571,3 +571,7 @@ blocked / in-progress / todo：无。M0 的 33 个任务全部已提交（M0-033
 
 ### M1-025 延迟补偿 025a — partial — 2026-11-18 — 提交见 git log
 - `combat/lagcomp.rs`（`rewind_ticks`/`resolve_fire`/`LagComp` 资源）、世界每 tick 写 16 帧历史、弹丸 `rewind` 字段（非零才入哈希）、弹丸阶段对回溯目标用历史帧；服务器 `lagcomp_clamped_total`。余项见 PI-072。
+
+
+### M1-026 服务端 C0 处理 026a — partial — 2026-11-18 — 提交见 git log
+- `c0.rs`（限速门 `C0Gate`、`C0Handler`：部署/小队/聊天/举报）、`text.rs`（聊天净化、重复检测）、连接层限速并经 `Command::C0` 交给 sim 线程，回复/聊天走各连接 C0 可靠流；新增 5 个 C0 指标。余项见 PI-073。

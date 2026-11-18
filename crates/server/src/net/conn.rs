@@ -399,12 +399,14 @@ fn send_reject(handle: &ClientHandle, reason: RejectReason) {
 /// M1 adds deploy/chat messages; M0 has none besides `Hello`/`Disconnect`.
 struct C0Limits {
     ping: RateLimiter,
+    gate: crate::c0::C0Gate,
 }
 
 impl C0Limits {
     fn new(now: Instant) -> Self {
         C0Limits {
             ping: RateLimiter::new(PING_PER_SEC, PING_PER_SEC, now),
+            gate: crate::c0::C0Gate::new(now),
         }
     }
 }
@@ -444,16 +446,38 @@ fn handle_frame(
                 handle.close_graceful();
                 false
             }
-            // M1 gameplay messages: decoded and validated by the protocol crate; handling is
-            // M1-026. Until then they are accepted and dropped.
+            // M1 gameplay messages: rate limit first (excess is dropped and counted), then the
+            // sim thread applies them (M1-026).
             Ok(
-                ClientMsgC0::DeployRequest(_)
+                m @ (ClientMsgC0::DeployRequest(_)
                 | ClientMsgC0::SquadOp(_)
                 | ClientMsgC0::Chat(_)
                 | ClientMsgC0::MarkerPlace(_)
                 | ClientMsgC0::Settings(_)
-                | ClientMsgC0::Report(_),
-            ) => true,
+                | ClientMsgC0::Report(_)),
+            ) => {
+                let Some(kind) = crate::c0::C0Kind::of(&m) else {
+                    return true;
+                };
+                if !c0.gate.allow(kind, Instant::now()) {
+                    ctx.metrics
+                        .c0_rate_limited_total
+                        .with_label_values(&[kind.label()])
+                        .inc();
+                    return true;
+                }
+                if ctx
+                    .commands
+                    .try_send(Command::C0 { player, msg: m })
+                    .is_err()
+                {
+                    ctx.metrics
+                        .c0_rate_limited_total
+                        .with_label_values(&["queue_full"])
+                        .inc();
+                }
+                true
+            }
             // A second Hello, or anything undecodable, is a protocol violation.
             Ok(ClientMsgC0::Hello(_)) | Err(_) => {
                 malformed(ctx, handle, "bad C0 message", ip);
