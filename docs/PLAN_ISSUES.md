@@ -1118,3 +1118,6 @@ H-021（RTX 3060 参考机）尚未到位。经总控指示，在本工作站（
 
 ## PI-117 M1-043b：CSM 的范围与限制（2026-11-19）
 CSM 用 Babylon `CascadedShadowGenerator`（`lighting/csm.ts`）：没有显式分割表，只能用 `shadowMaxZ` 和 `lambda=0.85` 近似数据里的分割；只有 `StandardMaterial` 网格接收阴影，**地形与 PBR `ShaderMaterial` 不接收**（要在各自着色器里采样级联图，留给后续）；`CascadeScheduler` 未接 Babylon 重绘控制。实测 +0.2 ms GPU（WebGPU）/ +6.4 ms（WebGL2，计时口径未查）、CPU +3–4 ms（draw call 81→600–780），见 `reports/m1-csm.md`。室内外亮度、大气 LUT/云、IBL KTX2、`/data` 光照预设与 `probes.bin` 未做（缺资源/数据）。
+
+## PI-118 M1-044b：后处理链用 Babylon 管线（2026-11-19）
+`post-chain.ts` 直接用 `DefaultRenderingPipeline` + `TAARenderingPipeline`（不是自写着色器）；自定义材质没有运动向量，TAA 只有抖动 + 累积，运动物体会拖影；自动曝光的亮度直方图读回没接（`setTargetEv` 手动）；色调映射作用于 LDR 输入，画面偏灰。数字见 `reports/m1-post.md`（WebGPU 整帧 GPU +0.10–0.23 ms、WebGL2 +0.06–0.13 ms，静止闪烁指标无区分度）。
