@@ -1,0 +1,64 @@
+{
+  "causeway_candidates": [
+    "way/915382240",
+    "way/91823740"
+  ],
+  "clean": {
+    "dropped_modern[building=hospital]": 1,
+    "dropped_modern[building=industrial]": 1,
+    "dropped_modern[building=retail]": 7,
+    "dropped_modern[building=roof]": 2,
+    "dropped_modern[building=school]": 5,
+    "dropped_modern[building=service]": 6,
+    "dropped_modern[building=train_station]": 1,
+    "dropped_modern[highway=cycleway]": 11,
+    "dropped_modern[landuse=industrial]": 7,
+    "dropped_modern[landuse=retail]": 5,
+    "dropped_modern[railway=abandoned]": 3,
+    "dropped_modern[railway=platform]": 2,
+    "dropped_modern[railway=razed]": 1,
+    "dropped_modern[shop]": 11,
+    "dropped_outside_box": 467,
+    "dropped_small": 56,
+    "skipped_wall_fence": 7,
+    "unclassified": 9
+  },
+  "counts": {
+    "buildings": 2839,
+    "forests": 5,
+    "hedgerows": 32,
+    "roads": 764,
+    "water": 27
+  },
+  "derived_attr_per_feature": 5.79,
+  "hedgerow_length_m": 2394.5,
+  "input_sha256": "68879a739f0c7826c3249c2b175ba3f42aa3f346b2372f41e6cf32780d6727c3",
+  "layer_sha256": {
+    "buildings": "fc4252a1a55c36082593149ccda53894f098311c4176343751aa0f6a64bdf45f",
+    "forests": "9e671d48b4dad110c27cead8aa1a7e57ac02020722164044a26392e046da2a43",
+    "hedgerows": "402e4d9db7738cc7d53d374a441a5d364e014b864081de7fabb079c835f318e4",
+    "roads": "f91f18084ed0a11ab9d8ac4d2861056a0e605371c08a25216338e5e6498654ab",
+    "water": "cea1bc1aaf8f6f0e4d99ada27f75833bb8a8cc54dc30e69720db5a4dd6dbf165"
+  },
+  "osm_timestamp": "2026-11-18T06:59:26Z",
+  "out_of_range_vertices": 0,
+  "road_connectivity": {
+    "components": 9,
+    "largest_m": [
+      48024.2,
+      474.7,
+      411.6
+    ]
+  },
+  "road_length_m": {
+    "dirt": 2427.7,
+    "path": 13000.4,
+    "paved": 48713.4,
+    "rail": 5049.7
+  },
+  "schema": 1,
+  "slice_m1": {
+    "buildings": 1432,
+    "roads": 360
+  }
+}

@@ -67,7 +67,7 @@ g_assets() {
     run node tools/asset-pipeline/bin/asset-pipeline.mjs manifest-budget --base "$w/base-manifest.json" --core-size-file client/dist/size-report.json
   else echo "WARN: client/dist/size-report.json missing (build the client first); manifest-budget not run"; fi
 }
-g_map() { need python3 || return 2; (cd tools/map-pipeline && run python3 -m pytest -q); }
+g_map() { need python3 || return 2; (cd tools/map-pipeline && run python3 -m pytest -q) && run python3 -m map_pipeline validate-vectors data/maps/carentan; }
 
 for g in "${SEL[@]}"; do
   declare -F "g_$g" >/dev/null || { echo "unknown group: $g (groups: ${GROUPS_ALL[*]})"; exit 64; }

@@ -1,0 +1,119 @@
+{
+  "$id": "frontline/map-pipeline/roads.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "properties": {
+    "features": {
+      "items": {
+        "properties": {
+          "geometry": {
+            "properties": {
+              "coordinates": {
+                "items": {
+                  "items": {
+                    "maximum": 2048,
+                    "minimum": 0,
+                    "type": "number"
+                  },
+                  "maxItems": 2,
+                  "minItems": 2,
+                  "type": "array"
+                },
+                "minItems": 2,
+                "type": "array"
+              },
+              "type": {
+                "const": "LineString"
+              }
+            },
+            "required": [
+              "type",
+              "coordinates"
+            ],
+            "type": "object"
+          },
+          "properties": {
+            "additionalProperties": false,
+            "properties": {
+              "_derived": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array",
+                "uniqueItems": true
+              },
+              "_osm_id": {
+                "pattern": "^(way|relation)/[0-9]+$",
+                "type": "string"
+              },
+              "bridge": {
+                "type": "boolean"
+              },
+              "causeway_candidate": {
+                "type": "boolean"
+              },
+              "class": {
+                "enum": [
+                  "paved",
+                  "dirt",
+                  "path",
+                  "rail",
+                  "causeway"
+                ]
+              },
+              "elev_mode": {
+                "enum": [
+                  "terrain",
+                  "embankment",
+                  "bridge"
+                ]
+              },
+              "highway": {
+                "type": "string"
+              },
+              "surface": {
+                "type": "string"
+              },
+              "vehicle_ok": {
+                "type": "boolean"
+              },
+              "width_m": {
+                "exclusiveMinimum": 0,
+                "type": "number"
+              }
+            },
+            "required": [
+              "class",
+              "width_m",
+              "surface",
+              "bridge",
+              "elev_mode",
+              "vehicle_ok",
+              "_osm_id",
+              "_derived"
+            ],
+            "type": "object"
+          },
+          "type": {
+            "const": "Feature"
+          }
+        },
+        "required": [
+          "type",
+          "properties",
+          "geometry"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "type": {
+      "const": "FeatureCollection"
+    }
+  },
+  "required": [
+    "type",
+    "features"
+  ],
+  "title": "roads.geojson (M1-032)",
+  "type": "object"
+}

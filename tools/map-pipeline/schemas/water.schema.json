@@ -1,0 +1,129 @@
+{
+  "$id": "frontline/map-pipeline/water.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "properties": {
+    "features": {
+      "items": {
+        "properties": {
+          "geometry": {
+            "oneOf": [
+              {
+                "properties": {
+                  "coordinates": {
+                    "items": {
+                      "items": {
+                        "maximum": 2048,
+                        "minimum": 0,
+                        "type": "number"
+                      },
+                      "maxItems": 2,
+                      "minItems": 2,
+                      "type": "array"
+                    },
+                    "minItems": 2,
+                    "type": "array"
+                  },
+                  "type": {
+                    "const": "LineString"
+                  }
+                },
+                "required": [
+                  "type",
+                  "coordinates"
+                ],
+                "type": "object"
+              },
+              {
+                "properties": {
+                  "coordinates": {
+                    "items": {
+                      "items": {
+                        "items": {
+                          "maximum": 2048,
+                          "minimum": 0,
+                          "type": "number"
+                        },
+                        "maxItems": 2,
+                        "minItems": 2,
+                        "type": "array"
+                      },
+                      "minItems": 4,
+                      "type": "array"
+                    },
+                    "minItems": 1,
+                    "type": "array"
+                  },
+                  "type": {
+                    "const": "Polygon"
+                  }
+                },
+                "required": [
+                  "type",
+                  "coordinates"
+                ],
+                "type": "object"
+              }
+            ]
+          },
+          "properties": {
+            "additionalProperties": false,
+            "properties": {
+              "_derived": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array",
+                "uniqueItems": true
+              },
+              "_osm_id": {
+                "pattern": "^(way|relation)/[0-9]+$",
+                "type": "string"
+              },
+              "depth_m": {
+                "minimum": 0,
+                "type": "number"
+              },
+              "kind": {
+                "type": "string"
+              },
+              "walkable_depth_m": {
+                "minimum": 0,
+                "type": "number"
+              },
+              "width_m": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "kind",
+              "depth_m",
+              "walkable_depth_m",
+              "_osm_id",
+              "_derived"
+            ],
+            "type": "object"
+          },
+          "type": {
+            "const": "Feature"
+          }
+        },
+        "required": [
+          "type",
+          "properties",
+          "geometry"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "type": {
+      "const": "FeatureCollection"
+    }
+  },
+  "required": [
+    "type",
+    "features"
+  ],
+  "title": "water.geojson (M1-032)",
+  "type": "object"
+}

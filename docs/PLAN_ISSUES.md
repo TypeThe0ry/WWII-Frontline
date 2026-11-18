@@ -960,3 +960,14 @@
 - **M1-031 取舍**：①`heightmap_1m.r16` 存的是已切片混合后的 2049² 高度（矩形内原样 1 m，外侧 32 m 羽化到 8 m 远景环上采样）；②LiDAR 瓦片只覆盖约 ±1.5 km，远景环其余区域用“最近有效样本外延”填充（不使用许可证 FLAGGED 的 GLO-30），`meta.height.far_ring_lidar_coverage` 记录覆盖率；③基准偏移暂取 1 m DEM 的 0.1 百分位（尚无水体掩膜，`offset_method` 已标注），待 M1-032 的水体矢量出来后改为最低水面；④验收 1 需要独立 DEM（RGE ALTI 官方页未核实，不用）：`reports/m1-dem-check.csv` 目前是锚点处“重采样 vs 原始 0.5 m 点值”的自洽检查，不是独立来源核对，STATUS 如实标 partial；⑤2049² 不含 256 m 缓冲区（缓冲只用于远景环，已由 8 m 环覆盖）。
 - **受影响任务**：M1-031、M1-032、M1-034。
 - **裁决（Fable 填写）**：
+
+
+## PI-081 M1-032 OSM 矢量初稿取舍
+- **相似变换不作用于 OSM**：`meta.similarity` 描述 design→real，OSM 本身就是真实坐标；故只做 WGS84→UTM30N→本地米。设计坐标的校准留给 M1-034。
+- **堤道**：`motorway/trunk` 标 `causeway_candidate:true`（class 仍 paved），清单写入摘要（2 条）；N13 堤道本身在盒外约 300 m，真正的 `causeway` 类由 M1-033 判定。
+- **现代剔除**：零售/工业/学校/医院/火车站/service 建筑、`landuse=retail|industrial`、骑行道、废弃/拆除/站台铁路；`wall`/`fence` 暂不入树篱层（7 条跳过）。
+- **字段名**：规格里的 `walkable_depth` 为数值，按单位后缀惯例命名 `walkable_depth_m`；服务道路宽默认 4 m。
+- **清洗**：自相交面直接丢弃并计数（真实数据 0 个），不做修复；悬空线延伸未实现（只删 <2 m）。
+- **树篱稀疏**：OSM 仅 2 条 hedge + 31 条 tree_row，真实树篱需 M1-033 描摹。
+- **受影响任务**：M1-033、M1-034、M1-035。
+- **裁决（Fable 填写）**：

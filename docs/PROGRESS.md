@@ -595,3 +595,8 @@ blocked / in-progress / todo：无。M0 的 33 个任务全部已提交（M0-033
 
 ### M1-031 Carentan 高度图 031a — partial — 2026-11-18 — 提交见 git log
 - `slice_m1/dem_prep/qa/dem_carentan`（GDAL 阶段）与 CLI `dem`；工作站用真实 LiDAR HD 生成 `data/maps/carentan/{heightmap_1m,heightmap_far_8m}.r16` 与更新后的 `meta.json`（height/far_ring/slice_m1/inputs）、`reports/m1-dem-check.csv`。余项见 PI-080。
+
+
+### M1-032 OSM 矢量提取与清洗 032a — partial — 2026-11-18 — 提交见 git log
+- `map_pipeline/{osm,osm_rules,clean,modern_filter}.py`、CLI `osm` / `validate-vectors`、`tools/map-pipeline/schemas/*.schema.json`（5 层）、`tests/test_osm.py`；`data/maps/carentan/{roads,water,hedgerows,buildings,forests}.geojson`、`ATTRIBUTION_OSM.txt`、`reports/m1-osm-summary.json`；本地门槛 map 组增加 `validate-vectors`。
+- 真实数据：764 条道路 / 2,839 栋建筑 / 32 段树篱；结果见 STATUS。
