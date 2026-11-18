@@ -8,7 +8,7 @@
 
 - **当前里程碑**：M0 技术验证——**验收已执行（M0-033，2026-11-17）：M0 记 `partial`，可带条件关闭**，等 Fable 审阅检查点 0（H-038）；验收报告 `reports/m0/ACCEPTANCE.md`，进度总览与任务日志见 `docs/PROGRESS.md`。
 - **M0 统计（2026-11-17）**：33 个任务——done 19、partial 14（含 M0-033 自身）、blocked 0；M1–M4 共 230 个全部 todo。退出标准 E0-1…E0-12：通过 5（E0-1/2/4/9/11）、部分 5（E0-3/6/7/8/10）、需参考机或人工 2（E0-5/12）、未通过 0。
-- **下一个任务**：`M1-028`（M1-013c 副武器切换需武器槽，推迟）（M1-006 已 partial，余项拆 M1-006b；M1-005 已 partial：PI-036；M1-001–004 已 partial：CI 墙钟待 H-102，PI-032/033/034/035 待确认）。M1 前置待办（须在对应任务前解除）：H-102（CI 实跑）、H-021（参考机，M1 渲染任务前）、H-011/025/026（录像，M1 退出前）、PI-030（KCC 判据，待 Fable 裁决）。
+- **下一个任务**：`M1-029`（M1-013c 副武器切换需武器槽，推迟）（M1-006 已 partial，余项拆 M1-006b；M1-005 已 partial：PI-036；M1-001–004 已 partial：CI 墙钟待 H-102，PI-032/033/034/035 待确认）。M1 前置待办（须在对应任务前解除）：H-102（CI 实跑）、H-021（参考机，M1 渲染任务前）、H-011/025/026（录像，M1 退出前）、PI-030（KCC 判据，待 Fable 裁决）。
 - **blocked 清单**：（无）
   - 格式：`任务 ID — 所缺条目 — 登记日期 — 谁来解除（人类/素材/其它任务）`
   - 人工侧待办（不阻塞任务，但卡退出标准）：GitHub 无 main 分支/无法开 PR（H-102）、参考机（H-021）、对标录像（H-011/H-025/H-026，汇总 H-104）、受信任 TLS 证书（H-017）、Firefox/Safari 手工互通（H-103）、受限网络台（H-022）、Fable M0 审阅（H-038）。
@@ -105,7 +105,7 @@
 | M1-025 | server：延迟补偿 | partial（025a：回溯与夹紧；余项见 PI-072） | 弹丸携带 rewind（≤8 tick，view_tick=0 不补偿），目标命中体取历史帧 `tick−rewind`；固定靶横穿测试 6 tick 视角：补偿命中 12/12、无补偿 0/12（差 ≥15% 判据满足）；视角落后 12 tick 仅回溯 8 tick（0/8 命中，8 tick 为 8/8）；`rewind_ticks` 夹紧/回绕/未来、起点 0.49/0.51 m 边界单测；`lagcomp_clamped_total` 指标测试；sim-wasm 金哈希未变 | PI-072 | 墙体保护/`lagcomp_wall_reject`、`lagcomp.json`、起点校正指标、载具历史、150 ms netem 命中率场景、criterion、20 客户端 P99 → 拆 M1-025b |
 | M1-026 | server：部署/小队处理与可靠事件 | partial（026a：C0 处理；C4 见 PI-073） | 聊天 8 s 内第 6 条丢弃、部署 1/s、举报 1/min 且 10/局（单测）；聊天过滤单测 8 项（201 字符/RLO/控制字符/全角折叠）；部署 10 种非法请求 `reason` 与 sim `DeployError::code()` 一一对应、2 种合法回 `ok` 且 `spawn_tick ≥ 当前`；小队创建/加入/踢人与 sim 名册一致；聊天按 all/team/squad 路由；指标 `c0_rate_limited_total{type}`、`deploy_requests_total{result}`、`chat_rejected_total{reason}`、`squad_ops_total`、`reports_total` | PI-073 | `ReliableEventBus`/C4 SimEvent 映射与 `PlayerRoster` 增量、重连恢复、C4 5% 丢包、背压、`scripts/check-no-rules-in-server.sh`、C0 criterion、`/metrics` 端到端断言、MarkerPlace → 拆 M1-026b |
 | M1-027 | server：基础校验（速度/射速/视角） | partial（027a：计数与注入测试；余项见 PI-074） | 1.3× 移动向量注入 30 s：权威最高速度 6.34 m/s（≤6.4×1.02），`suspicion_move_total` ≥100；以每 2 tick 一次的扳机上升沿（15 次/s）打 10 s：实际射出 8 发（≤cap），拒绝 56 次计入 `fire_rate_rejected_total`；1000 条 ≤3000°/s 合成甩枪 0 误报、180° 瞬转在 3600°/s 限幅下被钳制并计数；`InputCmd/FireCmd` 字段穷举审计测试；`AntiCheat` 每玩家分类计数 + 60 s 前 5 名日志；输入窗口/重放边界由 M0-018 已覆盖；同时修正 `view_tick` 语义为“相对 tick 的差值”（M1-025 的绝对值解读有误） | PI-074 | `data/rules/anticheat.json` 数据化、`pred_hash` 不匹配统计、origin_hint 校正计数、`Disconnect{reason}` 分级、headless 注入器与 20 客户端 5 min 混合、criterion `anticheat_on_input` → 拆 M1-027b |
-| M1-028 | gateway：服务器列表、游客鉴权与 ticket | todo | | | |
+| M1-028 | gateway：服务器列表、游客鉴权与 ticket | partial（028a：内存版；SQLite/指标见 PI-075） | ticket：TTL 60 s（59 s 通过、61 s 失败）、重放被拒、逐字节篡改 100% 失败、他场/他钥失败；游客 token：TTL 86400 s、过期 401、有效旧 token 续期同一 guest；限速：同 IP 第 11 次 429（含 Retry-After，换 IP 不受影响，1 min 后恢复）、同账号第 7 次 ticket 429；服务器列表：3 台注册、1 台 6 s 无心跳 → 返回 2 台，协议版本不符 `compatible=false`；内部 API 无/错 token 401、随机 id 404、结果入库并使对局下线；`Cache-Control: no-store` 与 CORS 仅放行配置来源；路由表快照；`check-deps` 通过（gateway 不依赖 sim/server/bots）；协议 `dto.rs`（TicketClaims 规范编码）| PI-075 | SQLite 迁移（guests/matches/results）、请求延迟/错误率指标、并发 200 ticket P95、criterion ticket 签发、日志无 token 审计脚本、`cargo deny` 实跑（CI）、server 侧注册/心跳/验签（M1-029）→ 拆 M1-028b |
 | M1-029 | server：注册、心跳与 ticket 验证 | todo | | | |
 | M1-030 | 地图：Carentan 数据源许可证与锚点对账 | todo | | | |
 | M1-031 | 地图：Carentan 1/3 区域高度图 | todo | | | |

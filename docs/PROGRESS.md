@@ -579,3 +579,7 @@ blocked / in-progress / todo：无。M0 的 33 个任务全部已提交（M0-033
 
 ### M1-027 基础校验 027a — partial — 2026-11-18 — 提交见 git log
 - `anticheat.rs`（按玩家分类计数、扳机上升沿拒绝检测、前 5 名日志）、新增 `view_rate_clamped_total`/`fire_rate_rejected_total`/`suspicion_move_total`；速度/射速/视角注入测试与字段审计；修正 `view_tick` 为差值语义（`rewind_ticks(delta)`）。余项见 PI-074。
+
+
+### M1-028 gateway 028a — partial — 2026-11-18 — 提交见 git log
+- `crates/gateway`：axum 路由（guest/servers/ticket/internal）、HS256 游客 token、Ed25519 join ticket（+`JtiCache`）、滑动窗口限速、内存注册表与心跳超时、CORS/no-store；`protocol::dto::TicketClaims` 规范编码。新增依赖 axum/ed25519-dalek/hmac/sha2/base64/rand（均 MIT/Apache）。余项见 PI-075。
