@@ -119,11 +119,20 @@ name = "spawn"
 harness = false
 
 [[test]]
+name = "deploy_validate"
+required-features = ["test-util"]
+
+[[test]]
 name = "supply_crates"
 required-features = ["test-util"]
 
 [[test]]
 name = "supply_ammo"
+required-features = ["test-util"]
+
+[[bench]]
+name = "deploy_validate"
+harness = false
 required-features = ["test-util"]
 
 [[bench]]

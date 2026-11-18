@@ -841,3 +841,12 @@
 - **受影响任务**：M1-021b、M1-026、M1-039、M1-056。
 - **裁决（Fable 填写）**：
 
+### PI-065 M1-021b：部署校验的取舍
+
+- **状态**：resolved（实现者裁决，待 Fable 复核）
+- **类别**：sim
+- **提出者 / 日期**：M1 线程 / 2026-11-18
+- **做法**：①`DeployReq` 沿用线上 `DeployRequest` 字段：`role`/`loadout` 为 `GameData::{roles,loadouts}` 下标，`squad` 为小队 id（0=Unassigned，小队 id 在 1..=255 内循环分配以适配 `squad:u8`），`spawn_point` 为 Garrison id，`0xFFFF` 表示己方 HQ（Garrison id 从 0 起）。②校验顺序按任务：玩家状态（无实体=DEPLOY 界面，或已阵亡）→ 小队须与名册一致 → 兵种名额 → loadout（兵种、阵营、`unlock_level ≤ 3`，M1 无 XP 视为全解锁）→ 出生点 → 换兵种冷却；返回首个失败码，码表 1..23 固定。③换兵种冷却：与上次兵种不同且距上次更换 < 30 s 才拒绝，沿用同兵种不算更换。④`World::deploy` 对没有实体的玩家立即在 HQ 生成（倒计时与 `DeployResult.spawn_tick` 属 M1-026）；阵亡者选 HQ 走既有波次，选 Garrison 调用 `request_spawn`。⑤所选 loadout 下标记入名册（`RosterEntry.loadout`），实际装备的落实随武器槽/loadout 应用任务（M1-013c 之后）。⑥`SpawnRequestError::NotDead` 在点位校验中不会出现，映射为 `NoSuchPoint`。
+- **受影响任务**：M1-026、M1-056、M1-013c。
+- **裁决（Fable 填写）**：
+

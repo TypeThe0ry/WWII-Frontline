@@ -389,6 +389,79 @@ impl World {
         Ok(())
     }
 
+    /// Test-only (feature `test-util`): sets a Garrison's free spawn slots.
+    #[cfg(feature = "test-util")]
+    pub fn debug_set_garrison_slots(&mut self, id: u16, slots: f32) {
+        if let Some(g) = self
+            .ecs
+            .resource_mut::<crate::spawn::garrison::Garrisons>()
+            .list
+            .get_mut(&id)
+        {
+            g.slots = slots;
+        }
+    }
+
+    /// Does `team` have an HQ (set with [`World::set_hq`])?
+    pub fn has_hq(&self, team: Team) -> bool {
+        self.ecs.resource::<crate::spawn::SpawnRules>().hq[team as usize].is_some()
+    }
+
+    /// Applies a validated deploy: role, loadout choice, then the spawn. A player with no body
+    /// yet appears at the HQ at once (`spawn_in_ticks` 0); a dead player queues for the HQ wave
+    /// (0: the respawn system times it) or for the chosen Garrison (its wait, in ticks).
+    pub fn deploy(
+        &mut self,
+        p: PlayerId,
+        req: &crate::deploy::DeployReq,
+    ) -> Result<crate::deploy::DeployDone, crate::deploy::DeployError> {
+        use crate::deploy::{DeployDone, DeployError, SPAWN_HQ};
+        let ok = self.validate_deploy(p, req)?;
+        let team = self.squads.entry(p).expect("validated").team;
+        // Roles were checked above; the only way this can fail is a race that cannot happen
+        // inside one call.
+        self.set_role(p, Some(ok.role)).map_err(DeployError::from)?;
+        self.squads.set_loadout(p, Some(req.loadout));
+        let has_body = self.ecs.resource::<PlayerIndex>().map.contains_key(&p);
+        if !has_body {
+            let hq = self.ecs.resource::<crate::spawn::SpawnRules>().hq[team as usize]
+                .ok_or(DeployError::NoHq)?;
+            let yaw = if team == Team::Us {
+                0.0
+            } else {
+                std::f32::consts::PI
+            };
+            self.spawn_player(SpawnReq {
+                player: p,
+                team,
+                pos: hq,
+                yaw,
+            })
+            .map_err(|_| DeployError::NotDeployable)?;
+            return Ok(DeployDone {
+                role: ok.role,
+                spawn_in_ticks: 0,
+            });
+        }
+        if req.spawn_point == SPAWN_HQ {
+            self.ecs
+                .resource_mut::<crate::spawn::SpawnRules>()
+                .choice
+                .remove(&p);
+            return Ok(DeployDone {
+                role: ok.role,
+                spawn_in_ticks: 0,
+            });
+        }
+        let wait = self
+            .request_spawn(p, req.spawn_point)
+            .map_err(DeployError::from_spawn_request)?;
+        Ok(DeployDone {
+            role: ok.role,
+            spawn_in_ticks: wait,
+        })
+    }
+
     /// Feeds KIA state to the squads and runs their upkeep (once per tick).
     fn sync_squads(&mut self) {
         if self.squads.is_empty() {
@@ -1386,6 +1459,36 @@ impl World {
         }
     }
 
+    /// Is `garrison` a usable spawn for `team` right now (no player state involved)?
+    pub(crate) fn check_garrison_point(
+        &self,
+        team: Team,
+        garrison: u16,
+    ) -> Result<(), crate::spawn::garrison::SpawnRequestError> {
+        use crate::spawn::garrison::*;
+        let now = self.tick().0;
+        let hz = self.cfg.tick_hz;
+        let g = self
+            .ecs
+            .resource::<Garrisons>()
+            .list
+            .get(&garrison)
+            .ok_or(SpawnRequestError::NoSuchPoint)?;
+        if g.team != team {
+            return Err(SpawnRequestError::WrongTeam);
+        }
+        if g.state != GarrisonState::Active {
+            return Err(SpawnRequestError::NotActive);
+        }
+        if g.blocked(now, hz) {
+            return Err(SpawnRequestError::Blocked);
+        }
+        if g.slots < 1.0 {
+            return Err(SpawnRequestError::NoSlots);
+        }
+        Ok(())
+    }
+
     /// A dead player picks a Garrison to respawn at. Returns the estimated wait in ticks.
     pub fn request_spawn(
         &mut self,
@@ -1408,25 +1511,7 @@ impl World {
             };
             (*er.get::<Team>().unwrap(), t_kia)
         };
-        {
-            let gs = self.ecs.resource::<Garrisons>();
-            let g = gs
-                .list
-                .get(&garrison)
-                .ok_or(SpawnRequestError::NoSuchPoint)?;
-            if g.team != team {
-                return Err(SpawnRequestError::WrongTeam);
-            }
-            if g.state != GarrisonState::Active {
-                return Err(SpawnRequestError::NotActive);
-            }
-            if g.blocked(now, hz) {
-                return Err(SpawnRequestError::Blocked);
-            }
-            if g.slots < 1.0 {
-                return Err(SpawnRequestError::NoSlots);
-            }
-        }
+        self.check_garrison_point(team, garrison)?;
         let extra = {
             let rules = self.ecs.resource::<crate::spawn::SpawnRules>();
             let g = &self.ecs.resource::<Garrisons>().list[&garrison];

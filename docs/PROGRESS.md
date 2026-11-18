@@ -553,3 +553,7 @@ blocked / in-progress / todo：无。M0 的 33 个任务全部已提交（M0-033
 
 ### M1-021a 小队、兵种名额与平衡 — partial（021b 部署校验待做）— 2026-11-18 — 提交见 git log
 - 新模块 `squad/`（`SquadManager`：名册、小队、创建/加入/离开/踢/移交/锁/邀请、速率窗口、禁入、队长继任与离线接管）、`roles/quota.rs`（`role_available`）、`team/balance.rs`（加入/换队）；`data/rules/squads.json` + schema + `SquadsRulesDef`；Medic 加全队上限 12；`World::{roster_add,roster_remove,squad_op,set_role,switch_team,...}`、`SimEvent::Roster`；名册为空时哈希不变（golden 仅 dataHash 重生成）；测试 `squads_ops` 20 项（PI-064）。
+
+### M1-021b 部署校验 — done（M1-021 完成）— 2026-11-18 — 提交见 git log
+- `deploy/`：`DeployReq`（同线上 `DeployRequest`）、`World::validate_deploy`（玩家状态→小队→兵种名额→loadout→出生点→换兵种冷却）与 `World::deploy`（落实兵种/loadout、新玩家 HQ 出生、阵亡者 HQ 波次或 Garrison 等待）；`DeployError` 23 分支 + 固定码表；`check_garrison_point` 与 `request_spawn` 共用；Officer/Support 能力随兵种设置；测试 `deploy_validate` 6 项、bench `deploy_validate`（PI-065）。
+
