@@ -1043,3 +1043,6 @@ M1-038 体量为 L。先交付与场景无关的引擎（行为树、效用、�
 
 ## PI-093 M1-041a：先做座位状态机与外推辅助（2026-11-18）
 载具预测本体依赖 sim-wasm 导出载具步进（需 wasm 重编与对账接线），在云端无法完成端到端验收(netem/headless)，故先落地与 wasm 无关的纯逻辑。换座 2 s 取 60 tick（30 Hz）；停车阈值 5 km/h 取自 GD 14.7，均为 `initial`。
+
+## PI-094 M1-042a：变体规则（2026-11-18）
+任务给"4 宏×4 pass≤60"。规范化规则：depth/shadow 不用 normalMap/detail，alpha 通道不用 alphaTest（混合与裁切互斥）；据此合法变体 32、Low 20，留出 28 个余量给后续宏（如 USE_INSTANCING）。该规则为 `initial`，着色器实现（042b）如发现 alpha 需要 alphaTest 再调整。
