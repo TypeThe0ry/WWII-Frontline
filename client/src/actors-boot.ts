@@ -76,6 +76,7 @@ export async function bootActors(o: ActorsBootOptions): Promise<ActorsHandle> {
     localWeapon,
     aiming,
     tracers: params.get('tracers') !== '0',
+    particles: params.get('particles') === '0' ? undefined : { tier: params.get('quality') === 'low' ? 'low' : 'high', wgsl: ctx.kind === 'webgpu' },
   });
   manager.registry.install(window);
   // e2e hook: names of every mesh / material in the scene (naming rule check)

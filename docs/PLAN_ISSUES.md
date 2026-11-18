@@ -1097,3 +1097,6 @@ H-021（RTX 3060 参考机）尚未到位。经总控指示，在本工作站（
 
 ## PI-110 M1-051b/052b：占位几何与植被散布（2026-11-19）
 `?scene=world` 的树篱（方盒）、建筑（挤出体，实心，无开洞/室内）、士兵（M0 灰盒）都是占位，用来取得真实对象数量与 draw call，不代表最终素材（M1-064 阻塞）。植被最初用 M0 的全图均匀散布（不认道路/建筑/树篱），是 M1 场景的 CPU 瓶颈（400–800 draw、CPU 27–36 ms）。2026-11-19 已改为认地图并合并 draw（见 `reports/m1-perf.md`“植被修复”）：draw 84–205、CPU 14–18 ms，但仍高于 §13.5 的约 10.4 ms 且卡顿帧未消除；草密度 0.4 与 256 m 分组是 [tbd] 选择。任何 M1 性能结论仍须在参考机上重测（PI-109）。
+
+## PI-111 M1-047b：粒子事件接线与 /data 字段缺口（2026-11-19）
+已接：`fire.local/remote` → 炮口焰粒子（寿命取武器 `fx.muzzle_flash_ms`，来自 /data）+ 本地弹壳（**Low 档不弹壳**）；`impact` → 尘土；新增 `explosion {pos, radius, own}` 事件 → 爆炸 + 烟，规模按 `damage_radius_m / 8`（8 = `us_mk2` 的 `damage_radius_m`，/data）。/data **没有**的字段仍是 [tbd] 常量（`vfx/emitters.ts`、`PARTICLE_SIZE_M`）：每种效果的粒子数/寿命/扩散、烟的数量与寿命、弹壳寿命、尘土按材质区分（`materials/*.json` 有 `impact_fx_class`，但 `impact` 事件只给材质序号，客户端还没有序号→类的映射）。`explosion` 事件**目前没有生产者**（网络层没发爆炸事件，需 C 端/网关消息），只有消费者与单测。

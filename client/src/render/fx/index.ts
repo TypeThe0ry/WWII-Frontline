@@ -14,6 +14,9 @@ import { freshWorldMatrix } from '../actors/world';
 import { ImpactDustPool } from './impact-dust';
 import { MuzzleFlashPool } from './muzzle-flash';
 import { TracerPool } from './tracer';
+import { emitEffect } from '../vfx/emitters';
+import { ParticlePool, type VfxTier } from '../vfx/particle-pool';
+import { ParticleRenderer } from '../vfx/particle-render';
 
 export interface FxOptions {
   scene: Scene;
@@ -26,13 +29,18 @@ export interface FxOptions {
   /** Monotonic ms clock (default `performance.now`; tests inject a fake). */
   now?: () => number;
   tracers?: boolean;
+  /** GPU particles (M1-047b): pool tier and shader language; omit to leave particles off (tests, no-GPU). */
+  particles?: { tier: VfxTier; wgsl: boolean };
 }
 
 const KIND_FLASH_LOCAL = 0;
 const KIND_FLASH_REMOTE = 1;
 const KIND_IMPACT = 2;
+const KIND_EXPLOSION = 3;
 const DEFAULT_FLASH_MS = 50;
 const LOG_CAP = 512;
+/** `damage_radius_m` of the reference grenade (data/explosives/us_mk2.json): the explosion preset is sized for it. */
+const EXPLOSION_REF_RADIUS_M = 8;
 
 interface Pending {
   kind: number;
@@ -45,12 +53,17 @@ interface Pending {
   dy: number;
   dz: number;
   frame: number;
+  radius: number;
+  own: boolean;
 }
 
 export class FxManager {
   readonly flashes: MuzzleFlashPool;
   readonly tracers: TracerPool;
   readonly dust: ImpactDustPool;
+  /** GPU particle pool / renderer (null when `particles` was not requested). */
+  readonly particlePool: ParticlePool | null;
+  readonly particles: ParticleRenderer | null;
   /** Engine frame ids at which each `fire.*` event was emitted / its flash became visible (same order). */
   readonly fireEventFrames: number[] = [];
   readonly muzzleFlashFrames: number[] = [];
@@ -70,11 +83,13 @@ export class FxManager {
     this.flashes = new MuzzleFlashPool(o.scene, o.registry);
     this.tracers = new TracerPool(o.scene, o.registry);
     this.dust = new ImpactDustPool(o.scene, o.registry);
+    this.particlePool = o.particles ? new ParticlePool(o.particles.tier) : null;
+    this.particles = o.particles && this.particlePool ? new ParticleRenderer(o.scene, this.particlePool, o.particles.wgsl) : null;
     const engine = o.scene.getEngine();
     const slot = (): Pending => {
       let p = this.pending[this.pendingCount];
       if (!p) {
-        p = { kind: 0, weapon: 0, shooter: 0, x: 0, y: 0, z: 0, dx: 0, dy: 0, dz: 1, frame: 0 };
+        p = { kind: 0, weapon: 0, shooter: 0, x: 0, y: 0, z: 0, dx: 0, dy: 0, dz: 1, frame: 0, radius: 0, own: false };
         this.pending[this.pendingCount] = p;
       }
       this.pendingCount++;
@@ -115,6 +130,16 @@ export class FxManager {
         p.z = e.pos.z;
         p.frame = engine.frameId;
       }),
+      o.bus.on('explosion', (e) => {
+        const p = slot();
+        p.kind = KIND_EXPLOSION;
+        p.x = e.pos.x;
+        p.y = e.pos.y;
+        p.z = e.pos.z;
+        p.radius = e.radius;
+        p.own = e.own;
+        p.frame = engine.frameId;
+      }),
     );
     this.obs = o.scene.onBeforeRenderObservable.add(() => this.beforeRender());
   }
@@ -129,6 +154,11 @@ export class FxManager {
       if (p.kind === KIND_IMPACT) {
         this.dust.spawn(p.x, p.y, p.z);
         this.tracers.impactAt(p.x, p.y, p.z);
+        this.emitParticles('impact_dust', p.x, p.y, p.z, false, undefined, 1, p.frame);
+        continue;
+      }
+      if (p.kind === KIND_EXPLOSION) {
+        this.emitParticles('explosion', p.x, p.y, p.z, p.own, undefined, Math.max(0.25, p.radius / EXPLOSION_REF_RADIUS_M), p.frame);
         continue;
       }
       const def = this.o.weapons.get(p.weapon);
@@ -136,6 +166,9 @@ export class FxManager {
       this.fireEventFrames.push(p.frame);
       if (this.flashes.spawn(now, def?.muzzleFlashMs ?? DEFAULT_FLASH_MS, socket, p.x, p.y, p.z, frame)) this.muzzleFlashFrames.push(frame);
       else this.muzzleFlashFrames.push(-1);
+      this.emitParticles('muzzle', p.x, p.y, p.z, p.kind === KIND_FLASH_LOCAL, (def?.muzzleFlashMs ?? DEFAULT_FLASH_MS) / 1000, 1, p.frame);
+      // shell casing: off at the Low tier (ARCHITECTURE 13.5.3), only the local player's weapon ejects one [tbd]
+      if (this.o.particles && this.o.particles.tier !== 'low' && p.kind === KIND_FLASH_LOCAL) this.emitParticles('shell', p.x, p.y, p.z, true, undefined, 1, p.frame);
       if (this.tracersOn) {
         let ox = p.x;
         let oy = p.y;
@@ -154,6 +187,17 @@ export class FxManager {
     this.flashes.update(now);
     this.tracers.update(dtS);
     this.dust.update(dtS);
+    const cam = this.o.scene.activeCamera;
+    if (this.particles && cam) this.particles.update(cam, dtS);
+  }
+
+  private emitParticles(name: 'muzzle' | 'impact_dust' | 'explosion' | 'shell', x: number, y: number, z: number, own: boolean, life: number | undefined, scale: number, seed: number): void {
+    const pool = this.particlePool;
+    if (!pool) return;
+    const cam = this.o.scene.activeCamera;
+    const pos = cam?.globalPosition;
+    const dist = pos ? Math.hypot(x - pos.x, y - pos.y, z - pos.z) : 0;
+    emitEffect(pool, name, x, y, z, own, dist, seed, { life, scale });
   }
 
   dispose(): void {
@@ -162,10 +206,12 @@ export class FxManager {
     this.flashes.dispose();
     this.tracers.dispose();
     this.dust.dispose();
+    this.particles?.dispose();
   }
 }
 
 export { MuzzleFlashPool } from './muzzle-flash';
 export { TracerPool } from './tracer';
 export { ImpactDustPool } from './impact-dust';
+export { emitEffect } from '../vfx/emitters';
 export { FirstPersonRig } from './first-person-camera';

@@ -31,6 +31,8 @@ export interface ActorManagerOptions {
   aiming?: () => boolean;
   now?: () => number;
   tracers?: boolean;
+  /** GPU particle tier + shader language (M1-047b); omit for no particles. */
+  particles?: { tier: 'high' | 'medium' | 'low'; wgsl: boolean };
   /** Third-person weapon scale relative to the first-person one. */
   thirdPersonScale?: number;
 }
@@ -78,6 +80,7 @@ export class ActorManager {
       remoteMuzzle: (id) => this.actors.get(id)?.actor.weapon?.muzzle ?? null,
       now: o.now,
       tracers: o.tracers,
+      particles: o.particles,
     });
     this.offs.push(
       // Creation needs the entity's weapon (faction): only possible once the id is in the frame data; otherwise `update` creates it.

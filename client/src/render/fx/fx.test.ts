@@ -238,3 +238,45 @@ d('first-person camera and weapon', () => {
     expect(ts!.scene.getTransformNodeByName('PH_V-WPN-US-001__fp')).toBeNull();
   });
 });
+
+d('GPU particles (M1-047b)', () => {
+  async function withParticles(tier: 'high' | 'low') {
+    const { data } = await realData();
+    ts = makeScene();
+    const bus = new EventBus<GameEvents>();
+    const state = new GameState();
+    state.local.pos.set([100, 5, 200]);
+    const us = data.weapons.find((w) => w.faction === 'us')!;
+    mgr = new ActorManager({ scene: ts.scene, bus, state, data, camera: ts.camera, localWeapon: () => us.index, now: () => 0, particles: { tier, wgsl: false } });
+    return { bus, us, m: mgr };
+  }
+
+  it('fire.local -> muzzle flash + shell; impact -> dust; explosion -> blast + smoke, scaled by radius', async () => {
+    const { bus, us, m } = await withParticles('high');
+    const pool = m.fx.particlePool!;
+    expect(pool.active).toBe(0);
+    ts!.frame(() => bus.emit('fire.local', { weapon: us.index, muzzlePos: muzzle, dir }));
+    const afterFire = pool.active;
+    expect(afterFire).toBe(2); // 1 flash + 1 shell casing
+    ts!.frame(() => bus.emit('impact', { pos: { x: 105, y: 5, z: 210 }, normal: 0, material: 0 }));
+    expect(pool.active).toBeGreaterThan(afterFire);
+    const before = pool.active;
+    const cp = ts!.camera.globalPosition; // near the camera: far explosions merge into one particle
+    ts!.frame(() => bus.emit('explosion', { pos: { x: cp.x, y: cp.y, z: cp.z + 10 }, radius: 8, own: false }));
+    expect(pool.active - before).toBe(9); // 3 blast + 6 smoke
+    expect(m.fx.particles!.drawn).toBe(pool.active);
+  });
+
+  it('Low tier ejects no shell casings and caps the pool at 300', async () => {
+    const { bus, us, m } = await withParticles('low');
+    ts!.frame(() => bus.emit('fire.local', { weapon: us.index, muzzlePos: muzzle, dir }));
+    expect(m.fx.particlePool!.active).toBe(1); // flash only
+    expect(m.fx.particlePool!.capacity).toBe(300);
+  });
+
+  it('without the particles option nothing is created', async () => {
+    const { mgr: m } = await setup();
+    expect(m.fx.particlePool).toBeNull();
+    expect(m.fx.particles).toBeNull();
+  });
+});
