@@ -62,13 +62,17 @@ pub fn movement(
         &MeleeState,
         &crate::suppression::SuppressionState,
         &crate::supply::Carrying,
+        &crate::vehicle::seats::InVehicle,
     )>,
 ) {
     let Some(p) = params.0 else {
         return;
     };
     for (_, e) in table.sorted() {
-        if let Ok((mut t, mut m, last, life, w, melee, supp, carry)) = q.get_mut(e) {
+        if let Ok((mut t, mut m, last, life, w, melee, supp, carry, invh)) = q.get_mut(e) {
+            if invh.0.is_some() {
+                continue;
+            }
             let mut cmd = last.cmd;
             if ms.input_frozen(tick.0 .0, mcfg.freeze_ticks) {
                 // The match is over: movement input is frozen for a few seconds (M1-018).

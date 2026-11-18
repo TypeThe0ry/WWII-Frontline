@@ -2,6 +2,9 @@
 //! spring suspension with a track drive model. No general vehicle controller and no Rapier
 //! body (PI-066): one small deterministic integrator, bodies visited in ascending `EntityId`.
 
+pub mod collision;
+pub mod seats;
+pub mod snapshot;
 pub mod suspension;
 pub mod tracks;
 
@@ -11,7 +14,6 @@ use bevy_ecs::prelude::*;
 use glam::{Mat3, Quat, Vec3};
 use serde::Deserialize;
 
-use crate::components::{CollisionRes, SimCfgRes};
 use crate::data::defs::VehicleDef;
 use crate::hash::HashWriter;
 use crate::ids::EntityId;
@@ -74,6 +76,7 @@ pub struct VehicleParams {
     /// Half the distance between the tracks.
     pub half_gauge: f32,
     pub hull_hp: f32,
+    pub seat_count: usize,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -150,6 +153,7 @@ impl VehicleParams {
             mu_lat: tr.friction_lateral,
             half_gauge: (w / 2.0 - 0.3).max(0.5),
             hull_hp: g.hull_health_hp as f32,
+            seat_count: g.seats.len(),
         })
     }
 }
@@ -171,6 +175,17 @@ pub struct Vehicle {
     /// Suspension rays in contact after the last step (diagnostics / grounded checks).
     pub grounded_rays: u32,
     pub hull_hp: f32,
+    /// One slot per seat of the definition (index = seat id; 0 is the driver).
+    pub seats: Vec<Option<seats::Occupant>>,
+    /// Hull touched an obstacle last tick (impacts count once per contact).
+    /// Driven by `World::set_vehicle_ctrl` (tests, later bots) instead of a seated driver.
+    pub scripted: bool,
+    pub in_contact: bool,
+    /// Victim -> tick of the last crush (repeat guard).
+    pub crushed: BTreeMap<crate::ids::PlayerId, u32>,
+    /// Ticks spent past the overturn tilt; `overturned` latches the event.
+    pub flip_ticks: u32,
+    pub overturned: bool,
 }
 
 impl Vehicle {
@@ -220,17 +235,6 @@ impl Vehicles {
     }
 }
 
-/// Advances every vehicle one tick (ascending `EntityId`).
-pub fn step_vehicles(mut vehicles: ResMut<Vehicles>, col: Res<CollisionRes>, cfg: Res<SimCfgRes>) {
-    if vehicles.list.is_empty() {
-        return;
-    }
-    let dt = 1.0 / f32::from(cfg.hz);
-    for v in vehicles.list.values_mut() {
-        step_one(v, &col.0, dt);
-    }
-}
-
 pub fn step_one(v: &mut Vehicle, col: &crate::CollisionData, dt: f32) {
     tracks::update_speed_target(v, dt);
     let h = dt / SUBSTEPS as f32;
@@ -262,3 +266,7 @@ pub fn yaw_quat(yaw: f32) -> Quat {
 pub fn basis(rot: Quat) -> Mat3 {
     Mat3::from_quat(rot)
 }
+
+/// Per-tick driver of every vehicle: input mapping, physics, collisions, seat timers, crushing.
+pub use system::step_vehicles;
+mod system;

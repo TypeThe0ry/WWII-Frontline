@@ -9,6 +9,27 @@ use crate::weapon::HitZone;
 #[derive(Debug, Clone, PartialEq)]
 #[non_exhaustive]
 pub enum SimEvent {
+    /// A hull hit an obstacle; `damage` is the hull damage dealt (M1-022).
+    VehicleCollision {
+        vehicle: EntityId,
+        speed_mps: f32,
+        damage: f32,
+    },
+    /// A vehicle ran a player over (the damage is already applied).
+    Crush {
+        vehicle: EntityId,
+        victim: PlayerId,
+        speed_kph: f32,
+    },
+    VehicleOverturned {
+        vehicle: EntityId,
+    },
+    /// A player took a seat, moved seats, or left (`seat: None`).
+    SeatChanged {
+        player: PlayerId,
+        vehicle: EntityId,
+        seat: Option<u8>,
+    },
     /// Roster, squad or role changed (M1-021).
     Roster(crate::squad::RosterDelta),
     /// An enemy entered a HQ protection zone: it takes damage after the warning (M1-019).

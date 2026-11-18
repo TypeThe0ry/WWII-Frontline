@@ -557,3 +557,6 @@ blocked / in-progress / todo：无。M0 的 33 个任务全部已提交（M0-033
 ### M1-021b 部署校验 — done（M1-021 完成）— 2026-11-18 — 提交见 git log
 - `deploy/`：`DeployReq`（同线上 `DeployRequest`）、`World::validate_deploy`（玩家状态→小队→兵种名额→loadout→出生点→换兵种冷却）与 `World::deploy`（落实兵种/loadout、新玩家 HQ 出生、阵亡者 HQ 波次或 Garrison 等待）；`DeployError` 23 分支 + 固定码表；`check_garrison_point` 与 `request_spawn` 共用；Officer/Support 能力随兵种设置；测试 `deploy_validate` 6 项、bench `deploy_validate`（PI-065）。
 
+### M1-022 载具物理 — done — 2026-11-18 — 提交见 git log
+- `vehicle/`：`VehicleParams`（取自 `data/vehicles`）、射线悬挂（每侧 6 条，弹簧-阻尼）、履带驱动（每侧速度目标 + 摩擦椭圆、坡度切断）、座位（进入/换座/离车/离车伤害）、车体撞地形与碾压、翻覆事件、`VehicleExtra`（12 B）；`World::{spawn_vehicle,set_vehicle_ctrl,seat_enter,seat_switch,seat_exit_begin,seat_exit_cancel,vehicle_views}`；`InVehicle` 组件使 `movement` 跳过乘员；测试 `vehicle_physics` 8 项、`vehicle_seats` 8 项；bench `vehicle_step`（PI-066）。
+
