@@ -108,4 +108,17 @@ describe('no external texture/model URLs in vegetation code (acceptance 7)', () 
       expect(src, f).not.toMatch(/\.(png|jpe?g|ktx2?|dds|basis|webp|glb|gltf)['"`]/i);
     }
   });
+
+  it('groupChunks merges chunk tables into fewer meshes without changing instance totals or LOD counts (M1-069b)', async () => {
+    const one = await setup();
+    const four = await setup({ groupChunks: 2 });
+    one.veg.update(one.cam, 1 / 60);
+    four.veg.update(four.cam, 1 / 60);
+    expect(four.veg.meshes.length).toBeLessThan(one.veg.meshes.length / 2);
+    expect(four.veg.stats.total).toEqual(one.veg.stats.total);
+    expect(sum(four.veg.stats.perLod.tree)).toBe(sum(one.veg.stats.perLod.tree));
+    expect(sum(four.veg.stats.perLod.grass)).toBe(sum(one.veg.stats.perLod.grass));
+    one.veg.dispose();
+    four.veg.dispose();
+  });
 });

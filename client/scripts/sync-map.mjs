@@ -19,7 +19,7 @@ const FILES = ['meta.json', 'heightmap_1m.r16', 'heightmap_far_8m.r16']; // spaw
 if (mapId === 'm0') FILES.push('spawns.json');
 if (mapId === 'm0') for (let bz = 0; bz < 4; bz++) for (let bx = 0; bx < 4; bx++) FILES.push(`chunks/c_${bx}_${bz}.bin`);
 // M1-051b/052b: the Carentan world layers drawn by the client (hedgerows, buildings); no m0 chunk files for this map.
-if (mapId !== 'm0') for (const f of ['hedgerows.geojson', 'buildings.geojson']) if (existsSync(join(src, f))) FILES.push(f);
+if (mapId !== 'm0') for (const f of ['hedgerows.geojson', 'buildings.geojson', 'roads.geojson', 'water.geojson', 'forests.geojson']) if (existsSync(join(src, f))) FILES.push(f);
 
 if (mapId === 'm0' && FILES.some((f) => !existsSync(join(src, f)))) {
   console.log(`[sync-map] ${src} incomplete -> running the map pipeline (seed 1)`);

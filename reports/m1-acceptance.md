@@ -9,9 +9,9 @@
 | E1-3 | 带宽 | P50 ≤ 128、P99 ≤ 400 kbps，上行 ≤ 32 kbps | 下行 P50 15.96 / P99 26.6 kbps，上行 P50 20.5 kbps（无损、同机） | 同上 | partial | M1-068b（netem 未测） |
 | E1-4 | AOI | 视锥外且 >96 m 敌人下发 = 0 | `aoi_audit.rs::no_enemy_is_sent_outside_the_r3_rules`（20 人 10v10 移动/转向场景，独立复述 R3 界限）通过；loadtest 20+12 bot 路径未接审计；aoi_encode P99 ≤ 0.5 ms | `cargo test -p frontline-server --test aoi_audit`（M1-024a） | partial | PI-071 |
 | E1-5 | 延迟补偿 | 150 ms RTT 命中率差 ≤ 5% | 未测（无 netem、无对照场景） | M1-068b | 未测 | M1-068b |
-| E1-6 | High 性能 | P95 ≤ 16.7 ms、≤1200 draw call、≤4.0 M 三角形 | 未测（判定工具已就绪；三机位未采集） | `tools/perf/budget.mjs`、`reports/m1-perf.md` | 未测 | M1-069b（工作站） |
-| E1-7 | Low 性能 | ≥30 fps，draw call ≤900/500 | 未测（无 Iris Xe 级机器） | 同上 | 未测 | M1-069b、H-021 |
-| E1-8 | 材质变体 | ≤ 60 | 未测（M1 无变体计数结果） | CI `variant-count` | 未测 | M1-069b |
+| E1-6 | High 性能 | P95 ≤ 16.7 ms、≤1200 draw call、≤4.0 M 三角形 | **工作站数字（RTX 3080，非 3060 参考机，PI-109）：FAIL（部分通过）**。draw call 84/205/145（植被开；PASS）、三角形 ≤0.45 M（PASS）；P50 16.7 ms（VSync 锁），**P95 16.8–100 ms（FAIL）**，卡顿帧 70–238（限 2，FAIL；机器负载约 100 有干扰）；CPU P50 14.2/17.9/14.6 ms（目标约 10.4 ms）。植被关：P95 16.7–16.8（边缘）。分 pass GPU 预算、wasm 内存未测 | `reports/m1-perf.md`、`reports/m1-perf.json`、`reports/m1-perf-raw/` | **未通过（工作站）；参考机未测** | M1-069b 余项（卡顿/CPU）、H-021 |
+| E1-7 | Low 性能 | ≥30 fps，draw call ≤900/500 | 未测（无 Iris Xe 级机器，且渲染器没有 Low 档运行路径的 M1 采集；High 档工作站 draw call 84–205 仅供参考） | `reports/m1-perf.md` | 未测 | M1-069b、H-021 |
+| E1-8 | 材质变体 | ≤ 60 | 运行时场景实际使用的材质 18 种（≤60，**代理量**：材质数，不是 CI `variant-count` 的着色器变体数；含 M0 灰盒占位）；`variant-count` 的 M1 数字仍未产出 | `reports/m1-perf.md`（材质节） | 部分（代理 PASS；变体数未测） | M1-069b |
 | E1-9 | 包体积 | core ≤ 8 MB；首图 Medium ≤ 150 MB | core brotli 682,349 B（≤ 8,388,608 B）；首图未测 | `tools/ci/core-size.mjs` | partial | M1-064 阻塞（素材） |
 | E1-10 | 部署流程 | 键鼠可达；点击到可操作 ≤ 15 s；预取完成率 ≥ 95% | 未测（TSX 组件与 Playwright 未做） | M1-056b/057b/061b | 未测 | — |
 | E1-11 | Garrison + 补给闭环 | 闭环可玩 | `e2e_garrison_supply_loop` 通过（取箱→放 Garrison 扣 50→队友 8 s ±1 tick 重生）；真实客户端未测 | M1-019/020 | partial | — |
