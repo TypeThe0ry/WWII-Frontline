@@ -37,5 +37,17 @@
   "ui.reject.banned": "You are banned from this server",
   "ui.reject.ticket": "Join ticket invalid or expired",
   "ui.reject.dataHash": "Game data mismatch, please reload",
-  "ui.reject.unknown": "Could not join the server"
+  "ui.reject.unknown": "Could not join the server",
+  "ui.deploy.role.full": "Role is full in your squad",
+  "ui.deploy.role.teamFull": "Role is full on your team",
+  "ui.deploy.role.squadTooSmall": "Squad is too small for this role",
+  "ui.deploy.role.leaderOnly": "Squad leader only",
+  "ui.deploy.role.notInArmor": "Crewmen serve in armor crews only",
+  "ui.deploy.role.wrongSquadKind": "Not available in this squad type",
+  "ui.deploy.role.unassigned": "Join a squad to unlock this role",
+  "ui.deploy.spawn.blocked": "Spawn point is blocked",
+  "ui.deploy.spawn.cooldown": "Spawn point is on cooldown",
+  "ui.deploy.spawn.destroyed": "Spawn point was destroyed",
+  "ui.deploy.spawn.full": "Spawn point is full",
+  "ui.deploy.spawn.locked": "Spawn point is not unlocked"
 }
