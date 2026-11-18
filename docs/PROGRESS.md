@@ -605,3 +605,7 @@ blocked / in-progress / todo：无。M0 的 33 个任务全部已提交（M0-033
 ### M1-033 1944 修正 033a — partial — 2026-11-18 — 提交见 git log
 - `apply_edits.py`、`hedgerow_tools.py`、`edits_1944.py`、CLI `edits-1944`、`tests/test_apply_edits.py`；`data/maps/carentan/{terrain_edits.geojson,removed_modern.json,slice_m1_targets.json}`、`reports/m1-{1944-edits,heightmap-diff}.json`；M1-032 图层增加 `verified:false`，树篱 `source:"osm_draft"`。
 - 缺人工输入，退出码 4（partial），见 STATUS。
+
+
+### M1-034 关卡标注与建筑足迹 034a — partial — 2026-11-18 — 提交见 git log
+- `zones.py`、`buildings_annotate.py`、CLI `zones-m1` 与 `validate --slice m1`、`tests/test_zones.py`；`data/maps/carentan/{m1/{zones,spawns,cover_points,nav_critical}.json,vehicle_routes.json,landmarks.json}`、`reports/m1-zones-validate.json`；`buildings.geojson` 已标注样式/可进入性/门洞。

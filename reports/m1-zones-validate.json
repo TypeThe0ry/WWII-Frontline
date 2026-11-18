@@ -1,0 +1,100 @@
+{
+  "ok": true,
+  "rules": {
+    "cover_points>=8": {
+      "detail": {
+        "L1a": {
+          "mapped": 0,
+          "total": 8
+        },
+        "L2a": {
+          "mapped": 16,
+          "total": 16
+        },
+        "L3a": {
+          "mapped": 16,
+          "total": 16
+        }
+      },
+      "pass": true
+    },
+    "enterable<=25%": {
+      "detail": {
+        "enterable": 70,
+        "total": 1408
+      },
+      "pass": true
+    },
+    "enterable_have_door": {
+      "detail": 0,
+      "pass": true
+    },
+    "hq_infantry_connected": {
+      "detail": 1292.0,
+      "pass": true
+    },
+    "hq_vehicle_connected": {
+      "detail": 2165.4,
+      "pass": true
+    },
+    "landmark_church_found_in_osm": {
+      "detail": {
+        "arcade_square": true,
+        "bridge_south": false,
+        "church_notre_dame": true,
+        "farm_ingouf": false
+      },
+      "pass": true
+    },
+    "landmarks_defined": {
+      "detail": [],
+      "pass": true
+    },
+    "nav_not_enclosed": {
+      "detail": {
+        "GER": 9,
+        "US": 6
+      },
+      "pass": true
+    },
+    "no_m1_coords_in_full_map_files": {
+      "detail": "ok",
+      "pass": true
+    },
+    "playable_polygon": {
+      "detail": 64,
+      "pass": true
+    },
+    "snap<=60m": {
+      "detail": {
+        "L2a": 7.07,
+        "L3a": 14.56
+      },
+      "pass": true
+    },
+    "vehicle_route_chokepoint>=1": {
+      "detail": [
+        "way/1285590953",
+        "way/560781549"
+      ],
+      "pass": true
+    },
+    "vehicle_route_width>=3.6": {
+      "detail": 4.0,
+      "pass": true
+    },
+    "zone_entrances>=3": {
+      "detail": {
+        "L1a": 12,
+        "L2a": 10,
+        "L3a": 12
+      },
+      "pass": true
+    },
+    "zone_not_in_water_or_building": {
+      "detail": "ok",
+      "pass": true
+    }
+  },
+  "schema": 1
+}

@@ -1,0 +1,65 @@
+{
+ "cover_zones": [
+  "L1a",
+  "L2a",
+  "L3a"
+ ],
+ "garrison_candidates": {
+  "GER": {
+   "design_pos": [
+    1340,
+    720
+   ],
+   "hq_distance_m": 212.6,
+   "pos": [
+    1340.0,
+    720.0
+   ],
+   "snap_m": 0.0
+  },
+  "US": {
+   "design_pos": [
+    650,
+    1470
+   ],
+   "hq_distance_m": 217.2,
+   "pos": [
+    650.0,
+    1470.0
+   ],
+   "snap_m": 0.0
+  }
+ },
+ "hq": {
+  "GER": {
+   "design_pos": [
+    1480,
+    560
+   ],
+   "pos": [
+    1480.0,
+    560.0
+   ],
+   "radius_m": 40,
+   "snap_m": 0.0
+  },
+  "US": {
+   "design_pos": [
+    480,
+    1600
+   ],
+   "pos": [
+    476.0,
+    1600.0
+   ],
+   "radius_m": 40,
+   "snap_m": 4.0
+  }
+ },
+ "kinds_supported": [
+  "hq",
+  "garrison"
+ ],
+ "note": "M1 slice only; not valid for the full map",
+ "schema": "frontline.map.spawns/1"
+}

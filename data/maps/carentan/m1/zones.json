@@ -1,0 +1,166 @@
+{
+ "lines": [
+  {
+   "id": "L1",
+   "points": [
+    {
+     "design_pos": [
+      900,
+      1450
+     ],
+     "id": "L1a",
+     "name_key": "carentan.ingouf_farm",
+     "origin": "R",
+     "pos": [
+      900.0,
+      1450.0
+     ],
+     "pos_error_m": 250,
+     "radius_m": 45,
+     "snap_m": 0.0,
+     "tags": [
+      "stone_courtyard",
+      "hedgerow"
+     ]
+    },
+    {
+     "design_pos": [
+      560,
+      1700
+     ],
+     "id": "L1b",
+     "name_key": "carentan.southern_bridge",
+     "origin": "R",
+     "pos": [
+      560.0,
+      1700.0
+     ],
+     "pos_error_m": 150,
+     "radius_m": 35,
+     "snap_m": 0.0,
+     "tags": [
+      "bridge",
+      "chokepoint"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "L2",
+   "points": [
+    {
+     "design_pos": [
+      700,
+      800
+     ],
+     "id": "L2a",
+     "name_key": "carentan.market_garden_fields",
+     "origin": "G",
+     "pos": [
+      705.0,
+      805.0
+     ],
+     "pos_error_m": 80,
+     "radius_m": 55,
+     "snap_m": 7.07,
+     "tags": [
+      "hedgerow_grid"
+     ]
+    },
+    {
+     "design_pos": [
+      500,
+      1000
+     ],
+     "id": "L2c",
+     "name_key": "carentan.orchard_cross",
+     "origin": "G",
+     "pos": [
+      500.0,
+      1000.0
+     ],
+     "pos_error_m": 80,
+     "radius_m": 50,
+     "snap_m": 0.0,
+     "tags": [
+      "hedgerow_gap"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "L3",
+   "points": [
+    {
+     "design_pos": [
+      1277,
+      897
+     ],
+     "id": "L3a",
+     "name_key": "carentan.notre_dame",
+     "origin": "R",
+     "pos": [
+      1273.0,
+      911.0
+     ],
+     "pos_error_m": 40,
+     "radius_m": 50,
+     "snap_m": 14.56,
+     "tags": [
+      "church",
+      "graveyard_wall"
+     ]
+    },
+    {
+     "design_pos": [
+      1380,
+      990
+     ],
+     "id": "L3b",
+     "name_key": "carentan.place_de_la_republique",
+     "origin": "R",
+     "pos": [
+      1380.0,
+      990.0
+     ],
+     "pos_error_m": 120,
+     "radius_m": 45,
+     "snap_m": 0.0,
+     "tags": [
+      "arcade"
+     ]
+    }
+   ]
+  }
+ ],
+ "m1_active": [
+  "L1a",
+  "L2a",
+  "L3a"
+ ],
+ "notes": [
+  "L2a: design [700, 800] not standable; snapped 7.1 m to [705.0,805.0]",
+  "L3a: design [1277, 897] not standable; snapped 14.6 m to [1273.0,911.0]",
+  "HQ US: design [480, 1600] snapped 4.0 m"
+ ],
+ "out_of_bounds_buffer_m": 64,
+ "playable_polygon": [
+  [
+   380.0,
+   520.0
+  ],
+  [
+   1560.0,
+   520.0
+  ],
+  [
+   1560.0,
+   1700.0
+  ],
+  [
+   380.0,
+   1700.0
+  ]
+ ],
+ "schema": "frontline.map.zones/1"
+}
