@@ -1040,3 +1040,6 @@ M1-038 体量为 L。先交付与场景无关的引擎（行为树、效用、�
 
 ## PI-092 M1-040b：C4 事件无 event_id，去重只用于 C2.events（2026-11-18）
 任务写的"C4 按 event_id 去重"与协议不符：`ServerEventC4` 各消息没有 event_id（C4 是可靠流，不会重复），重复投递只发生在 C2.events 的冗余发送。因此 `GameState.apply` 不做去重；`EventDedup` 留给 C2.events 解码层。热路径堆增量验收改为结构性断言（槽位对象复用），数值验收待专用 `--expose-gc` 基准。
+
+## PI-093 M1-041a：先做座位状态机与外推辅助（2026-11-18）
+载具预测本体依赖 sim-wasm 导出载具步进（需 wasm 重编与对账接线），在云端无法完成端到端验收(netem/headless)，故先落地与 wasm 无关的纯逻辑。换座 2 s 取 60 tick（30 Hz）；停车阈值 5 km/h 取自 GD 14.7，均为 `initial`。
