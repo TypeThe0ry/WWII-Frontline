@@ -108,6 +108,8 @@ pub enum Command {
         player: PlayerId,
         msg: frontline_protocol::msg::c0::ClientMsgC0,
     },
+    /// Keep every team at `n` players by spawning / removing bots (M1-039c); `0` turns it off.
+    SetBotFill(u8),
 }
 
 /// Network-side sender for inputs. Drops the new input when the channel is full and counts it.
@@ -234,6 +236,8 @@ pub struct SimLoop<C: Clock> {
     outgoing: Vec<Outgoing>,
     /// Bots hosted in this process (`--bots N`, M0-026); `None` without bots.
     bot_host: Option<BotHost>,
+    /// Per-team target for dynamic bot fill; `None` keeps the static `--bots N`.
+    bot_fill: Option<u8>,
     /// Running count of the sim's gameplay events (shots, hits, kills, spawns).
     tally: EventTally,
 }
@@ -339,6 +343,7 @@ pub fn build_loop_with_bots<C: Clock>(
         clients_in: Vec::new(),
         outgoing: Vec::new(),
         bot_host,
+        bot_fill: None,
         tally: EventTally::default(),
     };
     (lp, InputSender { tx: itx, metrics }, ctx)
@@ -532,6 +537,7 @@ impl<C: Clock> SimLoop<C> {
                         .handle(&mut self.world, &self.metrics, player, msg, &mut out);
                     self.send_c0(out);
                 }
+                Command::SetBotFill(n) => self.bot_fill = (n > 0).then_some(n),
                 Command::RemovePlayer(p) | Command::ClientGone(p) => {
                     self.c0.forget(p);
                     self.bridge.anticheat.forget(p);
@@ -606,8 +612,17 @@ impl<C: Clock> SimLoop<C> {
     /// next tick enters the same validation path as a human's. Also tallies this tick's events.
     fn bots_think(&mut self) {
         self.tally.add(&self.step_events);
+        let mut changed = false;
         if let Some(host) = self.bot_host.as_mut() {
+            let now = self.world.tick().0;
+            // Once a second: top up / make room (M1-039c). Spawned bots think from the next tick.
+            if let (Some(target), true) = (self.bot_fill, now.is_multiple_of(30)) {
+                changed = host.reconcile(now, &mut self.world, &mut self.bridge, target) != (0, 0);
+            }
             host.tick(&self.world, &mut self.bridge);
+        }
+        if changed {
+            self.update_player_gauges();
         }
     }
 
@@ -728,6 +743,34 @@ mod tests {
             TICK_PERIOD.mul_f64(3.0)
         );
         assert_eq!(m.tick_skipped_slots_total.get(), 1);
+    }
+
+    /// M1-039c: `SetBotFill` tops every team up to the target within a second and the gauge follows.
+    #[test]
+    fn set_bot_fill_tops_teams_up_within_a_second() {
+        let c = FakeClock::new();
+        let m = Metrics::new();
+        let (mut lp, _tx, ctx) = build_loop_with_bots(&c, &cfg(), 2, m.clone(), StopFlag::new());
+        assert_eq!(m.bots.get(), 2);
+        ctx.send(Command::SetBotFill(4)).unwrap();
+        for _ in 0..31 {
+            lp.tick();
+        }
+        let host = lp.bot_host().unwrap();
+        assert_eq!(
+            (host.count_team(Team::Us), host.count_team(Team::Ger)),
+            (4, 4)
+        );
+        assert_eq!(m.bots.get(), 8);
+        ctx.send(Command::SetBotFill(0)).unwrap();
+        for _ in 0..60 {
+            lp.tick();
+        }
+        assert_eq!(
+            lp.bot_host().unwrap().len(),
+            8,
+            "0 switches fill off, bots stay"
+        );
     }
 
     #[test]
