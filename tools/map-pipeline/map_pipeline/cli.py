@@ -91,8 +91,15 @@ def main(argv=None) -> int:
     ed.add_argument("--repo", default=".")
     ed.add_argument("--out", default="data/maps/carentan")
     ed.add_argument("--incoming", default="assets/incoming/maps/carentan/traced")
+    ch = sub.add_parser("chunks-m1", help="bake the M1 slice chunks (M1-035)")
+    ch.add_argument("--repo", default=".")
+    ch.add_argument("--out", default="data/maps/carentan")
+    ch.add_argument("--dest", default="assets/processed/maps/carentan/m1/chunks")
+    ch.add_argument("--workers", type=int, default=4)
     a = ap.parse_args(argv)
 
+    if a.cmd == "chunks-m1":
+        return _chunks(a)
     if a.cmd == "zones-m1":
         from . import zones
 
@@ -258,3 +265,22 @@ def _validate_vectors(a) -> int:
         bad += len(errs)
         print(f"{k}: {len(errs)} errors")
     return 1 if bad else 0
+
+
+def _chunks(a) -> int:
+    import time
+
+    from . import chunker
+
+    t0 = time.time()
+    out, dest, root = Path(a.out), Path(a.repo) / a.dest, Path(a.repo)
+    ctx, res, entries = chunker.bake(out, dest, a.workers)
+    rep = chunker.report(res, entries)
+    rep["verify"] = chunker.verify(ctx, res, dest)
+    rep["bake_seconds"] = round(time.time() - t0, 1)
+    (out / "m1" / "chunks").mkdir(parents=True, exist_ok=True)
+    (out / "m1" / "chunks" / "index.json").write_text(json.dumps(chunker.index_doc(entries), indent=1, sort_keys=True) + "\n", encoding="utf-8")
+    (out / "m1" / "chunks" / "FORMAT.txt").write_text(chunker.FORMAT_DOC, encoding="utf-8")
+    (root / "reports" / "m1-chunk-bake.json").write_text(json.dumps(rep, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    print(json.dumps({k: rep[k] for k in ("chunks", "bytes", "chunks_over_limit", "verify", "bake_seconds")}))
+    return 1 if rep["chunks_over_limit"] else 0

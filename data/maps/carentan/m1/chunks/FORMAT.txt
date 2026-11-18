@@ -1,0 +1,12 @@
+FCHK v1 (M1-035) - one file per 64 m chunk: b_{bx}_{bz}.fchk (visual+data), c_{bx}_{bz}.fcol (collision)
+Header   : '<4sBBHHH' magic 'FCHK', version, flags, bx, bz, nsections
+Table    : nsections x '<BBHIII' (id, codec(1=zlib), pad, offset, compressed_len, raw_len)
+Sections : 1 height  : 65x65 u16, row-wise delta (wrapping), low-byte plane then high-byte plane, zlib
+           2 splat   : 8 planes x 64x64 u8 (grass,dirt,mud,road,cobble,rock,sand,forest_floor), per-pixel sum 255, zlib
+           3 props   : JSON list (bld_*/lm_*), footprints in chunk-local centimetres, PH_ asset refs, spans[] neighbours
+           4 veg     : '<HHIH' ntrees nshrubs grass_seed grass_count, then (ntrees+nshrubs) x '<HHBBB' (x,z u16 of 64 m, species, scale, rot), zlib
+           5 hedge   : '<H' nseg; each '<BBBB' height_dm mound_dm blocking npts + npts x '<HH' (u16 of 64 m), 2 m spacing, zlib
+Collision: zlib of  <4sBBHff header (FCOL v1, 65 samples, hmin, hmax) + 65x65 u16 heights (same samples as the visual chunk)
+           + 64x64 u8 material ids (= dominant splat layer index).
+Height triangulation: every 1 m quad is split along the diagonal (x,z)-(x+1,z+1); the visual (CDLOD LOD0) and the
+           collision height field must use this same diagonal (PI-084). Chunk edge samples are shared with neighbours.

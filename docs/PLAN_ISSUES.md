@@ -991,3 +991,13 @@
 - **地标**：只有教堂在 OSM 命中；农场/南桥/拱廊广场未命中，保留设计值待人工核实。
 - **受影响任务**：M1-018/019（读取 m1/zones、spawns）、M1-035、M1-052。
 - **裁决（Fable 填写）**：
+
+
+## PI-084 M1-035 区块格式取舍
+- **压缩**：环境无 brotli，区块用 zlib-9（高度做 delta+字节平面）；容器每段带 codec 字段，换 brotli 只需改编码器与 FORMAT.txt。浏览器 `DecompressionStream` 原生支持 deflate，也是实际考虑。
+- **字节**：单块 15–21 KB，低于规格估计的 30–80 KB，原因是草只存种子、OSM 植被稀疏；真素材/人工树篱到位后重测。
+- **对角线**：每个 1 m 格沿 (0,0)-(1,1) 对角线剖分；CDLOD（M1-049）与 Rapier `HeightField` 须同向，不一致时再登记。
+- **打包**：`.fpak` 与 manifest 条目未接 M1-003/005，区块先落 `assets/processed/`，`index.json` 带 `data_quality:"draft"`。
+- **splat**：dirt 占 21%（建筑 2 m 缓冲 + 小径/铁路），偏高，待 M1-035b 与美术调参。
+- **受影响任务**：M1-036、M1-049、M1-050、M1-051。
+- **裁决（Fable 填写）**：
