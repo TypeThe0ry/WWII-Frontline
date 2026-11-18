@@ -32,10 +32,11 @@ def window_bounds(e: float, n: float, res_m: float = 1.0, samples: int = NEAR_SA
     return (e - half, n - half, e + span + half, n + span + half)
 
 
-def _warp(gdal, src: str, bounds, res_m: float) -> np.ndarray:
+def _warp(gdal, src, bounds, res_m: float, dst_srs: str | None = None) -> np.ndarray:
     xmin, ymin, xmax, ymax = bounds
     w = int(round((xmax - xmin) / res_m))
     h = int(round((ymax - ymin) / res_m))
+    kw = {"dstSRS": dst_srs} if dst_srs else {}
     ds = gdal.Warp(
         "",
         src,
@@ -46,6 +47,7 @@ def _warp(gdal, src: str, bounds, res_m: float) -> np.ndarray:
         resampleAlg="average",
         dstNodata=-9999,
         outputType=gdal.GDT_Float32,
+        **kw,
     )
     arr = ds.GetRasterBand(1).ReadAsArray().astype(np.float64)
     ds = None
