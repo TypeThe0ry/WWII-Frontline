@@ -1,9 +1,8 @@
 # PR gate: client unit tests (ARCHITECTURE §17.5, target < 5 min).
 name: test-ts
+# 2026-11-18: automatic triggers removed (PI-078); checks run locally via scripts/local-ci.sh.
 on:
-  pull_request:
-  push:
-    branches: [main]
+  workflow_dispatch:
 concurrency:
   group: test-ts-${{ github.ref }}
   cancel-in-progress: true

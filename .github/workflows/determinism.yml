@@ -5,16 +5,9 @@
 #    variable DETERMINISM_STRICT=0 to fall back to the R5 warn-only mode if a legitimate platform difference appears
 #    (then watch drift.cm_per_s in reports/m0/determinism/summary.json).
 name: determinism
+# 2026-11-18: automatic triggers removed (PI-078); checks run locally via scripts/local-ci.sh.
 on:
-  pull_request:
-  push:
-    branches: [main]
   workflow_dispatch:
-    inputs:
-      strict:
-        description: "Fail when native and wasm differ (default on, PI-019)"
-        type: boolean
-        default: true
 concurrency:
   group: determinism-${{ github.ref }}
   cancel-in-progress: true

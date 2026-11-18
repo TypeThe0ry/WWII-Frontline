@@ -1,9 +1,8 @@
 # PR gate: formatting, lint, type check, dependency policy (ARCHITECTURE §17.5, target < 6 min).
 name: lint
+# 2026-11-18: automatic triggers removed (PI-078); checks run locally via scripts/local-ci.sh.
 on:
-  pull_request:
-  push:
-    branches: [main]
+  workflow_dispatch:
 concurrency:
   group: lint-${{ github.ref }}
   cancel-in-progress: true

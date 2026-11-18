@@ -4,10 +4,9 @@
 # machines (tools/perf/README.md, scripts/perf-regress.mjs).
 # A metric over its tolerance fails the job; the measurement is uploaded as an artifact either way.
 name: bench
+# 2026-11-18: automatic triggers removed (PI-078); checks run locally via scripts/local-ci.sh.
 on:
   workflow_dispatch:
-  schedule:
-    - cron: "17 3 * * *"
 permissions:
   contents: read
 env:

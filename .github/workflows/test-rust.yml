@@ -3,10 +3,9 @@
 # is available yet (NEEDS_HUMAN H-014), and rust-cache needs no extra setup on hosted runners.
 # Revisit with sccache + remote backend if the cold-cache time approaches the budget.
 name: test-rust
+# 2026-11-18: automatic triggers removed (PI-078); checks run locally via scripts/local-ci.sh.
 on:
-  pull_request:
-  push:
-    branches: [main]
+  workflow_dispatch:
 concurrency:
   group: test-rust-${{ github.ref }}
   cancel-in-progress: true

@@ -937,3 +937,9 @@
 - **做法**：①UTM 换算用纯 Python Krüger 级数（与 pyproj 差 <1 mm，测试在装有 pyproj 时交叉校验），不把 pyproj 加进管线依赖；②MAPS §3.4 只给出教堂的真实坐标源，其余 7 个锚点的“真实”E/N 暂取设计框架值（框架原点 + 设计坐标），在 `meta.json` 标 `provisional:true`，因此当前相似变换为恒等、`applied:false`，待 H-051 填入真实坐标后重新拟合；锚点 `n13_nw_corner`、`flood_east_edge` 是据 MAPS 文字取的边缘/范围点（±300 m），仅用于凑足 8 个与交叉校验；Augustine 修道院位置未核实，不入锚点；③数据源台账 id 约定为 `AST-M-{LIDAR|ALTI|GLO30|OSM}-01`（req_id `M-CAR-001..004`），草稿行全部 `PENDING`，`verified` 仅在台账 `status=OK` 且存档存在时取台账 `purchase_date`；④任务写的 “`validate-sources` 在 MISSING/PENDING 时返回非 0” 与“人类登记前应被允许”冲突：以 `meta.m1_sources_checked`（默认 false）为开关，false 时只报告不失败，结构错误始终失败；⑤meta 的“JSON Schema”暂用 `carentan.validate_meta` 手写校验，正式 schema 文件与 CI 接入拆 M1-030b；⑥`height.hmin_m/hmax_m` 为 null（M1-031 填）。
 - **受影响任务**：M1-031、M1-032、M1-034、H-051/H-052/H-004。
 - **裁决（Fable 填写）**：
+
+### PI-078 停用 GitHub Actions，改为本地合并门槛
+- **提出者 / 日期**：用户 TT 指示 / 2026-11-18
+- **做法**：①`.github/workflows/*.yml` 的所有自动触发（pull_request/push/schedule）已去掉，只保留 `workflow_dispatch`（需要时可手动跑；文件保留作为检查清单的权威定义）；②新增 `scripts/local-ci.sh [组…]`（lint / rust / ts / data / determinism / wasm / assets / map），复刻各工作流的步骤；缺工具的组报告 `SKIPPED` 并以退出码 3 结束（不算绿）；③合并前门槛：本次改动涉及的组必须通过（Rust 改动 → lint+rust+ts，数据/schema → data，地图工具 → map，sim/wasm → determinism+wasm，素材 → assets）；云端容器没有 wasm-pack/cargo-deny，determinism 与 wasm 两组需在 Linux 工作站上跑（Remote Control），在那之前凡改动 sim/sim-wasm 的任务必须先在工作站跑过再合并；④`manifest-budget` 依赖客户端构建产物，已并入 assets 组（有 `client/dist/size-report.json` 时才跑）；⑤CI 实跑里程碑相关的 H-102 事项就此失效（改为本地基线）。
+- **受影响任务**：M1-001–004（CI 墙钟判据）、所有后续任务的合并流程。
+- **裁决（Fable 填写）**：

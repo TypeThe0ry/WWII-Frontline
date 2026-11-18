@@ -2,24 +2,9 @@
 # Unit tests, lint, type check, then the gate against the real LICENSES.md (assets/incoming/ is not in git, so the real
 # run must succeed with zero files) and the missing-asset report.
 name: asset-pipeline
+# 2026-11-18: automatic triggers removed (PI-078); checks run locally via scripts/local-ci.sh.
 on:
-  pull_request:
-    paths:
-      - "tools/asset-pipeline/**"
-      - "LICENSES.md"
-      - "licenses/**"
-      - "assets/requirements.json"
-      - "docs/ASSET_SHOPPING_LIST.md"
-      - "data/placeholders/**"
-      - "pnpm-lock.yaml"
-      - ".github/workflows/asset-pipeline.yml"
-  push:
-    branches: [main]
-    paths:
-      - "tools/asset-pipeline/**"
-      - "LICENSES.md"
-      - "licenses/**"
-      - "assets/requirements.json"
+  workflow_dispatch:
 concurrency:
   group: asset-pipeline-${{ github.ref }}
   cancel-in-progress: true
