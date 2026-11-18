@@ -1037,3 +1037,6 @@ M1-038 体量为 L。先交付与场景无关的引擎（行为树、效用、�
 
 ## PI-091 M1-040a：先做纯状态模块（2026-11-18）
 部署状态机、去重、击杀信息环、roster 合并先作为与 signals/协议解码无关的纯类落地并测试；roster 增量采用 per-player `seq` 取最大（假定 M1-010 的 `PlayerRoster` 增量带可比较序号，若实际字段不同按 protocol 为准再改）。`apply.ts` 与 EventMap 扩展留 040b。
+
+## PI-092 M1-040b：C4 事件无 event_id，去重只用于 C2.events（2026-11-18）
+任务写的"C4 按 event_id 去重"与协议不符：`ServerEventC4` 各消息没有 event_id（C4 是可靠流，不会重复），重复投递只发生在 C2.events 的冗余发送。因此 `GameState.apply` 不做去重；`EventDedup` 留给 C2.events 解码层。热路径堆增量验收改为结构性断言（槽位对象复用），数值验收待专用 `--expose-gc` 基准。

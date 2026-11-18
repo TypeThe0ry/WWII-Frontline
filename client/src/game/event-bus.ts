@@ -33,6 +33,16 @@ export interface GameEvents {
   'hit.confirm': { target: number; zone: number; damage: number; killed: boolean };
   /** `angle` in radians (0 = ahead of the player's view, clockwise), `amount` 0..1. */
   'damage.taken': { angle: number; amount: number };
+  // --- M1-040 (game state, from C0 / C4): server-authoritative state changes. ---
+  'kill.feed': { killer: number; victim: number; weapon: number; headshot: boolean; dist: number };
+  'deploy.state': { phase: string; spawnTick?: number; reason?: string };
+  'objective.changed': { objective: number; owner: number; reason: number };
+  'revive': { medic: number; target: number };
+  'roster.changed': { player: number; joined: boolean };
+  'spawnpoint.changed': { id: number; team: number; state: number };
+  'match.phase': { phase: number; endsAt: number };
+  'notice': { code: number; args: readonly [number, number, number] };
+  'death': { victim: number; respawnAfter: number; canBeRevived: boolean };
 }
 
 export type Listener<P> = (payload: P) => void;
