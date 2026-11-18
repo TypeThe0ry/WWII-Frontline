@@ -16,12 +16,14 @@
 
 pub mod aim;
 pub mod brain;
+pub mod bt;
 pub mod ctx;
 pub mod difficulty;
 pub mod grid_nav;
 pub mod nav;
 pub mod perception;
 pub mod soldier;
+pub mod utility;
 
 pub use brain::{BotBrain, BrainStats};
 pub use ctx::BotCtx;
