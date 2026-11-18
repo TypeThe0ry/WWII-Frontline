@@ -58,7 +58,7 @@ describe('placeholder', () => {
   it('placeholder node names and sockets', () => {
     expect(PH_NAME_RE.test(phName('V-VEH-US-003', 'sherman'))).toBe(true);
     expect(new Set(TANK_SOCKETS).size).toBe(TANK_SOCKETS.length);
-    for (const s of ['socket_muzzle', 'socket_seat_driver', 'socket_seat_gunner', 'socket_seat_commander', 'socket_hatch', 'socket_exhaust', 'socket_mg_coax']) {
+    for (const s of ['socket_gun_muzzle', 'socket_turret', 'socket_seat_driver', 'socket_seat_gunner', 'socket_seat_commander', 'socket_hatch', 'socket_exhaust', 'socket_mg_coax']) {
       expect(TANK_SOCKETS).toContain(s);
     }
   });

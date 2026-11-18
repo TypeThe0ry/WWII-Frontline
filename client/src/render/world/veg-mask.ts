@@ -5,6 +5,10 @@
  */
 export const BLOCK = 1;
 export const FOREST = 2;
+/** Surface kinds for the terrain splat (M1-050b): they also set BLOCK (vegetation stays off them). */
+export const ROAD = 4;
+export const WATER = 8;
+export const BUILDING = 16;
 
 export type Pt = readonly [number, number];
 
@@ -12,6 +16,8 @@ export interface VegMask {
   size: number;
   blocked(x: number, z: number): boolean;
   forest(x: number, z: number): boolean;
+  /** Raw flag byte of the cell at (x, z) (BLOCK | FOREST | ROAD | WATER | BUILDING); 0 outside the grid. */
+  flags(x: number, z: number): number;
   /** Cells carrying each flag (diagnostics). */
   counts: { blocked: number; forest: number };
 }
@@ -94,16 +100,16 @@ export function buildVegMask(layers: MaskLayers): VegMask {
   const m = new Uint8Array(n * n);
   for (const ring of layers.forests ?? []) fillPolygon(m, n, ring, FOREST);
   for (const ring of layers.buildings ?? []) {
-    fillPolygon(m, n, ring, BLOCK);
-    strokePolyline(m, n, [...ring, ring[0]!], MARGIN.building, BLOCK);
+    fillPolygon(m, n, ring, BLOCK | BUILDING);
+    strokePolyline(m, n, [...ring, ring[0]!], MARGIN.building, BLOCK | BUILDING);
   }
-  for (const r of layers.roads ?? []) strokePolyline(m, n, r.pts, r.width_m / 2 + MARGIN.road, BLOCK);
+  for (const r of layers.roads ?? []) strokePolyline(m, n, r.pts, r.width_m / 2 + MARGIN.road, BLOCK | ROAD);
   for (const r of layers.hedges ?? []) strokePolyline(m, n, r.pts, r.width_m / 2 + MARGIN.hedge, BLOCK);
   for (const ring of layers.waterPolys ?? []) {
-    fillPolygon(m, n, ring, BLOCK);
-    strokePolyline(m, n, [...ring, ring[0]!], MARGIN.water, BLOCK);
+    fillPolygon(m, n, ring, BLOCK | WATER);
+    strokePolyline(m, n, [...ring, ring[0]!], MARGIN.water, BLOCK | WATER);
   }
-  for (const r of layers.waterLines ?? []) strokePolyline(m, n, r.pts, r.width_m / 2 + MARGIN.water, BLOCK);
+  for (const r of layers.waterLines ?? []) strokePolyline(m, n, r.pts, r.width_m / 2 + MARGIN.water, BLOCK | WATER);
   let blocked = 0;
   let forest = 0;
   for (let k = 0; k < m.length; k++) {
@@ -115,7 +121,7 @@ export function buildVegMask(layers: MaskLayers): VegMask {
     const j = Math.floor(z);
     return i >= 0 && j >= 0 && i < n && j < n ? m[j * n + i]! : 0;
   };
-  return { size: n, blocked: (x, z) => (at(x, z) & BLOCK) !== 0, forest: (x, z) => (at(x, z) & FOREST) !== 0, counts: { blocked, forest } };
+  return { size: n, blocked: (x, z) => (at(x, z) & BLOCK) !== 0, forest: (x, z) => (at(x, z) & FOREST) !== 0, flags: at, counts: { blocked, forest } };
 }
 
 interface Feat {

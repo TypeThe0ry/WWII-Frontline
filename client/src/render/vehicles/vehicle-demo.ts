@@ -72,7 +72,7 @@ export async function attachVehicleDemo(ctx: RenderContext, params: URLSearchPar
     if (before !== state.turretYaw && model.shownTurretYaw === state.turretYaw) {
       shots++;
       if (fx) {
-        model.socketWorld('socket_muzzle', muzzle);
+        model.socketWorld('socket_gun_muzzle', muzzle);
         fx.emitTankShot(muzzle.x, muzzle.y, muzzle.z);
       }
     }
