@@ -99,7 +99,7 @@ mod internal {
     fn side_hit_through_the_ammo_rack_and_driver() {
         // From the left side at z = 1.4 (driver's row), travelling -X through the driver.
         let d = internal_damage(
-            Vec3::new(1.5, 0.9, 1.4),
+            Vec3::new(1.5, -0.2, 1.4),
             Vec3::new(-1.0, 0.0, 0.0),
             40.0,
             400.0,
@@ -114,7 +114,7 @@ mod internal {
     fn module_takes_full_damage_and_hull_adds_20_percent() {
         // Through the engine from the rear, along the hull axis.
         let d = internal_damage(
-            Vec3::new(0.0, 0.7, -2.7),
+            Vec3::new(0.0, -0.3, -2.7),
             Vec3::new(0.0, 0.0, 1.0),
             40.0,
             400.0,
@@ -128,7 +128,7 @@ mod internal {
     fn turret_spillover_hits_the_other_turret_crewman() {
         // Straight down the gunner's seat from above: gunner direct 25%, commander 8%.
         let d = internal_damage(
-            Vec3::new(0.0, 2.2, 0.2),
+            Vec3::new(0.0, 1.8, 0.2),
             Vec3::new(0.0, -1.0, 0.0),
             40.0,
             400.0,

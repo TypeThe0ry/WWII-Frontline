@@ -30,6 +30,33 @@ pub enum SimEvent {
         vehicle: EntityId,
         seat: Option<u8>,
     },
+    /// A shell struck a vehicle: armour zone index and outcome (0 pen, 1 no pen, 2 ricochet).
+    ArmorHit {
+        vehicle: EntityId,
+        zone: u8,
+        result: u8,
+    },
+    /// A vehicle module (0..6) or the hull (0xFF) took damage; `hp` is what is left.
+    VehicleDamaged {
+        vehicle: EntityId,
+        module: u8,
+        hp: f32,
+    },
+    /// The main gun fired shell type `shell` (0 AP, 1 HE, 2 WP).
+    VehicleFired {
+        vehicle: EntityId,
+        shell: u8,
+    },
+    VehicleKnockedOut {
+        vehicle: EntityId,
+    },
+    VehicleAmmoExplosion {
+        vehicle: EntityId,
+    },
+    CrewKilled {
+        player: PlayerId,
+        vehicle: EntityId,
+    },
     /// Roster, squad or role changed (M1-021).
     Roster(crate::squad::RosterDelta),
     /// An enemy entered a HQ protection zone: it takes damage after the warning (M1-019).

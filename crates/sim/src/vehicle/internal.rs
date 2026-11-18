@@ -26,35 +26,35 @@ type Aabb = (Vec3, Vec3);
 const MODULE_BOXES: [(ModuleId, Aabb); MODULE_COUNT] = [
     (
         ModuleId::Engine,
-        (Vec3::new(-0.8, 0.2, -2.6), Vec3::new(0.8, 1.2, -1.0)),
+        (Vec3::new(-0.8, -0.8, -2.6), Vec3::new(0.8, 0.2, -1.0)),
     ),
     (
         ModuleId::TrackL,
-        (Vec3::new(0.9, 0.0, -2.6), Vec3::new(1.4, 0.7, 2.4)),
+        (Vec3::new(0.9, -1.3, -2.6), Vec3::new(1.4, -0.3, 2.4)),
     ),
     (
         ModuleId::TrackR,
-        (Vec3::new(-1.4, 0.0, -2.6), Vec3::new(-0.9, 0.7, 2.4)),
+        (Vec3::new(-1.4, -1.3, -2.6), Vec3::new(-0.9, -0.3, 2.4)),
     ),
     (
         ModuleId::TurretDrive,
-        (Vec3::new(-0.6, 1.2, -0.6), Vec3::new(0.6, 1.5, 0.6)),
+        (Vec3::new(-0.6, 0.4, -0.6), Vec3::new(0.6, 0.7, 0.6)),
     ),
     (
         ModuleId::MainGun,
-        (Vec3::new(-0.3, 1.5, 0.0), Vec3::new(0.3, 2.0, 0.8)),
+        (Vec3::new(-0.3, 0.7, 0.0), Vec3::new(0.3, 1.2, 0.8)),
     ),
     (
         ModuleId::AmmoRack,
-        (Vec3::new(-1.0, 0.0, 0.2), Vec3::new(1.0, 0.6, 1.2)),
+        (Vec3::new(-1.0, -0.9, 0.2), Vec3::new(1.0, -0.2, 1.2)),
     ),
 ];
 
 /// Crew positions per seat (driver, gunner, commander) and their compartment (0 hull, 1 turret).
 pub const CREW: [(Vec3, u8); 3] = [
-    (Vec3::new(0.0, 0.9, 1.4), 0),
-    (Vec3::new(0.0, 1.3, 0.0), 1),
-    (Vec3::new(0.0, 1.5, -0.3), 1),
+    (Vec3::new(0.0, -0.2, 1.4), 0),
+    (Vec3::new(0.0, 0.8, 0.0), 1),
+    (Vec3::new(0.0, 1.0, -0.3), 1),
 ];
 
 #[derive(Debug, Clone, Copy, PartialEq, Default)]

@@ -8,6 +8,8 @@ pub mod gun;
 pub mod internal;
 pub mod modules;
 pub mod seats;
+pub mod shell;
+pub mod shells;
 pub mod snapshot;
 pub mod suspension;
 pub mod tracks;
@@ -22,6 +24,8 @@ use serde::Deserialize;
 use crate::data::defs::VehicleDef;
 use crate::hash::HashWriter;
 use crate::ids::EntityId;
+
+pub use shells::shell_flight;
 
 pub const GRAVITY: f32 = 9.81;
 /// Integration sub-steps per tick (spring stiffness needs `dt <= ~1/90 s`).
@@ -82,6 +86,11 @@ pub struct VehicleParams {
     pub half_gauge: f32,
     pub hull_hp: f32,
     pub seat_count: usize,
+    pub zones: [shell::Zone; shell::ZONE_COUNT],
+    pub module_specs: modules::ModuleSpecs,
+    pub turret: turret::TurretParams,
+    pub gun: gun::GunParams,
+    pub shells: Vec<shell::ShellDef>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -95,6 +104,54 @@ pub enum VehicleSpawnError {
 pub enum VehicleDataError {
     Missing(&'static str),
     Bad(&'static str),
+}
+
+fn parse_zones(
+    g: &crate::data::defs::VehicleGameplay,
+) -> Result<[shell::Zone; shell::ZONE_COUNT], VehicleDataError> {
+    let mut out = [shell::Zone {
+        thickness_mm: 0.0,
+        slope_deg: 0.0,
+    }; shell::ZONE_COUNT];
+    for (i, id) in shell::ZONE_IDS.iter().enumerate() {
+        let z = g
+            .armor_zones
+            .iter()
+            .find(|z| z.id == *id)
+            .ok_or(VehicleDataError::Missing("armor_zones"))?;
+        out[i] = shell::Zone {
+            thickness_mm: z.thickness_mm as f32,
+            slope_deg: z.slope_deg as f32,
+        };
+    }
+    Ok(out)
+}
+
+fn main_gun(
+    g: &crate::data::defs::VehicleGameplay,
+) -> Result<&serde_json::Value, VehicleDataError> {
+    g.weapons
+        .iter()
+        .find(|w| w["kind"] == "cannon")
+        .ok_or(VehicleDataError::Missing("weapons"))
+}
+
+fn parse_gun(g: &crate::data::defs::VehicleGameplay) -> Result<gun::GunParams, VehicleDataError> {
+    let w = main_gun(g)?;
+    let f = |k: &str| w[k].as_f64().ok_or(VehicleDataError::Bad("weapons"));
+    let n = |k: &str| w["ammo_rounds"][k].as_u64().unwrap_or(0) as u16;
+    Ok(gun::GunParams {
+        reload_s: f("reload_s")? as f32,
+        switch_reload_s: f("switch_reload_s")? as f32,
+        ammo: [n("ap"), n("he"), n("wp")],
+    })
+}
+
+fn parse_shells(
+    g: &crate::data::defs::VehicleGameplay,
+) -> Result<Vec<shell::ShellDef>, VehicleDataError> {
+    let w = main_gun(g)?;
+    serde_json::from_value(w["shells"].clone()).map_err(|_| VehicleDataError::Bad("shells"))
 }
 
 impl VehicleParams {
@@ -159,6 +216,21 @@ impl VehicleParams {
             half_gauge: (w / 2.0 - 0.3).max(0.5),
             hull_hp: g.hull_health_hp as f32,
             seat_count: g.seats.len(),
+            zones: parse_zones(g)?,
+            module_specs: modules::ModuleSpecs::from_def(def),
+            turret: turret::TurretParams {
+                traverse_deg_s: g
+                    .turret_traverse_deg_s
+                    .ok_or(VehicleDataError::Missing("turret_traverse_deg_s"))?
+                    as f32,
+                elev_min_deg: g
+                    .gun_elevation_deg
+                    .ok_or(VehicleDataError::Missing("gun_elevation_deg"))?[0]
+                    as f32,
+                elev_max_deg: g.gun_elevation_deg.unwrap()[1] as f32,
+            },
+            gun: parse_gun(g)?,
+            shells: parse_shells(g)?,
         })
     }
 }
@@ -191,6 +263,19 @@ pub struct Vehicle {
     /// Ticks spent past the overturn tilt; `overturned` latches the event.
     pub flip_ticks: u32,
     pub overturned: bool,
+    pub modules: modules::Modules,
+    pub turret: turret::Turret,
+    pub gun: gun::Gun,
+    /// Destroyed (hull HP 0 or cook-off); no further combat processing.
+    pub knocked_out: bool,
+    /// Ticks until the burning wreck explodes (0 = not burning).
+    pub burn_left: u32,
+    /// Ticks until the wreck is removed (0 = not yet a wreck).
+    pub wreck_left: u32,
+    /// Wreck expired; the world removes it after the tick.
+    pub gone: bool,
+    /// SWAP was held last tick (shell cycling acts on the rising edge).
+    pub swap_held: bool,
 }
 
 impl Vehicle {
