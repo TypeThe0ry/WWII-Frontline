@@ -154,6 +154,11 @@ impl Default for Frame {
     }
 }
 
+/// Wire entity ids: players use 0..=127, vehicles 128..=255.
+pub const MAX_SLOTS: usize = 256;
+/// First wire id of vehicles.
+pub const VEHICLE_ID_BASE: u8 = 128;
+
 pub struct SnapshotScheduler {
     clients: BTreeMap<PlayerId, ClientBook>,
     grid: AoiGrid,
@@ -174,7 +179,9 @@ pub struct SnapshotScheduler {
     // scratch
     cand_ids: Vec<u8>,
     cands: Vec<Cand>,
-    near: [bool; 128],
+    near: [bool; MAX_SLOTS],
+    /// Wire id (128..=255) of each live vehicle.
+    veh_slot: BTreeMap<EntityId, u8>,
     params: AoiParams,
 }
 
@@ -187,7 +194,7 @@ impl SnapshotScheduler {
         SnapshotScheduler {
             clients: BTreeMap::new(),
             grid: AoiGrid::new(),
-            frames: vec![Frame::default(); 128],
+            frames: vec![Frame::default(); MAX_SLOTS],
             team_of: [Team::Us; 128],
             ent_of: [None; 128],
             player_of: BTreeMap::new(),
@@ -201,7 +208,8 @@ impl SnapshotScheduler {
             near_every_packet: false,
             cand_ids: Vec::new(),
             cands: Vec::new(),
-            near: [false; 128],
+            near: [false; MAX_SLOTS],
+            veh_slot: BTreeMap::new(),
             params: AoiParams::from_rules(&frontline_sim::GameData::embedded().rules.aoi, TICK_HZ),
         }
     }
@@ -387,7 +395,7 @@ impl SnapshotScheduler {
         }
 
         let view = world.view();
-        let mut present = [false; 128];
+        let mut present = [false; MAX_SLOTS];
         for pl in view.players() {
             let id = pl.player as usize & 127;
             present[id] = true;
@@ -451,11 +459,87 @@ impl SnapshotScheduler {
             };
             self.grid.update(id as u8, pl.pos.x, pl.pos.z);
         }
+        self.update_vehicle_frames(world, &mut present);
         for (id, p) in present.iter().enumerate() {
             if !p && self.frames[id].present {
                 self.frames[id].present = false;
                 self.grid.remove(id as u8);
             }
+        }
+    }
+
+    /// Fills the frames of vehicles (wire ids 128..=255; a vehicle keeps its slot while it lives).
+    fn update_vehicle_frames(&mut self, world: &World, present: &mut [bool; MAX_SLOTS]) {
+        use frontline_protocol::snapshot::{QVel, VehicleExtra};
+        let ids = world.vehicle_ids();
+        self.veh_slot.retain(|e, _| ids.contains(e));
+        for e in ids {
+            let Some(v) = world.vehicle(e) else { continue };
+            if v.gone {
+                continue;
+            }
+            let slot = match self.veh_slot.get(&e) {
+                Some(&s) => s,
+                None => {
+                    let used: Vec<u8> = self.veh_slot.values().copied().collect();
+                    let Some(s) = (VEHICLE_ID_BASE..=255).find(|s| !used.contains(s)) else {
+                        continue;
+                    };
+                    self.veh_slot.insert(e, s);
+                    s
+                }
+            };
+            let id = slot as usize;
+            present[id] = true;
+            let seats = v
+                .seats
+                .iter()
+                .take(3)
+                .enumerate()
+                .fold(0u8, |m, (i, o)| m | (u8::from(o.is_some()) << i));
+            let damage = u8::from(v.knocked_out)
+                | u8::from(v.burn_left > 0) << 1
+                | u8::from(v.overturned) << 2;
+            let hp_q = if v.hull_hp > 0.0 && v.params.hull_hp > 0.0 {
+                ((v.hull_hp / v.params.hull_hp).min(1.0) * 255.0 + 0.5) as u8
+            } else {
+                0
+            };
+            let tau = std::f32::consts::TAU;
+            let pi = std::f32::consts::PI;
+            let ty = (v.turret.yaw.rem_euclid(tau) / tau * 4096.0) as u16 & 0xFFF;
+            let gp = (((v.turret.pitch + pi / 2.0) / pi).clamp(0.0, 1.0) * 4095.0 + 0.5) as u16;
+            let f = &mut self.frames[id];
+            f.present = true;
+            f.entity = e;
+            f.team = v.team;
+            f.pos = v.pos;
+            f.firing = false;
+            f.hurt_q = false;
+            f.state = EntityState {
+                id: slot,
+                kind: EntityKind::Vehicle,
+                pos: QPos::from_meters(v.pos.x, v.pos.y, v.pos.z),
+                yaw: 0,
+                pitch: 0,
+                vel: Some(QVel::from_mps(v.vel.x, v.vel.y, v.vel.z)),
+                anim: 0,
+                stance: 0,
+                weapon: 0,
+                flags: ((v.team == Team::Ger) as u8) << 7,
+                health_q: hp_q,
+                vehicle: Some(VehicleExtra {
+                    quat: frontline_protocol::quant::quat_pack([
+                        v.rot.x, v.rot.y, v.rot.z, v.rot.w,
+                    ]),
+                    turret_yaw: ty,
+                    gun_pitch: gp,
+                    track_flags: 0,
+                    seats,
+                    damage_flags: damage,
+                }),
+            };
+            self.grid.update(slot, v.pos.x, v.pos.z);
         }
     }
 
@@ -708,7 +792,7 @@ impl SnapshotScheduler {
         let evs = book.events.entries();
         let n_ev = b.add_events(&evs).unwrap_or(0);
 
-        let mut removes: [u8; 128] = [0; 128];
+        let mut removes: [u8; MAX_SLOTS] = [0; MAX_SLOTS];
         let mut n_rm = 0usize;
         for (id, slot) in book.prio.slots.iter().enumerate() {
             if slot.state == SlotState::Leaving && slot.remove_left > 0 {
@@ -723,7 +807,7 @@ impl SnapshotScheduler {
             }
         }
         let mut starved = 0u64;
-        let mut sent_ids: [u8; 128] = [0; 128];
+        let mut sent_ids: [u8; MAX_SLOTS] = [0; MAX_SLOTS];
         let mut n_sent = 0usize;
         for cd in &self.cands {
             let f = &self.frames[cd.id as usize];
