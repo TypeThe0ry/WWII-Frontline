@@ -1,0 +1,103 @@
+{
+  "$id": "frontline/map-pipeline/hedgerows.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "properties": {
+    "features": {
+      "items": {
+        "properties": {
+          "geometry": {
+            "properties": {
+              "coordinates": {
+                "items": {
+                  "items": {
+                    "maximum": 2048,
+                    "minimum": 0,
+                    "type": "number"
+                  },
+                  "maxItems": 2,
+                  "minItems": 2,
+                  "type": "array"
+                },
+                "minItems": 2,
+                "type": "array"
+              },
+              "type": {
+                "const": "LineString"
+              }
+            },
+            "required": [
+              "type",
+              "coordinates"
+            ],
+            "type": "object"
+          },
+          "properties": {
+            "additionalProperties": false,
+            "properties": {
+              "_derived": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array",
+                "uniqueItems": true
+              },
+              "_osm_id": {
+                "pattern": "^(way|relation)/[0-9]+$",
+                "type": "string"
+              },
+              "gap": {
+                "type": "boolean"
+              },
+              "height_m": {
+                "maximum": 6,
+                "minimum": 0.5,
+                "type": "number"
+              },
+              "kind": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "mound_width_m": {
+                "minimum": 0,
+                "type": "number"
+              },
+              "vehicle_blocking": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "height_m",
+              "mound_width_m",
+              "gap",
+              "vehicle_blocking",
+              "_osm_id",
+              "_derived"
+            ],
+            "type": "object"
+          },
+          "type": {
+            "const": "Feature"
+          }
+        },
+        "required": [
+          "type",
+          "properties",
+          "geometry"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "type": {
+      "const": "FeatureCollection"
+    }
+  },
+  "required": [
+    "type",
+    "features"
+  ],
+  "title": "hedgerows.geojson (M1-032)",
+  "type": "object"
+}

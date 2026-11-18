@@ -1,0 +1,119 @@
+{
+  "$id": "frontline/map-pipeline/buildings.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "properties": {
+    "features": {
+      "items": {
+        "properties": {
+          "geometry": {
+            "properties": {
+              "coordinates": {
+                "items": {
+                  "items": {
+                    "items": {
+                      "maximum": 2048,
+                      "minimum": 0,
+                      "type": "number"
+                    },
+                    "maxItems": 2,
+                    "minItems": 2,
+                    "type": "array"
+                  },
+                  "minItems": 4,
+                  "type": "array"
+                },
+                "minItems": 1,
+                "type": "array"
+              },
+              "type": {
+                "const": "Polygon"
+              }
+            },
+            "required": [
+              "type",
+              "coordinates"
+            ],
+            "type": "object"
+          },
+          "properties": {
+            "additionalProperties": false,
+            "properties": {
+              "_derived": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array",
+                "uniqueItems": true
+              },
+              "_osm_id": {
+                "pattern": "^(way|relation)/[0-9]+$",
+                "type": "string"
+              },
+              "asset_ref": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "destructible": {
+                "type": "boolean"
+              },
+              "enterable": {
+                "type": "boolean"
+              },
+              "levels": {
+                "maximum": 12,
+                "minimum": 1,
+                "type": "integer"
+              },
+              "roof": {
+                "type": "string"
+              },
+              "ruin_stage": {
+                "minimum": 0,
+                "type": "integer"
+              },
+              "style": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "style",
+              "levels",
+              "roof",
+              "enterable",
+              "destructible",
+              "asset_ref",
+              "ruin_stage",
+              "_osm_id",
+              "_derived"
+            ],
+            "type": "object"
+          },
+          "type": {
+            "const": "Feature"
+          }
+        },
+        "required": [
+          "type",
+          "properties",
+          "geometry"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "type": {
+      "const": "FeatureCollection"
+    }
+  },
+  "required": [
+    "type",
+    "features"
+  ],
+  "title": "buildings.geojson (M1-032)",
+  "type": "object"
+}

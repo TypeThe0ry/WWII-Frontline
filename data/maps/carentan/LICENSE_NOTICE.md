@@ -5,7 +5,7 @@
 > ledger in `LICENSES.md` §3, and `reports/m1-map-licenses.json` shows the current state.
 > This is not legal advice.
 
-## Vector layers (`roads`, `hedgerows`, `buildings`, water): ODbL 1.0
+## Vector layers (`roads`, `hedgerows`, `buildings`, `water`, `forests`): ODbL 1.0
 
 Data derived from OpenStreetMap is licensed under the Open Database License (ODbL) 1.0.
 
@@ -26,3 +26,5 @@ assets are not covered by this notice (Produced Work / collective database separ
 
 Aerial photographs and period maps (IGN Remonter le temps, NARA, GSGS, IWM) are used only as a
 tracing reference and are **not** included in this repository. IWM imagery is never embedded.
+
+OSM extract: Overpass API, base timestamp 2026-11-18T06:59:26Z, input sha256 68879a73…27c3 (`source/overpass_carentan.meta.json`). Attribution text: `ATTRIBUTION_OSM.txt`.

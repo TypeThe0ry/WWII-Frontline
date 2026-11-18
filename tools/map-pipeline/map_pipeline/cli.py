@@ -77,7 +77,17 @@ def main(argv=None) -> int:
     dm.add_argument("--incoming", default="assets/incoming/maps/carentan/dem")
     dm.add_argument("--out", default="data/maps/carentan")
     dm.add_argument("--repo", default=".")
+    om = sub.add_parser("osm", help="Carentan OSM Overpass extract -> vector layers (M1-032)")
+    om.add_argument("--repo", default=".")
+    om.add_argument("--out", default="data/maps/carentan")
+    vv = sub.add_parser("validate-vectors", help="schema + range check of a map's vector layers")
+    vv.add_argument("dir")
     a = ap.parse_args(argv)
+
+    if a.cmd == "osm":
+        return _osm(a)
+    if a.cmd == "validate-vectors":
+        return _validate_vectors(a)
 
     if a.cmd == "dem":
         return _dem(a)
@@ -178,3 +188,46 @@ def _dem(a) -> int:
         return dem_prep.EXIT_TOO_MUCH_NODATA if "no-data" in str(e) else 1
     print(json.dumps(info, indent=2))
     return 0
+
+
+def _osm(a) -> int:
+    from . import osm
+
+    root = Path(a.repo)
+    try:
+        src = osm.find_input(root)
+    except osm.OsmMissing as e:
+        print(f"BLOCKED: {e}", file=sys.stderr)
+        return osm.EXIT_MISSING_OSM
+    meta_p = root / "data/maps/carentan/source/overpass_carentan.meta.json"
+    ometa = json.loads(meta_p.read_text(encoding="utf-8")) if meta_p.is_file() else {}
+    mp = json.loads((root / "data/maps/carentan/meta.json").read_text(encoding="utf-8"))
+    crs = mp["crs"]
+    layers, stats = osm.extract(osm.load(src), (crs["origin_e"], crs["origin_n"]))
+    out = Path(a.out)
+    hashes = {k: osm.dump_layer(out / f"{k}.geojson", v) for k, v in layers.items()}
+    summ = osm.summary(layers, stats, hashes, ometa)
+    rp = root / "reports" / "m1-osm-summary.json"
+    rp.write_text(json.dumps(summ, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    print(json.dumps({"counts": summ["counts"], "slice_m1": summ["slice_m1"], "connectivity": summ["road_connectivity"]}))
+    return 0
+
+
+def _validate_vectors(a) -> int:
+    import jsonschema
+
+    sd = Path(__file__).resolve().parent.parent / "schemas"
+    bad = 0
+    for k in ("roads", "water", "hedgerows", "buildings", "forests"):
+        p = Path(a.dir) / f"{k}.geojson"
+        if not p.is_file():
+            print(f"missing {p}")
+            bad += 1
+            continue
+        v = jsonschema.Draft202012Validator(json.loads((sd / f"{k}.schema.json").read_text(encoding="utf-8")))
+        errs = list(v.iter_errors(json.loads(p.read_text(encoding="utf-8"))))
+        for e in errs[:5]:
+            print(f"{k}: {list(e.absolute_path)}: {e.message[:160]}")
+        bad += len(errs)
+        print(f"{k}: {len(errs)} errors")
+    return 1 if bad else 0
