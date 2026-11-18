@@ -1124,3 +1124,6 @@ CSM 用 Babylon `CascadedShadowGenerator`（`lighting/csm.ts`）：没有显式�
 
 ## PI-119 M1-045b：只做了占位角色的无素材部分（2026-11-19）
 045b 的骨架/重定向/GPU 蒙皮/真实动画依赖 M1-064 的素材，跳过。已做：`entity.footstep` 事件、趴下姿态与 GD 9.2 切换时间、距离 LOD（滞回）、远端开火的上半身后坐（`render/actors/`，数字见 `reports/m1-characters.md`）。趴下高度（约 2.2×胶囊半径）、LOD 距离 40/120 m 是 [tbd]（数据里没有）；`entity.footstep` 目前没有消费者（音频 M1-063b 的脚步声还没接）。
+
+## PI-120 M1-046b：FP 武器 pass 与贴墙（2026-11-19）
+武器相机 + 层掩码（`fp/fp-pass.ts`）替代 M0 的 renderingGroup 深度清除；贴墙只对世界场景的建筑网格有效（树篱 thin-instance 不拾取，没有碰撞世界接线），枪口前伸取占位枪 socket 的距离而不是 /data 的 `length_m`（该字段不存在）。`ads.state` 是新总线事件，目前没有消费者。数字见 `reports/m1-fp.md`。

@@ -11,6 +11,7 @@ import type { Scene } from '@babylonjs/core/scene';
 import type { EventBus, GameEvents } from '../../game/event-bus';
 import type { GameState } from '../../game/state';
 import { FirstPersonRig, FxManager } from '../fx';
+import { FpWeaponPass } from '../fp/fp-pass';
 import type { ActorData, WeaponActorDef } from './actor-data';
 import { FootstepClock, lodFor, stanceTransitionS, type Stance } from './anim-graph';
 import { type Faction, PlaceholderRegistry } from './names';
@@ -34,6 +35,8 @@ export interface ActorManagerOptions {
   tracers?: boolean;
   /** GPU particle tier + shader language (M1-047b); omit for no particles. */
   particles?: { tier: 'high' | 'medium' | 'low'; wgsl: boolean };
+  /** Weapon camera pass (default on when a first-person camera exists). */
+  fpPass?: boolean;
   /** Third-person weapon scale relative to the first-person one. */
   thirdPersonScale?: number;
 }
@@ -62,6 +65,8 @@ export class ActorManager {
   readonly registry = new PlaceholderRegistry();
   readonly fx: FxManager;
   readonly rig: FirstPersonRig | null;
+  /** Separate weapon camera / depth pass (M1-046b); null without a first-person camera or with `fpPass: false`. */
+  readonly fpPass: FpWeaponPass | null;
   private readonly chars = new Map<Faction, CharacterSources>();
   private readonly wsrc = new Map<number, WeaponSources>();
   private readonly weaponsByIndex = new Map<number, WeaponActorDef>();
@@ -82,6 +87,8 @@ export class ActorManager {
     // the local weapon's requirement ids exist even before the first-person weapon does
     scene.setRenderingAutoClearDepthStencil(1, true, true, false);
     this.rig = o.camera ? new FirstPersonRig(o.camera, data, o.aiming ?? (() => false)) : null;
+    this.fpPass = o.camera && o.fpPass !== false ? new FpWeaponPass(scene, o.camera, data.hipFovDeg * (Math.PI / 180)) : null;
+    if (this.rig) this.rig.onAds = (state, t) => o.bus.emit('ads.state', { state, t });
     this.fx = new FxManager({
       scene,
       bus: o.bus,
@@ -186,7 +193,9 @@ export class ActorManager {
   attachWeaponFP(index: number | string): void {
     const def = typeof index === 'string' ? this.o.data.weapons.find((w) => w.id === index) : this.weaponsByIndex.get(index);
     this.fpIndex = def?.index ?? -1;
-    this.rig?.setWeapon(def ? buildFirstPersonWeapon(this.o.scene, def, this.registry) : null);
+    const w = def ? buildFirstPersonWeapon(this.o.scene, def, this.registry) : null;
+    this.rig?.setWeapon(w);
+    if (w) this.fpPass?.adopt(w.root, w.meshes);
   }
 
   /** Once per render frame, after the game update and before the scene renders. */
@@ -196,6 +205,7 @@ export class ActorManager {
     const lw = this.o.localWeapon?.();
     if (lw !== undefined && lw !== this.fpIndex && this.weaponsByIndex.has(lw)) this.attachWeaponFP(lw);
     this.rig?.update(state.local, dtMs);
+    this.fpPass?.sync();
 
     const e = state.entities;
     const stamp = ++this.stamp;
@@ -234,6 +244,7 @@ export class ActorManager {
     for (const id of [...this.actors.keys()]) this.remove(id);
     this.fx.dispose();
     this.rig?.dispose();
+    this.fpPass?.dispose();
     for (const c of this.chars.values()) c.dispose();
     for (const w of this.wsrc.values()) w.dispose();
   }

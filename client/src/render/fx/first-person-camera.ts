@@ -9,6 +9,7 @@
 import type { TargetCamera } from '@babylonjs/core/Cameras/targetCamera';
 import type { ActorData, WeaponActorDef } from '../actors/actor-data';
 import type { WeaponNode } from '../actors/placeholder-weapon';
+import { wallPushback } from '../fp/fp-math';
 
 export interface FpLocal {
   pos: ArrayLike<number>;
@@ -28,7 +29,19 @@ const RECOIL_BACK_M_PER_DEG = 0.012;
 const BOB_AMPLITUDE_M = 0.006;
 const BOB_SPEED_RAD_PER_M = 2.4;
 
+/** Distance (m) to the nearest blocking surface along a ray, or null: set by the host scene (picks buildings in the world scene). */
+export type WallProbe = (ox: number, oy: number, oz: number, dx: number, dy: number, dz: number, maxDist: number) => number | null;
+export type AdsState = 'hip' | 'entering' | 'ads' | 'leaving';
+
 export class FirstPersonRig {
+  /** Wall pushback (M1-046b): when set, the weapon is pulled back so the muzzle stays `WALL_MARGIN_M` short of the wall. */
+  wallProbe: WallProbe | null = null;
+  /** Called when the ADS state changes (hip -> entering -> ads -> leaving -> hip). */
+  onAds: ((state: AdsState, t: number) => void) | null = null;
+  adsState: AdsState = 'hip';
+  /** Last wall distance probed (m), Infinity when nothing is in reach. */
+  wallDist = Infinity;
+
   /** Current eye height above the feet. */
   eye: number;
   /** 0 = hip, 1 = fully aimed. */
@@ -76,6 +89,11 @@ export class FirstPersonRig {
     const adsStep = dtMs / Math.max(1, def.adsMs);
     this.ads = this.aiming() ? Math.min(1, this.ads + adsStep) : Math.max(0, this.ads - adsStep);
     const k = this.ads * this.ads * (3 - 2 * this.ads); // smoothstep
+    const st: AdsState = this.ads >= 1 ? 'ads' : this.ads <= 0 ? 'hip' : this.aiming() ? 'entering' : 'leaving';
+    if (st !== this.adsState) {
+      this.adsState = st;
+      this.onAds?.(st, this.ads);
+    }
     cam.fov = this.hipFov * (1 + (def.view.adsFovMult - 1) * k);
 
     const speed = Math.hypot(l.vel[0] as number, l.vel[2] as number);
@@ -84,7 +102,18 @@ export class FirstPersonRig {
     const rp = l.recoilPitch;
     const ox = lerp(def.view.hipOffset[0], def.view.adsOffset[0], k) + Math.sin(this.bobPhase) * BOB_AMPLITUDE_M * bob;
     const oy = lerp(def.view.hipOffset[1], def.view.adsOffset[1], k) + Math.abs(Math.sin(this.bobPhase)) * BOB_AMPLITUDE_M * bob;
-    const oz = lerp(def.view.hipOffset[2], def.view.adsOffset[2], k) - rp * RECOIL_BACK_M_PER_DEG;
+    let oz = lerp(def.view.hipOffset[2], def.view.adsOffset[2], k) - rp * RECOIL_BACK_M_PER_DEG;
+    if (this.wallProbe) {
+      // ray along the view direction: the weapon reaches `length` forward of the camera at its hip/ADS offset
+      const sy0 = Math.sin(l.yaw);
+      const cy0 = Math.cos(l.yaw);
+      const sp0 = Math.sin(l.pitch);
+      const cp0 = Math.cos(l.pitch);
+      const reach = oz + w.muzzle.position.z; // how far the muzzle socket sits in front of the camera at this offset
+      const d = this.wallProbe(px, py, pz, sy0 * cp0, sp0, cy0 * cp0, reach + 0.5);
+      this.wallDist = d ?? Infinity;
+      if (d !== null) oz -= wallPushback(d, reach);
+    } else this.wallDist = Infinity;
 
     // camera basis (left-handed, y up): forward f, right r, up u
     const sy = Math.sin(l.yaw);

@@ -170,6 +170,8 @@ export async function attachWorld(ctx: RenderContext, terrain: { heightAt(x: num
       const m = toMesh(`V-BLD-PLACEHOLDER_cell${key}`, cell.arrays, scene);
       m.material = mat;
       m.useVertexColors = true;
+      m.isPickable = true; // wall probe of the first-person weapon (M1-046b)
+      m.metadata = { blocks: true };
       buildingMeshes.push(m);
     }
     stats.building_count = bs.buildings;

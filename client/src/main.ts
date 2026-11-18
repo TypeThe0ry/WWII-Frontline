@@ -147,6 +147,22 @@ async function boot(): Promise<void> {
     ctx.onFrame((dtMs) => post.update(dtMs / 1000), 'first', 'post_update');
   }
 
+  // M1-046b: first-person weapon wall pushback against the building meshes of the world scene
+  if (actors?.manager.rig && window.__world) {
+    const { Ray } = await import('@babylonjs/core/Culling/ray');
+    const { Vector3 } = await import('@babylonjs/core/Maths/math.vector');
+    const o = new Vector3();
+    const d = new Vector3();
+    const ray = new Ray(o, d, 1);
+    actors.manager.rig.wallProbe = (ox, oy, oz, dx, dy, dz, max) => {
+      o.set(ox, oy, oz);
+      d.set(dx, dy, dz);
+      ray.length = max;
+      const hit = ctx.scene.pickWithRay(ray, (m) => m.metadata?.blocks === true);
+      return hit?.hit ? hit.distance : null;
+    };
+  }
+
   const overlay = new DebugOverlay(params.get('debug') === '1');
   const stepper = new FixedStepper();
   const getDump = () =>
