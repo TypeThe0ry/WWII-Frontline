@@ -1,41 +1,48 @@
 {
   "schema": 1,
   "milestone": "all",
+  "coverage_basis": "source-metadata",
   "summary": {
-    "real": 0,
-    "placeholder": 0,
-    "missing": 168,
+    "real": 12,
+    "placeholder": 11,
+    "missing": 138,
+    "internal_only": 7,
     "total": 168
   },
   "by_milestone": {
     "M0": {
-      "real": 0,
-      "placeholder": 0,
-      "missing": 13,
+      "real": 6,
+      "placeholder": 1,
+      "missing": 6,
+      "internal_only": 0,
       "total": 13
     },
     "M1": {
-      "real": 0,
-      "placeholder": 0,
-      "missing": 72,
+      "real": 5,
+      "placeholder": 7,
+      "missing": 56,
+      "internal_only": 4,
       "total": 72
     },
     "M2": {
       "real": 0,
-      "placeholder": 0,
-      "missing": 24,
+      "placeholder": 1,
+      "missing": 21,
+      "internal_only": 2,
       "total": 24
     },
     "M3": {
       "real": 0,
-      "placeholder": 0,
-      "missing": 47,
+      "placeholder": 1,
+      "missing": 45,
+      "internal_only": 1,
       "total": 47
     },
     "M4": {
-      "real": 0,
-      "placeholder": 0,
-      "missing": 12,
+      "real": 1,
+      "placeholder": 1,
+      "missing": 10,
+      "internal_only": 0,
       "total": 12
     }
   },
@@ -43,23 +50,84 @@
     {
       "id": "V-NAT-007",
       "milestone": "M0",
-      "status": "missing",
-      "detail": "no input",
-      "assets": []
+      "status": "real",
+      "detail": "matching free source registered (metadata only; not built)",
+      "assets": [
+        "AST-V-NAT-001-01",
+        "AST-V-NAT-007-01",
+        "AST-V-NAT-007-01-02",
+        "AST-V-NAT-007-01-03",
+        "AST-V-NAT-007-01-04",
+        "AST-V-NAT-007-01-05",
+        "AST-V-NAT-007-02",
+        "AST-V-NAT-007-02-02",
+        "AST-V-NAT-007-02-03",
+        "AST-V-NAT-007-02-04",
+        "AST-V-NAT-007-02-05",
+        "AST-V-NAT-007-03",
+        "AST-V-NAT-007-03-02",
+        "AST-V-NAT-007-03-03",
+        "AST-V-NAT-007-03-04",
+        "AST-V-NAT-007-03-05",
+        "AST-V-NAT-007-04",
+        "AST-V-NAT-007-04-02",
+        "AST-V-NAT-007-04-03",
+        "AST-V-NAT-007-04-04",
+        "AST-V-NAT-007-04-05",
+        "AST-V-NAT-007-05",
+        "AST-V-NAT-007-05-02",
+        "AST-V-NAT-007-05-03",
+        "AST-V-NAT-007-05-04",
+        "AST-V-NAT-007-05-05",
+        "AST-V-NAT-007-06",
+        "AST-V-NAT-007-06-02",
+        "AST-V-NAT-007-06-03",
+        "AST-V-NAT-007-06-04",
+        "AST-V-NAT-007-06-05",
+        "AST-V-NAT-007-07",
+        "AST-V-NAT-007-07-02",
+        "AST-V-NAT-007-07-03",
+        "AST-V-NAT-007-07-04",
+        "AST-V-NAT-007-07-05",
+        "AST-V-NAT-007-08",
+        "AST-V-NAT-007-08-02",
+        "AST-V-NAT-007-08-03",
+        "AST-V-NAT-007-08-04",
+        "AST-V-NAT-007-08-05"
+      ]
     },
     {
       "id": "V-SKY-001",
       "milestone": "M0",
-      "status": "missing",
-      "detail": "no input",
-      "assets": []
+      "status": "real",
+      "detail": "matching free source registered (metadata only; not built)",
+      "assets": [
+        "AST-V-SKY-001-01",
+        "AST-V-SKY-001-02",
+        "AST-V-SKY-001-03",
+        "AST-V-SKY-001-04",
+        "AST-V-SKY-001-05",
+        "AST-V-SKY-001-06",
+        "AST-V-SKY-001-07",
+        "AST-V-SKY-001-08",
+        "AST-V-SKY-001-09"
+      ]
     },
     {
       "id": "V-WPN-GE-001",
       "milestone": "M0",
-      "status": "missing",
-      "detail": "no input",
-      "assets": []
+      "status": "placeholder",
+      "detail": "free proxy candidate",
+      "assets": [
+        "AST-V-WPN-GE-001-01",
+        "AST-V-WPN-GE-001-01-02",
+        "AST-V-WPN-GE-001-01-03",
+        "AST-V-WPN-GE-001-01-04",
+        "AST-V-WPN-GE-001-01-05",
+        "AST-V-WPN-GE-001-01-06",
+        "AST-V-WPN-GE-001-01-07",
+        "AST-V-WPN-GE-001-01-08"
+      ]
     },
     {
       "id": "V-ANM-001",
@@ -106,118 +174,310 @@
     {
       "id": "V-FNT-001",
       "milestone": "M0",
-      "status": "missing",
-      "detail": "no input",
-      "assets": []
+      "status": "real",
+      "detail": "matching free source registered (metadata only; not built)",
+      "assets": [
+        "AST-V-FNT-001-01"
+      ]
     },
     {
       "id": "V-FNT-002",
       "milestone": "M0",
-      "status": "missing",
-      "detail": "no input",
-      "assets": []
+      "status": "real",
+      "detail": "matching free source registered (metadata only; not built)",
+      "assets": [
+        "AST-V-FNT-002-01"
+      ]
     },
     {
       "id": "V-FNT-003",
       "milestone": "M0",
-      "status": "missing",
-      "detail": "no input",
-      "assets": []
+      "status": "real",
+      "detail": "matching free source registered (metadata only; not built)",
+      "assets": [
+        "AST-V-FNT-003-01"
+      ]
     },
     {
       "id": "V-FNT-004",
       "milestone": "M0",
-      "status": "missing",
-      "detail": "ledger PENDING/PENDING/OK, not processed",
+      "status": "real",
+      "detail": "matching free source registered (metadata only; not built)",
       "assets": [
         "AST-V-FNT-004-01",
         "AST-V-FNT-004-02",
-        "AST-V-FNT-004-03"
+        "AST-V-FNT-004-03",
+        "AST-V-FNT-004-04"
       ]
     },
     {
       "id": "V-BLD-001",
       "milestone": "M1",
-      "status": "missing",
-      "detail": "no input",
-      "assets": []
+      "status": "placeholder",
+      "detail": "free proxy candidate",
+      "assets": [
+        "AST-V-BLD-001-01",
+        "AST-V-BLD-001-02",
+        "AST-V-BLD-001-03",
+        "AST-V-BLD-001-04",
+        "AST-V-BLD-001-05",
+        "AST-V-BLD-001-06",
+        "AST-V-BLD-001-06-02",
+        "AST-V-BLD-001-06-03",
+        "AST-V-BLD-001-06-04",
+        "AST-V-BLD-001-06-05",
+        "AST-V-BLD-001-07",
+        "AST-V-BLD-001-07-02",
+        "AST-V-BLD-001-07-03",
+        "AST-V-BLD-001-07-04",
+        "AST-V-BLD-001-07-05",
+        "AST-V-BLD-001-08",
+        "AST-V-BLD-001-08-02",
+        "AST-V-BLD-001-08-03",
+        "AST-V-BLD-001-08-04",
+        "AST-V-BLD-001-08-05",
+        "AST-V-BLD-001-09",
+        "AST-V-BLD-001-09-02",
+        "AST-V-BLD-001-09-03",
+        "AST-V-BLD-001-09-04",
+        "AST-V-BLD-001-09-05",
+        "AST-V-BLD-001-10",
+        "AST-V-BLD-001-10-02",
+        "AST-V-BLD-001-10-03",
+        "AST-V-BLD-001-10-04",
+        "AST-V-BLD-001-10-05",
+        "AST-V-BLD-001-11",
+        "AST-V-BLD-001-11-02",
+        "AST-V-BLD-001-11-03",
+        "AST-V-BLD-001-11-04",
+        "AST-V-BLD-001-11-05"
+      ]
     },
     {
       "id": "V-BLD-002",
       "milestone": "M1",
-      "status": "missing",
-      "detail": "no input",
-      "assets": []
+      "status": "placeholder",
+      "detail": "free proxy candidate",
+      "assets": [
+        "AST-V-BLD-001-01",
+        "AST-V-BLD-001-02",
+        "AST-V-BLD-001-03",
+        "AST-V-BLD-001-04",
+        "AST-V-BLD-001-05"
+      ]
     },
     {
       "id": "V-BLD-003",
       "milestone": "M1",
-      "status": "missing",
-      "detail": "no input",
-      "assets": []
+      "status": "placeholder",
+      "detail": "free proxy candidate",
+      "assets": [
+        "AST-V-BLD-001-01",
+        "AST-V-BLD-001-02",
+        "AST-V-BLD-001-03",
+        "AST-V-BLD-001-04"
+      ]
     },
     {
       "id": "V-NAT-001",
       "milestone": "M1",
-      "status": "missing",
-      "detail": "no input",
-      "assets": []
+      "status": "placeholder",
+      "detail": "free proxy candidate",
+      "assets": [
+        "AST-V-NAT-001-01",
+        "AST-V-NAT-001-02",
+        "AST-V-NAT-001-02-02",
+        "AST-V-NAT-001-02-03",
+        "AST-V-NAT-001-02-04",
+        "AST-V-NAT-001-02-05",
+        "AST-V-NAT-001-03",
+        "AST-V-NAT-001-03-02",
+        "AST-V-NAT-001-03-03",
+        "AST-V-NAT-001-03-04",
+        "AST-V-NAT-001-03-05"
+      ]
     },
     {
       "id": "V-NAT-002",
       "milestone": "M1",
-      "status": "missing",
-      "detail": "no input",
-      "assets": []
+      "status": "real",
+      "detail": "matching free source registered (metadata only; not built)",
+      "assets": [
+        "AST-V-NAT-001-01",
+        "AST-V-NAT-002-01",
+        "AST-V-NAT-002-01-02",
+        "AST-V-NAT-002-01-03",
+        "AST-V-NAT-002-01-04",
+        "AST-V-NAT-002-01-05",
+        "AST-V-NAT-002-01-06",
+        "AST-V-NAT-002-01-07",
+        "AST-V-NAT-002-01-08",
+        "AST-V-NAT-002-01-09",
+        "AST-V-NAT-002-01-10",
+        "AST-V-NAT-002-01-11"
+      ]
     },
     {
       "id": "V-NAT-004",
       "milestone": "M1",
-      "status": "missing",
-      "detail": "no input",
-      "assets": []
+      "status": "real",
+      "detail": "matching free source registered (metadata only; not built)",
+      "assets": [
+        "AST-V-NAT-001-01",
+        "AST-V-NAT-001-02",
+        "AST-V-NAT-001-02-02",
+        "AST-V-NAT-001-02-03",
+        "AST-V-NAT-001-02-04",
+        "AST-V-NAT-001-02-05",
+        "AST-V-NAT-001-03",
+        "AST-V-NAT-001-03-02",
+        "AST-V-NAT-001-03-03",
+        "AST-V-NAT-001-03-04",
+        "AST-V-NAT-001-03-05",
+        "AST-V-NAT-002-01",
+        "AST-V-NAT-002-01-02",
+        "AST-V-NAT-002-01-03",
+        "AST-V-NAT-002-01-04",
+        "AST-V-NAT-002-01-05",
+        "AST-V-NAT-002-01-06",
+        "AST-V-NAT-002-01-07",
+        "AST-V-NAT-002-01-08",
+        "AST-V-NAT-002-01-09",
+        "AST-V-NAT-002-01-10",
+        "AST-V-NAT-002-01-11",
+        "AST-V-NAT-003-01",
+        "AST-V-NAT-003-01-02",
+        "AST-V-NAT-003-01-03",
+        "AST-V-NAT-003-01-04",
+        "AST-V-NAT-003-01-05",
+        "AST-V-NAT-003-01-06",
+        "AST-V-NAT-003-01-07",
+        "AST-V-NAT-003-01-08",
+        "AST-V-NAT-004-01",
+        "AST-V-NAT-004-01-02",
+        "AST-V-NAT-004-01-03",
+        "AST-V-NAT-004-01-04",
+        "AST-V-NAT-004-01-05"
+      ]
     },
     {
       "id": "V-NAT-005",
       "milestone": "M1",
-      "status": "missing",
-      "detail": "no input",
-      "assets": []
+      "status": "real",
+      "detail": "matching free source registered (metadata only; not built)",
+      "assets": [
+        "AST-V-NAT-001-01",
+        "AST-V-NAT-005-01",
+        "AST-V-NAT-005-01-02",
+        "AST-V-NAT-005-01-03",
+        "AST-V-NAT-005-01-04",
+        "AST-V-NAT-005-01-05",
+        "AST-V-NAT-005-02",
+        "AST-V-NAT-005-02-02",
+        "AST-V-NAT-005-02-03",
+        "AST-V-NAT-005-02-04",
+        "AST-V-NAT-005-02-05",
+        "AST-V-NAT-005-03",
+        "AST-V-NAT-005-03-02",
+        "AST-V-NAT-005-03-03",
+        "AST-V-NAT-005-03-04",
+        "AST-V-NAT-005-03-05",
+        "AST-V-NAT-005-04",
+        "AST-V-NAT-005-04-02",
+        "AST-V-NAT-005-04-03",
+        "AST-V-NAT-005-04-04",
+        "AST-V-NAT-005-04-05"
+      ]
     },
     {
       "id": "V-PRP-001",
       "milestone": "M1",
-      "status": "missing",
-      "detail": "no input",
-      "assets": []
+      "status": "placeholder",
+      "detail": "free proxy candidate",
+      "assets": [
+        "AST-V-BLD-001-05",
+        "AST-V-PRP-001-01"
+      ]
     },
     {
       "id": "V-PRP-002",
       "milestone": "M1",
-      "status": "missing",
-      "detail": "no input",
-      "assets": []
+      "status": "placeholder",
+      "detail": "free proxy candidate",
+      "assets": [
+        "AST-V-BLD-001-05",
+        "AST-V-PRP-001-01"
+      ]
     },
     {
       "id": "V-PRP-003",
       "milestone": "M1",
-      "status": "missing",
-      "detail": "no input",
-      "assets": []
+      "status": "placeholder",
+      "detail": "free proxy candidate",
+      "assets": [
+        "AST-V-BLD-001-05",
+        "AST-V-PRP-001-01"
+      ]
     },
     {
       "id": "V-PRP-004",
       "milestone": "M1",
-      "status": "missing",
-      "detail": "no input",
-      "assets": []
+      "status": "real",
+      "detail": "matching free source registered (metadata only; not built)",
+      "assets": [
+        "AST-V-PRP-001-01",
+        "AST-V-PRP-004-01",
+        "AST-V-PRP-004-01-02",
+        "AST-V-PRP-004-01-03",
+        "AST-V-PRP-004-01-04",
+        "AST-V-PRP-004-01-05",
+        "AST-V-PRP-004-02",
+        "AST-V-PRP-004-02-02",
+        "AST-V-PRP-004-02-03",
+        "AST-V-PRP-004-02-04",
+        "AST-V-PRP-004-02-05",
+        "AST-V-PRP-004-03",
+        "AST-V-PRP-004-03-02",
+        "AST-V-PRP-004-03-03",
+        "AST-V-PRP-004-03-04",
+        "AST-V-PRP-004-03-05"
+      ]
     },
     {
       "id": "V-PRP-006",
       "milestone": "M1",
-      "status": "missing",
-      "detail": "no input",
-      "assets": []
+      "status": "real",
+      "detail": "matching free source registered (metadata only; not built)",
+      "assets": [
+        "AST-V-BLD-001-05",
+        "AST-V-PRP-001-01",
+        "AST-V-PRP-006-01",
+        "AST-V-PRP-006-01-02",
+        "AST-V-PRP-006-01-03",
+        "AST-V-PRP-006-01-04",
+        "AST-V-PRP-006-01-05",
+        "AST-V-PRP-006-02",
+        "AST-V-PRP-006-02-02",
+        "AST-V-PRP-006-02-03",
+        "AST-V-PRP-006-02-04",
+        "AST-V-PRP-006-02-05",
+        "AST-V-PRP-006-02-06",
+        "AST-V-PRP-006-02-07",
+        "AST-V-PRP-006-02-08",
+        "AST-V-PRP-006-02-09",
+        "AST-V-PRP-006-02-10",
+        "AST-V-PRP-006-02-11",
+        "AST-V-PRP-006-03",
+        "AST-V-PRP-006-03-02",
+        "AST-V-PRP-006-03-03",
+        "AST-V-PRP-006-03-04",
+        "AST-V-PRP-006-03-05",
+        "AST-V-PRP-006-04",
+        "AST-V-PRP-006-04-02",
+        "AST-V-PRP-006-04-03",
+        "AST-V-PRP-006-04-04",
+        "AST-V-PRP-006-04-05"
+      ]
     },
     {
       "id": "V-CHR-US-001",
@@ -236,9 +496,11 @@
     {
       "id": "V-CHR-GE-001",
       "milestone": "M1",
-      "status": "missing",
-      "detail": "no input",
-      "assets": []
+      "status": "internal-only",
+      "detail": "internal playtest only; excluded from public coverage",
+      "assets": [
+        "AST-UE-INTERNAL-01"
+      ]
     },
     {
       "id": "V-CHR-FPA-001",
@@ -285,16 +547,20 @@
     {
       "id": "V-WPN-GE-004",
       "milestone": "M1",
-      "status": "missing",
-      "detail": "no input",
-      "assets": []
+      "status": "internal-only",
+      "detail": "internal playtest only; excluded from public coverage",
+      "assets": [
+        "AST-UE-INTERNAL-02"
+      ]
     },
     {
       "id": "V-WPN-GE-005",
       "milestone": "M1",
-      "status": "missing",
-      "detail": "no input",
-      "assets": []
+      "status": "internal-only",
+      "detail": "internal playtest only; excluded from public coverage",
+      "assets": [
+        "AST-UE-INTERNAL-02"
+      ]
     },
     {
       "id": "V-WPN-GE-007",
@@ -306,9 +572,11 @@
     {
       "id": "V-WPN-GE-008",
       "milestone": "M1",
-      "status": "missing",
-      "detail": "no input",
-      "assets": []
+      "status": "internal-only",
+      "detail": "internal playtest only; excluded from public coverage",
+      "assets": [
+        "AST-UE-INTERNAL-02"
+      ]
     },
     {
       "id": "V-WPN-GE-011",
@@ -642,58 +910,114 @@
     {
       "id": "V-BLD-004",
       "milestone": "M2",
-      "status": "missing",
-      "detail": "no input",
-      "assets": []
+      "status": "internal-only",
+      "detail": "internal playtest only; public placeholder remains",
+      "assets": [
+        "AST-V-BLD-001-01",
+        "AST-V-BLD-001-02",
+        "AST-V-BLD-001-03",
+        "AST-V-BLD-001-04",
+        "AST-UE-INTERNAL-06"
+      ]
     },
     {
       "id": "V-BLD-008",
       "milestone": "M2",
       "status": "missing",
-      "detail": "no input",
-      "assets": []
+      "detail": "ledger candidates; no matching free source or chosen proxy",
+      "assets": [
+        "AST-V-BLD-001-01",
+        "AST-V-BLD-001-02",
+        "AST-V-BLD-001-03",
+        "AST-V-BLD-001-04"
+      ]
     },
     {
       "id": "V-BLD-010",
       "milestone": "M2",
-      "status": "missing",
-      "detail": "no input",
-      "assets": []
+      "status": "placeholder",
+      "detail": "free proxy candidate",
+      "assets": [
+        "AST-V-BLD-001-01",
+        "AST-V-BLD-001-02",
+        "AST-V-BLD-001-03",
+        "AST-V-BLD-001-04",
+        "AST-V-BLD-010-01",
+        "AST-V-BLD-010-01-02",
+        "AST-V-BLD-010-01-03",
+        "AST-V-BLD-010-01-04",
+        "AST-V-BLD-010-01-05",
+        "AST-V-BLD-010-02",
+        "AST-V-BLD-010-02-02",
+        "AST-V-BLD-010-02-03",
+        "AST-V-BLD-010-02-04",
+        "AST-V-BLD-010-02-05",
+        "AST-V-BLD-010-03",
+        "AST-V-BLD-010-03-02",
+        "AST-V-BLD-010-03-03",
+        "AST-V-BLD-010-03-04",
+        "AST-V-BLD-010-03-05",
+        "AST-V-BLD-010-04",
+        "AST-V-BLD-010-04-02",
+        "AST-V-BLD-010-04-03",
+        "AST-V-BLD-010-04-04",
+        "AST-V-BLD-010-04-05"
+      ]
     },
     {
       "id": "V-PRP-005",
       "milestone": "M2",
       "status": "missing",
-      "detail": "no input",
-      "assets": []
+      "detail": "ledger candidates; no matching free source or chosen proxy",
+      "assets": [
+        "AST-V-PRP-001-01"
+      ]
     },
     {
       "id": "V-PRP-007",
       "milestone": "M2",
       "status": "missing",
-      "detail": "no input",
-      "assets": []
+      "detail": "ledger candidates; no matching free source or chosen proxy",
+      "assets": [
+        "AST-V-PRP-001-01"
+      ]
     },
     {
       "id": "V-PRP-008",
       "milestone": "M2",
       "status": "missing",
-      "detail": "no input",
-      "assets": []
+      "detail": "ledger candidates; no matching free source or chosen proxy",
+      "assets": [
+        "AST-V-PRP-001-01"
+      ]
     },
     {
       "id": "V-PRP-009",
       "milestone": "M2",
-      "status": "missing",
-      "detail": "no input",
-      "assets": []
+      "status": "internal-only",
+      "detail": "internal playtest only; public placeholder remains",
+      "assets": [
+        "AST-V-BLD-001-05",
+        "AST-V-PRP-001-01",
+        "AST-V-PRP-009-01",
+        "AST-V-PRP-009-01-02",
+        "AST-V-PRP-009-01-03",
+        "AST-V-PRP-009-01-04",
+        "AST-V-PRP-009-01-05",
+        "AST-V-PRP-009-01-06",
+        "AST-V-PRP-009-01-07",
+        "AST-V-PRP-009-01-08",
+        "AST-UE-INTERNAL-06"
+      ]
     },
     {
       "id": "V-PRP-010",
       "milestone": "M2",
       "status": "missing",
-      "detail": "no input",
-      "assets": []
+      "detail": "ledger candidates; no matching free source or chosen proxy",
+      "assets": [
+        "AST-V-PRP-001-01"
+      ]
     },
     {
       "id": "V-CHR-US-003",
@@ -811,15 +1135,24 @@
       "id": "V-BLD-009",
       "milestone": "M3",
       "status": "missing",
-      "detail": "no input",
-      "assets": []
+      "detail": "ledger candidates; no matching free source or chosen proxy",
+      "assets": [
+        "AST-V-BLD-001-01",
+        "AST-V-BLD-001-02",
+        "AST-V-BLD-001-03",
+        "AST-V-BLD-001-04"
+      ]
     },
     {
       "id": "V-SKY-003",
       "milestone": "M3",
-      "status": "missing",
-      "detail": "no input",
-      "assets": []
+      "status": "placeholder",
+      "detail": "free proxy candidate",
+      "assets": [
+        "AST-V-SKY-001-01",
+        "AST-V-SKY-003-01",
+        "AST-V-SKY-003-02"
+      ]
     },
     {
       "id": "V-CHR-GE-002",
@@ -866,9 +1199,11 @@
     {
       "id": "V-WPN-GE-003",
       "milestone": "M3",
-      "status": "missing",
-      "detail": "no input",
-      "assets": []
+      "status": "internal-only",
+      "detail": "internal playtest only; excluded from public coverage",
+      "assets": [
+        "AST-UE-INTERNAL-02"
+      ]
     },
     {
       "id": "V-WPN-GE-006",
@@ -1140,50 +1475,88 @@
       "id": "V-BLD-005",
       "milestone": "M4",
       "status": "missing",
-      "detail": "no input",
-      "assets": []
+      "detail": "ledger candidates; no matching free source or chosen proxy",
+      "assets": [
+        "AST-V-BLD-001-01",
+        "AST-V-BLD-001-02",
+        "AST-V-BLD-001-03",
+        "AST-V-BLD-001-04"
+      ]
     },
     {
       "id": "V-BLD-006",
       "milestone": "M4",
       "status": "missing",
-      "detail": "no input",
-      "assets": []
+      "detail": "ledger candidates; no matching free source or chosen proxy",
+      "assets": [
+        "AST-V-BLD-001-01",
+        "AST-V-BLD-001-02",
+        "AST-V-BLD-001-03",
+        "AST-V-BLD-001-04"
+      ]
     },
     {
       "id": "V-BLD-007",
       "milestone": "M4",
       "status": "missing",
-      "detail": "no input",
-      "assets": []
+      "detail": "ledger candidates; no matching free source or chosen proxy",
+      "assets": [
+        "AST-V-BLD-001-01",
+        "AST-V-BLD-001-02",
+        "AST-V-BLD-001-03",
+        "AST-V-BLD-001-04"
+      ]
     },
     {
       "id": "V-NAT-003",
       "milestone": "M4",
-      "status": "missing",
-      "detail": "no input",
-      "assets": []
+      "status": "placeholder",
+      "detail": "free proxy candidate",
+      "assets": [
+        "AST-V-NAT-001-01",
+        "AST-V-NAT-003-01",
+        "AST-V-NAT-003-01-02",
+        "AST-V-NAT-003-01-03",
+        "AST-V-NAT-003-01-04",
+        "AST-V-NAT-003-01-05",
+        "AST-V-NAT-003-01-06",
+        "AST-V-NAT-003-01-07",
+        "AST-V-NAT-003-01-08",
+        "AST-V-NAT-007-08",
+        "AST-V-NAT-007-08-02",
+        "AST-V-NAT-007-08-03",
+        "AST-V-NAT-007-08-04",
+        "AST-V-NAT-007-08-05"
+      ]
     },
     {
       "id": "V-NAT-006",
       "milestone": "M4",
       "status": "missing",
-      "detail": "no input",
-      "assets": []
+      "detail": "ledger candidates; no matching free source or chosen proxy",
+      "assets": [
+        "AST-V-NAT-001-01"
+      ]
     },
     {
       "id": "V-NAT-008",
       "milestone": "M4",
       "status": "missing",
-      "detail": "no input",
-      "assets": []
+      "detail": "ledger candidates; no matching free source or chosen proxy",
+      "assets": [
+        "AST-V-NAT-001-01"
+      ]
     },
     {
       "id": "V-SKY-002",
       "milestone": "M4",
-      "status": "missing",
-      "detail": "no input",
-      "assets": []
+      "status": "real",
+      "detail": "matching free source registered (metadata only; not built)",
+      "assets": [
+        "AST-V-SKY-002-01",
+        "AST-V-SKY-002-02",
+        "AST-V-SKY-002-03"
+      ]
     },
     {
       "id": "V-CHR-US-004",
@@ -1222,5 +1595,10 @@
     }
   ],
   "violations": [],
-  "unknown_req_ids": []
+  "unknown_req_ids": [
+    "M-CAR-001",
+    "M-CAR-002",
+    "M-CAR-003",
+    "M-CAR-004"
+  ]
 }

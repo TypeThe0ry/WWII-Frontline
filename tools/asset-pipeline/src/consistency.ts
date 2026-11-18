@@ -47,15 +47,16 @@ export async function checkConsistency(m: Manifest, packs: string): Promise<stri
   return problems;
 }
 
-/** `placeholder:false` entries must have a ledger row with status OK. */
+/** Internal assets are never distributable; other `placeholder:false` entries require status OK. */
 export function checkPlaceholders(m: Manifest, ledger: string | Ledger): string[] {
   const l = typeof ledger === 'string' ? loadLedger(ledger) : ledger;
   const problems: string[] = [];
   for (const [id, a] of Object.entries(m.assets)) {
-    if (a.placeholder) continue;
     const assetId = a.license_ref?.replace(/^LICENSES\.md#/, '');
     const row = assetId ? l.byAssetId.get(assetId) : undefined;
-    if (!row) problems.push(`${id}: placeholder:false without a ledger row`);
+    if (row?.status === 'INTERNAL') problems.push(`${id}: internal-only ledger asset ${row.asset_id} is not distributable`);
+    else if (a.placeholder) continue;
+    else if (!row) problems.push(`${id}: placeholder:false without a ledger row`);
     else if (row.status !== 'OK') problems.push(`${id}: placeholder:false but ledger ${row.asset_id} is ${row.status}`);
   }
   return problems;

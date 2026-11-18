@@ -9,6 +9,7 @@ import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative, sep } from 'node:path';
 import { FileSource, FpakReader, INDEX_FIXED_BYTES, type KindName } from './fpak/index.ts';
+import { assertStatusOk } from './gate.ts';
 import { loadLedger, type Ledger } from './ledger.ts';
 import { readStats, type Stats } from './stats.ts';
 
@@ -167,6 +168,7 @@ export async function buildManifest(o: BuildManifestOptions): Promise<Manifest> 
     const st = stats.get(base);
     const assetId = st?.asset_id ?? audioIds.get(base);
     const row = assetId ? ledger.byAssetId.get(assetId) : undefined;
+    if (row?.status === 'INTERNAL') assertStatusOk(row, base);
     const ov = Object.entries(o.overrides ?? {}).filter(([g]) => globToRegExp(g).test(base)).map(([, v]) => v);
     const merged = Object.assign({}, ...ov) as Overrides[string];
     const a: ManifestAsset = {

@@ -40,9 +40,9 @@ describe('report (acceptance 6)', () => {
     const rep = buildReport({ requirements: reqs, ledger: r.ledger, work: r.work, placeholders: ph });
     const byId = Object.fromEntries(rep.requirements.map((x) => [x.id, x.status]));
     expect(byId).toEqual({ 'V-REAL-001': 'real', 'V-GREY-001': 'placeholder', 'A-NONE-001': 'missing', 'V-LATE-001': 'missing' });
-    expect(rep.summary).toEqual({ real: 1, placeholder: 1, missing: 2, total: 4 });
-    expect(rep.by_milestone.M1).toEqual({ real: 1, placeholder: 1, missing: 1, total: 3 });
-    expect(rep.by_milestone.M2).toEqual({ real: 0, placeholder: 0, missing: 1, total: 1 });
+    expect(rep.summary).toEqual({ real: 1, placeholder: 1, missing: 2, internal_only: 0, total: 4 });
+    expect(rep.by_milestone.M1).toEqual({ real: 1, placeholder: 1, missing: 1, internal_only: 0, total: 3 });
+    expect(rep.by_milestone.M2).toEqual({ real: 0, placeholder: 0, missing: 1, internal_only: 0, total: 1 });
     expect(rep.unknown_req_ids).toEqual(['V-OTHER-001']);
     expect(formatReport(rep)).toContain('V-REAL-001');
   });
@@ -56,6 +56,22 @@ describe('report (acceptance 6)', () => {
     expect(rep.requirements.find((x) => x.id === 'A-NONE-001')!.status).toBe('missing');
     expect(rep.violations).toHaveLength(1);
     expect(rep.violations[0]).toContain('A-NONE-001');
+  });
+
+  it('INTERNAL rows with multiple requirement IDs cannot back build coverage', () => {
+    const r = tmpRepo(ledgerText([
+      { asset_id: 'AST-INT', req_id: 'V-REAL-001, V-GREY-001', status: 'INTERNAL' },
+    ]));
+    repos.push(r);
+    r.put('work/AST-INT/normalized.gltf', '{}');
+    const m = r.put('manifest.json', JSON.stringify({ entries: [{ req_id: 'V-GREY-001', placeholder: false }] }));
+    const rep = buildReport({ requirements: reqs, ledger: r.ledger, work: r.work, manifest: m });
+    expect(rep.summary).toEqual({ real: 0, placeholder: 0, missing: 2, internal_only: 2, total: 4 });
+    expect(rep.requirements.slice(0, 2).map((row) => [row.status, row.assets])).toEqual([
+      ['internal-only', ['AST-INT']], ['internal-only', ['AST-INT']],
+    ]);
+    expect(rep.violations).toEqual([expect.stringContaining('V-GREY-001')]);
+    expect(rep.unknown_req_ids).toEqual([]);
   });
 
   it('milestone filter', () => {

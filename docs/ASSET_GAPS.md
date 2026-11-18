@@ -604,3 +604,19 @@
 ### 3.5 替换流程
 
 素材到位 → 放入 `assets/incoming/{需求ID}/…` → 在 `LICENSES.md` 登记并状态 OK → 管线处理（`.fpak` 打包）→ 同一需求 ID 覆盖占位 → manifest `placeholder` 置 false → 视觉回归/听感检查 → 在 `ASSET_SHOPPING_LIST.md` 勾选"已购"。
+
+### 3.6 M1-064 免费素材登记与占位回退（2026-11-19）
+
+从 `work/playable` 的免费采集索引登记 227 个文件（223 个 Poly Haven/Kenney CC0，4 个 Google Fonts OFL），仅保留来源页、许可证文本、候选需求 ID 和 SHA-256 等元数据，未搬运原档。`assets/manifests/missing-report.json` 的 `coverage_basis: source-metadata` 是**来源级**清单，不是 §3.4 的构建验收：`real` 有匹配的已登记免费来源；`placeholder` 有近似素材可作占位；`missing` 未登记匹配的来源或经选定的近似占位，仍使用 §3.2/3.3 回退；`internal-only` 尚无可计入 real 的公开来源，TT 已购转换件仅记录为内部试玩用途。报告列出的候选文件不表示整套需求已验收。M1 来源级为 **5 real / 7 placeholder / 56 missing / 4 internal-only**（72 个需求含非视觉），逐项见报告和 `tasks/STATUS.md` 的 M1-064 行。
+
+| 类别 | 本轮覆盖与现行占位决定 |
+|---|---|
+| 地表、自然与天空 | Poly Haven 提供树、石、泥地与农田材质和 HDRI。M1 的 `V-NAT-002`、`V-NAT-004`、`V-NAT-005` 已有匹配来源；`V-NAT-001` 只有用于拼装的零件，保留 §3.2 的树篱灰盒与玩法碰撞（GAP-V03）。`V-NAT-008` 只有通用近似。 |
+| 建筑与掩体 | 免费墙面、屋顶和废墟材质、Kenney 通用建筑包不能替代可玩的诺曼底整屋模块。`V-BLD-001`、`V-BLD-002`、`V-BLD-003` 保留灰盒、通行门洞与分体碰撞（GAP-V02）。 |
+| 道具 | `V-PRP-004`、`V-PRP-006` 有弹药箱、木箱或木桶等对应来源。`V-PRP-001`、`V-PRP-002`、`V-PRP-003` 仅通用近似，沿用沙袋、铁丝网与反坦克障碍灰盒；通用道具包不补齐无线电、工事或残骸。 |
+| 角色、武器与字体 | Kenney 通用角色不满足二战服装、骨架与动画要求；上游 `V-CHR-001` 至 `009` 不按主线阵营角色 ID 计覆盖。Poly Haven 栓动步枪仅为 `V-WPN-GE-001` 的近似，不作 Kar98k 真素材。`V-FNT-001` 至 `004` 有免费来源，尚不代表已完成字体打包。 |
+| 动画、载具、特效与音频 | 缺项继续使用 §3.2/3.3 占位；动画保留位移/程序化回退，特效继续用简单粒子，缺音频保持静音。 |
+
+**TT 已购 UE 包**：六个采购包、16 个 GLB 输出（含德国士兵的额外 LOD），只在 `LICENSES.md` 的 `INTERNAL` 行登记。M1 的 `V-CHR-GE-001`、`V-WPN-GE-004`、`V-WPN-GE-005`、`V-WPN-GE-008` 仍用公开灰盒。转换件不计公开覆盖；普通 ingest、元数据 ingest 和发布 manifest 均拒绝已标记的 `INTERNAL` 素材。不得为替换灰盒而把转换件、`.uasset` 或其他中间产物放入主分支构建。
+
+**待 TT 手动下载或核验（候选，未验收）**：Sketchfab 的 Garand、Thompson、MP40、MG42、Sherman、Panzer IV 及 Regelbau M178 碉堡（见 `ASSET_SHOPPING_LIST.md` §8）；Quaternius 植被/角色/动作/建筑/武器/载具包的 Google Drive 下载；Mixamo 登录及 Mixamo/CMU 动作授权；OpenGameArt 枪口焰、弹孔及爆炸贴图候选的页面与许可。许可、来源或用途未核定前不进台账 `OK`，不改变占位决定。
