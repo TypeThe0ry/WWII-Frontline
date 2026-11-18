@@ -1067,3 +1067,6 @@ GD 9.2 只给了俯冲站→趴 0.7 s；非俯冲的站→趴本任务按经过�
 
 ## PI-101 M1-049a：解码视为 fetch 后立即完成（2026-11-18）
 核心把 `fetched()` 之后直接置 `uploading`，省略独立的 `decoding` 状态（解码在 Worker 池内、对主线程状态机不可见）；`ChunkState` 类型仍保留 `decoding`/`requested`/`evicting` 以便与任务书接口一致。上传耗时估计系数（2 ms/MB）为 `initial`，M1-049b 用 `stream_upload_ms` 实测后替换。
+
+## PI-102 M1-050a：BC7 下 3 图层材质超 24 MB（2026-11-18）
+验收 4 要求 8 层 1024² 含 mip 总显存 ≤24 MB。按 `TerrainLayerDef` 每层 albedo+normal+ORM 三张图计：BC7(8 bpp) 约 32 MB，超出；ASTC 6×6 约 14.2 MB、ETC2 约 16 MB 达标。建议（待 Fable 裁决）：BC7 设备把 normal 用 BC5(8 bpp)并把 ORM 合进 albedo 的 alpha 之外的独立 512² 层，或在 BC7 设备上把层纹理降到 768²/2 张图；M1-050b 实测真实格式后定。当前仅记录核算，未改预算。
