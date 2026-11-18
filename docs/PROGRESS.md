@@ -609,3 +609,7 @@ blocked / in-progress / todo：无。M0 的 33 个任务全部已提交（M0-033
 
 ### M1-034 关卡标注与建筑足迹 034a — partial — 2026-11-18 — 提交见 git log
 - `zones.py`、`buildings_annotate.py`、CLI `zones-m1` 与 `validate --slice m1`、`tests/test_zones.py`；`data/maps/carentan/{m1/{zones,spawns,cover_points,nav_critical}.json,vehicle_routes.json,landmarks.json}`、`reports/m1-zones-validate.json`；`buildings.geojson` 已标注样式/可进入性/门洞。
+
+
+### M1-035 区块烘焙 035a — partial — 2026-11-18 — 提交见 git log
+- `splat.py`、`vegetation.py`、`chunker.py`、CLI `chunks-m1`、`tests/test_chunker.py`；`data/maps/carentan/m1/chunks/{index.json,FORMAT.txt}`、`reports/m1-chunk-bake.json`；区块二进制输出到 `assets/processed/maps/carentan/m1/chunks/`（不入库）。

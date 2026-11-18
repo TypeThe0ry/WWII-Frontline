@@ -1,0 +1,5718 @@
+{
+ "bundle": "map_carentan_medium",
+ "bx_range": [
+  5,
+  24
+ ],
+ "bz_range": [
+  8,
+  26
+ ],
+ "chunk_m": 64,
+ "chunks": [
+  {
+   "bx": 5,
+   "bytes": 12176,
+   "bz": 8,
+   "data_quality": "draft",
+   "files": [
+    "b_5_8.fchk",
+    "c_5_8.fcol"
+   ],
+   "key": "terrain_carentan/b_5_8",
+   "lod": [
+    0
+   ],
+   "sha256": "078cda8f28ae3cf352bd6cb99987763d7f5c7ab6f46a8927eadf414925e941eb"
+  },
+  {
+   "bx": 5,
+   "bytes": 10703,
+   "bz": 9,
+   "data_quality": "draft",
+   "files": [
+    "b_5_9.fchk",
+    "c_5_9.fcol"
+   ],
+   "key": "terrain_carentan/b_5_9",
+   "lod": [
+    0
+   ],
+   "sha256": "b0e2c7f095c89b4c7d22f61964a113769697711411eae31822b67d6bab937a2e"
+  },
+  {
+   "bx": 5,
+   "bytes": 11236,
+   "bz": 10,
+   "data_quality": "draft",
+   "files": [
+    "b_5_10.fchk",
+    "c_5_10.fcol"
+   ],
+   "key": "terrain_carentan/b_5_10",
+   "lod": [
+    0
+   ],
+   "sha256": "9a38a0b880c4e194c5c514b23719b49a10c57dd23528fd23911104c5d9a74e05"
+  },
+  {
+   "bx": 5,
+   "bytes": 11317,
+   "bz": 11,
+   "data_quality": "draft",
+   "files": [
+    "b_5_11.fchk",
+    "c_5_11.fcol"
+   ],
+   "key": "terrain_carentan/b_5_11",
+   "lod": [
+    0
+   ],
+   "sha256": "790e8602d7402b4c876196fcc90c07074bb04d52c3f5d34dddded8333e621766"
+  },
+  {
+   "bx": 5,
+   "bytes": 11581,
+   "bz": 12,
+   "data_quality": "draft",
+   "files": [
+    "b_5_12.fchk",
+    "c_5_12.fcol"
+   ],
+   "key": "terrain_carentan/b_5_12",
+   "lod": [
+    0
+   ],
+   "sha256": "5d8f0c82ef0424b34f4ec01e9f1f87ed59bf9fd96def82b12d92c0bd7e555b8a"
+  },
+  {
+   "bx": 5,
+   "bytes": 14819,
+   "bz": 13,
+   "data_quality": "draft",
+   "files": [
+    "b_5_13.fchk",
+    "c_5_13.fcol"
+   ],
+   "key": "terrain_carentan/b_5_13",
+   "lod": [
+    0
+   ],
+   "sha256": "6e96020b4c68852e9c760b8b3c82ba0e98b0f1d87ae71c32a141f078930525f3"
+  },
+  {
+   "bx": 5,
+   "bytes": 14673,
+   "bz": 14,
+   "data_quality": "draft",
+   "files": [
+    "b_5_14.fchk",
+    "c_5_14.fcol"
+   ],
+   "key": "terrain_carentan/b_5_14",
+   "lod": [
+    0
+   ],
+   "sha256": "b075c6fa158e80efbfc8b477a9e70a36cf7cf1ad9a3060d984e9c8ca31566770"
+  },
+  {
+   "bx": 5,
+   "bytes": 15454,
+   "bz": 15,
+   "data_quality": "draft",
+   "files": [
+    "b_5_15.fchk",
+    "c_5_15.fcol"
+   ],
+   "key": "terrain_carentan/b_5_15",
+   "lod": [
+    0
+   ],
+   "sha256": "bafe1364f5179f268702dda34aef569f143f2c6c96fd2c3fc6bd4219da5001e9"
+  },
+  {
+   "bx": 5,
+   "bytes": 15310,
+   "bz": 16,
+   "data_quality": "draft",
+   "files": [
+    "b_5_16.fchk",
+    "c_5_16.fcol"
+   ],
+   "key": "terrain_carentan/b_5_16",
+   "lod": [
+    0
+   ],
+   "sha256": "dbf545a3a76651482ae0e1488b883a796ec651b9ee3abf21c21c50a0a6227def"
+  },
+  {
+   "bx": 5,
+   "bytes": 15551,
+   "bz": 17,
+   "data_quality": "draft",
+   "files": [
+    "b_5_17.fchk",
+    "c_5_17.fcol"
+   ],
+   "key": "terrain_carentan/b_5_17",
+   "lod": [
+    0
+   ],
+   "sha256": "3fc40250fa61aed25f89c1432dd2b533ecee62eac08bb74e7aa2cfd3008e26af"
+  },
+  {
+   "bx": 5,
+   "bytes": 15253,
+   "bz": 18,
+   "data_quality": "draft",
+   "files": [
+    "b_5_18.fchk",
+    "c_5_18.fcol"
+   ],
+   "key": "terrain_carentan/b_5_18",
+   "lod": [
+    0
+   ],
+   "sha256": "c105481f8b64c358474d69de80bd5045a3452fb2d86d46a2817247da2da5bbb7"
+  },
+  {
+   "bx": 5,
+   "bytes": 13255,
+   "bz": 19,
+   "data_quality": "draft",
+   "files": [
+    "b_5_19.fchk",
+    "c_5_19.fcol"
+   ],
+   "key": "terrain_carentan/b_5_19",
+   "lod": [
+    0
+   ],
+   "sha256": "1c2d411ea23773ffc0e800d119601eb88e75a8e0c11399cffa929da6f949a72e"
+  },
+  {
+   "bx": 5,
+   "bytes": 15198,
+   "bz": 20,
+   "data_quality": "draft",
+   "files": [
+    "b_5_20.fchk",
+    "c_5_20.fcol"
+   ],
+   "key": "terrain_carentan/b_5_20",
+   "lod": [
+    0
+   ],
+   "sha256": "4ff3c7c35b5a91abe8bde248c3563d05b3103933002572ffde3447eed5dec9de"
+  },
+  {
+   "bx": 5,
+   "bytes": 16210,
+   "bz": 21,
+   "data_quality": "draft",
+   "files": [
+    "b_5_21.fchk",
+    "c_5_21.fcol"
+   ],
+   "key": "terrain_carentan/b_5_21",
+   "lod": [
+    0
+   ],
+   "sha256": "6b14911b1c0a45696eb5f5895b6baeb40568d413e0e48b9c1378ed905ea24f3c"
+  },
+  {
+   "bx": 5,
+   "bytes": 12631,
+   "bz": 22,
+   "data_quality": "draft",
+   "files": [
+    "b_5_22.fchk",
+    "c_5_22.fcol"
+   ],
+   "key": "terrain_carentan/b_5_22",
+   "lod": [
+    0
+   ],
+   "sha256": "c510d73c2fa2680b08332aa869627298728fefb09670cc1443330bcd362a0eff"
+  },
+  {
+   "bx": 5,
+   "bytes": 13171,
+   "bz": 23,
+   "data_quality": "draft",
+   "files": [
+    "b_5_23.fchk",
+    "c_5_23.fcol"
+   ],
+   "key": "terrain_carentan/b_5_23",
+   "lod": [
+    0
+   ],
+   "sha256": "2be2aad4e208c78513d85723a446eb9d0d034a90b7518c44b0fc419095033e1d"
+  },
+  {
+   "bx": 5,
+   "bytes": 13461,
+   "bz": 24,
+   "data_quality": "draft",
+   "files": [
+    "b_5_24.fchk",
+    "c_5_24.fcol"
+   ],
+   "key": "terrain_carentan/b_5_24",
+   "lod": [
+    0
+   ],
+   "sha256": "7363508b1d09e89a222f9a5ac255e9d73cc94ea55addcb4b88d340326906abc5"
+  },
+  {
+   "bx": 5,
+   "bytes": 13270,
+   "bz": 25,
+   "data_quality": "draft",
+   "files": [
+    "b_5_25.fchk",
+    "c_5_25.fcol"
+   ],
+   "key": "terrain_carentan/b_5_25",
+   "lod": [
+    0
+   ],
+   "sha256": "5c8e8fdcad96234de9102403271c618704080e01ccea5d9085f3a87e6ec257d2"
+  },
+  {
+   "bx": 5,
+   "bytes": 13542,
+   "bz": 26,
+   "data_quality": "draft",
+   "files": [
+    "b_5_26.fchk",
+    "c_5_26.fcol"
+   ],
+   "key": "terrain_carentan/b_5_26",
+   "lod": [
+    0
+   ],
+   "sha256": "231601b19c3cd85d60f032f65461f7454981ea264e972c40bd24fe310b08cb45"
+  },
+  {
+   "bx": 6,
+   "bytes": 14463,
+   "bz": 8,
+   "data_quality": "draft",
+   "files": [
+    "b_6_8.fchk",
+    "c_6_8.fcol"
+   ],
+   "key": "terrain_carentan/b_6_8",
+   "lod": [
+    0
+   ],
+   "sha256": "b68c963f8f9896379877aa80ba8446eb4bdaddb124f242e978a11a5dbb5cfcee"
+  },
+  {
+   "bx": 6,
+   "bytes": 11584,
+   "bz": 9,
+   "data_quality": "draft",
+   "files": [
+    "b_6_9.fchk",
+    "c_6_9.fcol"
+   ],
+   "key": "terrain_carentan/b_6_9",
+   "lod": [
+    0
+   ],
+   "sha256": "934f5df6da8350cb81044609efd4cdd6f71f402eb6dfc40b11e516399aba0dae"
+  },
+  {
+   "bx": 6,
+   "bytes": 11820,
+   "bz": 10,
+   "data_quality": "draft",
+   "files": [
+    "b_6_10.fchk",
+    "c_6_10.fcol"
+   ],
+   "key": "terrain_carentan/b_6_10",
+   "lod": [
+    0
+   ],
+   "sha256": "e01ee80dd499c93f522dbf187ddca6234b084d3b4da020ddab78b6982d496743"
+  },
+  {
+   "bx": 6,
+   "bytes": 12293,
+   "bz": 11,
+   "data_quality": "draft",
+   "files": [
+    "b_6_11.fchk",
+    "c_6_11.fcol"
+   ],
+   "key": "terrain_carentan/b_6_11",
+   "lod": [
+    0
+   ],
+   "sha256": "a8b1dfc6420a01d84083965049d98ae1a1af1111417e7d4f1516e11a35bbc0a9"
+  },
+  {
+   "bx": 6,
+   "bytes": 14092,
+   "bz": 12,
+   "data_quality": "draft",
+   "files": [
+    "b_6_12.fchk",
+    "c_6_12.fcol"
+   ],
+   "key": "terrain_carentan/b_6_12",
+   "lod": [
+    0
+   ],
+   "sha256": "ac40443af81055d435c5f0090b0a2e065f204928ec7e0daf43be7428640170be"
+  },
+  {
+   "bx": 6,
+   "bytes": 17582,
+   "bz": 13,
+   "data_quality": "draft",
+   "files": [
+    "b_6_13.fchk",
+    "c_6_13.fcol"
+   ],
+   "key": "terrain_carentan/b_6_13",
+   "lod": [
+    0
+   ],
+   "sha256": "5598cc093a741077a784637bf8635446a05ff4eec886cf5b66b4ba4200e27ca3"
+  },
+  {
+   "bx": 6,
+   "bytes": 14841,
+   "bz": 14,
+   "data_quality": "draft",
+   "files": [
+    "b_6_14.fchk",
+    "c_6_14.fcol"
+   ],
+   "key": "terrain_carentan/b_6_14",
+   "lod": [
+    0
+   ],
+   "sha256": "780395a4a815a26f0570a354aed951488894a9cf0457b61ee76f6909ac28482a"
+  },
+  {
+   "bx": 6,
+   "bytes": 15812,
+   "bz": 15,
+   "data_quality": "draft",
+   "files": [
+    "b_6_15.fchk",
+    "c_6_15.fcol"
+   ],
+   "key": "terrain_carentan/b_6_15",
+   "lod": [
+    0
+   ],
+   "sha256": "beaa52c9cb815973ee08ba4768cb7c55479bc03e447b185146c80917d775387b"
+  },
+  {
+   "bx": 6,
+   "bytes": 18454,
+   "bz": 16,
+   "data_quality": "draft",
+   "files": [
+    "b_6_16.fchk",
+    "c_6_16.fcol"
+   ],
+   "key": "terrain_carentan/b_6_16",
+   "lod": [
+    0
+   ],
+   "sha256": "76f3ab7d19c999724608e1fd25d6e871f4e17a3277f895e116fe11e52a23e673"
+  },
+  {
+   "bx": 6,
+   "bytes": 17335,
+   "bz": 17,
+   "data_quality": "draft",
+   "files": [
+    "b_6_17.fchk",
+    "c_6_17.fcol"
+   ],
+   "key": "terrain_carentan/b_6_17",
+   "lod": [
+    0
+   ],
+   "sha256": "fb2f27cc75e65b47070915512e73d2e651da845ddbf24e15d62ae62bbba810aa"
+  },
+  {
+   "bx": 6,
+   "bytes": 17232,
+   "bz": 18,
+   "data_quality": "draft",
+   "files": [
+    "b_6_18.fchk",
+    "c_6_18.fcol"
+   ],
+   "key": "terrain_carentan/b_6_18",
+   "lod": [
+    0
+   ],
+   "sha256": "d6606726f9bc34b55cd39c7c894687e5334f59a3a8d84a92083cb7f0e8418a3a"
+  },
+  {
+   "bx": 6,
+   "bytes": 17155,
+   "bz": 19,
+   "data_quality": "draft",
+   "files": [
+    "b_6_19.fchk",
+    "c_6_19.fcol"
+   ],
+   "key": "terrain_carentan/b_6_19",
+   "lod": [
+    0
+   ],
+   "sha256": "643eb674f2f2296eee19e89b117b04c77e99164a3a00ffed6c9524b009f303db"
+  },
+  {
+   "bx": 6,
+   "bytes": 16107,
+   "bz": 20,
+   "data_quality": "draft",
+   "files": [
+    "b_6_20.fchk",
+    "c_6_20.fcol"
+   ],
+   "key": "terrain_carentan/b_6_20",
+   "lod": [
+    0
+   ],
+   "sha256": "b2863260401347f2576dc5529c5a38737bc92e37535ea0feb6c5af610c067137"
+  },
+  {
+   "bx": 6,
+   "bytes": 15171,
+   "bz": 21,
+   "data_quality": "draft",
+   "files": [
+    "b_6_21.fchk",
+    "c_6_21.fcol"
+   ],
+   "key": "terrain_carentan/b_6_21",
+   "lod": [
+    0
+   ],
+   "sha256": "28177ab3b82dcf11310fb45ad7a4d82f6befa70e8a90cb00f70a0427db064369"
+  },
+  {
+   "bx": 6,
+   "bytes": 12992,
+   "bz": 22,
+   "data_quality": "draft",
+   "files": [
+    "b_6_22.fchk",
+    "c_6_22.fcol"
+   ],
+   "key": "terrain_carentan/b_6_22",
+   "lod": [
+    0
+   ],
+   "sha256": "9c8c1d16e99bdb9a08cadbea364febd737405ea944d0c2171e842431e4f492c5"
+  },
+  {
+   "bx": 6,
+   "bytes": 14700,
+   "bz": 23,
+   "data_quality": "draft",
+   "files": [
+    "b_6_23.fchk",
+    "c_6_23.fcol"
+   ],
+   "key": "terrain_carentan/b_6_23",
+   "lod": [
+    0
+   ],
+   "sha256": "20491417ce34b4d2778ffc5317adae81e31c851c6b2314b203b6beed9e4b96fc"
+  },
+  {
+   "bx": 6,
+   "bytes": 14455,
+   "bz": 24,
+   "data_quality": "draft",
+   "files": [
+    "b_6_24.fchk",
+    "c_6_24.fcol"
+   ],
+   "key": "terrain_carentan/b_6_24",
+   "lod": [
+    0
+   ],
+   "sha256": "8b9f6cc8479cf78fcea46da38b6e633c980cdb028d8d754210c1e87d32b851ee"
+  },
+  {
+   "bx": 6,
+   "bytes": 16744,
+   "bz": 25,
+   "data_quality": "draft",
+   "files": [
+    "b_6_25.fchk",
+    "c_6_25.fcol"
+   ],
+   "key": "terrain_carentan/b_6_25",
+   "lod": [
+    0
+   ],
+   "sha256": "b15fc1e3df23b1766ee68d421c680d9bf8d3ec4e8e0daaaf9a1a0b00d3a3fcaa"
+  },
+  {
+   "bx": 6,
+   "bytes": 14921,
+   "bz": 26,
+   "data_quality": "draft",
+   "files": [
+    "b_6_26.fchk",
+    "c_6_26.fcol"
+   ],
+   "key": "terrain_carentan/b_6_26",
+   "lod": [
+    0
+   ],
+   "sha256": "02dde5a04faf2ffe6abafcf1b6cffafb9217c0749e44130b3bc70d5f81f07a85"
+  },
+  {
+   "bx": 7,
+   "bytes": 16061,
+   "bz": 8,
+   "data_quality": "draft",
+   "files": [
+    "b_7_8.fchk",
+    "c_7_8.fcol"
+   ],
+   "key": "terrain_carentan/b_7_8",
+   "lod": [
+    0
+   ],
+   "sha256": "92d9a18b9d449b6472c76d2bd0b9291a4deb632b65d3a5227ac73752d2ada6f6"
+  },
+  {
+   "bx": 7,
+   "bytes": 11907,
+   "bz": 9,
+   "data_quality": "draft",
+   "files": [
+    "b_7_9.fchk",
+    "c_7_9.fcol"
+   ],
+   "key": "terrain_carentan/b_7_9",
+   "lod": [
+    0
+   ],
+   "sha256": "1ecdd6055f4bf4520845f38dc7973923b9f3661136198ceec7bf5b7ca6aae5ab"
+  },
+  {
+   "bx": 7,
+   "bytes": 11869,
+   "bz": 10,
+   "data_quality": "draft",
+   "files": [
+    "b_7_10.fchk",
+    "c_7_10.fcol"
+   ],
+   "key": "terrain_carentan/b_7_10",
+   "lod": [
+    0
+   ],
+   "sha256": "1a041c2f15b631ebcd38c717e9d386d7655622a6c162cb6a91d81697f3731d33"
+  },
+  {
+   "bx": 7,
+   "bytes": 14055,
+   "bz": 11,
+   "data_quality": "draft",
+   "files": [
+    "b_7_11.fchk",
+    "c_7_11.fcol"
+   ],
+   "key": "terrain_carentan/b_7_11",
+   "lod": [
+    0
+   ],
+   "sha256": "f6258f22aefe8ce97f3b04b801093e05631c15e470f5dd5b9062272e89f379cb"
+  },
+  {
+   "bx": 7,
+   "bytes": 17412,
+   "bz": 12,
+   "data_quality": "draft",
+   "files": [
+    "b_7_12.fchk",
+    "c_7_12.fcol"
+   ],
+   "key": "terrain_carentan/b_7_12",
+   "lod": [
+    0
+   ],
+   "sha256": "c667767a138007e7d7b101d97cba63b19812ef631ae3bcc0b62e71ab4053239b"
+  },
+  {
+   "bx": 7,
+   "bytes": 17468,
+   "bz": 13,
+   "data_quality": "draft",
+   "files": [
+    "b_7_13.fchk",
+    "c_7_13.fcol"
+   ],
+   "key": "terrain_carentan/b_7_13",
+   "lod": [
+    0
+   ],
+   "sha256": "773a8dc222e4d03ecd278df398783481f425ec58006d2e44602d18a63c63cba5"
+  },
+  {
+   "bx": 7,
+   "bytes": 16808,
+   "bz": 14,
+   "data_quality": "draft",
+   "files": [
+    "b_7_14.fchk",
+    "c_7_14.fcol"
+   ],
+   "key": "terrain_carentan/b_7_14",
+   "lod": [
+    0
+   ],
+   "sha256": "b32695c01e4a86c3bf3676c8effd00c416e3bd6dcc86f18e8a6979f30aabbc99"
+  },
+  {
+   "bx": 7,
+   "bytes": 16053,
+   "bz": 15,
+   "data_quality": "draft",
+   "files": [
+    "b_7_15.fchk",
+    "c_7_15.fcol"
+   ],
+   "key": "terrain_carentan/b_7_15",
+   "lod": [
+    0
+   ],
+   "sha256": "1abc34a937cdebc7e2ac011a8243976663edb3de5b5a6d6b8c3d5467b72aed1f"
+  },
+  {
+   "bx": 7,
+   "bytes": 14738,
+   "bz": 16,
+   "data_quality": "draft",
+   "files": [
+    "b_7_16.fchk",
+    "c_7_16.fcol"
+   ],
+   "key": "terrain_carentan/b_7_16",
+   "lod": [
+    0
+   ],
+   "sha256": "e94f55e05536fda3322a0efd8244b377c76054085dd1e990d9381af12439d494"
+  },
+  {
+   "bx": 7,
+   "bytes": 15379,
+   "bz": 17,
+   "data_quality": "draft",
+   "files": [
+    "b_7_17.fchk",
+    "c_7_17.fcol"
+   ],
+   "key": "terrain_carentan/b_7_17",
+   "lod": [
+    0
+   ],
+   "sha256": "2b4d723595db5a7bd51e61b581e3221d463b10805363f9845ab8d91d76831905"
+  },
+  {
+   "bx": 7,
+   "bytes": 18148,
+   "bz": 18,
+   "data_quality": "draft",
+   "files": [
+    "b_7_18.fchk",
+    "c_7_18.fcol"
+   ],
+   "key": "terrain_carentan/b_7_18",
+   "lod": [
+    0
+   ],
+   "sha256": "b062591612e61a00f2cd7e57ae8b761cbee5d938c61478b60aca74e14c712091"
+  },
+  {
+   "bx": 7,
+   "bytes": 15088,
+   "bz": 19,
+   "data_quality": "draft",
+   "files": [
+    "b_7_19.fchk",
+    "c_7_19.fcol"
+   ],
+   "key": "terrain_carentan/b_7_19",
+   "lod": [
+    0
+   ],
+   "sha256": "cd003d0a879a3b241973ca78ddee7733de2d2029bbb99ccbc077dc1f4ddd731e"
+  },
+  {
+   "bx": 7,
+   "bytes": 13911,
+   "bz": 20,
+   "data_quality": "draft",
+   "files": [
+    "b_7_20.fchk",
+    "c_7_20.fcol"
+   ],
+   "key": "terrain_carentan/b_7_20",
+   "lod": [
+    0
+   ],
+   "sha256": "d540b0661c3bce4319be348ddec56cf9bd3681185238ef5dbb08f4cb1f61ec36"
+  },
+  {
+   "bx": 7,
+   "bytes": 15386,
+   "bz": 21,
+   "data_quality": "draft",
+   "files": [
+    "b_7_21.fchk",
+    "c_7_21.fcol"
+   ],
+   "key": "terrain_carentan/b_7_21",
+   "lod": [
+    0
+   ],
+   "sha256": "f580fc1a27272558acef6dd190079b6ab05aeb5e61df923fddf3d3aefa99133c"
+  },
+  {
+   "bx": 7,
+   "bytes": 13465,
+   "bz": 22,
+   "data_quality": "draft",
+   "files": [
+    "b_7_22.fchk",
+    "c_7_22.fcol"
+   ],
+   "key": "terrain_carentan/b_7_22",
+   "lod": [
+    0
+   ],
+   "sha256": "a6321eba559d2f99c4dc9a262a5ba24e7406ca5e23bff180f681a4475652cd71"
+  },
+  {
+   "bx": 7,
+   "bytes": 13291,
+   "bz": 23,
+   "data_quality": "draft",
+   "files": [
+    "b_7_23.fchk",
+    "c_7_23.fcol"
+   ],
+   "key": "terrain_carentan/b_7_23",
+   "lod": [
+    0
+   ],
+   "sha256": "4f64046edc4731a12f71cffba74423ff328b245edf0af4a99ffa7406f2f91d70"
+  },
+  {
+   "bx": 7,
+   "bytes": 13917,
+   "bz": 24,
+   "data_quality": "draft",
+   "files": [
+    "b_7_24.fchk",
+    "c_7_24.fcol"
+   ],
+   "key": "terrain_carentan/b_7_24",
+   "lod": [
+    0
+   ],
+   "sha256": "e86d9ff89e025669b70576c26afbc61541f89cd5d0dc63e0a4baa487b73f5212"
+  },
+  {
+   "bx": 7,
+   "bytes": 12088,
+   "bz": 25,
+   "data_quality": "draft",
+   "files": [
+    "b_7_25.fchk",
+    "c_7_25.fcol"
+   ],
+   "key": "terrain_carentan/b_7_25",
+   "lod": [
+    0
+   ],
+   "sha256": "729265bd535521f64f94105bc3f1a203359c78fa6f6cf1a556246560aee06feb"
+  },
+  {
+   "bx": 7,
+   "bytes": 14228,
+   "bz": 26,
+   "data_quality": "draft",
+   "files": [
+    "b_7_26.fchk",
+    "c_7_26.fcol"
+   ],
+   "key": "terrain_carentan/b_7_26",
+   "lod": [
+    0
+   ],
+   "sha256": "5d686b5d6cf75e56481908f512f44b64552a9b78aa0b58060015ffef25e1776d"
+  },
+  {
+   "bx": 8,
+   "bytes": 16911,
+   "bz": 8,
+   "data_quality": "draft",
+   "files": [
+    "b_8_8.fchk",
+    "c_8_8.fcol"
+   ],
+   "key": "terrain_carentan/b_8_8",
+   "lod": [
+    0
+   ],
+   "sha256": "f7ba52af96c13bef69a21994b1d7b5fa7536889de7f4e43e255f21484370768c"
+  },
+  {
+   "bx": 8,
+   "bytes": 13763,
+   "bz": 9,
+   "data_quality": "draft",
+   "files": [
+    "b_8_9.fchk",
+    "c_8_9.fcol"
+   ],
+   "key": "terrain_carentan/b_8_9",
+   "lod": [
+    0
+   ],
+   "sha256": "82e11dcbb3dfe3476f757f7372d649105281a439bc62c9abf64acc2c76391f2e"
+  },
+  {
+   "bx": 8,
+   "bytes": 13433,
+   "bz": 10,
+   "data_quality": "draft",
+   "files": [
+    "b_8_10.fchk",
+    "c_8_10.fcol"
+   ],
+   "key": "terrain_carentan/b_8_10",
+   "lod": [
+    0
+   ],
+   "sha256": "ddd1de9bb2fbf8efc20196030532f6ca6953b67f56491c02ba4a4868721dcedd"
+  },
+  {
+   "bx": 8,
+   "bytes": 14917,
+   "bz": 11,
+   "data_quality": "draft",
+   "files": [
+    "b_8_11.fchk",
+    "c_8_11.fcol"
+   ],
+   "key": "terrain_carentan/b_8_11",
+   "lod": [
+    0
+   ],
+   "sha256": "853b1d94b4f618c1fd2d4981c2fff0c46e13d623e2731c580c17599ce17cf73f"
+  },
+  {
+   "bx": 8,
+   "bytes": 17434,
+   "bz": 12,
+   "data_quality": "draft",
+   "files": [
+    "b_8_12.fchk",
+    "c_8_12.fcol"
+   ],
+   "key": "terrain_carentan/b_8_12",
+   "lod": [
+    0
+   ],
+   "sha256": "4e00d804bf6381fb3f99b277d3bbd94d93e39efaa7ac9cddb6a22c562b17c3ac"
+  },
+  {
+   "bx": 8,
+   "bytes": 16458,
+   "bz": 13,
+   "data_quality": "draft",
+   "files": [
+    "b_8_13.fchk",
+    "c_8_13.fcol"
+   ],
+   "key": "terrain_carentan/b_8_13",
+   "lod": [
+    0
+   ],
+   "sha256": "39118b4f45f248f22e77a4921dfc851f561dab641abdf7b7cb2cced45adfec6d"
+  },
+  {
+   "bx": 8,
+   "bytes": 17057,
+   "bz": 14,
+   "data_quality": "draft",
+   "files": [
+    "b_8_14.fchk",
+    "c_8_14.fcol"
+   ],
+   "key": "terrain_carentan/b_8_14",
+   "lod": [
+    0
+   ],
+   "sha256": "f16f0ba454a0beb4ea77dd4e077cce57d81c95bdef69778103d976596f274d06"
+  },
+  {
+   "bx": 8,
+   "bytes": 16641,
+   "bz": 15,
+   "data_quality": "draft",
+   "files": [
+    "b_8_15.fchk",
+    "c_8_15.fcol"
+   ],
+   "key": "terrain_carentan/b_8_15",
+   "lod": [
+    0
+   ],
+   "sha256": "2c187b39fdbcda1f36e0ce7c6ad27d4bccfaa7f83a602d2b625103540ac1a98d"
+  },
+  {
+   "bx": 8,
+   "bytes": 16151,
+   "bz": 16,
+   "data_quality": "draft",
+   "files": [
+    "b_8_16.fchk",
+    "c_8_16.fcol"
+   ],
+   "key": "terrain_carentan/b_8_16",
+   "lod": [
+    0
+   ],
+   "sha256": "7edc8ba11829acc5464c5b7afe2e26f3460544978ba7c22335c2d9b54508919f"
+  },
+  {
+   "bx": 8,
+   "bytes": 16943,
+   "bz": 17,
+   "data_quality": "draft",
+   "files": [
+    "b_8_17.fchk",
+    "c_8_17.fcol"
+   ],
+   "key": "terrain_carentan/b_8_17",
+   "lod": [
+    0
+   ],
+   "sha256": "62067fc01c66cf40c7a7ea19e5158f54e47df8736b792d9e210f8b5efe7fd603"
+  },
+  {
+   "bx": 8,
+   "bytes": 17237,
+   "bz": 18,
+   "data_quality": "draft",
+   "files": [
+    "b_8_18.fchk",
+    "c_8_18.fcol"
+   ],
+   "key": "terrain_carentan/b_8_18",
+   "lod": [
+    0
+   ],
+   "sha256": "a33496b77e46f9123935df9be59e6a0654989c76e14c175813d777e4945f2ccb"
+  },
+  {
+   "bx": 8,
+   "bytes": 14634,
+   "bz": 19,
+   "data_quality": "draft",
+   "files": [
+    "b_8_19.fchk",
+    "c_8_19.fcol"
+   ],
+   "key": "terrain_carentan/b_8_19",
+   "lod": [
+    0
+   ],
+   "sha256": "37084b69a90c1bca7ce3af2595466ba14b3c4f2ede15c49799a8a8afee2a77ca"
+  },
+  {
+   "bx": 8,
+   "bytes": 13439,
+   "bz": 20,
+   "data_quality": "draft",
+   "files": [
+    "b_8_20.fchk",
+    "c_8_20.fcol"
+   ],
+   "key": "terrain_carentan/b_8_20",
+   "lod": [
+    0
+   ],
+   "sha256": "1fb15fe8b92a1e3a7abc51ec35b155e76f39a8c5f3a8593dad6d338e1e28a5ea"
+  },
+  {
+   "bx": 8,
+   "bytes": 13714,
+   "bz": 21,
+   "data_quality": "draft",
+   "files": [
+    "b_8_21.fchk",
+    "c_8_21.fcol"
+   ],
+   "key": "terrain_carentan/b_8_21",
+   "lod": [
+    0
+   ],
+   "sha256": "47f82b5e467da5240696fcfd107f3a8257a23f99769e6da5dfe8d8fb2e0c0138"
+  },
+  {
+   "bx": 8,
+   "bytes": 14201,
+   "bz": 22,
+   "data_quality": "draft",
+   "files": [
+    "b_8_22.fchk",
+    "c_8_22.fcol"
+   ],
+   "key": "terrain_carentan/b_8_22",
+   "lod": [
+    0
+   ],
+   "sha256": "8d44b2b7dc460f69ee3be5d6ba530fa535ebc0633d94d5dbd677b164d1bf9f58"
+  },
+  {
+   "bx": 8,
+   "bytes": 15315,
+   "bz": 23,
+   "data_quality": "draft",
+   "files": [
+    "b_8_23.fchk",
+    "c_8_23.fcol"
+   ],
+   "key": "terrain_carentan/b_8_23",
+   "lod": [
+    0
+   ],
+   "sha256": "d6f5305b1ecb5a0ba07891446c2f79fc9a12a105ef1a95c2e6cfc4c2159c2d18"
+  },
+  {
+   "bx": 8,
+   "bytes": 10184,
+   "bz": 24,
+   "data_quality": "draft",
+   "files": [
+    "b_8_24.fchk",
+    "c_8_24.fcol"
+   ],
+   "key": "terrain_carentan/b_8_24",
+   "lod": [
+    0
+   ],
+   "sha256": "a2b6527043a1e1b226e3aea4fe342068312e8a7991007b6b465087faf0e89788"
+  },
+  {
+   "bx": 8,
+   "bytes": 13270,
+   "bz": 25,
+   "data_quality": "draft",
+   "files": [
+    "b_8_25.fchk",
+    "c_8_25.fcol"
+   ],
+   "key": "terrain_carentan/b_8_25",
+   "lod": [
+    0
+   ],
+   "sha256": "9da976b2d9cf58d026a1c076f0ee20f155e5fd21443db0ca36d98b12aa9070fb"
+  },
+  {
+   "bx": 8,
+   "bytes": 14079,
+   "bz": 26,
+   "data_quality": "draft",
+   "files": [
+    "b_8_26.fchk",
+    "c_8_26.fcol"
+   ],
+   "key": "terrain_carentan/b_8_26",
+   "lod": [
+    0
+   ],
+   "sha256": "d612f073c5cce53502776309c30619d03b786e8a87ef506a45abb3e6b528c412"
+  },
+  {
+   "bx": 9,
+   "bytes": 17005,
+   "bz": 8,
+   "data_quality": "draft",
+   "files": [
+    "b_9_8.fchk",
+    "c_9_8.fcol"
+   ],
+   "key": "terrain_carentan/b_9_8",
+   "lod": [
+    0
+   ],
+   "sha256": "10558795c1f4ef1bacef4d9127d354bc231bcd0ac15e87a0f10bb5171751fa9e"
+  },
+  {
+   "bx": 9,
+   "bytes": 16599,
+   "bz": 9,
+   "data_quality": "draft",
+   "files": [
+    "b_9_9.fchk",
+    "c_9_9.fcol"
+   ],
+   "key": "terrain_carentan/b_9_9",
+   "lod": [
+    0
+   ],
+   "sha256": "389cf66991bb54160cf311da0907817a14862c60703f380153df42d729de7d55"
+  },
+  {
+   "bx": 9,
+   "bytes": 15084,
+   "bz": 10,
+   "data_quality": "draft",
+   "files": [
+    "b_9_10.fchk",
+    "c_9_10.fcol"
+   ],
+   "key": "terrain_carentan/b_9_10",
+   "lod": [
+    0
+   ],
+   "sha256": "3c85a4b186d5461905642949e71f302f57d10c6f53572d558d20e0d4e8a448b7"
+  },
+  {
+   "bx": 9,
+   "bytes": 13542,
+   "bz": 11,
+   "data_quality": "draft",
+   "files": [
+    "b_9_11.fchk",
+    "c_9_11.fcol"
+   ],
+   "key": "terrain_carentan/b_9_11",
+   "lod": [
+    0
+   ],
+   "sha256": "e92a68aadc16ef860e11520bc8e9f425e4bdba8348ee6ec174215acf38814e2b"
+  },
+  {
+   "bx": 9,
+   "bytes": 16410,
+   "bz": 12,
+   "data_quality": "draft",
+   "files": [
+    "b_9_12.fchk",
+    "c_9_12.fcol"
+   ],
+   "key": "terrain_carentan/b_9_12",
+   "lod": [
+    0
+   ],
+   "sha256": "753a2ce93b84beec1f896b1b55c8acdf57b7aa163797db9bc9d151f94f6c560c"
+  },
+  {
+   "bx": 9,
+   "bytes": 19087,
+   "bz": 13,
+   "data_quality": "draft",
+   "files": [
+    "b_9_13.fchk",
+    "c_9_13.fcol"
+   ],
+   "key": "terrain_carentan/b_9_13",
+   "lod": [
+    0
+   ],
+   "sha256": "f03650f03d4934334c3ab46ab059081ea3ac50b7278cc6e757e8c8ac4067005c"
+  },
+  {
+   "bx": 9,
+   "bytes": 17738,
+   "bz": 14,
+   "data_quality": "draft",
+   "files": [
+    "b_9_14.fchk",
+    "c_9_14.fcol"
+   ],
+   "key": "terrain_carentan/b_9_14",
+   "lod": [
+    0
+   ],
+   "sha256": "0ca7fc1a0ac82f758c20e9c225a38e3c356e9266c33fbb7549b79da0186517fa"
+  },
+  {
+   "bx": 9,
+   "bytes": 18042,
+   "bz": 15,
+   "data_quality": "draft",
+   "files": [
+    "b_9_15.fchk",
+    "c_9_15.fcol"
+   ],
+   "key": "terrain_carentan/b_9_15",
+   "lod": [
+    0
+   ],
+   "sha256": "381fa35a3e77f53734771f8a97c0c71d4e1c488e1c85c6a7480e3fabba063ec3"
+  },
+  {
+   "bx": 9,
+   "bytes": 15682,
+   "bz": 16,
+   "data_quality": "draft",
+   "files": [
+    "b_9_16.fchk",
+    "c_9_16.fcol"
+   ],
+   "key": "terrain_carentan/b_9_16",
+   "lod": [
+    0
+   ],
+   "sha256": "7fee73ca3804621f73c838512b2e3f7325b65c5b63305595e8e72c6609642fdb"
+  },
+  {
+   "bx": 9,
+   "bytes": 12481,
+   "bz": 17,
+   "data_quality": "draft",
+   "files": [
+    "b_9_17.fchk",
+    "c_9_17.fcol"
+   ],
+   "key": "terrain_carentan/b_9_17",
+   "lod": [
+    0
+   ],
+   "sha256": "60f8999b187c5789da0703017edff82d5e34329eaa5e4845c2b0c360b8187e97"
+  },
+  {
+   "bx": 9,
+   "bytes": 12283,
+   "bz": 18,
+   "data_quality": "draft",
+   "files": [
+    "b_9_18.fchk",
+    "c_9_18.fcol"
+   ],
+   "key": "terrain_carentan/b_9_18",
+   "lod": [
+    0
+   ],
+   "sha256": "2f78017e725797701d1d3ac9c0ccb62936ebc262d6f3b2d0d0c85cbf70d2c265"
+  },
+  {
+   "bx": 9,
+   "bytes": 14707,
+   "bz": 19,
+   "data_quality": "draft",
+   "files": [
+    "b_9_19.fchk",
+    "c_9_19.fcol"
+   ],
+   "key": "terrain_carentan/b_9_19",
+   "lod": [
+    0
+   ],
+   "sha256": "e300bbffcc3ee8d3a4a0b171db9845401337e07a43663dfd83994088497a2532"
+  },
+  {
+   "bx": 9,
+   "bytes": 12604,
+   "bz": 20,
+   "data_quality": "draft",
+   "files": [
+    "b_9_20.fchk",
+    "c_9_20.fcol"
+   ],
+   "key": "terrain_carentan/b_9_20",
+   "lod": [
+    0
+   ],
+   "sha256": "ff268ee4c22c84ca2ebd46982ba1bc04c6ac708881e4e9272b9753c45af98e1e"
+  },
+  {
+   "bx": 9,
+   "bytes": 13332,
+   "bz": 21,
+   "data_quality": "draft",
+   "files": [
+    "b_9_21.fchk",
+    "c_9_21.fcol"
+   ],
+   "key": "terrain_carentan/b_9_21",
+   "lod": [
+    0
+   ],
+   "sha256": "7781376c6a137a30053f60e5b3854301619428a1b6e5f38d002b6759bafa6b6b"
+  },
+  {
+   "bx": 9,
+   "bytes": 12555,
+   "bz": 22,
+   "data_quality": "draft",
+   "files": [
+    "b_9_22.fchk",
+    "c_9_22.fcol"
+   ],
+   "key": "terrain_carentan/b_9_22",
+   "lod": [
+    0
+   ],
+   "sha256": "24bff62e542ff29110385c3ae6dbd81bd59799f0588e143ca179c075730a68b1"
+  },
+  {
+   "bx": 9,
+   "bytes": 13166,
+   "bz": 23,
+   "data_quality": "draft",
+   "files": [
+    "b_9_23.fchk",
+    "c_9_23.fcol"
+   ],
+   "key": "terrain_carentan/b_9_23",
+   "lod": [
+    0
+   ],
+   "sha256": "bed9dbedb4563789b03a9b98b0073fe3a4a88621449bc82900a52fca35374216"
+  },
+  {
+   "bx": 9,
+   "bytes": 14123,
+   "bz": 24,
+   "data_quality": "draft",
+   "files": [
+    "b_9_24.fchk",
+    "c_9_24.fcol"
+   ],
+   "key": "terrain_carentan/b_9_24",
+   "lod": [
+    0
+   ],
+   "sha256": "a7ba36ac214dc4a8e7b2f8c2ebd0872c0b3e4c7ceb5de20dbf82c12687dd4e63"
+  },
+  {
+   "bx": 9,
+   "bytes": 12077,
+   "bz": 25,
+   "data_quality": "draft",
+   "files": [
+    "b_9_25.fchk",
+    "c_9_25.fcol"
+   ],
+   "key": "terrain_carentan/b_9_25",
+   "lod": [
+    0
+   ],
+   "sha256": "378278c7cad07c2eb3bd166f575414b9bac5a3242c4ace6766fe8b8764a5dbcb"
+  },
+  {
+   "bx": 9,
+   "bytes": 11380,
+   "bz": 26,
+   "data_quality": "draft",
+   "files": [
+    "b_9_26.fchk",
+    "c_9_26.fcol"
+   ],
+   "key": "terrain_carentan/b_9_26",
+   "lod": [
+    0
+   ],
+   "sha256": "09dd6718e0e9074bcba1f6c104b6e6c875feda4b1b37ab9c29b5ca4d8d274114"
+  },
+  {
+   "bx": 10,
+   "bytes": 15621,
+   "bz": 8,
+   "data_quality": "draft",
+   "files": [
+    "b_10_8.fchk",
+    "c_10_8.fcol"
+   ],
+   "key": "terrain_carentan/b_10_8",
+   "lod": [
+    0
+   ],
+   "sha256": "486ecd60036acb87a4a1cbb70894a914fe1be2a6e379142cba2e74e987380367"
+  },
+  {
+   "bx": 10,
+   "bytes": 17559,
+   "bz": 9,
+   "data_quality": "draft",
+   "files": [
+    "b_10_9.fchk",
+    "c_10_9.fcol"
+   ],
+   "key": "terrain_carentan/b_10_9",
+   "lod": [
+    0
+   ],
+   "sha256": "4170c4b72228c01d110ea7ada8fcadb20db58a45b2cc3bfab109d43b428ddebf"
+  },
+  {
+   "bx": 10,
+   "bytes": 15513,
+   "bz": 10,
+   "data_quality": "draft",
+   "files": [
+    "b_10_10.fchk",
+    "c_10_10.fcol"
+   ],
+   "key": "terrain_carentan/b_10_10",
+   "lod": [
+    0
+   ],
+   "sha256": "8768b40d1933b099e158434b66cda11cfa8e7bdee6d8db004d4a40d53aca24e9"
+  },
+  {
+   "bx": 10,
+   "bytes": 14737,
+   "bz": 11,
+   "data_quality": "draft",
+   "files": [
+    "b_10_11.fchk",
+    "c_10_11.fcol"
+   ],
+   "key": "terrain_carentan/b_10_11",
+   "lod": [
+    0
+   ],
+   "sha256": "67bf775beb41007887140878b3fc3c21b3f568f6c8a9e0798bce7e9fdf84d65a"
+  },
+  {
+   "bx": 10,
+   "bytes": 17430,
+   "bz": 12,
+   "data_quality": "draft",
+   "files": [
+    "b_10_12.fchk",
+    "c_10_12.fcol"
+   ],
+   "key": "terrain_carentan/b_10_12",
+   "lod": [
+    0
+   ],
+   "sha256": "505b0a9ff7514f97e7647f87259fddf36745c4b4979a1fa01b5cb30e28352688"
+  },
+  {
+   "bx": 10,
+   "bytes": 18809,
+   "bz": 13,
+   "data_quality": "draft",
+   "files": [
+    "b_10_13.fchk",
+    "c_10_13.fcol"
+   ],
+   "key": "terrain_carentan/b_10_13",
+   "lod": [
+    0
+   ],
+   "sha256": "19f56c7b3d8476242e9e873bec5e3ca77395a91a5678ddfc4bfe4bd49f710529"
+  },
+  {
+   "bx": 10,
+   "bytes": 17774,
+   "bz": 14,
+   "data_quality": "draft",
+   "files": [
+    "b_10_14.fchk",
+    "c_10_14.fcol"
+   ],
+   "key": "terrain_carentan/b_10_14",
+   "lod": [
+    0
+   ],
+   "sha256": "41296561219229ff655816cd252f4b7c6cd616b153a921d134158be56f920b58"
+  },
+  {
+   "bx": 10,
+   "bytes": 15110,
+   "bz": 15,
+   "data_quality": "draft",
+   "files": [
+    "b_10_15.fchk",
+    "c_10_15.fcol"
+   ],
+   "key": "terrain_carentan/b_10_15",
+   "lod": [
+    0
+   ],
+   "sha256": "80e1d9d7407e0a98f1aca28de618428be074eda111877fc0ea94a806be03ada9"
+  },
+  {
+   "bx": 10,
+   "bytes": 12849,
+   "bz": 16,
+   "data_quality": "draft",
+   "files": [
+    "b_10_16.fchk",
+    "c_10_16.fcol"
+   ],
+   "key": "terrain_carentan/b_10_16",
+   "lod": [
+    0
+   ],
+   "sha256": "36e883f3793d9e65a071e0ca9c2373dc8fe744fad28679ab267e4693f27a212e"
+  },
+  {
+   "bx": 10,
+   "bytes": 14192,
+   "bz": 17,
+   "data_quality": "draft",
+   "files": [
+    "b_10_17.fchk",
+    "c_10_17.fcol"
+   ],
+   "key": "terrain_carentan/b_10_17",
+   "lod": [
+    0
+   ],
+   "sha256": "f76d4f0a8682f051530337cfebdbd71bc9c87d71a7414e7fc03ba414711cbce1"
+  },
+  {
+   "bx": 10,
+   "bytes": 11346,
+   "bz": 18,
+   "data_quality": "draft",
+   "files": [
+    "b_10_18.fchk",
+    "c_10_18.fcol"
+   ],
+   "key": "terrain_carentan/b_10_18",
+   "lod": [
+    0
+   ],
+   "sha256": "33d8ac62e6b0b29d30d2c2934937c02ee42ba238ce2f7d45ba6b2054ea089d50"
+  },
+  {
+   "bx": 10,
+   "bytes": 12098,
+   "bz": 19,
+   "data_quality": "draft",
+   "files": [
+    "b_10_19.fchk",
+    "c_10_19.fcol"
+   ],
+   "key": "terrain_carentan/b_10_19",
+   "lod": [
+    0
+   ],
+   "sha256": "8facf77cffb46d5673c9af27d303bbf3e9418160c91dbfd084d6e1a1dbd7772e"
+  },
+  {
+   "bx": 10,
+   "bytes": 11648,
+   "bz": 20,
+   "data_quality": "draft",
+   "files": [
+    "b_10_20.fchk",
+    "c_10_20.fcol"
+   ],
+   "key": "terrain_carentan/b_10_20",
+   "lod": [
+    0
+   ],
+   "sha256": "495ed455a4e93e59b52ff095f54268959519073e746bd079b122035655c0605a"
+  },
+  {
+   "bx": 10,
+   "bytes": 11447,
+   "bz": 21,
+   "data_quality": "draft",
+   "files": [
+    "b_10_21.fchk",
+    "c_10_21.fcol"
+   ],
+   "key": "terrain_carentan/b_10_21",
+   "lod": [
+    0
+   ],
+   "sha256": "5e3e8e8741f8fd7151777645a57fee4b7084a0347465520be80fd7fed8bbcab5"
+  },
+  {
+   "bx": 10,
+   "bytes": 12379,
+   "bz": 22,
+   "data_quality": "draft",
+   "files": [
+    "b_10_22.fchk",
+    "c_10_22.fcol"
+   ],
+   "key": "terrain_carentan/b_10_22",
+   "lod": [
+    0
+   ],
+   "sha256": "96942e6d4be31039d63cfc40fd1bf10ded665410504ff13936a4ef09619f2c11"
+  },
+  {
+   "bx": 10,
+   "bytes": 11155,
+   "bz": 23,
+   "data_quality": "draft",
+   "files": [
+    "b_10_23.fchk",
+    "c_10_23.fcol"
+   ],
+   "key": "terrain_carentan/b_10_23",
+   "lod": [
+    0
+   ],
+   "sha256": "a806fd687a7c600d143c19e9168b4573789fc26634dd54929b881b5596e7b39c"
+  },
+  {
+   "bx": 10,
+   "bytes": 11617,
+   "bz": 24,
+   "data_quality": "draft",
+   "files": [
+    "b_10_24.fchk",
+    "c_10_24.fcol"
+   ],
+   "key": "terrain_carentan/b_10_24",
+   "lod": [
+    0
+   ],
+   "sha256": "1eb4bf655df6cf90bb114df20748a8471552916c7243af0166f7635e555cdfe4"
+  },
+  {
+   "bx": 10,
+   "bytes": 11290,
+   "bz": 25,
+   "data_quality": "draft",
+   "files": [
+    "b_10_25.fchk",
+    "c_10_25.fcol"
+   ],
+   "key": "terrain_carentan/b_10_25",
+   "lod": [
+    0
+   ],
+   "sha256": "f8e0b823a55748b17aac2f5d5841fb961503fc2a4c5f0124c05aba8c9a39faa4"
+  },
+  {
+   "bx": 10,
+   "bytes": 10825,
+   "bz": 26,
+   "data_quality": "draft",
+   "files": [
+    "b_10_26.fchk",
+    "c_10_26.fcol"
+   ],
+   "key": "terrain_carentan/b_10_26",
+   "lod": [
+    0
+   ],
+   "sha256": "9a1a0b8e376782d7eb2fc97d364cbd63a4d577b20aaa10ec14193d3bc2f4c864"
+  },
+  {
+   "bx": 11,
+   "bytes": 17044,
+   "bz": 8,
+   "data_quality": "draft",
+   "files": [
+    "b_11_8.fchk",
+    "c_11_8.fcol"
+   ],
+   "key": "terrain_carentan/b_11_8",
+   "lod": [
+    0
+   ],
+   "sha256": "a035071e330db0f538ac7ac329877a73017f8f0afb02a2f1ccf6ba6a06ba4d3d"
+  },
+  {
+   "bx": 11,
+   "bytes": 17836,
+   "bz": 9,
+   "data_quality": "draft",
+   "files": [
+    "b_11_9.fchk",
+    "c_11_9.fcol"
+   ],
+   "key": "terrain_carentan/b_11_9",
+   "lod": [
+    0
+   ],
+   "sha256": "21d178c5cddc69e02eaf612ada142b14d7221402953732d086bf4e67f6380fc9"
+  },
+  {
+   "bx": 11,
+   "bytes": 20558,
+   "bz": 10,
+   "data_quality": "draft",
+   "files": [
+    "b_11_10.fchk",
+    "c_11_10.fcol"
+   ],
+   "key": "terrain_carentan/b_11_10",
+   "lod": [
+    0
+   ],
+   "sha256": "6648320826b6957579118a9cb7adc08f0de3c7f7b169206620f4e4b8dda45688"
+  },
+  {
+   "bx": 11,
+   "bytes": 17819,
+   "bz": 11,
+   "data_quality": "draft",
+   "files": [
+    "b_11_11.fchk",
+    "c_11_11.fcol"
+   ],
+   "key": "terrain_carentan/b_11_11",
+   "lod": [
+    0
+   ],
+   "sha256": "50a6a7b077a2ed123bb240644354c52439bebb61eb965b22877bae3c5a0ead43"
+  },
+  {
+   "bx": 11,
+   "bytes": 16847,
+   "bz": 12,
+   "data_quality": "draft",
+   "files": [
+    "b_11_12.fchk",
+    "c_11_12.fcol"
+   ],
+   "key": "terrain_carentan/b_11_12",
+   "lod": [
+    0
+   ],
+   "sha256": "71a82a4816b75689c5be69b911f6172736dfbb53da3076b37ed5d6241d1703ad"
+  },
+  {
+   "bx": 11,
+   "bytes": 18479,
+   "bz": 13,
+   "data_quality": "draft",
+   "files": [
+    "b_11_13.fchk",
+    "c_11_13.fcol"
+   ],
+   "key": "terrain_carentan/b_11_13",
+   "lod": [
+    0
+   ],
+   "sha256": "20104a9d64c0ad27f994ed23bd1f5afb280b4b7dc3cdbc1cbf07e5ad8ba9a487"
+  },
+  {
+   "bx": 11,
+   "bytes": 17012,
+   "bz": 14,
+   "data_quality": "draft",
+   "files": [
+    "b_11_14.fchk",
+    "c_11_14.fcol"
+   ],
+   "key": "terrain_carentan/b_11_14",
+   "lod": [
+    0
+   ],
+   "sha256": "9dd7e54f0b3541d68091f5a25f92f466e65e0fb9bfc517bfec50390ac0b4d790"
+  },
+  {
+   "bx": 11,
+   "bytes": 12965,
+   "bz": 15,
+   "data_quality": "draft",
+   "files": [
+    "b_11_15.fchk",
+    "c_11_15.fcol"
+   ],
+   "key": "terrain_carentan/b_11_15",
+   "lod": [
+    0
+   ],
+   "sha256": "b2ee6c85ee026d95f65988065ecd417b5fbde1a354a0712287c4320c3690288f"
+  },
+  {
+   "bx": 11,
+   "bytes": 12786,
+   "bz": 16,
+   "data_quality": "draft",
+   "files": [
+    "b_11_16.fchk",
+    "c_11_16.fcol"
+   ],
+   "key": "terrain_carentan/b_11_16",
+   "lod": [
+    0
+   ],
+   "sha256": "7a0ccb54a7c2b5532dafea0c5971c91349c6f66c8781ad3bafe9d2d6dd348199"
+  },
+  {
+   "bx": 11,
+   "bytes": 12399,
+   "bz": 17,
+   "data_quality": "draft",
+   "files": [
+    "b_11_17.fchk",
+    "c_11_17.fcol"
+   ],
+   "key": "terrain_carentan/b_11_17",
+   "lod": [
+    0
+   ],
+   "sha256": "81661af0df0c1678bdd9301061851dbaba15ae9ab5ae2d23adcd23bffe2b8f06"
+  },
+  {
+   "bx": 11,
+   "bytes": 13008,
+   "bz": 18,
+   "data_quality": "draft",
+   "files": [
+    "b_11_18.fchk",
+    "c_11_18.fcol"
+   ],
+   "key": "terrain_carentan/b_11_18",
+   "lod": [
+    0
+   ],
+   "sha256": "a42a7a86e9a15f8233cbc294bb84d7e1406bf6b791aa3e94dd7936c24e10b69f"
+  },
+  {
+   "bx": 11,
+   "bytes": 12448,
+   "bz": 19,
+   "data_quality": "draft",
+   "files": [
+    "b_11_19.fchk",
+    "c_11_19.fcol"
+   ],
+   "key": "terrain_carentan/b_11_19",
+   "lod": [
+    0
+   ],
+   "sha256": "ee56092994c9abff3ca15cb668aab9319b6064af2b09027dbcc84aa5e8c0e871"
+  },
+  {
+   "bx": 11,
+   "bytes": 12075,
+   "bz": 20,
+   "data_quality": "draft",
+   "files": [
+    "b_11_20.fchk",
+    "c_11_20.fcol"
+   ],
+   "key": "terrain_carentan/b_11_20",
+   "lod": [
+    0
+   ],
+   "sha256": "f73cf361bb4a0a7489d210649361130bf3b1039177edd135b4411129fb05ab3c"
+  },
+  {
+   "bx": 11,
+   "bytes": 11981,
+   "bz": 21,
+   "data_quality": "draft",
+   "files": [
+    "b_11_21.fchk",
+    "c_11_21.fcol"
+   ],
+   "key": "terrain_carentan/b_11_21",
+   "lod": [
+    0
+   ],
+   "sha256": "8c718460061fce786ac39e187678472d599eeac0740fbe3dd825c2c8fdd6864c"
+  },
+  {
+   "bx": 11,
+   "bytes": 11671,
+   "bz": 22,
+   "data_quality": "draft",
+   "files": [
+    "b_11_22.fchk",
+    "c_11_22.fcol"
+   ],
+   "key": "terrain_carentan/b_11_22",
+   "lod": [
+    0
+   ],
+   "sha256": "9ed57b42dba703c08e5f6ef760973ef068d36eed3779b1823aea19c398c78f15"
+  },
+  {
+   "bx": 11,
+   "bytes": 11312,
+   "bz": 23,
+   "data_quality": "draft",
+   "files": [
+    "b_11_23.fchk",
+    "c_11_23.fcol"
+   ],
+   "key": "terrain_carentan/b_11_23",
+   "lod": [
+    0
+   ],
+   "sha256": "3a16998d363738ce34fc3d507ca23ef6430c8c7c81d742f481e81abf8f3d10e6"
+  },
+  {
+   "bx": 11,
+   "bytes": 11103,
+   "bz": 24,
+   "data_quality": "draft",
+   "files": [
+    "b_11_24.fchk",
+    "c_11_24.fcol"
+   ],
+   "key": "terrain_carentan/b_11_24",
+   "lod": [
+    0
+   ],
+   "sha256": "899bf73e9b36ada517560d4dfff25e0b8f7aec4672e7ec842a50f72884d56a6c"
+  },
+  {
+   "bx": 11,
+   "bytes": 11971,
+   "bz": 25,
+   "data_quality": "draft",
+   "files": [
+    "b_11_25.fchk",
+    "c_11_25.fcol"
+   ],
+   "key": "terrain_carentan/b_11_25",
+   "lod": [
+    0
+   ],
+   "sha256": "132ba22756e096f04f0779ec9a082a466ee5bfe2905b3d761c78859c36d6e946"
+  },
+  {
+   "bx": 11,
+   "bytes": 12361,
+   "bz": 26,
+   "data_quality": "draft",
+   "files": [
+    "b_11_26.fchk",
+    "c_11_26.fcol"
+   ],
+   "key": "terrain_carentan/b_11_26",
+   "lod": [
+    0
+   ],
+   "sha256": "92f40e0af32f276e30b4ed42a0d9e8d1c0176249b7509db14ec0ca7638dc91e8"
+  },
+  {
+   "bx": 12,
+   "bytes": 17526,
+   "bz": 8,
+   "data_quality": "draft",
+   "files": [
+    "b_12_8.fchk",
+    "c_12_8.fcol"
+   ],
+   "key": "terrain_carentan/b_12_8",
+   "lod": [
+    0
+   ],
+   "sha256": "bdc6317357d8d3f614862ffdad39afa12dcca61f04f2f2a9d23a365f91f2754f"
+  },
+  {
+   "bx": 12,
+   "bytes": 18649,
+   "bz": 9,
+   "data_quality": "draft",
+   "files": [
+    "b_12_9.fchk",
+    "c_12_9.fcol"
+   ],
+   "key": "terrain_carentan/b_12_9",
+   "lod": [
+    0
+   ],
+   "sha256": "2e90f9593ab4201a4cb33a7cdad99a847861952c065535da21775f93d88877ed"
+  },
+  {
+   "bx": 12,
+   "bytes": 17654,
+   "bz": 10,
+   "data_quality": "draft",
+   "files": [
+    "b_12_10.fchk",
+    "c_12_10.fcol"
+   ],
+   "key": "terrain_carentan/b_12_10",
+   "lod": [
+    0
+   ],
+   "sha256": "9e861b1ad96c359c41d31a5827d6282600d61cbb405b08eda6e0aaf49c759ffb"
+  },
+  {
+   "bx": 12,
+   "bytes": 18123,
+   "bz": 11,
+   "data_quality": "draft",
+   "files": [
+    "b_12_11.fchk",
+    "c_12_11.fcol"
+   ],
+   "key": "terrain_carentan/b_12_11",
+   "lod": [
+    0
+   ],
+   "sha256": "9b0a8fc3521b1e5f85f6770e630dce2b03562b4a11dfb786e29ced7988bccc97"
+  },
+  {
+   "bx": 12,
+   "bytes": 18265,
+   "bz": 12,
+   "data_quality": "draft",
+   "files": [
+    "b_12_12.fchk",
+    "c_12_12.fcol"
+   ],
+   "key": "terrain_carentan/b_12_12",
+   "lod": [
+    0
+   ],
+   "sha256": "a87d1e4e1633e4f43f61641ea7e5f5fa17429dc77108444522800070d964fab8"
+  },
+  {
+   "bx": 12,
+   "bytes": 18219,
+   "bz": 13,
+   "data_quality": "draft",
+   "files": [
+    "b_12_13.fchk",
+    "c_12_13.fcol"
+   ],
+   "key": "terrain_carentan/b_12_13",
+   "lod": [
+    0
+   ],
+   "sha256": "6432bdc4a2d544840f344803b3dfe85752b2111f219043f181fc8e1095124701"
+  },
+  {
+   "bx": 12,
+   "bytes": 16696,
+   "bz": 14,
+   "data_quality": "draft",
+   "files": [
+    "b_12_14.fchk",
+    "c_12_14.fcol"
+   ],
+   "key": "terrain_carentan/b_12_14",
+   "lod": [
+    0
+   ],
+   "sha256": "418ddb2f79bf764e246700dd1d4a44674c3a9acc1b5e6b90d19f60b2a49b1167"
+  },
+  {
+   "bx": 12,
+   "bytes": 12025,
+   "bz": 15,
+   "data_quality": "draft",
+   "files": [
+    "b_12_15.fchk",
+    "c_12_15.fcol"
+   ],
+   "key": "terrain_carentan/b_12_15",
+   "lod": [
+    0
+   ],
+   "sha256": "9e67cd43abf4d67f77c411b294bb0b3747dc67845aec44612cc4dbd7a2c82dc2"
+  },
+  {
+   "bx": 12,
+   "bytes": 10461,
+   "bz": 16,
+   "data_quality": "draft",
+   "files": [
+    "b_12_16.fchk",
+    "c_12_16.fcol"
+   ],
+   "key": "terrain_carentan/b_12_16",
+   "lod": [
+    0
+   ],
+   "sha256": "7369ba6fb0d539f841e874be0200e4c2ef646532612dcb106fa4bba76a986596"
+  },
+  {
+   "bx": 12,
+   "bytes": 13928,
+   "bz": 17,
+   "data_quality": "draft",
+   "files": [
+    "b_12_17.fchk",
+    "c_12_17.fcol"
+   ],
+   "key": "terrain_carentan/b_12_17",
+   "lod": [
+    0
+   ],
+   "sha256": "8f3fc5cf1e69ddcc3adb36de433ff8a2bfd502e3aa9095364f8d7c7a4c0c45a5"
+  },
+  {
+   "bx": 12,
+   "bytes": 12529,
+   "bz": 18,
+   "data_quality": "draft",
+   "files": [
+    "b_12_18.fchk",
+    "c_12_18.fcol"
+   ],
+   "key": "terrain_carentan/b_12_18",
+   "lod": [
+    0
+   ],
+   "sha256": "7b951ae5f6eb8d5da10bc34b699129cadbb8251efe0382ebcd1b2f2bd4d1b717"
+  },
+  {
+   "bx": 12,
+   "bytes": 13794,
+   "bz": 19,
+   "data_quality": "draft",
+   "files": [
+    "b_12_19.fchk",
+    "c_12_19.fcol"
+   ],
+   "key": "terrain_carentan/b_12_19",
+   "lod": [
+    0
+   ],
+   "sha256": "fc6e2f7d047e585f48b29ab3d1f117b6b4606ff7b85d4faf599a0db1ed3f9fa1"
+  },
+  {
+   "bx": 12,
+   "bytes": 12352,
+   "bz": 20,
+   "data_quality": "draft",
+   "files": [
+    "b_12_20.fchk",
+    "c_12_20.fcol"
+   ],
+   "key": "terrain_carentan/b_12_20",
+   "lod": [
+    0
+   ],
+   "sha256": "4853771d0b9522669fe6827564e0132ee2e194b7ebdf92c68a287a6ec0d44d7f"
+  },
+  {
+   "bx": 12,
+   "bytes": 11481,
+   "bz": 21,
+   "data_quality": "draft",
+   "files": [
+    "b_12_21.fchk",
+    "c_12_21.fcol"
+   ],
+   "key": "terrain_carentan/b_12_21",
+   "lod": [
+    0
+   ],
+   "sha256": "b52e219a54a3923727c3f55a3c6c09ca4e12d8dd716fcac69ea326ed3af9c9fe"
+  },
+  {
+   "bx": 12,
+   "bytes": 11694,
+   "bz": 22,
+   "data_quality": "draft",
+   "files": [
+    "b_12_22.fchk",
+    "c_12_22.fcol"
+   ],
+   "key": "terrain_carentan/b_12_22",
+   "lod": [
+    0
+   ],
+   "sha256": "8e4dcf99b1d33d15493a9059106e199428d59103979dafe33d7e1e8a7ff3cc82"
+  },
+  {
+   "bx": 12,
+   "bytes": 11298,
+   "bz": 23,
+   "data_quality": "draft",
+   "files": [
+    "b_12_23.fchk",
+    "c_12_23.fcol"
+   ],
+   "key": "terrain_carentan/b_12_23",
+   "lod": [
+    0
+   ],
+   "sha256": "23dde139b753c95002c252b21f696829ab44a45e189d41479bb8aeb539f32d7a"
+  },
+  {
+   "bx": 12,
+   "bytes": 12009,
+   "bz": 24,
+   "data_quality": "draft",
+   "files": [
+    "b_12_24.fchk",
+    "c_12_24.fcol"
+   ],
+   "key": "terrain_carentan/b_12_24",
+   "lod": [
+    0
+   ],
+   "sha256": "f396708f7fab7739b5f22f21b0fffbaeba433cd5cd847d9224094d9d415c7d10"
+  },
+  {
+   "bx": 12,
+   "bytes": 17365,
+   "bz": 25,
+   "data_quality": "draft",
+   "files": [
+    "b_12_25.fchk",
+    "c_12_25.fcol"
+   ],
+   "key": "terrain_carentan/b_12_25",
+   "lod": [
+    0
+   ],
+   "sha256": "18d305539103eda66b59e93cb76ef9fa547ea1efd8f5240e84c23888a3fdba08"
+  },
+  {
+   "bx": 12,
+   "bytes": 12061,
+   "bz": 26,
+   "data_quality": "draft",
+   "files": [
+    "b_12_26.fchk",
+    "c_12_26.fcol"
+   ],
+   "key": "terrain_carentan/b_12_26",
+   "lod": [
+    0
+   ],
+   "sha256": "4bb58caf486d281c4f613466ec7155c64a759cbb73b2af43d4c56651aa71f842"
+  },
+  {
+   "bx": 13,
+   "bytes": 18427,
+   "bz": 8,
+   "data_quality": "draft",
+   "files": [
+    "b_13_8.fchk",
+    "c_13_8.fcol"
+   ],
+   "key": "terrain_carentan/b_13_8",
+   "lod": [
+    0
+   ],
+   "sha256": "dd34aea8107049a156799dbce6c632fdf92bc21620804247da44ecc2629de0ba"
+  },
+  {
+   "bx": 13,
+   "bytes": 18073,
+   "bz": 9,
+   "data_quality": "draft",
+   "files": [
+    "b_13_9.fchk",
+    "c_13_9.fcol"
+   ],
+   "key": "terrain_carentan/b_13_9",
+   "lod": [
+    0
+   ],
+   "sha256": "aceb8729515d93d3759d142004645fd9f94644365252077b72520807f5531fa1"
+  },
+  {
+   "bx": 13,
+   "bytes": 17131,
+   "bz": 10,
+   "data_quality": "draft",
+   "files": [
+    "b_13_10.fchk",
+    "c_13_10.fcol"
+   ],
+   "key": "terrain_carentan/b_13_10",
+   "lod": [
+    0
+   ],
+   "sha256": "8a57bb355cc08ebe55ea7f3aed91284e5b3f9d8fa31f5913ea6f64b310c71d0e"
+  },
+  {
+   "bx": 13,
+   "bytes": 18686,
+   "bz": 11,
+   "data_quality": "draft",
+   "files": [
+    "b_13_11.fchk",
+    "c_13_11.fcol"
+   ],
+   "key": "terrain_carentan/b_13_11",
+   "lod": [
+    0
+   ],
+   "sha256": "4faac8b3a9a40f6476720b5bfadc1877008daafd28f7a1ed7fb0bfe5c8b1f7fc"
+  },
+  {
+   "bx": 13,
+   "bytes": 18017,
+   "bz": 12,
+   "data_quality": "draft",
+   "files": [
+    "b_13_12.fchk",
+    "c_13_12.fcol"
+   ],
+   "key": "terrain_carentan/b_13_12",
+   "lod": [
+    0
+   ],
+   "sha256": "ec36b795bc6d373307b6562968e2d21d5dc2c26630746000917fea025196574a"
+  },
+  {
+   "bx": 13,
+   "bytes": 18615,
+   "bz": 13,
+   "data_quality": "draft",
+   "files": [
+    "b_13_13.fchk",
+    "c_13_13.fcol"
+   ],
+   "key": "terrain_carentan/b_13_13",
+   "lod": [
+    0
+   ],
+   "sha256": "009513558f34a42529296590627093771637372e2ce55fcecb5591f52b80ca4c"
+  },
+  {
+   "bx": 13,
+   "bytes": 16102,
+   "bz": 14,
+   "data_quality": "draft",
+   "files": [
+    "b_13_14.fchk",
+    "c_13_14.fcol"
+   ],
+   "key": "terrain_carentan/b_13_14",
+   "lod": [
+    0
+   ],
+   "sha256": "292ecd26249811543d543fddae4fd67f9d1f1be6f0d139a59c8a12d751401398"
+  },
+  {
+   "bx": 13,
+   "bytes": 11088,
+   "bz": 15,
+   "data_quality": "draft",
+   "files": [
+    "b_13_15.fchk",
+    "c_13_15.fcol"
+   ],
+   "key": "terrain_carentan/b_13_15",
+   "lod": [
+    0
+   ],
+   "sha256": "6c4e56358fdf13fb8c39f5b2cc26bfb05ea27d138df44debc78446c66354f41b"
+  },
+  {
+   "bx": 13,
+   "bytes": 10950,
+   "bz": 16,
+   "data_quality": "draft",
+   "files": [
+    "b_13_16.fchk",
+    "c_13_16.fcol"
+   ],
+   "key": "terrain_carentan/b_13_16",
+   "lod": [
+    0
+   ],
+   "sha256": "dd7eadd7254c3a5606d5f2776dd1bd1a46e3986b2884fa84956c9137f128deb7"
+  },
+  {
+   "bx": 13,
+   "bytes": 12494,
+   "bz": 17,
+   "data_quality": "draft",
+   "files": [
+    "b_13_17.fchk",
+    "c_13_17.fcol"
+   ],
+   "key": "terrain_carentan/b_13_17",
+   "lod": [
+    0
+   ],
+   "sha256": "9d5d6afccc35f697e3cbbc689a605b9e7e6167ffd4bf81c6d7db7862efa50771"
+  },
+  {
+   "bx": 13,
+   "bytes": 12774,
+   "bz": 18,
+   "data_quality": "draft",
+   "files": [
+    "b_13_18.fchk",
+    "c_13_18.fcol"
+   ],
+   "key": "terrain_carentan/b_13_18",
+   "lod": [
+    0
+   ],
+   "sha256": "a513434223b0ab0a5776b7b7528d7fe5abb07b73f39b62acc4d4f5b57aefa9b3"
+  },
+  {
+   "bx": 13,
+   "bytes": 14603,
+   "bz": 19,
+   "data_quality": "draft",
+   "files": [
+    "b_13_19.fchk",
+    "c_13_19.fcol"
+   ],
+   "key": "terrain_carentan/b_13_19",
+   "lod": [
+    0
+   ],
+   "sha256": "8f4dd5944afdd979cd7de105929fbc84e8585b11cd943d03dce6b1c3d03ebd42"
+  },
+  {
+   "bx": 13,
+   "bytes": 13065,
+   "bz": 20,
+   "data_quality": "draft",
+   "files": [
+    "b_13_20.fchk",
+    "c_13_20.fcol"
+   ],
+   "key": "terrain_carentan/b_13_20",
+   "lod": [
+    0
+   ],
+   "sha256": "668f044d0b7356848af86322e71c24c9e1cec320247554474e74bd0e581e7978"
+  },
+  {
+   "bx": 13,
+   "bytes": 10863,
+   "bz": 21,
+   "data_quality": "draft",
+   "files": [
+    "b_13_21.fchk",
+    "c_13_21.fcol"
+   ],
+   "key": "terrain_carentan/b_13_21",
+   "lod": [
+    0
+   ],
+   "sha256": "9ccb7d7030bbdcb652cb5e8a34180923ffacea330c3313c9d52d21ace21ae8e8"
+  },
+  {
+   "bx": 13,
+   "bytes": 12256,
+   "bz": 22,
+   "data_quality": "draft",
+   "files": [
+    "b_13_22.fchk",
+    "c_13_22.fcol"
+   ],
+   "key": "terrain_carentan/b_13_22",
+   "lod": [
+    0
+   ],
+   "sha256": "8ca57ce7cdf2f84a0827208e366eda1f20cbaf2f083df192314371eff46c10e6"
+  },
+  {
+   "bx": 13,
+   "bytes": 13793,
+   "bz": 23,
+   "data_quality": "draft",
+   "files": [
+    "b_13_23.fchk",
+    "c_13_23.fcol"
+   ],
+   "key": "terrain_carentan/b_13_23",
+   "lod": [
+    0
+   ],
+   "sha256": "f9bb3e610ef0c29992ea826364b930b6855236e00ef0dd97dab982408e78ca83"
+  },
+  {
+   "bx": 13,
+   "bytes": 16979,
+   "bz": 24,
+   "data_quality": "draft",
+   "files": [
+    "b_13_24.fchk",
+    "c_13_24.fcol"
+   ],
+   "key": "terrain_carentan/b_13_24",
+   "lod": [
+    0
+   ],
+   "sha256": "8bc6eff8bb5b3027fa739f84a99b0b98303974966dc1a8e4592e96f86c8da2a7"
+  },
+  {
+   "bx": 13,
+   "bytes": 14743,
+   "bz": 25,
+   "data_quality": "draft",
+   "files": [
+    "b_13_25.fchk",
+    "c_13_25.fcol"
+   ],
+   "key": "terrain_carentan/b_13_25",
+   "lod": [
+    0
+   ],
+   "sha256": "f434d31e9542984c498f289bb4458a154912e389951958044c61bbe1a2a7a3d7"
+  },
+  {
+   "bx": 13,
+   "bytes": 12675,
+   "bz": 26,
+   "data_quality": "draft",
+   "files": [
+    "b_13_26.fchk",
+    "c_13_26.fcol"
+   ],
+   "key": "terrain_carentan/b_13_26",
+   "lod": [
+    0
+   ],
+   "sha256": "d5393e30a17978247916acafec9cc7656805462604fb355c4db083aae18d420a"
+  },
+  {
+   "bx": 14,
+   "bytes": 19203,
+   "bz": 8,
+   "data_quality": "draft",
+   "files": [
+    "b_14_8.fchk",
+    "c_14_8.fcol"
+   ],
+   "key": "terrain_carentan/b_14_8",
+   "lod": [
+    0
+   ],
+   "sha256": "82eaf7dcbc718033007e6ee56395d73aae18cc5f9633fb8f84d4dcd0bbe12b3c"
+  },
+  {
+   "bx": 14,
+   "bytes": 18675,
+   "bz": 9,
+   "data_quality": "draft",
+   "files": [
+    "b_14_9.fchk",
+    "c_14_9.fcol"
+   ],
+   "key": "terrain_carentan/b_14_9",
+   "lod": [
+    0
+   ],
+   "sha256": "dfb0364d0b65a835bf52c6a06c95839ab7b42fded40be38078b7da4308053fbf"
+  },
+  {
+   "bx": 14,
+   "bytes": 17607,
+   "bz": 10,
+   "data_quality": "draft",
+   "files": [
+    "b_14_10.fchk",
+    "c_14_10.fcol"
+   ],
+   "key": "terrain_carentan/b_14_10",
+   "lod": [
+    0
+   ],
+   "sha256": "b6fc734715b5daea061f5b1cf6bb6531b40ca173522d159158e601e842be154b"
+  },
+  {
+   "bx": 14,
+   "bytes": 14328,
+   "bz": 11,
+   "data_quality": "draft",
+   "files": [
+    "b_14_11.fchk",
+    "c_14_11.fcol"
+   ],
+   "key": "terrain_carentan/b_14_11",
+   "lod": [
+    0
+   ],
+   "sha256": "bf6c8627ffdd47675d48825799e9631a0b56f52e48fa60d018dbd1a20304a3d0"
+  },
+  {
+   "bx": 14,
+   "bytes": 16947,
+   "bz": 12,
+   "data_quality": "draft",
+   "files": [
+    "b_14_12.fchk",
+    "c_14_12.fcol"
+   ],
+   "key": "terrain_carentan/b_14_12",
+   "lod": [
+    0
+   ],
+   "sha256": "3116ac4f09d194b20265b08700d9da0f56142aabe61416983d91c8f997fc583e"
+  },
+  {
+   "bx": 14,
+   "bytes": 17163,
+   "bz": 13,
+   "data_quality": "draft",
+   "files": [
+    "b_14_13.fchk",
+    "c_14_13.fcol"
+   ],
+   "key": "terrain_carentan/b_14_13",
+   "lod": [
+    0
+   ],
+   "sha256": "9fd4cd00871f051794c8c998cfa977d10aca4fdb0723b24841772efc1b1b80be"
+  },
+  {
+   "bx": 14,
+   "bytes": 17147,
+   "bz": 14,
+   "data_quality": "draft",
+   "files": [
+    "b_14_14.fchk",
+    "c_14_14.fcol"
+   ],
+   "key": "terrain_carentan/b_14_14",
+   "lod": [
+    0
+   ],
+   "sha256": "6b85772c6346b08802767ef2e807af75235f5c68111496cb896139657a3c1410"
+  },
+  {
+   "bx": 14,
+   "bytes": 14918,
+   "bz": 15,
+   "data_quality": "draft",
+   "files": [
+    "b_14_15.fchk",
+    "c_14_15.fcol"
+   ],
+   "key": "terrain_carentan/b_14_15",
+   "lod": [
+    0
+   ],
+   "sha256": "c83ae7afcf15db61461716c1f9f6e50fc1c76c4d3e232570ee4ae50193e6989d"
+  },
+  {
+   "bx": 14,
+   "bytes": 13756,
+   "bz": 16,
+   "data_quality": "draft",
+   "files": [
+    "b_14_16.fchk",
+    "c_14_16.fcol"
+   ],
+   "key": "terrain_carentan/b_14_16",
+   "lod": [
+    0
+   ],
+   "sha256": "784ab36127694160a7f40a072fbfb0c47d02c372053c6772e377e1f2528a56b0"
+  },
+  {
+   "bx": 14,
+   "bytes": 13457,
+   "bz": 17,
+   "data_quality": "draft",
+   "files": [
+    "b_14_17.fchk",
+    "c_14_17.fcol"
+   ],
+   "key": "terrain_carentan/b_14_17",
+   "lod": [
+    0
+   ],
+   "sha256": "30fb23caaf260b5175df279c77507935fa98207cab2c24a044e9e1fe83de5e00"
+  },
+  {
+   "bx": 14,
+   "bytes": 13119,
+   "bz": 18,
+   "data_quality": "draft",
+   "files": [
+    "b_14_18.fchk",
+    "c_14_18.fcol"
+   ],
+   "key": "terrain_carentan/b_14_18",
+   "lod": [
+    0
+   ],
+   "sha256": "8299caa96d22e0c3a4256ab7ae6439046a5b74c8e4ce0f49fdeb550d1f224182"
+  },
+  {
+   "bx": 14,
+   "bytes": 14754,
+   "bz": 19,
+   "data_quality": "draft",
+   "files": [
+    "b_14_19.fchk",
+    "c_14_19.fcol"
+   ],
+   "key": "terrain_carentan/b_14_19",
+   "lod": [
+    0
+   ],
+   "sha256": "dc70f84957eceb90189b71138b25893757ed2b6216ae730542192bcea3e74125"
+  },
+  {
+   "bx": 14,
+   "bytes": 14509,
+   "bz": 20,
+   "data_quality": "draft",
+   "files": [
+    "b_14_20.fchk",
+    "c_14_20.fcol"
+   ],
+   "key": "terrain_carentan/b_14_20",
+   "lod": [
+    0
+   ],
+   "sha256": "2f569841ba9af7c1ed6edc2502af9a5db4d764151a171038a3f21ada2142477b"
+  },
+  {
+   "bx": 14,
+   "bytes": 14137,
+   "bz": 21,
+   "data_quality": "draft",
+   "files": [
+    "b_14_21.fchk",
+    "c_14_21.fcol"
+   ],
+   "key": "terrain_carentan/b_14_21",
+   "lod": [
+    0
+   ],
+   "sha256": "e25e1db64696562c4d1b280a14b3e77ff30c4feb3810430b7d1c0821b76dba99"
+  },
+  {
+   "bx": 14,
+   "bytes": 12497,
+   "bz": 22,
+   "data_quality": "draft",
+   "files": [
+    "b_14_22.fchk",
+    "c_14_22.fcol"
+   ],
+   "key": "terrain_carentan/b_14_22",
+   "lod": [
+    0
+   ],
+   "sha256": "fa0e4432312cb9a3172dc08a072c3853018608ae41413acc97216c4547b9dab0"
+  },
+  {
+   "bx": 14,
+   "bytes": 11708,
+   "bz": 23,
+   "data_quality": "draft",
+   "files": [
+    "b_14_23.fchk",
+    "c_14_23.fcol"
+   ],
+   "key": "terrain_carentan/b_14_23",
+   "lod": [
+    0
+   ],
+   "sha256": "682b96eec4e06daded35eaa8987870238ccaeb243f7a61cae320d67ef527ac61"
+  },
+  {
+   "bx": 14,
+   "bytes": 14638,
+   "bz": 24,
+   "data_quality": "draft",
+   "files": [
+    "b_14_24.fchk",
+    "c_14_24.fcol"
+   ],
+   "key": "terrain_carentan/b_14_24",
+   "lod": [
+    0
+   ],
+   "sha256": "12d79e4d668bf1b997c075cc44cafdbb1f31180107718b7db501f64cb77dd1e9"
+  },
+  {
+   "bx": 14,
+   "bytes": 12406,
+   "bz": 25,
+   "data_quality": "draft",
+   "files": [
+    "b_14_25.fchk",
+    "c_14_25.fcol"
+   ],
+   "key": "terrain_carentan/b_14_25",
+   "lod": [
+    0
+   ],
+   "sha256": "4f7731e5eef21977c092d09d8661382a494253a1cc3f47df007cbd4a2646303e"
+  },
+  {
+   "bx": 14,
+   "bytes": 14222,
+   "bz": 26,
+   "data_quality": "draft",
+   "files": [
+    "b_14_26.fchk",
+    "c_14_26.fcol"
+   ],
+   "key": "terrain_carentan/b_14_26",
+   "lod": [
+    0
+   ],
+   "sha256": "fc5289d38fc3f1372dd7b015125f0816b8e450094440ca1240a275283c6ad01f"
+  },
+  {
+   "bx": 15,
+   "bytes": 18172,
+   "bz": 8,
+   "data_quality": "draft",
+   "files": [
+    "b_15_8.fchk",
+    "c_15_8.fcol"
+   ],
+   "key": "terrain_carentan/b_15_8",
+   "lod": [
+    0
+   ],
+   "sha256": "7f8c6bb3f92c9b9fc04ca7780422820e5f3ffdbea21135840a51c2f59ff89648"
+  },
+  {
+   "bx": 15,
+   "bytes": 16704,
+   "bz": 9,
+   "data_quality": "draft",
+   "files": [
+    "b_15_9.fchk",
+    "c_15_9.fcol"
+   ],
+   "key": "terrain_carentan/b_15_9",
+   "lod": [
+    0
+   ],
+   "sha256": "cb946dbc823e35c4eb2ee08b611eaefffee387c09ff89e8ddc71de6f817a94c9"
+  },
+  {
+   "bx": 15,
+   "bytes": 18592,
+   "bz": 10,
+   "data_quality": "draft",
+   "files": [
+    "b_15_10.fchk",
+    "c_15_10.fcol"
+   ],
+   "key": "terrain_carentan/b_15_10",
+   "lod": [
+    0
+   ],
+   "sha256": "1b84bac5ff67c3285fa81f7b381e2ed48adcad2cdde94c50a39e14d9ab237111"
+  },
+  {
+   "bx": 15,
+   "bytes": 19706,
+   "bz": 11,
+   "data_quality": "draft",
+   "files": [
+    "b_15_11.fchk",
+    "c_15_11.fcol"
+   ],
+   "key": "terrain_carentan/b_15_11",
+   "lod": [
+    0
+   ],
+   "sha256": "b4549e55eebfc03226bf77d5afa180df11037c218034dd8c271346c235210d1f"
+  },
+  {
+   "bx": 15,
+   "bytes": 16715,
+   "bz": 12,
+   "data_quality": "draft",
+   "files": [
+    "b_15_12.fchk",
+    "c_15_12.fcol"
+   ],
+   "key": "terrain_carentan/b_15_12",
+   "lod": [
+    0
+   ],
+   "sha256": "6efb9d033f1d62051a016ee0f88f59c3b9ae3764a925837f7b5c67051ab3d60f"
+  },
+  {
+   "bx": 15,
+   "bytes": 17554,
+   "bz": 13,
+   "data_quality": "draft",
+   "files": [
+    "b_15_13.fchk",
+    "c_15_13.fcol"
+   ],
+   "key": "terrain_carentan/b_15_13",
+   "lod": [
+    0
+   ],
+   "sha256": "2d6290fa9c783669bccff79af5cbed2e5d15ffc304c66619c0523bb64ce88298"
+  },
+  {
+   "bx": 15,
+   "bytes": 17310,
+   "bz": 14,
+   "data_quality": "draft",
+   "files": [
+    "b_15_14.fchk",
+    "c_15_14.fcol"
+   ],
+   "key": "terrain_carentan/b_15_14",
+   "lod": [
+    0
+   ],
+   "sha256": "3c86246292926776ffd7baa4a3bea572b6233639b914bfd9001c568f4a7e2258"
+  },
+  {
+   "bx": 15,
+   "bytes": 13803,
+   "bz": 15,
+   "data_quality": "draft",
+   "files": [
+    "b_15_15.fchk",
+    "c_15_15.fcol"
+   ],
+   "key": "terrain_carentan/b_15_15",
+   "lod": [
+    0
+   ],
+   "sha256": "66e639e50623d2f9cbfbbbbc656e19d8107b1d1a08a5dcf018b49c5cc351117a"
+  },
+  {
+   "bx": 15,
+   "bytes": 12255,
+   "bz": 16,
+   "data_quality": "draft",
+   "files": [
+    "b_15_16.fchk",
+    "c_15_16.fcol"
+   ],
+   "key": "terrain_carentan/b_15_16",
+   "lod": [
+    0
+   ],
+   "sha256": "1cf0826457a6b1882f794181f12dc3937c2c715ff597aba4b48ba79eadb16ce3"
+  },
+  {
+   "bx": 15,
+   "bytes": 14245,
+   "bz": 17,
+   "data_quality": "draft",
+   "files": [
+    "b_15_17.fchk",
+    "c_15_17.fcol"
+   ],
+   "key": "terrain_carentan/b_15_17",
+   "lod": [
+    0
+   ],
+   "sha256": "78bddaf84ef884fb59c70401036bb4f6ab008f9fca4bbfd176b90a7b2cb93f08"
+  },
+  {
+   "bx": 15,
+   "bytes": 16390,
+   "bz": 18,
+   "data_quality": "draft",
+   "files": [
+    "b_15_18.fchk",
+    "c_15_18.fcol"
+   ],
+   "key": "terrain_carentan/b_15_18",
+   "lod": [
+    0
+   ],
+   "sha256": "7251fef15876cc4f6b01b53a4902bacfadcfb755c214ddffe46d0784d93387e7"
+  },
+  {
+   "bx": 15,
+   "bytes": 17183,
+   "bz": 19,
+   "data_quality": "draft",
+   "files": [
+    "b_15_19.fchk",
+    "c_15_19.fcol"
+   ],
+   "key": "terrain_carentan/b_15_19",
+   "lod": [
+    0
+   ],
+   "sha256": "88b6006d4fd7ad0268e6e728f5de9bdc66db190ac135c0498261ffe29ea35354"
+  },
+  {
+   "bx": 15,
+   "bytes": 15109,
+   "bz": 20,
+   "data_quality": "draft",
+   "files": [
+    "b_15_20.fchk",
+    "c_15_20.fcol"
+   ],
+   "key": "terrain_carentan/b_15_20",
+   "lod": [
+    0
+   ],
+   "sha256": "2c659b2d3172174f043f13782280d520f97e59ddd157e345dd85954a3480c60a"
+  },
+  {
+   "bx": 15,
+   "bytes": 14043,
+   "bz": 21,
+   "data_quality": "draft",
+   "files": [
+    "b_15_21.fchk",
+    "c_15_21.fcol"
+   ],
+   "key": "terrain_carentan/b_15_21",
+   "lod": [
+    0
+   ],
+   "sha256": "bb529397fdb4b36489116fc337b7dce969c9544c068ce11d8ab36615404fc49c"
+  },
+  {
+   "bx": 15,
+   "bytes": 12336,
+   "bz": 22,
+   "data_quality": "draft",
+   "files": [
+    "b_15_22.fchk",
+    "c_15_22.fcol"
+   ],
+   "key": "terrain_carentan/b_15_22",
+   "lod": [
+    0
+   ],
+   "sha256": "fcb9a3761ed51e25edcf98c09b65a4f037f07a5e8568bc0449f3b4793cae6d14"
+  },
+  {
+   "bx": 15,
+   "bytes": 11961,
+   "bz": 23,
+   "data_quality": "draft",
+   "files": [
+    "b_15_23.fchk",
+    "c_15_23.fcol"
+   ],
+   "key": "terrain_carentan/b_15_23",
+   "lod": [
+    0
+   ],
+   "sha256": "0b9064cbb7e056f968fd706cf95c58054c563600ddcbbf49738bdc825cd227dc"
+  },
+  {
+   "bx": 15,
+   "bytes": 11683,
+   "bz": 24,
+   "data_quality": "draft",
+   "files": [
+    "b_15_24.fchk",
+    "c_15_24.fcol"
+   ],
+   "key": "terrain_carentan/b_15_24",
+   "lod": [
+    0
+   ],
+   "sha256": "16e0eed1608f400223e467e379dd69df5ad84a8c993cef95198bffbfc8b07cc5"
+  },
+  {
+   "bx": 15,
+   "bytes": 11993,
+   "bz": 25,
+   "data_quality": "draft",
+   "files": [
+    "b_15_25.fchk",
+    "c_15_25.fcol"
+   ],
+   "key": "terrain_carentan/b_15_25",
+   "lod": [
+    0
+   ],
+   "sha256": "656e70504c71de3abdce33e19c3ff2aa63d18e37f6c0efa74f4ca6a494c0ed88"
+  },
+  {
+   "bx": 15,
+   "bytes": 12101,
+   "bz": 26,
+   "data_quality": "draft",
+   "files": [
+    "b_15_26.fchk",
+    "c_15_26.fcol"
+   ],
+   "key": "terrain_carentan/b_15_26",
+   "lod": [
+    0
+   ],
+   "sha256": "c655289b78e62d91e7240e58a5b2e5090b673a06d580d4ba4fc24c89f0242096"
+  },
+  {
+   "bx": 16,
+   "bytes": 18753,
+   "bz": 8,
+   "data_quality": "draft",
+   "files": [
+    "b_16_8.fchk",
+    "c_16_8.fcol"
+   ],
+   "key": "terrain_carentan/b_16_8",
+   "lod": [
+    0
+   ],
+   "sha256": "ec2db02f50fc33995c25b6422ab5e14aec5aa9920159ecf6c8d16c063d6efc0c"
+  },
+  {
+   "bx": 16,
+   "bytes": 17313,
+   "bz": 9,
+   "data_quality": "draft",
+   "files": [
+    "b_16_9.fchk",
+    "c_16_9.fcol"
+   ],
+   "key": "terrain_carentan/b_16_9",
+   "lod": [
+    0
+   ],
+   "sha256": "a5f36eef0139697b2a161e302f7dceed11b26ad0bf4854a38d6bbb99b5bed240"
+  },
+  {
+   "bx": 16,
+   "bytes": 17148,
+   "bz": 10,
+   "data_quality": "draft",
+   "files": [
+    "b_16_10.fchk",
+    "c_16_10.fcol"
+   ],
+   "key": "terrain_carentan/b_16_10",
+   "lod": [
+    0
+   ],
+   "sha256": "0d9f5b8f48922cac79433ac16b290bcc5dc784e127aaa4e5df9d19f35e6531f3"
+  },
+  {
+   "bx": 16,
+   "bytes": 17536,
+   "bz": 11,
+   "data_quality": "draft",
+   "files": [
+    "b_16_11.fchk",
+    "c_16_11.fcol"
+   ],
+   "key": "terrain_carentan/b_16_11",
+   "lod": [
+    0
+   ],
+   "sha256": "2fb86ef64db693a20f71ceeab04975b171a6a135ce46166f54e890130a20746c"
+  },
+  {
+   "bx": 16,
+   "bytes": 18379,
+   "bz": 12,
+   "data_quality": "draft",
+   "files": [
+    "b_16_12.fchk",
+    "c_16_12.fcol"
+   ],
+   "key": "terrain_carentan/b_16_12",
+   "lod": [
+    0
+   ],
+   "sha256": "0125bef11ebbe084b4484d144cf07767fa3c178c94744051b421d9f666997864"
+  },
+  {
+   "bx": 16,
+   "bytes": 17710,
+   "bz": 13,
+   "data_quality": "draft",
+   "files": [
+    "b_16_13.fchk",
+    "c_16_13.fcol"
+   ],
+   "key": "terrain_carentan/b_16_13",
+   "lod": [
+    0
+   ],
+   "sha256": "72cfb07fa8f2debed8e80eb2d82dce1efc9275b5d9f3480d49e37e56df9cb0d3"
+  },
+  {
+   "bx": 16,
+   "bytes": 15913,
+   "bz": 14,
+   "data_quality": "draft",
+   "files": [
+    "b_16_14.fchk",
+    "c_16_14.fcol"
+   ],
+   "key": "terrain_carentan/b_16_14",
+   "lod": [
+    0
+   ],
+   "sha256": "f866dbf03fc234567e6d38b597ef84a2e6eaef207a6b70d52e1fde956571e304"
+  },
+  {
+   "bx": 16,
+   "bytes": 16627,
+   "bz": 15,
+   "data_quality": "draft",
+   "files": [
+    "b_16_15.fchk",
+    "c_16_15.fcol"
+   ],
+   "key": "terrain_carentan/b_16_15",
+   "lod": [
+    0
+   ],
+   "sha256": "6549c3cfb8ccdb18875b3ac54794d1e283e9f6197fdcda723f89c485bc2493ec"
+  },
+  {
+   "bx": 16,
+   "bytes": 15265,
+   "bz": 16,
+   "data_quality": "draft",
+   "files": [
+    "b_16_16.fchk",
+    "c_16_16.fcol"
+   ],
+   "key": "terrain_carentan/b_16_16",
+   "lod": [
+    0
+   ],
+   "sha256": "1a0517e2fd9f07c6bc8b4b9f156c4d5bbe182cc62d995f288a4f303c3a579572"
+  },
+  {
+   "bx": 16,
+   "bytes": 17663,
+   "bz": 17,
+   "data_quality": "draft",
+   "files": [
+    "b_16_17.fchk",
+    "c_16_17.fcol"
+   ],
+   "key": "terrain_carentan/b_16_17",
+   "lod": [
+    0
+   ],
+   "sha256": "29b0b0d8b626c854687aa31a7b5e4491cbb873d37440c6e89ae700ff0d33ad65"
+  },
+  {
+   "bx": 16,
+   "bytes": 15965,
+   "bz": 18,
+   "data_quality": "draft",
+   "files": [
+    "b_16_18.fchk",
+    "c_16_18.fcol"
+   ],
+   "key": "terrain_carentan/b_16_18",
+   "lod": [
+    0
+   ],
+   "sha256": "7f99ae8cb0544f5a36bb4a7722a2d62ed859d697ee601fd8e023d05840438587"
+  },
+  {
+   "bx": 16,
+   "bytes": 16376,
+   "bz": 19,
+   "data_quality": "draft",
+   "files": [
+    "b_16_19.fchk",
+    "c_16_19.fcol"
+   ],
+   "key": "terrain_carentan/b_16_19",
+   "lod": [
+    0
+   ],
+   "sha256": "b2d09f843dc4697d9723692a6f9b97a2e6fe5cf80dce108297e95f80dfedb767"
+  },
+  {
+   "bx": 16,
+   "bytes": 15696,
+   "bz": 20,
+   "data_quality": "draft",
+   "files": [
+    "b_16_20.fchk",
+    "c_16_20.fcol"
+   ],
+   "key": "terrain_carentan/b_16_20",
+   "lod": [
+    0
+   ],
+   "sha256": "abb35d0bf5a10655b26f4187dc0b71e9bb2efd737d69c17aa286ab0c23631458"
+  },
+  {
+   "bx": 16,
+   "bytes": 15634,
+   "bz": 21,
+   "data_quality": "draft",
+   "files": [
+    "b_16_21.fchk",
+    "c_16_21.fcol"
+   ],
+   "key": "terrain_carentan/b_16_21",
+   "lod": [
+    0
+   ],
+   "sha256": "ffe34385c5e3fb5305f2bc2460c27aac504460718fdce723d3d5ee037a58fdf6"
+  },
+  {
+   "bx": 16,
+   "bytes": 12811,
+   "bz": 22,
+   "data_quality": "draft",
+   "files": [
+    "b_16_22.fchk",
+    "c_16_22.fcol"
+   ],
+   "key": "terrain_carentan/b_16_22",
+   "lod": [
+    0
+   ],
+   "sha256": "eb3b6331289220fefc6cf49946b42a52e815b8e1e99f5f584a26ad9b06cb5aac"
+  },
+  {
+   "bx": 16,
+   "bytes": 11678,
+   "bz": 23,
+   "data_quality": "draft",
+   "files": [
+    "b_16_23.fchk",
+    "c_16_23.fcol"
+   ],
+   "key": "terrain_carentan/b_16_23",
+   "lod": [
+    0
+   ],
+   "sha256": "f954725abc6ee6b670bf0fdbd436462ba316464c0c1e1588c8d1237feec21db6"
+  },
+  {
+   "bx": 16,
+   "bytes": 11574,
+   "bz": 24,
+   "data_quality": "draft",
+   "files": [
+    "b_16_24.fchk",
+    "c_16_24.fcol"
+   ],
+   "key": "terrain_carentan/b_16_24",
+   "lod": [
+    0
+   ],
+   "sha256": "0bc78c3967b5cab57a9d571a638259170c2d1af2e5415db94f5c18c85dda7cf2"
+  },
+  {
+   "bx": 16,
+   "bytes": 11271,
+   "bz": 25,
+   "data_quality": "draft",
+   "files": [
+    "b_16_25.fchk",
+    "c_16_25.fcol"
+   ],
+   "key": "terrain_carentan/b_16_25",
+   "lod": [
+    0
+   ],
+   "sha256": "ddafa2f1c9f9f0c412cd735835aacedbd18155f4674cf668f3d276ec0234fb66"
+  },
+  {
+   "bx": 16,
+   "bytes": 11802,
+   "bz": 26,
+   "data_quality": "draft",
+   "files": [
+    "b_16_26.fchk",
+    "c_16_26.fcol"
+   ],
+   "key": "terrain_carentan/b_16_26",
+   "lod": [
+    0
+   ],
+   "sha256": "102325283467c787869d3edc5da906f31297e396520d555888567122193e433a"
+  },
+  {
+   "bx": 17,
+   "bytes": 18455,
+   "bz": 8,
+   "data_quality": "draft",
+   "files": [
+    "b_17_8.fchk",
+    "c_17_8.fcol"
+   ],
+   "key": "terrain_carentan/b_17_8",
+   "lod": [
+    0
+   ],
+   "sha256": "5d0707fbc7473b13fcc25a65da868d91b8ecfbf84bad27673bcffcefced813ff"
+  },
+  {
+   "bx": 17,
+   "bytes": 18525,
+   "bz": 9,
+   "data_quality": "draft",
+   "files": [
+    "b_17_9.fchk",
+    "c_17_9.fcol"
+   ],
+   "key": "terrain_carentan/b_17_9",
+   "lod": [
+    0
+   ],
+   "sha256": "ee4a8ceadceeba7f680e3c6579416067de4bdcb0cb52aa5304dcc0eaf96de80f"
+  },
+  {
+   "bx": 17,
+   "bytes": 17516,
+   "bz": 10,
+   "data_quality": "draft",
+   "files": [
+    "b_17_10.fchk",
+    "c_17_10.fcol"
+   ],
+   "key": "terrain_carentan/b_17_10",
+   "lod": [
+    0
+   ],
+   "sha256": "9852e2a3cadb2459b12f9561e4580db7ea2dae72bdfcdedf57dafb0e00bd19b2"
+  },
+  {
+   "bx": 17,
+   "bytes": 17324,
+   "bz": 11,
+   "data_quality": "draft",
+   "files": [
+    "b_17_11.fchk",
+    "c_17_11.fcol"
+   ],
+   "key": "terrain_carentan/b_17_11",
+   "lod": [
+    0
+   ],
+   "sha256": "cef937530cd09fd0afbc9fc7d88f745ab9db1c71475769803baffbcc8f5e3b3d"
+  },
+  {
+   "bx": 17,
+   "bytes": 17954,
+   "bz": 12,
+   "data_quality": "draft",
+   "files": [
+    "b_17_12.fchk",
+    "c_17_12.fcol"
+   ],
+   "key": "terrain_carentan/b_17_12",
+   "lod": [
+    0
+   ],
+   "sha256": "af54f78ba0f17d934088bfc65e1c4a123070d05779f9127a7d594d0cc75f855d"
+  },
+  {
+   "bx": 17,
+   "bytes": 17518,
+   "bz": 13,
+   "data_quality": "draft",
+   "files": [
+    "b_17_13.fchk",
+    "c_17_13.fcol"
+   ],
+   "key": "terrain_carentan/b_17_13",
+   "lod": [
+    0
+   ],
+   "sha256": "fe7ce6d122ba1bc9b6e9fdac7d7cef88e8eb579de76716b0a523b47658cc576b"
+  },
+  {
+   "bx": 17,
+   "bytes": 17317,
+   "bz": 14,
+   "data_quality": "draft",
+   "files": [
+    "b_17_14.fchk",
+    "c_17_14.fcol"
+   ],
+   "key": "terrain_carentan/b_17_14",
+   "lod": [
+    0
+   ],
+   "sha256": "2e77ebc5446997f9088a0303231124c40adddc6d05e8edb8c683ac2423faa8c2"
+  },
+  {
+   "bx": 17,
+   "bytes": 14144,
+   "bz": 15,
+   "data_quality": "draft",
+   "files": [
+    "b_17_15.fchk",
+    "c_17_15.fcol"
+   ],
+   "key": "terrain_carentan/b_17_15",
+   "lod": [
+    0
+   ],
+   "sha256": "41ae578fe5fa62ae9cb7a38c91d826909d4207d9464d766daaa4105cf7d6eb5a"
+  },
+  {
+   "bx": 17,
+   "bytes": 13834,
+   "bz": 16,
+   "data_quality": "draft",
+   "files": [
+    "b_17_16.fchk",
+    "c_17_16.fcol"
+   ],
+   "key": "terrain_carentan/b_17_16",
+   "lod": [
+    0
+   ],
+   "sha256": "7f9bcd1e3e495eb09bbc29144a4280b4b0175db40f7b507f93c692d927195f91"
+  },
+  {
+   "bx": 17,
+   "bytes": 16226,
+   "bz": 17,
+   "data_quality": "draft",
+   "files": [
+    "b_17_17.fchk",
+    "c_17_17.fcol"
+   ],
+   "key": "terrain_carentan/b_17_17",
+   "lod": [
+    0
+   ],
+   "sha256": "33ebc66be2a6da33b6bf3ed06f111c1a618e01102367b43aaf759513f0ecc25c"
+  },
+  {
+   "bx": 17,
+   "bytes": 15464,
+   "bz": 18,
+   "data_quality": "draft",
+   "files": [
+    "b_17_18.fchk",
+    "c_17_18.fcol"
+   ],
+   "key": "terrain_carentan/b_17_18",
+   "lod": [
+    0
+   ],
+   "sha256": "db16809d43cc0b54e1b99c175a466c2debba2cc268977e4ea88e290ce250c799"
+  },
+  {
+   "bx": 17,
+   "bytes": 14315,
+   "bz": 19,
+   "data_quality": "draft",
+   "files": [
+    "b_17_19.fchk",
+    "c_17_19.fcol"
+   ],
+   "key": "terrain_carentan/b_17_19",
+   "lod": [
+    0
+   ],
+   "sha256": "66720d67236f72b959ed57749665a78ab87f52f81ee09becd7852a40612da354"
+  },
+  {
+   "bx": 17,
+   "bytes": 16031,
+   "bz": 20,
+   "data_quality": "draft",
+   "files": [
+    "b_17_20.fchk",
+    "c_17_20.fcol"
+   ],
+   "key": "terrain_carentan/b_17_20",
+   "lod": [
+    0
+   ],
+   "sha256": "f87b7ef1e59fc919c68183d2b004b2d6ece109c05ccd7899824815d0ec6b5b89"
+  },
+  {
+   "bx": 17,
+   "bytes": 15565,
+   "bz": 21,
+   "data_quality": "draft",
+   "files": [
+    "b_17_21.fchk",
+    "c_17_21.fcol"
+   ],
+   "key": "terrain_carentan/b_17_21",
+   "lod": [
+    0
+   ],
+   "sha256": "937fca935f7c73620aaa7c2bfc726537d8ad6d07b52460e5d6629b9217ce20d2"
+  },
+  {
+   "bx": 17,
+   "bytes": 13404,
+   "bz": 22,
+   "data_quality": "draft",
+   "files": [
+    "b_17_22.fchk",
+    "c_17_22.fcol"
+   ],
+   "key": "terrain_carentan/b_17_22",
+   "lod": [
+    0
+   ],
+   "sha256": "e05cc858bfdb38d8ecf2ffff1d41c39207855d6a4033e68f8933e97dec3ac232"
+  },
+  {
+   "bx": 17,
+   "bytes": 11199,
+   "bz": 23,
+   "data_quality": "draft",
+   "files": [
+    "b_17_23.fchk",
+    "c_17_23.fcol"
+   ],
+   "key": "terrain_carentan/b_17_23",
+   "lod": [
+    0
+   ],
+   "sha256": "80486b4dba8724d3f4ff072b98ced9b591b6328067bf2aa5c5358610f84fb2a2"
+  },
+  {
+   "bx": 17,
+   "bytes": 11379,
+   "bz": 24,
+   "data_quality": "draft",
+   "files": [
+    "b_17_24.fchk",
+    "c_17_24.fcol"
+   ],
+   "key": "terrain_carentan/b_17_24",
+   "lod": [
+    0
+   ],
+   "sha256": "dd82858fd488ba8e5627152fb853cfa680699ff0edd144ff8d1a65cc21810919"
+  },
+  {
+   "bx": 17,
+   "bytes": 11253,
+   "bz": 25,
+   "data_quality": "draft",
+   "files": [
+    "b_17_25.fchk",
+    "c_17_25.fcol"
+   ],
+   "key": "terrain_carentan/b_17_25",
+   "lod": [
+    0
+   ],
+   "sha256": "63c21bd4de86da2d0c0a35e67913a48fdb30d388ce10f1d8f03b332887690d77"
+  },
+  {
+   "bx": 17,
+   "bytes": 12242,
+   "bz": 26,
+   "data_quality": "draft",
+   "files": [
+    "b_17_26.fchk",
+    "c_17_26.fcol"
+   ],
+   "key": "terrain_carentan/b_17_26",
+   "lod": [
+    0
+   ],
+   "sha256": "acffe49586f01adb3dbbd8ad754de7b4d2e79b9c0b20958359d38308d00a40b1"
+  },
+  {
+   "bx": 18,
+   "bytes": 18698,
+   "bz": 8,
+   "data_quality": "draft",
+   "files": [
+    "b_18_8.fchk",
+    "c_18_8.fcol"
+   ],
+   "key": "terrain_carentan/b_18_8",
+   "lod": [
+    0
+   ],
+   "sha256": "6b9c8ed9d85769ea6a3ba2dbdce1e2742d0be1d1a3b155d96c7c4ffa3cd77fe1"
+  },
+  {
+   "bx": 18,
+   "bytes": 18641,
+   "bz": 9,
+   "data_quality": "draft",
+   "files": [
+    "b_18_9.fchk",
+    "c_18_9.fcol"
+   ],
+   "key": "terrain_carentan/b_18_9",
+   "lod": [
+    0
+   ],
+   "sha256": "25bb3ce9f50e2c93ce7aa94953a98535612faac57c65be9b3e730a75ef8e13bd"
+  },
+  {
+   "bx": 18,
+   "bytes": 16444,
+   "bz": 10,
+   "data_quality": "draft",
+   "files": [
+    "b_18_10.fchk",
+    "c_18_10.fcol"
+   ],
+   "key": "terrain_carentan/b_18_10",
+   "lod": [
+    0
+   ],
+   "sha256": "13063189ff8a5d5c6ca064fadb1b1ae02bbd5796be3130387d098b14a41f44ab"
+  },
+  {
+   "bx": 18,
+   "bytes": 19262,
+   "bz": 11,
+   "data_quality": "draft",
+   "files": [
+    "b_18_11.fchk",
+    "c_18_11.fcol"
+   ],
+   "key": "terrain_carentan/b_18_11",
+   "lod": [
+    0
+   ],
+   "sha256": "1c746e24f60f0b1bd8b4a92da2a1050881b491769c689a698f0f8a50d8080ed8"
+  },
+  {
+   "bx": 18,
+   "bytes": 16557,
+   "bz": 12,
+   "data_quality": "draft",
+   "files": [
+    "b_18_12.fchk",
+    "c_18_12.fcol"
+   ],
+   "key": "terrain_carentan/b_18_12",
+   "lod": [
+    0
+   ],
+   "sha256": "5376a255db8e554eef635113c77392c7e17e8feca4be54eea1cbec853d6d0549"
+  },
+  {
+   "bx": 18,
+   "bytes": 18045,
+   "bz": 13,
+   "data_quality": "draft",
+   "files": [
+    "b_18_13.fchk",
+    "c_18_13.fcol"
+   ],
+   "key": "terrain_carentan/b_18_13",
+   "lod": [
+    0
+   ],
+   "sha256": "aa2e7f35739c922a60318a8b947515090876c191e2dee714a47e325c6d926684"
+  },
+  {
+   "bx": 18,
+   "bytes": 16326,
+   "bz": 14,
+   "data_quality": "draft",
+   "files": [
+    "b_18_14.fchk",
+    "c_18_14.fcol"
+   ],
+   "key": "terrain_carentan/b_18_14",
+   "lod": [
+    0
+   ],
+   "sha256": "e88319b080d2c32ce86a1ddd215ee6d5b7c8189ded4e672667faec4da3332fdd"
+  },
+  {
+   "bx": 18,
+   "bytes": 14435,
+   "bz": 15,
+   "data_quality": "draft",
+   "files": [
+    "b_18_15.fchk",
+    "c_18_15.fcol"
+   ],
+   "key": "terrain_carentan/b_18_15",
+   "lod": [
+    0
+   ],
+   "sha256": "7d6825c63f898884343d995e521b0be297252575b6df7ffb7fe376784ee0a0bc"
+  },
+  {
+   "bx": 18,
+   "bytes": 15041,
+   "bz": 16,
+   "data_quality": "draft",
+   "files": [
+    "b_18_16.fchk",
+    "c_18_16.fcol"
+   ],
+   "key": "terrain_carentan/b_18_16",
+   "lod": [
+    0
+   ],
+   "sha256": "14d528d6f02c60f957bd40fc8a64cc0934d31b530d54902d1df85d4f27bfe696"
+  },
+  {
+   "bx": 18,
+   "bytes": 13118,
+   "bz": 17,
+   "data_quality": "draft",
+   "files": [
+    "b_18_17.fchk",
+    "c_18_17.fcol"
+   ],
+   "key": "terrain_carentan/b_18_17",
+   "lod": [
+    0
+   ],
+   "sha256": "43bfb783d03b671f986eb975a5a825c12517b3ee509245159f9a7f6f3c1c6b77"
+  },
+  {
+   "bx": 18,
+   "bytes": 16866,
+   "bz": 18,
+   "data_quality": "draft",
+   "files": [
+    "b_18_18.fchk",
+    "c_18_18.fcol"
+   ],
+   "key": "terrain_carentan/b_18_18",
+   "lod": [
+    0
+   ],
+   "sha256": "7c73dccdb32e2909c7ae02635b93210ca89a4c7de0a640bf11ee3c3bdbf5c658"
+  },
+  {
+   "bx": 18,
+   "bytes": 14508,
+   "bz": 19,
+   "data_quality": "draft",
+   "files": [
+    "b_18_19.fchk",
+    "c_18_19.fcol"
+   ],
+   "key": "terrain_carentan/b_18_19",
+   "lod": [
+    0
+   ],
+   "sha256": "c2f6c49bd30e5783ed6169443a8a63113ac00b701971db007dc52d3ad379dbc1"
+  },
+  {
+   "bx": 18,
+   "bytes": 14061,
+   "bz": 20,
+   "data_quality": "draft",
+   "files": [
+    "b_18_20.fchk",
+    "c_18_20.fcol"
+   ],
+   "key": "terrain_carentan/b_18_20",
+   "lod": [
+    0
+   ],
+   "sha256": "5a3e15cef906deed69b502ddd76e8a95d345039537bd6f08c5a5d93d5f7ef833"
+  },
+  {
+   "bx": 18,
+   "bytes": 13410,
+   "bz": 21,
+   "data_quality": "draft",
+   "files": [
+    "b_18_21.fchk",
+    "c_18_21.fcol"
+   ],
+   "key": "terrain_carentan/b_18_21",
+   "lod": [
+    0
+   ],
+   "sha256": "141714439c9099b7c27e9aafc6cb48d44421dfba441901ca75982916892bbbab"
+  },
+  {
+   "bx": 18,
+   "bytes": 12314,
+   "bz": 22,
+   "data_quality": "draft",
+   "files": [
+    "b_18_22.fchk",
+    "c_18_22.fcol"
+   ],
+   "key": "terrain_carentan/b_18_22",
+   "lod": [
+    0
+   ],
+   "sha256": "183f24137cca5713f5ff8b66613d738abf2e1ea10d11b517bea0a6b652c8e884"
+  },
+  {
+   "bx": 18,
+   "bytes": 11135,
+   "bz": 23,
+   "data_quality": "draft",
+   "files": [
+    "b_18_23.fchk",
+    "c_18_23.fcol"
+   ],
+   "key": "terrain_carentan/b_18_23",
+   "lod": [
+    0
+   ],
+   "sha256": "e2b8fdc4df483963cc705aae36f24ed688b740ec0e6322209d6cb268002fac9f"
+  },
+  {
+   "bx": 18,
+   "bytes": 12088,
+   "bz": 24,
+   "data_quality": "draft",
+   "files": [
+    "b_18_24.fchk",
+    "c_18_24.fcol"
+   ],
+   "key": "terrain_carentan/b_18_24",
+   "lod": [
+    0
+   ],
+   "sha256": "b0f0c13f3a620cf71fe5e10cc19e7ce48d19ebe5895ca12cd56e25e98014e222"
+  },
+  {
+   "bx": 18,
+   "bytes": 12419,
+   "bz": 25,
+   "data_quality": "draft",
+   "files": [
+    "b_18_25.fchk",
+    "c_18_25.fcol"
+   ],
+   "key": "terrain_carentan/b_18_25",
+   "lod": [
+    0
+   ],
+   "sha256": "490396704ba69cf81909c56bb3d27bb2ab64cb7f4c1631198e581caf61a3c59a"
+  },
+  {
+   "bx": 18,
+   "bytes": 13523,
+   "bz": 26,
+   "data_quality": "draft",
+   "files": [
+    "b_18_26.fchk",
+    "c_18_26.fcol"
+   ],
+   "key": "terrain_carentan/b_18_26",
+   "lod": [
+    0
+   ],
+   "sha256": "cda6af69ca50c5f08a07fb5638518523957428b9e6ff53b1bfe1641eefb5caba"
+  },
+  {
+   "bx": 19,
+   "bytes": 17963,
+   "bz": 8,
+   "data_quality": "draft",
+   "files": [
+    "b_19_8.fchk",
+    "c_19_8.fcol"
+   ],
+   "key": "terrain_carentan/b_19_8",
+   "lod": [
+    0
+   ],
+   "sha256": "f261e80467c89d71ef657f5d71a4b6939aa22970ea7ba7d65e12ea8d48121884"
+  },
+  {
+   "bx": 19,
+   "bytes": 17290,
+   "bz": 9,
+   "data_quality": "draft",
+   "files": [
+    "b_19_9.fchk",
+    "c_19_9.fcol"
+   ],
+   "key": "terrain_carentan/b_19_9",
+   "lod": [
+    0
+   ],
+   "sha256": "c9c3f7ab24e417a59f5c76198288564f36e3d94f7a227af483a28029c25a5e5a"
+  },
+  {
+   "bx": 19,
+   "bytes": 14803,
+   "bz": 10,
+   "data_quality": "draft",
+   "files": [
+    "b_19_10.fchk",
+    "c_19_10.fcol"
+   ],
+   "key": "terrain_carentan/b_19_10",
+   "lod": [
+    0
+   ],
+   "sha256": "c002fdb973a5614cc76a900969c5a8ecf518a211b04bb412a9456cff866ce75d"
+  },
+  {
+   "bx": 19,
+   "bytes": 16972,
+   "bz": 11,
+   "data_quality": "draft",
+   "files": [
+    "b_19_11.fchk",
+    "c_19_11.fcol"
+   ],
+   "key": "terrain_carentan/b_19_11",
+   "lod": [
+    0
+   ],
+   "sha256": "1ec8291baab551933527ff16aa92c5b6a47b99cabb05e304decc0b8486628064"
+  },
+  {
+   "bx": 19,
+   "bytes": 17441,
+   "bz": 12,
+   "data_quality": "draft",
+   "files": [
+    "b_19_12.fchk",
+    "c_19_12.fcol"
+   ],
+   "key": "terrain_carentan/b_19_12",
+   "lod": [
+    0
+   ],
+   "sha256": "cd8df300b499dc445a49f4374ace7a493d380bec63a36c102aeb094d9daeebcf"
+  },
+  {
+   "bx": 19,
+   "bytes": 18431,
+   "bz": 13,
+   "data_quality": "draft",
+   "files": [
+    "b_19_13.fchk",
+    "c_19_13.fcol"
+   ],
+   "key": "terrain_carentan/b_19_13",
+   "lod": [
+    0
+   ],
+   "sha256": "4b619599e27345207c61d1c01c1a964a33b5ad2b172434986f3e0cd931403d55"
+  },
+  {
+   "bx": 19,
+   "bytes": 14450,
+   "bz": 14,
+   "data_quality": "draft",
+   "files": [
+    "b_19_14.fchk",
+    "c_19_14.fcol"
+   ],
+   "key": "terrain_carentan/b_19_14",
+   "lod": [
+    0
+   ],
+   "sha256": "7c2066ef9a89bcc2e8e1cf688a4e628aada92c4eb26eed40f5e5b6c15815413c"
+  },
+  {
+   "bx": 19,
+   "bytes": 15142,
+   "bz": 15,
+   "data_quality": "draft",
+   "files": [
+    "b_19_15.fchk",
+    "c_19_15.fcol"
+   ],
+   "key": "terrain_carentan/b_19_15",
+   "lod": [
+    0
+   ],
+   "sha256": "82a54f62e61f4f5245d54e91a85d3f664a6e5697d5c4166d598f023e5db72448"
+  },
+  {
+   "bx": 19,
+   "bytes": 14015,
+   "bz": 16,
+   "data_quality": "draft",
+   "files": [
+    "b_19_16.fchk",
+    "c_19_16.fcol"
+   ],
+   "key": "terrain_carentan/b_19_16",
+   "lod": [
+    0
+   ],
+   "sha256": "72ff657c48301ff0a0d27550e3db1bb21457c627d990202df1e5f2b97376b2c3"
+  },
+  {
+   "bx": 19,
+   "bytes": 15676,
+   "bz": 17,
+   "data_quality": "draft",
+   "files": [
+    "b_19_17.fchk",
+    "c_19_17.fcol"
+   ],
+   "key": "terrain_carentan/b_19_17",
+   "lod": [
+    0
+   ],
+   "sha256": "7fd66e3ec2eaf7534a5c88f81b9c2480f42ca63148b13958abee5891f0bb73b9"
+  },
+  {
+   "bx": 19,
+   "bytes": 17001,
+   "bz": 18,
+   "data_quality": "draft",
+   "files": [
+    "b_19_18.fchk",
+    "c_19_18.fcol"
+   ],
+   "key": "terrain_carentan/b_19_18",
+   "lod": [
+    0
+   ],
+   "sha256": "e1255ec8fc889466d2e73c8cd02bf194d12195da5724018d9f42b58e63590bad"
+  },
+  {
+   "bx": 19,
+   "bytes": 15100,
+   "bz": 19,
+   "data_quality": "draft",
+   "files": [
+    "b_19_19.fchk",
+    "c_19_19.fcol"
+   ],
+   "key": "terrain_carentan/b_19_19",
+   "lod": [
+    0
+   ],
+   "sha256": "fe56e9e6dcf54e81a6bc7183f90ef2e831980e64243a2c2c970f44680dd238fc"
+  },
+  {
+   "bx": 19,
+   "bytes": 13399,
+   "bz": 20,
+   "data_quality": "draft",
+   "files": [
+    "b_19_20.fchk",
+    "c_19_20.fcol"
+   ],
+   "key": "terrain_carentan/b_19_20",
+   "lod": [
+    0
+   ],
+   "sha256": "a9f5d515781b5c18947043653aed51eaa23f448fb4696a355de03764510bb373"
+  },
+  {
+   "bx": 19,
+   "bytes": 12690,
+   "bz": 21,
+   "data_quality": "draft",
+   "files": [
+    "b_19_21.fchk",
+    "c_19_21.fcol"
+   ],
+   "key": "terrain_carentan/b_19_21",
+   "lod": [
+    0
+   ],
+   "sha256": "07885e8f5a867c4ac17c23ce77f02ab351a8602da180742cf9573605d3bcbbf5"
+  },
+  {
+   "bx": 19,
+   "bytes": 11724,
+   "bz": 22,
+   "data_quality": "draft",
+   "files": [
+    "b_19_22.fchk",
+    "c_19_22.fcol"
+   ],
+   "key": "terrain_carentan/b_19_22",
+   "lod": [
+    0
+   ],
+   "sha256": "a906d677a7223faa6a91b4ce44bbb2e10f972484bf09e21078057dfaf37d9b60"
+  },
+  {
+   "bx": 19,
+   "bytes": 12941,
+   "bz": 23,
+   "data_quality": "draft",
+   "files": [
+    "b_19_23.fchk",
+    "c_19_23.fcol"
+   ],
+   "key": "terrain_carentan/b_19_23",
+   "lod": [
+    0
+   ],
+   "sha256": "2527897f01d5551820a2ef26eef1ce192d87a0328ffdf73d221d9909a372d422"
+  },
+  {
+   "bx": 19,
+   "bytes": 12348,
+   "bz": 24,
+   "data_quality": "draft",
+   "files": [
+    "b_19_24.fchk",
+    "c_19_24.fcol"
+   ],
+   "key": "terrain_carentan/b_19_24",
+   "lod": [
+    0
+   ],
+   "sha256": "2d69b86cfbae84bfeab44cd5c242b5e8b2ca440da54108fa2189f6ce557e2649"
+  },
+  {
+   "bx": 19,
+   "bytes": 11251,
+   "bz": 25,
+   "data_quality": "draft",
+   "files": [
+    "b_19_25.fchk",
+    "c_19_25.fcol"
+   ],
+   "key": "terrain_carentan/b_19_25",
+   "lod": [
+    0
+   ],
+   "sha256": "fb71610faffcfb71994ef42f0f72003b4124003929175f95cbda5e335be6506d"
+  },
+  {
+   "bx": 19,
+   "bytes": 12366,
+   "bz": 26,
+   "data_quality": "draft",
+   "files": [
+    "b_19_26.fchk",
+    "c_19_26.fcol"
+   ],
+   "key": "terrain_carentan/b_19_26",
+   "lod": [
+    0
+   ],
+   "sha256": "1d5ced8b7967860d7ea1c80732d9b238ad6e6f96715e65aaddce311445eda9c1"
+  },
+  {
+   "bx": 20,
+   "bytes": 15825,
+   "bz": 8,
+   "data_quality": "draft",
+   "files": [
+    "b_20_8.fchk",
+    "c_20_8.fcol"
+   ],
+   "key": "terrain_carentan/b_20_8",
+   "lod": [
+    0
+   ],
+   "sha256": "98d313743b1bdaa41b2aff75d29ee1bbd171b7d614281e8c6ab8d6755ea81e2d"
+  },
+  {
+   "bx": 20,
+   "bytes": 16154,
+   "bz": 9,
+   "data_quality": "draft",
+   "files": [
+    "b_20_9.fchk",
+    "c_20_9.fcol"
+   ],
+   "key": "terrain_carentan/b_20_9",
+   "lod": [
+    0
+   ],
+   "sha256": "b6808ca5c6eddc16b4b960a2239432c105eb2291a75cb5d5d8d6782d897f1c3a"
+  },
+  {
+   "bx": 20,
+   "bytes": 16537,
+   "bz": 10,
+   "data_quality": "draft",
+   "files": [
+    "b_20_10.fchk",
+    "c_20_10.fcol"
+   ],
+   "key": "terrain_carentan/b_20_10",
+   "lod": [
+    0
+   ],
+   "sha256": "0307356b40b84ce901ce6a50e058342211257255ce6f42c8a393e59bf8c3485a"
+  },
+  {
+   "bx": 20,
+   "bytes": 17531,
+   "bz": 11,
+   "data_quality": "draft",
+   "files": [
+    "b_20_11.fchk",
+    "c_20_11.fcol"
+   ],
+   "key": "terrain_carentan/b_20_11",
+   "lod": [
+    0
+   ],
+   "sha256": "35facead1c268517aea47d8db64d40a882d02376dad8d99e98b69a3f49c6ea3e"
+  },
+  {
+   "bx": 20,
+   "bytes": 16918,
+   "bz": 12,
+   "data_quality": "draft",
+   "files": [
+    "b_20_12.fchk",
+    "c_20_12.fcol"
+   ],
+   "key": "terrain_carentan/b_20_12",
+   "lod": [
+    0
+   ],
+   "sha256": "9ab1c859ed5191ffa544232fff5c8772efb3d09da635850449ed34df872f5787"
+  },
+  {
+   "bx": 20,
+   "bytes": 16944,
+   "bz": 13,
+   "data_quality": "draft",
+   "files": [
+    "b_20_13.fchk",
+    "c_20_13.fcol"
+   ],
+   "key": "terrain_carentan/b_20_13",
+   "lod": [
+    0
+   ],
+   "sha256": "e61ad82601e5c711a3caa3908fe4e4f40ad8ae087935a1891de5d326b979d984"
+  },
+  {
+   "bx": 20,
+   "bytes": 19092,
+   "bz": 14,
+   "data_quality": "draft",
+   "files": [
+    "b_20_14.fchk",
+    "c_20_14.fcol"
+   ],
+   "key": "terrain_carentan/b_20_14",
+   "lod": [
+    0
+   ],
+   "sha256": "006924cf1c50334bf7bf284fb20b14b024921b5e270a73ddd8ddd098b02597a9"
+  },
+  {
+   "bx": 20,
+   "bytes": 18532,
+   "bz": 15,
+   "data_quality": "draft",
+   "files": [
+    "b_20_15.fchk",
+    "c_20_15.fcol"
+   ],
+   "key": "terrain_carentan/b_20_15",
+   "lod": [
+    0
+   ],
+   "sha256": "cb8fd79c2b47d17997656723ac3e095632e43507a1d06f6374d163d9e1305ac4"
+  },
+  {
+   "bx": 20,
+   "bytes": 14591,
+   "bz": 16,
+   "data_quality": "draft",
+   "files": [
+    "b_20_16.fchk",
+    "c_20_16.fcol"
+   ],
+   "key": "terrain_carentan/b_20_16",
+   "lod": [
+    0
+   ],
+   "sha256": "4e49232a4bd8d51697cb732b80236a8f24e671ce9c60fdcc40769c8848d27279"
+  },
+  {
+   "bx": 20,
+   "bytes": 17322,
+   "bz": 17,
+   "data_quality": "draft",
+   "files": [
+    "b_20_17.fchk",
+    "c_20_17.fcol"
+   ],
+   "key": "terrain_carentan/b_20_17",
+   "lod": [
+    0
+   ],
+   "sha256": "d6c20a9c9f1f17e350fc6bb511f7f3e83fa80b486324d330df5ba3aeefa5f46f"
+  },
+  {
+   "bx": 20,
+   "bytes": 17458,
+   "bz": 18,
+   "data_quality": "draft",
+   "files": [
+    "b_20_18.fchk",
+    "c_20_18.fcol"
+   ],
+   "key": "terrain_carentan/b_20_18",
+   "lod": [
+    0
+   ],
+   "sha256": "baef6c30493b90877b01fde69321a5afd46ddd8538c8c7a022cb827e64467948"
+  },
+  {
+   "bx": 20,
+   "bytes": 16316,
+   "bz": 19,
+   "data_quality": "draft",
+   "files": [
+    "b_20_19.fchk",
+    "c_20_19.fcol"
+   ],
+   "key": "terrain_carentan/b_20_19",
+   "lod": [
+    0
+   ],
+   "sha256": "21b48228531edd2bf4fcd2090226827c994ca64fd8acae151b64d521a3f9e70c"
+  },
+  {
+   "bx": 20,
+   "bytes": 13400,
+   "bz": 20,
+   "data_quality": "draft",
+   "files": [
+    "b_20_20.fchk",
+    "c_20_20.fcol"
+   ],
+   "key": "terrain_carentan/b_20_20",
+   "lod": [
+    0
+   ],
+   "sha256": "5065e8633236c1f2b13754641642fb48d9f2cb23fca5f648bfa74d32ca310e23"
+  },
+  {
+   "bx": 20,
+   "bytes": 11884,
+   "bz": 21,
+   "data_quality": "draft",
+   "files": [
+    "b_20_21.fchk",
+    "c_20_21.fcol"
+   ],
+   "key": "terrain_carentan/b_20_21",
+   "lod": [
+    0
+   ],
+   "sha256": "cf82b8750c846b34a0ab64ed5c7c87b43ed3b5ae08f60812600f7f57a5d18dc5"
+  },
+  {
+   "bx": 20,
+   "bytes": 12172,
+   "bz": 22,
+   "data_quality": "draft",
+   "files": [
+    "b_20_22.fchk",
+    "c_20_22.fcol"
+   ],
+   "key": "terrain_carentan/b_20_22",
+   "lod": [
+    0
+   ],
+   "sha256": "e85adb12a2868f7048865a899b95537fcae2ad8ee23c19fed9d411e6a76930a7"
+  },
+  {
+   "bx": 20,
+   "bytes": 13465,
+   "bz": 23,
+   "data_quality": "draft",
+   "files": [
+    "b_20_23.fchk",
+    "c_20_23.fcol"
+   ],
+   "key": "terrain_carentan/b_20_23",
+   "lod": [
+    0
+   ],
+   "sha256": "93e60bcbf19ab898f5e0957fe4ad07b9175d02c2a77578152ed547dd92f639c2"
+  },
+  {
+   "bx": 20,
+   "bytes": 10347,
+   "bz": 24,
+   "data_quality": "draft",
+   "files": [
+    "b_20_24.fchk",
+    "c_20_24.fcol"
+   ],
+   "key": "terrain_carentan/b_20_24",
+   "lod": [
+    0
+   ],
+   "sha256": "9eb40e6204c6cb6dea4a4596e0c31c2c2326444acae5ec0f62a1886e2242d950"
+  },
+  {
+   "bx": 20,
+   "bytes": 11400,
+   "bz": 25,
+   "data_quality": "draft",
+   "files": [
+    "b_20_25.fchk",
+    "c_20_25.fcol"
+   ],
+   "key": "terrain_carentan/b_20_25",
+   "lod": [
+    0
+   ],
+   "sha256": "9ea0c58dd9322d597774b2ff4815715bcdf71c5c88191096aac932ccf0d15dbb"
+  },
+  {
+   "bx": 20,
+   "bytes": 11162,
+   "bz": 26,
+   "data_quality": "draft",
+   "files": [
+    "b_20_26.fchk",
+    "c_20_26.fcol"
+   ],
+   "key": "terrain_carentan/b_20_26",
+   "lod": [
+    0
+   ],
+   "sha256": "4515eff376dd9d2243ed357821b543a6818b5a1b30169956d8e7269148dd0803"
+  },
+  {
+   "bx": 21,
+   "bytes": 15380,
+   "bz": 8,
+   "data_quality": "draft",
+   "files": [
+    "b_21_8.fchk",
+    "c_21_8.fcol"
+   ],
+   "key": "terrain_carentan/b_21_8",
+   "lod": [
+    0
+   ],
+   "sha256": "d7d31bf22fe5fc44671acdf1e97b76d279cefafda03384ca1132642aea4e9bb1"
+  },
+  {
+   "bx": 21,
+   "bytes": 18702,
+   "bz": 9,
+   "data_quality": "draft",
+   "files": [
+    "b_21_9.fchk",
+    "c_21_9.fcol"
+   ],
+   "key": "terrain_carentan/b_21_9",
+   "lod": [
+    0
+   ],
+   "sha256": "16d007537b9d067783b61d5d064a45ad53cbb79c99970c2abf98f648a1df62eb"
+  },
+  {
+   "bx": 21,
+   "bytes": 18157,
+   "bz": 10,
+   "data_quality": "draft",
+   "files": [
+    "b_21_10.fchk",
+    "c_21_10.fcol"
+   ],
+   "key": "terrain_carentan/b_21_10",
+   "lod": [
+    0
+   ],
+   "sha256": "7a3c4b8b7bf0854fc28516dfd6ff0594f40ac42f54ab59f57225167541092d14"
+  },
+  {
+   "bx": 21,
+   "bytes": 17389,
+   "bz": 11,
+   "data_quality": "draft",
+   "files": [
+    "b_21_11.fchk",
+    "c_21_11.fcol"
+   ],
+   "key": "terrain_carentan/b_21_11",
+   "lod": [
+    0
+   ],
+   "sha256": "dfc98148dec4bc764df7a35ec0d563623ca8c9b702714e3c814318e9dad44b41"
+  },
+  {
+   "bx": 21,
+   "bytes": 18302,
+   "bz": 12,
+   "data_quality": "draft",
+   "files": [
+    "b_21_12.fchk",
+    "c_21_12.fcol"
+   ],
+   "key": "terrain_carentan/b_21_12",
+   "lod": [
+    0
+   ],
+   "sha256": "e6f890a65bb8edbf56e91616ae88b9ac57e2117d1bcaa0687e0e949c132bbaa0"
+  },
+  {
+   "bx": 21,
+   "bytes": 17978,
+   "bz": 13,
+   "data_quality": "draft",
+   "files": [
+    "b_21_13.fchk",
+    "c_21_13.fcol"
+   ],
+   "key": "terrain_carentan/b_21_13",
+   "lod": [
+    0
+   ],
+   "sha256": "31806bda99209fff75acf55faceb18e6c2fab6192a544f7fca11fad3bb9cdbbf"
+  },
+  {
+   "bx": 21,
+   "bytes": 17205,
+   "bz": 14,
+   "data_quality": "draft",
+   "files": [
+    "b_21_14.fchk",
+    "c_21_14.fcol"
+   ],
+   "key": "terrain_carentan/b_21_14",
+   "lod": [
+    0
+   ],
+   "sha256": "c905d9f57994c9bd714622c5879ab845b6b9e86beae012ed94d6589af5d7a990"
+  },
+  {
+   "bx": 21,
+   "bytes": 18464,
+   "bz": 15,
+   "data_quality": "draft",
+   "files": [
+    "b_21_15.fchk",
+    "c_21_15.fcol"
+   ],
+   "key": "terrain_carentan/b_21_15",
+   "lod": [
+    0
+   ],
+   "sha256": "9642ccb65e631866a39617ba8afa6298d98dec96527176527cef3dcfc6919172"
+  },
+  {
+   "bx": 21,
+   "bytes": 17687,
+   "bz": 16,
+   "data_quality": "draft",
+   "files": [
+    "b_21_16.fchk",
+    "c_21_16.fcol"
+   ],
+   "key": "terrain_carentan/b_21_16",
+   "lod": [
+    0
+   ],
+   "sha256": "e17a1ccf63e11ff0eebf5c8cb4c3b68a3a542d6ba181edd9cde59680771b8b52"
+  },
+  {
+   "bx": 21,
+   "bytes": 16193,
+   "bz": 17,
+   "data_quality": "draft",
+   "files": [
+    "b_21_17.fchk",
+    "c_21_17.fcol"
+   ],
+   "key": "terrain_carentan/b_21_17",
+   "lod": [
+    0
+   ],
+   "sha256": "62ae96fd4bbe87041d30796dab91bdeb62637f20ca35b98696a37d13d5f0c03e"
+  },
+  {
+   "bx": 21,
+   "bytes": 16020,
+   "bz": 18,
+   "data_quality": "draft",
+   "files": [
+    "b_21_18.fchk",
+    "c_21_18.fcol"
+   ],
+   "key": "terrain_carentan/b_21_18",
+   "lod": [
+    0
+   ],
+   "sha256": "2742b910ff02815c65cbd339204d7dd2230dc5aa763168ede259a8b5ea6214f4"
+  },
+  {
+   "bx": 21,
+   "bytes": 16417,
+   "bz": 19,
+   "data_quality": "draft",
+   "files": [
+    "b_21_19.fchk",
+    "c_21_19.fcol"
+   ],
+   "key": "terrain_carentan/b_21_19",
+   "lod": [
+    0
+   ],
+   "sha256": "536339d1ca200537a200e5c209f0cbd869d4adc968606c8b8ddcb37a18f60d5f"
+  },
+  {
+   "bx": 21,
+   "bytes": 13152,
+   "bz": 20,
+   "data_quality": "draft",
+   "files": [
+    "b_21_20.fchk",
+    "c_21_20.fcol"
+   ],
+   "key": "terrain_carentan/b_21_20",
+   "lod": [
+    0
+   ],
+   "sha256": "de9acf0bef7e19fe83e8f2bab19e82b52036d8b3f94144d231526954961f78db"
+  },
+  {
+   "bx": 21,
+   "bytes": 11822,
+   "bz": 21,
+   "data_quality": "draft",
+   "files": [
+    "b_21_21.fchk",
+    "c_21_21.fcol"
+   ],
+   "key": "terrain_carentan/b_21_21",
+   "lod": [
+    0
+   ],
+   "sha256": "b169f9ff3b9474d68898b9a61fb265e5fcaa78f13614e6407549baaaf5a1790e"
+  },
+  {
+   "bx": 21,
+   "bytes": 11937,
+   "bz": 22,
+   "data_quality": "draft",
+   "files": [
+    "b_21_22.fchk",
+    "c_21_22.fcol"
+   ],
+   "key": "terrain_carentan/b_21_22",
+   "lod": [
+    0
+   ],
+   "sha256": "1dc7f6da54239bf0e655aa057db75e1607662773b0c1ab22be66d1b467d66ef2"
+  },
+  {
+   "bx": 21,
+   "bytes": 12706,
+   "bz": 23,
+   "data_quality": "draft",
+   "files": [
+    "b_21_23.fchk",
+    "c_21_23.fcol"
+   ],
+   "key": "terrain_carentan/b_21_23",
+   "lod": [
+    0
+   ],
+   "sha256": "bae5ed19eb031a1741e562d964565727b71e816aae13dcb0539ac3a0f78b8996"
+  },
+  {
+   "bx": 21,
+   "bytes": 11576,
+   "bz": 24,
+   "data_quality": "draft",
+   "files": [
+    "b_21_24.fchk",
+    "c_21_24.fcol"
+   ],
+   "key": "terrain_carentan/b_21_24",
+   "lod": [
+    0
+   ],
+   "sha256": "54dfe4c70a8a2558ad15a4bdfc6f96b00ba6639b26846feecaf66258049a86fa"
+  },
+  {
+   "bx": 21,
+   "bytes": 10851,
+   "bz": 25,
+   "data_quality": "draft",
+   "files": [
+    "b_21_25.fchk",
+    "c_21_25.fcol"
+   ],
+   "key": "terrain_carentan/b_21_25",
+   "lod": [
+    0
+   ],
+   "sha256": "8ceab567bdac3e946c158e1441d3f7bc8687547ffbc6db5cf67c69075d6f38e2"
+  },
+  {
+   "bx": 21,
+   "bytes": 11175,
+   "bz": 26,
+   "data_quality": "draft",
+   "files": [
+    "b_21_26.fchk",
+    "c_21_26.fcol"
+   ],
+   "key": "terrain_carentan/b_21_26",
+   "lod": [
+    0
+   ],
+   "sha256": "758cd08a4c72bcdee51aeef725f9325daf241fb21dc5ad26ec7e8af5455df1a2"
+  },
+  {
+   "bx": 22,
+   "bytes": 14934,
+   "bz": 8,
+   "data_quality": "draft",
+   "files": [
+    "b_22_8.fchk",
+    "c_22_8.fcol"
+   ],
+   "key": "terrain_carentan/b_22_8",
+   "lod": [
+    0
+   ],
+   "sha256": "19146902dbce2a09e343ecb4a8c4da15cc08eb4f70ef4a7ab8909768ee76bc23"
+  },
+  {
+   "bx": 22,
+   "bytes": 18449,
+   "bz": 9,
+   "data_quality": "draft",
+   "files": [
+    "b_22_9.fchk",
+    "c_22_9.fcol"
+   ],
+   "key": "terrain_carentan/b_22_9",
+   "lod": [
+    0
+   ],
+   "sha256": "b35d7ff9126e525cca3bc359cd4c65e50f666a4f804e9464082fcc954fb82e94"
+  },
+  {
+   "bx": 22,
+   "bytes": 18262,
+   "bz": 10,
+   "data_quality": "draft",
+   "files": [
+    "b_22_10.fchk",
+    "c_22_10.fcol"
+   ],
+   "key": "terrain_carentan/b_22_10",
+   "lod": [
+    0
+   ],
+   "sha256": "9197c7f6df8271557cda09c413e41bae5e45b4079c550ab1f85b4dbf2fde588f"
+  },
+  {
+   "bx": 22,
+   "bytes": 18075,
+   "bz": 11,
+   "data_quality": "draft",
+   "files": [
+    "b_22_11.fchk",
+    "c_22_11.fcol"
+   ],
+   "key": "terrain_carentan/b_22_11",
+   "lod": [
+    0
+   ],
+   "sha256": "9334c70367e81ccfb7bf4e952e8c77b34424dfe3e66c28147f630c1f88aa58c1"
+  },
+  {
+   "bx": 22,
+   "bytes": 18549,
+   "bz": 12,
+   "data_quality": "draft",
+   "files": [
+    "b_22_12.fchk",
+    "c_22_12.fcol"
+   ],
+   "key": "terrain_carentan/b_22_12",
+   "lod": [
+    0
+   ],
+   "sha256": "76fdc11d3405ee642a9b4bd50850ffb116d7101ae9218231ed23508380b1d9a9"
+  },
+  {
+   "bx": 22,
+   "bytes": 17756,
+   "bz": 13,
+   "data_quality": "draft",
+   "files": [
+    "b_22_13.fchk",
+    "c_22_13.fcol"
+   ],
+   "key": "terrain_carentan/b_22_13",
+   "lod": [
+    0
+   ],
+   "sha256": "753e68683cfcdc8d47ba84b4313d4c16ab70644520c7cf6cbb9a2190d14d6aea"
+  },
+  {
+   "bx": 22,
+   "bytes": 17670,
+   "bz": 14,
+   "data_quality": "draft",
+   "files": [
+    "b_22_14.fchk",
+    "c_22_14.fcol"
+   ],
+   "key": "terrain_carentan/b_22_14",
+   "lod": [
+    0
+   ],
+   "sha256": "06ed7399747c73129ff39036cbdb02db056027be83d10e5c09f67cca9f62073b"
+  },
+  {
+   "bx": 22,
+   "bytes": 18164,
+   "bz": 15,
+   "data_quality": "draft",
+   "files": [
+    "b_22_15.fchk",
+    "c_22_15.fcol"
+   ],
+   "key": "terrain_carentan/b_22_15",
+   "lod": [
+    0
+   ],
+   "sha256": "8a56c6f190a1d1a3b50906b6bb19681137b345451a4bdf5ab007ce94d1912e32"
+  },
+  {
+   "bx": 22,
+   "bytes": 15284,
+   "bz": 16,
+   "data_quality": "draft",
+   "files": [
+    "b_22_16.fchk",
+    "c_22_16.fcol"
+   ],
+   "key": "terrain_carentan/b_22_16",
+   "lod": [
+    0
+   ],
+   "sha256": "a768aa53d129cb2b88bb1b74301a0dfc7517a5ea88e23644292572dba7538226"
+  },
+  {
+   "bx": 22,
+   "bytes": 18028,
+   "bz": 17,
+   "data_quality": "draft",
+   "files": [
+    "b_22_17.fchk",
+    "c_22_17.fcol"
+   ],
+   "key": "terrain_carentan/b_22_17",
+   "lod": [
+    0
+   ],
+   "sha256": "a5c167a0289e67565ebd132703331288d7f19f2e1e8480b9a0098ad6021ed301"
+  },
+  {
+   "bx": 22,
+   "bytes": 17790,
+   "bz": 18,
+   "data_quality": "draft",
+   "files": [
+    "b_22_18.fchk",
+    "c_22_18.fcol"
+   ],
+   "key": "terrain_carentan/b_22_18",
+   "lod": [
+    0
+   ],
+   "sha256": "9982812d0fb91c95ac97c069df8a063378bfe2dca4035aaea8208ebd1cff4f38"
+  },
+  {
+   "bx": 22,
+   "bytes": 17251,
+   "bz": 19,
+   "data_quality": "draft",
+   "files": [
+    "b_22_19.fchk",
+    "c_22_19.fcol"
+   ],
+   "key": "terrain_carentan/b_22_19",
+   "lod": [
+    0
+   ],
+   "sha256": "2f3d18fce82d53112e6c80b4f27d9fbb9b1bfcb2dbc5a58c6d217e051a837abe"
+  },
+  {
+   "bx": 22,
+   "bytes": 15405,
+   "bz": 20,
+   "data_quality": "draft",
+   "files": [
+    "b_22_20.fchk",
+    "c_22_20.fcol"
+   ],
+   "key": "terrain_carentan/b_22_20",
+   "lod": [
+    0
+   ],
+   "sha256": "b521514bafd85ff6144f210bc5a78d4667f997c588820f09035f0191c0a12eba"
+  },
+  {
+   "bx": 22,
+   "bytes": 12653,
+   "bz": 21,
+   "data_quality": "draft",
+   "files": [
+    "b_22_21.fchk",
+    "c_22_21.fcol"
+   ],
+   "key": "terrain_carentan/b_22_21",
+   "lod": [
+    0
+   ],
+   "sha256": "e6336ef8081db3cd31c4556407beacf53170a9ee993c551bdbcd3e075c17e9a4"
+  },
+  {
+   "bx": 22,
+   "bytes": 11838,
+   "bz": 22,
+   "data_quality": "draft",
+   "files": [
+    "b_22_22.fchk",
+    "c_22_22.fcol"
+   ],
+   "key": "terrain_carentan/b_22_22",
+   "lod": [
+    0
+   ],
+   "sha256": "f202c0db280a0e00fb44f1eda00e325c787675f5bf61d2b4a06a1e78460cc42f"
+  },
+  {
+   "bx": 22,
+   "bytes": 13544,
+   "bz": 23,
+   "data_quality": "draft",
+   "files": [
+    "b_22_23.fchk",
+    "c_22_23.fcol"
+   ],
+   "key": "terrain_carentan/b_22_23",
+   "lod": [
+    0
+   ],
+   "sha256": "6c43dfb85dda79a2f0453a1a65f6cfc006278e9b87e5ced24b4bcc58ae0dd7e7"
+  },
+  {
+   "bx": 22,
+   "bytes": 14211,
+   "bz": 24,
+   "data_quality": "draft",
+   "files": [
+    "b_22_24.fchk",
+    "c_22_24.fcol"
+   ],
+   "key": "terrain_carentan/b_22_24",
+   "lod": [
+    0
+   ],
+   "sha256": "183f3444ef4f936f278f894457daedddbff65a820bf8d3800f9b6bcba7fa6025"
+  },
+  {
+   "bx": 22,
+   "bytes": 12136,
+   "bz": 25,
+   "data_quality": "draft",
+   "files": [
+    "b_22_25.fchk",
+    "c_22_25.fcol"
+   ],
+   "key": "terrain_carentan/b_22_25",
+   "lod": [
+    0
+   ],
+   "sha256": "933e4a7cb9b2c391ce11b3a454f9fdb2bda4477e4b4eb8ad16176415dd86b646"
+  },
+  {
+   "bx": 22,
+   "bytes": 12597,
+   "bz": 26,
+   "data_quality": "draft",
+   "files": [
+    "b_22_26.fchk",
+    "c_22_26.fcol"
+   ],
+   "key": "terrain_carentan/b_22_26",
+   "lod": [
+    0
+   ],
+   "sha256": "e054b43292e6a9452cbc0837d6ec2f804c190b8899c034723dbf6ffc7cffabe8"
+  },
+  {
+   "bx": 23,
+   "bytes": 15511,
+   "bz": 8,
+   "data_quality": "draft",
+   "files": [
+    "b_23_8.fchk",
+    "c_23_8.fcol"
+   ],
+   "key": "terrain_carentan/b_23_8",
+   "lod": [
+    0
+   ],
+   "sha256": "8b55e65ba51ef1d059b7fa8155a6983070506ff03ed9595d7f70a4519950355f"
+  },
+  {
+   "bx": 23,
+   "bytes": 15559,
+   "bz": 9,
+   "data_quality": "draft",
+   "files": [
+    "b_23_9.fchk",
+    "c_23_9.fcol"
+   ],
+   "key": "terrain_carentan/b_23_9",
+   "lod": [
+    0
+   ],
+   "sha256": "146b475fee03520b32e4fab2dd52429ea8a9cdc1bc3f23d6bd2d11c2d7ce31a5"
+  },
+  {
+   "bx": 23,
+   "bytes": 17746,
+   "bz": 10,
+   "data_quality": "draft",
+   "files": [
+    "b_23_10.fchk",
+    "c_23_10.fcol"
+   ],
+   "key": "terrain_carentan/b_23_10",
+   "lod": [
+    0
+   ],
+   "sha256": "a6bd81430db96ddabfd1ab2ee09a45b439af11deff39f82bfe7516f0546e99d5"
+  },
+  {
+   "bx": 23,
+   "bytes": 19265,
+   "bz": 11,
+   "data_quality": "draft",
+   "files": [
+    "b_23_11.fchk",
+    "c_23_11.fcol"
+   ],
+   "key": "terrain_carentan/b_23_11",
+   "lod": [
+    0
+   ],
+   "sha256": "8a49e4045e727e8306cd05c49518203b05521b847c9322bb089081bcc8e2bc10"
+  },
+  {
+   "bx": 23,
+   "bytes": 16470,
+   "bz": 12,
+   "data_quality": "draft",
+   "files": [
+    "b_23_12.fchk",
+    "c_23_12.fcol"
+   ],
+   "key": "terrain_carentan/b_23_12",
+   "lod": [
+    0
+   ],
+   "sha256": "00ba2cc15bc7dbf6c4d3073471e7cf1beedac6023d82a25d95d4c52fd1dc9278"
+  },
+  {
+   "bx": 23,
+   "bytes": 15954,
+   "bz": 13,
+   "data_quality": "draft",
+   "files": [
+    "b_23_13.fchk",
+    "c_23_13.fcol"
+   ],
+   "key": "terrain_carentan/b_23_13",
+   "lod": [
+    0
+   ],
+   "sha256": "a4d60981488ac63ba7b83b14e5f0f9fcf86bfcd12a10ffb64487aa2be435a131"
+  },
+  {
+   "bx": 23,
+   "bytes": 17328,
+   "bz": 14,
+   "data_quality": "draft",
+   "files": [
+    "b_23_14.fchk",
+    "c_23_14.fcol"
+   ],
+   "key": "terrain_carentan/b_23_14",
+   "lod": [
+    0
+   ],
+   "sha256": "80e658690c0fd7ee5fc7fecddd447417d4bc01d05a04bafad5e93151f8d26f8f"
+  },
+  {
+   "bx": 23,
+   "bytes": 18460,
+   "bz": 15,
+   "data_quality": "draft",
+   "files": [
+    "b_23_15.fchk",
+    "c_23_15.fcol"
+   ],
+   "key": "terrain_carentan/b_23_15",
+   "lod": [
+    0
+   ],
+   "sha256": "316995c004781966881fc35dc3e2b2feb5e3d3bce9e9c628b95e487c817aee91"
+  },
+  {
+   "bx": 23,
+   "bytes": 15021,
+   "bz": 16,
+   "data_quality": "draft",
+   "files": [
+    "b_23_16.fchk",
+    "c_23_16.fcol"
+   ],
+   "key": "terrain_carentan/b_23_16",
+   "lod": [
+    0
+   ],
+   "sha256": "5909170a4d25ec558f4f7efb34eed223d5c24f44e19f2889d93792446b4e4cef"
+  },
+  {
+   "bx": 23,
+   "bytes": 14549,
+   "bz": 17,
+   "data_quality": "draft",
+   "files": [
+    "b_23_17.fchk",
+    "c_23_17.fcol"
+   ],
+   "key": "terrain_carentan/b_23_17",
+   "lod": [
+    0
+   ],
+   "sha256": "00498814ed89f4d0393dfbf2c5212d5ed1e96c139c977c3e519ce7fa1b1daa7a"
+  },
+  {
+   "bx": 23,
+   "bytes": 16733,
+   "bz": 18,
+   "data_quality": "draft",
+   "files": [
+    "b_23_18.fchk",
+    "c_23_18.fcol"
+   ],
+   "key": "terrain_carentan/b_23_18",
+   "lod": [
+    0
+   ],
+   "sha256": "84f300cef676823f89a9cb66a91943c41b911106c392da79513ae4212d58d49a"
+  },
+  {
+   "bx": 23,
+   "bytes": 15830,
+   "bz": 19,
+   "data_quality": "draft",
+   "files": [
+    "b_23_19.fchk",
+    "c_23_19.fcol"
+   ],
+   "key": "terrain_carentan/b_23_19",
+   "lod": [
+    0
+   ],
+   "sha256": "f4734c07181d122202a69a68d314b3cf8f6b6202a064c6cee040c22b5edac5e1"
+  },
+  {
+   "bx": 23,
+   "bytes": 15057,
+   "bz": 20,
+   "data_quality": "draft",
+   "files": [
+    "b_23_20.fchk",
+    "c_23_20.fcol"
+   ],
+   "key": "terrain_carentan/b_23_20",
+   "lod": [
+    0
+   ],
+   "sha256": "a274bb2e816a37e6379cc027c07992d03be626d5f50ad369f382ff118d8e41df"
+  },
+  {
+   "bx": 23,
+   "bytes": 12020,
+   "bz": 21,
+   "data_quality": "draft",
+   "files": [
+    "b_23_21.fchk",
+    "c_23_21.fcol"
+   ],
+   "key": "terrain_carentan/b_23_21",
+   "lod": [
+    0
+   ],
+   "sha256": "54a52df615d06ce55d53fc491b7d1653cd656fcde97895198dd291aa80474e5f"
+  },
+  {
+   "bx": 23,
+   "bytes": 11712,
+   "bz": 22,
+   "data_quality": "draft",
+   "files": [
+    "b_23_22.fchk",
+    "c_23_22.fcol"
+   ],
+   "key": "terrain_carentan/b_23_22",
+   "lod": [
+    0
+   ],
+   "sha256": "385b383a2de188e1efa14da87d9906e219eec9e330b8d2a5d8087edf020f9039"
+  },
+  {
+   "bx": 23,
+   "bytes": 13502,
+   "bz": 23,
+   "data_quality": "draft",
+   "files": [
+    "b_23_23.fchk",
+    "c_23_23.fcol"
+   ],
+   "key": "terrain_carentan/b_23_23",
+   "lod": [
+    0
+   ],
+   "sha256": "be5344e7d5024a37b6d666f0d127d686d13e13edef54f0fb4269e4a7eae9f4ce"
+  },
+  {
+   "bx": 23,
+   "bytes": 13958,
+   "bz": 24,
+   "data_quality": "draft",
+   "files": [
+    "b_23_24.fchk",
+    "c_23_24.fcol"
+   ],
+   "key": "terrain_carentan/b_23_24",
+   "lod": [
+    0
+   ],
+   "sha256": "33c33ac326a16ec76e48529812c04e7577944673934ea62b28857c3a3dd54c3f"
+  },
+  {
+   "bx": 23,
+   "bytes": 13153,
+   "bz": 25,
+   "data_quality": "draft",
+   "files": [
+    "b_23_25.fchk",
+    "c_23_25.fcol"
+   ],
+   "key": "terrain_carentan/b_23_25",
+   "lod": [
+    0
+   ],
+   "sha256": "768bca3698618dac0cd1ba603d32940d4dab1adf0604fe8a883c8014c399b118"
+  },
+  {
+   "bx": 23,
+   "bytes": 12918,
+   "bz": 26,
+   "data_quality": "draft",
+   "files": [
+    "b_23_26.fchk",
+    "c_23_26.fcol"
+   ],
+   "key": "terrain_carentan/b_23_26",
+   "lod": [
+    0
+   ],
+   "sha256": "319b035b961b40fd957aafd5a3b707692fb41ff002dda9bc8ff8e5f95bb35dd9"
+  },
+  {
+   "bx": 24,
+   "bytes": 15004,
+   "bz": 8,
+   "data_quality": "draft",
+   "files": [
+    "b_24_8.fchk",
+    "c_24_8.fcol"
+   ],
+   "key": "terrain_carentan/b_24_8",
+   "lod": [
+    0
+   ],
+   "sha256": "4d9032accbd3dd23058d22637efea31232cd03e85f994bb6ec4c74f37663816f"
+  },
+  {
+   "bx": 24,
+   "bytes": 17909,
+   "bz": 9,
+   "data_quality": "draft",
+   "files": [
+    "b_24_9.fchk",
+    "c_24_9.fcol"
+   ],
+   "key": "terrain_carentan/b_24_9",
+   "lod": [
+    0
+   ],
+   "sha256": "3b6163260cd3f58099a6303a6674b6caf0a545a1d1cbcdc4d2b64a975bd6bb6b"
+  },
+  {
+   "bx": 24,
+   "bytes": 18201,
+   "bz": 10,
+   "data_quality": "draft",
+   "files": [
+    "b_24_10.fchk",
+    "c_24_10.fcol"
+   ],
+   "key": "terrain_carentan/b_24_10",
+   "lod": [
+    0
+   ],
+   "sha256": "a3f4fadccbcd09e5f76d2c37c9dc85da64af1da279eed1687207e4c839ba635e"
+  },
+  {
+   "bx": 24,
+   "bytes": 16653,
+   "bz": 11,
+   "data_quality": "draft",
+   "files": [
+    "b_24_11.fchk",
+    "c_24_11.fcol"
+   ],
+   "key": "terrain_carentan/b_24_11",
+   "lod": [
+    0
+   ],
+   "sha256": "074c946dc614b33c42560027c48e8794eec2e8d9bb2fc62009887910addf3e19"
+  },
+  {
+   "bx": 24,
+   "bytes": 16516,
+   "bz": 12,
+   "data_quality": "draft",
+   "files": [
+    "b_24_12.fchk",
+    "c_24_12.fcol"
+   ],
+   "key": "terrain_carentan/b_24_12",
+   "lod": [
+    0
+   ],
+   "sha256": "20641908ba1a83a3e1fa9838acf60e97b99c19ae5378384ecb428d623e7b5073"
+  },
+  {
+   "bx": 24,
+   "bytes": 18479,
+   "bz": 13,
+   "data_quality": "draft",
+   "files": [
+    "b_24_13.fchk",
+    "c_24_13.fcol"
+   ],
+   "key": "terrain_carentan/b_24_13",
+   "lod": [
+    0
+   ],
+   "sha256": "6bb678d8afdbd00e6636c4c00daacc952974fb98b678ee480b0cdb2265578cdc"
+  },
+  {
+   "bx": 24,
+   "bytes": 15245,
+   "bz": 14,
+   "data_quality": "draft",
+   "files": [
+    "b_24_14.fchk",
+    "c_24_14.fcol"
+   ],
+   "key": "terrain_carentan/b_24_14",
+   "lod": [
+    0
+   ],
+   "sha256": "33517d2ec695233816b162a2e6d29e4f44c816d90f2ff24740d26bd651605b72"
+  },
+  {
+   "bx": 24,
+   "bytes": 13355,
+   "bz": 15,
+   "data_quality": "draft",
+   "files": [
+    "b_24_15.fchk",
+    "c_24_15.fcol"
+   ],
+   "key": "terrain_carentan/b_24_15",
+   "lod": [
+    0
+   ],
+   "sha256": "a9bdd3edb97abe8fea996748383ac49ed3a0d58a26fea624cc04d7b5d9bbca4f"
+  },
+  {
+   "bx": 24,
+   "bytes": 12367,
+   "bz": 16,
+   "data_quality": "draft",
+   "files": [
+    "b_24_16.fchk",
+    "c_24_16.fcol"
+   ],
+   "key": "terrain_carentan/b_24_16",
+   "lod": [
+    0
+   ],
+   "sha256": "c34eef5cb322740d5b69011e15a45e1f05eaee0f6dd0fea43dafbbaae2eb2f97"
+  },
+  {
+   "bx": 24,
+   "bytes": 13333,
+   "bz": 17,
+   "data_quality": "draft",
+   "files": [
+    "b_24_17.fchk",
+    "c_24_17.fcol"
+   ],
+   "key": "terrain_carentan/b_24_17",
+   "lod": [
+    0
+   ],
+   "sha256": "d1452ffe1479d5ccb556d092c9f80c65e2d59e9630b2b55c3d7a6f7ebadbfa60"
+  },
+  {
+   "bx": 24,
+   "bytes": 17593,
+   "bz": 18,
+   "data_quality": "draft",
+   "files": [
+    "b_24_18.fchk",
+    "c_24_18.fcol"
+   ],
+   "key": "terrain_carentan/b_24_18",
+   "lod": [
+    0
+   ],
+   "sha256": "b68b24a0e09117b4c21d2e4eed5344c5186fe3e64c18637f7f4cf07542ec7843"
+  },
+  {
+   "bx": 24,
+   "bytes": 16467,
+   "bz": 19,
+   "data_quality": "draft",
+   "files": [
+    "b_24_19.fchk",
+    "c_24_19.fcol"
+   ],
+   "key": "terrain_carentan/b_24_19",
+   "lod": [
+    0
+   ],
+   "sha256": "6eec31358df3ddd1b9d1aaf6538945885013cd5bdd79e2c6a4d1f69be9298829"
+  },
+  {
+   "bx": 24,
+   "bytes": 13410,
+   "bz": 20,
+   "data_quality": "draft",
+   "files": [
+    "b_24_20.fchk",
+    "c_24_20.fcol"
+   ],
+   "key": "terrain_carentan/b_24_20",
+   "lod": [
+    0
+   ],
+   "sha256": "aff2b05e3ab8571c1f18a40c635fcf7718ea6d0624c63239cd35cb8a9df6aa3d"
+  },
+  {
+   "bx": 24,
+   "bytes": 14470,
+   "bz": 21,
+   "data_quality": "draft",
+   "files": [
+    "b_24_21.fchk",
+    "c_24_21.fcol"
+   ],
+   "key": "terrain_carentan/b_24_21",
+   "lod": [
+    0
+   ],
+   "sha256": "fd71049175faa190ee45e3f2ccd49d5dc53b9f3931c14a81061c2e3ce0d31fe6"
+  },
+  {
+   "bx": 24,
+   "bytes": 12353,
+   "bz": 22,
+   "data_quality": "draft",
+   "files": [
+    "b_24_22.fchk",
+    "c_24_22.fcol"
+   ],
+   "key": "terrain_carentan/b_24_22",
+   "lod": [
+    0
+   ],
+   "sha256": "73d1bbef20096eae0249bbb3e8b35d7bda3491f4b3e257d93a3d7084b9c8b721"
+  },
+  {
+   "bx": 24,
+   "bytes": 11250,
+   "bz": 23,
+   "data_quality": "draft",
+   "files": [
+    "b_24_23.fchk",
+    "c_24_23.fcol"
+   ],
+   "key": "terrain_carentan/b_24_23",
+   "lod": [
+    0
+   ],
+   "sha256": "857fe4466786ce7e8be4c988e46bf4eb6ae5fbf5c316244426ec7b8d3e32f8b5"
+  },
+  {
+   "bx": 24,
+   "bytes": 12584,
+   "bz": 24,
+   "data_quality": "draft",
+   "files": [
+    "b_24_24.fchk",
+    "c_24_24.fcol"
+   ],
+   "key": "terrain_carentan/b_24_24",
+   "lod": [
+    0
+   ],
+   "sha256": "4e5ee1073d74ef00ba46f8d4a5f91b97ace8dd7e94072ae4d204cf7ff46613fe"
+  },
+  {
+   "bx": 24,
+   "bytes": 13687,
+   "bz": 25,
+   "data_quality": "draft",
+   "files": [
+    "b_24_25.fchk",
+    "c_24_25.fcol"
+   ],
+   "key": "terrain_carentan/b_24_25",
+   "lod": [
+    0
+   ],
+   "sha256": "5763866d2c8a581523ff44dae96a04e4425f32ee733e183efaadc14f05e1e856"
+  },
+  {
+   "bx": 24,
+   "bytes": 12564,
+   "bz": 26,
+   "data_quality": "draft",
+   "files": [
+    "b_24_26.fchk",
+    "c_24_26.fcol"
+   ],
+   "key": "terrain_carentan/b_24_26",
+   "lod": [
+    0
+   ],
+   "sha256": "57174e64d485ab3db1b22ebf66fb7ebf0394ca95ebec77e6ec24cc1855e10b80"
+  }
+ ],
+ "count": 380,
+ "format_version": 1,
+ "map_id": "carentan",
+ "schema": "frontline.map.chunk_index/1"
+}

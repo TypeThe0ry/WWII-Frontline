@@ -1,0 +1,53 @@
+{
+  "bake_seconds": 14.2,
+  "bytes": {
+    "max": 20558,
+    "p50": 14879,
+    "p99": 19215,
+    "total": 5662715
+  },
+  "chunks": 380,
+  "chunks_over_limit": [],
+  "codec": "zlib-9 (brotli unavailable, PI-084)",
+  "data_quality": "draft",
+  "format_version": 1,
+  "max_bytes_limit": 81920,
+  "schema": 1,
+  "section_totals": {
+    "collision": 2621234,
+    "hedge_segments": 5597,
+    "height": 1923286,
+    "props": 110643,
+    "splat": 958245,
+    "veg": 8750
+  },
+  "splat_layer_share": {
+    "cobble": 0.066,
+    "dirt": 0.2077,
+    "forest_floor": 0.0007,
+    "grass": 0.6909,
+    "mud": 0.0226,
+    "road": 0.0082,
+    "rock": 0.0017,
+    "sand": 0.0023
+  },
+  "vegetation": {
+    "limits": [
+      192,
+      256,
+      4096
+    ],
+    "max_grass": 4096,
+    "max_shrubs": 26,
+    "max_trees": 12
+  },
+  "verify": {
+    "edge_mismatches": 0,
+    "edge_pairs_checked": 100,
+    "raycast_max_dh_m": 0.0,
+    "raycast_mean_dh_m": 0.0,
+    "splat_bad_pixels": 0,
+    "veg_checked": 268,
+    "veg_violations": 0
+  }
+}
