@@ -1088,3 +1088,6 @@ UI_SPEC 写"差>3 不可选、冷却 120 s"，GAMEDESIGN §2.4 为 H_t−H_other
 
 ## PI-107 M1-060：虚影合法性配色以 UI_SPEC 为准（2026-11-18）
 INDEX 写"绿/红"，UI_SPEC §4.12/§4.13 规定"蓝=合法 / 斜纹+warn=不合法 / 灰=资源不足"（形状冗余、色盲友好）。按任务书以 UI_SPEC 为准；`ghostStyle` 的三态在颜色之外还用不同图案和图标区分，有单测。
+
+## PI-108 M1-064/065：素材阻塞与字体产物不入库（2026-11-18）
+M1-064 无可接入素材（台账 OK 仅字体），标 blocked，不影响其它任务（INDEX §0）。M1-065 字体部分用 `tools/font-subset/subset.py` 生成（Python fonttools+brotli，开发机一次性 `pip install fonttools brotli`），产物按需重建不进 git，避免 ~1 MB 二进制入库；发布构建需把该步骤接入打包流程（待 M1-067 部署任务）。Noto Sans SC 采用可变字体实例化（400–700 轴）而非 3 个静态字重，体积更小。
