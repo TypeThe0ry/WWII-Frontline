@@ -267,7 +267,7 @@ pub struct PriorityState {
 impl Default for PriorityState {
     fn default() -> Self {
         PriorityState {
-            slots: vec![Slot::default(); 128],
+            slots: vec![Slot::default(); 256],
             last_eval_tick: None,
             eval_counter: 0,
         }
