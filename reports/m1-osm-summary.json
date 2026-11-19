@@ -4,6 +4,7 @@
     "way/91823740"
   ],
   "clean": {
+    "dangles_extended": 0,
     "dropped_modern[building=hospital]": 1,
     "dropped_modern[building=industrial]": 1,
     "dropped_modern[building=retail]": 7,
@@ -33,16 +34,158 @@
   "derived_attr_per_feature": 5.79,
   "hedgerow_length_m": 2394.5,
   "input_sha256": "68879a739f0c7826c3249c2b175ba3f42aa3f346b2372f41e6cf32780d6727c3",
+  "intersection_utm_check": {
+    "max_err_m": 0.00585,
+    "median_err_m": 0.00387,
+    "ok": true,
+    "sampled": 10,
+    "samples": [
+      {
+        "err_m": 0.00107,
+        "local_m": [
+          2.14,
+          49.81
+        ],
+        "utm_e": 626434.141,
+        "utm_n": 5462065.811,
+        "ways": [
+          "way/1483936328",
+          "way/209650783",
+          "way/63417603"
+        ]
+      },
+      {
+        "err_m": 0.00153,
+        "local_m": [
+          217.87,
+          150.42
+        ],
+        "utm_e": 626649.869,
+        "utm_n": 5462166.421,
+        "ways": [
+          "way/1115571571",
+          "way/1115571572",
+          "way/513339477"
+        ]
+      },
+      {
+        "err_m": 0.00385,
+        "local_m": [
+          334.61,
+          1322.25
+        ],
+        "utm_e": 626766.611,
+        "utm_n": 5463338.254,
+        "ways": [
+          "way/594488410",
+          "way/594488414"
+        ]
+      },
+      {
+        "err_m": 0.00388,
+        "local_m": [
+          463.9,
+          1386.22
+        ],
+        "utm_e": 626895.901,
+        "utm_n": 5463402.224,
+        "ways": [
+          "way/1418691336",
+          "way/594496521"
+        ]
+      },
+      {
+        "err_m": 0.00282,
+        "local_m": [
+          872.0,
+          113.91
+        ],
+        "utm_e": 627303.999,
+        "utm_n": 5462129.913,
+        "ways": [
+          "way/1309426530",
+          "way/1311449911"
+        ]
+      },
+      {
+        "err_m": 0.00322,
+        "local_m": [
+          1085.17,
+          58.51
+        ],
+        "utm_e": 627517.172,
+        "utm_n": 5462074.508,
+        "ways": [
+          "way/1046334970",
+          "way/513301866"
+        ]
+      },
+      {
+        "err_m": 0.00441,
+        "local_m": [
+          1156.73,
+          567.94
+        ],
+        "utm_e": 627588.733,
+        "utm_n": 5462583.937,
+        "ways": [
+          "way/686260524",
+          "way/740792323"
+        ]
+      },
+      {
+        "err_m": 0.00585,
+        "local_m": [
+          1282.17,
+          1203.11
+        ],
+        "utm_e": 627714.174,
+        "utm_n": 5463219.114,
+        "ways": [
+          "way/62948164",
+          "way/62948165"
+        ]
+      },
+      {
+        "err_m": 0.00521,
+        "local_m": [
+          1491.75,
+          1006.34
+        ],
+        "utm_e": 627923.753,
+        "utm_n": 5463022.344,
+        "ways": [
+          "way/1295267016",
+          "way/686261445"
+        ]
+      },
+      {
+        "err_m": 0.0044,
+        "local_m": [
+          1710.7,
+          715.59
+        ],
+        "utm_e": 628142.697,
+        "utm_n": 5462731.593,
+        "ways": [
+          "way/1423095874",
+          "way/1423095875"
+        ]
+      }
+    ],
+    "total_intersections": 860
+  },
   "layer_sha256": {
     "buildings": "3b0dae036b4508fd021d6212955148286817b700b1767296aabd5d601d2ef4ba",
     "forests": "9676c59f204e29e0c685478d1f827a078a21db857c2b9e82ec366d2351e20367",
     "hedgerows": "51002910f497e8c9823051642bd29cf1aad6fc46836a3e8f5af5b4932009fef3",
-    "roads": "423d52300956b73357a1d4bc198de7b82dc0a98d6b272b61b45c88ad9150487d",
+    "roads": "56d65561451b4ff829c10c4b23200a4757d5f7b900b8e8a4b5c9defa87f41398",
     "water": "c24d83a9086d1b3d24168afd495ebf04922b2601d9ca62a193155fe354f8b1ba"
   },
   "osm_timestamp": "2026-11-18T06:59:26Z",
   "out_of_range_vertices": 0,
   "road_connectivity": {
+    "causeway_candidates_in_main_component": [],
     "components": 9,
     "largest_m": [
       48024.2,

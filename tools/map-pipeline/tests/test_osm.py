@@ -142,8 +142,14 @@ def test_real_data_acceptance():
     assert s["out_of_range_vertices"] == 0
     assert sum(s["road_length_m"].values()) >= 1000
     assert s["slice_m1"]["buildings"] >= 50
+    assert s["intersection_utm_check"]["ok"] and s["intersection_utm_check"]["sampled"] >= 10
+    assert s["intersection_utm_check"]["max_err_m"] < 0.1
     assert "© OpenStreetMap contributors" in (d / "ATTRIBUTION_OSM.txt").read_text(encoding="utf-8")
     assert "ODbL" in (d / "LICENSE_NOTICE.md").read_text(encoding="utf-8")
+    meta = json.loads((d / "meta.json").read_text(encoding="utf-8"))
+    osm_src = [src for src in meta["sources"] if src["id"] == "osm"][0]
+    assert osm_src.get("inputs") and len(osm_src["inputs"][0]["sha256"]) == 64
+    assert osm_src.get("osm_timestamp") == s["osm_timestamp"]
     for k in [k for k in osm.LAYERS if k != 'buildings']:  # buildings are annotated later (M1-034)
         import hashlib
         assert hashlib.sha256((d / f"{k}.geojson").read_bytes()).hexdigest() == s["layer_sha256"][k]
@@ -151,3 +157,23 @@ def test_real_data_acceptance():
         for f in json.loads((d / f"{layer}.geojson").read_text())["features"]:
             if f["geometry"]["type"] == "Polygon":
                 assert abs(clean.area(f["geometry"]["coordinates"][0][:-1])) >= 4.0
+
+
+def test_extend_dangles_closes_small_gap():
+    roads = [
+        {"type": "Feature", "properties": {"vehicle_ok": True, "_osm_id": "way/1"},
+         "geometry": {"type": "LineString", "coordinates": [[100.0, 100.0], [200.0, 100.0]]}},
+        {"type": "Feature", "properties": {"vehicle_ok": True, "_osm_id": "way/2"},
+         "geometry": {"type": "LineString", "coordinates": [[200.8, 100.0], [300.0, 100.0]]}},
+        {"type": "Feature", "properties": {"vehicle_ok": True, "_osm_id": "way/3"},
+         "geometry": {"type": "LineString", "coordinates": [[310.0, 100.0], [400.0, 100.0]]}},
+    ]
+    n = clean.extend_dangles(roads, max_gap_m=1.5)
+    assert n == 1
+    assert roads[0]["geometry"]["coordinates"][-1] == [200.8, 100.0] or roads[1]["geometry"]["coordinates"][0] == [200.0, 100.0]
+    assert roads[2]["geometry"]["coordinates"][0] == [310.0, 100.0]
+
+
+def test_check_roads_cli():
+    from map_pipeline.cli import main
+    assert main(["check-roads", str(ROOT / "data/maps/carentan")]) == 0

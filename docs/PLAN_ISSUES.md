@@ -1368,3 +1368,36 @@ PrePass 速度会卡死渲染循环，改用自有速度 RTT（地形/薄实例/
 - **保持 `partial` 的原因与开放问题**：
   - M1-001…005：历史 GitHub Actions 墙钟未实测（H-102，现以 PI-078 本地门禁替代）；PI-032/033/034/035/036 待 Fable 裁决；真实 CC0 原档未入库打包（M1-064 / R11，M1-002 样例 B 体积比 31.5 % 仍 > 25 %）；M1-003 蒙皮网格布局属 M1-045；M1-004 缺真实 M1 音频（M1-065）且 `ffmpeg` 许可证待核实；M1-005 仓库 `manifest.json` 仍为空（待 M1-064/M1-035b 产包）。
   - M1-006：浏览器探针的上传阶段仅测 `UploadScheduler` 帧调度，不含真实 WebGPU/WebGL2 驱动建缓冲/纹理的 GPU 上传耗时；未在 RTX 3060 / Iris Xe 参考机（H-021）与 Firefox/Safari（H-103）复测；法线 RRRG 的 BC5 转码路径留 M1-042。
+
+## PI-127C4 B3-C4：M1-031…M1-036 地图管线无人工余项推进与开放决策（2026-11-19）
+
+- **状态：open / partial**（所有不依赖人工项 H-051/H-052/H-004/H-061/M1-064 的工程余项均已实现并实测；人工/参考机/素材阻塞项如实保持 partial）。
+- **无 GDAL 路径明确化（`tools/map-pipeline/README.md`）**：仅 `m0 --dem` 与 `dem` 两个原始 GeoTIFF 重采样阶段需要 `osgeo.gdal`；其余 13 个子命令（`m0`、`carentan-meta`、`validate-sources`、`dem-qa`、`osm`、`validate-vectors`、`check-roads`、`edits-1944`、`zones-m1`、`validate`、`chunks-m1`、`pack-chunks`、`nav`、`nav-query`）均 100% 无 GDAL（纯 NumPy / Python，nav 仅需 Node `tools/nav-bake`）。无 GDAL 错误路径在 `tests/test_quantize_validate.py` 改为 `monkeypatch` 注入，即使在有 GDAL 的机器上也会持续回归（不再跳过）。
+- **M1-031 水体掩膜基准与 −6 m 核查（`reports/m1-dem-water-check.json`）**：
+  - `dem_prep.water_mask_from_features` 已接入 `dem_carentan.build`（当 `water.geojson` 存在时自动按水面最低点定 `offset_m`），新增无 GDAL 的 `map-pipeline dem-qa`。
+  - 对当前已入库 `.r16` 实测：`water.geojson` 覆盖 361,447 格，水面最低 −0.179 m（IGN69 0.437 m）、p1 +0.089 m（IGN69 0.705 m），现有 p0.1 基准偏移 0.616 m 与水面最低差 0.179 m、与 p1 差 −0.089 m。`heightmap_far_8m.r16` 的 −6.936 m 全部位于 2048 m 可玩盒外；`heightmap_1m.r16` 中 <−1 m 的 405 格全部位于东北角 `[2023..2048, 1980..2008]`（M1 切片外），M1 切片内最低 +0.227 m、最高 +17.163 m。
+  - **决策**：未在缺原始 15 块 LiDAR GeoTIFF 的独立 worktree 中二次重采样已有 `.r16`（避免破坏原始输入可重现性）；待工作站带原始 incoming DEM 重跑 `map-pipeline dem` 时自动启用水体掩膜基准。RGE ALTI 独立核对与 GLO-30 远景环兜底仍受 H-052 阻塞。
+- **M1-032 交叉口 UTM 对账、悬空线延伸与 `meta.sources[].inputs[]`**：
+  - 实测 10 个真实道路交叉口反算 Overpass WGS84→UTM30N 误差 `max = 0.00585 m`（< 0.1 m）；`clean.extend_dangles` 已实现并经单测验证（真实 Carentan ≤1.5 m 悬空 0 处）；`data/schemas/map_meta.schema.json` 扩展支持 `sources[].inputs[]` 与 `osm_timestamp`，已写入 `data/maps/carentan/meta.json` 并通过 `tools/data-validate`；新增 `map-pipeline check-roads`。
+- **M1-033 整图 2049² 性能与人工缺口**：
+  - 优化 `apply_terrain_edits` 仅在多边形窗口内差分，工作站（EPYC 7402，PI-109）实测 2049² × 20 个 16 边形耗时 **0.169 s**（≤30 s，幂等）；`edits-1944` 增加 `flood_marsh` 自相交清洗、越界顶点与连通性汇报。人工树篱/洪泛/剔除清单/目标总长仍缺失（退出码 4，H-061）。
+- **M1-034 临街门洞修正、Garrison ≥200 m 规则与 `sim` 集成**：
+  - 查明 M1-036 原 3 栋不可达可进入建筑（`way/154024874`、`way/154024894`、`way/154025700`）根因：联排建筑共用墙面，旧 `door_for` 把门开在了两侧均被建筑占据的邻墙上。现改为优先选外侧 1.5–2.5 m 开阔边并写 `outward`，70 栋建筑全部开向临街/开阔侧；`validate --slice m1` 补齐 `garrison_hq_dist>=200m` 错误级校验（US 217.2 m / GER 212.6 m）；4 个核心地标全部含 `placeholder_dims_m`（未命中 OSM 的农场/南桥显式标 `dims_source:"design_placeholder"`）；新增 `crates/sim/tests/map_zones_load.rs` 实读 `m1/{zones,spawns}.json` 装载至 `World` 通过。
+- **M1-035 `.fpak` 打包、M1-005 清单与对角线方向发现**：
+  - 新增 `pack_chunks.py`（`map-pipeline pack-chunks`），遵循 `FPAK` v1 二进制规范与 `LOGICAL_ID_RE`（`terrain_carentan_b_{bx}_{bz}@chunk` / `@collision`），按 4×4 区块打成 30 个 `.fpak`（380 块 / 760 条目，5,714,050 B，单包 39.3–289.3 KB，因草为种子且缺真实树篱/林地，单包低于 1–16 MB 目标，真实素材到位后复核）；在 `tools/asset-pipeline/src/manifest.ts` 增加 `@chunk` 条目映射，产出 `assets/manifests/terrain_carentan.json`（保留 `assets/manifests/manifest.json` 干净以防空工作区 `local-ci assets` 报错）；经 TypeScript `assertNoStandalone`（0 错）、`checkConsistency`（0 错）与 `checkBudgets`（5,706,520 B / 150 MiB = 3.63%）跨语言验证。
+  - **关键发现（对角线方向不一致，待裁决）**：新增 `crates/sim/tests/chunk_collision_load.rs` 对 Carentan 16 块（bx 18..21 × bz 12..15）投射 200 条 Rapier 射线：Rapier 0.36.1 `HeightField` 沿 **`(1,0)-(0,1)`** 对角线剖分（与 `heightmap_1m.r16` 吻合 `max = 0.000010 m / mean = 0.000003 m`），而 `client/src/render/terrain/grid-mesh.ts`（CDLOD）与 `FORMAT.txt` 沿 **`(0,0)-(1,1)`** 剖分，两者在陡坡格实测最大差 **0.0669 m（> 0.05 m 验收线）**、均值 0.0038 m。为避免无裁决擅改 `heightfield.rs` 破坏 M0 golden 哈希或改 CDLOD morph 逻辑，本次按 PI-084 要求如实登记，**待决定**以哪一侧统一对角线（建议后续在 CDLOD 或 Rapier `HeightFieldFlags` 二选一并同步重钉 M0 golden）。
+- **M1-036 区域标注、100% 建筑可达、`offmesh.json` 初版与 `nav-query`**：
+  - `tools/nav-bake/src/bake.mjs` 改为自定义瓦片构建，接入 `markBoxArea` 标注 `ground=1`（18,610）、`wade=2`（437，代价 ×2）、`door=3`（199）；记录单瓦片耗时（步行 max 780.8 ms / P50 103.0 ms；载具 max 191.7 ms / P50 34.7 ms）；**可进入建筑可达率提升至 70/70（100%，`unreachable: 0`）**；生成并经 Detour 实测校验 70 条地面入口/翻窗 `offmesh.json` 链接（`violations: 0`、`max_dist_m = 0.391 m ≤ 0.5 m`）；新增 `map-pipeline nav-query`；实测连通性 8/8 通过，`crates/bots/tests/nav_mesh.rs` 8/8 通过。
+  - **开放问题（孤岛与楼层）**：主连通分量外存在 **48 个 >4 m² 孤岛（最大 111.1 m²）**，系 OSM 联排房屋围合出的封闭内院所致；是否通过 `floodFillPruneNavMesh` 裁剪非连通孤岛（保留所有可进入建筑室内与主分量）待裁决；多层楼板/楼梯 off-mesh 仍待 M1-052 室内灰盒生成。
+- **确定性复验**：连续两轮全流程运行 `osm` → `zones-m1` → `chunks-m1` → `pack-chunks` → `nav --slice m1`，18 个核心输出文件（含 `navmesh.bin`、`navmesh_vehicle.bin`、`chunks/index.json`、`terrain_carentan.json`）SHA-256 全部一致（0 差异）。
+- **受影响任务**：M1-031…M1-036、M1-037、M1-049、M1-050、M1-052。
+- **裁决（Fable 填写）**：
+
+## PI-128 B3-C8：M0-002 / H-037 许可名单临时决定（2026-11-19）
+
+- **临时决定，TT 可推翻。** 为解除 H-037 对 M0-002 许可名单的长期阻塞，将 `deny.toml` 的 `[licenses].allow` 设为宽松许可集合：`MIT`、`Apache-2.0`、`BSD-2-Clause`、`BSD-3-Clause`、`ISC`、`Zlib`、`CC0-1.0`、`Unicode-3.0`、`Unicode-DFS-2016`，以及 `MPL-2.0`（**仅限依赖**，workspace crate 本身保持 `publish = false` 且不采用 MPL-2.0；LGPL/GPL/AGPL 与未知许可证继续阻止）。移除了原保守列表中的 `Apache-2.0 WITH LLVM-exception` 与 `BSL-1.0`。
+- **实测（工作站，`cargo-deny 0.21.0`）：**
+  - `cargo deny --locked check` 4/4 通过（`advisories ok, bans ok, licenses ok, sources ok`），**0 条错误**、**21 条警告**（18 条依赖多版本重复 + 3 条当前 `Cargo.lock` 未遇到的 `license-not-encountered`：`CC0-1.0`、`Unicode-DFS-2016`、`MPL-2.0`）。
+  - 当前全部 Rust 依赖均落在上述 10 个允许许可证内，**0 个例外**（`exceptions = []` 无需新增）。
+- **受影响任务**：M0-002（仍因 H-102 GitHub Actions 未实跑保持 `partial`）、H-037。
+- **裁决（TT 可推翻）：** 临时采用上述宽松许可 + 依赖仅限 `MPL-2.0` 政策。

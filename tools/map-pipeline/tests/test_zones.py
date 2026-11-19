@@ -75,3 +75,33 @@ def test_real_slice_all_rules_pass():
     from pathlib import Path
     r = json.loads((Path(__file__).resolve().parents[3] / "reports/m1-zones-validate.json").read_text())
     assert r["ok"], [k for k, v in r["rules"].items() if not v["pass"]]
+    assert r["rules"]["garrison_hq_dist>=200m"]["pass"]
+
+
+def test_door_for_prefers_open_exterior_over_adjacent_building():
+    # Building A: [100,100]-[110,100]-[110,110]-[100,110]; road is to the west (x=95),
+    # but a neighbouring building blocks the west side (90..100, 100..110).
+    ring = [[100.0, 100.0], [110.0, 100.0], [110.0, 110.0], [100.0, 110.0], [100.0, 100.0]]
+    g = grid([(90, 100, 110, 110)], n=200, res=1.0)
+    road = [[[92.0, 90.0], [92.0, 120.0]]]
+    d = ba.door_for(ring, road, grid=g)
+    assert d is not None and d["exterior_clear"] is True
+    # Must NOT pick the blocked west wall (x=100, y=105)
+    assert d["center"] != [100.0, 105.0]
+
+
+def test_garrison_too_close_fails_validate(tmp_path):
+    import json, shutil
+    from pathlib import Path
+    src = Path(__file__).resolve().parents[3] / "data/maps/carentan"
+    dst = tmp_path / "carentan"
+    dst.mkdir()
+    for fn in ("buildings.geojson", "roads.geojson", "water.geojson", "landmarks.json", "vehicle_routes.json"):
+        shutil.copy2(src / fn, dst / fn)
+    shutil.copytree(src / "m1", dst / "m1")
+    sp_path = dst / "m1" / "spawns.json"
+    sp = json.loads(sp_path.read_text())
+    sp["garrison_candidates"]["US"]["pos"] = [sp["hq"]["US"]["pos"][0] + 50.0, sp["hq"]["US"]["pos"][1]]
+    sp_path.write_text(json.dumps(sp))
+    rep, ok = zn.validate_slice(tmp_path, dst)
+    assert not ok and not rep["rules"]["garrison_hq_dist>=200m"]["pass"]

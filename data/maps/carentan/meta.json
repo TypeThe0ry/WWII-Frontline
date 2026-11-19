@@ -339,7 +339,15 @@
       "archive": "licenses/texts/AST-M-OSM-01.txt",
       "asset_id": "AST-M-OSM-01",
       "id": "osm",
+      "inputs": [
+        {
+          "downloaded": "2026-11-18",
+          "file": "overpass_carentan.json.gz",
+          "sha256": "68879a739f0c7826c3249c2b175ba3f42aa3f346b2372f41e6cf32780d6727c3"
+        }
+      ],
       "license": "ODbL-1.0",
+      "osm_timestamp": "2026-11-18T06:59:26Z",
       "verified": "2026-11-18"
     }
   ],

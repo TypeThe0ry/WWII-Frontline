@@ -346,10 +346,11 @@ def build(repo: Path, out: Path) -> dict:
     roadpts = [f["geometry"]["coordinates"] for f in layers["roads"]["features"] if f["properties"]["vehicle_ok"]]
     # landmarks
     bs = layers["buildings"]["features"]
+    grid_1m = build_grid(bs, layers["water"]["features"], res=1.0)
     church = [f for f in bs if f["properties"].get("type") == "church"]
     lm = ba.landmark_boxes(church, [("church_notre_dame", "Notre-Dame de Carentan", "church", (1277, 897), "A", "V-BLD-CHURCH", 28.0, 60)])
-    lm += ba.landmark_boxes(bs, [("farm_ingouf", "Ferme Ingouf", "farm", (900, 1450), "B", "V-BLD-FARM", 7.0, 80),
-                                 ("arcade_square", "Place de la République (unverified)", "arcade", (1380, 990), "B", "V-BLD-ARCADE", 9.0, 120)])
+    lm += ba.landmark_boxes(bs, [("farm_ingouf", "Ferme Ingouf", "farm", (900, 1450), "B", "V-BLD-FARM", 7.0, 80, {"l": 24.0, "w": 18.0, "h": 7.0}),
+                                 ("arcade_square", "Place de la République (unverified)", "arcade", (1380, 990), "B", "V-BLD-ARCADE", 9.0, 120, {"l": 24.0, "w": 18.0, "h": 9.0})])
     bridges = [f for f in layers["roads"]["features"] if f["properties"]["bridge"] and f["properties"]["class"] != "rail"]
     bpos = None
     for f in bridges:
@@ -361,17 +362,23 @@ def build(repo: Path, out: Path) -> dict:
                "asset_ref": "V-BLD-BRIDGE", "found_in_osm": bpos is not None,
                **({"pos_e": bpos[1][0], "pos_n": bpos[1][1], "osm_id": bpos[2]["properties"]["_osm_id"],
                    "placeholder_dims_m": {"l": round(clean.length(bpos[2]["geometry"]["coordinates"]), 1),
-                                          "w": bpos[2]["properties"]["width_m"], "h": 2.0}} if bpos else {})})
+                                          "w": bpos[2]["properties"]["width_m"], "h": 2.0}} if bpos else
+                  {"placeholder_dims_m": {"l": 18.0, "w": 8.0, "h": 2.5}, "dims_source": "design_placeholder"})})
     byid = {f["properties"]["_osm_id"]: f for f in bs}
     for m in lm:
         if m.get("osm_id") in byid and m["kind"] != "bridge":
-            d = ba.door_for(byid[m["osm_id"]]["geometry"]["coordinates"][0], roadpts)
+            d = ba.door_for(byid[m["osm_id"]]["geometry"]["coordinates"][0], roadpts, grid=grid_1m)
             m["doors"] = [d] if d else []
-    # doors for enterable buildings are recorded in the annotation
+    # doors for enterable buildings are recorded in the annotation; skip enclosed buildings with no open exterior edge
     for f in bs:
         if f["properties"]["enterable"]:
-            d = ba.door_for(f["geometry"]["coordinates"][0], roadpts)
-            f["properties"]["door"] = d
+            d = ba.door_for(f["geometry"]["coordinates"][0], roadpts, grid=grid_1m)
+            if d and d.get("exterior_clear", True):
+                f["properties"]["door"] = {"center": d["center"], "width_m": d["width_m"], "outward": d["outward"]}
+            else:
+                f["properties"]["enterable"] = False
+                f["properties"].pop("door", None)
+    stats["enterable"] = sum(1 for f in bs if f["properties"]["enterable"] and ba.in_rect(*ba.centroid(f["geometry"]["coordinates"][0])))
     # routes
     rg = RoadGraph(layers["roads"]["features"])
     route = route_summary(rg, [hq["US"]["pos"], [p for p in act if p["id"] == "L1a"][0]["pos"],
@@ -437,8 +444,11 @@ def validate_slice(repo: Path, out: Path):
     rule("enterable_have_door", all(f["properties"].get("door") and f["properties"]["levels"] >= 1 for f in en), sum(1 for f in en if not f["properties"].get("door")))
     need = {"church_notre_dame", "farm_ingouf", "arcade_square", "bridge_south"}
     have = {m["id"]: m for m in lm}
-    rule("landmarks_defined", need <= set(have) and all(have[i].get("asset_ref") for i in need), sorted(need - set(have)))
+    rule("landmarks_defined", need <= set(have) and all(have[i].get("asset_ref") and have[i].get("placeholder_dims_m") for i in need),
+         sorted(i for i in need if i not in have or not have[i].get("asset_ref") or not have[i].get("placeholder_dims_m")))
     rule("landmark_church_found_in_osm", have["church_notre_dame"]["found_in_osm"], {i: have[i]["found_in_osm"] for i in sorted(need) if i in have})
+    gar_dists = {s: round(math.hypot(v["pos"][0] - hq[s][0], v["pos"][1] - hq[s][1]), 1) for s, v in sp.get("garrison_candidates", {}).items() if s in hq}
+    rule("garrison_hq_dist>=200m", bool(gar_dists) and all(d >= 200.0 for d in gar_dists.values()), gar_dists)
     rule("cover_points>=8", all(len(v) >= MIN_COVER for v in cov.values()),
          {k: {"total": len(v), "mapped": sum(1 for c in v if c["kind"] != "placeholder_ring")} for k, v in cov.items()})
     rule("nav_not_enclosed", all(v >= MIN_ENTRANCES for v in _load(out / "m1" / "nav_critical.json")["hq_open_sectors"].values()),

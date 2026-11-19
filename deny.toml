@@ -1,10 +1,11 @@
 # cargo-deny configuration (M0-002; ARCHITECTURE §17.5, §4.5).
 #
-# TODO(H-037): the license allow-list below is the CONSERVATIVE default set from
-# LICENSES §5 (MIT / Apache-2.0 / BSD / ISC / Zlib / CC0 / Unicode). It is NOT yet
-# confirmed by the human owner (NEEDS_HUMAN H-037). Weak-copyleft (MPL, LGPL) and
-# GPL/AGPL families are deliberately absent, so any crate under them fails CI until a
-# case-by-case decision is recorded here. Unknown licenses are blocked.
+# H-037 provisional decision (临时决定，TT 可推翻; see docs/PLAN_ISSUES.md):
+# Permissive allow-list (MIT / Apache-2.0 / BSD-2-Clause / BSD-3-Clause / ISC / Zlib /
+# CC0-1.0 / Unicode-3.0 / Unicode-DFS-2016) plus MPL-2.0 (dependencies only; workspace
+# crates remain private/non-MPL). LGPL/GPL/AGPL families remain blocked; unknown
+# licenses are blocked. Any crate outside this list requires a documented entry in
+# `exceptions` below.
 #
 # Crate-to-crate direction rules (§4.5) are NOT expressed here; they are enforced by
 # tools/ci/check-deps.mjs because cargo-deny cannot express per-crate wrappers cleanly.
@@ -23,7 +24,6 @@ confidence-threshold = 0.9
 allow = [
   "MIT",
   "Apache-2.0",
-  "Apache-2.0 WITH LLVM-exception",
   "BSD-2-Clause",
   "BSD-3-Clause",
   "ISC",
@@ -31,7 +31,7 @@ allow = [
   "CC0-1.0",
   "Unicode-3.0",
   "Unicode-DFS-2016",
-  "BSL-1.0",
+  "MPL-2.0", # dependencies only
 ]
 exceptions = []
 

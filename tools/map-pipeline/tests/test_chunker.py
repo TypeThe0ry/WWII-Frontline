@@ -120,6 +120,43 @@ def test_real_report():
     r = json.loads((ROOT / "reports/m1-chunk-bake.json").read_text())
     assert r["chunks"] == 380 and not r["chunks_over_limit"] and r["bytes"]["max"] <= cb.MAX_CHUNK_BYTES
     assert r["verify"]["edge_mismatches"] == 0 and r["verify"]["veg_violations"] == 0 and r["verify"]["raycast_max_dh_m"] <= 0.05
+    assert r["fpak"]["chunks_packed"] == 380 and r["fpak"]["assert_no_standalone"] and r["fpak"]["consistency_ok"]
     idx = json.loads((DATA / "m1/chunks/index.json").read_text())
     got = {(c["bx"], c["bz"]) for c in idx["chunks"]}
     assert got == set(cb.keys())
+    m = json.loads((ROOT / "assets/manifests/terrain_carentan.json").read_text())
+    assert len(m["assets"]) == 380 and m["schema"] == 1
+
+
+def test_pack_chunks_fpak_roundtrip_and_determinism(tmp_path):
+    from map_pipeline import pack_chunks as pc
+    ks = [(14, 14), (15, 14), (14, 15), (18, 14)]
+    cb.bake(DATA, tmp_path / "chunks", workers=1, subset=ks)
+    s1 = pc.pack_chunks(tmp_path / "chunks", tmp_path / "fpak1", tmp_path / "m1.json")
+    s2 = pc.pack_chunks(tmp_path / "chunks", tmp_path / "fpak2", tmp_path / "m2.json")
+    assert s1["chunks_packed"] == 4 and s1["entries_packed"] == 8
+    assert s1["manifest_sha256"] == s2["manifest_sha256"]
+    assert s1["packs_sha256"] == s2["packs_sha256"]
+    assert s1["assert_no_standalone"] and s1["consistency_ok"]
+
+
+def test_vegetation_10k_synthetic_exclusion():
+    # Dense synthetic forest + road/building/water exclusions across 120 chunks -> >= 10,000 placed instances, 0 violations
+    checked = violations = 0
+    for idx in range(120):
+        bx, bz = 5 + (idx % 12), 8 + (idx // 12)
+        x0, z0 = bx * 64.0, bz * 64.0
+        layers = _layers(
+            forests=[poly(x0, z0, x0 + 64, z0 + 64)],
+            roads=[line([[x0, z0 + 32], [x0 + 64, z0 + 32]], **{"class": "paved", "width_m": 6.0, "bridge": False})],
+            buildings=[poly(x0 + 10, z0 + 10, x0 + 20, z0 + 20)],
+            water=[poly(x0 + 44, z0 + 44, x0 + 56, z0 + 56, kind="pond")],
+        )
+        _, m, _ = _splat(layers, bx=bx, bz=bz)
+        trees, shrubs, _ = vegetation.place("synth", bx, bz, m, layers["forests"], [], 1.0)
+        assert len(trees) <= vegetation.MAX_TREES and len(shrubs) <= vegetation.MAX_SHRUBS
+        for xq, zq, *_ in trees + shrubs:
+            checked += 1
+            if not vegetation._allowed(m, bx, bz, x0 + xq / 65535 * 64, z0 + zq / 65535 * 64):
+                violations += 1
+    assert checked >= 10_000 and violations == 0

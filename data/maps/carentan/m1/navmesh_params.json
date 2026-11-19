@@ -6,13 +6,13 @@
   "water": 0
  },
  "kcc_walk_slope_limit_deg": 35,
- "note": "walk params follow ARCHITECTURE 16.2 (MAPS 6.2 differs: PI-085); wade/door areas are not marked yet (PI-085)",
+ "note": "walk params follow ARCHITECTURE 16.2 (MAPS 6.2 differs: PI-085); ground=1, wade=2 (cost x2), door=3, water=0 marked in tile bake",
  "origin": [
   380.0,
   0.0,
   520.0
  ],
- "params_hash": "5e51a297f244b87d",
+ "params_hash": "f268707d4de04abb",
  "schema": "frontline.map.navmesh_params/1",
  "tile_size_m": 128,
  "vehicle": {

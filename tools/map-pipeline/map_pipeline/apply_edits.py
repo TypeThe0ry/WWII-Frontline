@@ -77,9 +77,8 @@ def apply_terrain_edits(h, edits, res_m: float = 1.0):
         if ring[0] == ring[-1]:
             ring = ring[:-1]
         w, sl = weights(out.shape, ring, float(p.get("transition_m", 0.0)), res_m)
-        before = out.copy()
         if w is not None:
-            cur = out[sl]
+            cur = out[sl].copy()
             X, Y = np.meshgrid(np.arange(sl[1].start, sl[1].stop) * res_m, np.arange(sl[0].start, sl[0].stop) * res_m)
             ins = _inside(X, Y, ring)
             if mode == "set_height":
@@ -92,14 +91,28 @@ def apply_terrain_edits(h, edits, res_m: float = 1.0):
                 tgt = float(cur[ins].mean()) if ins.any() else cur
             else:  # embankment: raise to target but never dig
                 tgt = np.maximum(cur, float(p["target_h_m"]))
-            out[sl] = cur + (np.asarray(tgt) - cur) * w
-        d = out - before
-        ch = d != 0
-        mx = float(np.abs(d).max()) if ch.any() else 0.0
-        rows, cols = np.nonzero(ch)
-        per.append({"id": p.get("id"), "mode": mode, "cells_changed": int(ch.sum()),
-                    "max_abs_dh_m": round(mx, 4), "mean_abs_dh_m": round(float(np.abs(d[ch]).mean()), 4) if ch.any() else 0.0,
-                    "bbox_cells": [int(cols.min()), int(rows.min()), int(cols.max()), int(rows.max())] if ch.any() else None})
+            updated = cur + (np.asarray(tgt) - cur) * w
+            out[sl] = updated
+            d_sub = updated - cur
+            ch = d_sub != 0
+            if ch.any():
+                mx = float(np.abs(d_sub).max())
+                mean_abs = float(np.abs(d_sub[ch]).mean())
+                r_off, c_off = sl[0].start, sl[1].start
+                rows, cols = np.nonzero(ch)
+                bbox = [int(cols.min() + c_off), int(rows.min() + r_off), int(cols.max() + c_off), int(rows.max() + r_off)]
+                cells_changed = int(ch.sum())
+            else:
+                mx = mean_abs = 0.0
+                bbox = None
+                cells_changed = 0
+        else:
+            mx = mean_abs = 0.0
+            bbox = None
+            cells_changed = 0
+        per.append({"id": p.get("id"), "mode": mode, "cells_changed": cells_changed,
+                    "max_abs_dh_m": round(mx, 4), "mean_abs_dh_m": round(mean_abs, 4),
+                    "bbox_cells": bbox})
         if mx > WARN_DELTA_M and not p.get("reason"):
             warns.append(f"{p.get('id')}: |dh| {mx:.2f} m > {WARN_DELTA_M} m without reason")
     tot = out - np.asarray(h, dtype=np.float64)
