@@ -9,7 +9,7 @@
     "magazine_capacity": 30,
     "magazine_type": "detachable_box",
     "muzzle_velocity_mps": 280,
-    "rate_of_fire_rpm_practical": 700,
+    "rate_of_fire_rpm_practical": "未核实",
     "mass_kg": 4.8,
     "_source": "待 M1-070 按 REF §6 复核"
   },
