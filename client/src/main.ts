@@ -79,7 +79,7 @@ async function boot(): Promise<void> {
   });
   if (sceneParam === 'taa') {
     const { attachTaaScene } = await import('./render/post/taa-scene');
-    window.__taa = attachTaaScene(ctx);
+    window.__taa = attachTaaScene(ctx, params.get('taa_mode') === 'pan' ? 'pan' : 'box');
   }
   if (sceneParam === 'pbr') {
     const { attachPbrScene } = await import('./render/materials/pbr-scene');
@@ -171,7 +171,7 @@ async function boot(): Promise<void> {
     const { attachPost } = await import('./render/post/post-chain');
     const t = params.get('post');
     const flag = (k: string): boolean | undefined => (params.has(k) ? params.get(k) === '1' : undefined);
-    const post = attachPost(ctx.scene, ctx.scene.activeCamera, { tier: t === 'low' || t === 'medium' ? t : 'high', taa: flag('taa'), bloom: flag('bloom'), fxaa: flag('fxaa'), tonemap: flag('tonemap'), clamp: flag('taa_clamp'), taaFactor: params.has('taa_factor') ? Number(params.get('taa_factor')) : undefined, guardMs: params.has('post_guard') ? Number(params.get('post_guard')) : undefined });
+    const post = attachPost(ctx.scene, ctx.scene.activeCamera, { tier: t === 'low' || t === 'medium' ? t : 'high', taa: flag('taa'), bloom: flag('bloom'), fxaa: flag('fxaa'), tonemap: flag('tonemap'), clamp: flag('taa_clamp'), taaFactor: params.has('taa_factor') ? Number(params.get('taa_factor')) : undefined, guardMs: params.has('post_guard') ? Number(params.get('post_guard')) : undefined, velocity: params.get('taa_vel') === '1' ? { wgsl: ctx.kind === 'webgpu', terrain: terrainHandle?.terrain, flipY: params.get('taa_velflip') === '1' } : undefined });
     window.__post = post;
     ctx.onFrame((dtMs) => post.update(dtMs / 1000), 'first', 'post_update');
   }

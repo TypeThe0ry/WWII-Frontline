@@ -1,0 +1,90 @@
+{
+  "frames": 60,
+  "mode": "pan",
+  "renderers": {
+    "webgpu": {
+      "box": {
+        "x": 594.144935841708,
+        "y": 376.54326412923604,
+        "w": 89.75839737052706,
+        "h": 89.75839737052706
+      },
+      "configs": {
+        "fxaa_only": {
+          "trail_dL": 0.8381625514252985,
+          "outside_dL": 0
+        },
+        "taa_no_clamp": {
+          "trail_dL": 0,
+          "outside_dL": 0
+        },
+        "taa_clamp": {
+          "trail_dL": 0,
+          "outside_dL": 0
+        },
+        "taa_clamp_velocity": {
+          "trail_dL": 0.2917005338611464,
+          "outside_dL": 0
+        },
+        "taa_clamp_velocity_flipy": {
+          "trail_dL": 0.28951104977391917,
+          "outside_dL": 0
+        },
+        "taa_clamp_factor08": {
+          "trail_dL": 0,
+          "outside_dL": 0
+        },
+        "taa_clamp_factor095": {
+          "trail_dL": 0,
+          "outside_dL": 0
+        },
+        "taa_clamp_factor05": {
+          "trail_dL": 0,
+          "outside_dL": 0
+        }
+      }
+    },
+    "webgl2": {
+      "box": {
+        "x": 594.144935841708,
+        "y": 376.54326412923604,
+        "w": 89.75839737052706,
+        "h": 89.75839737052706
+      },
+      "configs": {
+        "fxaa_only": {
+          "trail_dL": 0.8320395196295238,
+          "outside_dL": 0
+        },
+        "taa_no_clamp": {
+          "trail_dL": 0,
+          "outside_dL": 0
+        },
+        "taa_clamp": {
+          "trail_dL": 0,
+          "outside_dL": 0
+        },
+        "taa_clamp_velocity": {
+          "trail_dL": 0.2924192735252916,
+          "outside_dL": 0
+        },
+        "taa_clamp_velocity_flipy": {
+          "trail_dL": 0.29014980365436,
+          "outside_dL": 0
+        },
+        "taa_clamp_factor08": {
+          "trail_dL": 0,
+          "outside_dL": 0
+        },
+        "taa_clamp_factor095": {
+          "trail_dL": 0,
+          "outside_dL": 0
+        },
+        "taa_clamp_factor05": {
+          "trail_dL": 0,
+          "outside_dL": 0
+        }
+      }
+    }
+  }
+}

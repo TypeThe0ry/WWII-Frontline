@@ -3,7 +3,9 @@
 // for N frames with a given post configuration and compares the last frame with the same frame rendered through the post pipeline with every effect off:
 //   trail  = mean |dL| over the band the box crossed in the last 14 frames (excluding the box itself): ghosting shows up here
 //   outside = mean |dL| over the rest of the image (anti-aliasing / tone-mapping differences, the noise floor of the comparison)
-// Usage: node tools/perf/taa-ghost.mjs [--frames 60] [--out FILE]
+// Usage: node tools/perf/taa-ghost.mjs [--frames 60] [--mode box|pan] [--out FILE]
+//   --mode pan: the camera pans (about 1.5 px / frame) and the box stays put; the metric is then the mean |dL| over the whole image
+//   (wrong reprojection smears the checkerboard: that shows up as a large difference from the no-AA reference).
 import { createRequire } from 'node:module';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
@@ -29,6 +31,7 @@ async function main() {
   const args = process.argv.slice(2);
   const opt = (k, d) => (args.includes(k) ? args[args.indexOf(k) + 1] : d);
   const frames = Number(opt('--frames', 60));
+  const mode = opt('--mode', 'box');
   const CLIENT = path.join(ROOT, 'client');
   const require = createRequire(path.join(CLIENT, 'package.json'));
   const { chromium } = require('@playwright/test');
@@ -44,18 +47,20 @@ async function main() {
     ['fxaa_only', 'post=low&bloom=0&tonemap=0'],
     ['taa_no_clamp', 'post=high&bloom=0&tonemap=0&taa_clamp=0&post_guard=0'],
     ['taa_clamp', 'post=high&bloom=0&tonemap=0&taa_clamp=1&post_guard=0'],
+    ['taa_clamp_velocity', 'post=high&bloom=0&tonemap=0&taa_clamp=1&taa_vel=1&post_guard=0'],
+    ['taa_clamp_velocity_flipy', 'post=high&bloom=0&tonemap=0&taa_clamp=1&taa_vel=1&taa_velflip=1&post_guard=0'],
     ['taa_clamp_factor08', 'post=high&bloom=0&tonemap=0&taa_clamp=1&taa_factor=0.8&post_guard=0'],
     ['taa_clamp_factor095', 'post=high&bloom=0&tonemap=0&taa_clamp=1&taa_factor=0.95&post_guard=0'],
     ['taa_clamp_factor05', 'post=high&bloom=0&tonemap=0&taa_clamp=1&taa_factor=0.5&post_guard=0'],
   ];
-  const out = { frames, renderers: {} };
+  const out = { frames, mode, renderers: {} };
   try {
     for (const r of ['webgpu', 'webgl2']) {
       const shots = {};
       let box = null;
       for (const [name, q] of configs) {
         const page = await (await browser.newContext({ viewport: { width: 1280, height: 720 }, deviceScaleFactor: 1 })).newPage();
-        await page.goto(`http://localhost:${port}/?renderer=${r}&scene=taa&debug=0${q ? '&' + q : ''}`);
+        await page.goto(`http://localhost:${port}/?renderer=${r}&scene=taa&taa_mode=${mode}&debug=0${q ? '&' + q : ''}`);
         await page.waitForFunction(() => window.__taa !== undefined, undefined, { timeout: 120000 });
         const b = await page.evaluate((n) => window.__taa.runTo(n), frames);
         await page.waitForTimeout(300);
@@ -66,7 +71,7 @@ async function main() {
       const ref = shots.no_post;
       const stepPx = 3.4; // measured below from two positions
       const x1 = box.x, y = box.y, halfW = box.w / 2, halfH = box.h / 2;
-      const inTrail = (x, yy) => yy > y - halfH && yy < y + halfH && x < x1 - halfW - 2 && x > x1 - halfW - 14 * stepPx;
+      const inTrail = mode === 'pan' ? () => true : (x, yy) => yy > y - halfH && yy < y + halfH && x < x1 - halfW - 2 && x > x1 - halfW - 14 * stepPx;
       const inBox = (x, yy) => Math.abs(x - x1) < halfW + 4 && Math.abs(yy - y) < halfH + 4;
       out.renderers[r] = { box, configs: {} };
       for (const [name] of configs) {

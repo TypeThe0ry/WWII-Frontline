@@ -26,6 +26,7 @@ import { buildGridMesh } from './grid-mesh';
 import { NEAR_BLEND_M, type TerrainData } from './terrain-data';
 import type { SplatMaps } from './terrain-splat';
 import { dummyShadowTexture } from '../lighting/custom-csm';
+import { TERRAIN_VELOCITY_FRAGMENT_GLSL, TERRAIN_VELOCITY_FRAGMENT_WGSL } from '../post/velocity';
 import { SHADOW_SAMPLERS, SHADOW_UNIFORMS } from '../lighting/csm-shader';
 import { TERRAIN_FRAGMENT_GLSL, TERRAIN_VERTEX_GLSL } from './terrain-material.glsl';
 import { TERRAIN_FRAGMENT_WGSL, TERRAIN_VERTEX_WGSL } from './terrain-material.wgsl';
@@ -85,6 +86,7 @@ export class Terrain {
   private debug: TerrainDebugMode;
   private stitch: boolean;
   private yScale = 1;
+  private velMat: ShaderMaterial | null = null;
 
   constructor(scene: Scene, data: TerrainData, opts: TerrainOptions) {
     this.data = data;
@@ -182,6 +184,36 @@ export class Terrain {
     void GRID_CELLS;
   }
 
+  /**
+   * Velocity material for the TAA velocity pass (PI-118): the terrain vertex shader (same CDLOD displacement) with a fragment that
+   * writes the screen-space motion of the surface point from the unjittered current / previous view-projection (`uVP`, `uPrevVP`).
+   */
+  createVelocityMaterial(wgsl: boolean, flipY: boolean): ShaderMaterial {
+    const d = this.data;
+    const m = new ShaderMaterial(
+      'PH_V-NAT-007__velocity',
+      this.mesh.getScene(),
+      wgsl ? { vertexSource: TERRAIN_VERTEX_WGSL, fragmentSource: TERRAIN_VELOCITY_FRAGMENT_WGSL } : { vertexSource: TERRAIN_VERTEX_GLSL, fragmentSource: TERRAIN_VELOCITY_FRAGMENT_GLSL },
+      {
+        attributes: [VertexBuffer.PositionKind, 'inst0', 'inst1'],
+        uniforms: ['viewProjection', 'uCam', 'uHeightRange', 'uMap', 'uMap2', 'uYScale', 'uVP', 'uPrevVP', 'uFlipY'],
+        samplers: ['heightNear', 'heightFar'],
+        shaderLanguage: wgsl ? ShaderLanguage.WGSL : ShaderLanguage.GLSL,
+      },
+    );
+    m.backFaceCulling = false;
+    m.setTexture('heightNear', this.textures[0]!);
+    m.setTexture('heightFar', this.textures[1]!);
+    m.setVector2('uHeightRange', new Vector2(d.hmin, d.hmax));
+    m.setVector4('uMap', new Vector4(d.nearSize, d.meta.height.samples, d.far.originX, d.meta.far_ring.res_m));
+    m.setVector2('uMap2', new Vector2(d.meta.far_ring.samples, NEAR_BLEND_M));
+    m.setFloat('uYScale', this.yScale);
+    m.setFloat('uFlipY', flipY ? -1 : 1);
+    m.setVector3('uCam', this.camPos);
+    this.velMat = m;
+    return m;
+  }
+
   /** Debug/control switch: false disables the edge masks so LOD seams show cracks. */
   setStitch(on: boolean): void {
     this.stitch = on;
@@ -226,6 +258,7 @@ export class Terrain {
     this.mesh.forcedInstanceCount = Math.max(sel.count, 1);
     this.mesh.setEnabled(sel.count > 0);
     this.material.setVector3('uCam', this.camPos);
+    this.velMat?.setVector3('uCam', this.camPos);
 
     const s = this.stats;
     s.nodes = sel.count;
