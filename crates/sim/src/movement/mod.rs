@@ -153,14 +153,15 @@ fn ramp_horizontal(
     }
 }
 
-/// Headroom above the feet: how tall a capsule may be at `pos` (terrain overhangs only; the
-/// collision world has no other ceilings yet).
+/// Headroom above the feet: how tall a capsule may be at `pos`.
 fn headroom(col: &CollisionData, pos: Vec3, p: &MoveParams) -> f32 {
     let probe = 0.05;
-    match col.raycast(pos + Vec3::new(0.0, probe, 0.0), Vec3::Y, p.height_stand_m) {
-        Some(h) => h.t + probe,
-        None => p.height_stand_m,
-    }
+    let start = pos + Vec3::Y * probe;
+    let terrain = col
+        .raycast(start, Vec3::Y, p.height_stand_m)
+        .map_or(p.height_stand_m, |hit| hit.t + probe);
+    col.vertical_building_hit(start, true, p.height_stand_m)
+        .map_or(terrain, |(t, _)| terrain.min(t + probe))
 }
 
 /// One tick of an active vault: scripted motion, regeneration, no lean, no weapon.

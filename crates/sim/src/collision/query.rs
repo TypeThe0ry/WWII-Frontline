@@ -5,6 +5,7 @@
 //! `[c,d,b]`, diagonal `c-b`. Local `u` runs along +x, `v` along +z.
 
 use glam::Vec3;
+use rapier3d::prelude::{QueryFilter, Ray, Vector};
 
 use super::{CollisionChunk, CollisionData, CHUNK_CELLS, CHUNK_SIZE_M, MAX_WALK_SLOPE_DEG};
 
@@ -182,6 +183,28 @@ impl CollisionData {
             slope_deg: slope_of(normal.y),
             material,
         })
+    }
+
+    /// Movement-only query. Keep the public terrain probes and cover rays independent.
+    pub(crate) fn vertical_building_hit(
+        &self,
+        pos: Vec3,
+        up: bool,
+        max_t: f32,
+    ) -> Option<(f32, Vec3)> {
+        if self.buildings.is_empty() {
+            return None;
+        }
+        let only_buildings =
+            |_, c: &rapier3d::prelude::Collider| c.user_data == super::building::BUILDING_COLLIDER;
+        let qp = self
+            .physics
+            .world()
+            .query_pipeline_with_filter(QueryFilter::default().predicate(&only_buildings));
+        let dir = if up { Vector::Y } else { -Vector::Y };
+        let ray = Ray::new(Vector::from_array(pos.to_array()), dir);
+        let (_, hit) = qp.cast_ray_and_get_normal(&ray, max_t, true)?;
+        Some((hit.time_of_impact, Vec3::from_array(hit.normal.to_array())))
     }
 
     /// First terrain hit along `dir` (any length, normalised internally) within `max_t`

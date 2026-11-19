@@ -4,7 +4,7 @@ use std::collections::BTreeMap;
 
 use glam::{Vec2, Vec3};
 
-use super::{ChunkKey, CollisionData, RayHit, CHUNK_SIZE_M};
+use super::{BuildingWall, ChunkKey, CollisionData, RayHit, CHUNK_SIZE_M};
 use crate::ballistics::materials::{MaterialId, MaterialTable};
 use crate::ballistics::penetration::{Layer, LayerWorld};
 use crate::throwables::Occlusion;
@@ -29,27 +29,21 @@ impl CoverSlab {
         material: MaterialId,
         blast: Occlusion,
     ) -> Option<Self> {
-        let [a, b] = [a, b].map(Vec2::from_array);
-        let edge = b - a;
-        let length = edge.length();
-        let height = top - bottom;
-        if !length.is_finite()
-            || length < 0.001
-            || !height.is_finite()
-            || height <= 0.0
-            || !width.is_finite()
-            || width <= 0.0
-        {
-            return None;
-        }
-        let mid = a + edge * 0.5;
-        Some(Self {
-            center: Vec3::new(mid.x, bottom + height * 0.5, mid.y),
-            axis: edge / length,
-            half: Vec3::new(length * 0.5, height * 0.5, width * 0.5),
+        Some(Self::from_building_wall(
+            BuildingWall::new(a, b, bottom, top, width)?,
             material,
             blast,
-        })
+        ))
+    }
+
+    pub fn from_building_wall(wall: BuildingWall, material: MaterialId, blast: Occlusion) -> Self {
+        Self {
+            center: wall.center,
+            axis: wall.axis,
+            half: wall.half,
+            material,
+            blast,
+        }
     }
 
     fn side(&self) -> Vec2 {

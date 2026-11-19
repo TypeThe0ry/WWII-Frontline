@@ -8,6 +8,7 @@
  */
 import { Color3 } from '@babylonjs/core/Maths/math.color';
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';
+import { Ray } from '@babylonjs/core/Culling/ray';
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
 import { DirectionalLight } from '@babylonjs/core/Lights/directionalLight';
 import { HemisphericLight } from '@babylonjs/core/Lights/hemisphericLight';
@@ -18,6 +19,8 @@ import { VariantRegistry } from '../materials/variants';
 import { attachCsm, type CsmHandle } from '../lighting/csm';
 import type { ShadowTier } from '../lighting/csm-math';
 import { extrudeBuilding, newArrays, type BuildingInput, type BuildingStats, type MeshArrays } from './building-mesh';
+import { appendSurface, appendWall, buildingAt, type BuildingInterior, type BuildingLayouts } from './building-interiors';
+import { BUILDING_LOD_M } from './building-math';
 import { polylineToSegments, type HedgeProps, type HedgeSegment } from './hedge-geometry';
 import { HedgeChunks } from './hedge-chunks';
 import type { StreamMetrics } from './chunk-streamer';
@@ -32,6 +35,7 @@ interface Collection<P> {
   features: Feature<P>[];
 }
 interface BuildingProps {
+  _osm_id?: string;
   levels?: number;
   style?: string;
   enterable?: boolean;
@@ -46,6 +50,8 @@ export interface WorldStats {
   building_triangles: number;
   building_roof_failures: number;
   enterable: number;
+  interiors: number;
+  interior_probes: number;
   load_ms: number;
 }
 
@@ -55,6 +61,11 @@ export interface WorldHandle {
   /** Preview chunk residency. Counts describe the procedural hedge source. */
   stream: Readonly<StreamMetrics> | null;
   buildingMeshes: Mesh[];
+  buildings: readonly BuildingInterior[];
+  /** Camera room, updated before scene draw. Does not disable structural occluders. */
+  indoorBuilding: string | null;
+  /** First structural surface along a unit ray; open doorways do not occlude. */
+  buildingOcclusion(ox: number, oy: number, oz: number, dx: number, dy: number, dz: number, maxDist: number): number | null;
   /** Cascaded shadow maps when `?csm=1` (M1-043b). */
   csm: CsmHandle | null;
   dispose(): void;
@@ -89,7 +100,11 @@ export async function attachWorld(ctx: RenderContext, terrain: { heightAt(x: num
   const scene = ctx.scene;
   const mapId = params.get('map') ?? 'carentan';
   const base = `${import.meta.env.BASE_URL}maps/${mapId}/`;
-  const [hedgesJson, buildingsJson] = await Promise.all([fetchJson<Collection<HedgeProps>>(`${base}hedgerows.geojson`), fetchJson<Collection<BuildingProps>>(`${base}buildings.geojson`)]);
+  const [hedgesJson, buildingsJson, layouts] = await Promise.all([
+    fetchJson<Collection<HedgeProps>>(`${base}hedgerows.geojson`), fetchJson<Collection<BuildingProps>>(`${base}buildings.geojson`),
+    fetchJson<BuildingLayouts>(`${base}building-interiors.json`),
+  ]);
+  if (layouts && layouts.version !== 1) throw new Error('Unsupported building-interiors version');
 
   // The scene may already carry a directional light; walls facing away from it would be black without an ambient term.
   if (!scene.getLightByName('PH_world_sky')) {
@@ -102,7 +117,7 @@ export async function attachWorld(ctx: RenderContext, terrain: { heightAt(x: num
     sky.groundColor = new Color3(0.4, 0.38, 0.35);
   }
 
-  const stats: WorldStats = { hedge_segments: 0, hedge_length_m: 0, hedge_meshes: 0, building_count: 0, building_cells: 0, building_triangles: 0, building_roof_failures: 0, enterable: 0, load_ms: 0 };
+  const stats: WorldStats = { hedge_segments: 0, hedge_length_m: 0, hedge_meshes: 0, building_count: 0, building_cells: 0, building_triangles: 0, building_roof_failures: 0, enterable: 0, interiors: 0, interior_probes: 0, load_ms: 0 };
   const disposables: { dispose(): void }[] = [];
 
   const segments: HedgeSegment[] = [];
@@ -117,8 +132,17 @@ export async function attachWorld(ctx: RenderContext, terrain: { heightAt(x: num
 
   // Buildings: extrude and merge per cell.
   const buildingMeshes: Mesh[] = [];
+  const buildings: BuildingInterior[] = [];
+  const roomDetails: Mesh[] = [];
+  const layoutById = new Map((layouts?.buildings ?? []).map((b) => [b.id, b]));
   if (buildingsJson) {
-    const cells = new Map<number, { arrays: MeshArrays; n: number }>();
+    const cells = new Map<number, MeshArrays>();
+    const detailCells = new Map<number, MeshArrays>();
+    const arraysAt = (cells: Map<number, MeshArrays>, key: number) => {
+      let cell = cells.get(key);
+      if (!cell) cells.set(key, (cell = newArrays()));
+      return cell;
+    };
     const bs: BuildingStats = { buildings: 0, triangles: 0, roofFailures: 0 };
     for (const f of buildingsJson.features) {
       if (f.geometry.type !== 'Polygon') continue;
@@ -133,25 +157,47 @@ export async function attachWorld(ctx: RenderContext, terrain: { heightAt(x: num
         cz += p[1];
       }
       const key = Math.floor(cz / ring.length / CELL_M) * 1000 + Math.floor(cx / ring.length / CELL_M);
-      let cell = cells.get(key);
-      if (!cell) cells.set(key, (cell = { arrays: newArrays(), n: 0 }));
-      extrudeBuilding(input, (x, z) => terrain.heightAt(x, z), cell.arrays, bs);
-      cell.n++;
+      const cell = arraysAt(cells, key);
+      const layout = input.enterable && f.properties._osm_id ? layoutById.get(f.properties._osm_id) : undefined;
+      if (layout) {
+        buildings.push(layout);
+        const detail = arraysAt(detailCells, key);
+        const before = detail.indices.length + cell.indices.length;
+        for (const wall of layout.walls) appendWall(cell, wall, input.style);
+        for (const surface of layout.surfaces) appendSurface(surface.kind === 'roof' ? cell : detail, surface, input.style);
+        bs.buildings++;
+        bs.triangles += (detail.indices.length + cell.indices.length - before) / 3;
+        stats.interiors++;
+        stats.interior_probes += layout.probes.length;
+      } else {
+        extrudeBuilding(input, (x, z) => terrain.heightAt(x, z), cell, bs);
+      }
     }
     const mat = new StandardMaterial('PH_V-BLD-PLACEHOLDER', scene);
     mat.specularColor = Color3.Black();
     mat.diffuseColor = Color3.White(); // colour comes from the vertex colours
     disposables.push(mat);
-    for (const [key, cell] of [...cells.entries()].sort((a, b) => a[0] - b[0])) {
-      const m = toMesh(`V-BLD-PLACEHOLDER_cell${key}`, cell.arrays, scene);
-      m.material = mat;
+    // Two-sided floor/roof surfaces are visible from inside. Other shells retain their original material.
+    const detailedMat = mat.clone('PH_V-BLD-PLACEHOLDER_interior');
+    detailedMat.backFaceCulling = false;
+    detailedMat.twoSidedLighting = true;
+    disposables.push(detailedMat);
+    const upload = (name: string, arrays: MeshArrays, material: StandardMaterial) => {
+      const m = toMesh(name, arrays, scene);
+      m.material = material;
       m.useVertexColors = true;
-      m.isPickable = true; // wall probe of the first-person weapon (M1-046b)
-      m.metadata = { blocks: true };
+      m.isPickable = true;
+      m.metadata = { blocks: true, building: true };
       buildingMeshes.push(m);
+      return m;
+    };
+    for (const [key, cell] of [...cells.entries()].sort((a, b) => a[0] - b[0])) {
+      upload(`V-BLD-PLACEHOLDER_cell${key}`, cell, detailCells.has(key) ? detailedMat : mat);
+      const detail = detailCells.get(key);
+      if (detail) roomDetails.push(upload(`V-BLD-PLACEHOLDER_interior${key}`, detail, detailedMat));
     }
     stats.building_count = bs.buildings;
-    stats.building_cells = buildingMeshes.length;
+    stats.building_cells = cells.size;
     stats.building_triangles = bs.triangles;
     stats.building_roof_failures = bs.roofFailures;
   }
@@ -193,17 +239,45 @@ export async function attachWorld(ctx: RenderContext, terrain: { heightAt(x: num
     disposables.push(hedges, material);
   }
   stats.load_ms = performance.now() - t0;
-  return {
+  const ray = new Ray(Vector3.Zero(), Vector3.Zero());
+  const handle: WorldHandle = {
     stats,
     variants: new VariantRegistry(params.get('quality') === 'low' || params.get('post') === 'low'),
     stream,
     buildingMeshes,
+    buildings,
+    indoorBuilding: null,
+    buildingOcclusion(ox, oy, oz, dx, dy, dz, maxDist) {
+      ray.origin.set(ox, oy, oz);
+      ray.direction.set(dx, dy, dz);
+      ray.length = maxDist;
+      // Use structural geometry even when its detail draw is distance-culled.
+      const hit = scene.pickWithRay(ray, (mesh) => mesh.metadata?.building === true);
+      return hit?.hit ? hit.distance : null;
+    },
     csm,
     dispose() {
+      stopRooms();
       stopHedges?.();
       for (const d of disposables) d.dispose();
       csm?.dispose();
       for (const m of buildingMeshes) m.dispose();
     },
   };
+  const updateRooms = () => {
+    const camera = scene.activeCamera;
+    if (!camera) return;
+    camera.getViewMatrix();
+    const { x, y, z } = camera.globalPosition;
+    handle.indoorBuilding = buildingAt(buildings, x, y, z)?.id ?? null;
+    for (const mesh of roomDetails) {
+      const bounds = mesh.getBoundingInfo().boundingBox;
+      const dx = Math.max(bounds.minimumWorld.x - x, x - bounds.maximumWorld.x, 0);
+      const dz = Math.max(bounds.minimumWorld.z - z, z - bounds.maximumWorld.z, 0);
+      mesh.isVisible = dx * dx + dz * dz <= BUILDING_LOD_M[2] ** 2;
+    }
+  };
+  updateRooms();
+  const stopRooms = ctx.onFrame(updateRooms, undefined, 'building_update');
+  return handle;
 }

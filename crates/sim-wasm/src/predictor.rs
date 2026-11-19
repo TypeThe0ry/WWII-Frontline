@@ -218,6 +218,15 @@ impl Predictor {
         Ok(())
     }
 
+    pub fn load_building_collision_core(&mut self, bytes: &[u8]) -> Result<(), String> {
+        let buildings = frontline_sim::collision::BuildingCollision::from_bytes(bytes)
+            .map_err(|e| format!("bad building collision: {e}"))?;
+        self.sim
+            .collision_mut()
+            .install_building_collision(buildings);
+        Ok(())
+    }
+
     /// Sim terrain height (`CollisionData::height_at`, bilinear over the loaded chunks).
     pub fn height_at_core(&mut self, x: f32, z: f32) -> Option<f32> {
         self.sim.collision_mut().height_at(x, z)
@@ -394,6 +403,12 @@ impl Predictor {
     #[wasm_bindgen(js_name = loadCollision)]
     pub fn load_collision(&mut self, bx: i32, bz: i32, data: &[u8]) -> Result<(), JsError> {
         self.load_core(bx, bz, data).map_err(js_err)
+    }
+
+    /// Installs (or replaces) the versioned building geometry after complete validation.
+    #[wasm_bindgen(js_name = loadBuildingCollision)]
+    pub fn load_building_collision(&mut self, bytes: &[u8]) -> Result<(), JsError> {
+        self.load_building_collision_core(bytes).map_err(js_err)
     }
 
     /// Returns whether the chunk was loaded.
@@ -577,6 +592,29 @@ mod tests {
         assert!(p.load_core(0, 0, &[1, 2, 3]).is_err());
         assert!(p.equip_core("no_such_weapon", 1).is_err());
         assert!(Predictor::new_core(1, 0, 200).is_err());
+    }
+
+    #[test]
+    fn building_collision_load_is_atomic_and_replaceable() {
+        let mut p = Predictor::new_core(1, 0, 3).unwrap();
+        let original = p.sim.collision().state_hash();
+        let bytes = br#"{"version":1,"buildings":[{"id":"a",
+            "walls":[{"a":[5,10],"b":[7,11],"bottom":0,"top":3,"width":0.24}],
+            "surfaces":[{"kind":"floor","vertices":[[0,0,0],[0,0,1],[1,0,0]],"indices":[0,1,2]}]
+        }]}"#;
+        p.load_building_collision_core(bytes).unwrap();
+        let installed = p.sim.collision().state_hash();
+        assert_ne!(installed, original);
+        assert_eq!(p.sim.collision().physics().world().colliders.len(), 2);
+        assert!(p.load_building_collision_core(b"{").is_err());
+        assert_eq!(p.sim.collision().state_hash(), installed);
+        p.load_building_collision_core(bytes).unwrap();
+        assert_eq!(p.sim.collision().state_hash(), installed);
+        assert_eq!(p.sim.collision().physics().world().colliders.len(), 2);
+        p.load_building_collision_core(br#"{"version":1,"buildings":[]}"#)
+            .unwrap();
+        assert_eq!(p.sim.collision().state_hash(), original);
+        assert_eq!(p.sim.collision().physics().world().colliders.len(), 0);
     }
 
     #[test]

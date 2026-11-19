@@ -23,6 +23,7 @@
 //!   inserts into Rapier in ascending `(bz, bx)` order; floats use `f32` and `libm` only
 //!   (Rapier is built with `enhanced-determinism`, see PLAN_ISSUES PI-013).
 
+mod building;
 mod chunk;
 mod cover;
 mod heightfield;
@@ -30,6 +31,9 @@ mod query;
 
 use std::collections::BTreeMap;
 
+pub use building::{
+    BuildingCollision, BuildingCollisionError, BuildingWall, MAX_BUILDING_COLLISION_BYTES,
+};
 pub use chunk::{CollisionChunk, CollisionError};
 pub use cover::CoverSlab;
 pub use heightfield::TerrainPhysics;
@@ -49,7 +53,7 @@ pub const MAX_WALK_SLOPE_DEG: f32 = 35.0;
 /// Chunk key: `(bz, bx)` so that BTreeMap order is the required `(bz, bx)` ascending order.
 pub(crate) type ChunkKey = (i32, i32);
 
-/// Loaded terrain collision.
+/// Loaded terrain, optional building collision, and material-tagged cover.
 #[derive(Default)]
 pub struct CollisionData {
     chunks: BTreeMap<ChunkKey, CollisionChunk>,
@@ -59,6 +63,7 @@ pub struct CollisionData {
     /// `(min, max)` height over all loaded chunks; lets ray casts clip to the relief band.
     height_range: (f32, f32),
     cover: cover::StaticCover,
+    buildings: BuildingCollision,
 }
 
 impl std::fmt::Debug for CollisionData {
@@ -69,12 +74,12 @@ impl std::fmt::Debug for CollisionData {
     }
 }
 
-/// Cloning rebuilds the Rapier world from the chunk list in ascending `(bz, bx)` order, so
-/// a clone is bit-identical to a `from_chunks` build.
+/// Cloning rebuilds Rapier in chunk key order, then building ID and document-piece order.
 impl Clone for CollisionData {
     fn clone(&self) -> Self {
         let mut clone = Self::from_chunks(self.chunks.values().cloned());
         clone.cover = self.cover.clone();
+        clone.install_building_collision(self.buildings.clone());
         clone
     }
 }
@@ -91,14 +96,17 @@ impl CollisionData {
         for c in chunks {
             data.chunks.insert((c.bz, c.bx), c);
         }
-        let keys: Vec<ChunkKey> = data.chunks.keys().copied().collect();
-        for k in keys {
-            let c = &data.chunks[&k];
-            data.physics.insert(k, c);
-        }
-        data.physics.refresh();
+        data.rebuild_terrain_physics();
         data.recompute_bounds();
         data
+    }
+
+    fn rebuild_terrain_physics(&mut self) {
+        self.physics = TerrainPhysics::default();
+        for (&key, chunk) in &self.chunks {
+            self.physics.insert(key, chunk);
+        }
+        self.physics.refresh();
     }
 
     /// Adds (or replaces) a chunk, including its Rapier collider.
@@ -157,20 +165,40 @@ impl CollisionData {
         self.chunks.values().map(CollisionChunk::memory_bytes).sum()
     }
 
-    /// Rapier world holding one height-field collider per chunk (for the KCC).
+    /// Validated canonical building geometry (empty on legacy maps).
+    pub fn building_collision(&self) -> &BuildingCollision {
+        &self.buildings
+    }
+
+    /// Replaces the entire set of building colliders without changing terrain or server cover.
+    pub fn install_building_collision(&mut self, buildings: BuildingCollision) {
+        if !buildings.is_empty() {
+            self.physics.replace_buildings(&buildings);
+        } else if !self.buildings.is_empty() {
+            // Restore the canonical legacy handle order even if chunks arrived after buildings.
+            self.rebuild_terrain_physics();
+        }
+        self.buildings = buildings;
+    }
+
+    /// Rapier world holding the height-field and canonical building colliders for the KCC.
     pub fn physics(&self) -> &TerrainPhysics {
         &self.physics
     }
 
-    /// Digest of everything that defines the collision world: chunk keys and samples, then
-    /// the Rapier collider order and poses. Equal for two builds of the same data.
+    /// Digest of the loaded collision data. Legacy maps retain the original terrain-handle
+    /// digest; building maps hash the canonical geometry independent of chunk streaming order.
     pub fn state_hash(&self) -> u64 {
         let mut h = HashWriter::new();
         h.write_u32(self.chunks.len() as u32);
         for c in self.chunks.values() {
             c.hash_into(&mut h);
         }
-        self.physics.hash_into(&mut h);
+        if self.buildings.is_empty() {
+            self.physics.hash_into(&mut h);
+        } else {
+            self.buildings.hash_into(&mut h);
+        }
         self.cover.hash_into(&mut h);
         h.finish()
     }

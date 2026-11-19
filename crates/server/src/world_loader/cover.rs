@@ -1,5 +1,6 @@
 //! Authority-side cover from the authored map vectors, independent of render assets.
 
+use std::collections::BTreeMap;
 use std::path::Path;
 
 use frontline_sim::ballistics::materials::{MaterialId, MaterialTable};
@@ -7,7 +8,7 @@ use frontline_sim::collision::{CollisionData, CoverSlab};
 use frontline_sim::throwables::Occlusion;
 use serde::Deserialize;
 
-use super::MapError;
+use super::{map_asset_root, MapError};
 
 #[derive(Deserialize)]
 struct Collection {
@@ -30,6 +31,8 @@ enum Geometry {
 #[derive(Deserialize, Default)]
 #[serde(default)]
 struct Properties {
+    #[serde(rename = "_osm_id")]
+    id: serde_json::Value,
     style: String,
     levels: u8,
     gap: bool,
@@ -40,18 +43,25 @@ struct Properties {
 }
 
 pub(super) fn load(dir: &Path, col: &CollisionData) -> Result<Vec<CoverSlab>, MapError> {
-    let root = if dir.file_name().is_some_and(|name| name == "m1") {
-        dir.parent().unwrap_or(dir)
-    } else {
-        dir
-    };
+    let root = map_asset_root(dir);
     let mats = MaterialTable::embedded();
     let material = |name| mats.id_of(name).expect("embedded cover material");
     let brick = material("brick");
     let stone = material("stone_concrete");
     let wood = material("thin_wood");
     let foliage = material("foliage");
+    let wall_material = |p: &Properties| {
+        if p.material == "wood" {
+            (0.03, wood, Occlusion::Thin)
+        } else if p.material == "stone" || p.style.starts_with("stone_") || p.style == "church" {
+            (0.30, stone, Occlusion::Solid)
+        } else {
+            (0.30, brick, Occlusion::Solid)
+        }
+    };
     let mut cover = Vec::new();
+    let managed = col.building_collision();
+    let mut managed_materials = BTreeMap::new();
     // Per-slice vectors override full-map vectors when available. M0 ships neither.
     for filename in ["buildings.geojson", "hedgerows.geojson"] {
         let local = dir.join(filename);
@@ -60,20 +70,9 @@ pub(super) fn load(dir: &Path, col: &CollisionData) -> Result<Vec<CoverSlab>, Ma
         } else {
             root.join(filename)
         };
-        let data = match std::fs::read(&path) {
-            Ok(bytes) => bytes,
-            Err(e) if e.kind() == std::io::ErrorKind::NotFound => continue,
-            Err(e) => {
-                return Err(MapError::Io {
-                    path,
-                    error: e.to_string(),
-                })
-            }
+        let Some(data) = read_vectors(&path)? else {
+            continue;
         };
-        let data: Collection = serde_json::from_slice(&data).map_err(|e| MapError::BadJson {
-            path: path.clone(),
-            error: e.to_string(),
-        })?;
         for Feature {
             geometry,
             properties: p,
@@ -81,16 +80,13 @@ pub(super) fn load(dir: &Path, col: &CollisionData) -> Result<Vec<CoverSlab>, Ma
         {
             match geometry {
                 Geometry::Polygon(rings) => {
-                    let (width, mat, blast) = if p.material == "wood" {
-                        (0.03, wood, Occlusion::Thin)
-                    } else if p.material == "stone"
-                        || p.style.starts_with("stone_")
-                        || p.style == "church"
-                    {
-                        (0.30, stone, Occlusion::Solid)
-                    } else {
-                        (0.30, brick, Occlusion::Solid)
-                    };
+                    let (width, mat, blast) = wall_material(&p);
+                    if filename == "buildings.geojson" {
+                        if let Some(id) = p.id.as_str().filter(|id| managed.walls(id).is_some()) {
+                            managed_materials.insert(id.to_owned(), (mat, blast));
+                            continue;
+                        }
+                    }
                     for ring in rings.iter().filter(|r| r.len() >= 3) {
                         for (&a, &b) in ring.iter().zip(ring.iter().cycle().skip(1)) {
                             edge(
@@ -118,7 +114,67 @@ pub(super) fn load(dir: &Path, col: &CollisionData) -> Result<Vec<CoverSlab>, Ma
             }
         }
     }
+    // A local vector override may subset a shared document. Use parent material metadata for
+    // canonical IDs omitted locally, without restoring the parent's legacy slabs.
+    let buildings_file = "buildings.geojson";
+    if dir != root
+        && dir.join(buildings_file).is_file()
+        && managed
+            .buildings()
+            .any(|(id, _)| !managed_materials.contains_key(id))
+    {
+        if let Some(parent) = read_vectors(&root.join(buildings_file))? {
+            for f in parent.features {
+                if !matches!(f.geometry, Geometry::Polygon(_)) {
+                    continue;
+                }
+                if let Some(id) = f
+                    .properties
+                    .id
+                    .as_str()
+                    .filter(|id| managed.walls(id).is_some())
+                {
+                    let (_, mat, blast) = wall_material(&f.properties);
+                    managed_materials
+                        .entry(id.to_owned())
+                        .or_insert((mat, blast));
+                }
+            }
+        }
+    }
+    // Canonical pieces are installed even if a slice-local vector list omits the building.
+    // Missing material metadata has the legacy default (brick); dimensions come from the doc.
+    for (id, walls) in managed.buildings() {
+        let (mat, blast) = managed_materials
+            .get(id)
+            .copied()
+            .unwrap_or((brick, Occlusion::Solid));
+        cover.extend(
+            walls
+                .iter()
+                .map(|&wall| CoverSlab::from_building_wall(wall, mat, blast)),
+        );
+    }
     Ok(cover)
+}
+
+fn read_vectors(path: &Path) -> Result<Option<Collection>, MapError> {
+    let bytes = match std::fs::read(path) {
+        Ok(bytes) => bytes,
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(None),
+        Err(e) => {
+            return Err(MapError::Io {
+                path: path.to_path_buf(),
+                error: e.to_string(),
+            })
+        }
+    };
+    serde_json::from_slice(&bytes)
+        .map(Some)
+        .map_err(|e| MapError::BadJson {
+            path: path.to_path_buf(),
+            error: e.to_string(),
+        })
 }
 
 fn edge(
@@ -147,6 +203,102 @@ mod tests {
     use frontline_sim::{
         GameData, GameMode, MapId, SimConfig, SimEvent, SpawnReq, Team, Vec3, World,
     };
+
+    #[test]
+    fn m1_building_doc_replaces_legacy_wall_with_aperture() {
+        let tmp = tempfile::tempdir().unwrap();
+        let root = tmp.path().join("maps/carentan");
+        let m1 = root.join("m1");
+        std::fs::create_dir_all(m1.join("chunks")).unwrap();
+        // Valid flat zero-height FCOL chunk, with projectiles/LOS operated by the real map loader.
+        let mut chunk = b"FCOL\x01\x00\x41\x00".to_vec();
+        chunk.resize(16 + 65 * 65 * 2 + 64 * 64, 0);
+        std::fs::write(m1.join("chunks/c_0_0.bin"), chunk).unwrap();
+        std::fs::write(
+            m1.join("spawns.json"),
+            r#"{"hq":{"us":{"pos":[5,5]},"ger":{"pos":[60,60]}}}"#,
+        )
+        .unwrap();
+        std::fs::write(
+            root.join("buildings.geojson"),
+            r#"{"features":[
+          {"geometry":{"type":"Polygon","coordinates":[[[27,32],[37,32],[37,42],[27,42],[27,32]]]},
+           "properties":{"_osm_id":"way/door","building:material":"wood"}},
+          {"geometry":{"type":"Polygon","coordinates":[[[42,32],[50,32],[50,42],[42,42],[42,32]]]},
+           "properties":{"_osm_id":7,"style":"church"}}
+        ]}"#,
+        )
+        .unwrap();
+        let legacy = load_map(tmp.path(), "carentan/m1").unwrap().collision;
+        let ray = |x, y| (Vec3::new(x, y, 31.0), Vec3::new(x, y, 33.0));
+        let (from, to) = ray(32.0, 1.2);
+        assert_eq!(legacy.cover_count(), 8);
+        assert_eq!(legacy.physics().world().colliders.len(), 1);
+        assert!(legacy.raycast_cover_segment(from, to).is_some());
+        assert!(legacy.terrain_los(from, to));
+        assert!(!legacy.los(from, to));
+
+        let filename = "building-interiors.json";
+        std::fs::write(root.join(filename), r#"{"version":1,"buildings":[{"id":"way/door",
+            "walls":[
+              {"a":[27,32],"b":[31.4,32],"bottom":-0.4,"top":3,"width":0.24},
+              {"a":[32.6,32],"b":[37,32],"bottom":-0.4,"top":3,"width":0.24},
+              {"a":[31.4,32],"b":[32.6,32],"bottom":2.2,"top":3,"width":0.24},
+              {"a":[37,32],"b":[37,42],"bottom":-0.4,"top":3,"width":0.24},
+              {"a":[37,42],"b":[27,42],"bottom":-0.4,"top":3,"width":0.24},
+              {"a":[27,42],"b":[27,32],"bottom":-0.4,"top":3,"width":0.24}],
+            "surfaces":[{"kind":"roof","vertices":[[27,3,32],[27,3,42],[37,3,32]],"indices":[0,1,2]}]
+        }]}"#).unwrap();
+        let current = load_map(tmp.path(), "carentan/m1").unwrap().collision;
+        assert_eq!(current.cover_count(), 10);
+        assert_eq!(current.physics().world().colliders.len(), 8);
+        assert_eq!(current.height_at(32.0, 32.0), legacy.height_at(32.0, 32.0));
+        for (a, b) in [(from, to), (to, from)] {
+            assert!(current.raycast_cover_segment(a, b).is_none());
+            assert_eq!(current.blast_cover(a, b), Occlusion::Clear);
+            assert!(current.los(a, b));
+        }
+        let mats = MaterialTable::embedded();
+        for (x, y, material, blast) in [
+            (30.8, 1.2, "thin_wood", Occlusion::Thin), // adjacent wall
+            (32.0, 2.5, "thin_wood", Occlusion::Thin), // lintel
+            (45.0, 1.2, "stone_concrete", Occlusion::Solid), // unrelated legacy wall
+        ] {
+            let (a, b) = ray(x, y);
+            let hit = current.raycast_cover_segment(a, b).unwrap();
+            assert_eq!(hit.material, mats.id_of(material).unwrap().0);
+            assert_eq!(current.blast_cover(a, b), blast);
+            assert!(current
+                .raycast(a, (b - a).normalize(), a.distance(b))
+                .is_none());
+        }
+        let (a, b) = ray(30.8, 1.2);
+        let distance = |col: &CollisionData| col.raycast_cover_segment(a, b).unwrap().t;
+        assert!(
+            (distance(&current) - 0.88).abs() < 1e-5,
+            "canonical width, not legacy wood width"
+        );
+
+        // Local vectors may omit shared IDs without losing canonical wall materials.
+        std::fs::write(m1.join("buildings.geojson"), br#"{"features":[]}"#).unwrap();
+        let subset = load_map(tmp.path(), "carentan/m1").unwrap().collision;
+        assert_eq!(subset.cover_count(), 6);
+        assert_eq!(subset.blast_cover(a, b), Occlusion::Thin);
+        std::fs::remove_file(m1.join("buildings.geojson")).unwrap();
+
+        // The local doc overrides the parent, including an explicitly empty set; a bad local
+        // file is reported, not silently replaced with the parent's collision.
+        let local = m1.join(filename);
+        std::fs::write(&local, br#"{"version":1,"buildings":[]}"#).unwrap();
+        let overridden = load_map(tmp.path(), "carentan/m1").unwrap().collision;
+        assert_eq!(overridden.state_hash(), legacy.state_hash());
+        std::fs::write(&local, br#"{"version":2,"buildings":[]}"#).unwrap();
+        let err = load_map(tmp.path(), "carentan/m1").unwrap_err().to_string();
+        assert!(
+            err.contains(local.to_str().unwrap()) && err.contains("unsupported"),
+            "{err}"
+        );
+    }
 
     #[test]
     #[ignore = "requires raw Carentan collision from the M1 map bake"]

@@ -108,17 +108,19 @@ test('acceptance 7: hit.confirm -> hit marker visible within one frame, gone aft
   expect(r.bar).toBe('1');
 });
 
-test('draw calls and triangles of the actors (instanced): 0 / 10 / 100 soldiers', async ({ page }) => {
-  const rows: { n: number; draw: number; tris: number; active: number }[] = [];
+test('instancing keeps actor draws bounded as submitted geometry grows', async ({ page }) => {
+  const rows: { draw: number; tris: number }[] = [];
+  // Run the same actor boot without CDLOD terrain/vegetation, whose asynchronous submissions
+  // can differ between reloads. These software-renderer assertions are not a timing benchmark.
   for (const n of [0, 10, 100]) {
-    await open(page, n);
+    await page.goto(`/?renderer=webgl2&empty=1&fly=1&actors=demo&entities=${n}`);
+    await page.waitForFunction(() => window.__actors !== undefined);
     await frames(page, 6);
+    expect(await page.evaluate(() => window.__actors!.manager.actorCount)).toBe(n);
     const d = await page.evaluate(() => window.__perf!.dump());
-    rows.push({ n, draw: d.draw_calls, tris: d.triangles, active: d.active_meshes });
+    rows.push({ draw: d.draw_calls, tris: d.triangles });
   }
   const base = rows[0]!;
-  const out = rows.map((r) => `${r.n} soldiers: draw calls ${r.draw} (+${r.draw - base.draw}), triangles ${r.tris} (+${r.tris - base.tris}), active meshes ${r.active} (+${r.active - base.active})`);
-  console.log(`[actors cost vs 0 soldiers (first-person weapon only)]\n${out.join('\n')}`);
   expect(rows[1]!.draw - base.draw).toBeLessThanOrEqual(40);
   expect(rows[2]!.draw - base.draw).toBeLessThanOrEqual(40);
   expect(rows[1]!.tris).toBeGreaterThan(base.tris);
