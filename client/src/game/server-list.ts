@@ -10,8 +10,8 @@ export interface ServerInfo {
   phase: string;
   pingMs?: number;
   region: string;
-  version: number;
-  locked: boolean;
+  version: number | string;
+  locked?: boolean;
   compatible: boolean;
 }
 
@@ -40,7 +40,7 @@ export function applyFilters(list: readonly ServerInfo[], f: ServerFilters): Ser
     if (f.hideFull && s.humans + s.bots >= s.cap) return false;
     if (f.hideEmpty && s.humans === 0) return false;
     if (f.noBots && s.bots > 0) return false;
-    if (f.noPassword && s.locked) return false;
+    if (f.noPassword && s.locked !== false) return false;
     if (f.compatibleOnly && !s.compatible) return false;
     if (kw && !s.name.toLowerCase().includes(kw)) return false;
     return true;

@@ -17,7 +17,7 @@ pub struct RegisterReq {
     pub tags: Vec<String>,
     pub version: String,
     pub protocol_version: u16,
-    pub data_hash: String,
+    pub data_hash: u64,
     pub cap: u8,
     pub addr: String,
     pub ws_port: u16,

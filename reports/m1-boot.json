@@ -1,0 +1,12 @@
+{
+  "files": 184,
+  "rawBytes": 4263442,
+  "brotliBytes": 1150132,
+  "dataBytes": 9288,
+  "max": 8388608,
+  "pass": true,
+  "scope": "Production client/dist with web sim-wasm; reports bundle size only, not time to interactive.",
+  "command": "node tools/ci/core-size.mjs",
+  "firstLaunchMs": null,
+  "repeatLaunchMs": null
+}

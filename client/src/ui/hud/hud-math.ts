@@ -105,9 +105,9 @@ export function healthBand(hpFrac: number): 0 | 1 | 2 | 3 {
 export type FxState = 'clear' | 'suppressed' | 'bleeding' | 'downed';
 export const SUPPRESS_ON = 0.15;
 export const SUPPRESS_OFF = 0.05; // hysteresis
-export function fxState(prev: FxState, o: { downed: boolean; hpFrac: number; suppression: number }): FxState {
+export function fxState(prev: FxState, o: { downed: boolean; hpFrac: number; suppression: number; bleeding?: boolean }): FxState {
   if (o.downed) return 'downed';
-  if (o.hpFrac <= 0.25) return 'bleeding';
+  if (o.bleeding ?? (o.hpFrac <= 0.25)) return 'bleeding';
   const th = prev === 'suppressed' ? SUPPRESS_OFF : SUPPRESS_ON;
   return o.suppression > th ? 'suppressed' : 'clear';
 }

@@ -4,6 +4,14 @@ import { AudioBufferLibrary } from './buffer-library';
 import { AudioDirector } from './dispatch';
 import { WebAudioScheduler } from './web-audio';
 
+/** Optional route supplied by the lobby engine. That engine owns the shared context. */
+export interface GameAudioOutput {
+  context: AudioContext;
+  sfxInput: AudioNode;
+  resume(): Promise<void>;
+  canPlay(): boolean;
+}
+
 export interface GameAudioHandle {
   readonly library: AudioBufferLibrary;
   flush(): void;
@@ -11,16 +19,16 @@ export interface GameAudioHandle {
 }
 
 /** Realtime owner. The licensed clip catalog is populated by M1-065; an empty library is valid. */
-export function attachGameAudio(bus: EventBus<GameEvents>, deps: Pick<AudioBindDeps, 'weaponId' | 'listener' | 'surfaceAt'>): GameAudioHandle | null {
+export function attachGameAudio(bus: EventBus<GameEvents>, deps: Pick<AudioBindDeps, 'weaponId' | 'listener' | 'surfaceAt'>, output?: GameAudioOutput): GameAudioHandle | null {
   if (typeof AudioContext === 'undefined') return null;
   let context: AudioContext;
   try {
-    context = new AudioContext({ latencyHint: 'interactive' });
+    context = output?.context ?? new AudioContext({ latencyHint: 'interactive' });
   } catch {
     return null;
   }
   const library = new AudioBufferLibrary(context, (message) => console.warn(message), import.meta.env.DEV);
-  const scheduler = new WebAudioScheduler(context, library);
+  const scheduler = new WebAudioScheduler(context, library, output?.sfxInput);
   const director = new AudioDirector(scheduler, scheduler.pool, {
     variantCount: (weapon, layer) => library.variantCount(`wpn.${weapon}.${layer}`),
     footstepVariants: (surface) => library.variantCount(`fs.${surface}`),
@@ -33,9 +41,9 @@ export function attachGameAudio(bus: EventBus<GameEvents>, deps: Pick<AudioBindD
   const resume = (event: Event): void => {
     if (!event.isTrusted) return;
     gestureSeen = true;
-    if (context.state === 'running' || resuming) return;
+    if ((output ? output.canPlay() : context.state === 'running') || resuming) return;
     resuming = true;
-    void context.resume().catch(() => { /* a later trusted gesture can retry */ }).finally(() => { resuming = false; });
+    void (output ? output.resume() : context.resume()).catch(() => { /* a later trusted gesture can retry */ }).finally(() => { resuming = false; });
   };
   document.addEventListener('pointerdown', resume, true);
   document.addEventListener('pointerup', resume, true);
@@ -43,7 +51,7 @@ export function attachGameAudio(bus: EventBus<GameEvents>, deps: Pick<AudioBindD
   const off = bindAudioEvents(bus, director, {
     ...deps,
     now: () => context.currentTime,
-    canPlay: () => gestureSeen && context.state === 'running',
+    canPlay: () => output?.canPlay() ?? (gestureSeen && context.state === 'running'),
     onSuppress: (at) => scheduler.applySuppression(director, at),
   });
   return {
@@ -55,7 +63,7 @@ export function attachGameAudio(bus: EventBus<GameEvents>, deps: Pick<AudioBindD
       document.removeEventListener('pointerup', resume, true);
       document.removeEventListener('keydown', resume, true);
       scheduler.dispose();
-      if (context.state !== 'closed') void context.close().catch(() => {});
+      if (!output && context.state !== 'closed') void context.close().catch(() => {});
     },
   };
 }
