@@ -1,8 +1,6 @@
 /**
  * Streaming core (M1-049, ARCHITECTURE 9.3): ring selection, priority score, the per-chunk state
- * machine with bounded retry and exponential backoff, and the upload budget. It does no I/O: the
- * host feeds results back with `fetched` / `failed` / `uploaded` and takes work with `nextFetches`
- * / `nextUploads`, which keeps all of it unit-testable.
+ * machine with bounded retry and exponential backoff. I/O and frame scheduling live in ChunkStreamer.
  */
 export type ChunkState = 'unloaded' | 'requested' | 'fetching' | 'decoding' | 'uploading' | 'resident' | 'evicting' | 'failed';
 
@@ -22,11 +20,21 @@ export interface Chunk {
   retries: number;
   /** Time before which a failed chunk is not retried. */
   retryAt: number;
-  bytes: number;
 }
+
+export interface ChunkCoord { bx: number; bz: number }
+export interface WantedChunk extends ChunkCoord { score: number; spawn: boolean }
+export type ChunkFrustum = (bx: number, bz: number) => boolean;
 
 export const chunkOf = (m: number): number => Math.min(GRID - 1, Math.max(0, Math.floor(m / CHUNK_M)));
 export const chunkKey = (bx: number, bz: number): number => bz * GRID + bx;
+export const isChunkIndex = (n: number): boolean => Number.isInteger(n) && n >= 0 && n < GRID;
+
+export function* chunksAround(bx: number, bz: number, ring: number): Iterable<ChunkCoord> {
+  for (let z = Math.max(0, bz - ring); z <= Math.min(GRID - 1, bz + ring); z++) {
+    for (let x = Math.max(0, bx - ring); x <= Math.min(GRID - 1, bx + ring); x++) yield { bx: x, bz: z };
+  }
+}
 
 /** Ring (Chebyshev) distance between two chunks. */
 export const ringDist = (ax: number, az: number, bx: number, bz: number): number => Math.max(Math.abs(ax - bx), Math.abs(az - bz));
@@ -55,142 +63,91 @@ export function headingAhead(px: number, pz: number, dx: number, dz: number, bx:
 
 export class StreamerCore {
   private readonly chunks = new Map<number, Chunk>();
-  /** Chunks missing inside R_near (must stay 0 once resident: "no holes"). */
-  holes = 0;
   fetching = 0;
-  spawnTarget: { bx: number; bz: number } | undefined;
-  uploadsPerFrameMs: number[] = [];
+  spawnTarget: (ChunkCoord & { ring?: number }) | undefined;
+
+  constructor(private readonly maxRetries = MAX_RETRIES) {}
 
   state(bx: number, bz: number): ChunkState {
+    if (!isChunkIndex(bx) || !isChunkIndex(bz)) return 'unloaded';
     return this.chunks.get(chunkKey(bx, bz))?.state ?? 'unloaded';
   }
 
-  private chunk(bx: number, bz: number): Chunk {
-    const k = chunkKey(bx, bz);
-    let c = this.chunks.get(k);
-    if (!c) {
-      c = { state: 'unloaded', retries: 0, retryAt: 0, bytes: 0 };
-      this.chunks.set(k, c);
-    }
-    return c;
-  }
-
-  /** Wanted chunks (ring <= R_MID around the player), nearest first by priority. */
-  wanted(px: number, pz: number, dx: number, dz: number, inFrustum: (bx: number, bz: number) => boolean): { bx: number; bz: number; score: number }[] {
+  wanted(px: number, pz: number, dx: number, dz: number, inFrustum: ChunkFrustum,
+    radius = R_MID, extendHeading = true,
+  ): WantedChunk[] {
     const pbx = chunkOf(px);
     const pbz = chunkOf(pz);
-    const out: { bx: number; bz: number; score: number }[] = [];
-    for (let bz = Math.max(0, pbz - R_MID); bz <= Math.min(GRID - 1, pbz + R_MID); bz++) {
-      for (let bx = Math.max(0, pbx - R_MID); bx <= Math.min(GRID - 1, pbx + R_MID); bx++) {
-        const d = ringDist(bx, bz, pbx, pbz);
-        const st = this.spawnTarget;
-        out.push({
-          bx,
-          bz,
-          score: priority({
-            d,
-            inFrustum: inFrustum(bx, bz),
-            headingAhead: headingAhead(px, pz, dx, dz, bx, bz),
-            spawnTarget: st !== undefined && ringDist(bx, bz, st.bx, st.bz) <= R_NEAR,
-          }),
-        });
-      }
+    const target = this.spawnTarget;
+    const spawnRing = target?.ring ?? R_NEAR;
+    const out: WantedChunk[] = [];
+    const add = (bx: number, bz: number, spawn: boolean) => {
+      out.push({ bx, bz, spawn, score: priority({
+        d: spawn && target ? ringDist(bx, bz, target.bx, target.bz) : ringDist(bx, bz, pbx, pbz),
+        inFrustum: inFrustum(bx, bz),
+        headingAhead: headingAhead(px, pz, dx, dz, bx, bz),
+        spawnTarget: spawn,
+      }) });
+    };
+    if (target) for (const { bx, bz } of chunksAround(target.bx, target.bz, spawnRing)) add(bx, bz, true);
+    for (const { bx, bz } of chunksAround(pbx, pbz, radius + Number(extendHeading))) {
+      if (target && ringDist(bx, bz, target.bx, target.bz) <= spawnRing) continue;
+      if (ringDist(bx, bz, pbx, pbz) > radius && !headingAhead(px, pz, dx, dz, bx, bz)) continue;
+      add(bx, bz, false);
     }
-    return out.sort((a, b) => b.score - a.score || a.bz - b.bz || a.bx - b.bx);
+    return out.sort((a, b) => Number(b.spawn) - Number(a.spawn) || b.score - a.score || a.bz - b.bz || a.bx - b.bx);
   }
 
-  /** Starts up to the concurrency limit of fetches from `queue` (already priority sorted). */
-  nextFetches(queue: readonly { bx: number; bz: number }[], now: number): { bx: number; bz: number }[] {
-    const out: { bx: number; bz: number }[] = [];
+  /** Starts one request if its state and backoff permit it. */
+  start(bx: number, bz: number, now: number): boolean {
+    if (this.fetching >= MAX_CONCURRENT_FETCH) return false;
+    const k = chunkKey(bx, bz);
+    const c = this.chunks.get(k) ?? { state: 'unloaded', retries: 0, retryAt: 0 };
+    if (c.state !== 'unloaded' && (c.state !== 'failed' || c.retries > this.maxRetries || now < c.retryAt)) return false;
+    c.state = 'fetching';
+    this.chunks.set(k, c);
+    this.fetching++;
+    return true;
+  }
+
+  nextFetches(queue: readonly ChunkCoord[], now: number): ChunkCoord[] {
+    const out: ChunkCoord[] = [];
     for (const q of queue) {
-      if (this.fetching + out.length >= MAX_CONCURRENT_FETCH) break;
-      const c = this.chunk(q.bx, q.bz);
-      const startable = c.state === 'unloaded' || (c.state === 'failed' && c.retries <= MAX_RETRIES && now >= c.retryAt);
-      if (!startable) continue;
-      c.state = 'fetching';
-      out.push(q);
+      if (this.fetching >= MAX_CONCURRENT_FETCH) break;
+      if (this.start(q.bx, q.bz, now)) out.push(q);
     }
-    this.fetching += out.length;
     return out;
   }
 
-  fetched(bx: number, bz: number, bytes: number): void {
-    const c = this.chunk(bx, bz);
-    if (c.state !== 'fetching') return;
+  fetched(bx: number, bz: number): void {
+    const c = this.chunks.get(chunkKey(bx, bz));
+    if (c?.state !== 'fetching') return;
     this.fetching--;
-    c.state = 'uploading'; // decode is assumed done by the worker pool before this call
-    c.bytes = bytes;
+    c.state = 'uploading'; // Decode is part of the load job (PI-101).
   }
 
-  /** Fetch or decode failed: retry with exponential backoff, give up after MAX_RETRIES. */
   failed(bx: number, bz: number, now: number): void {
-    const c = this.chunk(bx, bz);
+    const c = this.chunks.get(chunkKey(bx, bz));
+    if (c?.state !== 'fetching' && c?.state !== 'uploading') return;
     if (c.state === 'fetching') this.fetching--;
     c.retries++;
     c.state = 'failed';
     c.retryAt = now + BACKOFF_BASE_S * 2 ** (c.retries - 1);
   }
 
-  /** True when a chunk is permanently failed (retries exhausted). */
   dead(bx: number, bz: number): boolean {
     const c = this.chunks.get(chunkKey(bx, bz));
-    return c !== undefined && c.state === 'failed' && c.retries > MAX_RETRIES;
-  }
-
-  /** Picks chunks to upload this frame within the budget: <= 1.5 ms (estimated) or <= 2 MB. */
-  nextUploads(estMsPerMb = 2): { bx: number; bz: number }[] {
-    const out: { bx: number; bz: number }[] = [];
-    let ms = 0;
-    let bytes = 0;
-    for (const [k, c] of this.chunks) {
-      if (c.state !== 'uploading') continue;
-      const cost = (c.bytes / 1048576) * estMsPerMb;
-      if (out.length > 0 && (ms + cost > UPLOAD_BUDGET_MS || bytes + c.bytes > UPLOAD_BUDGET_BYTES)) break;
-      ms += cost;
-      bytes += c.bytes;
-      out.push({ bx: k % GRID, bz: Math.floor(k / GRID) });
-    }
-    return out;
+    return c?.state === 'failed' && c.retries > this.maxRetries;
   }
 
   uploaded(bx: number, bz: number): void {
-    const c = this.chunk(bx, bz);
-    if (c.state === 'uploading') c.state = 'resident';
+    const c = this.chunks.get(chunkKey(bx, bz));
+    if (c?.state === 'uploading') c.state = 'resident';
   }
 
-  /** Evicts resident chunks farther than R_NEAR + 2 from the player; returns the evicted ones. */
-  evict(px: number, pz: number): { bx: number; bz: number }[] {
-    const pbx = chunkOf(px);
-    const pbz = chunkOf(pz);
-    const out: { bx: number; bz: number }[] = [];
-    for (const [k, c] of this.chunks) {
-      if (c.state !== 'resident') continue;
-      const bx = k % GRID;
-      const bz = Math.floor(k / GRID);
-      if (ringDist(bx, bz, pbx, pbz) > R_NEAR + 2) {
-        c.state = 'unloaded';
-        c.retries = 0;
-        out.push({ bx, bz });
-      }
-    }
-    return out;
-  }
-
-  /** Counts chunks inside R_near of the player that are not resident (the "holes"). */
-  countHoles(px: number, pz: number): number {
-    const pbx = chunkOf(px);
-    const pbz = chunkOf(pz);
-    let n = 0;
-    for (let bz = Math.max(0, pbz - R_NEAR); bz <= Math.min(GRID - 1, pbz + R_NEAR); bz++) {
-      for (let bx = Math.max(0, pbx - R_NEAR); bx <= Math.min(GRID - 1, pbx + R_NEAR); bx++) if (this.state(bx, bz) !== 'resident') n++;
-    }
-    this.holes = n;
-    return n;
-  }
-
-  /** Whether the sim may predict into chunk (bx,bz): its collision must be resident (task 6). */
-  collisionReady(bx: number, bz: number): boolean {
-    const s = this.state(bx, bz);
-    return s === 'resident' || s === 'uploading';
+  unload(bx: number, bz: number): void {
+    const k = chunkKey(bx, bz);
+    if (this.chunks.get(k)?.state === 'fetching') this.fetching--;
+    this.chunks.delete(k);
   }
 }

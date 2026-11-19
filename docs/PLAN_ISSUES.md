@@ -1301,3 +1301,14 @@ PrePass 速度会卡死渲染循环，改用自有速度 RTT（地形/薄实例/
 - **端口与地图与任务书草案对齐说明**：任务书 `M1-066` 草案中的 `8443/4433` 与 `--map carentan --mode frontline` 为早期示意；代码实装以 `crates/gateway`（明文 HTTP `8080`，`crates/server/src/gateway_link/client.rs` 拒绝 `https://` `GATEWAY_URL`，见 PI-075⑤）、`crates/server`（WS `7000`、WT `7001/udp`、`/metrics` `9100`，`KNOWN_MAPS` 当前仅 `m0`，默认 `--mode sandbox`）及 `client/vite.config.ts`（`5173`，代理 `/v1` 与 `/game-ws`）为准，可通过环境变量覆盖。
 - **容器模板保留**：`deploy/dev/{docker-compose.yml,Dockerfile.gateway,Dockerfile.server,.env.example,README.md}` 按 M1-066 清单提供多阶段非 root 模板，供 `M1-067`/`M2-024`/`M2-048` 后续复用。
 - **实测与 partial 范围**：`shellcheck dev.sh tools/dev/check-dev-stack.sh` 退出 0；`./dev.sh check`（工作站，`GATEWAY_PORT=18080` 等避开本机占用端口）完成 2 轮启动 + `reset` 幂等复起（首轮 4 s、次轮 3 s），覆盖 `/healthz`、`frontline-server` 自动注册、`/v1/guest` + `/v1/servers/{id}/ticket` 签票、`/metrics`、Vite `/` 与 `/v1/servers` 代理、`dev-cert.sha256`（13 天 ECDSA P-256）生成。**未测项（记为 partial）**：Playwright Chromium 经 WT 入局与阻断 UDP 后回退 WS 的浏览器实测、静态资源 206 Range 验证、`docker compose` 构建与镜像体积（server ≤ 150 MB / gateway ≤ 100 MB）实测。
+
+## PI-128 C3 渲染与世界接线验收边界（2026-11-19）
+
+- **M1-042b/043b/044b（PI-094、PI-116–118）**。每个后端分别计数。合法 PBR 变体 32/20（High/Low），自写 CSM 普通/实例化深度与 TAA 普通/实例化/地形速度共 5 个，`local-ci.sh ts` 门禁为 37/60 和 25/40。世界预览登记实际挂载的通道，PBR 演示与其预热共用注册表。Babylon 内置 shader 和其他系统的 shader 未纳入这个口径。保留 `taa_vel` 默认关闭。完整 PBR 世界材质替换、参考机开销及视觉验收未测。
+- **M1-049b（PI-101）**。下载、解码及限额上传分开处理。保留 6 并发和指数退避，按可用线程启用区块解码 worker。FPAK 数据源通过 `AssetLoader` 使用 Range、缓存和取消机制。预览以 GeoJSON 树篱作为运行时流式数据源，摄像机近环以外释放 GPU 网格，地形保留连续的全图 CDLOD 回退。FCHK/FCOL 解码、槽位、预取进度及碰撞就绪有独立验证。生产地图包与地形 GPU 数组的接线、出生 UI 及本地碰撞预测门控仍为 partial。浏览器 Range 与移动测试使用夹具，生产地图 100 Mbps 预取和 30 s 故障长跑未测。
+- **M1-050b（PI-102/113）**。占位 splat 在 Low 走四层近场细节路径，双后端使用权重 mip 做宏观色，CPU 表面查询按线性权重采样并接入地形撞击尘。压缩预算按 block 与 mip 核算。真实 albedo/normal/ORM 层、KTX2 `LayerArray`、`SlotSplat` 及接缝 ΔL 待 M1-064 与实际数据。
+- **M1-051b（PI-103/110）**。树篱段按中心归属 64 m 区块，缺口跳过，近环外卸载并解绑阴影投射体。植被按摄像机和物种绘制距离创建分组，退出距离额外保留 64 m，越界释放实例资源。Low 保留 35% 草密度和 20 m 距离，M0 保留原路径。树篱数据量仍等待人工描绘，独立碰撞、远景树篱简模、道具、impostor ΔE 与 5 min GPU 内存验收仍待完成。
+- **M1-046b（PI-098）**。占位 FP pass 独立深度，探测建筑和已驻留树篱，直接采样已有预测武器快照的装填状态与 `/data` 时长。ADS、开火后坐和换弹姿态有逻辑测试。武器素材、手部/换弹动画及参考机场景验收待 M1-064 或 H-021。
+- **M1-047b（PI-099/111）**。占位粒子与贴花走固定容量批次，建筑与地形挂接命中接收面。地形材质查询决定尘土类型，静态表面贴花有法线校验与距离淡出。特效材质和完整材质参数待 M1-064 或数据回填，联网实战效果、真实素材和 GPU 预算未验收。
+- **M1-048b（PI-100/112）**。占位车辆渲染器接受一帧完整的采样姿态，按实体 ID 增删模型，在应用新姿态后从炮口 socket 发出特效。`?vehicle=demo` 走同一渲染器，并独立挂载炮口粒子。线上车辆实体/射击 feed、损伤外观及截图基线仍为 partial。保留 M1-041d 文件的所有权边界。
+- **PI-109 性能**。GPU0 工作期间轮询读数包含 34%、41% 和 42%，本轮未开始 GPU 性能采集。SwiftShader 浏览器用例为功能验证，RTX 3060、Iris Xe、帧时间及 GPU 内存均未测。M1-067 预发布账号与部署流程保持阻塞。

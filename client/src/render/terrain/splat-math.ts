@@ -28,41 +28,55 @@ export function dominantLayer(a: ArrayLike<number>, b: ArrayLike<number>): numbe
   return best;
 }
 
+export const TRIPLANAR_START_DEG = 40;
+export const TRIPLANAR_RANGE_DEG = 10;
+export const DETAIL_FADE_M = [80, 200] as const;
+export const TRIPLANAR_FADE_M = [40, 100] as const;
+export const MACRO_FADE_M = [160, 450] as const;
+
 const smoothstep = (e0: number, e1: number, x: number): number => {
   const t = Math.min(Math.max((x - e0) / (e1 - e0), 0), 1);
   return t * t * (3 - 2 * t);
 };
 
 /** Triplanar blend factor from the surface slope: 0 below `startDeg`, 1 at `startDeg + rangeDeg`. */
-export function triplanarWeight(slopeDeg: number, startDeg = 40, rangeDeg = 10): number {
+export function triplanarWeight(slopeDeg: number, startDeg = TRIPLANAR_START_DEG, rangeDeg = TRIPLANAR_RANGE_DEG): number {
   return smoothstep(startDeg, startDeg + rangeDeg, slopeDeg);
 }
 
 /** Slope (deg) from a unit surface normal's y component. */
 export const slopeDeg = (ny: number): number => (Math.acos(Math.min(Math.max(ny, -1), 1)) * 180) / Math.PI;
 
-/** Two-scale tiling blend that hides repetition: mixes the layer at `scale` and at `scale * ratio`. */
+/** Repeating texture coordinate at `scale` repeats per metre. */
 export function tileUv(u: number, scale: number): number {
   const t = u * scale;
   return t - Math.floor(t);
 }
 
-/** Bits per pixel of the GPU block formats a UASTC transcode may land in. */
-export const BPP = { bc7: 8, astc6x6: 3.5556, astc4x4: 8, etc2: 4 } as const;
-export type LayerFormat = keyof typeof BPP;
+/** GPU block footprints. `etc2` here is opaque RGB8; the worker's ETC2 RGBA8 output is 8 bpp. */
+const BLOCKS = { bc7: [4, 16], astc6x6: [6, 16], astc4x4: [4, 16], etc2: [4, 8], etc2rgba8: [4, 16] } as const;
+export type LayerFormat = keyof typeof BLOCKS;
 
-/** VRAM bytes of `layers` layers of `size`^2 textures, `maps` maps per layer, with a full mip chain. */
+/** Tightly packed compressed bytes, including whole edge blocks and a full mip chain. Excludes driver overhead. */
 export function layerArrayBytes(layers: number, size: number, maps: number, fmt: LayerFormat): number {
-  return layers * maps * ((size * size * BPP[fmt]) / 8) * (4 / 3);
+  if (!Number.isSafeInteger(size) || size < 1) throw new RangeError('Terrain layer size must be a positive integer');
+  const [blockEdge, blockBytes] = BLOCKS[fmt];
+  let bytes = 0;
+  for (let edge = size; edge >= 1; edge = Math.floor(edge / 2)) {
+    bytes += Math.ceil(edge / blockEdge) ** 2 * blockBytes;
+  }
+  return bytes * layers * maps;
 }
 
 export const LAYER_BUDGET_BYTES = 24 * 1024 * 1024;
 
-/**
- * PI-102 decision: 8-bpp formats (BC7, ASTC 4x4) keep albedo at 1024^2 but store normal and ORM at 512^2 (one mip
- * less); ASTC 6x6 / ETC2 devices keep all three at 1024^2. Returns the 8-layer array size in bytes.
- */
+/** PI-102: for 8-bpp formats, retain the albedo base mip and drop the first normal and ORM mip. */
+export function terrainLayerSizes(fmt: LayerFormat): { albedo: number; normal: number; orm: number } {
+  const [edge, bytes] = BLOCKS[fmt];
+  const detail = bytes * 8 / edge ** 2 >= 8 ? 512 : 1024;
+  return { albedo: 1024, normal: detail, orm: detail };
+}
+
 export function terrainLayerBytes(fmt: LayerFormat, layers = LAYERS): number {
-  if (BPP[fmt] < 8) return layerArrayBytes(layers, 1024, 3, fmt);
-  return layerArrayBytes(layers, 1024, 1, fmt) + layerArrayBytes(layers, 512, 2, fmt);
+  return Object.values(terrainLayerSizes(fmt)).reduce((sum, size) => sum + layerArrayBytes(layers, size, 1, fmt), 0);
 }

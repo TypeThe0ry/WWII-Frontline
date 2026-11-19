@@ -7,16 +7,16 @@
 import { FreeCamera } from '@babylonjs/core/Cameras/freeCamera';
 import type { Camera } from '@babylonjs/core/Cameras/camera';
 import type { TargetCamera } from '@babylonjs/core/Cameras/targetCamera';
-import { Vector3 } from '@babylonjs/core/Maths/math.vector';
-import type { AbstractMesh } from '@babylonjs/core/Meshes/abstractMesh';
+import { AbstractMesh } from '@babylonjs/core/Meshes/abstractMesh';
 import type { Scene } from '@babylonjs/core/scene';
 
 export const FP_LAYER = 0x10000000;
-const ALL_BUT_FP = 0x0fffffff;
 
 export class FpWeaponPass {
   readonly camera: FreeCamera;
   private readonly prevActive: Camera[] | null;
+  private readonly prevCamera: Camera | null;
+  private readonly prevWorldMask: number;
 
   constructor(
     private readonly scene: Scene,
@@ -25,7 +25,9 @@ export class FpWeaponPass {
     readonly fovRad: number,
   ) {
     this.prevActive = scene.activeCameras ? [...scene.activeCameras] : null;
-    world.layerMask = ALL_BUT_FP;
+    this.prevCamera = scene.activeCamera;
+    this.prevWorldMask = world.layerMask;
+    world.layerMask &= ~FP_LAYER;
     this.camera = new FreeCamera('fp_weapon_camera', world.position.clone(), scene);
     this.camera.layerMask = FP_LAYER;
     this.camera.fov = fovRad;
@@ -39,7 +41,8 @@ export class FpWeaponPass {
 
   /** Marks a mesh (and its children) as belonging to the weapon pass. */
   adopt(root: AbstractMesh | { getChildMeshes(): AbstractMesh[] }, extra: readonly AbstractMesh[] = []): void {
-    const list = [...extra, ...('getChildMeshes' in root ? root.getChildMeshes() : [])];
+    if (root instanceof AbstractMesh) root.layerMask = FP_LAYER;
+    const list = [...extra, ...root.getChildMeshes()];
     for (const m of list) m.layerMask = FP_LAYER;
   }
 
@@ -47,16 +50,14 @@ export class FpWeaponPass {
   sync(): void {
     const w = this.world;
     this.camera.position.copyFrom(w.position);
-    this.camera.rotation.copyFrom(w.rotation as Vector3);
+    this.camera.rotation.copyFrom(w.rotation);
     this.camera.fov = this.fovRad;
-    const eng = this.scene.getEngine();
-    this.camera.getProjectionMatrix(true);
-    void eng;
   }
 
   dispose(): void {
     this.scene.activeCameras = this.prevActive;
-    this.world.layerMask = 0x0fffffff | FP_LAYER;
     this.camera.dispose();
+    this.scene.activeCamera = this.prevCamera;
+    this.world.layerMask = this.prevWorldMask;
   }
 }
