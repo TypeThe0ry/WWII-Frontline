@@ -1,10 +1,11 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { EventBus, type GameEvents } from '../game/event-bus';
+import { GameState } from '../game/state/game-state';
 import { connect, type ConnectOptions } from './connect';
 import { parseNetConfig, type NetConfig } from './config';
 import { disconnectBytes, FakeWebSocket, FakeWebTransport, type FakeServerOpts } from './fakes';
 import { NetError } from './handshake';
-import { HAVE_WASM, loadWasm } from './test-support';
+import { HAVE_WASM, loadWasm, rejectBytes, welcomeBytes } from './test-support';
 import type { SimWasmModule } from './wasm';
 import type { WebTransportCtor } from './wt-transport';
 
@@ -41,6 +42,87 @@ describe.skipIf(!HAVE_WASM)('connect / fallback / handshake (fake WebSocket + We
     WebTransportCtor: wtCtor,
     WebSocketCtor: FakeWebSocket,
     ...over,
+  });
+
+  describe('reliable game state', () => {
+    function bind() {
+      const state = new GameState(bus);
+      return {
+        state,
+        onC4Event: state.apply.bind(state),
+        onDeployResult: state.applyDeployResult.bind(state),
+      };
+    }
+
+    it.each(['ws', 'wt'] as const)('applies C0 deploy results and C4 events over %s', async (kind) => {
+      const { state, onC4Event, onDeployResult } = bind();
+      const deploy = vi.fn();
+      const kill = vi.fn();
+      bus.on('deploy.state', deploy);
+      bus.on('kill.feed', kill);
+      const s = await connect(opts({ config: cfg(`transport=${kind}`), onC4Event, onDeployResult }));
+      try {
+        const conn = (kind === 'wt' ? FakeWebTransport.instances[0] : FakeWebSocket.instances[0])!.conn;
+        // DeployResult: type, then ok:1, spawn_tick:32, reason:8, zero padding.
+        const okAtTickZero = Uint8Array.of(0x11, 0x80, 0, 0, 0, 0, 0);
+        conn.c0(okAtTickZero); // No pending request: must be ignored.
+        await vi.waitFor(() => expect(state.deploy.illegal).toBe(1));
+        expect(deploy).not.toHaveBeenCalled();
+        state.applyDeploy({ type: 'open' });
+        state.applyDeploy({ type: 'request' });
+        conn.c0(Uint8Array.of(0x11, 0, 0, 0, 0, 21 >>> 1, (21 & 1) << 7));
+        await vi.waitFor(() => expect(deploy).toHaveBeenLastCalledWith({ phase: 'Choosing', reason: 'deploy.reject.point_blocked', spawnTick: undefined }));
+        state.applyDeploy({ type: 'request' });
+        conn.c0(okAtTickZero);
+        await vi.waitFor(() => expect(deploy).toHaveBeenLastCalledWith({ phase: 'Counting', spawnTick: 0, reason: undefined }));
+
+        conn.c4(Uint8Array.of(0xff)); // Invalid type; later messages still arrive.
+        // Kill: headshot=1, dist_q=400, followed by two zero assists.
+        conn.c4(Uint8Array.of(1, 3, 4, 2, 0x8c, 0x80, 0, 0));
+        conn.c4(Uint8Array.of(7, 4, 1, 65, 0, 0, 1, 0)); // roster: A
+        conn.c4(Uint8Array.of(7, 4, 1, 66, 0, 0, 1, 0)); // roster: B replaces A
+        await vi.waitFor(() => expect(state.roster.get(4)?.name).toBe('B'));
+        const entry = { killer: 4, victim: 3, weapon: 2, headshot: true, dist: 100 };
+        expect(state.killFeed.at(0)).toEqual(entry);
+        expect(kill.mock.calls).toEqual([[entry]]);
+
+        s.close();
+        conn.c4(Uint8Array.of(1, 3, 4, 2, 0x8c, 0x80, 0, 0));
+        await new Promise<void>((resolve) => setTimeout(resolve, 0));
+        expect(kill).toHaveBeenCalledTimes(1);
+      } finally {
+        s.close();
+      }
+    });
+
+    it.each(['welcome', 'reject'] as const)('WT buffers early C4 and only publishes after Welcome (%s)', async (answer) => {
+      const { state, onC4Event } = bind();
+      const objective = vi.fn();
+      bus.on('objective.changed', objective);
+      FakeWebTransport.reset({ ...server, silent: true });
+      const pending = connect(opts({ config: cfg('transport=wt'), onC4Event }));
+      const rejection = answer === 'reject' ? expect(pending).rejects.toMatchObject({ code: 'rejected' }) : undefined;
+      await vi.waitFor(() => expect(FakeWebTransport.instances[0]?.conn.receivedC0[0]?.[0]).toBe(1));
+      const { conn } = FakeWebTransport.instances[0]!;
+      conn.c4(Uint8Array.of(5, 2, 1, 0));
+      conn.c4(Uint8Array.of(5, 2, 0, 0));
+      await new Promise<void>((resolve) => setTimeout(resolve, 0));
+      expect(objective).not.toHaveBeenCalled();
+      if (answer === 'reject') {
+        conn.c0(rejectBytes(1));
+        await rejection;
+        expect(state.objectives.size).toBe(0);
+      } else {
+        conn.c0(welcomeBytes({ dataHash: server.dataHash }));
+        const s = await pending;
+        try {
+          expect(objective.mock.calls).toEqual([[{ objective: 2, owner: 1, reason: 0 }], [{ objective: 2, owner: 0, reason: 0 }]]);
+          expect(state.objectives.get(2)?.owner).toBe(0);
+        } finally {
+          s.close();
+        }
+      }
+    });
   });
 
   describe('fallback', () => {

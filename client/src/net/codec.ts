@@ -9,7 +9,7 @@
  * `codec.test.ts` pins the byte layout against the golden bytes of `protocol::framing`.
  */
 import type { C4Event } from '../game/state/c4';
-import { LAYOUT_C0_DISCONNECT, LAYOUT_C0_PONG, LAYOUT_C0_REJECT, LAYOUT_C0_WELCOME, type SimWasmModule } from './wasm';
+import { LAYOUT_C0_DEPLOY_RESULT, LAYOUT_C0_DISCONNECT, LAYOUT_C0_PONG, LAYOUT_C0_REJECT, LAYOUT_C0_WELCOME, type SimWasmModule } from './wasm';
 
 export const Channel = { C0: 0, C1: 1, C2: 2, C3: 3, C4: 4, C5: 5 } as const;
 export type Channel = (typeof Channel)[keyof typeof Channel];
@@ -146,7 +146,13 @@ export interface DisconnectMsg {
   reason: number;
   reasonName: string;
 }
-export type ServerMsg = WelcomeMsg | RejectMsg | PongMsg | DisconnectMsg;
+export interface DeployResultMsg {
+  kind: 'deployResult';
+  ok: boolean;
+  spawnTick: number;
+  reason: number;
+}
+export type ServerMsg = WelcomeMsg | RejectMsg | PongMsg | DisconnectMsg | DeployResultMsg;
 
 export interface HelloParams {
   protocolVersion: number;
@@ -216,6 +222,8 @@ export class NetCodec {
           return { kind: 'pong', clientTime: m.clientTime, serverTick: m.serverTick, serverTimeMs: m.serverTimeMs };
         case LAYOUT_C0_DISCONNECT:
           return { kind: 'disconnect', reason: m.reason, reasonName: DISCONNECT_REASONS[m.reason] ?? `code_${m.reason}` };
+        case LAYOUT_C0_DEPLOY_RESULT:
+          return { kind: 'deployResult', ok: m.ok, spawnTick: m.spawnTick, reason: m.reason };
         default:
           throw new FrameError(`unexpected server C0 message kind ${m.kind}`);
       }
