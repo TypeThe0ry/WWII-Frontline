@@ -58,15 +58,27 @@ g_wasm() {
 g_assets() {
   need pnpm node ffmpeg || return 2
   local w; w=$(mktemp -d)
+  trap 'rm -rf "$w"' RETURN
   run pnpm -C tools/asset-pipeline lint && run pnpm -C tools/asset-pipeline typecheck \
+    && run pnpm -C tools/asset-pipeline build \
     && run pnpm -C tools/asset-pipeline test && run pnpm -C tools/asset-pipeline test:e2e || return 1
   run node tools/asset-pipeline/bin/asset-pipeline.mjs ledger-check && run node tools/asset-pipeline/bin/asset-pipeline.mjs ingest --work "$w" || return 1
+  if [ -f assets/manifests/incoming-index.json ]; then
+    run node tools/asset-pipeline/bin/asset-pipeline.mjs ingest --metadata-only assets/manifests/incoming-index.json || return 1
+  fi
   run node tools/asset-pipeline/bin/asset-pipeline.mjs gen-requirements --out "$w/requirements.json" && diff -u assets/requirements.json "$w/requirements.json" || return 1
   run node tools/asset-pipeline/bin/asset-pipeline.mjs report --milestone M1 --placeholders data/placeholders --gaps --strict --work "$w" --out "$w/asset-report.json" || return 1
+  git show "origin/${BASE_BRANCH:-claude/serene-wright-lc7k1n}:assets/manifests/manifest.json" > "$w/base-manifest.json" 2>/dev/null || rm -f "$w/base-manifest.json"
+  local core_arg=()
   if [ -f client/dist/size-report.json ]; then
-    git show "origin/${BASE_BRANCH:-claude/serene-wright-lc7k1n}:assets/manifests/manifest.json" > "$w/base-manifest.json" 2>/dev/null || rm -f "$w/base-manifest.json"
-    run node tools/asset-pipeline/bin/asset-pipeline.mjs manifest-budget --base "$w/base-manifest.json" --core-size-file client/dist/size-report.json
-  else echo "WARN: client/dist/size-report.json missing (build the client first); manifest-budget not run"; fi
+    core_arg=(--core-size-file client/dist/size-report.json)
+  elif [ -d client/dist ]; then
+    run node tools/ci/core-size.mjs --dist client/dist --report "$w/size-report.json" || return 1
+    core_arg=(--core-size-file "$w/size-report.json")
+  else
+    echo "WARN: client/dist missing (build the client first); core bundle check skipped"
+  fi
+  run node tools/asset-pipeline/bin/asset-pipeline.mjs manifest-budget --base "$w/base-manifest.json" "${core_arg[@]}"
 }
 g_map() { need python3 || return 2; (cd tools/map-pipeline && run python3 -m pytest -q) && run python3 -m map_pipeline validate-vectors data/maps/carentan && run python3 -m map_pipeline validate data/maps/carentan --slice m1; }
 
