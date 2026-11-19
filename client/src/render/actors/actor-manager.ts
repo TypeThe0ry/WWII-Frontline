@@ -101,6 +101,7 @@ export class ActorManager {
       particles: o.particles,
     });
     this.offs.push(
+      o.bus.on('fire.local', (e) => this.rig?.queueShot(e.weapon)),
       // Creation needs the entity's weapon (faction): only possible once the id is in the frame data; otherwise `update` creates it.
       o.bus.on('entity.spawned', (e) => {
         const k = this.slotOf(e.id);
@@ -191,10 +192,11 @@ export class ActorManager {
 
   /** Builds the first-person weapon of weapon index `index` (or removes it for an unknown index). */
   attachWeaponFP(index: number | string): void {
+    if (!this.rig) return;
     const def = typeof index === 'string' ? this.o.data.weapons.find((w) => w.id === index) : this.weaponsByIndex.get(index);
     this.fpIndex = def?.index ?? -1;
     const w = def ? buildFirstPersonWeapon(this.o.scene, def, this.registry) : null;
-    this.rig?.setWeapon(w);
+    this.rig.setWeapon(w);
     if (w) this.fpPass?.adopt(w.root, w.meshes);
   }
 

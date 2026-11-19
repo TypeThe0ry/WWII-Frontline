@@ -1,11 +1,10 @@
 //! `D = dmg x falloff(d) x part_mult x pen_factor x ff_mult` and the state it leaves the target
-//! in (GAMEDESIGN 6.6, 7.1). Pure; the projectile stage and later the explosion and vehicle stages
-//! call it.
+//! in (GAMEDESIGN 6.6, 7.1). Damage producers apply HP changes; the deaths stage resolves outcomes.
 
 use crate::data::defs::WeaponDef;
 use crate::weapon::HitZone;
 
-/// Hit points a player has while downed (GAMEDESIGN 7.1; the state machine is M1-016).
+/// Hit points a player has right after going down or being revived (GAMEDESIGN 7.1).
 pub const DOWNED_HP: f32 = 40.0;
 /// A hit that leaves hit points at or below this kills outright (overkill, GAMEDESIGN 7.1).
 pub const OVERKILL_HP: f32 = -60.0;
@@ -60,11 +59,15 @@ pub enum KillReason {
     Overkill,
     Explosion,
     Vehicle,
+    /// A producer marked this lethal hit as KIA (e.g. a backstab or a high fall).
+    Forced,
+    /// A hit depleted the target's downed HP without another outright-KIA rule.
+    DownedDepleted,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DamageOutcome {
-    /// Still on their feet.
+    /// HP remains positive; the target stays in its current state.
     Hit,
     Downed,
     Killed(KillReason),
@@ -117,31 +120,54 @@ pub fn damage_amount(def: &WeaponDef, h: &HitInfo, t: &TargetCtx) -> f32 {
     d
 }
 
-/// Applies one hit (GAMEDESIGN 7.1): `hp <= 0` from a bullet in the head, or `hp <= -60` from
-/// anything, or any explosion / vehicle hit that takes `hp` to 0, kills; other hits that take `hp`
-/// to 0 or below down the target.
+/// Previews one hit on a standing target, without a producer-specific KIA override.
 pub fn compute_damage(def: &WeaponDef, h: &HitInfo, t: &TargetCtx) -> DamageResult {
     let damage = damage_amount(def, h, t);
     let hp_after = t.hp - damage;
-    let overkill = (-hp_after).max(0.0);
-    let outcome = if hp_after > 0.0 {
-        DamageOutcome::Hit
-    } else if hp_after <= OVERKILL_HP {
-        DamageOutcome::Killed(KillReason::Overkill)
-    } else {
-        match h.kind {
-            DamageKind::Explosion => DamageOutcome::Killed(KillReason::Explosion),
-            DamageKind::Vehicle => DamageOutcome::Killed(KillReason::Vehicle),
-            _ if h.zone == HitZone::Head && h.kind == DamageKind::Bullet => {
-                DamageOutcome::Killed(KillReason::Headshot)
-            }
-            _ => DamageOutcome::Downed,
-        }
-    };
     DamageResult {
         hp_after,
-        outcome,
+        outcome: classify_outcome(hp_after, h.kind, h.zone, false, false),
         damage,
-        overkill,
+        overkill: (-hp_after).max(0.0),
+    }
+}
+
+/// Classifies already-applied damage without subtracting HP or changing life state.
+pub(crate) fn classify_outcome(
+    hp_after: f32,
+    kind: DamageKind,
+    zone: HitZone,
+    downed: bool,
+    direct_kia: bool,
+) -> DamageOutcome {
+    if hp_after > 0.0 {
+        DamageOutcome::Hit
+    } else if let Some(reason) = outright_kill_reason(hp_after, kind, zone, direct_kia) {
+        DamageOutcome::Killed(reason)
+    } else if downed {
+        DamageOutcome::Killed(KillReason::DownedDepleted)
+    } else {
+        DamageOutcome::Downed
+    }
+}
+
+/// Outright KIA rules for a hit that would otherwise down a standing target.
+pub(crate) fn outright_kill_reason(
+    hp_after: f32,
+    kind: DamageKind,
+    zone: HitZone,
+    direct_kia: bool,
+) -> Option<KillReason> {
+    if hp_after <= OVERKILL_HP {
+        return Some(KillReason::Overkill);
+    }
+    if direct_kia {
+        return Some(KillReason::Forced);
+    }
+    match kind {
+        DamageKind::Explosion => Some(KillReason::Explosion),
+        DamageKind::Vehicle => Some(KillReason::Vehicle),
+        DamageKind::Bullet if zone == HitZone::Head => Some(KillReason::Headshot),
+        _ => None,
     }
 }

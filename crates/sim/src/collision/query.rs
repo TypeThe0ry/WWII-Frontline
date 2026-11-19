@@ -194,9 +194,13 @@ impl CollisionData {
         self.trace(origin, dir / len, max_t).hit
     }
 
-    /// Clear line between two points: `false` if the segment meets the terrain, starts below
-    /// it, or leaves the loaded chunks (conservative, see module docs of `collision`).
+    /// Clear line between two points, accounting for terrain and static cover.
     pub fn los(&self, from: Vec3, to: Vec3) -> bool {
+        self.terrain_los(from, to) && self.raycast_cover_segment(from, to).is_none()
+    }
+
+    /// Terrain-only visibility, conservative when the line leaves loaded chunks.
+    pub fn terrain_los(&self, from: Vec3, to: Vec3) -> bool {
         let d = to - from;
         let len = d.length();
         if !from.is_finite() || !to.is_finite() {

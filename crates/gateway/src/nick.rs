@@ -1,14 +1,10 @@
-//! Nickname validation: 3-20 characters after folding full-width forms (the NFKC subset the
-//! server also applies, PI-073), no control or bidirectional-override characters.
+//! Nickname validation: 3–20 characters after NFKC, excluding controls and bidi overrides.
+
+use unicode_normalization::UnicodeNormalization;
 
 pub fn validate_nick(raw: &str) -> Result<String, &'static str> {
     let mut out = String::with_capacity(raw.len());
-    for c in raw.chars() {
-        let c = match c {
-            '\u{FF01}'..='\u{FF5E}' => char::from_u32(c as u32 - 0xFF01 + 0x21).unwrap_or(c),
-            '\u{3000}' => ' ',
-            _ => c,
-        };
+    for c in raw.nfkc() {
         if c.is_control()
             || matches!(c,
                 '\u{061C}' | '\u{200B}'..='\u{200F}' | '\u{202A}'..='\u{202E}' | '\u{2066}'..='\u{2069}' | '\u{FEFF}')
@@ -33,6 +29,7 @@ mod tests {
     fn accepts_and_folds() {
         assert_eq!(validate_nick("  Gaius  ").unwrap(), "Gaius");
         assert_eq!(validate_nick("ＡＢＣ").unwrap(), "ABC");
+        assert_eq!(validate_nick("①ﬁＡ").unwrap(), "1fiA");
         assert!(validate_nick(&"a".repeat(20)).is_ok());
     }
 

@@ -7,9 +7,11 @@
  *    `ads_ms` (data) to blend. Hip FOV is data too (`view.hip_fov_deg`).
  */
 import type { TargetCamera } from '@babylonjs/core/Cameras/targetCamera';
+import { Vector3 } from '@babylonjs/core/Maths/math.vector';
 import type { ActorData, WeaponActorDef } from '../actors/actor-data';
 import type { WeaponNode } from '../actors/placeholder-weapon';
-import { wallPushback } from '../fp/fp-math';
+import { freshWorldMatrix } from '../actors/world';
+import { RecoilSpring, stepAds, wallPushback } from '../fp/fp-math';
 
 export interface FpLocal {
   pos: ArrayLike<number>;
@@ -36,6 +38,8 @@ export type AdsState = 'hip' | 'entering' | 'ads' | 'leaving';
 export class FirstPersonRig {
   /** Wall pushback (M1-046b): when set, the weapon is pulled back so the muzzle stays `WALL_MARGIN_M` short of the wall. */
   wallProbe: WallProbe | null = null;
+  /** Sample the equipped weapon's predicted reload fraction (0 to 1), or undefined when idle. */
+  localReloadProgress: (() => number | undefined) | undefined;
   /** Called when the ADS state changes (hip -> entering -> ads -> leaving -> hip). */
   onAds: ((state: AdsState, t: number) => void) | null = null;
   adsState: AdsState = 'hip';
@@ -50,6 +54,10 @@ export class FirstPersonRig {
   private def: WeaponActorDef | null = null;
   private bobPhase = 0;
   private hipFov: number;
+  private readonly recoil = new RecoilSpring();
+  private readonly muzzleWorld = new Vector3();
+  private pendingWeapon = -1;
+  private pendingShots = 0;
 
   constructor(
     readonly camera: TargetCamera,
@@ -73,6 +81,14 @@ export class FirstPersonRig {
     this.weapon?.dispose();
     this.weapon = w;
     this.def = w?.def ?? null;
+    this.recoil.pos = this.recoil.vel = 0;
+    if (!w) this.camera.fov = this.hipFov;
+  }
+
+  queueShot(weapon: number): void {
+    if (weapon !== this.pendingWeapon) this.pendingShots = 0;
+    this.pendingWeapon = weapon;
+    this.pendingShots++;
   }
 
   update(l: FpLocal, dtMs: number): void {
@@ -91,11 +107,13 @@ export class FirstPersonRig {
 
     const def = this.def;
     const w = this.weapon;
+    const shots = def?.index === this.pendingWeapon ? this.pendingShots : 0;
+    this.pendingShots = 0;
     if (!def || !w) return;
-    const adsStep = dtMs / Math.max(1, def.adsMs);
-    this.ads = this.aiming() ? Math.min(1, this.ads + adsStep) : Math.max(0, this.ads - adsStep);
+    const aiming = this.aiming();
+    this.ads = stepAds(this.ads, dtMs / 1000, def.adsMs, aiming);
     const k = this.ads * this.ads * (3 - 2 * this.ads); // smoothstep
-    const st: AdsState = this.ads >= 1 ? 'ads' : this.ads <= 0 ? 'hip' : this.aiming() ? 'entering' : 'leaving';
+    const st: AdsState = this.ads >= 1 ? 'ads' : this.ads <= 0 ? 'hip' : aiming ? 'entering' : 'leaving';
     if (st !== this.adsState) {
       this.adsState = st;
       this.onAds?.(st, this.ads);
@@ -106,20 +124,16 @@ export class FirstPersonRig {
     this.bobPhase += speed * (dtMs / 1000) * BOB_SPEED_RAD_PER_M;
     const bob = (1 - 0.85 * k) * Math.min(1, speed / 4);
     const rp = l.recoilPitch;
+    this.recoil.update(dtMs / 1000);
+    if (shots) {
+      // The shot has a visible displacement even if this frame's elapsed time is zero.
+      this.recoil.pos = Math.min(0.035, this.recoil.pos + shots * 0.012);
+    }
+    const reload = this.localReloadProgress?.() ?? 0;
+    const lowered = Math.sin(Math.PI * Math.min(1, Math.max(0, reload))) ** 2;
     const ox = lerp(def.view.hipOffset[0], def.view.adsOffset[0], k) + Math.sin(this.bobPhase) * BOB_AMPLITUDE_M * bob;
-    const oy = lerp(def.view.hipOffset[1], def.view.adsOffset[1], k) + Math.abs(Math.sin(this.bobPhase)) * BOB_AMPLITUDE_M * bob;
-    let oz = lerp(def.view.hipOffset[2], def.view.adsOffset[2], k) - rp * RECOIL_BACK_M_PER_DEG;
-    if (this.wallProbe) {
-      // ray along the view direction: the weapon reaches `length` forward of the camera at its hip/ADS offset
-      const sy0 = Math.sin(l.yaw);
-      const cy0 = Math.cos(l.yaw);
-      const sp0 = Math.sin(l.pitch);
-      const cp0 = Math.cos(l.pitch);
-      const reach = oz + w.muzzle.position.z; // how far the muzzle socket sits in front of the camera at this offset
-      const d = this.wallProbe(px, py, pz, sy0 * cp0, sp0, cy0 * cp0, reach + 0.5);
-      this.wallDist = d ?? Infinity;
-      if (d !== null) oz -= wallPushback(d, reach);
-    } else this.wallDist = Infinity;
+    const oy = lerp(def.view.hipOffset[1], def.view.adsOffset[1], k) + Math.abs(Math.sin(this.bobPhase)) * BOB_AMPLITUDE_M * bob - lowered * 0.12;
+    const oz = lerp(def.view.hipOffset[2], def.view.adsOffset[2], k) - rp * RECOIL_BACK_M_PER_DEG - this.recoil.pos;
 
     // camera basis (left-handed, y up): forward f, right r, up u
     const sy = Math.sin(l.yaw);
@@ -135,7 +149,20 @@ export class FirstPersonRig {
     const uy = cp;
     const uz = -cy * sp;
     w.root.position.set(px + rx * ox + ux * oy + fx * oz, py + uy * oy + fy * oz, pz + rz * ox + uz * oy + fz * oz);
-    w.root.rotation.set(-(l.pitch + rp * DEG * RECOIL_GAIN), l.yaw + l.recoilYaw * DEG * RECOIL_GAIN, 0);
+    w.root.rotation.set(-(l.pitch + rp * DEG * RECOIL_GAIN) + lowered * 0.3, l.yaw + l.recoilYaw * DEG * RECOIL_GAIN, 0);
+    this.wallDist = Infinity;
+    if (this.wallProbe) {
+      // Project the animated muzzle onto the view ray before applying the final retraction.
+      Vector3.TransformCoordinatesToRef(Vector3.ZeroReadOnly, freshWorldMatrix(w.muzzle), this.muzzleWorld);
+      const muzzle = this.muzzleWorld;
+      const reach = Math.max(0, (muzzle.x - px) * fx + (muzzle.y - py) * fy + (muzzle.z - pz) * fz);
+      const dist = this.wallProbe(px, py, pz, fx, fy, fz, reach + 0.1);
+      this.wallDist = dist ?? Infinity;
+      if (dist !== null) {
+        const back = Math.min(def.dims.length, wallPushback(dist, reach));
+        w.root.position.set(w.root.position.x - fx * back, w.root.position.y - fy * back, w.root.position.z - fz * back);
+      }
+    }
   }
 
   dispose(): void {

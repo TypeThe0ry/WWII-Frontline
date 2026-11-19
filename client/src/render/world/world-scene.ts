@@ -1,25 +1,26 @@
 /**
  * Hedgerows + buildings of a map (`?scene=world&map=carentan`, M1-051b / M1-052b): the GeoJSON layers the map pipeline
  * writes (`hedgerows.geojson`, `buildings.geojson`, map-local metres) drawn as
- *  - one thin-instanced box mesh for all hedge segments (placeholder `V-HEDGE-PLACEHOLDER`, 1 draw call), and
+ *  - one thin-instanced box mesh per occupied near hedge chunk, and
  *  - extruded building massing merged per CELL_M cell (placeholder `V-BLD-PLACEHOLDER`, ~100 draw calls).
  * Both are grey-box stand-ins until M1-064 delivers assets; they exist so the M1 camera scenes carry the real
  * object counts and the draw call budget (<= 60 hedges, <= 900 buildings) can be measured.
  */
 import { Color3 } from '@babylonjs/core/Maths/math.color';
-import { Matrix, Quaternion, Vector3 } from '@babylonjs/core/Maths/math.vector';
+import { Vector3 } from '@babylonjs/core/Maths/math.vector';
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
 import { DirectionalLight } from '@babylonjs/core/Lights/directionalLight';
 import { HemisphericLight } from '@babylonjs/core/Lights/hemisphericLight';
 import { Mesh } from '@babylonjs/core/Meshes/mesh';
 import { VertexData } from '@babylonjs/core/Meshes/mesh.vertexData';
-import { MeshBuilder } from '@babylonjs/core/Meshes/meshBuilder';
-import '@babylonjs/core/Meshes/thinInstanceMesh'; // Mesh.thinInstance* augmentation (not pulled in when vegetation is off)
 import type { RenderContext } from '../engine';
+import { VariantRegistry } from '../materials/variants';
 import { attachCsm, type CsmHandle } from '../lighting/csm';
 import type { ShadowTier } from '../lighting/csm-math';
 import { extrudeBuilding, newArrays, type BuildingInput, type BuildingStats, type MeshArrays } from './building-mesh';
 import { polylineToSegments, type HedgeProps, type HedgeSegment } from './hedge-geometry';
+import { HedgeChunks } from './hedge-chunks';
+import type { StreamMetrics } from './chunk-streamer';
 
 export const CELL_M = 128;
 
@@ -50,7 +51,9 @@ export interface WorldStats {
 
 export interface WorldHandle {
   stats: WorldStats;
-  hedges: Mesh | null;
+  variants: VariantRegistry;
+  /** Preview chunk residency. Counts describe the procedural hedge source. */
+  stream: Readonly<StreamMetrics> | null;
   buildingMeshes: Mesh[];
   /** Cascaded shadow maps when `?csm=1` (M1-043b). */
   csm: CsmHandle | null;
@@ -65,19 +68,6 @@ async function fetchJson<T>(url: string): Promise<T | null> {
   } catch {
     return null;
   }
-}
-
-/** Instance matrices (column-major 16 floats each) for hedge segments: unit box scaled to (mound width, height, length). */
-export function hedgeMatrices(segs: readonly HedgeSegment[], groundAt: (x: number, z: number) => number): Float32Array {
-  const out = new Float32Array(segs.length * 16);
-  const m = new Matrix();
-  segs.forEach((s, i) => {
-    const y = groundAt(s.x, s.z);
-    // yaw 0 = +z growing toward +x: rotation about +y by `yaw` maps the box's local +z onto that heading
-    Matrix.ComposeToRef(new Vector3(s.moundWidth, s.height, s.len), Quaternion.RotationAxis(Vector3.Up(), s.yaw), new Vector3(s.x, y + s.height / 2 - 0.05, s.z), m);
-    m.copyToArray(out, i * 16);
-  });
-  return out;
 }
 
 function toMesh(name: string, a: MeshArrays, scene: RenderContext['scene']): Mesh {
@@ -115,29 +105,15 @@ export async function attachWorld(ctx: RenderContext, terrain: { heightAt(x: num
   const stats: WorldStats = { hedge_segments: 0, hedge_length_m: 0, hedge_meshes: 0, building_count: 0, building_cells: 0, building_triangles: 0, building_roof_failures: 0, enterable: 0, load_ms: 0 };
   const disposables: { dispose(): void }[] = [];
 
-  // Hedgerows: one mesh, thin instances. Gap segments neither block nor draw.
-  let hedges: Mesh | null = null;
-  if (hedgesJson) {
-    const segs: HedgeSegment[] = [];
-    for (const f of hedgesJson.features) {
-      if (f.geometry.type !== 'LineString') continue;
-      for (const s of polylineToSegments(f.geometry.coordinates as [number, number][], f.properties)) if (!s.gap) segs.push(s);
-    }
-    stats.hedge_segments = segs.length;
-    stats.hedge_length_m = segs.reduce((a, s) => a + s.len, 0);
-    if (segs.length > 0) {
-      hedges = MeshBuilder.CreateBox('V-HEDGE-PLACEHOLDER', { size: 1 }, scene);
-      const mat = new StandardMaterial('PH_V-HEDGE-PLACEHOLDER', scene);
-      mat.diffuseColor = Color3.FromHexString('#3f5e2c');
-      mat.specularColor = Color3.Black();
-      hedges.material = mat;
-      hedges.thinInstanceSetBuffer('matrix', hedgeMatrices(segs, (x, z) => terrain.heightAt(x, z)), 16, true);
-      hedges.thinInstanceRefreshBoundingInfo(true);
-      hedges.isPickable = false;
-      stats.hedge_meshes = 1;
-      disposables.push(hedges, mat);
+  const segments: HedgeSegment[] = [];
+  for (const f of hedgesJson?.features ?? []) {
+    if (f.geometry.type !== 'LineString') continue;
+    for (const segment of polylineToSegments(f.geometry.coordinates as [number, number][], f.properties)) {
+      if (!segment.gap) segments.push(segment);
     }
   }
+  stats.hedge_segments = segments.length;
+  stats.hedge_length_m = segments.reduce((sum, segment) => sum + segment.len, 0);
 
   // Buildings: extrude and merge per cell.
   const buildingMeshes: Mesh[] = [];
@@ -188,19 +164,46 @@ export async function attachWorld(ctx: RenderContext, terrain: { heightAt(x: num
       const casc = params.get('csm_cascades');
       csm = attachCsm(sun, tier, ctx.kind === 'webgl2', casc ? { cascades: Number(casc) | 0 } : {});
       for (const m of buildingMeshes) csm.add(m);
-      if (hedges) csm.add(hedges);
     }
+  }
+  let stream: StreamMetrics | null = null;
+  let stopHedges: (() => void) | undefined;
+  if (segments.length > 0) {
+    const material = new StandardMaterial('PH_V-HEDGE-PLACEHOLDER', scene);
+    material.diffuseColor = Color3.FromHexString('#3f5e2c');
+    material.specularColor = Color3.Black();
+    const hedges = new HedgeChunks(scene, material, segments, (x, z) => terrain.heightAt(x, z),
+      (mesh) => csm?.add(mesh), (mesh) => csm?.generator.removeShadowCaster(mesh, false));
+    stream = hedges.streamer.metrics;
+    let previous: { x: number; z: number } | undefined;
+    const update = (dtMs: number) => {
+      const camera = scene.activeCamera;
+      if (!camera) return;
+      camera.getViewMatrix();
+      const { x, z } = camera.globalPosition;
+      const pos = { x, z };
+      const dt = dtMs / 1000;
+      const vel = previous && dt > 0 ? { x: (x - previous.x) / dt, z: (z - previous.z) / dt } : { x: 0, z: 0 };
+      hedges.streamer.update(pos, vel, () => true, dt);
+      previous = pos;
+      stats.hedge_meshes = hedges.activeMeshes;
+    };
+    update(0);
+    stopHedges = ctx.onFrame(update, undefined, 'hedgerow_update');
+    disposables.push(hedges, material);
   }
   stats.load_ms = performance.now() - t0;
   return {
     stats,
-    hedges,
+    variants: new VariantRegistry(params.get('quality') === 'low' || params.get('post') === 'low'),
+    stream,
     buildingMeshes,
     csm,
     dispose() {
+      stopHedges?.();
+      for (const d of disposables) d.dispose();
       csm?.dispose();
       for (const m of buildingMeshes) m.dispose();
-      for (const d of disposables) d.dispose();
     },
   };
 }

@@ -4,8 +4,9 @@ import { dirname, join } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
 import {
   Codec, FpakWriter, buildManifest, checkBudgets, checkConsistency, checkPlaceholders, globToRegExp, manifestDigest, parseLedger, publishPath,
-  serializeManifest, writeStats, bundleBytes, type Manifest, type Stats,
+  serializeManifest, writeStats, bundleBytes, categoryBreakdown, formatCategoryBreakdown, type Manifest, type Stats,
 } from '../src/index.ts';
+import { main } from '../src/cli.ts';
 import { ExitCode } from '../src/errors.ts';
 import { ledgerText } from './helpers.ts';
 
@@ -174,5 +175,55 @@ describe('globs', () => {
     ['terrain_carentan/*', 'terrain_carentan/a/b', false], ['terrain_carentan/**', 'terrain_carentan/a/b', true], ['veh_us_m4*', 'veh_us_m4a1', true],
   ])('%s vs %s -> %s', (g, id, ok) => {
     expect(globToRegExp(g).test(id)).toBe(ok);
+  });
+});
+
+describe('category breakdown & core-size.mjs compatibility', () => {
+  it('breaks down bytes by category prefix including _fp and _tp weapon chains', () => {
+    const ref = (entry: string, bytes: number) => ({ pak: '/a/x.fpak', entry, offset: 0, bytes, sha256: '', index_bytes: 20 });
+    const m: Manifest = {
+      schema: 1, build: '', game_version: '', data_hash: '', bundles: {}, budgets: {},
+      assets: {
+        wpn_us_garand: {
+          kind: 'model', tier: ['medium'], placeholder: true,
+          lods: [
+            { lod: 0, suffix: '_fp', ...ref('wpn_us_garand@lod0_fp', 5000) },
+            { lod: 0, suffix: '_tp', ...ref('wpn_us_garand@lod0_tp', 1200) },
+          ],
+        },
+        snd_garand_fire: {
+          kind: 'audio', tier: ['medium'], placeholder: true,
+          audio: [{ codec: 'opus', ...ref('snd_garand_fire@opus', 800) }],
+        },
+      },
+    };
+    const rows = categoryBreakdown(m, 'medium');
+    expect(rows).toEqual([
+      { category: 'snd', assets: 1, entries: 1, bytes: 820, fpBytes: 0, tpBytes: 0 },
+      { category: 'wpn', assets: 1, entries: 2, bytes: 6240, fpBytes: 5020, tpBytes: 1220 },
+    ]);
+    expect(formatCategoryBreakdown(rows)).toContain('wpn');
+    expect(formatCategoryBreakdown(rows)).toContain('5020');
+  });
+
+  it('manifest-budget CLI reads brotliBytes produced by tools/ci/core-size.mjs', async () => {
+    const root = join(tmp, 'core-size-cli');
+    mkdirSync(join(root, 'assets/manifests'), { recursive: true });
+    writeFileSync(join(root, 'LICENSES.md'), ledgerText([]));
+    writeFileSync(join(root, 'assets/manifests/budgets.json'), JSON.stringify({ core_bytes: 8_388_608, map_carentan_medium_bytes: 157_286_400 }));
+    writeFileSync(join(root, 'assets/manifests/manifest.json'), JSON.stringify({
+      schema: 1, build: 't', game_version: '0.1.0', data_hash: '',
+      assets: {}, bundles: { core: ['ui_*'], map_carentan_medium: ['veh_*'] },
+      budgets: { core_bytes: 8_388_608, map_carentan_medium_bytes: 157_286_400 },
+    }));
+    writeFileSync(join(root, 'size-report.json'), JSON.stringify({ files: 10, rawBytes: 4_000_000, brotliBytes: 1_150_132, dataBytes: 9000, max: 8_388_608, pass: true }));
+    const okLines: string[] = [];
+    expect(await main(['manifest-budget', '--root', root, '--core-size-file', 'size-report.json'], (l) => okLines.push(l))).toBe(ExitCode.Ok);
+    expect(okLines.join('\n')).toContain('1150132');
+    expect(okLines.join('\n')).not.toContain('skipped');
+    writeFileSync(join(root, 'size-report.json'), JSON.stringify({ files: 10, rawBytes: 20_000_000, brotliBytes: 9_000_000, dataBytes: 0, max: 8_388_608, pass: false }));
+    const badLines: string[] = [];
+    expect(await main(['manifest-budget', '--root', root, '--core-size-file', 'size-report.json'], (l) => badLines.push(l))).not.toBe(ExitCode.Ok);
+    expect(badLines.join('\n')).toMatch(/FAIL core.*over/);
   });
 });

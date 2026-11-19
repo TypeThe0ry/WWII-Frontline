@@ -1,9 +1,10 @@
 //! Environment configuration (`GATEWAY_BIND`, `TICKET_SIGNING_KEY_FILE`, `INTERNAL_API_TOKEN`,
-//! `TOKEN_SECRET`, `ALLOWED_ORIGINS`).
+//! `TOKEN_SECRET`, `ALLOWED_ORIGINS`, `DATABASE_URL`).
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct Config {
     pub bind: String,
+    pub database_url: String,
     /// Ed25519 seed (32 raw bytes) file; generated and written when missing.
     pub ticket_key_file: Option<String>,
     pub internal_token: String,
@@ -25,6 +26,7 @@ impl Config {
         let secret = get("TOKEN_SECRET").ok_or("TOKEN_SECRET is required")?;
         Ok(Config {
             bind: get("GATEWAY_BIND").unwrap_or_else(|| "127.0.0.1:8080".into()),
+            database_url: get("DATABASE_URL").unwrap_or_else(|| "sqlite://gateway.sqlite3".into()),
             ticket_key_file: get("TICKET_SIGNING_KEY_FILE"),
             internal_token,
             token_secret: secret.into_bytes(),
@@ -40,6 +42,7 @@ impl Config {
     pub fn test() -> Config {
         Config {
             bind: "127.0.0.1:0".into(),
+            database_url: "sqlite::memory:".into(),
             ticket_key_file: None,
             internal_token: "internal-test-token".into(),
             token_secret: b"test-secret-test-secret-test-secret".to_vec(),

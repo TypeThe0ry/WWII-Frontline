@@ -4,6 +4,7 @@ import { assertAllowedFor } from './helpers.ts';
 import {
   decodePng, encodeKtx2, inspectKtx2, packOrm, padToMultipleOf4, processTextures, profileFor, selectFormat, toRrrg, type Raster,
 } from '../src/textures.ts';
+import { ffmpeg } from '../src/audio/ffmpeg.ts';
 import { ExitCode, GateError } from '../src/errors.ts';
 import { albedoPng, buildDoc, grayPng, normalPng, sphereData } from './synth.ts';
 
@@ -110,4 +111,23 @@ describe('processTextures on a document', () => {
     const ledger = assertAllowedFor('LOD');
     await expect(processTextures(doc, { cls: {}, assetId: 'AST-V-TEST-001-01', ledger })).rejects.toMatchObject({ code: ExitCode.ProcessingNotAllowed });
   });
+
+  it('JPEG source textures (as in Poly Haven CC0 glTF) decode via ffmpeg and encode to KTX2', async () => {
+    const toJpeg = async (png: Buffer) => {
+      const { stdout } = await ffmpeg(['-f', 'image2pipe', '-vcodec', 'png', '-i', 'pipe:0', '-f', 'image2pipe', '-vcodec', 'mjpeg', '-q:v', '3', 'pipe:1'], { input: png });
+      return new Uint8Array(stdout.buffer, stdout.byteOffset, stdout.byteLength);
+    };
+    const doc = buildDoc(sphereData(8, 8), { baseColor: albedoPng(32), normal: normalPng(32) });
+    for (const tex of doc.getRoot().listTextures()) {
+      const jpg = await toJpeg(Buffer.from(tex.getImage()!));
+      tex.setImage(jpg).setMimeType('image/jpeg');
+    }
+    const out = await processTextures(doc, { cls: { texture_profile: 'bg' } });
+    const byslot = Object.fromEntries(out.textures.map((t) => [t.slot, t]));
+    expect(byslot.color!.format).toBe('ETC1S');
+    expect(byslot.normal!.format).toBe('UASTC');
+    expect(byslot.normal!.channels).toBe(2);
+    expect([byslot.color!.width, byslot.color!.height]).toEqual([32, 32]);
+    expect(doc.getRoot().listTextures().every((t) => t.getMimeType() === 'image/ktx2')).toBe(true);
+  }, 60_000);
 });

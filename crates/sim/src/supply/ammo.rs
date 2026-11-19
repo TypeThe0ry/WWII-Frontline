@@ -1,7 +1,7 @@
 //! Ammo Crates and resupply (GAMEDESIGN 12.3; M1-020b).
 //!
 //! A crate holds 600 points; refilling a loadout item costs its price in points. Order:
-//! primary magazines, then grenades, then bandages. A player never gets more than its
+//! primary magazines, secondary magazines, grenades, then bandages. A player never gets more than its
 //! loadout's initial amount.
 
 use std::collections::BTreeMap;
@@ -11,7 +11,7 @@ use frontline_protocol::msg::input::buttons;
 use glam::Vec3;
 
 use crate::components::{
-    CurrentTick, EntityTable, EventBuf, LastInput, Player, SimCfgRes, Team, Transform,
+    CurrentTick, EntityTable, EventBuf, LastInput, Player, SimCfgRes, Team, Transform, WeaponTable,
 };
 use crate::data::GameData;
 use crate::health::LifeState;
@@ -19,6 +19,7 @@ use crate::ids::PlayerId;
 use crate::medical::{Vitals, SELF_BANDAGES};
 use crate::step::SimEvent;
 use crate::throwables::system::{Gadgets, START_FRAG, START_SMOKE};
+use crate::weapon::sidearm::{default_loadout, initial_weapon, WeaponSlots};
 use crate::weapon::{WeaponParams, WeaponState};
 
 use super::{dist_xz, SupplyWorld};
@@ -103,24 +104,13 @@ pub fn loadout_target(
     team: Team,
     hz: u8,
 ) -> Option<(LoadoutTarget, String)> {
-    let key = match team {
-        Team::Us => "us",
-        Team::Ger => "ger",
-    };
-    let lid = data
-        .role(role)?
-        .faction_overrides
-        .get(key)?
-        .loadout_ids
-        .first()?;
-    let lo = data.loadout(lid)?;
-    let def = data.weapons.iter().find(|w| w.id == lo.primary)?;
+    let lo = default_loadout(data, role, team)?;
+    let def = data.weapon(&lo.primary)?;
     let p = WeaponParams::from_def(def, hz).ok()?;
-    let reserve = u32::from(p.mag_capacity) * lo.ammo_mags.saturating_sub(1);
     Some((
         LoadoutTarget {
             mag_capacity: p.mag_capacity,
-            reserve: reserve.min(u32::from(u16::MAX)) as u16,
+            reserve: initial_weapon(0, p.mag_capacity, lo.ammo_mags).reserve,
             frag: START_FRAG,
             smoke: START_SMOKE,
             bandages: SELF_BANDAGES,
@@ -132,6 +122,7 @@ pub fn loadout_target(
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Item {
     Mag,
+    SecondaryMag,
     Frag,
     Smoke,
     Bandage,
@@ -160,6 +151,24 @@ pub fn resupply(
     class: &str,
     costs: &AmmoCosts,
 ) -> ResupplyResult {
+    resupply_equipment(inv, points, target, class, costs, None)
+}
+
+struct SecondaryRefill<'a> {
+    gun: &'a mut WeaponState,
+    class: &'a str,
+    capacity: u16,
+    reserve: u16,
+}
+
+fn resupply_equipment(
+    inv: &mut Inventory<'_>,
+    points: &mut u32,
+    target: &LoadoutTarget,
+    class: &str,
+    costs: &AmmoCosts,
+    secondary: Option<SecondaryRefill<'_>>,
+) -> ResupplyResult {
     let mut out = ResupplyResult::default();
     let mut spend = |units: u32, price: u32, points: &mut u32| -> u32 {
         if units == 0 || price == 0 {
@@ -170,17 +179,22 @@ pub fn resupply(
         out.points_spent += n * price;
         n
     };
-    // Primary magazines.
-    if let Some(w) = inv.weapon.as_deref_mut() {
-        let cap = u32::from(target.mag_capacity.max(1));
-        let missing = u32::from(target.reserve.saturating_sub(w.reserve));
+    let mut refill = |w: &mut WeaponState, capacity: u16, reserve: u16, class: &str, item| {
+        let cap = u32::from(capacity.max(1));
+        let missing = u32::from(reserve.saturating_sub(w.reserve));
         let clips = missing.div_ceil(cap);
         let got = spend(clips, costs.mag_price(class), points);
         if got > 0 {
             let rounds = (got * cap).min(missing);
             w.reserve += rounds as u16;
-            out.items.push((Item::Mag, got));
+            out.items.push((item, got));
         }
+    };
+    if let Some(w) = inv.weapon.as_deref_mut() {
+        refill(w, target.mag_capacity, target.reserve, class, Item::Mag);
+    }
+    if let Some(s) = secondary {
+        refill(s.gun, s.capacity, s.reserve, s.class, Item::SecondaryMag);
     }
     let g = costs.get("grenade");
     let n = spend(
@@ -257,11 +271,12 @@ impl AmmoCfg {
 
 /// Upkeep (expiry, empty crates) and the hold-to-resupply interaction.
 #[allow(clippy::type_complexity, clippy::too_many_arguments)]
-pub fn ammo(
+pub(crate) fn ammo(
     tick: Res<CurrentTick>,
     sim: Res<SimCfgRes>,
     cfg: Res<super::SupplyCfg>,
     acfg: Res<AmmoCfg>,
+    wt: Res<WeaponTable>,
     table: Res<EntityTable>,
     mut sw_res: ResMut<SupplyWorld>,
     mut events: ResMut<EventBuf>,
@@ -272,6 +287,7 @@ pub fn ammo(
         &LifeState,
         &LastInput,
         Option<&mut WeaponState>,
+        &mut WeaponSlots,
         &mut Gadgets,
         &mut Vitals,
     )>,
@@ -293,7 +309,8 @@ pub fn ammo(
         events.0.push(SimEvent::CrateDestroyed { id });
     }
     for (_, e) in table.sorted() {
-        let Ok((pl, team, tr, life, last, weapon, mut gadgets, mut vitals)) = q.get_mut(e) else {
+        let Ok((pl, team, tr, life, last, weapon, slots, mut gadgets, mut vitals)) = q.get_mut(e)
+        else {
             continue;
         };
         let pid = pl.id;
@@ -326,18 +343,57 @@ pub fn ammo(
         if *h != cfg.interact_ticks {
             continue;
         }
-        let Some((target, class)) =
-            loadout_target(sim.data, crate::world::DEFAULT_ROLE, *team, sim.hz)
-        else {
-            continue;
+        let slots = slots.into_inner();
+        let active = weapon.map(|w| w.into_inner());
+        let (primary, secondary) = if slots.secondary_active {
+            (slots.stowed.as_mut(), active)
+        } else {
+            (active, slots.stowed.as_mut())
+        };
+        let magazine = |gun: &WeaponState, mags| {
+            let class = &sim.data.weapons.get(usize::from(gun.def_id))?.class;
+            let cap = wt.params(gun.def_id)?.mag_capacity;
+            Some((
+                cap,
+                initial_weapon(gun.def_id, cap, mags).reserve,
+                class.as_str(),
+            ))
+        };
+        let (cap, reserve, class) = primary
+            .as_deref()
+            .and_then(|w| magazine(w, slots.loadout?.ammo_mags))
+            .unwrap_or((0, 0, ""));
+        let secondary = secondary.and_then(|gun| {
+            let (capacity, reserve, class) =
+                magazine(gun, slots.loadout?.secondary_mags.unwrap_or(1))?;
+            Some(SecondaryRefill {
+                gun,
+                class,
+                capacity,
+                reserve,
+            })
+        });
+        let target = LoadoutTarget {
+            mag_capacity: cap,
+            reserve,
+            frag: START_FRAG,
+            smoke: START_SMOKE,
+            bandages: SELF_BANDAGES,
         };
         let c = sw.ammo.get_mut(&cid).unwrap();
         let mut inv = Inventory {
-            weapon: weapon.map(|w| w.into_inner()),
+            weapon: primary,
             gadgets: &mut gadgets,
             bandages: &mut vitals.bandages,
         };
-        let res = resupply(&mut inv, &mut c.points, &target, &class, &acfg.prices);
+        let res = resupply_equipment(
+            &mut inv,
+            &mut c.points,
+            &target,
+            class,
+            &acfg.prices,
+            secondary,
+        );
         if res.points_spent > 0 {
             events.0.push(SimEvent::Resupplied {
                 player: pid,

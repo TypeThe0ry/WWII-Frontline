@@ -44,6 +44,8 @@ pub fn build_ctx(args: &Args) -> Result<Ctx, String> {
         empty_collision: frontline_sim::CollisionData::empty(),
         waypoints,
         drive_vehicle: args.drive_vehicle,
+        #[cfg(feature = "anticheat-test")]
+        anticheat_mix: args.anticheat_mix,
         trace: std::env::var("HEADLESS_TRACE").is_ok_and(|v| v == "1"),
     })
 }
@@ -66,6 +68,8 @@ pub async fn run(args: &Args, ctx: Ctx) -> Report {
             empty_collision: frontline_sim::CollisionData::empty(),
             waypoints: ctx.waypoints.clone(),
             drive_vehicle: ctx.drive_vehicle && i == 0,
+            #[cfg(feature = "anticheat-test")]
+            anticheat_mix: ctx.anticheat_mix,
             trace: ctx.trace,
         };
         if spread {

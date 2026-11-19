@@ -42,3 +42,10 @@ docs/measurements/tmp/
 
 # M1-065a: generated font subsets (python3 tools/font-subset/subset.py --fetch --src assets/incoming/fonts --out client/public/fonts)
 client/public/fonts/
+
+# Default gateway SQLite database and sidecars
+/gateway.sqlite3
+/gateway.sqlite3-*
+
+# M1-066: local dev stack runtime state (PIDs, logs, ephemeral secrets, spool)
+.dev-stack/

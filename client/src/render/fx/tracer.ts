@@ -17,6 +17,8 @@ export const TRACER_MAX_RANGE_M = 400;
 export const TRACER_MAX_SPEED_MPS = 600;
 /** An impact within this distance of a tracer's line ends that tracer. */
 export const TRACER_IMPACT_MATCH_M = 2;
+const TRACER_MAX_LIFE_S = 0.3;
+const VISUAL_GRAVITY_MPS2 = 9.8;
 
 interface Tracer {
   mesh: InstancedMesh;
@@ -30,6 +32,8 @@ interface Tracer {
   /** Distance travelled by the tail end of the streak. */
   travelled: number;
   range: number;
+  ballistic: boolean;
+  fresh: boolean;
 }
 
 export class TracerPool {
@@ -48,7 +52,7 @@ export class TracerPool {
       mesh.setEnabled(false);
       mesh.isPickable = false;
       mesh.alwaysSelectAsActiveMesh = true;
-      this.free.push({ mesh, ox: 0, oy: 0, oz: 0, dx: 0, dy: 0, dz: 1, speed: 0, travelled: 0, range: 0 });
+      this.free.push({ mesh, ox: 0, oy: 0, oz: 0, dx: 0, dy: 0, dz: 1, speed: 0, travelled: 0, range: 0, ballistic: false, fresh: false });
       registry.add(REQ.FX_TRACER);
     }
   }
@@ -57,7 +61,8 @@ export class TracerPool {
     return this.live.length;
   }
 
-  spawn(ox: number, oy: number, oz: number, dx: number, dy: number, dz: number, muzzleVelocityMps: number): boolean {
+  spawn(ox: number, oy: number, oz: number, dx: number, dy: number, dz: number, muzzleVelocityMps: number, ballistic = false): boolean {
+    if (!(muzzleVelocityMps > 0)) return false;
     const t = this.free.pop();
     if (!t) return false;
     t.ox = ox;
@@ -69,7 +74,8 @@ export class TracerPool {
     t.speed = Math.min(TRACER_MAX_SPEED_MPS, muzzleVelocityMps);
     t.travelled = 0;
     t.range = TRACER_MAX_RANGE_M;
-    t.mesh.rotation.set(-Math.asin(Math.max(-1, Math.min(1, dy))), Math.atan2(dx, dz), 0);
+    t.ballistic = ballistic;
+    t.fresh = ballistic;
     t.mesh.setEnabled(true);
     this.place(t);
     this.live.push(t);
@@ -78,7 +84,11 @@ export class TracerPool {
 
   private place(t: Tracer): void {
     const c = t.travelled + TRACER_LENGTH_M / 2; // centre of the streak
-    t.mesh.position.set(t.ox + t.dx * c, t.oy + t.dy * c, t.oz + t.dz * c);
+    const age = c / t.speed;
+    const gravity = t.ballistic ? VISUAL_GRAVITY_MPS2 : 0;
+    t.mesh.position.set(t.ox + t.dx * c, t.oy + t.dy * c - 0.5 * gravity * age * age, t.oz + t.dz * c);
+    const vertical = t.dy - gravity * age / t.speed;
+    t.mesh.rotation.set(-Math.atan2(vertical, Math.hypot(t.dx, t.dz)), Math.atan2(t.dx, t.dz), 0);
   }
 
   /** The shot hit something at (x,y,z): the nearest tracer whose line passes within `TRACER_IMPACT_MATCH_M` ends there. */
@@ -105,9 +115,10 @@ export class TracerPool {
   update(dtS: number): void {
     for (let i = this.live.length - 1; i >= 0; i--) {
       const t = this.live[i] as Tracer;
-      t.travelled += t.speed * dtS;
+      if (!t.fresh) t.travelled += t.speed * dtS;
+      t.fresh = false;
       // the head of the streak is `travelled + length`; it disappears when the head reaches the range end
-      if (t.travelled + TRACER_LENGTH_M >= t.range) {
+      if (t.travelled + TRACER_LENGTH_M >= t.range || (t.ballistic && t.travelled >= t.speed * TRACER_MAX_LIFE_S)) {
         t.mesh.setEnabled(false);
         this.live.splice(i, 1);
         this.free.push(t);

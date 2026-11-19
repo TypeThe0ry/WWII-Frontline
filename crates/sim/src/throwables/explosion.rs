@@ -22,6 +22,8 @@ impl Occlusion {
 
 /// Friendly-fire coefficient of explosions on teammates (GAMEDESIGN 6.6; the owner takes 1.0).
 pub const FF_MULT: f32 = 0.7;
+/// Lift the blast ray off the terrain at the resting projectile's position.
+pub(crate) const RAY_LIFT_M: f32 = 0.05;
 
 /// Damage at distance `r` from the blast centre; zero at and beyond `big_r`.
 pub fn explosion_damage(dmax: f32, r: f32, big_r: f32, occlusion: Occlusion) -> f32 {

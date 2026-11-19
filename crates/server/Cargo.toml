@@ -16,7 +16,7 @@ workspace = true
 frontline-sim = { path = "../sim" }
 frontline-protocol = { path = "../protocol" }
 frontline-bots = { path = "../bots" }
-tokio = { version = "1", default-features = false, features = ["rt-multi-thread", "net", "io-util", "signal", "macros", "time", "sync"] }
+tokio = { version = "1", default-features = false, features = ["rt-multi-thread", "net", "io-util", "fs", "signal", "macros", "time", "sync"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", default-features = false, features = ["std", "registry"] }
 prometheus = { version = "0.14", default-features = false }
@@ -24,6 +24,7 @@ clap = { version = "4", features = ["derive", "env"] }
 crossbeam-channel = "0.5"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+tempfile = "3"
 tokio-tungstenite = "0.26"
 futures-util = "0.3.34"
 bytes = "1.12.1"
@@ -41,6 +42,15 @@ path = "src/main.rs"
 name = "aoi_encode"
 harness = false
 
+[[bench]]
+name = "ticket_verify"
+harness = false
+
+[[bench]]
+name = "anticheat_on_input"
+harness = false
+
 [dev-dependencies]
+criterion = { version = "0.7", default-features = false }
 axum = { version = "0.8", default-features = false, features = ["http1", "json", "tokio"] }
 frontline-sim = { path = "../sim", features = ["test-util"] }

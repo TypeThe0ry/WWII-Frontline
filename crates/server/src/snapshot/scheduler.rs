@@ -23,6 +23,7 @@ use frontline_sim::{EntityId, PlayerId, SimEvent, Team, Vec3, World};
 use super::aoi_grid::AoiGrid;
 use super::baseline_book::ClientBook;
 use super::events_out::{damage_angle, explosion_event, impact_event, shot_event};
+use super::occlusion::terrain_occludes;
 use super::priority::*;
 use super::self_state;
 use crate::metrics::Metrics;
@@ -136,6 +137,8 @@ struct Frame {
     team: Team,
     pos: Vec3,
     state: EntityState,
+    los_radius: f32,
+    los_height: f32,
     hurt_q: bool,
     firing: bool,
 }
@@ -148,6 +151,8 @@ impl Default for Frame {
             team: Team::Us,
             pos: Vec3::ZERO,
             state: EntityState::default(),
+            los_radius: 0.5,
+            los_height: 2.0,
             hurt_q: false,
             firing: false,
         }
@@ -400,9 +405,14 @@ impl SnapshotScheduler {
         let mut present = [false; MAX_SLOTS];
         for pl in view.players() {
             let id = pl.player as usize & 127;
-            present[id] = true;
             self.ent_of[id] = Some(pl.entity);
             self.team_of[id] = pl.team;
+            // Seated players still have self_state and event identity. Their remote position
+            // travels with the hull, and the occupancy mask identifies the occupied seats.
+            if world.seat_of(pl.player).is_some() {
+                continue;
+            }
+            present[id] = true;
             let (anim, stance) = match world.player_state(pl.player) {
                 Some(m) => {
                     let speed = m.vel.x.hypot(m.vel.z);
@@ -516,6 +526,8 @@ impl SnapshotScheduler {
             f.entity = e;
             f.team = v.team;
             f.pos = v.pos;
+            f.los_radius = v.params.half_extents.length();
+            f.los_height = f.los_radius;
             f.firing = false;
             f.hurt_q = false;
             f.state = EntityState {
@@ -694,29 +706,15 @@ impl SnapshotScheduler {
         }
     }
 
-    fn client_pass(
+    fn select_candidates(
         &mut self,
-        world: &World,
-        c: &ClientIn,
+        terrain: &frontline_sim::CollisionData,
+        p: PlayerId,
         o: &Observer,
         now: u32,
-        degraded: bool,
-        out: &mut Vec<Outgoing>,
+        packet_hz: f32,
     ) {
-        let p = c.player;
-        let self_state_pos = world.player_state(p).map(|s| s.pos).unwrap_or(o.pos);
-        let q = QPos::from_meters(self_state_pos.x, self_state_pos.y, self_state_pos.z);
-        let hz15 = c.link.hz15 || degraded;
-
-        let Some(book) = self.clients.get_mut(&p) else {
-            return;
-        };
-        book.on_client_report(c.ack_low, c.pred_hash);
-        if !Self::is_due(hz15, p, now) {
-            return;
-        }
-        let packet_hz = if hz15 { 15.0 } else { 20.0 };
-
+        let book = self.clients.get_mut(&p).expect("registered client");
         // ---- candidate / priority pass ----
         let dt = book
             .prio
@@ -743,9 +741,27 @@ impl SnapshotScheduler {
             }
             let slot = &mut book.prio.slots[id as usize];
             let was = slot.state == SlotState::InRange;
-            let rel = relation(o, f.pos);
-            if !is_candidate(&self.params, f.team as u8 == o.team, &rel, was) {
+            let mut rel = relation(o, f.pos);
+            let friendly = f.team as u8 == o.team;
+            if !is_candidate(&self.params, friendly, &rel, was) {
                 continue;
+            }
+            if !friendly && rel.dist > self.params.los_min_dist_m {
+                let eye = o.pos + Vec3::Y * EYE_H;
+                if slot
+                    .los
+                    .blocked(f.entity, now, self.params.los_period_ticks, || {
+                        terrain_occludes(terrain, eye, f.pos, f.los_radius, f.los_height)
+                    })
+                {
+                    continue;
+                }
+            } else {
+                slot.los.clear();
+            }
+            if !friendly {
+                // R3 decides enemy visibility. The visibility rate discount applies to friends.
+                rel.cos_h = 1.0;
             }
             slot.touched = ec;
             if !was {
@@ -761,21 +777,68 @@ impl SnapshotScheduler {
             let rate = if self.near_every_packet && rel.dist <= self.params.enemy_close_m {
                 packet_hz
             } else {
-                rate_hz(&rel, f.firing, f.hurt_q).min(packet_hz)
+                let rate = if f.state.kind == EntityKind::Vehicle {
+                    vehicle_rate_hz(&self.params, &rel, f.firing, f.hurt_q)
+                } else {
+                    rate_hz(&rel, f.firing, f.hurt_q)
+                };
+                rate.min(packet_hz)
             };
             slot.acc = (slot.acc + rate * dt).min(ACC_CAP);
             self.near[id as usize] = rel.dist <= self.params.enemy_close_m;
             self.cands.push(Cand { id, acc: slot.acc });
         }
-        for (id, slot) in book.prio.slots.iter_mut().enumerate() {
+        for slot in &mut book.prio.slots {
             if slot.state == SlotState::InRange && slot.touched != ec {
                 slot.state = SlotState::Leaving;
                 slot.remove_left = REMOVE_REPEATS;
                 slot.acc = 0.0;
-                let _ = id;
             }
         }
         order(&mut self.cands);
+    }
+
+    fn client_pass(
+        &mut self,
+        world: &World,
+        c: &ClientIn,
+        o: &Observer,
+        now: u32,
+        degraded: bool,
+        out: &mut Vec<Outgoing>,
+    ) {
+        let p = c.player;
+        let self_state_pos = world.player_state(p).map(|s| s.pos).unwrap_or(o.pos);
+        let q = QPos::from_meters(self_state_pos.x, self_state_pos.y, self_state_pos.z);
+        let hz15 = c.link.hz15 || degraded;
+
+        let Some(book) = self.clients.get_mut(&p) else {
+            return;
+        };
+        if let Some(report) = book.on_client_report(c.ack_low, c.pred_hash, now) {
+            if report.hash_mismatch {
+                if let Some(m) = &self.metrics {
+                    m.pred_hash_mismatch_total.inc();
+                }
+                tracing::debug!(
+                    event = "pred_hash_mismatch",
+                    player_id = p,
+                    ack = report.ack,
+                    tick = now,
+                    recent = book.recent_hash_mismatches(),
+                );
+            }
+        }
+        if !Self::is_due(hz15, p, now) {
+            return;
+        }
+        let packet_hz = if hz15 { 15.0 } else { 20.0 };
+
+        self.select_candidates(world.collision(), p, o, now, packet_hz);
+        let book = self
+            .clients
+            .get_mut(&p)
+            .expect("candidate pass for a registered client");
 
         // ---- encode ----
         let health_q = self.ent_of[p as usize]
@@ -797,15 +860,12 @@ impl SnapshotScheduler {
         let mut removes: [u8; MAX_SLOTS] = [0; MAX_SLOTS];
         let mut n_rm = 0usize;
         for (id, slot) in book.prio.slots.iter().enumerate() {
-            if slot.state == SlotState::Leaving && slot.remove_left > 0 {
+            if slot.state == SlotState::Leaving
+                && slot.remove_left > 0
+                && b.add_removed(id as u8).unwrap_or(false)
+            {
                 removes[n_rm] = id as u8;
                 n_rm += 1;
-            }
-        }
-        let mut rm_written = 0u64;
-        for &id in &removes[..n_rm] {
-            if b.add_removed(id).unwrap_or(false) {
-                rm_written += 1;
             }
         }
         let mut starved = 0u64;
@@ -839,6 +899,7 @@ impl SnapshotScheduler {
             }
         }
         if leaks > 0 {
+            tracing::warn!(event = "aoi_enemy_leak", player_id = p, tick = now, leaks);
             self.stats.enemy_leaks += leaks;
             if let Some(m) = &self.metrics {
                 m.aoi_enemy_leak_total.inc_by(leaks);
@@ -854,7 +915,7 @@ impl SnapshotScheduler {
             let s = &mut book.prio.slots[id as usize];
             s.remove_left = s.remove_left.saturating_sub(1);
             if s.remove_left == 0 {
-                *s = Slot::default();
+                s.state = SlotState::Absent;
             }
         }
         book.events.mark_sent(n_ev, now);
@@ -872,7 +933,7 @@ impl SnapshotScheduler {
         st.bytes += bytes.len() as u64;
         st.keyframe_records += kf as u64;
         st.delta_records += dl as u64;
-        st.remove_records += rm_written;
+        st.remove_records += n_rm as u64;
         st.starved += starved;
         if self.collect && st.sizes.len() < MAX_SAMPLES {
             st.sizes.push(bytes.len() as u16);
@@ -897,5 +958,81 @@ impl SnapshotScheduler {
             );
         }
         out.push(Outgoing { player: p, bytes });
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::path::PathBuf;
+    use std::time::Duration;
+
+    use frontline_sim::collision::{CHUNK_CELLS, CHUNK_SAMPLES};
+    use frontline_sim::{CollisionChunk, CollisionData};
+
+    use super::*;
+
+    /// `AOI_BENCH_OUTPUT=/data/scratch/... cargo test --release -p frontline-server --lib
+    /// aoi_select -- --ignored --nocapture`
+    #[test]
+    #[ignore = "manual optimized Criterion benchmark"]
+    fn aoi_select() {
+        let output =
+            PathBuf::from(std::env::var_os("AOI_BENCH_OUTPUT").expect("set AOI_BENCH_OUTPUT"));
+        let terrain = CollisionData::from_chunks((0..4).flat_map(|z| {
+            (0..4).map(move |x| {
+                CollisionChunk::new(
+                    x,
+                    z,
+                    vec![0.0; CHUNK_SAMPLES * CHUNK_SAMPLES],
+                    vec![0; CHUNK_CELLS * CHUNK_CELLS],
+                )
+            })
+        }));
+        let mut s = SnapshotScheduler::new(None);
+        s.clients.insert(0, ClientBook::new(0));
+        let observer = Observer {
+            pos: Vec3::new(110.0, 0.0, 20.0),
+            yaw: 0.0,
+            pitch: 0.0,
+            prev_yaw: 0.0,
+            prev_pitch: 0.0,
+            team: Team::Us as u8,
+        };
+        for id in 1..=60u8 {
+            let pos = Vec3::new(
+                20.0 + f32::from(id % 10) * 20.0,
+                0.0,
+                45.0 + f32::from(id / 10) * 29.0,
+            );
+            let frame = &mut s.frames[usize::from(id)];
+            frame.present = true;
+            frame.entity = u16::from(id);
+            frame.pos = pos;
+            frame.team = if id % 2 == 0 { Team::Us } else { Team::Ger };
+            s.grid.update(id, pos.x, pos.z);
+        }
+        s.select_candidates(&terrain, 0, &observer, 1, 20.0);
+        assert_eq!(s.cand_ids.len(), 60);
+        assert_eq!(s.cands.len(), 60);
+        let mut tick = 1u32;
+        criterion::Criterion::default()
+            .output_directory(&output)
+            .without_plots()
+            .warm_up_time(Duration::from_secs(1))
+            .measurement_time(Duration::from_secs(3))
+            .sample_size(30)
+            .bench_function("aoi_select/60_candidates", |b| {
+                b.iter(|| {
+                    tick += if tick % 3 == 1 { 1 } else { 2 };
+                    s.select_candidates(&terrain, 0, &observer, tick, 20.0);
+                    // Simulate an unconstrained packet budget so the priority accumulators
+                    // stay representative once the cache and send cadence warm up.
+                    let slots = &mut s.clients.get_mut(&0).unwrap().prio.slots;
+                    for c in &s.cands {
+                        slots[c.id as usize].acc -= 1.0;
+                    }
+                    std::hint::black_box(s.cands.len());
+                });
+            });
     }
 }

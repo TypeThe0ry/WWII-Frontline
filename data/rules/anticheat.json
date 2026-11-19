@@ -1,0 +1,6 @@
+{
+  "view_max_deg_s": 8000.0,
+  "window_ticks": 300,
+  "warn_count": 30,
+  "invalid_streak_ticks": 9
+}

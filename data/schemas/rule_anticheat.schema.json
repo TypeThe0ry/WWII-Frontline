@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://frontline.invalid/schemas/rule_anticheat.schema.json",
+  "title": "Anti-cheat input policy",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "view_max_deg_s",
+    "window_ticks",
+    "warn_count",
+    "invalid_streak_ticks"
+  ],
+  "properties": {
+    "view_max_deg_s": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "maximum": 8000
+    },
+    "window_ticks": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 300
+    },
+    "warn_count": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 300
+    },
+    "invalid_streak_ticks": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 300
+    }
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://frontline.invalid/schemas/rule_lagcomp.schema.json",
+  "title": "Lag compensation",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "cover_duration_s",
+    "cover_min_thickness_m"
+  ],
+  "properties": {
+    "cover_duration_s": {
+      "type": "number",
+      "minimum": 0
+    },
+    "cover_min_thickness_m": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    }
+  }
+}

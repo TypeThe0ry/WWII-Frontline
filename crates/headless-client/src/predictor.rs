@@ -363,4 +363,68 @@ mod tests {
         assert_eq!(p.ring.len(), 1);
         assert_eq!(p.stats.unknown_acks, 0);
     }
+
+    #[test]
+    fn scripted_walk_sprint_and_vault_match_authority() {
+        use frontline_protocol::msg::input::buttons;
+        use frontline_sim::{CollisionChunk, SpawnReq, Team, World};
+
+        let heights = (0..65 * 65)
+            .map(|i| if i % 65 >= 10 { 1.29 } else { 0.0 })
+            .collect();
+        let col = CollisionData::from_chunks([CollisionChunk::new(0, 0, heights, vec![0; 4096])]);
+        let mut world = World::new(
+            SimConfig {
+                tick_hz: 30,
+                match_seed: 1,
+                map: MapId(0),
+                mode: GameMode::Sandbox,
+                data: GameData::embedded(),
+            },
+            &col,
+        );
+        let pos = Vec3::new(5.0, 0.3, 20.0);
+        world
+            .spawn_player(SpawnReq {
+                player: 0,
+                team: Team::Us,
+                pos,
+                yaw: 0.0,
+            })
+            .unwrap();
+        let mut pred = Predictor::new(1, 0, 0, &col, 1);
+        pred.on_self(0, Some(pos.to_array()), true, false);
+        let mut max_err = 0.0_f32;
+        let mut vault_ticks = 0;
+        let mut max_speed = [0.0_f32; 2];
+        for seq in 1..=150 {
+            let mut c = cmd(seq, if seq <= 30 || seq >= 115 { 0 } else { 127 });
+            c.yaw = 16384;
+            if (31..=50).contains(&seq) {
+                c.aux = frontline_sim::movement::AUX_WALK;
+            }
+            c.buttons = match seq {
+                51..=80 => buttons::SPRINT,
+                81..=114 => buttons::USE,
+                _ => 0,
+            };
+            pred.push(&c);
+            world.step(&[(0, c)]);
+            let auth = world.player_state(0).unwrap();
+            max_err = max_err.max((pred.pos().unwrap() - auth.pos).length());
+            vault_ticks += usize::from(auth.vault.is_some());
+            if (31..=80).contains(&seq) {
+                let i = usize::from(seq > 50);
+                max_speed[i] = max_speed[i].max(auth.vel.x);
+            }
+            if seq % 3 == 0 {
+                pred.on_self(seq, Some(auth.pos.to_array()), true, false);
+            }
+        }
+        println!("150 ticks: headless max {max_err:.6} m, {vault_ticks} active vault ticks, walk/sprint maxima {max_speed:?} m/s, {} corrections", pred.stats.total);
+        assert!(max_speed[0] > 1.9 && max_speed[1] > 5.9);
+        assert!((22..=24).contains(&vault_ticks));
+        assert!(world.player_state(0).unwrap().pos.x > 10.0);
+        assert!(max_err < 0.05 && pred.stats.total == 0);
+    }
 }
