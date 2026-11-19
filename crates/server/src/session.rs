@@ -203,13 +203,14 @@ impl PlayerInput {
         let gap = self.state.gap;
         let mut c = self.last_cmd;
         c.tick = tick;
-        // One-shot actions are never replayed; level bits (aim, stance, sprint, lean) stay.
+        // One-shot actions are never replayed. Seat is a level here; the sim loop detects edges.
         c.buttons &= !EDGE_BUTTONS;
         c.aux &= AUX_LEVEL_MASK;
         let kind = if gap > REPEAT_MAX_GAP {
             c.move_x = 0;
             c.move_z = 0;
-            c.buttons &= !buttons::SPRINT;
+            // A stale seat level must not finish an exit hold without fresh input.
+            c.buttons &= !(buttons::SPRINT | buttons::VEHICLE_SEAT);
             Resolution::Held
         } else {
             Resolution::Repeated

@@ -13,6 +13,7 @@ use frontline_sim::{
 };
 
 use crate::bot_host::BotHost;
+use crate::seat_input::SeatInput;
 use crate::sim_bridge::{NetLink, SimBridge};
 use crate::snapshot::{ClientIn, LinkInfo, Outgoing, SnapshotScheduler, DEGRADE_HOLD_TICKS};
 use crate::validate::ValidateCfg;
@@ -226,6 +227,7 @@ pub struct SimLoop<C: Clock> {
     commands_rx: Receiver<Command>,
     stop: StopFlag,
     bridge: SimBridge,
+    seat_input: SeatInput,
     c0: crate::c0::C0Handler,
     consecutive: i64,
     ticks: u64,
@@ -336,6 +338,7 @@ pub fn build_loop_with_bots<C: Clock>(
         commands_rx: crx,
         stop,
         bridge,
+        seat_input: SeatInput::default(),
         c0: crate::c0::C0Handler::default(),
         consecutive: 0,
         phase_ms: [0.0; 6],
@@ -569,10 +572,15 @@ impl<C: Clock> SimLoop<C> {
         self.drain_inputs(now);
         let kicked = self.bridge.process_kicks(&mut self.world);
         if !kicked.is_empty() {
+            for player in kicked {
+                self.seat_input.forget(player);
+            }
             self.update_player_gauges();
         }
         self.bridge.resolve(now);
         self.bridge.anticheat_before_step(&self.world);
+        self.seat_input
+            .apply(&mut self.world, self.bridge.resolved());
         lap(0, &mut self.phase_ms);
         let out = self.world.step(self.bridge.resolved());
         lap(1, &mut self.phase_ms);
@@ -625,6 +633,7 @@ impl<C: Clock> SimLoop<C> {
                 Command::RemovePlayer(p) | Command::ClientGone(p) => {
                     self.c0.forget(p);
                     self.bridge.anticheat.forget(p);
+                    self.seat_input.forget(p);
                     self.bridge.leave(&mut self.world, p);
                     self.update_player_gauges();
                 }
@@ -791,6 +800,9 @@ impl<C: Clock> SimLoop<C> {
         }
     }
 }
+
+#[cfg(test)]
+mod seat_input_tests;
 
 #[cfg(test)]
 mod tests {
