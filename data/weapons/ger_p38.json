@@ -9,9 +9,21 @@
     "magazine_capacity": 8,
     "magazine_type": "detachable_box",
     "muzzle_velocity_mps": 350,
-    "rate_of_fire_rpm_practical": 300,
+    "rate_of_fire_rpm_practical": 40,
     "mass_kg": 0.96,
-    "_source": "待 M1-070 按 REF §6 复核"
+    "_source": [
+      {
+        "field": "rate_of_fire_rpm_practical",
+        "value": 40,
+        "unit": "rpm",
+        "source_id": "PWA",
+        "title": "Potsdamer Waffentafel Wa 42/43 (1941)",
+        "locator": "PDF p. 1, Zahlenangaben §3 (Schußleistung)",
+        "url": "https://bestanden.pistole38.nl/manuals/P38-manual-Waffentafeln-Potsdam-1941.pdf",
+        "accessed": "2026-11-19",
+        "note": "原表实用射速 32–40 发/分；标量取上限，与 Garand 的录法一致。不是游戏射速上限。"
+      }
+    ]
   },
   "gameplay": {
     "damage_torso_hp": 34,
