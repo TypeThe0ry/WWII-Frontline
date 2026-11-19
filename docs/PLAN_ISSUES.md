@@ -1155,6 +1155,9 @@ TAA 历史夹取默认开启（拖影 trail |ΔL| 4.67 → 3.11，FXAA 基线 2.
 ## PI-118 续二：TAA 速度通道与强制重投影（2026-11-19）
 PrePass 速度会卡死渲染循环，改用自有速度 RTT（地形/薄实例/网格各一个 GLSL+WGSL 速度材质），`?taa_vel=1` 时强制重投影并绑 `velocitySampler`。合成场景：方块拖尾 ΔL 3.11 → 0.92（FXAA 2.0），其余区域 0.83 → 0.29，镜头平移时 TAA 保持开启；WebGPU 与 WebGL2 一致，flipY 两种取值无法区分。默认仍关。**未做**：角色按静止、无 YCoCg 裁剪/运动遮罩、真实场景与帧时间未测。详见 `reports/m1-post.md`。
 
+## PI-118 续三：`taa_vel` 帧时间 A/B（2026-11-19）
+工作站 WebGPU 1080p、`post=high`、`--novsync`、世界场景三机位（hedgerow/old_town/open_field，60 实体 + 植被），`taa_vel=0/1` 各 2 次 × 25 s。帧间隔 P50（ms）：hedgerow 5.9 / 7.7 对 9.0 / 13.9；old_town 8.0 / 8.0 对 6.5 / 9.1；open_field 5.2 / 6.2 对 7.7 / 6.2。同一配置两次之间就差 1.8–2 ms（GPU0 同时有 40–98 % 的别的负载），所以只能说：**速度通道多渲染一遍地形/植被/网格，没有证据说成本 < 0.3 ms，hedgerow 上看起来有 1–6 ms 的增量（CPU 提交也变大）**。**不建议把默认改成开**；需要安静的 GPU 与 GPU 时间戳查询再测，并考虑只对近处植被/地形出速度。
+
 
 ## PI-123 M1-041d：载具驾驶的服务器指令通路与客户端状态缺口（2026-11-19）
 - 发现（读代码）：`World::seat_enter/seat_switch/seat_exit_begin` 已存在，但服务器没有任何调用方——线上没有座位请求消息（只有输入位 `VEHICLE_SEAT`，服务器校验放行但未映射到 `seat_enter`），自身状态（`SelfState`）也不告诉客户端「我坐在哪辆车的哪个座位」。因此 `VehiclePredictor`、`RemoteVehicleStore` 已就绪，但客户端无从知道何时进入/退出驾驶预测。
