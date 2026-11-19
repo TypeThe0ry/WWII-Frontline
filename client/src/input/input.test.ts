@@ -68,6 +68,14 @@ describe('keyboard -> InputCmd mapping', () => {
     const sprintKeys = Object.entries(DEFAULT_KEYMAP).filter(([, a]) => a === 'sprint').map(([k]) => k);
     expect(sprintKeys).toEqual(['ShiftLeft']);
   });
+  it('F sends the held vehicle-seat bit until released', () => {
+    const s = new InputSampler();
+    s.press('KeyF');
+    expect(s.build(1, 10, 6).buttons).toBe(BUTTONS.VEHICLE_SEAT);
+    expect(s.build(2, 11, 6).buttons).toBe(BUTTONS.VEHICLE_SEAT);
+    s.release('KeyF');
+    expect(s.build(3, 12, 6).buttons).toBe(0);
+  });
   it('two keys on one action: the action stays held until both are up', () => {
     const km = { ...DEFAULT_KEYMAP, ArrowUp: 'forward' as const };
     const s = new InputSampler(km);

@@ -54,6 +54,15 @@ export class RemoteVehicleStore {
     return this.tracks.has(id);
   }
 
+  /** Copies the raw kinematics for this snapshot tick, never an interpolated or cached older pose. */
+  copyKinematics(id: number, tick: number, out: Float32Array): boolean {
+    const last = this.tracks.get(id)?.samples.at(-1);
+    if (!last || last.tick !== tick) return false;
+    out.set(last.s.subarray(0, 10));
+    out[10] = 0; // Hull yaw rate is not on the wire (column 10 is turret yaw).
+    return true;
+  }
+
   ids(): number[] {
     return [...this.tracks.keys()];
   }
