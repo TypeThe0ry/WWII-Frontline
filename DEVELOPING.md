@@ -35,14 +35,28 @@ pnpm lint | pnpm typecheck | pnpm test
 
 ## CI checks (M0-002)
 
-Workflows live in `.github/workflows/` (`lint`, `test-rust`, `test-ts`, `wasm-build`, `data-validate`).
-Run the repo-specific gates locally:
+Run the affected `scripts/local-ci.sh` groups before merging. GitHub Actions
+workflows are manual-only (PI-078). The `lint` group requires `cargo-deny`:
+
+```sh
+cargo install --locked cargo-deny --root "$HOME/.cargo"
+export PATH="$HOME/.cargo/bin:$PATH"
+pnpm install --frozen-lockfile
+scripts/local-ci.sh lint
+```
+
+If `cargo-deny` is missing, `lint` is skipped and running it alone exits 3.
+The group runs all four dependency checks against `Cargo.lock`. The advisory
+check needs access to the RustSec advisory database. The `deny.toml` license
+allow-list is pending H-037.
+
+To run the repo-specific checks directly:
 
 ```sh
 node tools/ci/check-deps.mjs          # §4.5 crate dependency matrix (data: tools/ci/dep-matrix.mjs)
 node tools/ci/check-sim-purity.mjs    # §4.3.2 banned APIs in crates/sim/src; waive with `// purity-allow: <why>`
 pnpm ci:test                          # node --test for the scripts above
-cargo deny check                      # licenses (list pending H-037), bans, advisories, sources
+cargo deny --locked check             # advisories, bans, licenses, sources
 ```
 
 ## Map data (M0-009)
