@@ -1,6 +1,6 @@
 # M1 里程碑验收报告（M1-072，部分）
 
-状态：**M1 未达到可关闭条件。** 以下为 E1-1…E1-17 的核对结果，数字全部取自 `tasks/STATUS.md` 与 `reports/*.json`，未重新估算、未用别的机器数字顶替。工作站 GPU 可用（总控 2026-11-18 通知），GPU 相关项（E1-6/E1-7/E1-8 及 *b 任务）由工作站会话补测后再更新本表。
+状态：**M1 未达到可关闭条件。** 以下为 E1-1…E1-17 的核对结果，数字取自 `tasks/STATUS.md` 与 `reports/` 下的实测记录，工作站结果按 PI-109 标注。工作站 GPU 可用（总控 2026-11-18 通知），GPU 相关项（E1-6/E1-7/E1-8 及 *b 任务）由工作站会话补测后再更新本表。
 
 | E# | 标准 | 目标 | 实测 | 方法/命令/报告 | 结论 | 遗留(PI-xxx) |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -15,7 +15,7 @@
 | E1-9 | 包体积 | core ≤ 8 MB；首图 Medium ≤ 150 MB | F 的生产 core（含 sim-wasm）Brotli 1,150,132 B（≤ 8,388,608 B）；首图未测 | `reports/m1-boot.json`、`tools/ci/core-size.mjs` | partial | M1-064 阻塞（素材）、PI-125 |
 | E1-10 | 部署流程 | 键鼠可达；点击到可操作 ≤ 15 s；预取完成率 ≥ 95% | M1-040c 模拟 WS/WT 各 1 例 C0 接收；F 在工作站 Chromium 验证真实网关 → 本机 M0 WS 入场及键鼠界面，并用真实 WASM＋模拟 C0 验证部署拒绝与权威 spawn tick 显示。M0 自动生成不是 M1 部署，计时与预取率未测 | `client/e2e/ui-{lobby,match}.spec.ts`；`client/src/net/connect.test.ts` | partial（功能路径/夹具，非参考机） | PI-092 续、PI-109、PI-125 |
 | E1-11 | Garrison + 补给闭环 | 闭环可玩 | `e2e_garrison_supply_loop` 通过（取箱→放 Garrison 扣 50→队友 8 s ±1 tick 重生）。M1-060b 的 13 个真实 WASM 客户端逻辑用例通过，覆盖 8 种 Garrison 拒绝原因及补给箱/弹药箱预判。F 补充无样式放置/座位 DOM 与接线夹具；实局客户端、放置耗时和补弹闭环未测 | M1-019/020、`client/src/game/placement-check.test.ts` | partial | PI-107 续、PI-125 |
-| E1-12 | 坦克 | 3 座位；≥12 组 AP 与手算一致；120 ms RTT 直线校正 ≤1 次/10 s | 13 组 `armor_cases.json` 全一致；同机工作站（PI-109）WS 夹具折返联测 300 s：25±10 ms 单向延迟 + 2 % 丢包，入/出座各 1 次，59 次载具纠正（P99 0.0979 m）、0 次硬纠正；非 120 ms RTT 直线工况，该门槛仍未测 | M1-023、M1-022、`reports/m1-loadtest-netem.md` | partial | PI-070、PI-123 |
+| E1-12 | 坦克 | 3 座位；≥12 组 AP 与手算一致；120 ms RTT 直线校正 ≤1 次/10 s | 13 组 `armor_cases.json` 全一致；同机工作站（PI-109）WS 夹具折返联测 300 s：25±10 ms 单向延迟 + 2 % 丢包，入/出座各 1 次，59 次载具纠正（P99 0.0979 m）、0 次硬纠正。有头 Chromium 工作站夹具短程前进/倒车两轮，各入/出座 1 次，帧 P95 均为 16.7 ms。回环 0/244 次纠正，netem（单向 60 ms、2% 丢包）1/244 次（0.1215 m），硬纠正均为 0。其余座位及 120 ms RTT 连续 60 s 直线工况仍未测 | M1-023、M1-022、`reports/m1-loadtest-netem.md`、`reports/m1-vehicle-browser.md` | partial | PI-070、PI-109、PI-123 |
 | E1-13 | 倒地/救起/压制 | 状态机全转移单测；压制被客户端音画消费 | 016/017 单测通过（转移 ≥10 条）；网络对局已订阅压制音频。工作站无头 Chromium 的合成 PCM 在第二次压制后 400 ms 恢复到基准：低频振幅与高低频比均约 1.00002×。F 的倒地/阵亡/复生 DOM 通过模拟事件夹具；真实素材、联网生命周期/压制整链与音画联验未测（非 RTX 3060 参考机，PI-109） | M1-016/017；`client/e2e/audio-offline.spec.ts` | partial | PI-053、PI-124B、PI-125 |
 | E1-14 | 素材管线 | `.fpak` 往返一致；无独立 .glb/.ktx2/.ogg/.opus；缺失报告；无 PENDING 进主分支 | 台账 8 行：OK 4、PENDING 3、FLAGGED 1、REJECTED 0；仓库内 2 个 `.ktx2` 为测试夹具；PENDING 对应处理产物未入主分支 | `node tools/asset-pipeline/bin/asset-pipeline.mjs ledger-check --root .` | partial | PI-108 |
 | E1-15 | 基础反作弊 | 1.3× 速度、超射速被纠正/拒绝并计数 | 1.3× 注入：权威最高 6.34 m/s，`suspicion_move_total` ≥ 100；超射速 8 发出膛、56 次拒绝；甩枪 0 误报 | M1-027a | partial | PI-074 |
