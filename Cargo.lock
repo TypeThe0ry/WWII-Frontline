@@ -945,6 +945,7 @@ dependencies = [
  "frontline-protocol",
  "frontline-sim",
  "js-sys",
+ "serde",
  "serde_json",
  "wasm-bindgen",
 ]

@@ -33,22 +33,24 @@ describe('ghost style (acceptance 2: three states distinguishable by pattern and
 describe('placement machine (acceptance 4)', () => {
   it('place → commit → accepted returns to idle', () => {
     let s = P.placementNext(P.PLACEMENT_IDLE, { t: 'enter', kind: 'garrison' });
+    s = P.placementNext(s, { t: 'check', result: { legal: true } });
     s = P.placementNext(s, { t: 'commit' });
     expect(s.mode).toBe('committing');
     expect(P.placementNext(s, { t: 'accepted' })).toEqual(P.PLACEMENT_IDLE);
   });
   it('server rejection goes back to the ghost with the server reason', () => {
     let s = P.placementNext(P.PLACEMENT_IDLE, { t: 'enter', kind: 'ammo_crate' });
+    s = P.placementNext(s, { t: 'check', result: { legal: true } });
     s = P.placementNext(s, { t: 'commit' });
     s = P.placementNext(s, { t: 'rejected', reasonKey: 'ui.officer.err.enemyNear' });
     expect(s).toEqual({ mode: 'placing', kind: 'ammo_crate', reasonKey: 'ui.officer.err.enemyNear' });
   });
   it('illegal ghost cannot be committed; becomes placeable again when legal; cancel always works', () => {
     let s = P.placementNext(P.PLACEMENT_IDLE, { t: 'enter', kind: 'garrison' });
-    s = P.placementNext(s, { t: 'check', legal: false });
+    s = P.placementNext(s, { t: 'check', result: { legal: false } });
     expect(s.mode).toBe('invalid');
     expect(P.placementNext(s, { t: 'commit' }).mode).toBe('invalid');
-    s = P.placementNext(s, { t: 'check', legal: true });
+    s = P.placementNext(s, { t: 'check', result: { legal: true } });
     expect(s.mode).toBe('placing');
     expect(P.placementNext(P.placementNext(s, { t: 'commit' }), { t: 'cancel' })).toEqual(P.PLACEMENT_IDLE);
   });

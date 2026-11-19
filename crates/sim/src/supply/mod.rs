@@ -98,9 +98,13 @@ pub fn dist_xz(a: Vec3, b: Vec3) -> f32 {
 }
 
 /// Whether `team` may put a Supply Crate at `pos` (not within 80 m of an enemy-held point).
-pub fn can_place_supply_crate(objs: &[crate::rules::Objective], team: Team, pos: Vec3) -> bool {
-    objs.iter().all(|o| match o.owner {
-        Some(ow) if ow != team => dist_xz(o.pos, pos) >= ENEMY_POINT_EXCLUSION_M,
+pub fn can_place_supply_crate(
+    mut objectives: impl Iterator<Item = (Option<Team>, Vec3)>,
+    team: Team,
+    pos: Vec3,
+) -> bool {
+    objectives.all(|(owner, objective_pos)| match owner {
+        Some(ow) if ow != team => dist_xz(objective_pos, pos) >= ENEMY_POINT_EXCLUSION_M,
         _ => true,
     })
 }

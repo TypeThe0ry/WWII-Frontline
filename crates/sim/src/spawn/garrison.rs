@@ -129,6 +129,110 @@ fn dist_xz(a: Vec3, b: Vec3) -> f32 {
     ((a.x - b.x).powi(2) + (a.z - b.z).powi(2)).sqrt()
 }
 
+/// Read-only inputs for the authoritative and preview placement checks. Garrisons exclude
+/// destroyed points. Enemies include only non-dead opponents (the check applies LOS).
+pub struct GarrisonPlacement<'a> {
+    pub team: Team,
+    pub hq: &'a [Vec3],
+    pub garrisons: &'a [(Team, Vec3)],
+    pub objectives: &'a [crate::ObjectiveSpec],
+    pub collision: &'a crate::CollisionData,
+    pub water_material: Option<u8>,
+    pub enemies: &'a [Vec3],
+}
+
+pub fn water_material(data: &crate::GameData) -> Option<u8> {
+    data.materials
+        .iter()
+        .position(|m| m.id == "water")
+        .map(|i| i as u8)
+}
+
+impl GarrisonPlacement<'_> {
+    /// The actor's life and role are checked before supplying the world facts. Supplies are
+    /// queried at the actor, rather than the candidate, only after the other checks pass.
+    pub fn check(
+        &self,
+        pos: Vec3,
+        available_supplies: impl FnOnce() -> u32,
+    ) -> Result<GarrisonCost, PlaceError> {
+        for hq in self.hq {
+            if dist_xz(*hq, pos) < MIN_HQ_M {
+                return Err(PlaceError::TooCloseHq);
+            }
+        }
+        let mut own = 0usize;
+        for &(g_team, g_pos) in self.garrisons {
+            if g_team == self.team {
+                own += 1;
+                if dist_xz(g_pos, pos) < MIN_OWN_M {
+                    return Err(PlaceError::TooCloseOwnGarrison);
+                }
+            } else if dist_xz(g_pos, pos) < MIN_ENEMY_M {
+                return Err(PlaceError::TooCloseEnemyGarrison);
+            }
+        }
+        let objs = self.objectives;
+        let mut nearest: Option<(f32, &crate::ObjectiveSpec)> = None;
+        for o in objs {
+            let dd = dist_xz(o.pos, pos);
+            if dd < o.radius_m + OBJECTIVE_EXTRA_M {
+                return Err(PlaceError::TooCloseObjective);
+            }
+            if nearest.is_none_or(|(nd, _)| dd < nd) {
+                nearest = Some((dd, o));
+            }
+        }
+        let col = self.collision;
+        if col
+            .slope_deg_at(pos.x, pos.z)
+            .is_none_or(|s| s > MAX_SLOPE_DEG)
+        {
+            return Err(PlaceError::Slope);
+        }
+        if self.water_material.is_some() && col.material_at(pos.x, pos.z) == self.water_material {
+            return Err(PlaceError::Water);
+        }
+        let eye = pos + Vec3::Y * 1.6;
+        for &enemy in self.enemies {
+            if dist_xz(enemy, pos) <= ENEMY_NEAR_M && col.los(eye, enemy + Vec3::Y * 1.6) {
+                return Err(PlaceError::EnemyNear);
+            }
+        }
+        if own >= TEAM_CAP {
+            return Err(PlaceError::TeamCap);
+        }
+        let sector = nearest.map(|(_, o)| o.id);
+        let in_sector = self
+            .garrisons
+            .iter()
+            .filter(|(team, _)| *team == self.team)
+            .filter(|(_, g_pos)| {
+                let ns = objs
+                    .iter()
+                    .min_by(|a, b| dist_xz(a.pos, *g_pos).total_cmp(&dist_xz(b.pos, *g_pos)))
+                    .map(|o| o.id);
+                ns == sector
+            })
+            .count();
+        if in_sector >= SECTOR_CAP {
+            return Err(PlaceError::SectorCap);
+        }
+        let enemy_sector = nearest
+            .and_then(|(_, o)| o.owner)
+            .is_some_and(|ow| ow != self.team);
+        let cost = if enemy_sector {
+            COST_ENEMY
+        } else {
+            COST_FRIENDLY
+        };
+        if available_supplies() < cost {
+            return Err(PlaceError::NoSupplies);
+        }
+        Ok(GarrisonCost { supplies: cost })
+    }
+}
+
 /// Ticks of `s` seconds at `hz`.
 fn t(s: u32, hz: u8) -> u32 {
     s * u32::from(hz)
