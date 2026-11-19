@@ -151,7 +151,9 @@ pub fn projectile_system(
     mut seen: ResMut<SuppressSeen>,
     mut sq: Query<&mut SuppressionState>,
     mut q: Query<(&Transform, &Motion, &Team, &mut Health)>,
+    mut profiler: Option<ResMut<crate::step::StepProfiler>>,
 ) {
+    let _sample = crate::step::StepProfiler::measure(&mut profiler, |t| &mut t.projectiles);
     if projs.list.is_empty() {
         return;
     }

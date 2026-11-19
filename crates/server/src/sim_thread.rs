@@ -223,6 +223,7 @@ pub struct SimLoop<C: Clock> {
     /// Per-phase wall time (ms) of the last tick (see `tick_trace_enabled`):
     /// inputs, step, post-step, bots, aoi+snapshot, send.
     phase_ms: [f64; 6],
+    step_trace_ticks: Vec<u64>,
     clock: C,
     schedule: TickSchedule,
     world: World,
@@ -350,6 +351,17 @@ pub fn build_loop_with_bots<C: Clock>(
         )
     });
     let now = clock.now();
+    let step_trace_ticks =
+        if tick_trace_enabled() && std::env::var("FRONTLINE_STEP_TRACE").as_deref() == Ok("1") {
+            world.enable_step_profiling(step_clock_ns);
+            std::env::var("FRONTLINE_STEP_TRACE_TICKS")
+                .unwrap_or_default()
+                .split(',')
+                .filter_map(|tick| tick.trim().parse().ok())
+                .collect()
+        } else {
+            Vec::new()
+        };
     let lp = SimLoop {
         schedule: TickSchedule::new(now + TICK_PERIOD, TICK_PERIOD),
         started: now,
@@ -365,6 +377,7 @@ pub fn build_loop_with_bots<C: Clock>(
         c0: crate::c0::C0Handler::default(),
         consecutive: 0,
         phase_ms: [0.0; 6],
+        step_trace_ticks,
         ticks: 0,
         tick_ns: Samples::new(),
         err_ns: Samples::new(),
@@ -435,6 +448,14 @@ fn thread_sched() -> Option<(u64, u64)> {
 fn tick_trace_enabled() -> bool {
     static ON: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
     *ON.get_or_init(|| std::env::var("FRONTLINE_TICK_TRACE").map_or(true, |v| v != "0"))
+}
+
+fn step_clock_ns() -> u64 {
+    static START: std::sync::OnceLock<std::time::Instant> = std::sync::OnceLock::new();
+    START
+        .get_or_init(std::time::Instant::now)
+        .elapsed()
+        .as_nanos() as u64
 }
 
 impl<C: Clock> SimLoop<C> {
@@ -565,6 +586,26 @@ impl<C: Clock> SimLoop<C> {
                     "tick slower than a third of its budget"
                 );
             }
+        }
+        if let Some(t) = self.world.step_timings().filter(|_| {
+            dur > self.schedule.period() / 3 || self.step_trace_ticks.contains(&self.ticks)
+        }) {
+            let ms = |ns: u64| ns as f64 / 1e6;
+            tracing::info!(
+                event = "tick_step_trace",
+                tick = self.ticks,
+                tick_ms = dur.as_secs_f64() * 1e3,
+                phase_step_ms = self.phase_ms[1],
+                movement_ms = ms(t.movement),
+                weapons_ms = ms(t.weapons),
+                projectiles_ms = ms(t.projectiles),
+                vehicles_ms = ms(t.vehicles),
+                rockets_ms = ms(t.rockets),
+                shells_ms = ms(t.shells),
+                throwables_ms = ms(t.throwables),
+                other_ms = ms(t.other),
+                "simulation step system timings"
+            );
         }
         self.metrics.tick_overrun_consecutive.set(self.consecutive);
         if self.consecutive > self.metrics.tick_overrun_consecutive_max.get() {

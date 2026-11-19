@@ -1173,7 +1173,12 @@ TAA 历史夹取默认开启（拖影 trail |ΔL| 4.67 → 3.11，FXAA 基线 2.
 自写 CSM 增加动态投射体：占位士兵（实例）、坦克、树 LOD0/1（thin 实例，150 m 内）。士兵阴影对 CPU 射线真值一致 WebGPU 87.9 %/WebGL2 85.1 %（窄影被 PCF 软化，漏判为主）；树/坦克阴影形状未验真。开销相对只有建筑的版本几乎不变（实例化）。风摆动不进深度；`CascadeScheduler`、级联混合带未做。
 
 ## PI-115 续三：阶段计时常开与 34.5 ms 尖峰复测（2026-11-19）
-`FRONTLINE_TICK_TRACE` 改为默认开（`=0` 关），新增 `tick_slow`（耗时 > 周期 1/3 但未超时）日志。三组 1800 s 并行（wt+netem / wt 无损 / ws 无损）：P99 5.58 / 5.82 / 5.23 ms，max 26.3 / 25.4 / 42.9 ms，超时 0 / 0 / 2。>20 ms 的 8 次里 7 次是调度等待（cpu 低、runq 10–41 ms）；1 次真实计算尖峰：ws tick 28499，cpu 37.5 ms、runq 0.5 ms、`phase_step` 36.8 ms。step 偏慢的 tick（4929、11358、14904、15398、21665、42147）在独立运行里**按 tick 号重复**，说明是脚本内容触发的 step 开销（cpu 8–19 ms），不是随机；但没有 step 内部子阶段，具体是哪个系统（碰撞/弹道/载具/爆炸）**未确定**，下一步在 `World::step` 加子阶段计时。详见 `reports/m1-loadtest-netem.md` 续二。
+`FRONTLINE_TICK_TRACE` 改为默认开（`=0` 关），新增 `tick_slow`（耗时 > 周期 1/3 但未超时）日志。三组 1800 s 并行（wt+netem / wt 无损 / ws 无损）：P99 5.58 / 5.82 / 5.23 ms，max 26.3 / 25.4 / 42.9 ms，超时 0 / 0 / 2。>20 ms 的 8 次里 7 次是调度等待（cpu 低、runq 10–41 ms）；1 次真实计算尖峰：ws tick 28499，cpu 37.5 ms、runq 0.5 ms、`phase_step` 36.8 ms。部分并行运行的慢 tick 编号重合（4929、11358、14904、15398、21665、42147）。复核原始日志后发现这些运行几乎同时启动，使用不同的服务器 match UUID；4929 的两条日志时间戳相同。旧数据无法确认脚本触发，也没有 step 子阶段计时。详见 `reports/m1-loadtest-netem.md` 续二。
+
+## PI-115 续四：B2-G 的 WT bot-fill soak 与历史慢 tick 复跑（2026-11-19）
+
+- 工作站 WT 无 netem 跑满 1800 s，20 headless + 12 bot，bot-fill 每队目标 16 席。用户 scope 缺 cpuset 控制器，`taskset` 固定服务器 CPU 29、33、34。tick P50 / P99 / max 为 2.099 / 5.894 / 75.676 ms，超时 2 次，最长连续 1 次。>20 ms 的 3 次均由 runq wait 主导，最长一次 on-CPU 2.512 ms、runq wait 73.276 ms。
+- `FRONTLINE_STEP_TRACE=1` 开启 `World::step` 子阶段墙钟计时。复用历史 UUID 的 WS v3/v4 各复跑 975 s，旧 4929、28499 尖峰均未重现。旧 tick 28499 的子系统仍未知。历史场次未保存已应用输入或世界状态，确定性重放待补。独占核、参考机（PI-109）和 bot-fill + WT netem 长跑仍未测。详见 `reports/m1-loadtest-netem.md`。
 
 ## PI-118 续二：TAA 速度通道与强制重投影（2026-11-19）
 PrePass 速度会卡死渲染循环，改用自有速度 RTT（地形/薄实例/网格各一个 GLSL+WGSL 速度材质），`?taa_vel=1` 时强制重投影并绑 `velocitySampler`。合成场景：方块拖尾 ΔL 3.11 → 0.92（FXAA 2.0），其余区域 0.83 → 0.29，镜头平移时 TAA 保持开启；WebGPU 与 WebGL2 一致，flipY 两种取值无法区分。默认仍关。**未做**：角色按静止、无 YCoCg 裁剪/运动遮罩、真实场景与帧时间未测。详见 `reports/m1-post.md`。

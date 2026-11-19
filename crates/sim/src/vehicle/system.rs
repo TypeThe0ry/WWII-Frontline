@@ -57,7 +57,9 @@ pub fn step_vehicles(
         &LifeState,
         &mut InVehicle,
     )>,
+    mut profiler: Option<ResMut<crate::step::StepProfiler>>,
 ) {
+    let _sample = crate::step::StepProfiler::measure(&mut profiler, |t| &mut t.vehicles);
     if vehicles.list.is_empty() {
         return;
     }
