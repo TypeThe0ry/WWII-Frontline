@@ -6,7 +6,7 @@ export type PlacementKind = 'garrison' | 'supply_crate' | 'ammo_crate';
 export type PlacementMode = 'idle' | 'placing' | 'invalid' | 'committing';
 
 /** Mirrors `crates/sim/src/spawn/garrison.rs::PlaceError` (same order/names). */
-export const PLACE_ERRORS = ['WrongRole', 'TooCloseHq', 'TooCloseOwnGarrison', 'TooCloseEnemyGarrison', 'TooCloseObjective', 'Slope', 'Water', 'EnemyNear', 'NoSupplies', 'TeamCap', 'SectorCap', 'NotAlive'] as const;
+export const PLACE_ERRORS = ['WrongRole', 'TooCloseHq', 'TooCloseOwnGarrison', 'TooCloseEnemyGarrison', 'TooCloseObjective', 'Slope', 'Water', 'EnemyNear', 'NoSupplies', 'TeamCap', 'SectorCap', 'NotAlive', 'InNoBuildZone'] as const;
 export type PlaceError = (typeof PLACE_ERRORS)[number];
 export const PLACE_ERROR_KEY: Readonly<Record<PlaceError, string>> = {
   WrongRole: 'ui.officer.err.wrongRole',
@@ -21,6 +21,7 @@ export const PLACE_ERROR_KEY: Readonly<Record<PlaceError, string>> = {
   TeamCap: 'ui.officer.err.teamCap',
   SectorCap: 'ui.officer.err.sectorCap',
   NotAlive: 'ui.officer.err.notAlive',
+  InNoBuildZone: 'ui.officer.err.noBuildZone',
 };
 
 export interface PlacementResult {

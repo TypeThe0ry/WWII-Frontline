@@ -334,7 +334,8 @@ pub(crate) fn decode_server_core(bytes: &[u8]) -> Result<ServerC0, String> {
             o.reason = d.reason;
             o.spawn_tick = d.spawn_tick;
         }
-        ServerMsgC0::Chat(_) => {}
+        // Placement's signed positions are handled by its dedicated TS C0 adapter.
+        ServerMsgC0::Chat(_) | ServerMsgC0::PlacementResult(_) => {}
     }
     Ok(o)
 }

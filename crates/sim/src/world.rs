@@ -20,6 +20,8 @@ use crate::step::{SimEvent, StepOutput, StepProfiler, StepTimings};
 use crate::view::*;
 use crate::weapon::WeaponState;
 
+mod placement_zones;
+
 /// Role whose movement parameters every player uses until loadouts/roles are chosen (M0-012).
 pub const DEFAULT_ROLE: &str = "rifleman";
 
@@ -116,6 +118,7 @@ impl World {
                 .and_then(|r| MoveParams::from_role(r, cfg.tick_hz).ok()),
         ));
         ecs.insert_resource(CollisionRes(collision.clone()));
+        ecs.insert_resource(crate::NoBuildZones::default());
         ecs.insert_resource(SimCfgRes {
             data: cfg.data,
             hz: cfg.tick_hz,
@@ -1709,6 +1712,25 @@ impl World {
         pos: Vec3,
         sup: &dyn crate::supply_iface::SupplyProvider,
     ) -> Result<crate::spawn::garrison::GarrisonCost, crate::spawn::garrison::PlaceError> {
+        self.check_garrison_place(who, pos, sup, false)
+    }
+
+    /// Preview only: do not probe enemy positions or enemy supplies.
+    pub fn preview_garrison_place(
+        &self,
+        who: PlayerId,
+        pos: Vec3,
+    ) -> Result<crate::spawn::garrison::GarrisonCost, crate::spawn::garrison::PlaceError> {
+        self.check_garrison_place(who, pos, self.supply_world(), true)
+    }
+
+    fn check_garrison_place(
+        &self,
+        who: PlayerId,
+        pos: Vec3,
+        sup: &dyn crate::supply_iface::SupplyProvider,
+        preview: bool,
+    ) -> Result<crate::spawn::garrison::GarrisonCost, crate::spawn::garrison::PlaceError> {
         use crate::spawn::garrison::*;
         let &(_, e) = self
             .ecs
@@ -1739,7 +1761,7 @@ impl World {
             .resource::<Garrisons>()
             .list
             .values()
-            .filter(|g| g.state != GarrisonState::Destroyed)
+            .filter(|g| g.state != GarrisonState::Destroyed && (!preview || g.team == team))
             .map(|g| (g.team, g.pos))
             .collect();
         let objectives: Vec<_> = self
@@ -1755,6 +1777,9 @@ impl World {
             .map
             .values()
             .filter_map(|&(_, e)| {
+                if preview {
+                    return None;
+                }
                 let entity = self.ecs.entity(e);
                 let (other_team, life) = (entity.get::<Team>()?, entity.get::<LifeState>()?);
                 (*other_team != team && !life.is_dead()).then_some(entity.get::<Transform>()?.pos)
@@ -1765,11 +1790,39 @@ impl World {
             hq: &hq,
             garrisons: &garrisons,
             objectives: &objectives,
+            no_build_zones: self.no_build_zones(),
             collision: &self.ecs.resource::<CollisionRes>().0,
             water_material: water_material(self.cfg.data),
             enemies: &enemies,
         }
-        .check(pos, || sup.available(placer, SUPPLY_RANGE_M))
+        .check(pos, || {
+            if preview {
+                self.supply_world()
+                    .crates
+                    .values()
+                    .filter(|c| {
+                        c.team == team
+                            && c.carried_by.is_none()
+                            && crate::supply::dist_xz(c.pos, placer) <= SUPPLY_RANGE_M
+                    })
+                    .map(|c| c.supplies)
+                    .sum()
+            } else {
+                sup.available(placer, SUPPLY_RANGE_M)
+            }
+        })
+    }
+
+    /// Terrain-only short-range placement ray. The angle is an input; the origin and stance
+    /// always come from sim. No client-supplied position can be used as a placement target.
+    pub fn placement_aim(&self, who: PlayerId, yaw: f32, pitch: f32) -> Option<Vec3> {
+        let actor = self.player_state(who)?;
+        let params = self.ecs.resource::<MoveParamsRes>().0.as_ref()?;
+        let origin = actor.pos + Vec3::Y * crate::movement::eye_height(actor.stance_blend, params);
+        let ray =
+            self.collision()
+                .raycast(origin, crate::weapon::spread::view_dir(yaw, pitch), 8.0)?;
+        (ray.t > 0.0).then_some(ray.point)
     }
 
     /// Places a Garrison (starts as a building at 20 % health) and pays for it from the crates
@@ -2070,14 +2123,16 @@ impl World {
             return Err(AmmoPlaceError::NotSupport);
         }
         let cfg = self.ecs.resource::<AmmoCfg>().clone();
-        let mut sw = self.ecs.resource_mut::<crate::supply::SupplyWorld>();
+        let sw = self.ecs.resource::<crate::supply::SupplyWorld>();
         cfg.check_place(
             now,
             sw.ammo_count.get(&who).copied().unwrap_or(0),
             sw.ammo_last.get(&who).copied(),
             pos,
+            self.no_build_zones(),
             sw.ammo.values().map(|c| c.pos),
         )?;
+        let mut sw = self.ecs.resource_mut::<crate::supply::SupplyWorld>();
         let id = sw.next_id;
         sw.next_id += 1;
         sw.ammo.insert(

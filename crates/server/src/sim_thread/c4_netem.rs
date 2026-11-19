@@ -64,6 +64,7 @@ fn fixture() -> LoadedMap {
         size_m: 640.0,
         dir: PathBuf::new(),
         objectives: Vec::new(),
+        no_build_zones: Default::default(),
         garrison_sites: [None; 2],
     }
 }

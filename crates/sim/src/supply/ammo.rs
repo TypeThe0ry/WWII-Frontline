@@ -221,6 +221,7 @@ pub enum AmmoPlaceError {
     LimitPerLife,
     Cooldown,
     Stacked,
+    InNoBuildZone,
 }
 
 impl AmmoCfg {
@@ -231,8 +232,12 @@ impl AmmoCfg {
         used: u8,
         last: Option<u32>,
         pos: Vec3,
+        no_build_zones: &crate::NoBuildZones,
         crates: impl Iterator<Item = Vec3>,
     ) -> Result<u8, AmmoPlaceError> {
+        if no_build_zones.contains(pos) {
+            return Err(AmmoPlaceError::InNoBuildZone);
+        }
         if used >= self.max_uses {
             return Err(AmmoPlaceError::LimitPerLife);
         }

@@ -7,7 +7,8 @@ use frontline_sim::hash::HashWriter;
 use frontline_sim::predict::PredictSim;
 use frontline_sim::weapon::{Fsm, WeaponParams, WeaponState, TICK_UNITS};
 use frontline_sim::{
-    CollisionChunk, CollisionData, GameData, GameMode, MapId, PlayerAuthState, SimConfig, Tick,
+    CollisionChunk, CollisionData, GameData, GameMode, MapId, NoBuildZones, PlayerAuthState,
+    SimConfig, Tick,
 };
 use js_sys::Float32Array;
 use wasm_bindgen::prelude::*;
@@ -118,6 +119,7 @@ pub(crate) fn parse_cmd(bytes: &[u8]) -> Result<InputCmd, String> {
 #[wasm_bindgen]
 pub struct Predictor {
     pub(crate) sim: PredictSim,
+    pub(crate) no_build_zones: NoBuildZones,
     out: [f32; layout::STATE_LEN],
     vout: [f32; VEHICLE_STATE_LEN],
 }
@@ -139,6 +141,7 @@ impl Predictor {
         };
         let mut p = Self {
             sim: PredictSim::new(cfg, &CollisionData::empty(), my_player_id),
+            no_build_zones: NoBuildZones::default(),
             out: [0.0; layout::STATE_LEN],
             vout: [0.0; VEHICLE_STATE_LEN],
         };

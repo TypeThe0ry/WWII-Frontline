@@ -118,6 +118,10 @@ required-features = ["test-util"]
 name = "spawn_garrison"
 required-features = ["test-util"]
 
+[[test]]
+name = "placement_zones"
+required-features = ["test-util"]
+
 [[bench]]
 name = "spawn"
 harness = false

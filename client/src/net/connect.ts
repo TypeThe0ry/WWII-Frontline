@@ -69,9 +69,11 @@ export interface Session {
   onSnapshot(cb: (bytes: Uint8Array) => void): () => void;
   onC3(cb: (bytes: Uint8Array) => void): () => void;
   onC4(cb: (bytes: Uint8Array) => void): () => void;
+  onC0(cb: (bytes: Uint8Array) => void): () => void;
   /** Fires once when the connection ends for any reason except `close()`. */
   onDisconnect(cb: (reason: string) => void): () => void;
   sendInputBundle(bytes: Uint8Array): void;
+  sendC0(bytes: Uint8Array): void;
   stats(): NetStats;
   close(): void;
 }
@@ -135,6 +137,9 @@ class SessionImpl implements Session {
   onC4(cb: (bytes: Uint8Array) => void): () => void {
     return this.transport.onC4(cb);
   }
+  onC0(cb: (bytes: Uint8Array) => void): () => void {
+    return this.transport.onC0(cb);
+  }
   onDisconnect(cb: (reason: string) => void): () => void {
     this.disconnectCbs.push(cb);
     return () => {
@@ -145,6 +150,9 @@ class SessionImpl implements Session {
 
   sendInputBundle(bytes: Uint8Array): void {
     if (!this.disconnected) this.transport.sendC1(bytes);
+  }
+  sendC0(bytes: Uint8Array): void {
+    if (!this.disconnected) this.transport.sendC0(bytes);
   }
 
   stats(): NetStats {

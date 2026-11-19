@@ -51,6 +51,7 @@ g_wasm() {
   run python3 -m map_pipeline m0 --seed 1 --out data/maps/m0 && run cargo run --release -p frontline-sim-wasm --example trace || return 1
   export FRONTLINE_REQUIRE_TERRAIN=1
   run node crates/sim-wasm/tests/node-smoke.mjs || return 1
+  run node crates/sim-wasm/tests/placement-zones.mjs || return 1
   run node crates/sim-wasm/tests/native-vs-wasm.mjs || echo "WARN: native vs wasm drift (non-blocking per R5)"
   run node crates/sim-wasm/tests/bench.mjs
 }

@@ -398,6 +398,112 @@ impl Codec for Report {
     }
 }
 
+u8_enum!(PlacementSlot { Garrison = 0, Supply = 1, Ammo = 2 });
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PlacementRequest {
+    pub id: u16,
+    pub action: PlacementAction,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum PlacementAction {
+    Preview {
+        slot: PlacementSlot,
+        yaw: u16,
+        pitch: i16,
+    },
+    Commit {
+        preview_id: u16,
+    },
+}
+
+impl Codec for PlacementRequest {
+    fn encode(&self, w: &mut BitWriter) -> Result<(), CodecError> {
+        w.write_bits(self.id as u64, 16)?;
+        match self.action {
+            PlacementAction::Preview { slot, yaw, pitch } => {
+                w8(w, slot as u8)?;
+                w.write_bits(yaw as u64, 16)?;
+                w.write_bits(pitch as u16 as u64, 16)
+            }
+            PlacementAction::Commit { preview_id } => {
+                w8(w, 3)?;
+                w.write_bits(preview_id as u64, 16)
+            }
+        }
+    }
+
+    fn decode(r: &mut BitReader<'_>) -> Result<Self, CodecError> {
+        let id = r.read_bits(16)? as u16;
+        let kind = r8(r)?;
+        let action = if kind == 3 {
+            PlacementAction::Commit {
+                preview_id: r.read_bits(16)? as u16,
+            }
+        } else {
+            PlacementAction::Preview {
+                slot: PlacementSlot::from_u8(kind).ok_or(CodecError::InvalidTag)?,
+                yaw: r.read_bits(16)? as u16,
+                pitch: r.read_bits(16)? as u16 as i16,
+            }
+        };
+        Ok(Self { id, action })
+    }
+}
+
+u8_enum!(PlacementReason {
+    Ok = 0, NotAlive = 1, WrongRole = 2, NeedSquad = 3, NotSupport = 4, NotCarrying = 5,
+    NoTarget = 6, NoBuildZone = 7, TooCloseHq = 8, TooCloseOwnGarrison = 9,
+    TooCloseObjective = 10, Slope = 11, Water = 12, NoSupplies = 13, TeamCap = 14,
+    SectorCap = 15, LimitPerLife = 16, Cooldown = 17, Stacked = 18, Rejected = 19,
+});
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PlacementResult {
+    pub id: u16,
+    pub reason: PlacementReason,
+    pub supply_cost: u8,
+    /// The surface position for a preview, in centimetres. Commit results omit it.
+    pub target_cm: Option<[i32; 3]>,
+}
+
+impl Codec for PlacementResult {
+    fn encode(&self, w: &mut BitWriter) -> Result<(), CodecError> {
+        w.write_bits(self.id as u64, 16)?;
+        w8(w, self.reason as u8)?;
+        w8(w, self.supply_cost)?;
+        w8(w, u8::from(self.target_cm.is_some()))?;
+        if let Some(target) = self.target_cm {
+            for cm in target {
+                w.write_bits(cm as u32 as u64, 32)?;
+            }
+        }
+        Ok(())
+    }
+
+    fn decode(r: &mut BitReader<'_>) -> Result<Self, CodecError> {
+        let id = r.read_bits(16)? as u16;
+        let reason = PlacementReason::from_u8(r8(r)?).ok_or(CodecError::InvalidTag)?;
+        let supply_cost = r8(r)?;
+        let target_cm = match r8(r)? {
+            0 => None,
+            1 => Some([
+                r.read_bits(32)? as i32,
+                r.read_bits(32)? as i32,
+                r.read_bits(32)? as i32,
+            ]),
+            _ => return Err(CodecError::InvalidTag),
+        };
+        Ok(Self {
+            id,
+            reason,
+            supply_cost,
+            target_cm,
+        })
+    }
+}
+
 /// Client -> server C0 messages.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ClientMsgC0 {
@@ -410,6 +516,7 @@ pub enum ClientMsgC0 {
     MarkerPlace(MarkerPlace),
     Settings(Settings),
     Report(Report),
+    PlacementRequest(PlacementRequest),
 }
 
 /// Server -> client C0 messages.
@@ -421,6 +528,7 @@ pub enum ServerMsgC0 {
     Disconnect(Disconnect),
     DeployResult(DeployResult),
     Chat(Chat),
+    PlacementResult(PlacementResult),
 }
 
 impl ClientMsgC0 {
@@ -436,6 +544,7 @@ impl ClientMsgC0 {
             Self::MarkerPlace(_) => c0_type::MARKER_PLACE,
             Self::Settings(_) => c0_type::SETTINGS,
             Self::Report(_) => c0_type::REPORT,
+            Self::PlacementRequest(_) => c0_type::PLACEMENT_REQUEST,
         }
     }
 }
@@ -449,6 +558,7 @@ impl ServerMsgC0 {
             Self::Pong(_) => c0_type::PONG,
             Self::Disconnect(_) => c0_type::DISCONNECT,
             Self::DeployResult(_) => c0_type::DEPLOY_RESULT,
+            Self::PlacementResult(_) => c0_type::PLACEMENT_RESULT,
             Self::Chat(_) => c0_type::CHAT,
         }
     }
@@ -467,6 +577,7 @@ impl Codec for ClientMsgC0 {
             Self::MarkerPlace(m) => m.encode(w),
             Self::Settings(m) => m.encode(w),
             Self::Report(m) => m.encode(w),
+            Self::PlacementRequest(m) => m.encode(w),
         }
     }
     fn decode(r: &mut BitReader<'_>) -> Result<Self, CodecError> {
@@ -480,6 +591,7 @@ impl Codec for ClientMsgC0 {
             c0_type::MARKER_PLACE => Self::MarkerPlace(MarkerPlace::decode(r)?),
             c0_type::SETTINGS => Self::Settings(Settings::decode(r)?),
             c0_type::REPORT => Self::Report(Report::decode(r)?),
+            c0_type::PLACEMENT_REQUEST => Self::PlacementRequest(PlacementRequest::decode(r)?),
             _ => return Err(CodecError::InvalidTag),
         })
     }
@@ -495,6 +607,7 @@ impl Codec for ServerMsgC0 {
             Self::Disconnect(m) => m.encode(w),
             Self::DeployResult(m) => m.encode(w),
             Self::Chat(m) => m.encode(w),
+            Self::PlacementResult(m) => m.encode(w),
         }
     }
     fn decode(r: &mut BitReader<'_>) -> Result<Self, CodecError> {
@@ -505,6 +618,7 @@ impl Codec for ServerMsgC0 {
             c0_type::DISCONNECT => Self::Disconnect(Disconnect::decode(r)?),
             c0_type::DEPLOY_RESULT => Self::DeployResult(DeployResult::decode(r)?),
             c0_type::CHAT => Self::Chat(Chat::decode(r)?),
+            c0_type::PLACEMENT_RESULT => Self::PlacementResult(PlacementResult::decode(r)?),
             _ => return Err(CodecError::InvalidTag),
         })
     }
@@ -539,6 +653,41 @@ pub fn decode_c0_server(bytes: &[u8]) -> Result<ServerMsgC0, CodecError> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn placement_c0_matches_browser_bytes() {
+        let preview = ClientMsgC0::PlacementRequest(PlacementRequest {
+            id: 0x1234,
+            action: PlacementAction::Preview {
+                slot: PlacementSlot::Ammo,
+                yaw: 0x4321,
+                pitch: -4096,
+            },
+        });
+        let bytes = [0x17, 0x12, 0x34, 2, 0x43, 0x21, 0xf0, 0];
+        assert_eq!(encode_c0_client(&preview).unwrap(), bytes);
+        assert_eq!(decode_c0_client(&bytes), Ok(preview));
+        let commit = ClientMsgC0::PlacementRequest(PlacementRequest {
+            id: 1,
+            action: PlacementAction::Commit { preview_id: 0x1234 },
+        });
+        let bytes = [0x17, 0, 1, 3, 0x12, 0x34];
+        assert_eq!(encode_c0_client(&commit).unwrap(), bytes);
+        assert_eq!(decode_c0_client(&bytes), Ok(commit));
+        let result = ServerMsgC0::PlacementResult(PlacementResult {
+            id: 0x1234,
+            reason: PlacementReason::NoBuildZone,
+            supply_cost: 0,
+            target_cm: Some([-100, 500, 2400]),
+        });
+        let bytes = [
+            0x18, 0x12, 0x34, 7, 0, 1, 0xff, 0xff, 0xff, 0x9c, 0, 0, 1, 0xf4, 0, 0, 9, 0x60,
+        ];
+        assert_eq!(encode_c0_server(&result).unwrap(), bytes);
+        assert_eq!(decode_c0_server(&bytes), Ok(result));
+        assert!(decode_c0_server(&bytes[..17]).is_err());
+        assert!(decode_c0_client(&[0x17, 0, 0, 4]).is_err());
+    }
 
     #[test]
     fn ticket_limit() {

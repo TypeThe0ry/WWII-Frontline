@@ -12,6 +12,7 @@ import { assertLayoutMatches, type SimWasmModule } from '../net/wasm';
 import { EventBus, type GameEvents } from './event-bus';
 import { FixedStepper } from './fixed-step';
 import { GameLoop } from './game-loop';
+import { LivePlacement } from './live-placement';
 import { GameState } from './state/game-state';
 
 export interface NetGameHandle {
@@ -19,6 +20,7 @@ export interface NetGameHandle {
   readonly gameState: GameState;
   readonly session: Session;
   readonly sampler: InputSampler;
+  readonly placement: LivePlacement;
   /** The loaded sim-wasm module (data queries for the render side: roleDef / weaponDef / weaponIndex). */
   readonly wasm: SimWasmModule;
   /** Called by the render loop with the steps granted by its `FixedStepper`. */
@@ -80,7 +82,9 @@ export async function startNetGame(
   }
   const lock = new PointerLockController(sampler, canvas, document, window);
   lock.attach();
-  const game = new GameLoop({ wasm, decoder: new wasm.SnapshotDecoder(), bus, net: session, input: sampler, matchSeed: w.matchSeed, mapId: w.mapId, playerId: w.playerId });
+  const placement = new LivePlacement(sampler, (bytes) => session.sendC0(bytes));
+  const offPlacement = session.onC0((bytes) => placement.receive(bytes));
+  const game = new GameLoop({ wasm, decoder: new wasm.SnapshotDecoder(), bus, net: session, input: placement, matchSeed: w.matchSeed, mapId: w.mapId, playerId: w.playerId });
   game.loadCollision(chunks);
   const offSnap = session.onSnapshot((bytes) => game.onSnapshot(bytes));
 
@@ -113,6 +117,7 @@ export async function startNetGame(
     gameState,
     session,
     sampler,
+    placement,
     wasm,
     update: (steps, alpha, dtMs) => {
       if (!document.hidden) game.update(steps, alpha, dtMs);
@@ -130,6 +135,7 @@ export async function startNetGame(
     dispose: () => {
       onDispose?.();
       offSnap();
+      offPlacement();
       lock.detach();
       document.removeEventListener('visibilitychange', onVisibility);
       if (bgTimer !== undefined) clearInterval(bgTimer);

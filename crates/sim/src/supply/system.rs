@@ -10,19 +10,21 @@ use crate::step::SimEvent;
 
 use super::depot::tick_store;
 use super::{
-    can_place_supply_crate, dist_xz, limits, Carrying, SupplyCfg, SupplyCrate, SupplyWorld,
-    Support, INTERACT_RANGE_M,
+    check_supply_crate_place, dist_xz, limits, Carrying, SupplyCfg, SupplyCrate, SupplyPlaceError,
+    SupplyWorld, Support, INTERACT_RANGE_M,
 };
 
 /// Notice codes of `SimEvent::SupplyNotice`.
 pub const NOTICE_NO_PLACE: u8 = 1;
 pub const NOTICE_NOTHING_TO_RESUPPLY: u8 = 2;
+pub const NOTICE_IN_NO_BUILD_ZONE: u8 = 3;
 
 #[allow(clippy::type_complexity)]
 pub fn supply(
     cfg: Res<SupplyCfg>,
     table: Res<EntityTable>,
     objs: Res<Objectives>,
+    no_build_zones: Res<crate::NoBuildZones>,
     mut sw_res: ResMut<SupplyWorld>,
     mut events: ResMut<EventBuf>,
     mut q: Query<(
@@ -112,29 +114,24 @@ pub fn supply(
             continue;
         }
         match carry.0 {
-            Some(cid) => {
-                if !can_place_supply_crate(objs.0.iter().map(|o| (o.owner, o.pos)), *team, tr.pos) {
+            Some(_) => {
+                let result = check_supply_crate_place(
+                    objs.0.iter().map(|o| (o.owner, o.pos)),
+                    *team,
+                    tr.pos,
+                    &no_build_zones,
+                )
+                .and_then(|()| {
+                    sw.drop_carried_crate(pid, tr.pos, &mut carry, cfg.ground_max, &mut events.0)
+                });
+                if let Err(reason) = result {
                     events.0.push(SimEvent::SupplyNotice {
                         player: pid,
-                        code: NOTICE_NO_PLACE,
+                        code: match reason {
+                            SupplyPlaceError::InNoBuildZone => NOTICE_IN_NO_BUILD_ZONE,
+                            _ => NOTICE_NO_PLACE,
+                        },
                     });
-                    continue;
-                }
-                let seq = sw.next_seq;
-                sw.next_seq += 1;
-                if let Some(c) = sw.crates.get_mut(&cid) {
-                    c.carried_by = None;
-                    c.pos = tr.pos;
-                    c.seq = seq;
-                    events.0.push(SimEvent::CratePlaced {
-                        id: cid,
-                        team: *team,
-                        pos: tr.pos,
-                    });
-                }
-                carry.0 = None;
-                for gone in limits::evict(sw, *team, cfg.ground_max) {
-                    events.0.push(SimEvent::CrateDestroyed { id: gone });
                 }
             }
             None => {

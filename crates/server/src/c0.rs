@@ -16,6 +16,8 @@ use crate::metrics::Metrics;
 use crate::net::limits::RateLimiter;
 use crate::text::{sanitize_chat, DupFilter};
 
+mod placement;
+
 /// Rate-limit classes; `label()` is the `c0_rate_limited_total{type}` label.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum C0Kind {
@@ -43,9 +45,10 @@ impl C0Kind {
             ClientMsgC0::Chat(_) => C0Kind::Chat,
             ClientMsgC0::DeployRequest(_) => C0Kind::Deploy,
             ClientMsgC0::Report(_) => C0Kind::Report,
-            ClientMsgC0::SquadOp(_) | ClientMsgC0::MarkerPlace(_) | ClientMsgC0::Settings(_) => {
-                C0Kind::Other
-            }
+            ClientMsgC0::SquadOp(_)
+            | ClientMsgC0::MarkerPlace(_)
+            | ClientMsgC0::Settings(_)
+            | ClientMsgC0::PlacementRequest(_) => C0Kind::Other,
             ClientMsgC0::Hello(_) | ClientMsgC0::Ping(_) | ClientMsgC0::Disconnect(_) => {
                 return None
             }
@@ -109,6 +112,7 @@ pub struct ReportRec {
 #[derive(Default)]
 pub struct C0Handler {
     dup: std::collections::BTreeMap<PlayerId, DupFilter>,
+    placement: placement::PlacementSlots,
     pub reports: Vec<ReportRec>,
 }
 
@@ -117,6 +121,7 @@ pub type Outbox = Vec<(PlayerId, ServerMsgC0)>;
 impl C0Handler {
     pub fn forget(&mut self, p: PlayerId) {
         self.dup.remove(&p);
+        self.placement.forget(p);
     }
 
     /// Handles one gameplay message of `from`; replies and routed chat are pushed to `out`.
@@ -136,6 +141,10 @@ impl C0Handler {
             ClientMsgC0::SquadOp(op) => {
                 squad_op(world, metrics, from, &op);
             }
+            ClientMsgC0::PlacementRequest(req) => out.push((
+                from,
+                ServerMsgC0::PlacementResult(self.placement.handle(world, from, req)),
+            )),
             ClientMsgC0::Chat(c) => self.chat(world, metrics, from, c, out),
             ClientMsgC0::Report(r) => {
                 metrics.reports_total.inc();

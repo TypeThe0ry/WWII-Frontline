@@ -112,6 +112,7 @@ pub struct LoadedMap {
     pub size_m: f32,
     pub(crate) dir: PathBuf,
     pub objectives: Vec<frontline_sim::rules::ObjectiveSpec>,
+    pub(crate) no_build_zones: frontline_sim::NoBuildZones,
     pub(crate) garrison_sites: [Option<Vec3>; 2],
 }
 
@@ -315,6 +316,25 @@ pub fn load_map(data_dir: &Path, map: &str) -> Result<LoadedMap, MapError> {
             .get(t)
             .and_then(|p| ground(p.pos))
     });
+    let no_build_path = dir.join("no_build_zones.json");
+    let no_build_zones = match std::fs::read(&no_build_path) {
+        Ok(bytes) => serde_json::from_slice(&bytes)
+            .map_err(|e| e.to_string())
+            .and_then(|polygons| {
+                frontline_sim::NoBuildZones::new(polygons).map_err(|e| e.to_string())
+            })
+            .map_err(|error| MapError::BadJson {
+                path: no_build_path,
+                error,
+            })?,
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Default::default(),
+        Err(e) => {
+            return Err(MapError::Io {
+                path: no_build_path,
+                error: e.to_string(),
+            })
+        }
+    };
     Ok(LoadedMap {
         name: map.to_string(),
         collision,
@@ -324,11 +344,16 @@ pub fn load_map(data_dir: &Path, map: &str) -> Result<LoadedMap, MapError> {
         size_m,
         dir,
         objectives,
+        no_build_zones,
         garrison_sites,
     })
 }
 
 impl LoadedMap {
+    pub(crate) fn uses_tactical_deploy(&self) -> bool {
+        self.name != "m0" && !self.objectives.is_empty()
+    }
+
     /// Installs the per-team respawn points and the map centre into `world`.
     pub fn apply_to(&self, world: &mut World) {
         for team in [Team::Us, Team::Ger] {
@@ -336,6 +361,7 @@ impl LoadedMap {
             world.set_team_spawn(team, Vec3::new(h.x, h.y, h.z));
         }
         world.set_map_center(self.spawns.center.0, self.spawns.center.1);
+        world.install_no_build_zones(self.no_build_zones.clone());
     }
 
     pub(crate) fn apply_tactical(&self, world: &mut World) {
@@ -351,8 +377,10 @@ impl LoadedMap {
             > 2.0 * frontline_sim::spawn::HQ_ZONE_RADIUS_M
         {
             for team in [Team::Us, Team::Ger] {
-                world.set_hq(team, hq[team as usize]);
-                world.add_depot(team, hq[team as usize]);
+                if !world.has_hq(team) {
+                    world.set_hq(team, hq[team as usize]);
+                    world.add_depot(team, hq[team as usize]);
+                }
             }
         }
     }
