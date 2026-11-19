@@ -315,6 +315,9 @@ pub fn build_loop_with_bots<C: Clock>(
     );
     if let Some(m) = &cfg.map_data {
         m.apply_to(&mut world);
+        if m.uses_tactical_deploy() {
+            m.apply_tactical(&mut world);
+        }
         if cfg.dev_spawn_vehicle {
             // Bots alternate US/GER before the first human joins; US wins ties.
             let team = if bots.is_multiple_of(2) {
@@ -631,6 +634,21 @@ impl<C: Clock> SimLoop<C> {
         while let Ok(c) = self.commands_rx.try_recv() {
             match c {
                 Command::Join { player, team } => {
+                    if !self.dev_spawn_vehicle {
+                        if let Some(map) = self.bridge.map().filter(|m| m.uses_tactical_deploy()) {
+                            // Tactical maps use C0 SquadOp/DeployRequest for role and first body.
+                            // The compact M0 sandbox and vehicle fixture keep immediate spawn.
+                            let (_, yaw) = map.join_spawn(player, team);
+                            match self.world.roster_add(player, team) {
+                                Ok(()) => self.bridge.open_session(player, team, yaw),
+                                Err(error) => {
+                                    tracing::warn!(?error, player, "tactical roster rejected join")
+                                }
+                            }
+                            self.update_player_gauges();
+                            continue;
+                        }
+                    }
                     match self.bridge.join(&mut self.world, player, team) {
                         Ok(()) => {
                             if self.dev_spawn_vehicle && player == 0 {

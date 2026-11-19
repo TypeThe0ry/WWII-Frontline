@@ -50,6 +50,8 @@ pub mod c0_type {
     pub const MARKER_PLACE: u8 = 0x14;
     pub const SETTINGS: u8 = 0x15;
     pub const REPORT: u8 = 0x16;
+    pub const PLACEMENT_REQUEST: u8 = 0x17;
+    pub const PLACEMENT_RESULT: u8 = 0x18;
 }
 
 /// C4 (reliable server events) `msg_type` values.

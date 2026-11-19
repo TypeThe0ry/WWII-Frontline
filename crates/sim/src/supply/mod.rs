@@ -91,20 +91,65 @@ impl SupplyWorld {
     pub fn active(&self) -> bool {
         !self.depots.is_empty() || !self.points.is_empty() || self.next_id > 0
     }
+
+    /// Commit a checked, voluntary drop for either the USE interaction or the direct action.
+    pub(crate) fn drop_carried_crate(
+        &mut self,
+        who: PlayerId,
+        pos: Vec3,
+        carry: &mut Carrying,
+        ground_max: usize,
+        events: &mut Vec<crate::SimEvent>,
+    ) -> Result<u32, SupplyPlaceError> {
+        let id = carry.0.ok_or(SupplyPlaceError::NotCarrying)?;
+        let c = self
+            .crates
+            .get_mut(&id)
+            .filter(|c| c.carried_by == Some(who))
+            .ok_or(SupplyPlaceError::NotCarrying)?;
+        let team = c.team;
+        c.carried_by = None;
+        c.pos = pos;
+        c.seq = self.next_seq;
+        self.next_seq += 1;
+        carry.0 = None;
+        events.push(crate::SimEvent::CratePlaced { id, team, pos });
+        for id in limits::evict(self, team, ground_max) {
+            events.push(crate::SimEvent::CrateDestroyed { id });
+        }
+        Ok(id)
+    }
 }
 
 pub fn dist_xz(a: Vec3, b: Vec3) -> f32 {
     ((a.x - b.x).powi(2) + (a.z - b.z).powi(2)).sqrt()
 }
 
-/// Whether `team` may put a Supply Crate at `pos` (not within 80 m of an enemy-held point).
-pub fn can_place_supply_crate(
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SupplyPlaceError {
+    NotAlive,
+    NotSupport,
+    NotCarrying,
+    TooCloseObjective,
+    InNoBuildZone,
+}
+
+/// Position rules for voluntary Supply Crate drops. Callers establish that the actor can drop.
+pub fn check_supply_crate_place(
     mut objectives: impl Iterator<Item = (Option<Team>, Vec3)>,
     team: Team,
     pos: Vec3,
-) -> bool {
-    objectives.all(|(owner, objective_pos)| match owner {
+    no_build_zones: &crate::NoBuildZones,
+) -> Result<(), SupplyPlaceError> {
+    if no_build_zones.contains(pos) {
+        return Err(SupplyPlaceError::InNoBuildZone);
+    }
+    if objectives.all(|(owner, objective_pos)| match owner {
         Some(ow) if ow != team => dist_xz(objective_pos, pos) >= ENEMY_POINT_EXCLUSION_M,
         _ => true,
-    })
+    }) {
+        Ok(())
+    } else {
+        Err(SupplyPlaceError::TooCloseObjective)
+    }
 }

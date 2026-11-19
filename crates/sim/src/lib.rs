@@ -16,6 +16,7 @@ pub mod health;
 pub mod ids;
 pub mod medical;
 pub mod movement;
+pub mod placement;
 #[cfg(feature = "client-predict")]
 pub mod predict;
 pub mod projectile;
@@ -44,6 +45,7 @@ pub use glam::{Quat, Vec3};
 pub use health::{Health, LifeState, LifeStateView};
 pub use ids::{EntityId, PlayerId, Tick};
 pub use movement::{step_player, step_player_ex, MoveCtx, MoveParams, PlayerAuthState, Stance};
+pub use placement::{NoBuildZoneError, NoBuildZones};
 pub use respawn::{respawn_time, RespawnPolicy, RespawnQueue};
 pub use rules::{MatchPhaseKind, ObjectiveSpec, VictoryReason};
 pub use step::{RuleChange, SimEvent, StepOutput};

@@ -3,14 +3,25 @@
 use std::sync::OnceLock;
 
 use frontline_sim::spawn::garrison::{water_material, GarrisonPlacement, PlaceError, TEAM_CAP};
-use frontline_sim::supply::{ammo::AmmoCfg, can_place_supply_crate};
-use frontline_sim::{GameData, ObjectiveSpec, Team, Vec3};
+use frontline_sim::supply::{ammo::AmmoCfg, check_supply_crate_place};
+use frontline_sim::{GameData, NoBuildZones, ObjectiveSpec, Team, Vec3};
 use js_sys::{Object, Reflect};
 use serde::Deserialize;
 use wasm_bindgen::prelude::*;
 
 use crate::js_err;
 use crate::predictor::{Predictor, TICK_HZ};
+
+#[wasm_bindgen]
+impl Predictor {
+    /// Replace the map's no-build polygons (`[[[x, z], ...], ...]`); `[]` clears them.
+    #[wasm_bindgen(js_name = setNoBuildZones)]
+    pub fn set_no_build_zones(&mut self, zones_json: &str) -> Result<(), JsError> {
+        let polygons = serde_json::from_str(zones_json).map_err(js_err)?;
+        self.no_build_zones = NoBuildZones::new(polygons).map_err(js_err)?;
+        Ok(())
+    }
+}
 
 #[derive(Clone, Copy, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -160,6 +171,7 @@ pub fn placement_check(
                 hq: &hq,
                 garrisons: &garrisons,
                 objectives: &objectives,
+                no_build_zones: &predictor.no_build_zones,
                 collision: predictor.sim.collision(),
                 water_material: water_material(GameData::embedded()),
                 enemies: &enemies,
@@ -192,8 +204,15 @@ pub fn placement_check(
                 .into_iter()
                 .map(|o| Ok::<_, JsError>((o.owner.map(Team::from), vec3(o.pos)?)))
                 .collect::<Result<Vec<_>, _>>()?;
-            let legal = can_place_supply_crate(objectives.into_iter(), team.into(), pos);
-            answer((!legal).then_some("TooCloseObjective"), None, None)
+            match check_supply_crate_place(
+                objectives.into_iter(),
+                team.into(),
+                pos,
+                &predictor.no_build_zones,
+            ) {
+                Ok(()) => answer(None, None, None),
+                Err(reason) => answer(Some(&format!("{reason:?}")), None, None),
+            }
         }
         (
             "ammo_crate",
@@ -215,7 +234,14 @@ pub fn placement_check(
                 .into_iter()
                 .map(vec3)
                 .collect::<Result<Vec<_>, _>>()?;
-            match cfg.check_place(tick, used, last_placed_tick, pos, crates.into_iter()) {
+            match cfg.check_place(
+                tick,
+                used,
+                last_placed_tick,
+                pos,
+                &predictor.no_build_zones,
+                crates.into_iter(),
+            ) {
                 Ok(remaining) => answer(None, None, Some(remaining.into())),
                 Err(reason) => answer(Some(&format!("{reason:?}")), None, None),
             }

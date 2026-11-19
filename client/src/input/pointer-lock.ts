@@ -70,6 +70,9 @@ export class PointerLockController {
     on(this.canvas, 'mousedown', (e: MouseLike) => {
       if (this.locked) this.sampler.press(`Mouse${e.button}`);
     });
+    on(this.canvas, 'contextmenu', (e: Event) => {
+      if (this.locked) e.preventDefault();
+    });
     on(this.win, 'mouseup', (e: MouseLike) => this.sampler.release(`Mouse${e.button}`));
     on(this.canvas, 'mousemove', (e: MouseLike) => {
       if (this.locked) this.sampler.mouseMove(e.movementX ?? 0, e.movementY ?? 0);

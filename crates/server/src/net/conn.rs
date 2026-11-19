@@ -488,7 +488,8 @@ fn handle_frame(
                 | ClientMsgC0::Chat(_)
                 | ClientMsgC0::MarkerPlace(_)
                 | ClientMsgC0::Settings(_)
-                | ClientMsgC0::Report(_)),
+                | ClientMsgC0::Report(_)
+                | ClientMsgC0::PlacementRequest(_)),
             ) => {
                 let Some(kind) = crate::c0::C0Kind::of(&m) else {
                     return true;

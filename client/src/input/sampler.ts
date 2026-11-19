@@ -47,6 +47,8 @@ export const pitchFromCode = (code: number): number => ((code + 0.5) / 32767.5) 
 export class InputSampler implements InputSource {
   private readonly held = new Set<Action>();
   private readonly down = new Set<string>();
+  private pressed?: (code: string) => void;
+  private cleared?: () => void;
   private dx = 0;
   private dy = 0;
   private readonly axes: MoveAxes = { moveX: 0, moveZ: 0 };
@@ -61,6 +63,7 @@ export class InputSampler implements InputSource {
 
   /** `code` is `KeyboardEvent.code` or `Mouse<button>`. Repeats are idempotent. */
   press(code: string): void {
+    if (!this.down.has(code)) this.pressed?.(code);
     this.down.add(code);
     const a = this.keymap[code];
     if (a) this.held.add(a);
@@ -86,6 +89,13 @@ export class InputSampler implements InputSource {
     this.held.clear();
     this.dx = 0;
     this.dy = 0;
+    this.cleared?.();
+  }
+
+  /** Optional match input context; receives edges even between two fixed ticks. */
+  onInputContext(press: (code: string) => void, clear: () => void): void {
+    this.pressed = press;
+    this.cleared = clear;
   }
 
   isHeld(a: Action): boolean {

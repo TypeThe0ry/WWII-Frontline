@@ -118,6 +118,7 @@ pub enum PlaceError {
     TeamCap,
     SectorCap,
     NotAlive,
+    InNoBuildZone,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -136,6 +137,7 @@ pub struct GarrisonPlacement<'a> {
     pub hq: &'a [Vec3],
     pub garrisons: &'a [(Team, Vec3)],
     pub objectives: &'a [crate::ObjectiveSpec],
+    pub no_build_zones: &'a crate::NoBuildZones,
     pub collision: &'a crate::CollisionData,
     pub water_material: Option<u8>,
     pub enemies: &'a [Vec3],
@@ -156,6 +158,9 @@ impl GarrisonPlacement<'_> {
         pos: Vec3,
         available_supplies: impl FnOnce() -> u32,
     ) -> Result<GarrisonCost, PlaceError> {
+        if self.no_build_zones.contains(pos) {
+            return Err(PlaceError::InNoBuildZone);
+        }
         for hq in self.hq {
             if dist_xz(*hq, pos) < MIN_HQ_M {
                 return Err(PlaceError::TooCloseHq);
