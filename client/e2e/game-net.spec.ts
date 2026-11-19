@@ -48,12 +48,15 @@ test.afterAll(async () => {
 
 test('networked game boots, steps at 30 Hz, sends InputBundles and survives whatever the server answers', async ({ page }) => {
   const errors: string[] = [];
+  const missingAudio: string[] = [];
   page.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
   page.on('console', (m) => {
     if (m.type() === 'error') errors.push(`console.error: ${m.text()}`);
+    if (m.type() === 'warning' && /^\[asset-missing\] audio wpn\..+\.near\.0 requested by shot$/.test(m.text())) missingAudio.push(m.text());
   });
   await page.goto(`${base}?renderer=webgl2&empty=1&debug=1&transport=ws&server=127.0.0.1:${(server as ServerProc).wsPort}`);
   await page.waitForFunction(() => window.__netGame !== undefined, undefined, { timeout: 30_000 });
+  await page.keyboard.press('Shift'); // trusted gesture unlocks WebAudio in headless Chromium
   // hold W through the sampler (the keyboard path needs Pointer Lock, which headless Chromium does not grant)
   await page.evaluate(() => window.__netGame?.sampler.press('KeyW'));
   const t0 = Date.now();
@@ -69,6 +72,16 @@ test('networked game boots, steps at 30 Hz, sends InputBundles and survives what
   expect(r.avgBundle).toBeGreaterThan(10);
   expect(r.avgBundle).toBeLessThanOrEqual(32);
   expect(r.overlay).toContain('reconcile corrections');
+  await page.evaluate(() => {
+    const sampler = window.__netGame!.sampler;
+    sampler.release('KeyW');
+    sampler.press('Mouse0');
+  });
+  await expect.poll(() => missingAudio.length).toBe(1);
+  await page.evaluate(async () => {
+    window.__netGame!.dispose();
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+  });
   // no crash on whatever came back: decode failures are counted, never thrown
   const ours = errors.filter((e) => !/WebGPU|GPU stall|swiftshader/i.test(e));
   expect(ours).toEqual([]);

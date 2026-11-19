@@ -52,7 +52,7 @@ async function loadChunks(base: string, mapId: string): Promise<{ bx: number; bz
   return Promise.all(jobs);
 }
 
-export async function startNetGame(canvas: HTMLCanvasElement, bus: EventBus<GameEvents>, baseUrl = import.meta.env.BASE_URL): Promise<NetGameHandle> {
+export async function startNetGame(canvas: HTMLCanvasElement, bus: EventBus<GameEvents>, baseUrl = import.meta.env.BASE_URL, onDispose?: () => void): Promise<NetGameHandle> {
   const wasm = await loadWasm(baseUrl);
   const config = parseNetConfig(location.search, location);
   const [session, chunks] = await Promise.all([connect({ config, wasm, bus }), loadChunks(baseUrl, 'm0')]);
@@ -113,6 +113,7 @@ export async function startNetGame(canvas: HTMLCanvasElement, bus: EventBus<Game
       ];
     },
     dispose: () => {
+      onDispose?.();
       offSnap();
       lock.detach();
       document.removeEventListener('visibilitychange', onVisibility);

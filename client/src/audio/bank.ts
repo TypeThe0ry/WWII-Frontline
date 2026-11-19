@@ -29,10 +29,15 @@ export class AudioBank<B extends BufferLike> {
   get(id: string, requestedBy: string): B {
     const b = this.buffers.get(id);
     if (b) return b;
+    this.noteMissing(id, requestedBy);
+    return (this.silence ??= this.makeSilence(SILENCE_S));
+  }
+
+  /** Report absent assets even when the caller can skip allocating a voice. */
+  noteMissing(id: string, requestedBy: string): void {
     if (!this.missing.has(id)) {
       this.missing.add(id);
       if (this.dev) this.log(`${MISSING_PREFIX} ${id} requested by ${requestedBy}`);
     }
-    return (this.silence ??= this.makeSilence(SILENCE_S));
   }
 }
