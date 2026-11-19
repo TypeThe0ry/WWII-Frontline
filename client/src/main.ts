@@ -2,6 +2,7 @@ import { EventBus, FixedStepper } from './game';
 import type { GameEvents } from './game';
 import type { NetGameHandle } from './game/net-game';
 import type { ActorsHandle } from './actors-boot';
+import type { GameAudioHandle } from './audio/game-audio';
 import { createRenderer, parseRendererParam, DebugOverlay, buildPerfDump, installPerfApi } from './render';
 import type { PerfApi } from './render';
 import type { TerrainHandle } from './render/terrain/terrain-scene';
@@ -133,15 +134,34 @@ async function boot(): Promise<void> {
 
   // M0-022: networked play (`?server=host:port`): prediction, reconciliation, interpolation (client/src/game).
   let netGame: NetGameHandle | null = null;
+  let audio: GameAudioHandle | null = null;
+  let actors: ActorsHandle | null = null;
   const bus = new EventBus<GameEvents>();
   if (params.has('server')) {
-    const { startNetGame } = await import('./game/net-game');
-    netGame = await startNetGame(canvas, bus);
-    window.__netGame = netGame;
+    const [{ startNetGame }, { attachGameAudio }] = await Promise.all([import('./game/net-game'), import('./audio/game-audio')]);
+    const ng = await startNetGame(canvas, bus, import.meta.env.BASE_URL, () => {
+      audio?.dispose();
+      audio = null;
+      actors?.dispose();
+      actors = null;
+      netGame = null;
+    });
+    netGame = ng;
+
+    const weaponIds = new Map<number, string>();
+    for (const path of Object.keys(import.meta.glob('../../data/weapons/*.json'))) {
+      const id = path.slice(path.lastIndexOf('/') + 1, -'.json'.length);
+      weaponIds.set(ng.wasm.weaponIndex(id), id);
+    }
+    const pos = ng.game.state.local.simPos;
+    audio = attachGameAudio(bus, {
+      weaponId: (index) => weaponIds.get(index),
+      listener: () => ({ x: pos[0]!, y: pos[1]!, z: pos[2]! }),
+    });
+    window.__netGame = ng;
   }
 
   // M0-025: placeholder actors + first-person camera + shot feedback, on the real game state (`?server=`) or a synthetic one (`?actors=demo`).
-  let actors: ActorsHandle | null = null;
   if (netGame || params.get('actors') === 'demo') {
     const { bootActors } = await import('./actors-boot');
     const ng = netGame;
@@ -204,6 +224,7 @@ async function boot(): Promise<void> {
     const { steps, alpha } = stepper.advance(dt);
     netGame?.update(steps, alpha, dt);
     actors?.update(alpha, dt);
+    audio?.flush();
   }, 'first', 'game_update');
   if (actors && window.__perf) {
     const fx = actors.manager.fx;
