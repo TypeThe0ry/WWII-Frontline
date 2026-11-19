@@ -3,6 +3,7 @@
  * Everything environment specific (fetch, timers, decoder, uploader) is injectable so the logic runs in vitest without a browser.
  */
 import { CacheLayer, type CacheMode } from './cache';
+import { decodeAudioEntry, type DecodedAudioEntry } from './entry-audio';
 import { FetchRangeSource, FpakReader, type Fetcher } from './fpak-reader';
 import { loadManifest, ManifestIndex, type Manifest, type Tier } from './manifest';
 import { isPlaceholder, makePlaceholder, OncePerSession, silence, type Placeholder } from './placeholder';
@@ -10,6 +11,7 @@ import { CancelledError, WorkerPool } from './worker-pool';
 import { UploadScheduler } from './upload-scheduler';
 
 export * from './cache';
+export * from './entry-audio';
 export * from './fpak-reader';
 export * from './manifest';
 export * from './placeholder';
@@ -51,6 +53,8 @@ export interface LoaderDeps {
   decoder?: Decoder;
   uploads?: UploadScheduler;
   poolSize?: number;
+  /** Maximum concurrent network downloads (ARCHITECTURE 9.3: <= 6). */
+  maxDownloadConcurrency?: number;
   log?: (msg: string) => void;
   /** Called to schedule `uploads.runFrame()`; the render loop normally calls it itself. Default: never (caller drives it). */
   onProgress?: (e: ProgressEvent) => void;
@@ -69,6 +73,7 @@ export interface LoadOptions {
 
 export const RETRY_DELAYS_MS = [200, 400, 800] as const;
 export const PROGRESS_INTERVAL_MS = 100;
+export const DEFAULT_MAX_DOWNLOAD_CONCURRENCY = 6;
 
 const identityDecoder: Decoder = { decode: async (entryId, kind, bytes) => ({ entryId, kind, bytes }) };
 
@@ -79,6 +84,13 @@ export class AssetLoader {
   readonly #bytesInflight = new Map<string, Promise<Uint8Array>>();
   readonly #decoded = new Map<string, Promise<unknown>>();
   readonly #pool: WorkerPool<{ entryId: string; kind: 'mesh' | 'texture'; bytes: Uint8Array }, Decoded>;
+  readonly #maxDownloads: number;
+  #activeDownloads = 0;
+  readonly #downloadQueue: { run: () => void; cancel: () => void }[] = [];
+  readonly #maxDecodeInflight: number;
+  #activeDecodes = 0;
+  readonly #decodeQueue: { prio: number; seq: number; run: () => void; cancel: () => void }[] = [];
+  #decodeSeq = 0;
   readonly cache: CacheLayer;
   readonly uploads: UploadScheduler;
   readonly #deps: LoaderDeps;
@@ -93,8 +105,10 @@ export class AssetLoader {
     this.#deps = deps;
     this.cache = deps.cache ?? new CacheLayer();
     this.uploads = deps.uploads ?? new UploadScheduler();
+    this.#maxDownloads = Math.max(1, deps.maxDownloadConcurrency ?? DEFAULT_MAX_DOWNLOAD_CONCURRENCY);
     const dec = deps.decoder ?? identityDecoder;
     this.#pool = new WorkerPool((t) => dec.decode(t.entryId, t.kind, t.bytes), deps.poolSize);
+    this.#maxDecodeInflight = Math.max(this.#pool.size * 2, this.#maxDownloads);
     this.#logOnce = new OncePerSession(deps.log ?? ((m) => console.warn(m)));
   }
 
@@ -173,6 +187,37 @@ export class AssetLoader {
     throw last;
   }
 
+  async #withDownloadSlot<T>(fn: () => Promise<T>, token?: LoadToken): Promise<T> {
+    if (token?.cancelled) throw new CancelledError();
+    if (this.#activeDownloads >= this.#maxDownloads) {
+      await new Promise<void>((resolve, reject) => {
+        const entry = {
+          run: () => {
+            token?.abort.signal.removeEventListener('abort', onAbort);
+            resolve();
+          },
+          cancel: () => reject(new CancelledError()),
+        };
+        const onAbort = () => {
+          const idx = this.#downloadQueue.indexOf(entry);
+          if (idx >= 0) this.#downloadQueue.splice(idx, 1);
+          entry.cancel();
+        };
+        token?.abort.signal.addEventListener('abort', onAbort, { once: true });
+        this.#downloadQueue.push(entry);
+      });
+    }
+    if (token?.cancelled) throw new CancelledError();
+    this.#activeDownloads++;
+    try {
+      return await fn();
+    } finally {
+      this.#activeDownloads--;
+      const next = this.#downloadQueue.shift();
+      next?.run();
+    }
+  }
+
   /** Raw entry bytes (cache first). Concurrent requests for one entry share one read. Throws after 3 retries. */
   loadBytes(entryId: string, opts: LoadOptions = {}): Promise<Uint8Array> {
     const hit = this.#bytesInflight.get(entryId);
@@ -181,16 +226,31 @@ export class AssetLoader {
       const ref = this.#index.resolve(entryId);
       if (!ref) throw new Error(`${entryId}: not in the manifest for this tier`);
       const key = `${ref.sha256}`;
-      const cached = await this.cache.get(key);
+      // Fast synchronous memory LRU check avoids queuing when already in RAM.
+      const mem = this.cache.memory.get(key);
       this.#bump('download', 0, ref.bytes);
-      if (cached) {
-        this.#bump('download', cached.byteLength, 0);
-        return cached;
+      if (mem) {
+        this.cache.hits++;
+        this.#bump('download', mem.byteLength, 0);
+        return mem;
       }
-      const bytes = await this.#withRetry(entryId, async () => (await this.#reader(ref.pak, opts.token)).read(entryId, opts.token?.abort.signal), opts.token);
-      await this.cache.put(key, bytes);
-      this.#bump('download', bytes.byteLength, 0);
-      return bytes;
+      // Bound concurrent persistent-cache (OPFS/Cache API) + network I/O to maxDownloadConcurrency (default 6)
+      // so warm OPFS bursts cannot flood the main thread with hundreds of MB at once.
+      return await this.#withDownloadSlot(async () => {
+        const cached = await this.cache.get(key);
+        if (cached) {
+          this.#bump('download', cached.byteLength, 0);
+          return cached;
+        }
+        const bytes = await this.#withRetry(
+          entryId,
+          async () => (await this.#reader(ref.pak, opts.token)).read(entryId, opts.token?.abort.signal),
+          opts.token,
+        );
+        await this.cache.put(key, bytes);
+        this.#bump('download', bytes.byteLength, 0);
+        return bytes;
+      }, opts.token);
     })();
     this.#bytesInflight.set(entryId, p);
     const done = () => this.#bytesInflight.delete(entryId);
@@ -200,19 +260,62 @@ export class AssetLoader {
 
   // ---- decode + upload -------------------------------------------------------------------------------------------------
 
+  /** Backpressure gate so fast warm OPFS hits don't pile up hundreds of MB of raw buffers waiting for decode workers. */
+  async #withDecodeSlot<T>(prio: number, fn: () => Promise<T>, token?: LoadToken): Promise<T> {
+    if (token?.cancelled) throw new CancelledError();
+    if (this.#activeDecodes >= this.#maxDecodeInflight) {
+      await new Promise<void>((resolve, reject) => {
+        const entry = {
+          prio,
+          seq: this.#decodeSeq++,
+          run: () => {
+            token?.abort.signal.removeEventListener('abort', onAbort);
+            resolve();
+          },
+          cancel: () => reject(new CancelledError()),
+        };
+        const onAbort = () => {
+          const idx = this.#decodeQueue.indexOf(entry);
+          if (idx >= 0) this.#decodeQueue.splice(idx, 1);
+          entry.cancel();
+        };
+        token?.abort.signal.addEventListener('abort', onAbort, { once: true });
+        this.#decodeQueue.push(entry);
+        this.#decodeQueue.sort((a, b) => a.prio - b.prio || a.seq - b.seq);
+      });
+    }
+    if (token?.cancelled) throw new CancelledError();
+    this.#activeDecodes++;
+    try {
+      return await fn();
+    } finally {
+      this.#activeDecodes--;
+      const next = this.#decodeQueue.shift();
+      next?.run();
+    }
+  }
+
   async #decodeUpload(entryId: string, kind: 'mesh' | 'texture', opts: LoadOptions): Promise<Decoded | Placeholder> {
     try {
-      const bytes = await this.loadBytes(entryId, opts);
-      this.#bump('decode', 0, bytes.byteLength);
-      const task = this.#pool.submit({ entryId, kind, bytes }, opts.prio ?? 5);
-      opts.token?.abort.signal.addEventListener('abort', () => task.cancel(), { once: true });
-      const decoded = await task.promise;
-      this.#bump('decode', bytes.byteLength, 0);
+      const prio = opts.prio ?? 5;
+      const decoded = await this.#withDecodeSlot(
+        prio,
+        async () => {
+          const bytes = await this.loadBytes(entryId, opts);
+          this.#bump('decode', 0, bytes.byteLength);
+          const task = this.#pool.submit({ entryId, kind, bytes }, prio);
+          opts.token?.abort.signal.addEventListener('abort', () => task.cancel(), { once: true });
+          const out = await task.promise;
+          this.#bump('decode', bytes.byteLength, 0);
+          return out;
+        },
+        opts.token,
+      );
       this.#bump('upload', 0, decoded.bytes.byteLength);
       return await new Promise<Decoded>((resolve, reject) => {
         this.uploads.enqueue({
           bytes: decoded.bytes.byteLength,
-          prio: opts.prio ?? 5,
+          prio,
           run: () => {
             if (opts.token?.cancelled) return reject(new CancelledError());
             this.#bump('upload', decoded.bytes.byteLength, 0);
@@ -258,6 +361,18 @@ export class AssetLoader {
       if (e instanceof CancelledError) throw e;
       const base = id.split('@')[0] as string;
       this.#logOnce.log(this.#index.reqIdOf(id) ?? base, `assets: audio ${id} missing (${e instanceof Error ? e.message : String(e)}); playing silence`);
+      return { silent: true, samples: silence() };
+    }
+  }
+
+  /** Decoded `.fpak` audio entry (header stripped, container payload ready for `AudioContext.decodeAudioData`). */
+  async loadAudioEntry(id: string, opts: LoadOptions = {}): Promise<DecodedAudioEntry | Silence> {
+    try {
+      return decodeAudioEntry(await this.loadBytes(id, opts));
+    } catch (e) {
+      if (e instanceof CancelledError) throw e;
+      const base = id.split('@')[0] as string;
+      this.#logOnce.log(this.#index.reqIdOf(id) ?? base, `assets: audio ${id} missing/invalid (${e instanceof Error ? e.message : String(e)}); playing silence`);
       return { silent: true, samples: silence() };
     }
   }

@@ -1,6 +1,6 @@
 import { defineConfig } from '@playwright/test';
 
-const PORT = 5199;
+const PORT = Number(process.env.FRONTLINE_PLAYWRIGHT_PORT ?? 5199);
 
 // Software-rendered Chromium: WebGL2 via SwiftShader; WebGPU only through the SwiftShader adapter
 // (see e2e/webgpu-swiftshader-shim.js for why presenting is stubbed).

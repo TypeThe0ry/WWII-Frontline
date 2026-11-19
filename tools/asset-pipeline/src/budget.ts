@@ -86,3 +86,43 @@ export function formatUsages(r: BudgetResult): string {
   for (const s of r.skipped) lines.push(`${s.padEnd(30)} skipped (no measurement)`);
   return lines.join('\n');
 }
+
+export interface CategoryUsage {
+  category: string;
+  assets: number;
+  entries: number;
+  bytes: number;
+  fpBytes: number;
+  tpBytes: number;
+}
+
+/** Per-category byte summary (M1-005 / ARCHITECTURE 11.4 & 11.8: helps M1-064 track dual-precision weapon/character budgets). */
+export function categoryBreakdown(m: Manifest, tier?: string): CategoryUsage[] {
+  const byCat = new Map<string, CategoryUsage>();
+  for (const [id, a] of Object.entries(m.assets)) {
+    if (tier && !(a.tier as string[]).includes(tier)) continue;
+    const category = id.split('_')[0] || 'other';
+    const row = byCat.get(category) ?? { category, assets: 0, entries: 0, bytes: 0, fpBytes: 0, tpBytes: 0 };
+    row.assets++;
+    for (const r of assetRefs(a)) {
+      const sz = r.bytes + r.index_bytes;
+      row.entries++;
+      row.bytes += sz;
+      if (r.entry.endsWith('_fp')) row.fpBytes += sz;
+      else if (r.entry.endsWith('_tp')) row.tpBytes += sz;
+    }
+    byCat.set(category, row);
+  }
+  return [...byCat.values()].sort((a, b) => a.category.localeCompare(b.category));
+}
+
+export function formatCategoryBreakdown(rows: readonly CategoryUsage[]): string {
+  if (rows.length === 0) return '';
+  const lines = ['category    assets  entries        bytes     _fp bytes     _tp bytes'];
+  for (const r of rows) {
+    lines.push(
+      `${r.category.padEnd(10)} ${String(r.assets).padStart(7)} ${String(r.entries).padStart(8)} ${String(r.bytes).padStart(12)} ${String(r.fpBytes).padStart(13)} ${String(r.tpBytes).padStart(13)}`,
+    );
+  }
+  return lines.join('\n');
+}
