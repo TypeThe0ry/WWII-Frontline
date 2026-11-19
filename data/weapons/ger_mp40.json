@@ -9,9 +9,21 @@
     "magazine_capacity": 32,
     "magazine_type": "detachable_box",
     "muzzle_velocity_mps": 380,
-    "rate_of_fire_rpm_practical": 500,
+    "rate_of_fire_rpm_practical": 180,
     "mass_kg": 4.0,
-    "_source": "待 M1-070 按 REF §6 复核"
+    "_source": [
+      {
+        "field": "rate_of_fire_rpm_practical",
+        "value": 180,
+        "unit": "rpm",
+        "source_id": "TME",
+        "title": "U.S. War Department TM-E 30-451 (1945)",
+        "locator": "Ch. VII §II.4.a(2), Characteristics",
+        "url": "https://www.ibiblio.org/hyperwar/Germany/HB/HB-7.html",
+        "accessed": "2026-11-19",
+        "note": "手册的实用标称；不采用 1943 年情报的短点射条件值，也不修改游戏射速。"
+      }
+    ]
   },
   "gameplay": {
     "damage_torso_hp": 36,

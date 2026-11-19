@@ -107,6 +107,20 @@
 
 5 项回填、5 项留待决定。结构审计为 17 个已登记、50 个缺口、0 个违规；Sherman 的 schema 仅允许字符串 `_source`，其速度虽已附出处，结构审计仍计为缺口。原有 6 项在线未核实不在此次回填范围。独立 WASM smoke 的 `native.json` 回退金样仅更新 `dataHash`；协议、快照和行为金样保持原样。
 
+## B3-C7：剩余五项决议与变更日志（2026-11-19）
+
+上表保留 #137 合入时的记录。以下是随后合入的五项；未改变武器 `gameplay.fire.cap_rpm`，不新增周期射速字段，也不提高 `_meta.status`。
+
+| `data/` 文件 / `historical` 字段 | 旧值 | 合入值 | 理由 |
+| --- | --- | --- | --- |
+| `weapons/ger_mp40.json` / `rate_of_fire_rpm_practical` | 500 rpm | **180 rpm** | [TME] §VII.II.4.a(2) 有区分周期与实用射速的同型规格项；[MPSS] 的 80–90 是短点射特定口径，不与实用标称混合。 |
+| `weapons/us_m3_grease.json` / `rate_of_fire_rpm_practical` | 450 rpm | **`"未核实"`** | [TM2200] §28 的 350–450 是机构射速范围，[ORD44] 第 410 页明列为周期值；未确认同型通用实用值。 |
+| `weapons/us_thompson_m1a1.json` / `rate_of_fire_rpm_practical` | 700 rpm | **`"未核实"`** | [TM2200] §29 的 700–800 是机构射速范围，不能把下限当实用射速；未确认 M1A1 同口径实用值。 |
+| `vehicles/us_m4a1_75.json` / `mass_kg` | 30,300 kg | **30,527 kg** | [TM2800B] 第 109 页明确是 T54E1 履带的战斗全重 67,300 lb，换算后取整；用于物理质量与惯量。 |
+| `vehicles/us_m4a1_75.json` / `dimensions_m`（长 / 宽 / 高） | 5.84 / 2.62 / 2.74 m | **5.842 / 2.591 / 2.845 m** | [TM2800A] 第 108 页无防沙板外廓 230 × 102 × 112 in（宽用车体最大尺寸，不是履带外缘 100⅛ in）。保留为物理、碰撞/命中代理和占位模型的尺寸基准，未将该外廓当成精确的装甲壳体。客户端 JSON 镜像同步。 |
+
+至此 10 个差异均已处置：8 项有依据回填、2 项明确标为 `"未核实"`。本轮结构审计 18 已登记、49 缺口、0 违规；Sherman 的字符串出处不计为结构化登记。独立 WASM smoke 回退金样只更新 `native.json:dataHash`（`0xf4933a34a89989e4` → `0x1fa546bd0389d3d6`）；协议版本、快照及行为金样不改。
+
 ## 在线来源
 
 链接指向所用原始文献扫描、转录或发布机构的馆藏/资料页；没有复制手册正文。
@@ -142,5 +156,6 @@
 [TM2800A]: https://archive.org/download/TM9-2800/TM9-2800.pdf#page=108 "U.S. War Department TM 9-2800 (1943)，M4A1 尺寸图与型号"
 [TM2800B]: https://archive.org/download/TM9-2800/TM9-2800.pdf#page=109 "U.S. War Department TM 9-2800 (1943)，M4A1 规格表"
 [FM30]: https://www.ibiblio.org/hyperwar/USA/ref/FM/PDFs/FM23-30.pdf#page=11 "U.S. War Department FM 23-30 (1944)，整件质量表，扫描"
+[ORD44]: https://archive.org/details/CatalogOfStandardOrdnanceItemsVolume3 "U.S. Office of Chief of Ordnance, Catalog of Standard Ordnance Items (1944), Vol. III, p. 410，扫描"
 [FM41L]: https://www.biggerhammer.net/manuals/fm23_41/CH1.PDF "U.S. Army FM 23-41，战后 M3/M3A1 手册，第 1 章扫描"
 [NCJ]: https://ojp.gov/pdffiles1/Digitization/9639NCJRS.pdf "Submachine Guns in Police Operations，NCJRS 数字馆藏，战后周期射速对照"
