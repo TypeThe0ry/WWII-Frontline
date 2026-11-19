@@ -72,6 +72,8 @@ pub struct MeleeState {
     pub ticks_left: u16,
     /// The windup began while sprinting with a bayonet.
     pub lunging: bool,
+    /// Definition picked when the current windup started.
+    pub(crate) variant: Option<usize>,
     /// Execution of a downed enemy in progress (M1-016b): target, ticks left (0 = none) and the
     /// attacker's hit points when it began (losing any ends it).
     pub exec_target: u16,

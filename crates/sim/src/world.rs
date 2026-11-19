@@ -18,6 +18,7 @@ use crate::respawn::{RespawnPolicy, RespawnQueue, SpawnPoints};
 use crate::schedule::build_schedule;
 use crate::step::{SimEvent, StepOutput, StepProfiler, StepTimings};
 use crate::view::*;
+use crate::weapon::sidearm::{SpawnLoadout, WeaponSlots};
 use crate::weapon::WeaponState;
 
 mod placement_zones;
@@ -124,6 +125,9 @@ impl World {
             hz: cfg.tick_hz,
         });
         ecs.insert_resource(WeaponTable::new(cfg.data, cfg.tick_hz));
+        ecs.insert_resource(crate::projectile::ProjectileMaterials(
+            crate::ballistics::materials::MaterialTable::from_defs(cfg.data.materials),
+        ));
         ecs.insert_resource(crate::components::MeleeTable::new(cfg.data, cfg.tick_hz));
         ecs.insert_resource(crate::throwables::ThrowableTable::new(
             cfg.data,
@@ -349,7 +353,13 @@ impl World {
             .data
             .role(DEFAULT_ROLE)
             .map_or(100.0, |r| r.health_hp as f32);
-        let weapon = starting_weapon(self.cfg.data, DEFAULT_ROLE, req.team, self.cfg.tick_hz);
+        let loadout = SpawnLoadout(self.squads.entry(req.player).and_then(|e| e.loadout));
+        let (slots, weapon) = WeaponSlots::spawn(
+            self.cfg.data,
+            self.ecs.resource::<WeaponTable>(),
+            req.team,
+            loadout,
+        );
         let e = self
             .ecs
             .spawn((
@@ -396,6 +406,7 @@ impl World {
         if let Some(w) = weapon {
             self.ecs.entity_mut(e).insert(w);
         }
+        self.ecs.entity_mut(e).insert((loadout, slots));
         self.ecs.resource_mut::<EntityTable>().insert(id, e);
         self.ecs
             .resource_mut::<PlayerIndex>()
@@ -861,6 +872,10 @@ impl World {
                 spawn_in_ticks: 0,
             });
         }
+        let (_, entity) = self.ecs.resource::<PlayerIndex>().map[&p];
+        self.ecs
+            .entity_mut(entity)
+            .insert(SpawnLoadout(Some(req.loadout)));
         if req.spawn_point == SPAWN_HQ {
             self.ecs
                 .resource_mut::<crate::spawn::SpawnRules>()
@@ -1387,6 +1402,30 @@ impl World {
                 if !ms.is_idle() {
                     h.write_u8(0xE0 | ms.phase as u8 | (u8::from(ms.lunging) << 3));
                     h.write_u16(ms.ticks_left);
+                    if let Some(def) = ms.variant.and_then(|i| self.cfg.data.melee.get(i)) {
+                        if def.class != crate::data::defs::MeleeClass::Bayonet {
+                            h.write_bytes(def.id.as_bytes());
+                        }
+                    }
+                }
+            }
+            if let Some(l) = er
+                .get::<SpawnLoadout>()
+                .and_then(|l| l.0)
+                .and_then(|i| self.cfg.data.loadouts.get(usize::from(i)))
+            {
+                h.write_u8(0xE9);
+                h.write_bytes(l.id.as_bytes());
+            }
+            if let Some(slots) = er.get::<WeaponSlots>() {
+                if let Some(w) = slots.stowed {
+                    h.write_u8(0xEA);
+                    h.write_u8(u8::from(slots.secondary_active));
+                    h.write_u32(slots.draw_ticks);
+                    h.write_u8(u8::from(slots.swap_held));
+                    h.write_u8(slots.input_slot);
+                    h.write_u64(self.weapon_key(w.def_id));
+                    h.write_bytes(&w.to_bytes()[2..]);
                 }
             }
             if let Some(w) = er.get::<WeaponState>() {
@@ -1538,6 +1577,18 @@ impl World {
             if p.rewind > 0 {
                 h.write_u8(0xF4);
                 h.write_u8(p.rewind);
+            }
+            if p.cover.crossings != 0 {
+                h.write_u8(0xE2);
+                h.write_u8(p.cover.crossings);
+                h.write_f32(p.cover.remaining);
+                h.write_f32(p.cover.multiplier);
+                h.write_u8(u8::from(p.cover.transit.is_some()));
+                if let Some((exit, dir)) = p.cover.transit {
+                    for f in exit.to_array().into_iter().chain(dir.to_array()) {
+                        h.write_f32(f);
+                    }
+                }
             }
         }
         h.finish()

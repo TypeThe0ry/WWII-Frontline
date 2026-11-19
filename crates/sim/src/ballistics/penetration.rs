@@ -21,6 +21,41 @@ pub const MAX_SEGMENTS: usize = MAX_PENETRATIONS + 1;
 /// Floor of the per-layer damage multiplier.
 pub const MIN_LAYER_MULT: f32 = 0.25;
 
+pub(crate) enum Contact {
+    Stop,
+    Bounce(Vec3),
+    Through { remaining: f32, multiplier: f32 },
+}
+
+pub(crate) fn contact(
+    material: &super::materials::Material,
+    layer: &Layer,
+    dir: Vec3,
+    crossings: usize,
+    remaining: f32,
+    initial: f32,
+) -> Contact {
+    if crossings >= MAX_PENETRATIONS {
+        return Contact::Stop;
+    }
+    if material.ricochet && ricochet::bounces(dir, layer.normal) {
+        return Contact::Bounce(ricochet::reflect(dir, layer.normal));
+    }
+    let thickness = layer.thickness_mm();
+    let cost = thickness * material.cost_per_mm;
+    if (material.stop_mm > 0.0 && thickness > material.stop_mm)
+        || remaining < cost
+        || initial <= 0.0
+    {
+        return Contact::Stop;
+    }
+    let remaining = remaining - cost;
+    Contact::Through {
+        remaining,
+        multiplier: (remaining / initial).max(MIN_LAYER_MULT),
+    }
+}
+
 /// Ammunition facts the trace needs.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct PenAmmo {
@@ -132,24 +167,24 @@ pub fn trace_with_penetration(
             pen_start: p,
             damage_mult: res.dealt_mult,
         });
-        if m.ricochet && ricochet::bounces(dir, layer.normal) {
-            res.ricochet = Some((
-                layer.entry,
-                ricochet::reflect(dir, layer.normal),
-                ricochet::speed_factor(),
-            ));
-            res.stopped = true;
-            break;
+        match contact(&m, &layer, dir, i, p, ammo.pen_power) {
+            Contact::Bounce(dir) => {
+                res.ricochet = Some((layer.entry, dir, ricochet::speed_factor()));
+                res.stopped = true;
+                break;
+            }
+            Contact::Stop => {
+                res.stopped = true;
+                break;
+            }
+            Contact::Through {
+                remaining,
+                multiplier,
+            } => {
+                p = remaining;
+                res.dealt_mult *= multiplier;
+            }
         }
-        let thickness = layer.thickness_mm();
-        let need = thickness * m.cost_per_mm;
-        let capped = m.stop_mm > 0.0 && thickness > m.stop_mm;
-        if i == MAX_PENETRATIONS || capped || p < need {
-            res.stopped = true;
-            break;
-        }
-        p -= need;
-        res.dealt_mult *= (p / ammo.pen_power).max(MIN_LAYER_MULT);
         // Continue behind the layer, slightly deflected.
         left -= (layer.exit - pos).length();
         pos = layer.exit;

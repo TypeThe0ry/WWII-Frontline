@@ -20,6 +20,7 @@ use crate::components::{
 use crate::health::LifeState;
 use crate::ids::EntityId;
 use crate::step::SimEvent;
+use crate::throwables::{explosion::RAY_LIFT_M, system::CHEST_HEIGHT_M, Occlusion};
 use crate::weapon::hitbox;
 
 /// `(projectile id, target)` pairs already suppressed (a bullet suppresses a player once).
@@ -146,6 +147,7 @@ pub fn suppression(
             }
             continue;
         }
+        let chest = t.pos + Vec3::Y * CHEST_HEIGHT_M;
         for &c in &blasts {
             let r = (t.pos - c).length();
             if r >= EXPLOSION_R_M {
@@ -153,14 +155,14 @@ pub fn suppression(
             }
             let f = 1.0 - r / EXPLOSION_R_M;
             let mut amt = EXPLOSION_S * f * f;
-            let chest = t.pos + Vec3::Y * 1.2;
-            if !col.0.los(c, chest) {
+            // Suppression uses one wall penalty for either class of obstructing cover.
+            if col.0.blast_cover(c + Vec3::Y * RAY_LIFT_M, chest) != Occlusion::Clear {
                 amt *= WALL_MULT;
             }
             apply(&mut st, amt, now, hz, id, t.pos, c, &mut events.0);
         }
-        if st.s > 0.0 {
-            let cover = !col.0.los(st.src_pos, t.pos + Vec3::Y * 1.2);
+        if st.s > 0.0 && now > st.window_until {
+            let cover = col.0.blast_cover(st.src_pos, chest) != Occlusion::Clear;
             decay(&mut st, now, hz, m.stance_blend, cover);
         }
         // Forget suppressors older than the assist window.

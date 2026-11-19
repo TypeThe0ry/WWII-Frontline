@@ -19,8 +19,9 @@ use crate::respawn::{RespawnQueue, SpawnPoints};
 use crate::rng::{unit_f32, Purpose};
 use crate::step::SimEvent;
 use crate::weapon::melee::{melee_damage, melee_trace, step_melee, MELEE_WEAPON_IDX};
+use crate::weapon::sidearm::{self, SpawnLoadout, WeaponSlots};
 use crate::weapon::{is_sprinting, step_weapon, MeleeState, ShotCtx, WeaponState};
-use crate::world::{neutral_input, DEFAULT_ROLE};
+use crate::world::neutral_input;
 use frontline_protocol::msg::input::buttons;
 
 pub fn ingest_inputs(
@@ -124,7 +125,7 @@ pub fn movement(
 /// Weapon stage (ARCHITECTURE 6.10 stage 4a): fire state machine, reload, recoil; spawns the
 /// projectiles of this tick's shots. Uses the post-movement pose, ascending `EntityId`.
 #[allow(clippy::too_many_arguments, clippy::type_complexity)]
-pub fn weapons(
+pub(crate) fn weapons(
     cfg: Res<SimCfgRes>,
     wt: Res<WeaponTable>,
     params: Res<MoveParamsRes>,
@@ -144,6 +145,7 @@ pub fn weapons(
         &MeleeState,
         &crate::medical::FireLock,
         &crate::suppression::SuppressionState,
+        (&WeaponSlots, &crate::supply::Carrying),
     )>,
     mut profiler: Option<ResMut<crate::step::StepProfiler>>,
 ) {
@@ -152,7 +154,8 @@ pub fn weapons(
         return;
     };
     for (id, e) in table.sorted() {
-        let Ok((t, m, last, team, mut w, life, melee, lock, supp)) = q.get_mut(e) else {
+        let Ok((t, m, last, team, mut w, life, melee, lock, supp, (slots, carry))) = q.get_mut(e)
+        else {
             continue;
         };
         if !life.is_alive() {
@@ -169,7 +172,12 @@ pub fn weapons(
             entity: id,
         };
         let mut cmd = last.cmd;
-        if !melee.is_idle() || tick.0 .0 < lock.0 .0 {
+        let draw_blocked =
+            slots.draw_ticks > 0 || (carry.0.is_some() && !sidearm::is_pistol(cfg.data, &w));
+        if draw_blocked {
+            cmd.buttons &= !(buttons::FIRE | buttons::RELOAD | buttons::AIM);
+        }
+        if !melee.is_idle() || melee.executing() || tick.0 .0 < lock.0 .0 {
             // A running melee action blocks the trigger (M1-013b).
             cmd.buttons &= !buttons::FIRE;
         }
@@ -189,6 +197,10 @@ pub fn weapons(
                 .clamp(-core::f32::consts::FRAC_PI_2, core::f32::consts::FRAC_PI_2);
         }
         let out = step_weapon(&mut w, &wp, &cmd, &auth, &mp, ctx);
+        if draw_blocked {
+            // Like sprinting, a semi-auto trigger press during a draw is not buffered.
+            w.trigger_held = last.cmd.buttons & buttons::FIRE != 0;
+        }
         if let Some(shot) = out.shot {
             let weapon = w.def_id;
             let v = wt.ballistics(weapon).map_or(0.0, |b| b.muzzle_velocity_mps);
@@ -216,9 +228,10 @@ pub fn weapons(
 /// against the post-movement poses, ascending `EntityId`; a strike on a downed enemy starts an
 /// execution (GAMEDESIGN 7.4) instead of damage. Kills are attributed through the [`HitLog`].
 #[allow(clippy::type_complexity)]
-pub fn melee(
+pub(crate) fn melee(
     mt: Res<MeleeTable>,
     cfg: Res<SimCfgRes>,
+    col: Res<CollisionRes>,
     table: Res<EntityTable>,
     mut log: ResMut<HitLog>,
     mut events: ResMut<EventBuf>,
@@ -228,6 +241,11 @@ pub fn melee(
         &LastInput,
         &Team,
         &LifeState,
+        (
+            &WeaponSlots,
+            Option<&WeaponState>,
+            &crate::vehicle::seats::InVehicle,
+        ),
         &mut MeleeState,
         &mut Health,
     )>,
@@ -239,14 +257,15 @@ pub fn melee(
         team: Team,
         downed: bool,
     }
-    let mut strikes: Vec<(crate::ids::EntityId, bool)> = Vec::new();
+    let clear = |a: &Snap, b: &Snap| {
+        let hand = |s: &Snap| s.pos + Vec3::Y * if s.downed { 0.3 } else { 1.0 };
+        col.0.raycast_cover_segment(hand(a), hand(b)).is_none()
+    };
+    let mut strikes = Vec::new();
     // Executions in progress: (attacker, target) pairs that may finish this tick.
     let mut running: Vec<(crate::ids::EntityId, crate::ids::EntityId)> = Vec::new();
     for (id, e) in table.sorted() {
-        let Ok((_, m, last, team, life, mut ms, hp)) = q.get_mut(e) else {
-            continue;
-        };
-        let Some(p) = mt.params(*team) else {
+        let Ok((_, m, last, _, life, (slots, gun, vehicle), mut ms, hp)) = q.get_mut(e) else {
             continue;
         };
         if !life.is_alive() {
@@ -262,17 +281,29 @@ pub fn melee(
         }
         let want = last.cmd.buttons & buttons::MELEE != 0;
         let sprinting = is_sprinting(&last.cmd);
-        let can_start = m.vault.is_none() && !ms.executing();
-        let out = step_melee(&mut ms, p, want, can_start, sprinting);
+        let can_start =
+            m.vault.is_none() && !ms.executing() && slots.draw_ticks == 0 && vehicle.0.is_none();
+        if ms.is_idle() && want && can_start {
+            ms.variant = mt.variant(
+                cfg.data,
+                slots.loadout.and_then(|l| l.melee.as_deref()),
+                gun,
+            );
+        }
+        let Some(variant) = ms.variant else { continue };
+        let out = step_melee(&mut ms, mt.params(variant), want, can_start, sprinting);
         if out.strike {
-            strikes.push((id, ms.lunging));
+            strikes.push((id, ms.lunging, variant));
+        }
+        if ms.is_idle() {
+            ms.variant = None;
         }
     }
     // Snapshot of the players who can be hit at strike time (poses do not change in this stage).
     let snaps: Vec<Snap> = table
         .sorted()
         .filter_map(|(id, e)| {
-            let (t, _, _, team, life, _, h) = q.get(e).ok()?;
+            let (t, _, _, team, life, _, _, h) = q.get(e).ok()?;
             (!life.is_dead() && h.hp > 0.0).then_some(Snap {
                 id,
                 pos: t.pos,
@@ -300,7 +331,7 @@ pub fn melee(
         let Ok((.., mut ms, _)) = q.get_mut(ae) else {
             continue;
         };
-        if !tg.downed || !near {
+        if !tg.downed || !near || !clear(a, tg) {
             ms.exec_ticks = 0;
             continue;
         }
@@ -324,21 +355,22 @@ pub fn melee(
             });
         }
     }
-    for (aid, lunging) in strikes {
+    for (aid, lunging, variant) in strikes {
         let Some(a) = snaps.iter().find(|s| s.id == aid) else {
             continue;
         };
-        let Some(p) = mt.params(a.team) else {
-            continue;
-        };
+        let p = mt.params(variant);
         for tg in snaps.iter().filter(|s| s.id != aid && s.team != a.team) {
             let Some(hit) = melee_trace(p, lunging, a.pos, a.yaw, tg.pos, tg.yaw) else {
                 continue;
             };
+            if !clear(a, tg) {
+                continue;
+            }
             if tg.downed {
                 // Strike on a downed enemy: start the execution, no damage (one at a time).
                 let Some(ae) = table.get(aid) else { continue };
-                let hp_now = q.get(ae).map_or(0.0, |r| r.6.hp);
+                let hp_now = q.get(ae).map_or(0.0, |(.., h)| h.hp);
                 if let Ok((.., mut ms, _)) = q.get_mut(ae) {
                     if !ms.executing() {
                         ms.exec_target = tg.id;
@@ -353,7 +385,7 @@ pub fn melee(
             let Some(e) = table.get(tg.id) else {
                 continue;
             };
-            let Ok((_, _, _, _, _, _, mut hp)) = q.get_mut(e) else {
+            let Ok((.., mut hp)) = q.get_mut(e) else {
                 continue;
             };
             if hp.hp <= 0.0 {
@@ -387,7 +419,7 @@ pub use crate::medical::{deaths, falls, medical, vitals};
 /// (plus a deterministic offset of at most `spawn_jitter_m`), full health and weapon, facing the
 /// map centre. No spawn protection in M0.
 #[allow(clippy::too_many_arguments, clippy::type_complexity)]
-pub fn respawns(
+pub(crate) fn respawns(
     tick: Res<CurrentTick>,
     cfg: Res<SimCfgRes>,
     points: Res<SpawnPoints>,
@@ -399,6 +431,8 @@ pub fn respawns(
     mut events: ResMut<EventBuf>,
     mut rules: ResMut<crate::spawn::SpawnRules>,
     mut gs: ResMut<crate::spawn::garrison::Garrisons>,
+    wt: Res<WeaponTable>,
+    mut commands: Commands,
     mut q: Query<(
         &mut Transform,
         &mut Motion,
@@ -407,7 +441,7 @@ pub fn respawns(
         &mut LastInput,
         &Team,
         &Home,
-        Option<&mut WeaponState>,
+        &SpawnLoadout,
         &mut crate::spawn::SpawnProtection,
     )>,
 ) {
@@ -516,7 +550,7 @@ pub fn respawns(
             let mut r = rng.stream(tick.0, eid, Purpose::Respawn);
             let pick =
                 crate::spawn::place::pick_spawn(&col.0, hq, &all, &enemies, || unit_f32(&mut r));
-            let Ok((mut t, mut m, mut hp, mut life, mut last, _, home, weapon, mut prot)) =
+            let Ok((mut t, mut m, mut hp, mut life, mut last, _, home, loadout, mut prot)) =
                 q.get_mut(e)
             else {
                 continue;
@@ -539,12 +573,7 @@ pub fn respawns(
             let mut idle = neutral_input();
             idle.yaw = code;
             last.cmd = idle;
-            if let (Some(mut w), Some(fresh)) = (
-                weapon,
-                crate::components::starting_weapon(cfg.data, DEFAULT_ROLE, team, cfg.hz),
-            ) {
-                *w = fresh;
-            }
+            reset_equipment(commands.entity(e), cfg.data, &wt, team, *loadout);
             rules.last_spawn.insert(pid, tick.0 .0);
             let win = crate::spawn::FLOOD_WINDOW_S * u32::from(cfg.hz);
             let now = tick.0 .0;
@@ -567,7 +596,7 @@ pub fn respawns(
             events.0.push(SimEvent::Spawn { player: pid, pos });
             continue;
         }
-        let Ok((mut t, mut m, mut hp, mut life, mut last, team, home, weapon, _)) = q.get_mut(e)
+        let Ok((mut t, mut m, mut hp, mut life, mut last, team, home, loadout, _)) = q.get_mut(e)
         else {
             continue;
         };
@@ -599,13 +628,24 @@ pub fn respawns(
         let mut idle = neutral_input();
         idle.yaw = code;
         last.cmd = idle;
-        if let (Some(mut w), Some(fresh)) = (
-            weapon,
-            crate::components::starting_weapon(cfg.data, DEFAULT_ROLE, *team, cfg.hz),
-        ) {
-            *w = fresh;
-        }
+        reset_equipment(commands.entity(e), cfg.data, &wt, *team, *loadout);
         events.0.push(SimEvent::Spawn { player: pid, pos });
+    }
+}
+
+fn reset_equipment(
+    mut entity: bevy_ecs::system::EntityCommands,
+    data: &crate::data::GameData,
+    wt: &WeaponTable,
+    team: Team,
+    loadout: SpawnLoadout,
+) {
+    let (slots, weapon) = WeaponSlots::spawn(data, wt, team, loadout);
+    entity.insert((slots, MeleeState::default()));
+    if let Some(w) = weapon {
+        entity.insert(w);
+    } else {
+        entity.remove::<WeaponState>();
     }
 }
 
@@ -653,7 +693,7 @@ pub fn build_schedule() -> Schedule {
             )
                 .chain(),
             falls,
-            melee,
+            (sidearm::equip, melee).chain(),
             weapons,
             throwables,
             projectiles_system,
@@ -692,7 +732,7 @@ pub fn build_schedule() -> Schedule {
             )
                 .chain(),
             falls,
-            melee,
+            (sidearm::equip, melee).chain(),
             weapons,
             throwables,
             projectiles_system,
