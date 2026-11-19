@@ -26,6 +26,7 @@ export const SOCKET = {
   handR: 'socket_hand_r',
   handL: 'socket_hand_l',
   head: 'socket_head',
+  back: 'socket_back',
 } as const;
 
 export type Faction = 'us' | 'ger';

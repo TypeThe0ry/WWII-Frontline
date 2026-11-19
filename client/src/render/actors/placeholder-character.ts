@@ -2,9 +2,8 @@
  * Grey-box soldier (V-CHR-US-001 / V-CHR-GE-001): capsule body + head sphere + shoulder bar / hip block / nose block
  * that show which way the body and the head face. Sizes come from `CapsuleDims` (the rifleman role data).
  *
- * All parts are instances of a few shared source meshes per faction, so any number of actors costs about ten
- * draw calls. Sockets (`socket_head`, `socket_hand_r`, `socket_hand_l`) are transform nodes where the real skeleton's
- * attachment points will be; the third-person weapon hangs on `socket_hand_r`.
+ * The existing meshes are rigid instances parented to procedural joint pivots; there is no mesh skinning.
+ * The third-person weapon hangs on the right-hand socket, with its muzzle socket on the weapon itself.
  */
 import type { Mesh } from '@babylonjs/core/Meshes/mesh';
 import '@babylonjs/core/Meshes/instancedMesh';
@@ -13,8 +12,10 @@ import { MeshBuilder } from '@babylonjs/core/Meshes/meshBuilder';
 import { TransformNode } from '@babylonjs/core/Meshes/transformNode';
 import type { Scene } from '@babylonjs/core/scene';
 import type { CapsuleDims } from './actor-data';
+import { AnimGraph, type AnimSample } from './anim-graph';
 import { FACTION_COLOR, type Faction, PlaceholderRegistry, SOCKET, characterReq, phName, placeholderMaterial } from './names';
 import type { WeaponNode } from './placeholder-weapon';
+import { PlaceholderSkeleton } from './skeleton';
 import { freshWorldMatrix } from './world';
 
 export interface CharacterGeometry {
@@ -73,36 +74,25 @@ export class CharacterSources {
   }
 }
 
-export interface CharacterPose {
+export interface CharacterPose extends AnimSample {
   x: number;
   y: number;
   z: number;
   yaw: number;
   pitch: number;
-  /** 0 stand, 1 crouch (other values are treated as crouch). */
-  stance: number;
-  /** 0..255 wire health; 0 = dead. */
-  health: number;
 }
 
 export class PlaceholderCharacter {
   readonly root: TransformNode;
-  /** Pivot at chest height; rotated by the view pitch. Head, shoulders and hands hang on it. */
-  readonly aim: TransformNode;
-  readonly socketHead: TransformNode;
-  readonly socketHandR: TransformNode;
-  readonly socketHandL: TransformNode;
+  readonly skeleton: PlaceholderSkeleton;
+  readonly animation = new AnimGraph();
   weapon: WeaponNode | null = null;
-  /** Current body height (metres), eased towards the stance height. */
+  /** Current capsule envelope height (m). */
   height: number;
-  dead = false;
-  /** Detail level 0 (all parts) .. 2 (capsule only), set by the manager from the camera distance with hysteresis. */
+  /** Detail level 0 (all parts) .. 2 (capsule only), selected by the manager. */
   lod = 0;
-  /** Upper-body recoil kick (rad), added to the aim pitch and decayed by `update`. */
-  kick = 0;
 
   private readonly body: InstancedMesh;
-  private readonly hip: InstancedMesh;
   private readonly instances: InstancedMesh[] = [];
   private readonly req: string;
 
@@ -116,72 +106,75 @@ export class PlaceholderCharacter {
     const req = (this.req = characterReq(src.faction));
     this.height = caps.heightStand;
     this.root = new TransformNode(phName(req, id), scene);
-    const inst = (part: PartName, suffix: string, parent: TransformNode): InstancedMesh => {
-      const i = src.parts[part].createInstance(phName(req, `${id}_${suffix}`));
+    this.skeleton = new PlaceholderSkeleton(this.root, req, id, caps.radius);
+    const inst = (part: PartName, parent: TransformNode): InstancedMesh => {
+      const i = src.parts[part].createInstance(phName(req, `${id}_${part}`));
       i.parent = parent;
       i.isPickable = false;
       this.instances.push(i);
       return i;
     };
-    this.body = inst('body', 'body', this.root);
-    this.hip = inst('hip', 'hip', this.root);
-    this.aim = new TransformNode(`${phName(req, id)}_aim`, scene);
-    this.aim.parent = this.root;
-    this.socketHead = new TransformNode(SOCKET.head, scene);
-    this.socketHead.parent = this.aim;
-    this.socketHandR = new TransformNode(SOCKET.handR, scene);
-    this.socketHandR.parent = this.aim;
-    this.socketHandL = new TransformNode(SOCKET.handL, scene);
-    this.socketHandL.parent = this.aim;
-    const head = inst('head', 'head', this.socketHead);
-    head.position.set(0, 0, 0);
-    const nose = inst('nose', 'nose', this.socketHead);
-    nose.position.set(0, 0, geo.headRadius + geo.noseSize[2] * 0.2);
-    const sh = inst('shoulders', 'shoulders', this.aim);
-    sh.position.set(0, 0, 0);
-    const r = caps.radius;
-    this.socketHandR.position.set(r * 0.9, -r * 0.2, r * 1.2);
-    this.socketHandL.position.set(-r * 0.3, -r * 0.2, r * 2.4);
+    this.body = inst('body', this.skeleton.joints.Hips);
+    inst('hip', this.skeleton.joints.Hips).position.z = caps.radius * 0.7;
+    inst('head', this.socketHead);
+    inst('nose', this.socketHead).position.z = geo.headRadius + geo.noseSize[2] * 0.2;
+    inst('shoulders', this.aim);
     registry.add(req);
-    this.layout();
+    this.skeleton.layout(this.height, geo.headRadius, 0);
   }
 
-  /** Re-derives body / marker placement from the current height. */
-  private layout(): void {
-    const { caps, geo } = this.src;
-    const h = this.height;
-    this.body.scaling.y = h / caps.heightStand;
-    this.body.position.set(0, h / 2, 0);
-    this.hip.position.set(0, h * 0.5, caps.radius * 0.7);
-    this.aim.position.set(0, h * 0.78, 0);
-    this.socketHead.position.set(0, h - h * 0.78 - geo.headRadius * 0.7, 0);
-  }
+  get aim(): TransformNode { return this.skeleton.joints.Chest; }
+  get socketHead(): TransformNode { return this.skeleton.sockets[SOCKET.head]; }
+  get socketHandR(): TransformNode { return this.skeleton.sockets[SOCKET.handR]; }
+  get socketHandL(): TransformNode { return this.skeleton.sockets[SOCKET.handL]; }
+  get dead(): boolean { return this.animation.life === 'dead'; }
+  get kick(): number { return this.animation.recoil; }
 
   setWeapon(w: WeaponNode | null): void {
-    if (this.weapon) this.weapon.dispose();
+    this.weapon?.dispose();
+    this.animation.resetWeaponLayer();
     this.weapon = w;
     if (w) {
       w.root.parent = this.socketHandR;
       w.root.position.set(0, 0, 0);
+      w.root.setEnabled(this.lod < 2);
     }
   }
 
-  update(p: CharacterPose, dtMs: number, stanceMs: number): void {
-    const { caps } = this.src;
-    // stance 0 stand, 1 crouch, 2 prone (lying: about twice the capsule radius high [tbd], no data field yet)
-    const target = p.stance === 0 ? caps.heightStand : p.stance === 2 ? Math.min(caps.heightCrouch, caps.radius * 2.2) : caps.heightCrouch;
-    const step = ((caps.heightStand - Math.min(caps.heightCrouch, caps.radius * 2.2)) * dtMs) / Math.max(1, stanceMs);
-    if (this.height < target) this.height = Math.min(target, this.height + step);
-    else if (this.height > target) this.height = Math.max(target, this.height - step);
-    this.layout();
+  update(p: Readonly<CharacterPose>, dtMs: number, distanceM: number): 'left' | 'right' | undefined {
+    const a = this.animation;
+    const foot = a.update(dtMs / 1000, p, distanceM);
+    const { caps, geo } = this.src;
+    const downed = a.life === 'downed';
+    const pose = downed ? 2 : a.stancePose;
+    const prone = Math.min(caps.heightCrouch, caps.radius * 2.2);
+    this.height = pose <= 1
+      ? caps.heightStand + (caps.heightCrouch - caps.heightStand) * pose
+      : caps.heightCrouch + (prone - caps.heightCrouch) * (pose - 1);
+
+    const phase = a.cycle * 2 * Math.PI;
+    const stride = a.incapacitated ? 0 : a.strideWeight;
+    const swing = Math.cos(phase) * stride * 0.4;
+    this.skeleton.layout(this.height, geo.headRadius, Math.abs(Math.sin(phase)) * stride * caps.radius * 0.12);
+    this.body.scaling.y = this.height / caps.heightStand;
     this.root.position.set(p.x, p.y, p.z);
-    this.root.rotation.y = p.yaw;
-    this.kick = Math.max(0, this.kick - (dtMs / 1000) * 0.5);
-    this.aim.rotation.x = -p.pitch - this.kick;
-    this.setDead(p.health === 0);
+    this.root.rotation.set(0, p.yaw, this.dead ? Math.PI / 2 : downed ? Math.PI / 6 : 0);
+    const j = this.skeleton.joints;
+    const flex = pose * 0.25;
+    const air = a.incapacitated ? 0 : a.airWeight;
+    j.LeftUpperLeg.rotation.x = -flex - air * 0.45 + swing;
+    j.RightUpperLeg.rotation.x = -flex - air * 0.45 - swing;
+    j.LeftLowerLeg.rotation.x = flex + air * 0.6 + Math.max(0, -swing);
+    j.RightLowerLeg.rotation.x = flex + air * 0.6 + Math.max(0, swing);
+    j.Spine.rotation.z = a.hitWeight * 0.12;
+    this.aim.rotation.x = a.incapacitated ? 0 : -p.pitch - a.recoil;
+    const reload = a.reloadWeight * (1 - Math.min(1, a.recoil / 0.06));
+    j.RightLowerArm.rotation.x = reload * 0.45;
+    j.LeftLowerArm.rotation.x = reload * 0.7;
+    return foot;
   }
 
-  /** Switches the detail level: 1 hides the small markers (nose, shoulders, hip), 2 also the head and the weapon. */
+  /** Switches the detail level: 1 hides the small markers, 2 also the head and the weapon. */
   setLod(lod: number): void {
     if (lod === this.lod) return;
     this.lod = lod;
@@ -192,14 +185,6 @@ export class PlaceholderCharacter {
       i.setEnabled(lod === 0 || (lod === 1 && !small) || (lod >= 2 && !small && !head));
     }
     this.weapon?.root.setEnabled(lod < 2);
-  }
-
-  /** Dead: lies on its side, half transparent. (Death animation proper is M1.) */
-  private setDead(dead: boolean): void {
-    if (dead === this.dead) return;
-    this.dead = dead;
-    this.root.rotation.z = dead ? Math.PI / 2 : 0;
-    for (const i of this.instances) i.visibility = dead ? 0.5 : 1;
   }
 
   /** Top of the head in world space (for debug labels). */
@@ -213,9 +198,7 @@ export class PlaceholderCharacter {
   dispose(): void {
     this.weapon?.dispose();
     this.weapon = null;
-    for (const i of this.instances) i.dispose();
-    for (const n of [this.socketHead, this.socketHandR, this.socketHandL, this.aim, this.root]) n.dispose(false, false);
+    this.root.dispose(); // owns the joints, sockets and rigid mesh instances, but not their shared sources
     this.registry.add(this.req, -1);
   }
 }
-

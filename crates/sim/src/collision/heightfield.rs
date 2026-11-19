@@ -1,17 +1,20 @@
-//! Rapier world with one `HeightField` collider per chunk.
+//! Rapier query world with height-field and optional building colliders.
 
 use std::collections::BTreeMap;
 
 use rapier3d::prelude::{Array2, ColliderBuilder, ColliderHandle, PhysicsWorld, Vector};
 
-use super::{ChunkKey, CollisionChunk, CHUNK_CELLS, CHUNK_SAMPLES, CHUNK_SIZE_M};
+use super::{
+    BuildingCollision, ChunkKey, CollisionChunk, CHUNK_CELLS, CHUNK_SAMPLES, CHUNK_SIZE_M,
+};
 use crate::hash::HashWriter;
 
-/// Static terrain colliders (no rigid bodies, never stepped; the broad-phase BVH is
+/// Static world colliders (no rigid bodies, never stepped; the broad-phase BVH is
 /// refreshed with `detect_collisions` so that `query_pipeline()` is usable).
 pub struct TerrainPhysics {
     world: PhysicsWorld,
     handles: BTreeMap<ChunkKey, ColliderHandle>,
+    building_handles: Vec<ColliderHandle>,
 }
 
 impl Default for TerrainPhysics {
@@ -22,6 +25,7 @@ impl Default for TerrainPhysics {
                 ..PhysicsWorld::default()
             },
             handles: BTreeMap::new(),
+            building_handles: Vec::new(),
         }
     }
 }
@@ -64,6 +68,18 @@ impl TerrainPhysics {
         if let Some(h) = self.handles.remove(&key) {
             self.world.remove_collider(h);
         }
+    }
+
+    pub(super) fn replace_buildings(&mut self, buildings: &BuildingCollision) {
+        for handle in self.building_handles.drain(..) {
+            self.world.remove_collider(handle);
+        }
+        self.building_handles.extend(
+            buildings
+                .colliders()
+                .map(|collider| self.world.insert_collider(collider, None)),
+        );
+        self.refresh();
     }
 
     /// Updates the broad phase so that queries see the current colliders.
