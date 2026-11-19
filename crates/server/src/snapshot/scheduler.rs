@@ -183,6 +183,7 @@ pub struct SnapshotScheduler {
     /// Wire id (128..=255) of each live vehicle.
     veh_slot: BTreeMap<EntityId, u8>,
     params: AoiParams,
+    trace_aoi: bool,
 }
 
 fn snap_stance(s: frontline_sim::Stance) -> u8 {
@@ -211,6 +212,7 @@ impl SnapshotScheduler {
             near: [false; MAX_SLOTS],
             veh_slot: BTreeMap::new(),
             params: AoiParams::from_rules(&frontline_sim::GameData::embedded().rules.aoi, TICK_HZ),
+            trace_aoi: std::env::var_os("FL_AOI_TRACE").is_some(),
         }
     }
 
@@ -887,6 +889,12 @@ impl SnapshotScheduler {
             if starved > 0 {
                 m.aoi_starved_total.inc_by(starved);
             }
+        }
+        if self.trace_aoi {
+            eprintln!(
+                "[aoi-pose] {p} {now} {} {} {} {} {} {} {} {}",
+                o.team, o.pos.x, o.pos.y, o.pos.z, o.yaw, o.pitch, o.prev_yaw, o.prev_pitch,
+            );
         }
         out.push(Outgoing { player: p, bytes });
     }
