@@ -25,10 +25,13 @@ fn main() -> ExitCode {
             };
         }
     };
-    if let Err(e) = logging::init(cfg.match_id(), &cfg.log_level, cfg.log_rate_limit) {
-        eprintln!("error: cannot initialise logging: {e}");
-        return ExitCode::from(2);
-    }
+    let _log = match logging::init(cfg.match_id(), &cfg.log_level, cfg.log_rate_limit) {
+        Ok(log) => log,
+        Err(e) => {
+            eprintln!("error: cannot initialise logging: {e}");
+            return ExitCode::from(2);
+        }
+    };
     match run(cfg) {
         Ok(()) => ExitCode::SUCCESS,
         Err(e) => {

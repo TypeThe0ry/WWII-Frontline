@@ -175,6 +175,9 @@ export function summarize(opts) {
   };
   const hard = ['tick_p99', 'overrun_consecutive_max', 'down_p50_each_client', 'up_p50_each_client', 'disconnects', 'decode_errors', 'aoi_leaks_server', 'aoi_leaks_client_audit'];
   if (sameTick) {
+    const outputLoss = serverLog.match(/^\[log-output-loss\] (.*)$/m)?.[1];
+    checks.log_output = { ok: outputLoss == null, loss: outputLoss ?? null };
+    hard.push('log_output');
     checks.aoi_trace_coverage = {
       ok: expectedSnapshots > 0 && sameTick.matched_snapshots === expectedSnapshots &&
         sameTick.missing_pose_snapshots === 0 && sameTick.legacy_candidates.length === legacyAoi.leaks &&

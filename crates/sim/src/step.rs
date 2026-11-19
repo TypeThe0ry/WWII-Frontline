@@ -236,11 +236,15 @@ pub struct StepOutput {
     pub rule_changes: Vec<RuleChange>,
 }
 
-/// Wall-time samples for selected system bodies, in nanoseconds. Some systems include their
-/// own collision or explosion work. `other` also includes schedule and world bookkeeping.
+/// Wall-time samples in nanoseconds. Movement player timings are nested in `movement`.
+/// `other` is the legacy total outside the selected system bodies. `schedule_other` is
+/// only the part of that total inside the ECS schedule.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub struct StepTimings {
     pub movement: u64,
+    pub movement_players: u64,
+    pub movement_slowest_player: u64,
+    pub movement_slowest_entity: Option<EntityId>,
     pub weapons: u64,
     pub projectiles: u64,
     pub vehicles: u64,
@@ -248,6 +252,13 @@ pub struct StepTimings {
     pub shells: u64,
     pub throwables: u64,
     pub other: u64,
+    pub prepare: u64,
+    pub schedule_other: u64,
+    pub lagcomp: u64,
+    pub reap_wrecks: u64,
+    pub sync_squads: u64,
+    pub refresh_views: u64,
+    pub collect_output: u64,
 }
 
 /// Diagnostic resource installed only by a host that supplies a monotonic clock.

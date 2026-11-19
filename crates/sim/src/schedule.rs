@@ -67,17 +67,24 @@ pub fn movement(
     )>,
     mut profiler: Option<ResMut<crate::step::StepProfiler>>,
 ) {
-    let _sample = crate::step::StepProfiler::measure(&mut profiler, |t| &mut t.movement);
+    let clock = profiler.as_ref().map(|p| p.clock_ns);
+    let movement_start = clock.map_or(0, |clock| clock());
+    let mut player_total = 0;
+    let mut slowest = None;
     let Some(p) = params.0 else {
+        if let Some(profiler) = profiler.as_mut() {
+            profiler.timings.movement = (profiler.clock_ns)().saturating_sub(movement_start);
+        }
         return;
     };
-    for (_, e) in table.sorted() {
+    let input_frozen = ms.input_frozen(tick.0 .0, mcfg.freeze_ticks);
+    for (id, e) in table.sorted() {
         if let Ok((mut t, mut m, last, life, w, melee, supp, carry, invh)) = q.get_mut(e) {
             if invh.0.is_some() {
                 continue;
             }
             let mut cmd = last.cmd;
-            if ms.input_frozen(tick.0 .0, mcfg.freeze_ticks) {
+            if input_frozen {
                 // The match is over: movement input is frozen for a few seconds (M1-018).
                 cmd.move_x = 0;
                 cmd.move_z = 0;
@@ -113,11 +120,30 @@ pub fn movement(
                 reloading: w.is_some_and(|w| w.fsm.is_reloading()),
                 load_kg: None,
             };
-            let next = step_player_ex(&m.to_auth(&t), &cmd, &p, &collision.0, &ctx);
+            let auth = m.to_auth(&t);
+            let start = clock.map_or(0, |clock| clock());
+            let next = step_player_ex(&auth, &cmd, &p, &collision.0, &ctx);
+            if let Some(clock) = clock {
+                let elapsed = clock().saturating_sub(start);
+                player_total += elapsed;
+                if slowest.is_none_or(|(max, _)| elapsed > max) {
+                    slowest = Some((elapsed, id));
+                }
+            }
             t.pos = next.pos;
             t.yaw = next.yaw;
             t.pitch = next.pitch;
             *m = Motion::from_auth(&next);
+        }
+    }
+    if let Some(mut profiler) = profiler {
+        let movement = (profiler.clock_ns)().saturating_sub(movement_start);
+        let timings = &mut profiler.timings;
+        timings.movement = movement;
+        timings.movement_players = player_total;
+        if let Some((elapsed, entity)) = slowest {
+            timings.movement_slowest_player = elapsed;
+            timings.movement_slowest_entity = Some(entity);
         }
     }
 }

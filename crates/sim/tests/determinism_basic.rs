@@ -212,13 +212,12 @@ fn profiling_measures_steps_without_changing_simulation() {
         let inputs = inputs_for(tick, None);
         let expected = plain.step(&inputs);
         let actual = profiled.step(&inputs);
-        assert_eq!(actual.events, expected.events, "tick {tick}");
+        assert_eq!(actual, expected, "tick {tick}");
         assert_eq!(profiled.state_hash(), plain.state_hash(), "tick {tick}");
         assert!(plain.step_timings().is_none());
         let timing = profiled.step_timings().unwrap();
         assert_eq!(
             [
-                timing.movement,
                 timing.weapons,
                 timing.projectiles,
                 timing.vehicles,
@@ -226,8 +225,24 @@ fn profiling_measures_steps_without_changing_simulation() {
                 timing.shells,
                 timing.throwables
             ],
-            [10; 7],
+            [10; 6],
         );
-        assert_eq!(timing.other, 80);
+        assert_eq!(timing.movement, 10 + 20 * u64::from(PLAYERS));
+        assert_eq!(timing.movement_players, 10 * u64::from(PLAYERS));
+        assert_eq!(timing.movement_slowest_player, 10);
+        assert_eq!(timing.movement_slowest_entity, Some(0));
+        assert_eq!(
+            [
+                timing.prepare,
+                timing.lagcomp,
+                timing.reap_wrecks,
+                timing.sync_squads,
+                timing.refresh_views,
+                timing.collect_output,
+            ],
+            [10; 6],
+        );
+        assert_eq!(timing.schedule_other, 80);
+        assert_eq!(timing.other, 140);
     }
 }
