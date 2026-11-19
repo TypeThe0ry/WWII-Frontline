@@ -1,16 +1,10 @@
-//! Client-side R3 audit (M1-068b / E1-4): an independent check of what the server *sent* this client. The server counts its own
-//! leaks with the same predicate it used to select records (`aoi_enemy_leak_total`), which cannot catch a wrong predicate; this
-//! re-states the rule from the specification (ARCHITECTURE 6.5, R3) using only what the client knows: its own predicted position,
-//! the orientations it commanded, and the enemy records it received.
-//!
-//! Rule (leave limits, the hard bound): an enemy record is allowed when the enemy is within `CLOSE_LEAVE_M` (96 m x 1.1), or
-//! within `FAR_LEAVE_M` (400 m x 1.1) and inside `CONE_DEG` of some orientation held during the last `HIST_TICKS` ticks.
-//! The client's own pose differs from the server's by the prediction lead (RTT/2 plus the input delay), and the server's orientation
-//! history is shorter than the client's commanded one, so the audit is deliberately *looser* than the server: `pos_tol_m` is added to
-//! the distances, `cone_tol_deg` to the cone, and `HIST_TICKS` is 24 (0.8 s) against the server's 8. A reported leak is therefore a
-//! real violation, while a leak that stays inside the tolerance is not detected here (the exact bound is `aoi_audit.rs`).
+//! Approximate client-only AOI audit using predicted position and recently commanded view.
+//! Prediction lead, corrections and delayed input consumption can put that pose outside the
+//! +4 m / +5° tolerance. Candidates are diagnostics when the load-test harness can join received
+//! records with the authoritative observer by player and tick (see `scripts/audit-loadtest-aoi.mjs`).
 
 use std::collections::VecDeque;
+use std::fmt::Write;
 
 use frontline_protocol::snapshot::decoder::EntitiesSoA;
 use frontline_protocol::snapshot::EntityKind;
@@ -37,10 +31,8 @@ pub struct AoiAudit {
     pub skipped: u64,
     /// Largest distance (m) of a leaked record, 0 when none.
     pub worst_leak_m: f32,
-    /// Print every leak to stderr (`FL_AOI_TRACE=1`).
+    /// Emit decoded player records and prediction disagreements for an offline join.
     pub trace: bool,
-    /// Tick of the snapshot being checked (for traces).
-    pub tick: u32,
 }
 
 impl AoiAudit {
@@ -78,8 +70,30 @@ impl AoiAudit {
         })
     }
 
-    /// Audits one decoded snapshot. Allied and non-player records are skipped (faction = `flags` bit 7).
-    pub fn check(&mut self, own_pos: Vec3, e: &EntitiesSoA) {
+    /// Trace every decoded player record, including late snapshots and frames during life transitions.
+    pub fn trace_wire(&self, player: u8, tick: u32, e: &EntitiesSoA) {
+        if !self.trace {
+            return;
+        }
+        let mut line = format!("[aoi-wire] {player} {tick}");
+        for (i, xyz) in e.pos.chunks_exact(3).enumerate() {
+            if e.kind[i] == EntityKind::Player {
+                let _ = write!(
+                    line,
+                    " {} {} {} {} {}",
+                    e.ids[i],
+                    e.flags[i] >> 7,
+                    xyz[0],
+                    xyz[1],
+                    xyz[2]
+                );
+            }
+        }
+        eprintln!("{line}");
+    }
+
+    /// Checks the legacy client-pose estimate for comparison with the same-tick audit.
+    pub fn check(&mut self, player: u8, tick: u32, own_pos: Vec3, e: &EntitiesSoA) {
         let eye = own_pos + Vec3::new(0.0, EYE_M, 0.0);
         for i in 0..e.len() {
             if e.kind[i] != EntityKind::Player || (e.flags[i] >> 7) == self.own_faction {
@@ -95,19 +109,14 @@ impl AoiAudit {
             }
             if !self.allowed(dist, to / len) {
                 if self.trace {
-                    let best = self
-                        .hist
-                        .iter()
-                        .map(|&(y, p)| {
-                            let cp = p.cos();
-                            Vec3::new(y.sin() * cp, p.sin(), y.cos() * cp)
-                                .dot(to / len)
-                                .clamp(-1.0, 1.0)
-                                .acos()
-                                .to_degrees()
-                        })
-                        .fold(f32::MAX, f32::min);
-                    eprintln!("[aoi-audit] tick {} leak id {} dist {:.1} m best angle {:.1} deg own {:?} enemy {:?} flags {:#x} yaw_last {:?}", self.tick, e.ids[i], dist, best, own_pos, p, e.flags[i], self.hist.back());
+                    let mut line = format!(
+                        "[aoi-pred] {player} {tick} {} {} {} {}",
+                        e.ids[i], own_pos.x, own_pos.y, own_pos.z,
+                    );
+                    for (yaw, pitch) in &self.hist {
+                        let _ = write!(line, " {yaw} {pitch}");
+                    }
+                    eprintln!("{line}");
                 }
                 self.leaks += 1;
                 self.worst_leak_m = self.worst_leak_m.max(dist);

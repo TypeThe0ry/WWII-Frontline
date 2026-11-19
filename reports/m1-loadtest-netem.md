@@ -86,3 +86,33 @@ scripts/loadtest-netem.sh --netem 'delay 25ms 10ms loss 2%' -- \
 合入 #129 后用同样的 netem 配置补跑了 12 s 冒烟（debug，2 WS + 12 bot）：汇总通过，入/出各 1 次，最大水平位移 9.283 m，96 次比较中 5 次纠正（最大 0.0748 m），硬纠正/缺 tick 重锚均 0，tick P99 12.741 ms。仅是回归检查，不代替 release 的 300 s 场景或 AOI 复查。
 
 **未测**：浏览器实车和画面平滑、WT 行车、120 ms RTT 直线对账门槛（E1-12），以及真实网络下的瞄准延迟补偿对照（E1-5）。
+
+## B2-A：M1-068 驾驶联测 AOI 归因与复测（2026-11-19）
+
+在共享 EPYC 7402 工作站上顺序执行两组 release WS，M0 sandbox，20 个 headless 客户端（1 个驾驶员）+ 12 个 bot。服务器固定到 CPU 0–1，客户端固定到 CPU 2–3。netem 只在私有命名空间对 `lo` 注入 25±10 ms 单向延迟与 2% 包丢失。工作站数字不替代 RTX 3060 参考机验收（PI-109）。
+
+```sh
+cargo build --locked --release -p frontline-server -p frontline-headless-client
+scripts/loadtest-m0.sh --no-build --transport ws --count 20 --bots 12 --drive-vehicle --duration 300 \
+  --out /data/scratch/batch/b2/A/ws-drive-aoi-lossless-300s.json
+scripts/loadtest-netem.sh --netem 'delay 25ms 10ms loss 2%' -- \
+  --no-build --transport ws --count 20 --bots 12 --drive-vehicle --duration 300 \
+  --out /data/scratch/batch/b2/A/ws-drive-aoi-netem-300s.json
+```
+
+| 实测项 | [无损](loadtest-1119/ws-drive-aoi-lossless-300s.json) | [netem](loadtest-1119/ws-drive-aoi-netem-300s.json) |
+| --- | ---: | ---: |
+| 同 tick 配对 / 解码快照数 | 89,828 / 89,828 | 89,637 / 89,637 |
+| 独立审核的敌方记录 / 其中 >105.6 m | 368,962 / 61,945 | 350,168 / 70,524 |
+| 独立 R3 违规 / 服务器泄漏计数 | 0 / 0 | 0 / 0 |
+| 旧预测审计告警 | 0 | 6 |
+| tick P50 / P99 / max（ms） | 2.786 / 9.109 / 163.964 | 2.499 / 6.305 / 261.554 |
+| tick 超时数 / 最长连续 / 跳过定时槽 | 8 / 1 / 17 | 10 / 1 / 36 |
+| RTT P50 / P99（ms） | 0.270 / 4.075 | 52.544 / 163.551 |
+| 加入成功 / 断线 / 解码错 / 缺基线 / 乱序 | 20 / 0 / 0 / 0 / 0 | 20 / 0 / 0 / 0 / 0 |
+| 入座 / 离座 / 驾驶权威最大位移 | 1 / 1 / 12.189 m | 1 / 1 / 13.439 m |
+| 驾驶同 tick 比较 / 有限纠正 / 硬纠正 / 缺 tick 重锚 | 2,972 / 0 / 0 / 0 | 2,966 / 51 / 0 / 0 |
+
+netem 的 6 条旧告警均为徒步客户端收包时使用预测位置导致。只替换成同 tick 权威位置，6 条全部落入合法近距范围（94.34–103.53 m）。只替换朝向，6 条仍触发告警（预测距离 109.85–115.34 m）。例如接收者槽 2 在 tick 3316 收到敌方槽 7，最近预测位置测得 113.93 m / 168.26°，同 tick 权威位置测得 95.76 m / 166.88°。两组均未观察到快照乱序。上批 13 条缺逐条日志，无法逐条复核。
+
+新审计按接收者槽位和 C2 tick 配对解码记录与当刻服务器观察者位姿，独立计算 R3 离开阈值，只留位置量化误差。两组均通过硬门禁。最大 tick 尖峰分别有 159.876 / 260.592 ms 落在启用 trace 的快照阶段，on-CPU 分别为 5.194 / 2.412 ms，运行队列等待 0.052 / 0.000 ms。阻塞来源尚未定位。完整 30 min M1 驾驶场景和端到端瞄准对照仍未测。原始日志在 `/data/scratch/batch/b2/A/loadtest-Fsi5LW/` 和 `/data/scratch/batch/b2/A/loadtest-FQKlBW/`。
