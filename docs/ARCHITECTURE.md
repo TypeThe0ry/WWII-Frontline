@@ -606,7 +606,7 @@ SnapshotPacket (bit-packed)
 
 #### 6.5.3 自身状态（`self_state`，每包必含）
 
-`pos_corr`（仅当与客户端上报预测哈希不匹配时才含完整位置，否则 4 bit "ok"）、`ammo_in_mag`、`ammo_reserve`、`health(8b)`、`stamina(6b)`、`suppression(4b)`、`stance(3b)`、`deploy_state(3b)`、`cooldown_bits(8b)`。约 14 B。预测哈希：客户端在 `InputBundle` 中带 `pred_hash`（位置量化后 CRC8），服务器比较，不匹配才补发位置。
+`tag(4b)` 的低位指示 `pos_corr`（完整位置 45 bit），其后是 `ammo_in_mag(8b)`、`ammo_reserve(12b)`、`health(8b)`、`stamina(6b)`、`suppression(4b)`、`stance(3b)` 和 11 bit 尾部。协议 v4 中，徒步时 `tag >> 1 = 0`，尾部仍为 `deploy_state(3b) | cooldown_bits(8b)`；入座时 `tag >> 1 = 1 + seat × 2 + slot_bit_6`，尾部为槽的低 6 位和已有的 5 位 `cooldown_bits`，`deploy_state` 隐含为 0。`vehicle_slot` 为 128–255（徒步为 0），`seat` 为 0/1/2（驾驶/炮手/车长）。两种状态均为 56 bit、有位置修正时均为 101 bit。预测哈希：客户端在 `InputBundle` 中带 `pred_hash`（位置量化后 CRC8），服务器比较，不匹配才补发位置。
 
 #### 6.5.4 AOI 与优先级累加器
 

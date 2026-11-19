@@ -409,6 +409,7 @@ fn self_state_events_and_validation() {
         stance: 7,
         deploy_state: 5,
         cooldown_bits: 0xA5,
+        ..SelfState::default()
     };
     assert!(b.add_self(&s).unwrap());
     assert_eq!(b.add_self(&s), Err(CodecError::InvalidValue));

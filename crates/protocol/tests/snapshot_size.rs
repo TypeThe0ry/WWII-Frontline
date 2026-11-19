@@ -118,33 +118,24 @@ fn record_sizes_walking_4ms() {
 #[test]
 fn self_state_size() {
     let mut enc = SnapshotEncoder::new();
-    let mut b = enc.begin(1, 1, DEFAULT_BUDGET);
-    let before = b.bits_used();
-    let s = SelfState {
-        ammo_in_mag: 30,
-        ammo_reserve: 120,
-        health: 100,
-        stamina: 40,
-        ..Default::default()
-    };
-    assert!(b.add_self(&s).unwrap());
-    let plain = b.bits_used() - before;
-    let mut b = enc.begin(2, 1, DEFAULT_BUDGET);
-    let before = b.bits_used();
-    let s2 = SelfState {
-        pos_corr: Some(QPos { x: 1, y: 2, z: 3 }),
-        ..s
-    };
-    assert!(b.add_self(&s2).unwrap());
-    let corr = b.bits_used() - before;
-    println!(
-        "self_state: {} bits = {} B (no correction), {} bits = {} B (with pos_corr)",
-        plain,
-        plain.div_ceil(8),
-        corr,
-        corr.div_ceil(8)
-    );
-    assert!(plain.div_ceil(8) <= 14 && corr.div_ceil(8) <= 14);
+    for (pos_corr, expected_bits) in [(None, 56), (Some(QPos { x: 1, y: 2, z: 3 }), 101)] {
+        for (vehicle_slot, seat) in [(0, 0), (128, 0), (255, 2)] {
+            let mut b = enc.begin(1, 1, DEFAULT_BUDGET);
+            let before = b.bits_used();
+            let s = SelfState {
+                pos_corr,
+                ammo_in_mag: 30,
+                ammo_reserve: 120,
+                health: 100,
+                stamina: 40,
+                vehicle_slot,
+                seat,
+                ..Default::default()
+            };
+            assert!(b.add_self(&s).unwrap());
+            assert_eq!(b.bits_used() - before, expected_bits);
+        }
+    }
 }
 
 #[test]
@@ -226,6 +217,8 @@ fn golden_bytes() {
         stance: 1,
         deploy_state: 0,
         cooldown_bits: 0b101,
+        vehicle_slot: 255,
+        seat: 2,
     })
     .unwrap();
     b.add_events(&[
@@ -256,6 +249,7 @@ fn golden_bytes() {
     enc.on_ack(1, 90_000);
     let mut b = enc.begin(1, 90_002, DEFAULT_BUDGET);
     b.set_ack(779, 3).unwrap();
+    b.add_self(&SelfState::default()).unwrap();
     b.add_entity(&mk(0, 0.4), true).unwrap();
     b.add_entity(&mk(1, 0.4), false).unwrap();
     b.add_removed(6).unwrap();
@@ -344,6 +338,8 @@ fn bench_snapshot() {
     println!(
         "snapshot_encode_client (60 ents, 30 near + self): {:.1} us incl. input build ({in_us:.1} us) -> {:.1} us; \
          snapshot_decode: {dec_us:.1} us; last packet {} B (checksum {total} {sink})",
-        enc_us, enc_us - in_us, last.len()
+        enc_us,
+        enc_us - in_us,
+        last.len()
     );
 }

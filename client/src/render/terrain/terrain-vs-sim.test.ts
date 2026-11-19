@@ -79,7 +79,7 @@ describe.skipIf(!haveMap || !haveWasm)(`client heightAt vs sim height_at (${HOW}
     for (const [x, z] of pts) {
       if (x < 0 || z < 0 || x >= size || z >= size) continue;
       const s = sim.heightAt(x, z);
-      expect(Number.isFinite(s), `sim has no height at ${x},${z}`).toBe(true);
+      if (!Number.isFinite(s)) throw new Error(`sim has no height at ${x},${z}`);
       const e = Math.abs(terrain.heightAt(x, z) - s);
       if (e > worst) {
         worst = e;
