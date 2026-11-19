@@ -10,6 +10,8 @@ import type { SimWasmModule } from './net/wasm';
 import { createCrosshair, createHitMarker } from './ui';
 import { UniversalCamera } from '@babylonjs/core/Cameras/universalCamera';
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';
+import { TICK_HZ } from './game/fixed-step';
+import { predictedReloadProgress } from './render/fp/fp-math';
 
 export interface ActorsHandle {
   manager: ActorManager;
@@ -28,7 +30,7 @@ export interface ActorsBootOptions {
   params: URLSearchParams;
   /** Real game state (`?server=`); omitted for the demo feed. */
   state?: ActorFeed;
-  localWeapon?: () => number;
+  weaponState?: () => Uint8Array;
   aiming?: () => boolean;
   heightAt?: (x: number, z: number) => number;
 }
@@ -53,7 +55,10 @@ export async function bootActors(o: ActorsBootOptions): Promise<ActorsHandle> {
   const data = await loadActorData(wasm, import.meta.env.BASE_URL);
   let feed: DemoFeed | null = null;
   let state = o.state;
-  let localWeapon = o.localWeapon;
+  const byIndex = new Map(data.weapons.map((weapon) => [weapon.index, weapon]));
+  let weaponIndex = 0;
+  let reloadProgress: number | undefined;
+  let localWeapon = o.weaponState ? () => weaponIndex : undefined;
   let aiming = o.aiming;
   if (!state) {
     const w = data.weapons;
@@ -79,6 +84,7 @@ export async function bootActors(o: ActorsBootOptions): Promise<ActorsHandle> {
     fpPass: params.get('fp_pass') !== '0',
     particles: params.get('particles') === '0' ? undefined : { tier: params.get('quality') === 'low' ? 'low' : 'high', wgsl: ctx.kind === 'webgpu' },
   });
+  if (manager.rig && o.weaponState) manager.rig.localReloadProgress = () => reloadProgress;
   manager.registry.install(window);
   // e2e hook: names of every mesh / material in the scene (naming rule check)
   (window as unknown as { __actorsNames?: () => string[] }).__actorsNames = () => [...ctx.scene.meshes.map((m) => m.name), ...ctx.scene.materials.map((m) => m.name)];
@@ -92,6 +98,12 @@ export async function bootActors(o: ActorsBootOptions): Promise<ActorsHandle> {
     state,
     update(alpha, dtMs) {
       feed?.step(dtMs);
+      if (o.weaponState) {
+        const weapon = o.weaponState();
+        weaponIndex = (weapon[0] ?? 0) | ((weapon[1] ?? 0) << 8);
+        const durations = byIndex.get(weaponIndex)?.reloadMs;
+        reloadProgress = durations ? predictedReloadProgress(weapon, durations, TICK_HZ) : undefined;
+      }
       manager.update(alpha, dtMs);
     },
     dispose() {

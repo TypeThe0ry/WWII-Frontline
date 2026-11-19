@@ -67,6 +67,7 @@ async function bootWorld(
   app.appendChild(canvas);
 
   const sceneParam = params.get('scene');
+  if (sceneParam === 'world' && !params.has('map')) params.set('map', 'carentan');
   const terrainScene = sceneParam === 'terrain' || sceneParam === 'vegetation' || sceneParam === 'world'; // 'vegetation' = terrain + vegetation (M0-024); 'world' = + hedgerows + buildings (M1-051b/052b)
   // M1 camera scenes (`cam=open_field|hedgerow|old_town`): the pose also places the demo player (soldier eye view) unless `local=` is given.
   const m1cam = M1_PERF_CAMERAS.find((c) => c.name === params.get('cam'));
@@ -103,9 +104,11 @@ async function bootWorld(
     window.__vegetation = vegHandle;
   }
 
+  let worldHandle: WorldHandle | null = null;
   if (terrainHandle && sceneParam === 'world') {
     const { attachWorld } = await import('./render/world/world-scene');
-    window.__world = await attachWorld(ctx, terrainHandle.terrain, params);
+    worldHandle = await attachWorld(ctx, terrainHandle.terrain, params);
+    window.__world = worldHandle;
   }
 
   if (params.get('vfx') === 'stress') {
@@ -113,12 +116,14 @@ async function bootWorld(
     window.__vfx = attachVfxStress(ctx, params);
   }
 
-  if (terrainHandle && window.__world && params.get('csm') === 'custom') {
-    const { attachCustomCsm } = await import('./render/lighting/custom-csm');
+  if (terrainHandle && worldHandle && params.get('csm') === 'custom') {
+    const [{ attachCustomCsm }, { HEDGE_MESH_PREFIX }] = await Promise.all([
+      import('./render/lighting/custom-csm'), import('./render/world/hedge-chunks'),
+    ]);
     const tier = (params.get('csm_tier') ?? 'high') as import('./render/lighting/csm-math').ShadowTier;
-    const csm = attachCustomCsm(ctx, { tier, lightDir: [0.45, -0.8, 0.35], webgl2Config: params.get('csm_cfg') === 'webgl2' || undefined, flipY: params.has('csm_flipy') ? params.get('csm_flipy') === '1' : undefined, halfZ: params.has('csm_halfz') ? params.get('csm_halfz') === '1' : undefined });
-    for (const m of window.__world.buildingMeshes) csm.addCaster(m);
-    if (window.__world.hedges) csm.addCaster(window.__world.hedges, true);
+    const csm = attachCustomCsm(ctx, { tier, variants: worldHandle.variants, lightDir: [0.45, -0.8, 0.35], webgl2Config: params.get('csm_cfg') === 'webgl2' || undefined, flipY: params.has('csm_flipy') ? params.get('csm_flipy') === '1' : undefined, halfZ: params.has('csm_halfz') ? params.get('csm_halfz') === '1' : undefined });
+    for (const m of worldHandle.buildingMeshes) csm.addCaster(m);
+    csm.addDynamicCasters((mesh) => mesh.name.startsWith(HEDGE_MESH_PREFIX) ? 'instanced' : null, 350);
     csm.attach(terrainHandle.terrain.material);
     // dynamic casters (PI-117 follow-up): soldiers (instances of hidden source meshes), the tank, and visible tree LODs (thin instances)
     csm.addDynamicCasters((m) => {
@@ -130,7 +135,7 @@ async function bootWorld(
     }, 150);
     ctx.onFrame(() => {
       if (ctx.scene.activeCamera) csm.update(ctx.scene.activeCamera);
-    }, 'first', 'csm_update');
+    }, undefined, 'csm_update');
     window.__csm = csm;
   }
 
@@ -140,6 +145,7 @@ async function bootWorld(
   let detachUi: (() => void) | undefined;
   let actors: ActorsHandle | null = null;
   let gameAudio: GameAudioHandle | null = null;
+  let standaloneVehicleFx: import('./render/fx').FxManager | undefined;
   const disposeMatch = () => {
     detachUi?.(); detachUi = undefined;
     gameAudio?.dispose(); gameAudio = null;
@@ -148,6 +154,10 @@ async function bootWorld(
   const dispose = () => {
     if (netGame) netGame.dispose();
     else disposeMatch();
+    standaloneVehicleFx?.dispose();
+    worldHandle?.dispose();
+    vegHandle?.dispose();
+    delete window.__world;
     ctx.dispose();
     delete window.__netGame;
     delete window.__actors;
@@ -183,7 +193,7 @@ async function bootWorld(
         wasm,
         params,
         state: ng?.game.state,
-        localWeapon: ng ? () => ng.game.predictor.weaponDefId() : undefined,
+        weaponState: ng ? () => ng.game.predictor.wasm.weaponState() : undefined,
         aiming: ng ? () => ng.sampler.isHeld('aim') : undefined,
         heightAt: terrainHandle ? (x, z) => terrainHandle!.terrain.heightAt(x, z) : undefined,
       });
@@ -194,33 +204,45 @@ async function bootWorld(
       const { attachVehicleDemo } = await import('./render/vehicles/vehicle-demo');
       const { PlaceholderRegistry } = await import('./render/actors/names');
       const reg = actors ? actors.manager.registry : new PlaceholderRegistry();
-      window.__vehicle = await attachVehicleDemo(ctx, params, actors?.manager.fx ?? null, terrainHandle ? (x, z) => terrainHandle!.terrain.heightAt(x, z) : () => 0, reg);
-      if (!actors) reg.install(window);
+      if (!actors) {
+        const { FxManager } = await import('./render/fx');
+        standaloneVehicleFx = new FxManager({
+          scene: ctx.scene,
+          bus,
+          registry: reg,
+          weapons: new Map(),
+          localMuzzle: () => null,
+          remoteMuzzle: () => null,
+          particles: params.get('particles') === '0' ? undefined : { tier: params.get('quality') === 'low' ? 'low' : 'high', wgsl: ctx.kind === 'webgpu' },
+        });
+        reg.install(window);
+      }
+      window.__vehicle = await attachVehicleDemo(ctx, params, actors?.manager.fx ?? standaloneVehicleFx ?? null,
+        terrainHandle ? (x, z) => terrainHandle!.terrain.heightAt(x, z) : () => 0, reg);
     }
 
     if (params.has('post') && ctx.scene.activeCamera) {
       const { attachPost } = await import('./render/post/post-chain');
       const t = params.get('post');
       const flag = (k: string): boolean | undefined => (params.has(k) ? params.get(k) === '1' : undefined);
-      const post = attachPost(ctx.scene, ctx.scene.activeCamera, { tier: t === 'low' || t === 'medium' ? t : 'high', taa: flag('taa'), bloom: flag('bloom'), fxaa: flag('fxaa'), tonemap: flag('tonemap'), clamp: flag('taa_clamp'), taaFactor: params.has('taa_factor') ? Number(params.get('taa_factor')) : undefined, guardMs: params.has('post_guard') ? Number(params.get('post_guard')) : undefined, velocity: params.get('taa_vel') === '1' ? { wgsl: ctx.kind === 'webgpu', terrain: terrainHandle?.terrain, flipY: params.get('taa_velflip') === '1' } : undefined });
+      const post = attachPost(ctx.scene, ctx.scene.activeCamera, { tier: t === 'low' || t === 'medium' ? t : 'high', taa: flag('taa'), bloom: flag('bloom'), fxaa: flag('fxaa'), tonemap: flag('tonemap'), clamp: flag('taa_clamp'), taaFactor: params.has('taa_factor') ? Number(params.get('taa_factor')) : undefined, guardMs: params.has('post_guard') ? Number(params.get('post_guard')) : undefined, velocity: params.get('taa_vel') === '1' ? { wgsl: ctx.kind === 'webgpu', variants: worldHandle?.variants ?? window.__pbr?.registry, terrain: terrainHandle?.terrain, flipY: params.get('taa_velflip') === '1' } : undefined });
       window.__post = post;
-      ctx.onFrame((dtMs) => post.update(dtMs / 1000), 'first', 'post_update');
+      ctx.onFrame((dtMs) => post.update(dtMs / 1000), undefined, 'post_update');
     }
 
-    // M1-046b: first-person weapon wall pushback against the building meshes of the world scene
-    if (actors?.manager.rig && window.__world) {
-      const { Ray } = await import('@babylonjs/core/Culling/ray');
-      const { Vector3 } = await import('@babylonjs/core/Maths/math.vector');
-      const o = new Vector3();
-      const d = new Vector3();
-      const ray = new Ray(o, d, 1);
-      actors.manager.rig.wallProbe = (ox, oy, oz, dx, dy, dz, max) => {
-        o.set(ox, oy, oz);
-        d.set(dx, dy, dz);
-        ray.length = max;
-        const hit = ctx.scene.pickWithRay(ray, (m) => m.metadata?.blocks === true);
-        return hit?.hit ? hit.distance : null;
-      };
+    if (actors && worldHandle) {
+      const rig = actors.manager.rig;
+      if (rig) {
+        const [{ createFpWallProbe }, { HEDGE_MESH_PREFIX }] = await Promise.all([
+          import('./render/fp/wall-probe'), import('./render/world/hedge-chunks'),
+        ]);
+        rig.wallProbe = createFpWallProbe(ctx.scene, (mesh) => mesh.name.startsWith(HEDGE_MESH_PREFIX));
+      }
+    }
+    if (actors && terrainHandle) {
+      const terrain = terrainHandle.terrain;
+      actors.manager.fx.setImpactSurfaces(worldHandle?.buildingMeshes ?? [],
+        (x, z) => terrain.heightAt(x, z), (x, z) => terrain.getSurfaceAt(x, z));
     }
 
     const overlay = lobby ? null : new DebugOverlay(params.get('debug') === '1');

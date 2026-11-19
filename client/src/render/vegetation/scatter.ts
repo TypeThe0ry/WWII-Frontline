@@ -8,7 +8,7 @@
  * Math.sin/cos/random, so the same (seed, chunk) gives the same bytes on every engine. Candidates live on a
  * *global* cell grid, so patterns continue across chunk borders and the spacing rules hold across them.
  */
-import { CHUNK_SIZE_M, INSTANCE_BYTES, SPECIES, SPECIES_GRASS, SPECIES_SHRUB, SPECIES_TREE } from './species';
+import { CHUNK_SIZE_M, INSTANCE_BYTES, SPECIES, SPECIES_GRASS, SPECIES_SHRUB, SPECIES_TREE, type SpeciesId } from './species';
 
 export interface ScatterPoint {
   x: number;
@@ -28,6 +28,8 @@ export interface ScatterInput {
   mask?: { blocked(x: number, z: number): boolean; forest(x: number, z: number): boolean };
   /** Multiplier on the grass keep probability (default 1; the M1 world scene thins grass to bound memory). */
   grassScale?: number;
+  /** Emit only this species, preserving the corresponding entries in a full table. */
+  species?: SpeciesId;
 }
 
 /** Probability multiplier for trees outside forest cells when a mask is given (single trees, hedgerow trees come later). */
@@ -271,7 +273,7 @@ export function scatterChunk(input: ScatterInput): Uint8Array {
   const out: { sp: number; c: Candidate }[] = [];
 
   // Grass: independent jittered 0.75 m grid with clustered density.
-  {
+  if (input.species === undefined || input.species === SPECIES_GRASS) {
     const list: Candidate[] = [];
     const x0 = Math.floor(ox / GRASS_CELL_M);
     const x1 = Math.floor((ox + CHUNK_SIZE_M) / GRASS_CELL_M);
@@ -290,7 +292,7 @@ export function scatterChunk(input: ScatterInput): Uint8Array {
   const shrubs = new PoissonField(SPECIES_SHRUB, SHRUB_SPACING_M, seed, tester);
 
   // Shrubs: Poisson disk 1.5 m, also kept 1.5 m away from tree trunks.
-  {
+  if (input.species === undefined || input.species === SPECIES_SHRUB) {
     const list: Candidate[] = [];
     const cs = shrubs.cs;
     const x0 = Math.floor(ox / cs);
@@ -325,7 +327,7 @@ export function scatterChunk(input: ScatterInput): Uint8Array {
   }
 
   // Trees: Poisson disk 4 m.
-  {
+  if (input.species === undefined || input.species === SPECIES_TREE) {
     const list: Candidate[] = [];
     const cs = trees.cs;
     const x0 = Math.floor(ox / cs);

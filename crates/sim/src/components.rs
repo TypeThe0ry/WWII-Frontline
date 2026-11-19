@@ -205,32 +205,50 @@ pub struct WeaponTable {
     ballistics: Vec<BallisticsParams>,
 }
 
-/// Melee parameters per team (the bayonet of that faction; GAMEDESIGN 6.8, PI-052).
-#[derive(Resource, Debug, Clone, Copy, Default)]
+/// Melee parameters indexed like `GameData::melee`.
+#[derive(Resource, Debug, Clone, Default)]
 pub struct MeleeTable {
-    us: Option<crate::weapon::MeleeParams>,
-    ger: Option<crate::weapon::MeleeParams>,
+    params: Vec<crate::weapon::MeleeParams>,
+    rifle_butt: Option<usize>,
+    pistol_butt: Option<usize>,
 }
 
 impl MeleeTable {
     pub fn new(data: &GameData, hz: u8) -> Self {
-        use crate::data::defs::{MeleeClass, MeleeFaction};
-        let pick = |f: MeleeFaction| {
-            data.melee
-                .iter()
-                .find(|m| m.class == MeleeClass::Bayonet && m.faction == f)
-                .map(|m| crate::weapon::MeleeParams::from_def(m, hz))
-        };
+        let index = |id| data.melee.iter().position(|m| m.id == id);
         Self {
-            us: pick(MeleeFaction::Us),
-            ger: pick(MeleeFaction::Ger),
+            params: data
+                .melee
+                .iter()
+                .map(|m| crate::weapon::MeleeParams::from_def(m, hz))
+                .collect(),
+            rifle_butt: index("melee_rifle_butt"),
+            pistol_butt: index("melee_pistol_butt"),
         }
     }
-    pub fn params(&self, team: Team) -> Option<&crate::weapon::MeleeParams> {
-        match team {
-            Team::Us => self.us.as_ref(),
-            Team::Ger => self.ger.as_ref(),
+    pub(crate) fn variant(
+        &self,
+        data: &GameData,
+        configured: Option<&str>,
+        gun: Option<&WeaponState>,
+    ) -> Option<usize> {
+        let class = gun
+            .and_then(|w| data.weapons.get(usize::from(w.def_id)))
+            .map(|w| w.class.as_str());
+        if class == Some("pistol") {
+            return self.pistol_butt;
         }
+        let selected = configured.and_then(|id| data.melee.iter().position(|m| m.id == id));
+        selected
+            .filter(|&i| {
+                data.melee[i].class != crate::data::defs::MeleeClass::Bayonet
+                    || class.is_some_and(|c| c.starts_with("rifle") || c == "carbine")
+            })
+            .or_else(|| class.and(self.rifle_butt))
+    }
+
+    pub(crate) fn params(&self, variant: usize) -> &crate::weapon::MeleeParams {
+        &self.params[variant]
     }
 }
 
@@ -260,23 +278,12 @@ impl WeaponTable {
 /// Spawns the player's starting weapon from the role's loadout of its team (M0: the single
 /// default role, first loadout id; reserve = `ammo_mags - 1` clips: GAMEDESIGN 5.3 counts the one in the gun, PI-043).
 pub fn starting_weapon(data: &GameData, role: &str, team: Team, hz: u8) -> Option<WeaponState> {
-    let key = match team {
-        Team::Us => "us",
-        Team::Ger => "ger",
-    };
-    let lid = data
-        .role(role)?
-        .faction_overrides
-        .get(key)?
-        .loadout_ids
-        .first()?;
-    let lo = data.loadout(lid)?;
-    let idx = data.weapons.iter().position(|w| w.id == lo.primary)?;
-    let p = WeaponParams::from_def(&data.weapons[idx], hz).ok()?;
-    let reserve = u32::from(p.mag_capacity) * lo.ammo_mags.saturating_sub(1);
-    Some(WeaponState::new(
-        idx as u16,
+    let lo = crate::weapon::sidearm::default_loadout(data, role, team)?;
+    let idx = u16::try_from(data.weapons.iter().position(|w| w.id == lo.primary)?).ok()?;
+    let p = WeaponParams::from_def(&data.weapons[usize::from(idx)], hz).ok()?;
+    Some(crate::weapon::sidearm::initial_weapon(
+        idx,
         p.mag_capacity,
-        reserve.min(u32::from(u16::MAX)) as u16,
+        lo.ammo_mags,
     ))
 }

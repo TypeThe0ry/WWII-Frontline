@@ -57,6 +57,10 @@ export class ParticlePool {
 
   /** Returns true when the particle was stored. */
   emit(r: VfxEmitRequest): boolean {
+    return this.emitParticle(r.kind, r.x, r.y, r.z, r.life, r.priority);
+  }
+
+  emitParticle(kind: VfxKind, x: number, y: number, z: number, life: number, priority: number): boolean {
     let slot = -1;
     if (this.active < this.capacity) {
       for (let i = 0; i < this.capacity; i++) {
@@ -79,9 +83,9 @@ export class ParticlePool {
           ba = a;
         }
       }
-      if (bp >= r.priority) {
+      if (bp >= priority) {
         this.dropped++;
-        if (r.priority === PRIORITY_SELF) this.droppedSelf++;
+        if (priority === PRIORITY_SELF) this.droppedSelf++;
         return false;
       }
       slot = best;
@@ -90,13 +94,13 @@ export class ParticlePool {
       this.active--;
     }
     this.alive[slot] = 1;
-    this.kind[slot] = KIND_ID[r.kind];
-    this.prio[slot] = r.priority;
+    this.kind[slot] = KIND_ID[kind];
+    this.prio[slot] = priority;
     this.age[slot] = 0;
-    this.life[slot] = r.life;
-    this.pos[slot * 3] = r.x;
-    this.pos[slot * 3 + 1] = r.y;
-    this.pos[slot * 3 + 2] = r.z;
+    this.life[slot] = life;
+    this.pos[slot * 3] = x;
+    this.pos[slot * 3 + 1] = y;
+    this.pos[slot * 3 + 2] = z;
     this.active++;
     return true;
   }
@@ -151,6 +155,10 @@ export class DecalRing {
   private next = 0;
   /** Placements ever made (so tests can see recycling). */
   total = 0;
+
+  clear(): void {
+    this.active = this.total = this.next = 0;
+  }
 
   place(x: number, y: number, z: number, material: number): number {
     const i = this.next;

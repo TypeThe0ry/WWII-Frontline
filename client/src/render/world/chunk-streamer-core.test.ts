@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { chunkOf, headingAhead, MAX_CONCURRENT_FETCH, priority, R_NEAR, ringDist, StreamerCore, UPLOAD_BUDGET_BYTES } from './chunk-streamer-core';
+import { chunkOf, headingAhead, MAX_CONCURRENT_FETCH, priority, R_MID, R_NEAR, ringDist, StreamerCore } from './chunk-streamer-core';
 
 const always = () => true;
 
@@ -18,16 +18,18 @@ describe('priority', () => {
 });
 
 describe('state machine', () => {
-  it('requested -> fetching -> uploading -> resident', () => {
+  it('unloaded -> fetching -> uploading -> resident -> unloaded', () => {
     const s = new StreamerCore();
     const q = s.wanted(32, 32, 0, 0, always);
     const f = s.nextFetches(q, 0);
     expect(f.length).toBe(MAX_CONCURRENT_FETCH);
     expect(s.state(f[0]!.bx, f[0]!.bz)).toBe('fetching');
-    s.fetched(f[0]!.bx, f[0]!.bz, 40_000);
+    s.fetched(f[0]!.bx, f[0]!.bz);
     expect(s.state(f[0]!.bx, f[0]!.bz)).toBe('uploading');
     s.uploaded(f[0]!.bx, f[0]!.bz);
     expect(s.state(f[0]!.bx, f[0]!.bz)).toBe('resident');
+    s.unload(f[0]!.bx, f[0]!.bz);
+    expect(s.state(f[0]!.bx, f[0]!.bz)).toBe('unloaded');
   });
 
   it('fetch concurrency never exceeds 6', () => {
@@ -70,60 +72,24 @@ describe('state machine', () => {
   });
 });
 
-describe('uploads and eviction', () => {
-  it('upload batch respects the 2 MB / 1.5 ms budget but always makes progress', () => {
+describe('wanted chunks', () => {
+  it('adds one heading ring in the cone, within map bounds', () => {
     const s = new StreamerCore();
-    const q = s.wanted(1000, 1000, 0, 0, always).slice(0, 6);
-    s.nextFetches(q, 0);
-    for (const c of q) s.fetched(c.bx, c.bz, 900_000);
-    const batch = s.nextUploads();
-    expect(batch.length).toBeGreaterThanOrEqual(1);
-    expect(batch.length).toBeLessThan(6);
-    expect(batch.length * 900_000).toBeLessThanOrEqual(Math.max(UPLOAD_BUDGET_BYTES, 900_000));
-    const huge = new StreamerCore();
-    huge.nextFetches([{ bx: 1, bz: 1 }], 0);
-    huge.fetched(1, 1, 5 * 1048576);
-    expect(huge.nextUploads().length).toBe(1); // one oversized chunk still goes through
-  });
-
-  it('holes count is 0 once R_near is resident and rises when the player moves on; eviction frees far chunks', () => {
-    const s = new StreamerCore();
-    const px = 16 * 64 + 10;
-    const pz = 16 * 64 + 10;
-    const need = s.wanted(px, pz, 0, 0, always).filter((c) => ringDist(c.bx, c.bz, 16, 16) <= R_NEAR);
-    expect(s.countHoles(px, pz)).toBe(81);
-    for (const c of need) {
-      s.nextFetches([c], 0);
-      s.fetched(c.bx, c.bz, 1000);
-      s.uploaded(c.bx, c.bz);
-    }
-    expect(s.countHoles(px, pz)).toBe(0);
-    // Walk 10 chunks east: the old column is beyond R_near + 2 and gets evicted.
-    const evicted = s.evict(px + 10 * 64, pz);
-    expect(evicted.length).toBeGreaterThan(0);
-    expect(s.countHoles(px + 10 * 64, pz)).toBeGreaterThan(0);
-  });
-
-  it('spawn target multiplies the priority of blocks within R_near of it by 3', () => {
-    const plain = new StreamerCore();
-    const boosted = new StreamerCore();
-    boosted.spawnTarget = { bx: 20, bz: 20 };
-    const score = (s: StreamerCore) => s.wanted(16 * 64, 16 * 64, 0, 0, always).find((c) => c.bx === 20 && c.bz === 20)!.score;
-    expect(score(boosted) / score(plain)).toBeCloseTo(3);
-    const far = (s: StreamerCore) => s.wanted(16 * 64, 16 * 64, 0, 0, always).find((c) => c.bx === 12 && c.bz === 12)!.score;
-    expect(far(boosted)).toBe(far(plain)); // 8 chunks from the target: no boost
-  });
-
-  it('collision readiness gates prediction', () => {
-    const s = new StreamerCore();
-    expect(s.collisionReady(3, 3)).toBe(false);
-    s.nextFetches([{ bx: 3, bz: 3 }], 0);
-    expect(s.collisionReady(3, 3)).toBe(false);
-    s.fetched(3, 3, 10);
-    s.uploaded(3, 3);
-    expect(s.collisionReady(3, 3)).toBe(true);
+    const wanted = s.wanted(16 * 64 + 32, 16 * 64 + 32, 8, 0, always);
+    expect(wanted.some((c) => c.bx === 16 + R_MID + 1 && c.bz === 16)).toBe(true);
+    expect(wanted.some((c) => c.bx === 16 - R_MID - 1 && c.bz === 16)).toBe(false);
     expect(chunkOf(2047)).toBe(31);
     expect(chunkOf(5000)).toBe(31);
     expect(chunkOf(-5)).toBe(0);
+  });
+
+  it('puts every spawn chunk ahead of local chunks, even outside R_MID', () => {
+    const s = new StreamerCore();
+    s.spawnTarget = { bx: 24, bz: 24 };
+    const wanted = s.wanted(4 * 64, 4 * 64, 0, 0, always);
+    const count = (2 * R_NEAR + 1) ** 2;
+    expect(wanted[0]).toMatchObject({ bx: 24, bz: 24, spawn: true, score: 4.5 });
+    expect(wanted.slice(0, count).every((c) => c.spawn && ringDist(c.bx, c.bz, 24, 24) <= R_NEAR)).toBe(true);
+    expect(wanted[count]).toMatchObject({ bx: 4, bz: 4, spawn: false });
   });
 });

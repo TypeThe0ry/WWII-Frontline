@@ -1,8 +1,7 @@
 import { mkdirSync } from 'node:fs';
-import { expect, test, type Page } from '@playwright/test';
+import { chromium, expect, test, type Page } from '@playwright/test';
 
-// Software-rendered Chromium (SwiftShader): WebGL2 path is pixel-checked; the WebGPU path only checks that the WGSL
-// compiles and draws without validation errors (the shim turns presenting into an offscreen texture; GPU times are H-021).
+// SwiftShader covers WebGL2 pixels and WebGPU shader validation. TERRAIN_NATIVE_WEBGPU=1 also verifies WebGPU pixels.
 const SHIM = 'e2e/webgpu-swiftshader-shim.js';
 const SHOT_DIR = '../docs/measurements/M0-023';
 const SAVE_SHOTS = process.env.SAVE_SHOTS === '1';
@@ -119,6 +118,7 @@ test('GPU-sampled heights match the CPU surface (height debug mode, top-down, ne
   const errors = watchErrors(page);
   await page.goto('/?renderer=webgl2&scene=terrain&terrain_debug=height');
   await ready(page);
+  await page.evaluate(() => window.__terrain!.pause());
   const rand = rng(21);
   const hmin = 1;
   const hmax = 11;
@@ -140,8 +140,12 @@ test('GPU-sampled heights match the CPU surface (height debug mode, top-down, ne
     let sum = 0;
     let used = 0;
     for (const p of c.poses) {
-      await pose(page, p, [p[0], 0, p[2] + 0.4]);
-      await frames(page, 1);
+      // Capture and project against the same frame even when the software renderer queues frames.
+      await page.evaluate((pos) => {
+        const t = window.__terrain!;
+        t.setPose(pos, [pos[0], 0, pos[2] + 0.4]);
+        t.renderOnce();
+      }, p);
       const g = await grab(page, true);
       const cand = Array.from({ length: 120 }, (): [number, number] => [p[0] + (rand() * 2 - 1) * c.half[0], p[2] + (rand() * 2 - 1) * c.half[1]]);
       const probes = await page.evaluate(
@@ -253,10 +257,62 @@ test('far-ring edge is visible 4 km out and is a clean silhouette (acceptance 7,
   expect(errors).toEqual([]);
 });
 
-test('WebGPU path (SwiftShader): WGSL terrain compiles and draws without validation errors (pixels not checked)', async ({ page }) => {
+async function verifySplatFrames(page: Page, renderer: 'webgl2' | 'webgpu', quality: 'low' | 'high'): Promise<void> {
+  const errors = watchErrors(page);
+  const base = `/?renderer=${renderer}&scene=terrain&quality=${quality}&terrain_yscale=2`;
+  const poses: [Vec3, Vec3][] = [
+    [[128, 12, 40], [128, 5, 95]],    // open ground
+    [[177, 10, 114], [177, 14, 132]], // 2x exaggeration makes this face steeper than 50°
+    [[128, 500, -250], [128, 5, 150]], // far macro mip
+  ];
+  async function open(splat: number) {
+    await page.goto(`${base}&splat=${splat}&splat_res=3`);
+    await ready(page);
+    expect(await page.evaluate(() => (window.__caps as { kind: string }).kind)).toBe(renderer);
+    await page.evaluate(() => window.__terrain!.pause());
+  }
+  async function render(pair: [Vec3, Vec3]) {
+    await page.evaluate(([p, t]) => {
+      window.__terrain!.setPose(p, t);
+      window.__terrain!.renderOnce();
+    }, pair);
+    return page.locator('canvas').screenshot();
+  }
+  await open(1);
+  const fixedFrames: Buffer[] = [];
+  for (const pose of poses) {
+    const splat = await render(pose);
+    expect((await render(pose)).equals(splat)).toBe(true);
+    expect(fixedFrames.some((frame) => frame.equals(splat))).toBe(false);
+    fixedFrames.push(splat);
+  }
+  const openSplat = fixedFrames[0]!;
+  await open(0);
+  expect((await render(poses[0]!)).equals(openSplat)).toBe(false);
+  await open(1);
+  expect((await render(poses[0]!)).equals(openSplat)).toBe(true);
+  expect(errors).toEqual([]);
+}
+
+test('WebGL2 splat: Low frames repeat at open, steep and far terrain poses', async ({ page }) => {
+  await verifySplatFrames(page, 'webgl2', 'low');
+});
+
+test('Native WebGPU splat: High frames repeat at open, steep and far terrain poses', async ({ baseURL }) => {
+  test.skip(process.env.TERRAIN_NATIVE_WEBGPU !== '1', 'set TERRAIN_NATIVE_WEBGPU=1 on a Vulkan GPU');
+  const browser = await chromium.launch({ args: ['--enable-unsafe-webgpu', '--enable-features=Vulkan,WebGPU', '--use-angle=vulkan', '--ignore-gpu-blocklist'] });
+  try {
+    const page = await browser.newPage({ baseURL, viewport: { width: 480, height: 270 } });
+    await verifySplatFrames(page, 'webgpu', 'high');
+  } finally {
+    await browser.close();
+  }
+});
+
+test('WebGPU path (SwiftShader): WGSL splat compiles and draws without validation errors', async ({ page }) => {
   const errors = watchErrors(page);
   await page.addInitScript({ path: SHIM });
-  await page.goto('/?renderer=webgpu&scene=terrain&debug=1');
+  await page.goto('/?renderer=webgpu&scene=terrain&debug=1&splat=1');
   await page.waitForFunction(() => window.__caps !== undefined, undefined, { timeout: 15_000 });
   const caps = await page.evaluate(() => window.__caps as { kind: string; fallbackReason: string | null });
   test.skip(caps.kind !== 'webgpu', `no WebGPU adapter in this browser (${caps.fallbackReason})`);

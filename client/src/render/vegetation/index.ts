@@ -1,5 +1,5 @@
 export { Vegetation } from './vegetation';
-export type { ChunkTable, HeightSource, VegetationOptions, VegetationStats } from './vegetation';
+export type { ChunkTable, HeightSource, ProceduralVegetationSource, VegetationOptions, VegetationStats } from './vegetation';
 export { attachVegetation } from './vegetation-scene';
 export type { VegetationHandle } from './vegetation-scene';
 export { scatterChunk, packInstance, unpackInstance, MAX_SLOPE_DEG, SPAWN_EXCLUSION_M } from './scatter';

@@ -14,7 +14,8 @@ use glam::Vec3;
 use frontline_protocol::msg::input::buttons;
 
 use crate::combat::credit::RecentDamage;
-use crate::combat::DamageKind;
+use crate::combat::damage::{classify_outcome, outright_kill_reason};
+use crate::combat::{DamageKind, DamageOutcome};
 use crate::components::RespawnPolicyRes;
 use crate::components::{
     CollisionRes, CurrentTick, EntityTable, EventBuf, LastInput, Player, SimCfgRes, Team, Transform,
@@ -25,10 +26,8 @@ use crate::respawn::{respawn_time, RespawnQueue};
 use crate::step::SimEvent;
 use crate::weapon::HitZone;
 
-/// Hit points a player has right after going down or being revived.
-pub const DOWNED_HP: f32 = 40.0;
-/// Leaves hp at or below this: killed outright.
-pub const OVERKILL_HP: f32 = -60.0;
+pub use crate::combat::damage::{DOWNED_HP, OVERKILL_HP};
+
 /// Seconds a downed player takes to bleed out (40 hp at 0.5 hp/s).
 pub const BLEED_OUT_S: f32 = 80.0;
 /// Each revive in the fatigue window shortens the next bleed-out by this much, down to the floor.
@@ -161,12 +160,9 @@ pub fn bleed_out_ticks(fatigue: u8, hz: u8) -> u32 {
     ticks(s, hz)
 }
 
-/// Whether a hit that left the victim at `hp_after` kills outright instead of downing.
+/// Whether a lethal hit that left the victim at `hp_after` kills outright instead of downing.
 pub fn kills_outright(rec: &HitRec, hp_after: f32) -> bool {
-    hp_after <= OVERKILL_HP
-        || rec.direct_kia
-        || matches!(rec.kind, DamageKind::Explosion | DamageKind::Vehicle)
-        || (rec.kind == DamageKind::Bullet && rec.zone == HitZone::Head)
+    outright_kill_reason(hp_after, rec.kind, rec.zone, rec.direct_kia).is_some()
 }
 
 /// Rules stage, deaths (ARCHITECTURE 6.10 stage 5): applies the hits of this tick to the life
@@ -201,7 +197,8 @@ pub fn deaths(
             .get(rec.shooter)
             .and_then(|e| q.get(e).ok())
             .map(|(p, t, ..)| (p.id, *t));
-        // Read the victim first (copies), so the assist lookup can borrow the query again.
+        // Producers already deducted HP. Resolve each record against the current phase HP,
+        // including any reset to DOWNED_HP by an earlier record, not against per-hit replay.
         let (vid, vteam, hp_now, downed_before, fatigue_n, mut attackers) = {
             let Ok((vp, vteam, hp, life, recent, hist, ..)) = q.get(victim_e) else {
                 continue;
@@ -224,19 +221,21 @@ pub fn deaths(
             }
             (vp.id, *vteam, hp.hp, life.is_downed(), n, att)
         };
+        let outcome = classify_outcome(hp_now, rec.kind, rec.zone, downed_before, rec.direct_kia);
         if let Ok((_, _, _, _, mut recent, _, mut vitals)) = q.get_mut(victim_e) {
             if rec.damage > 0.0 && rec.shooter != rec.target {
                 recent.record(rec.shooter, rec.damage, tick.0, cfg.hz);
             }
             if rec.damage > 0.0 {
                 vitals.last_damage = tick.0;
-                if hp_now > 0.0 && (rec.damage >= BLEED_HIT_HP || rec.kind == DamageKind::Explosion)
+                if outcome == DamageOutcome::Hit
+                    && (rec.damage >= BLEED_HIT_HP || rec.kind == DamageKind::Explosion)
                 {
                     vitals.bleeding = true;
                 }
             }
         }
-        if hp_now > 0.0 {
+        if outcome == DamageOutcome::Hit {
             continue;
         }
         attackers.retain(|&(a, amount)| a != rec.shooter && amount >= ASSIST_MIN_HP);
@@ -247,7 +246,6 @@ pub fn deaths(
             killer_id.is_some() && killer.is_some_and(|(id, t)| t == vteam && id != vid);
         let headshot = rec.zone == HitZone::Head;
         let weapon = rec.weapon as u8;
-        let outright = kills_outright(&rec, hp_now);
         let assists: Vec<PlayerId> = attackers
             .into_iter()
             .filter_map(|(a, _)| table.get(a))
@@ -259,7 +257,7 @@ pub fn deaths(
             continue;
         };
         vitals.action = None;
-        if !downed_before && !outright {
+        if outcome == DamageOutcome::Downed {
             hp.hp = DOWNED_HP;
             *life = LifeState::Downed {
                 t_down: tick.0,

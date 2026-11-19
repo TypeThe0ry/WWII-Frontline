@@ -24,12 +24,14 @@
 //!   (Rapier is built with `enhanced-determinism`, see PLAN_ISSUES PI-013).
 
 mod chunk;
+mod cover;
 mod heightfield;
 mod query;
 
 use std::collections::BTreeMap;
 
 pub use chunk::{CollisionChunk, CollisionError};
+pub use cover::CoverSlab;
 pub use heightfield::TerrainPhysics;
 pub use query::{GroundHit, RayHit};
 
@@ -56,6 +58,7 @@ pub struct CollisionData {
     bounds: Option<[i32; 4]>,
     /// `(min, max)` height over all loaded chunks; lets ray casts clip to the relief band.
     height_range: (f32, f32),
+    cover: cover::StaticCover,
 }
 
 impl std::fmt::Debug for CollisionData {
@@ -70,7 +73,9 @@ impl std::fmt::Debug for CollisionData {
 /// a clone is bit-identical to a `from_chunks` build.
 impl Clone for CollisionData {
     fn clone(&self) -> Self {
-        Self::from_chunks(self.chunks.values().cloned())
+        let mut clone = Self::from_chunks(self.chunks.values().cloned());
+        clone.cover = self.cover.clone();
+        clone
     }
 }
 
@@ -166,6 +171,7 @@ impl CollisionData {
             c.hash_into(&mut h);
         }
         self.physics.hash_into(&mut h);
+        self.cover.hash_into(&mut h);
         h.finish()
     }
 }
