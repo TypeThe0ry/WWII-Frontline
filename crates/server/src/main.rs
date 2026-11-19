@@ -350,7 +350,7 @@ async fn start_gateway_link(
         tags: Vec::new(),
         version: GIT_SHA.to_string(),
         protocol_version: frontline_protocol::PROTOCOL_VERSION,
-        data_hash: format!("{:016x}", frontline_sim::GameData::embedded().hash),
+        data_hash: frontline_sim::GameData::embedded().hash,
         cap: 16,
         addr: cfg.public_addr.clone(),
         ws_port: ws.local_addr().port(),

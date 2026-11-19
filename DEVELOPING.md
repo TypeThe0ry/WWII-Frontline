@@ -306,3 +306,27 @@ node $A report --milestone M1 --placeholders data/placeholders --gaps    # real 
 node $A gen-requirements                   # refresh assets/requirements.json from docs/ASSET_SHOPPING_LIST.md §4
 pnpm -C tools/asset-pipeline lint | typecheck | test
 ```
+
+## M1 functional UI (no visual layer)
+
+`/` launches the lobby; existing `?server=`, `?scene=` and other developer routes still launch directly. In development `/v1` proxies to `FRONTLINE_GATEWAY_TARGET` (default `http://127.0.0.1:8080`). For a deployed client, proxy `/v1` at the origin or set `VITE_FRONTLINE_GATEWAY_URL` at build time and allow the client's origin in the gateway configuration. Guest credentials and join tickets stay in memory, not in the page URL or persistent settings.
+
+```sh
+wasm-pack build crates/sim-wasm --target web --profile wasm-release
+pnpm -C client exec playwright test -c playwright.ui.config.ts
+pnpm -C client exec playwright test -c src/ui/settings/playwright.config.ts
+```
+
+The UI suite exercises real browser DOM and sim-WASM with synthetic C0 replies for deployment. To run its opt-in live join/map test, build the gateway and match server, start them in separate terminals with disposable local credentials, and wait for the server to register before running Playwright:
+
+```sh
+cargo build --locked -p frontline-gateway -p frontline-server
+pnpm -C client sync-map
+GATEWAY_BIND=127.0.0.1:8080 INTERNAL_API_TOKEN=local-fixture TOKEN_SECRET=local-fixture-only target/debug/frontline-gateway
+# separate terminal:
+INTERNAL_API_TOKEN=local-fixture target/debug/frontline-server --gateway-url http://127.0.0.1:8080 --dev-cert
+# separate terminal:
+FRONTLINE_UI_LIVE=1 pnpm -C client exec playwright test -c playwright.ui.config.ts
+```
+
+Use `FRONTLINE_CHROME` (lobby/match suite) or `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` (settings/audio suite) to select an installed Chromium executable instead of the Playwright bundle. The local M0 match spawns on join, so the live join test is **not** evidence for the M1 deploy/respawn loop or M1 performance budgets.

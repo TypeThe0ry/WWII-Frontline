@@ -13,13 +13,13 @@ export class WebAudioScheduler implements Scheduler {
   private disposed = false;
   readonly pool = new VoicePool({ start: () => {}, stop: (voice) => this.sources.get(voice)?.(true) });
 
-  constructor(private readonly context: BaseAudioContext, private readonly bank: AudioBank<AudioBuffer>) {
+  constructor(private readonly context: BaseAudioContext, private readonly bank: AudioBank<AudioBuffer>, destination: AudioNode = context.destination) {
     this.filter = context.createBiquadFilter();
     this.filter.type = 'lowpass';
     this.filter.Q.value = 0;
     this.filter.frequency.value = suppressFilter(0, 0).cutoffHz;
     this.duck = context.createGain();
-    this.filter.connect(this.duck).connect(context.destination);
+    this.filter.connect(this.duck).connect(destination);
   }
 
   schedule(id: string, atS: number, gain: number, rate: number, voice?: VoiceHandle): void {
