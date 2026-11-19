@@ -1,4 +1,4 @@
-//! The M0 soldier brain: a small hand-written state machine (no behaviour tree before M1-038).
+//! Soldier movement, perception and command generation shared by the M0 and M1 brains.
 //!
 //! ```text
 //! Patrol --(enemy recognised)--> Engage --(target lost)--> chase last known position for
@@ -29,7 +29,11 @@ use crate::brain::{BotBrain, BrainStats};
 use crate::ctx::BotCtx;
 use crate::difficulty::{Tuning, TICK_HZ};
 use crate::grid_nav::{NavGrid, PathFinder};
+use crate::nav::{self, NavMesh};
 use crate::perception::{can_see, scan, Contact, EYE_CROUCH_M, EYE_STAND_M, TORSO_Y};
+
+mod tactical;
+use tactical::Tactical;
 
 /// `InputCmd::aux` bit 0 (walk modifier); mirrors `frontline_sim::movement::AUX_WALK`.
 const AUX_WALK: u8 = 1;
@@ -52,6 +56,8 @@ pub struct BotMap {
     pub nav: Option<NavGrid>,
     /// Patrol points (x, z) from `spawns.json`.
     pub patrol: Vec<[f32; 2]>,
+    navmesh: Option<NavMesh>,
+    cover: Vec<[f32; 2]>,
 }
 
 impl BotMap {
@@ -73,6 +79,8 @@ impl BotMap {
             tuning,
             nav: (nav.walkable_count() > 0).then_some(nav),
             patrol,
+            navmesh: None,
+            cover: Vec::new(),
         }
     }
 
@@ -82,7 +90,19 @@ impl BotMap {
             tuning,
             nav: None,
             patrol,
+            navmesh: None,
+            cover: Vec::new(),
         }
+    }
+
+    pub fn with_navmesh(mut self, navmesh: NavMesh) -> Self {
+        self.navmesh = Some(navmesh);
+        self
+    }
+
+    pub fn with_cover(mut self, cover: Vec<[f32; 2]>) -> Self {
+        self.cover = cover;
+        self
     }
 }
 
@@ -108,6 +128,8 @@ struct Decision {
     want_fire: bool,
     reload: bool,
     jump: bool,
+    interact: bool,
+    gadget: bool,
 }
 
 impl Decision {
@@ -118,6 +140,8 @@ impl Decision {
         want_fire: false,
         reload: false,
         jump: false,
+        interact: false,
+        gadget: false,
     };
 }
 
@@ -174,7 +198,7 @@ fn fires_next_tick(w: &WeaponState) -> bool {
         }
 }
 
-/// The M0 soldier. One instance per bot.
+/// One instance per soldier. M0 replays use `new`; M1 uses `with_tactics`.
 pub struct SoldierBrain {
     map: Arc<BotMap>,
     pf: PathFinder,
@@ -207,6 +231,8 @@ pub struct SoldierBrain {
     stuck_tick: u32,
     stats: BrainStats,
     contacts: Vec<Contact>,
+    tactics: Option<Tactical>,
+    mesh_pf: nav::path::PathFinder,
     /// How often each patrol point was reached (index = `spawns.json` order).
     pub patrol_reached: Vec<u32>,
     /// Stuck detections so far.
@@ -248,9 +274,17 @@ impl SoldierBrain {
             stuck_tick: 0,
             stats: BrainStats::default(),
             contacts: Vec::new(),
+            tactics: None,
+            mesh_pf: nav::path::PathFinder::new(),
             patrol_reached: vec![0; n],
             stuck_total: 0,
         }
+    }
+
+    pub fn with_tactics(map: Arc<BotMap>) -> Self {
+        let mut brain = Self::new(map);
+        brain.tactics = Some(Tactical::new());
+        brain
     }
 
     pub fn mode(&self) -> Mode {
@@ -277,6 +311,9 @@ impl SoldierBrain {
         self.stuck_anchor = [me.pos.x, me.pos.z];
         self.stuck_tick = tick;
         self.last_move_tick = tick;
+        if let Some(tactics) = &mut self.tactics {
+            tactics.reset();
+        }
     }
 
     fn clear_path(&mut self) {
@@ -329,10 +366,17 @@ impl SoldierBrain {
         let mut visible = false;
         // A target that is absent from the player list is simply "not visible": the bot cannot
         // know whether it died or hid, and keeps its last-known-position memory.
+        let mut rays = 7;
         let seen = self
             .target
             .and_then(|g| view.players().iter().find(|p| p.player == g.player))
-            .filter(|p| can_see(view, eye, me.yaw, p.pos, t, diff))
+            .filter(|p| {
+                if self.tactics.is_some() {
+                    tactical::see(view, me, eye, p.pos, t, diff, &mut rays)
+                } else {
+                    can_see(view, eye, me.yaw, p.pos, t, diff)
+                }
+            })
             .copied();
         if let (Some(p), Some(g)) = (seen, self.target.as_mut()) {
             let dt = tick.saturating_sub(g.last_seen);
@@ -349,11 +393,20 @@ impl SoldierBrain {
         }
         if !visible {
             let mut contacts = std::mem::take(&mut self.contacts);
-            scan(view, me, eye, t, diff, &mut rng, &mut contacts);
+            if self.tactics.is_some() {
+                tactical::scan(view, me, eye, t, diff, &mut rng, &mut contacts, &mut rays);
+            } else {
+                scan(view, me, eye, t, diff, &mut rng, &mut contacts);
+            }
             if let Some(c) = contacts.first().copied() {
                 let keep = self.target.filter(|g| {
-                    g.player == c.player
-                        || tick.saturating_sub(g.last_seen) <= REACQUIRE_GRACE_TICKS
+                    if self.tactics.is_some() {
+                        g.player == c.player
+                            && tick.saturating_sub(g.last_seen) <= REACQUIRE_GRACE_TICKS
+                    } else {
+                        g.player == c.player
+                            || tick.saturating_sub(g.last_seen) <= REACQUIRE_GRACE_TICKS
+                    }
                 });
                 let fire_not_before = match keep {
                     Some(g) => g.fire_not_before,
@@ -397,6 +450,19 @@ impl SoldierBrain {
             }
         }
 
+        if let Some(mut tactics) = self.tactics.take() {
+            if !visible
+                && self.target.is_some_and(|g| {
+                    tick.saturating_sub(g.last_seen) > (diff.memory_s * TICK_HZ) as u32
+                })
+            {
+                self.target = None;
+            }
+            tactics.decide(self, view, ctx, me, eye, winfo, visible, &mut rng);
+            self.tactics = Some(tactics);
+            return;
+        }
+
         // --- mode + movement ----------------------------------------------------------
         // Nothing left to shoot with (no resupply in M0): do not stand around staring at enemies.
         let out_of_ammo = ctx
@@ -414,7 +480,7 @@ impl SoldierBrain {
         match self.target {
             Some(g) if visible && !out_of_ammo => {
                 self.mode = Mode::Engage;
-                self.engage(view, ctx, me, eye, g, winfo, &mut rng, &mut dec);
+                self.engage(ctx, me, eye, g, winfo, &mut rng, &mut dec, false);
             }
             Some(g) if tick.saturating_sub(g.last_seen) <= memory_ticks => {
                 self.mode = Mode::Engage;
@@ -449,7 +515,6 @@ impl SoldierBrain {
     #[allow(clippy::too_many_arguments)]
     fn engage(
         &mut self,
-        _view: &dyn WorldView,
         ctx: &BotCtx,
         me: &PlayerView,
         eye: Vec3,
@@ -457,6 +522,7 @@ impl SoldierBrain {
         winfo: Option<WeaponInfo>,
         rng: &mut Pcg64Mcg,
         dec: &mut Decision,
+        settle_during_reaction: bool,
     ) {
         let map = self.map.clone();
         let t = &map.tuning;
@@ -501,7 +567,9 @@ impl SoldierBrain {
         // Shoot from standing still; before the reaction delay is over, shuffle a little.
         let waiting = tick < g.fire_not_before;
         dec.want_fire = !waiting;
-        if waiting && !dec.crouch {
+        let settle = SETTLE_TICKS + t.think_every_ticks.saturating_sub(1);
+        if waiting && !dec.crouch && (!settle_during_reaction || g.fire_not_before - tick > settle)
+        {
             if tick >= self.strafe_until {
                 let r = unit_f32(rng);
                 let dur = 10 + (unit_f32(rng) * 12.0) as u32;
@@ -609,9 +677,9 @@ impl SoldierBrain {
     fn steer(&mut self, me: &PlayerView, goal: [f32; 2], tick: u32) -> Option<[f32; 2]> {
         let map = self.map.clone();
         let here = [me.pos.x, me.pos.z];
-        let Some(nav) = map.nav.as_ref() else {
+        if map.nav.is_none() && map.navmesh.is_none() {
             return unit_dir(here, goal);
-        };
+        }
         let goal_moved = dist2d(self.path_goal, goal) > GOAL_MOVED_M;
         let need_plan = (self.path.is_empty() && !self.path_failed) || goal_moved;
         if need_plan
@@ -619,7 +687,18 @@ impl SoldierBrain {
                 || tick.saturating_sub(self.path_tick) >= map.tuning.repath_min_ticks)
         {
             let t0 = Instant::now();
-            let ok = self.pf.find(nav, here, goal, &mut self.path);
+            let ok = if let Some(mesh) = &map.navmesh {
+                match self.mesh_pf.find(mesh, here, goal, u64::MAX) {
+                    nav::path::PathResult::Found(path) => {
+                        self.path = path.points;
+                        true
+                    }
+                    _ => false,
+                }
+            } else {
+                self.pf
+                    .find(map.nav.as_ref().unwrap(), here, goal, &mut self.path)
+            };
             self.stats.path_ns += t0.elapsed().as_nanos() as u64;
             self.stats.path_queries += 1;
             self.path_tick = tick.max(1);
@@ -712,6 +791,13 @@ impl SoldierBrain {
         if dec.aim && b & buttons::SPRINT == 0 {
             b |= buttons::AIM;
         }
+        if dec.interact {
+            b |= buttons::USE;
+        }
+        if dec.gadget {
+            b |= buttons::GADGET;
+            self.dec.gadget = false;
+        }
         // Re-checked against the live weapon state: the decision may be up to 2 ticks old.
         let can_reload = ctx
             .self_weapon
@@ -782,6 +868,14 @@ fn unit_dir(from: [f32; 2], to: [f32; 2]) -> Option<[f32; 2]> {
 impl BotBrain for SoldierBrain {
     fn think(&mut self, view: &dyn WorldView, ctx: &BotCtx) -> InputCmd {
         self.seq = self.seq.wrapping_add(1);
+        if let Some(since) = ctx.survival.downed_since.filter(|_| self.tactics.is_some()) {
+            let mut cmd = self.dead_cmd(ctx);
+            // The sim requires a 3 s hold; start at 27 s to give up at about 30 s.
+            if ctx.tick.saturating_sub(since) >= 27 * TICK_HZ as u32 {
+                cmd.buttons = frontline_sim::medical::GIVE_UP_BUTTON;
+            }
+            return cmd;
+        }
         let Some(me) = view
             .players()
             .iter()
@@ -800,7 +894,28 @@ impl BotBrain for SoldierBrain {
             self.stats.thought = true;
             self.decide(view, ctx, &me);
         }
-        self.act(ctx)
+        let mut cmd = self.act(ctx);
+        // A cached decision can outlive a sighting by two ticks. Recheck before transmitting fire.
+        if self.tactics.is_some() && cmd.buttons & buttons::FIRE != 0 {
+            let eye = me.pos
+                + Vec3::Y
+                    * if self.crouching {
+                        EYE_CROUCH_M
+                    } else {
+                        EYE_STAND_M
+                    };
+            if !self.target.is_some_and(|g| {
+                view.players().iter().any(|p| {
+                    p.player == g.player
+                        && p.team != me.team
+                        && view.los(eye, p.pos + Vec3::Y * TORSO_Y)
+                })
+            }) {
+                cmd.buttons &= !buttons::FIRE;
+                self.last_fire_down = false;
+            }
+        }
+        cmd
     }
 
     fn take_stats(&mut self) -> BrainStats {
