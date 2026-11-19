@@ -18,7 +18,9 @@ impl SeatInput {
     pub(crate) fn apply(&mut self, world: &mut World, inputs: &[(PlayerId, InputCmd)]) {
         let previous = std::mem::take(&mut self.held);
         for &(player, cmd) in inputs {
-            let bit = 1u128 << player;
+            let Some(bit) = 1u128.checked_shl(u32::from(player)) else {
+                continue;
+            };
             let held = cmd.buttons & buttons::VEHICLE_SEAT != 0;
             let was_held = previous & bit != 0;
             if held {
