@@ -371,7 +371,9 @@ pub fn shell_flight(
     mut events: ResMut<EventBuf>,
     mut log: ResMut<HitLog>,
     mut q: Victims,
+    mut profiler: Option<ResMut<crate::step::StepProfiler>>,
 ) {
+    let _sample = crate::step::StepProfiler::measure(&mut profiler, |t| &mut t.shells);
     let hz = cfg.hz;
     for v in vehicles.list.values_mut() {
         wreck_step(

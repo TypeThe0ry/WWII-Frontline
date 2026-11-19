@@ -45,7 +45,7 @@ pub fn ingest_inputs(
 
 /// Moves every player with [`step_player`], ascending `EntityId` (ARCHITECTURE 6.10 stage 2).
 /// A player without a command this tick repeats its last one (input buffering is M0-018).
-#[allow(clippy::type_complexity)]
+#[allow(clippy::too_many_arguments, clippy::type_complexity)]
 pub fn movement(
     params: Res<MoveParamsRes>,
     collision: Res<CollisionRes>,
@@ -64,7 +64,9 @@ pub fn movement(
         &crate::supply::Carrying,
         &crate::vehicle::seats::InVehicle,
     )>,
+    mut profiler: Option<ResMut<crate::step::StepProfiler>>,
 ) {
+    let _sample = crate::step::StepProfiler::measure(&mut profiler, |t| &mut t.movement);
     let Some(p) = params.0 else {
         return;
     };
@@ -143,7 +145,9 @@ pub fn weapons(
         &crate::medical::FireLock,
         &crate::suppression::SuppressionState,
     )>,
+    mut profiler: Option<ResMut<crate::step::StepProfiler>>,
 ) {
+    let _sample = crate::step::StepProfiler::measure(&mut profiler, |t| &mut t.weapons);
     let Some(mp) = params.0 else {
         return;
     };

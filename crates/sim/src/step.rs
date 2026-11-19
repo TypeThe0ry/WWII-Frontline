@@ -235,3 +235,51 @@ pub struct StepOutput {
     pub events: Vec<SimEvent>,
     pub rule_changes: Vec<RuleChange>,
 }
+
+/// Wall-time samples for selected system bodies, in nanoseconds. Some systems include their
+/// own collision or explosion work. `other` also includes schedule and world bookkeeping.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+pub struct StepTimings {
+    pub movement: u64,
+    pub weapons: u64,
+    pub projectiles: u64,
+    pub vehicles: u64,
+    pub rockets: u64,
+    pub shells: u64,
+    pub throwables: u64,
+    pub other: u64,
+}
+
+/// Diagnostic resource installed only by a host that supplies a monotonic clock.
+#[doc(hidden)]
+#[derive(bevy_ecs::prelude::Resource)]
+pub struct StepProfiler {
+    pub(crate) clock_ns: fn() -> u64,
+    pub(crate) timings: StepTimings,
+}
+
+impl StepProfiler {
+    pub(crate) fn measure<'a>(
+        profiler: &'a mut Option<bevy_ecs::prelude::ResMut<Self>>,
+        select: fn(&mut StepTimings) -> &mut u64,
+    ) -> Option<StepSample<'a>> {
+        let profiler = profiler.as_deref_mut()?;
+        Some(StepSample {
+            clock_ns: profiler.clock_ns,
+            start: (profiler.clock_ns)(),
+            elapsed: select(&mut profiler.timings),
+        })
+    }
+}
+
+pub(crate) struct StepSample<'a> {
+    clock_ns: fn() -> u64,
+    start: u64,
+    elapsed: &'a mut u64,
+}
+
+impl Drop for StepSample<'_> {
+    fn drop(&mut self) {
+        *self.elapsed = (self.clock_ns)().saturating_sub(self.start);
+    }
+}

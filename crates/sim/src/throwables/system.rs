@@ -255,7 +255,9 @@ pub fn throwables(
         &mut Gadgets,
     )>,
     mut victims: Query<(&Transform, &Team, &LifeState, &mut Health)>,
+    mut profiler: Option<ResMut<crate::step::StepProfiler>>,
 ) {
+    let _sample = crate::step::StepProfiler::measure(&mut profiler, |t| &mut t.throwables);
     // 1. Cooking and throwing.
     let mut spawns: Vec<Thrown> = Vec::new();
     let mut hand_blasts: Vec<(Vec3, ThrowableParams, EntityId, Team)> = Vec::new();

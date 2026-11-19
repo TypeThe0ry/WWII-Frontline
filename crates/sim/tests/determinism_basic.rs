@@ -195,3 +195,39 @@ fn players_view_is_sorted_and_data_hash_exposed() {
     assert_eq!(ids.len(), PLAYERS as usize);
     assert_eq!(w.data_hash(), frontline_sim::data::DATA_HASH);
 }
+
+#[test]
+fn profiling_measures_steps_without_changing_simulation() {
+    use std::sync::atomic::{AtomicU64, Ordering};
+
+    fn sample_clock() -> u64 {
+        static NOW: AtomicU64 = AtomicU64::new(0);
+        NOW.fetch_add(10, Ordering::Relaxed)
+    }
+
+    let mut plain = new_world(42);
+    let mut profiled = new_world(42);
+    profiled.enable_step_profiling(sample_clock);
+    for tick in 1..=128 {
+        let inputs = inputs_for(tick, None);
+        let expected = plain.step(&inputs);
+        let actual = profiled.step(&inputs);
+        assert_eq!(actual.events, expected.events, "tick {tick}");
+        assert_eq!(profiled.state_hash(), plain.state_hash(), "tick {tick}");
+        assert!(plain.step_timings().is_none());
+        let timing = profiled.step_timings().unwrap();
+        assert_eq!(
+            [
+                timing.movement,
+                timing.weapons,
+                timing.projectiles,
+                timing.vehicles,
+                timing.rockets,
+                timing.shells,
+                timing.throwables
+            ],
+            [10; 7],
+        );
+        assert_eq!(timing.other, 80);
+    }
+}
