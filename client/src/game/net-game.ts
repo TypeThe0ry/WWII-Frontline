@@ -12,9 +12,11 @@ import { assertLayoutMatches, type SimWasmModule } from '../net/wasm';
 import { EventBus, type GameEvents } from './event-bus';
 import { FixedStepper } from './fixed-step';
 import { GameLoop } from './game-loop';
+import { GameState } from './state/game-state';
 
 export interface NetGameHandle {
   readonly game: GameLoop;
+  readonly gameState: GameState;
   readonly session: Session;
   readonly sampler: InputSampler;
   /** The loaded sim-wasm module (data queries for the render side: roleDef / weaponDef / weaponIndex). */
@@ -52,10 +54,15 @@ async function loadChunks(base: string, mapId: string): Promise<{ bx: number; bz
   return Promise.all(jobs);
 }
 
-export async function startNetGame(canvas: HTMLCanvasElement, bus: EventBus<GameEvents>, baseUrl = import.meta.env.BASE_URL): Promise<NetGameHandle> {
+export async function startNetGame(canvas: HTMLCanvasElement, bus: EventBus<GameEvents>, baseUrl = import.meta.env.BASE_URL, onDispose?: () => void): Promise<NetGameHandle> {
   const wasm = await loadWasm(baseUrl);
   const config = parseNetConfig(location.search, location);
-  const [session, chunks] = await Promise.all([connect({ config, wasm, bus }), loadChunks(baseUrl, 'm0')]);
+  const gameState = new GameState(bus);
+  const [session, chunks] = await Promise.all([connect({
+    config, wasm, bus,
+    onC4Event: (event) => gameState.apply(event),
+    onDeployResult: (result) => gameState.applyDeployResult(result),
+  }), loadChunks(baseUrl, 'm0')]);
   const w = session.welcome;
   const sampler = new InputSampler();
   try {
@@ -96,6 +103,7 @@ export async function startNetGame(canvas: HTMLCanvasElement, bus: EventBus<Game
 
   return {
     game,
+    gameState,
     session,
     sampler,
     wasm,
@@ -113,6 +121,7 @@ export async function startNetGame(canvas: HTMLCanvasElement, bus: EventBus<Game
       ];
     },
     dispose: () => {
+      onDispose?.();
       offSnap();
       lock.detach();
       document.removeEventListener('visibilitychange', onVisibility);

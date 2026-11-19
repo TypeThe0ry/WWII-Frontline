@@ -8,7 +8,7 @@
  */
 import { AUX_WALK, BUTTONS, MOVE_MAX } from './buttons';
 
-export type Action = 'forward' | 'back' | 'left' | 'right' | 'walk' | 'sprint' | 'crouch' | 'jump' | 'fire' | 'aim' | 'reload';
+export type Action = 'forward' | 'back' | 'left' | 'right' | 'walk' | 'sprint' | 'crouch' | 'jump' | 'fire' | 'aim' | 'reload' | 'vehicle_seat';
 
 export const DEFAULT_KEYMAP: Readonly<Record<string, Action>> = {
   KeyW: 'forward',
@@ -20,6 +20,7 @@ export const DEFAULT_KEYMAP: Readonly<Record<string, Action>> = {
   KeyC: 'crouch',
   Space: 'jump',
   KeyR: 'reload',
+  KeyF: 'vehicle_seat',
   Mouse0: 'fire',
   Mouse2: 'aim',
 };
@@ -32,6 +33,7 @@ export const ACTION_BUTTON: Readonly<Partial<Record<Action, number>>> = {
   fire: BUTTONS.FIRE,
   aim: BUTTONS.AIM,
   reload: BUTTONS.RELOAD,
+  vehicle_seat: BUTTONS.VEHICLE_SEAT,
 };
 
 export interface MoveAxes {

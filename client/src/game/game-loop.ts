@@ -7,18 +7,22 @@
  * (the real `Session` satisfies it) and never imports render / ui / audio.
  */
 import type { InputSource } from '../input/sampler';
-import { LAYOUT_STATE_AMMO_IN_MAG, LAYOUT_STATE_AMMO_RESERVE, LAYOUT_STATE_RECOIL_PITCH, LAYOUT_STATE_RECOIL_YAW, LAYOUT_STATE_VX, LAYOUT_STATE_VY, LAYOUT_STATE_VZ, type SimWasmModule, type WasmSnapshotDecoder } from '../net/wasm';
+import { LAYOUT_STATE_AMMO_IN_MAG, LAYOUT_STATE_AMMO_RESERVE, LAYOUT_STATE_RECOIL_PITCH, LAYOUT_STATE_RECOIL_YAW, LAYOUT_STATE_VX, LAYOUT_STATE_VY, LAYOUT_STATE_VZ, type SimWasmModule, type WasmPredictor, type WasmSnapshotDecoder } from '../net/wasm';
 import type { EventBus, GameEvents, Vec3 } from './event-bus';
 import { EventDecoder } from './events';
 import { EntityStore, INTERP_DELAY_TICKS, MAX_ENTITIES, RenderTimeline } from './interpolation';
 import { LocalPredictor, type PredictorOptions } from './predictor';
 import { Reconciler } from './reconcile';
-import { SnapshotApplier } from './snapshot-apply';
+import { SnapshotApplier, type SnapshotSummary } from './snapshot-apply';
 import { GameState } from './state';
-import { CMD_BYTES, UnackedRing } from './unacked-ring';
+import { CMD_BYTES, seqDiff, UnackedRing, type UnackedEntry } from './unacked-ring';
+import { VehiclePredictor } from './vehicle-predict';
 
 export const MAX_BUNDLE_CMDS = 3;
 const TICK_MS = 1000 / 30;
+// The M1 hull is the Sherman. Vehicle snapshot rows do not identify the definition.
+const M1_VEHICLE_DEF = 'us_m4a1_75';
+type CollisionChunk = { bx: number; bz: number; data: Uint8Array };
 
 /** The part of `ClockSync` the game uses. */
 export interface ClockPort {
@@ -122,6 +126,13 @@ export class GameLoop {
   readonly stats: GameStats = { steps: 0, bundles: 0, bundleBytes: 0, bundleBytesMax: 0, bytesByN: [0, 0, 0, 0], countByN: [0, 0, 0, 0], snapshots: 0, staleSnapshots: 0, decodeErrors: 0, fireLocal: 0 };
 
   private readonly wasm: SimWasmModule;
+  private readonly createVehicleWasm: () => WasmPredictor;
+  private readonly collisionChunks: CollisionChunk[] = [];
+  private readonly vehicleKin = new Float32Array(11);
+  private vehicleWasm?: WasmPredictor;
+  private vehicle?: VehiclePredictor;
+  private vehicleSlot = 0;
+  private vehicleSeat = 0;
   private readonly bus: EventBus<GameEvents>;
   private readonly net: NetPort;
   private readonly input: InputSource;
@@ -150,6 +161,8 @@ export class GameLoop {
 
   constructor(opts: GameLoopOptions) {
     this.wasm = opts.wasm;
+    // Vehicle stepping advances the WASM predictor's tick, so it cannot share the infantry instance.
+    this.createVehicleWasm = () => new opts.wasm.Predictor(opts.matchSeed, opts.mapId, opts.playerId);
     this.bus = opts.bus;
     this.net = opts.net;
     this.input = opts.input;
@@ -185,8 +198,12 @@ export class GameLoop {
   }
 
   /** Loads the collision chunks (`c_<bx>_<bz>.bin`, M0 = all 16). Call before the first `update`. */
-  loadCollision(chunks: Iterable<{ bx: number; bz: number; data: Uint8Array }>): void {
-    for (const c of chunks) this.predictor.loadCollision(c.bx, c.bz, c.data);
+  loadCollision(chunks: Iterable<CollisionChunk>): void {
+    for (const c of chunks) {
+      this.predictor.loadCollision(c.bx, c.bz, c.data);
+      if (this.vehicleWasm) this.vehicleWasm.loadCollision(c.bx, c.bz, c.data);
+      else this.collisionChunks.push(c);
+    }
     // Settle onto the terrain (the spawn guess is airborne); not simulated through the ring.
     this.predictor.capture(this.ring.base);
   }
@@ -199,6 +216,11 @@ export class GameLoop {
   }
   get lastErrM(): number {
     return this.reconciler.stats.lastErrM;
+  }
+
+  /** The local hull prediction is available only while driving, after its first authoritative row. */
+  get vehiclePredictor(): VehiclePredictor | undefined {
+    return this.vehicleSeat === 0 && this.vehicle?.active ? this.vehicle : undefined;
   }
 
   /** Called once per render frame with the steps the fixed stepper granted. */
@@ -230,6 +252,7 @@ export class GameLoop {
     this.prevY = this.predictor.y;
     this.prevZ = this.predictor.z;
     this.predictor.step(cmd);
+    this.vehiclePredictor?.step(tick, cmd);
     const e = this.ring.push();
     e.seq = seq;
     e.tick = tick;
@@ -295,11 +318,37 @@ export class GameLoop {
       this.stats.staleSnapshots++;
     }
     this.applier.applyEntities(nowMs);
+    if (newer && s.hasSelf) this.applyVehicle(s);
     this.events.decode(this.applier.decoder.events());
     const ev = this.appliedEv;
     ev.tick = s.tick;
     ev.entityCount = this.store.count;
     this.bus.emit('snapshot.applied', ev);
+  }
+
+  private applyVehicle(s: SnapshotSummary): void {
+    const vehicles = this.applier.vehicles;
+    const slot = s.health > 0 ? s.vehicleSlot : 0;
+    if (slot !== this.vehicleSlot || s.seat !== this.vehicleSeat || !vehicles.has(slot)) this.vehicle?.leave();
+    this.vehicleSlot = slot;
+    this.vehicleSeat = s.seat;
+    if (slot === 0 || !vehicles.copyKinematics(slot, s.tick, this.vehicleKin)) return;
+    if (!this.vehicle) {
+      const wasm = this.createVehicleWasm();
+      for (const { bx, bz, data } of this.collisionChunks) wasm.loadCollision(bx, bz, data);
+      this.collisionChunks.length = 0;
+      this.vehicleWasm = wasm;
+      this.vehicle = new VehiclePredictor(wasm);
+    }
+    const cmds: UnackedEntry[] = [];
+    if (s.seat === 0) {
+      for (let i = 0; i < this.ring.length; i++) {
+        const e = this.ring.at(i);
+        if (seqDiff(e.seq, s.ackInputSeq) > 0 && ((e.tick - s.tick) | 0) > 0) cmds.push(e);
+      }
+    }
+    if (!this.vehicle.active) this.vehicle.enter(M1_VEHICLE_DEF, s.tick, this.vehicleKin, cmds);
+    else if (s.seat === 0) this.vehicle.reconcile(s.tick, this.vehicleKin, cmds);
   }
 
   private applySelf(s: ReturnType<SnapshotApplier['decode']>): void {
@@ -377,6 +426,7 @@ export class GameLoop {
 
   private renderFrame(alpha: number, dtMs: number, nowMs: number): void {
     this.reconciler.smoother.advance(dtMs);
+    this.vehicle?.update(dtMs / 1000);
     this.fillLocal(alpha);
     // remote entities
     const clock = this.net.clock;
@@ -418,6 +468,7 @@ export class GameLoop {
   }
 
   dispose(): void {
+    this.vehicleWasm?.free();
     this.predictor.free();
   }
 }
