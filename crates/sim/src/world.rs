@@ -365,6 +365,14 @@ impl World {
             .resource_mut::<PlayerIndex>()
             .map
             .insert(req.player, (id, e));
+        if let Some(role) = self
+            .squads
+            .entry(req.player)
+            .filter(|entry| !entry.role_invalid)
+            .and_then(|entry| entry.role)
+        {
+            self.sync_role_abilities(req.player, Some(role));
+        }
         self.pending_events.push(SimEvent::PlayerSpawned {
             player: req.player,
             entity: id,
@@ -748,9 +756,14 @@ impl World {
         let now = self.tick();
         let d = self.squads.set_role(p, role, now)?;
         self.push_roster(d);
+        self.sync_role_abilities(p, role);
+        Ok(())
+    }
+
+    fn sync_role_abilities(&mut self, p: PlayerId, role: Option<&str>) {
         self.set_officer(p, role == Some("officer"));
         self.set_support(p, role == Some("support"));
-        Ok(())
+        self.set_medic(p, role == Some("medic"));
     }
 
     /// Test-only (feature `test-util`): sets a Garrison's free spawn slots.
@@ -771,6 +784,12 @@ impl World {
         self.ecs.resource::<crate::spawn::SpawnRules>().hq[team as usize].is_some()
     }
 
+    /// Compact maps can deploy at a fixed team spawn without an M1 HQ protection zone.
+    pub(crate) fn deployment_hq(&self, team: Team) -> Option<Vec3> {
+        self.ecs.resource::<crate::spawn::SpawnRules>().hq[team as usize]
+            .or_else(|| self.ecs.resource::<SpawnPoints>().pos[team as usize])
+    }
+
     /// Applies a validated deploy: role, loadout choice, then the spawn. A player with no body
     /// yet appears at the HQ at once (`spawn_in_ticks` 0); a dead player queues for the HQ wave
     /// (0: the respawn system times it) or for the chosen Garrison (its wait, in ticks).
@@ -788,8 +807,7 @@ impl World {
         self.squads.set_loadout(p, Some(req.loadout));
         let has_body = self.ecs.resource::<PlayerIndex>().map.contains_key(&p);
         if !has_body {
-            let hq = self.ecs.resource::<crate::spawn::SpawnRules>().hq[team as usize]
-                .ok_or(DeployError::NoHq)?;
+            let hq = self.deployment_hq(team).ok_or(DeployError::NoHq)?;
             let yaw = if team == Team::Us {
                 0.0
             } else {
@@ -2174,6 +2192,16 @@ impl World {
             er.get::<crate::throwables::system::Gadgets>()?.frag,
             er.get::<crate::medical::Vitals>()?.bandages,
         ))
+    }
+
+    /// Frag and smoke grenades left in a player's own inventory.
+    pub fn grenade_counts(&self, id: PlayerId) -> Option<(u8, u8)> {
+        let &(_, e) = self.ecs.resource::<PlayerIndex>().map.get(&id)?;
+        let g = self
+            .ecs
+            .entity(e)
+            .get::<crate::throwables::system::Gadgets>()?;
+        Some((g.frag, g.smoke))
     }
 
     /// Test-only (feature `test-util`): sets the stock of Depot `i`.

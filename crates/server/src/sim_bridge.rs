@@ -149,15 +149,21 @@ impl SimBridge {
     /// Spawns with an explicit request (tests, benches, bots) and opens a session.
     pub fn spawn(&mut self, world: &mut World, req: SpawnReq) -> Result<(), SpawnError> {
         world.spawn_player(req)?;
-        let mut s = PlayerSession::new(req.player, req.team, self.cfg, yaw_code(req.yaw));
-        s.joined();
-        self.table.insert(req.player, s);
+        self.open_session(req.player, req.team, req.yaw);
         Ok(())
+    }
+
+    /// Opens the input session for a deploy-managed player (who may not have a body yet).
+    pub(crate) fn open_session(&mut self, player: PlayerId, team: Team, yaw: f32) {
+        let mut s = PlayerSession::new(player, team, self.cfg, yaw_code(yaw));
+        s.joined();
+        self.table.insert(player, s);
     }
 
     /// Removes the player (disconnect, kick). Idempotent; returns whether a session existed.
     pub fn leave(&mut self, world: &mut World, player: PlayerId) -> bool {
         world.remove_player(player);
+        world.roster_remove(player);
         match self.table.remove(&player) {
             Some(mut s) => {
                 s.gone();

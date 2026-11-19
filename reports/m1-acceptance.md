@@ -22,6 +22,19 @@
 | E1-16 | 数据与史实 | historical 100% 有出处或"未核实"；批 M1 回填与复测在容限 | 67 字段：13 有出处、54 标"未核实"（均保持 initial）；批 M1 录像为 0 | `docs/measurements/hist-review-m1.md`；M1-071 blocked | partial | M1-070b、H-011/025/026 |
 | E1-17 | 占位决定 | 范围内占位需求 ID 有"决定"或明确推迟 | 72 个 M1 视觉需求 ID 全为占位，台账 OK 行仅 4 条（字体） | `reports/m1-placeholders.md` | partial | PI-108 |
 
+## Bot 行为补测（M1-038c / M1-039c）
+
+`bt_scenarios` 验证了墙后 1,000 tick 零开火、听声搜索不授权开火、视觉记忆到期、Move/Attack/Defend/Hold、倒地放弃输入、5 s 卡住跳跃及补给/救治输入。各 200 次脚本采样中，Recruit / Veteran 识别后首次发出 `FIRE` 的平均延迟为 746.00 / 403.50 ms；未测真人实战延迟。共享 EPYC 7402 工作站（PI-109，非 RTX 3060 参考机）上的 10v10 M1 brain / M0 地形发布构建，8,290 次完整决策 P50 1.48 µs / P95 5.39 µs（`reports/m1-bots-bt.json`）。这些结果不替代 E1-1 真人测试或 E1-2 服务器长跑。
+
+发布构建 soak（`cargo test --release --locked -p frontline-server --test bots_soak tactical_ -- --ignored --nocapture --test-threads=1`），同一共享工作站：
+
+| 场景 | 模拟时长 / 墙钟 | 发射 / 击杀 / 重生 | 部署成功 / 拒绝 / 踢出 | BotHost P95（全部 bot 思考和输入摄入） | tick P99 |
+| --- | --- | --- | --- | --- | --- |
+| Carentan 1/3、真实据点 5、20 bot | 9,000 tick / 300 s；10.703 s | 47 / 11 / 9 | 31 / 0 / 0 | 0.064 ms | 4.741 ms |
+| M0、18 bot + 2 脚本玩家 | 9,000 tick / 300 s；5.435 s | 227 / 55 / 54 | 72 / 0 / 0 | 0.134 ms | 1.217 ms |
+
+混合组第 30 tick 填到每队 9 bot + 1 脚本玩家，共发 18,000 个 C1 输入包、处理 1 个 C0。测试为进程内模拟，无真实传输或真人；Carentan 仅激活一个据点、使用烘焙 navmesh 与解压后的 380 个 `FCOL` 地形块，不等于多据点完整对局。碰撞夹具用 `map_pipeline chunks-m1` 生成，zlib 解压 `c_*.fcol` 到 `data/maps/carentan/m1/chunks/c_*.bin`；生成物不进仓库。E1-1 不改判定。
+
 ## 演示脚本（MILESTONES §2.4）
 
 8 步均**未执行**：预发布域名与 HTTPS（H-015/016/017/020 待人工）、真实客户端界面（TSX 未做）、20 人测试服、坦克与老城场景渲染（GPU 接线 *b 任务未做）都不具备。没有任何一步记为通过。

@@ -2,8 +2,7 @@
 //! [`GoalSelector`](crate::utility::GoalSelector), the threat score, and the combat behaviour tree.
 //!
 //! Everything here is pure: inputs are a [`Situation`] the brain assembles from the (no-wallhack)
-//! perception, outputs are goal scores and leaf ids. Wiring into `SoldierBrain` is M1-039,
-//! together with the squad-order interface, so the M0 golden replays stay untouched.
+//! perception, outputs are goal scores and leaf ids consumed by the M1 `SoldierBrain`.
 
 use frontline_sim::PlayerId;
 

@@ -172,6 +172,10 @@ impl Arena {
                 difficulty: self.difficulty,
                 rng_seed: self.seed,
                 self_weapon: self.world.weapon_state(*p),
+                squad_order: None,
+                squad_leader: None,
+                hearing: &[],
+                survival: Default::default(),
             };
             cmds.push((*p, brain.think(self.world.view(), &ctx)));
             path_ns += brain.take_stats().path_ns;
@@ -268,6 +272,8 @@ use frontline_sim::{EntityId, WeaponState, WorldView};
 pub struct FakeView {
     pub players: Vec<PlayerView>,
     pub nav: NavData,
+    pub blocked: bool,
+    pub objectives: Vec<ObjectiveView>,
 }
 
 impl FakeView {
@@ -275,6 +281,8 @@ impl FakeView {
         FakeView {
             players: Vec::new(),
             nav: NavData::default(),
+            blocked: false,
+            objectives: Vec::new(),
         }
     }
 
@@ -307,7 +315,7 @@ impl WorldView for FakeView {
         None
     }
     fn los(&self, _from: Vec3, _to: Vec3) -> bool {
-        true
+        !self.blocked
     }
     fn height_at(&self, x: f32, z: f32) -> Option<f32> {
         ((-1.0..=300.0).contains(&x) && (-1.0..=300.0).contains(&z)).then_some(0.0)
@@ -316,7 +324,7 @@ impl WorldView for FakeView {
         Resources::default()
     }
     fn objectives(&self) -> &[ObjectiveView] {
-        &[]
+        &self.objectives
     }
     fn nav_hint(&self) -> &NavData {
         &self.nav
@@ -335,7 +343,7 @@ pub fn weapon_by_id(id: &str, mag: u16, reserve: u16) -> WeaponState {
     w
 }
 
-pub fn ctx(bot: PlayerId, team: Team, tick: u32, w: Option<WeaponState>) -> BotCtx {
+pub fn ctx(bot: PlayerId, team: Team, tick: u32, w: Option<WeaponState>) -> BotCtx<'static> {
     BotCtx {
         bot_id: bot,
         team,
@@ -343,6 +351,10 @@ pub fn ctx(bot: PlayerId, team: Team, tick: u32, w: Option<WeaponState>) -> BotC
         difficulty: Difficulty::embedded_default(),
         rng_seed: 99,
         self_weapon: w,
+        squad_order: None,
+        squad_leader: None,
+        hearing: &[],
+        survival: Default::default(),
     }
 }
 

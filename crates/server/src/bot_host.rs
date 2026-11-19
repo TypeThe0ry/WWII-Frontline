@@ -4,21 +4,28 @@
 //! session (through [`SimBridge::join`], exactly like a human's join), asks its
 //! [`BotBrain`] for one [`InputCmd`] per tick from the **read-only** world, and pushes that command
 //! through [`SimBridge::ingest_cmd`] - the same window check + `validate_input` + input buffer
-//! that human C1 bundles use. The host holds `&World` only; it can neither change the world nor
-//! skip validation (`input_rejected_total` counts bot violations like anyone's).
+//! that human C1 bundles use. Brains only receive `&dyn WorldView`; the host mediates squad,
+//! deploy and role requests through the same authoritative rules used for players.
 
+use std::collections::BTreeMap;
 use std::sync::Arc;
 use std::time::Instant;
 
-use frontline_bots::fill::{BotInfo, BotState, FillAction, FillManager};
+use frontline_bots::ctx::SoldierStatus;
+use frontline_bots::fill::{BotInfo, BotState, FillAction, FillManager, REJOIN_GRACE_S};
+use frontline_bots::perception::Sound;
+use frontline_bots::squad_leader::{ObjView, SquadLeader, SquadOrder, REPICK_TICKS};
 use frontline_bots::{BotBrain, BotCtx, BotMap, Difficulty, SoldierBrain, Tuning};
 use frontline_protocol::msg::input::InputCmd;
-use frontline_sim::{GameData, PlayerId, Team, WeaponState, World, WorldView};
+use frontline_sim::squad::SquadId;
+use frontline_sim::{GameData, LifeState, PlayerId, SimEvent, Team, WeaponState, World, WorldView};
 
 use crate::metrics::Metrics;
 use crate::net::conn::Sessions;
 use crate::sim_bridge::SimBridge;
 use crate::world_loader::LoadedMap;
+
+mod gameplay;
 
 /// Nickname prefix of every bot (GAMEDESIGN 20.2).
 pub use frontline_bots::fill::BOT_NAME_PREFIX;
@@ -49,12 +56,13 @@ struct BotSlot {
     team: Team,
     name: String,
     brain: Box<dyn BotBrain>,
+    tactics: Option<gameplay::Slot>,
 }
 
 /// Timing of one bot tick, as measured by the host.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct BotTickTiming {
-    /// Whole host tick: all `think` calls plus input ingestion.
+    /// Whole host tick: fill, gameplay requests, `think` calls and input ingestion.
     pub total_ns: u64,
     /// Time inside path queries.
     pub path_ns: u64,
@@ -73,8 +81,12 @@ pub struct BotHost {
     stuck_total: u64,
     /// Shared nav data for soldier bots spawned by [`reconcile`](Self::reconcile).
     soldier_map: Option<Arc<BotMap>>,
+    tactical_map: Option<Arc<BotMap>>,
     sessions: Option<Arc<Sessions>>,
     fill: [FillManager; 2],
+    disconnected: [BTreeMap<PlayerId, u32>; 2],
+    leaders: BTreeMap<SquadId, (PlayerId, SquadLeader)>,
+    sounds: Vec<Sound>,
 }
 
 impl BotHost {
@@ -91,8 +103,12 @@ impl BotHost {
             hashes: Vec::new(),
             stuck_total: 0,
             soldier_map: None,
+            tactical_map: None,
             sessions: None,
             fill: [FillManager::new(), FillManager::new()],
+            disconnected: Default::default(),
+            leaders: BTreeMap::new(),
+            sounds: Vec::new(),
         }
     }
 
@@ -122,10 +138,13 @@ impl BotHost {
         let mut host = BotHost::new(seed, Difficulty::default_from(rules), metrics.clone());
         for i in 0..count {
             let (id, team) = bot_slot(i);
-            if let Some(s) = sessions {
-                s.reserve_bot(id, team);
+            if sessions.is_some_and(|s| !s.reserve_bot(id, team)) {
+                continue;
             }
             if let Err(e) = bridge.join(world, id, team) {
+                if let Some(s) = sessions {
+                    s.unreserve_bot(id);
+                }
                 tracing::warn!(event = "bot_join_failed", player_id = id as u64, error = ?e, "bot could not join");
                 continue;
             }
@@ -149,19 +168,42 @@ impl BotHost {
             team,
             name,
             brain,
+            tactics: None,
         });
         self.metrics.bots.set(self.slots.len() as i64);
     }
 
-    /// Highest free id counting down from 127 that no session or bot uses.
-    fn free_bot_id(&self, bridge: &SimBridge) -> Option<PlayerId> {
-        (0..=127u8)
-            .rev()
-            .find(|&i| bridge.session(i).is_none() && !self.is_bot(i))
+    fn reserve_bot_id(&self, bridge: &SimBridge, world: &World, team: Team) -> Option<PlayerId> {
+        (0..=127u8).rev().find(|&i| {
+            bridge.session(i).is_none()
+                && world.squads().entry(i).is_none()
+                && world.player_life(i).is_none()
+                && !self.is_bot(i)
+                && self
+                    .sessions
+                    .as_ref()
+                    .is_none_or(|s| s.reserve_bot(i, team))
+        })
     }
 
-    /// Fill-to-target for both teams (M1-039c, GAMEDESIGN 2.4): spawns bots through the normal join path
-    /// when a team is short, removes them (deploy screen first, then alive) when humans joined.
+    pub(crate) fn human_left(&mut self, player: PlayerId, team: Team, tick: u32) {
+        if !self.is_bot(player) {
+            self.disconnected[team as usize].insert(player, tick);
+        }
+    }
+
+    pub(crate) fn forget(&mut self, player: PlayerId) {
+        if let Some(i) = self.slots.iter().position(|s| s.player == player) {
+            self.slots.remove(i);
+            if let Some(s) = &self.sessions {
+                s.unreserve_bot(player);
+            }
+            self.metrics.bots.set(self.len() as i64);
+        }
+    }
+
+    /// Fill-to-target (M1-039c): roster new bots through the squad/deploy path and make room for
+    /// humans (deploying bots first, then bots on foot, then vehicle occupants).
     /// `target` is the per-team size. Returns `(spawned, removed)`. Needs a host built by
     /// [`with_soldiers`](Self::with_soldiers) (it owns the nav data); otherwise it does nothing.
     pub fn reconcile(
@@ -174,59 +216,195 @@ impl BotHost {
         let Some(map) = self.soldier_map.clone() else {
             return (0, 0);
         };
+        let map = self
+            .tactical_map
+            .get_or_insert_with(|| {
+                let Some(loaded) = bridge.map().filter(|m| m.has_bot_navigation()) else {
+                    return map;
+                };
+                let tuning = Tuning::from_rules(&world.config().data.rules.bots);
+                let map = BotMap::build(
+                    world.view(),
+                    (loaded.size_m, loaded.size_m),
+                    loaded.patrol_points.clone(),
+                    tuning,
+                );
+                Arc::new(loaded.bot_navigation(map))
+            })
+            .clone();
         let (mut spawned, mut removed) = (0, 0);
-        for (ti, team) in [Team::Us, Team::Ger].into_iter().enumerate() {
-            let humans: Vec<(PlayerId, bool)> = bridge
+        let teams = [Team::Us, Team::Ger];
+        let mut actions = teams.map(|team| {
+            let mut humans: Vec<(PlayerId, bool)> = bridge
                 .sessions()
                 .filter(|(id, s)| s.team == team && !self.is_bot(**id))
                 .map(|(id, _)| (*id, true))
                 .collect();
+            let ti = team as usize;
+            let grace = (REJOIN_GRACE_S * f32::from(world.config().tick_hz)) as u32;
+            self.disconnected[ti].retain(|&id, left| {
+                bridge.session(id).is_none() && tick.saturating_sub(*left) < grace
+            });
+            humans.extend(self.disconnected[ti].keys().map(|&id| (id, false)));
             let bots: Vec<BotInfo> = self
                 .slots
                 .iter()
                 .filter(|b| b.team == team)
                 .map(|b| BotInfo {
                     id: b.player,
-                    state: BotState::Alive,
+                    state: if matches!(
+                        world.player_life(b.player),
+                        None | Some(LifeState::Dead { .. })
+                    ) {
+                        BotState::Deploying
+                    } else if world.seat_of(b.player).is_some() {
+                        BotState::InVehicle
+                    } else {
+                        BotState::Alive
+                    },
                 })
                 .collect();
-            for a in self.fill[ti].reconcile(tick, &humans, &bots, target) {
+            self.fill[ti]
+                .reconcile(tick, &humans, &bots, target)
+                .into_iter()
+        });
+        // Interleave joins so the sim's team-balance check sees both teams grow together.
+        loop {
+            let mut any = false;
+            for (team, iter) in teams.into_iter().zip(&mut actions) {
+                let Some(a) = iter.next() else { continue };
+                any = true;
                 match a {
                     FillAction::SpawnBot => {
-                        let Some(id) = self.free_bot_id(bridge) else {
+                        let Some(id) = self.reserve_bot_id(bridge, world, team) else {
                             continue;
                         };
-                        if let Some(s) = &self.sessions {
-                            s.reserve_bot(id, team);
-                        }
-                        if bridge.join(world, id, team).is_err() {
+                        let rostered = world.roster_add(id, team).is_ok();
+                        if !rostered {
                             if let Some(s) = &self.sessions {
                                 s.unreserve_bot(id);
                             }
                             continue;
                         }
-                        let n = self.slots.len() as u16;
+                        gameplay::assign_squad(world, &self.metrics, id, team);
+                        let (_, yaw) = crate::world_loader::join_spawn_at(
+                            bridge.map().map(AsRef::as_ref),
+                            id,
+                            team,
+                        );
+                        bridge.open_session(id, team, yaw);
                         self.add(
                             id,
                             team,
-                            bot_nickname(n),
-                            Box::new(SoldierBrain::new(map.clone())),
+                            bot_nickname(127 - u16::from(id)),
+                            Box::new(SoldierBrain::with_tactics(map.clone())),
                         );
+                        self.slots.last_mut().unwrap().tactics = Some(gameplay::Slot::default());
                         spawned += 1;
                     }
                     FillAction::RemoveBot { id, .. } => {
                         bridge.leave(world, id);
-                        if let Some(s) = &self.sessions {
-                            s.unreserve_bot(id);
-                        }
-                        self.slots.retain(|b| b.player != id);
-                        self.metrics.bots.set(self.slots.len() as i64);
+                        self.forget(id);
                         removed += 1;
                     }
                 }
             }
+            if !any {
+                break;
+            }
         }
         (spawned, removed)
+    }
+
+    /// Updates tactical orders and performs gameplay requests before the read-only brain pass.
+    pub(crate) fn gameplay(
+        &mut self,
+        world: &mut World,
+        events: &[SimEvent],
+        map: Option<&LoadedMap>,
+    ) {
+        if !self.slots.iter().any(|s| s.tactics.is_some()) {
+            self.sounds.clear();
+            self.leaders.clear();
+            return;
+        }
+        let now = world.tick().0;
+        gameplay::record_sounds(&mut self.sounds, now, events);
+        if now.is_multiple_of(REPICK_TICKS) {
+            self.update_orders(world, now);
+        }
+        for s in &mut self.slots {
+            let Some(state) = &mut s.tactics else {
+                continue;
+            };
+            let squad = world.squads().squad_of(s.player);
+            let order = squad
+                .and_then(|sq| self.leaders.get(&sq.id).filter(|(p, _)| *p == sq.leader))
+                .map(|(_, l)| l.order());
+            let site = map.and_then(|m| m.garrison_sites[s.team as usize]);
+            state.update(world, &self.metrics, s.player, order, events, site);
+        }
+    }
+
+    fn update_orders(&mut self, world: &World, now: u32) {
+        self.leaders.retain(|id, (leader, _)| {
+            world
+                .squads()
+                .squad(*id)
+                .is_some_and(|sq| sq.leader == *leader)
+        });
+        let view = world.view();
+        if view.objectives().is_empty() {
+            self.leaders.clear();
+            return;
+        }
+        for team in [Team::Us, Team::Ger] {
+            let objs: Vec<_> = view
+                .objectives()
+                .iter()
+                .map(|o| {
+                    let friends_near = view
+                        .players()
+                        .iter()
+                        .filter(|p| {
+                            p.team == team
+                                && frontline_sim::supply::dist_xz(p.pos, o.pos) <= o.radius_m
+                        })
+                        .count() as u8;
+                    // Public contested state is a threat proxy, never a count of unseen opponents.
+                    let enemies_near = if o.contested { 4 } else { 0 };
+                    ObjView {
+                        id: o.id,
+                        pos: o.pos,
+                        own: o.owner == Some(team),
+                        held: o.p.abs() / 100.0,
+                        friends_near,
+                        enemies_near,
+                    }
+                })
+                .collect();
+            for s in self
+                .slots
+                .iter()
+                .filter(|s| s.team == team && s.tactics.is_some())
+            {
+                let Some(sq) = world
+                    .squads()
+                    .squad_of(s.player)
+                    .filter(|sq| sq.leader == s.player)
+                else {
+                    continue;
+                };
+                let Some(from) = world.player_state(s.player).map(|p| p.pos) else {
+                    continue;
+                };
+                self.leaders
+                    .entry(sq.id)
+                    .or_insert_with(|| (s.player, SquadLeader::new()))
+                    .1
+                    .update(now, from, &objs);
+            }
+        }
     }
 
     pub fn len(&self) -> usize {
@@ -280,27 +458,57 @@ impl BotHost {
     /// One bot step for the tick after `world.tick()`: every bot thinks, then its command is
     /// ingested through the bridge (validation included). Returns `(accepted, total)`.
     pub fn tick(&mut self, world: &World, bridge: &mut SimBridge) -> (usize, usize) {
-        let t0 = Instant::now();
+        self.tick_started(world, bridge, Instant::now())
+    }
+
+    pub(crate) fn tick_started(
+        &mut self,
+        world: &World,
+        bridge: &mut SimBridge,
+        t0: Instant,
+    ) -> (usize, usize) {
         let now = world.tick().0 + 1;
-        let weapon = |p: PlayerId| world.weapon_state(p);
         let mut path_ns = 0u64;
         let mut hash: u64 = 0xcbf2_9ce4_8422_2325;
         let mut accepted = 0usize;
         let view: &dyn WorldView = world.view();
-        let alive: Vec<PlayerId> = view.players().iter().map(|p| p.player).collect();
         for s in &mut self.slots {
+            let alive = world.player_life(s.player) == Some(LifeState::Alive);
+            let squad = s
+                .tactics
+                .as_ref()
+                .and_then(|_| world.squads().squad_of(s.player));
+            let order =
+                squad.and_then(|sq| self.leaders.get(&sq.id).filter(|(p, _)| *p == sq.leader));
+            let role_order = s.tactics.as_ref().and_then(gameplay::Slot::intent);
             let ctx = BotCtx {
                 bot_id: s.player,
                 team: s.team,
                 tick: now,
                 difficulty: self.difficulty,
                 rng_seed: self.seed,
-                self_weapon: alive
-                    .contains(&s.player)
-                    .then(|| weapon(s.player))
-                    .flatten(),
+                self_weapon: alive.then(|| world.weapon_state(s.player)).flatten(),
+                squad_order: role_order
+                    .map(|i| SquadOrder::Move(i.pos))
+                    .or_else(|| order.map(|(_, l)| l.order())),
+                squad_leader: squad.map(|sq| sq.leader).filter(|&p| p != s.player),
+                hearing: if s.tactics.is_some() {
+                    &self.sounds
+                } else {
+                    &[]
+                },
+                survival: s
+                    .tactics
+                    .as_ref()
+                    .map_or_else(SoldierStatus::default, |st| st.survival(world, s.player)),
             };
-            let cmd = s.brain.think(view, &ctx);
+            let mut cmd = s.brain.think(view, &ctx);
+            if let Some((intent, from)) = role_order
+                .filter(|_| alive)
+                .zip(world.player_state(s.player))
+            {
+                intent.apply(from.pos, &mut cmd);
+            }
             let st = s.brain.take_stats();
             path_ns += st.path_ns;
             self.stuck_total += u64::from(st.stuck_events);
@@ -339,6 +547,10 @@ impl BotHost {
                 difficulty: self.difficulty,
                 rng_seed: self.seed,
                 self_weapon: weapon(s.player),
+                squad_order: None,
+                squad_leader: None,
+                hearing: &[],
+                survival: SoldierStatus::default(),
             };
             let cmd = s.brain.think(view, &ctx);
             out.push((s.player, cmd));
@@ -420,5 +632,41 @@ mod fill_tests {
         assert!(ids
             .iter()
             .all(|i| host.nickname(*i).unwrap().starts_with(BOT_NAME_PREFIX)));
+    }
+
+    #[test]
+    fn fill_human_replaces_deploying_bot_and_honors_flap_grace() {
+        let (mut world, mut bridge, mut host) = setup(2);
+        assert_eq!(host.reconcile(0, &mut world, &mut bridge, 2), (2, 0));
+        let waiting = host
+            .slots
+            .iter()
+            .find(|s| s.team == Team::Us && s.tactics.is_some())
+            .unwrap()
+            .player;
+        bridge.join(&mut world, 0, Team::Us).unwrap();
+        assert_eq!(host.reconcile(30, &mut world, &mut bridge, 2), (0, 1));
+        assert!(
+            bridge.session(waiting).is_none(),
+            "DEPLOY bot must be replaced first"
+        );
+        assert!(
+            world.squads().entry(waiting).is_none(),
+            "bot's roster seat must also leave"
+        );
+        assert!(host.is_bot(127), "living bot must keep its seat");
+
+        for t in [60, 390] {
+            host.human_left(0, Team::Us, t);
+            assert!(bridge.leave(&mut world, 0));
+            assert_eq!(host.reconcile(t, &mut world, &mut bridge, 2), (0, 0));
+            assert_eq!(host.reconcile(t + 299, &mut world, &mut bridge, 2), (0, 0));
+            if t == 60 {
+                bridge.join(&mut world, 0, Team::Us).unwrap();
+                assert_eq!(host.reconcile(t + 300, &mut world, &mut bridge, 2), (0, 0));
+            } else {
+                assert_eq!(host.reconcile(t + 300, &mut world, &mut bridge, 2), (1, 0));
+            }
+        }
     }
 }

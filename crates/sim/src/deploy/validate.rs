@@ -208,7 +208,7 @@ impl World {
         }
         // 5. Spawn point.
         if req.spawn_point == SPAWN_HQ {
-            if !self.has_hq(team) {
+            if self.deployment_hq(team).is_none() {
                 return Err(DeployError::NoHq);
             }
         } else {
