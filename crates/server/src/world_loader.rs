@@ -110,6 +110,9 @@ pub struct LoadedMap {
     pub patrol_points: Vec<[f32; 2]>,
     /// Map edge length in metres (`meta.crs.size_m`; the loaded chunks' extent when absent).
     pub size_m: f32,
+    pub(crate) dir: PathBuf,
+    pub objectives: Vec<frontline_sim::rules::ObjectiveSpec>,
+    pub(crate) garrison_sites: [Option<Vec3>; 2],
 }
 
 #[derive(Deserialize)]
@@ -117,10 +120,25 @@ struct SpawnsFile {
     hq: std::collections::BTreeMap<String, HqEntry>,
     #[serde(default)]
     patrol_points: Vec<PatrolEntry>,
+    #[serde(default)]
+    garrison_candidates: std::collections::BTreeMap<String, PatrolEntry>,
 }
 #[derive(Deserialize)]
 struct PatrolEntry {
     pos: [f32; 2],
+}
+#[derive(Deserialize)]
+struct ZonesFile {
+    lines: Vec<ZoneLine>,
+}
+#[derive(Deserialize)]
+struct ZoneLine {
+    points: Vec<ZonePoint>,
+}
+#[derive(Deserialize)]
+struct ZonePoint {
+    pos: [f32; 2],
+    radius_m: f32,
 }
 #[derive(Deserialize)]
 struct HqEntry {
@@ -142,7 +160,13 @@ struct CrsMeta {
 /// Finds the repository `data/` directory: `explicit` if given, otherwise the first ancestor of
 /// the working directory or of the executable that holds `data/maps/<map>/meta.json`.
 pub fn locate_data_dir(explicit: Option<&Path>, map: &str) -> Result<PathBuf, MapError> {
-    let marker = |d: &Path| d.join("maps").join(map).join("meta.json").is_file();
+    let marker = |d: &Path| {
+        let dir = d.join("maps").join(map);
+        dir.join("meta.json").is_file()
+            || (dir.file_name().is_some_and(|n| n == "m1")
+                && dir.join("spawns.json").is_file()
+                && dir.parent().is_some_and(|p| p.join("meta.json").is_file()))
+    };
     if let Some(d) = explicit {
         return if marker(d) {
             Ok(d.to_path_buf())
@@ -251,13 +275,46 @@ pub fn load_map(data_dir: &Path, map: &str) -> Result<LoadedMap, MapError> {
         })
     };
     let hq = [hq_of("us", "US")?, hq_of("ger", "GER")?];
-    let meta: Option<MetaFile> = json(&dir.join("meta.json")).ok();
+    // A named slice such as `carentan/m1` shares its parent's coordinate extent.
+    let meta: Option<MetaFile> = json(&dir.join("meta.json")).ok().or_else(|| {
+        if dir.file_name()? == "m1" {
+            json(&dir.parent()?.join("meta.json")).ok()
+        } else {
+            None
+        }
+    });
     let center = match meta.and_then(|m| m.crs).and_then(|c| c.size_m) {
         Some(s) if s > 0.0 => (s * 0.5, s * 0.5),
         _ => ((hq[0].x + hq[1].x) * 0.5, (hq[0].z + hq[1].z) * 0.5),
     };
     let size_m = (center.0 * 2.0).max(center.1 * 2.0);
     let patrol_points = spawns_file.patrol_points.iter().map(|p| p.pos).collect();
+    let ground = |[x, z]: [f32; 2]| collision.height_at(x, z).map(|y| Vec3::new(x, y, z));
+    let zones = dir.join("zones.json");
+    let objectives = if zones.is_file() {
+        json::<ZonesFile>(&zones)?
+            .lines
+            .into_iter()
+            .flat_map(|line| line.points)
+            .enumerate()
+            .filter_map(|(i, p)| {
+                Some(frontline_sim::rules::ObjectiveSpec {
+                    id: u16::try_from(i + 1).ok()?,
+                    pos: ground(p.pos)?,
+                    radius_m: p.radius_m,
+                    owner: None,
+                })
+            })
+            .collect()
+    } else {
+        Vec::new()
+    };
+    let garrison_sites = ["US", "GER"].map(|t| {
+        spawns_file
+            .garrison_candidates
+            .get(t)
+            .and_then(|p| ground(p.pos))
+    });
     Ok(LoadedMap {
         name: map.to_string(),
         collision,
@@ -265,6 +322,9 @@ pub fn load_map(data_dir: &Path, map: &str) -> Result<LoadedMap, MapError> {
         chunk_count,
         patrol_points,
         size_m,
+        dir,
+        objectives,
+        garrison_sites,
     })
 }
 
@@ -276,6 +336,48 @@ impl LoadedMap {
             world.set_team_spawn(team, Vec3::new(h.x, h.y, h.z));
         }
         world.set_map_center(self.spawns.center.0, self.spawns.center.1);
+    }
+
+    pub(crate) fn apply_tactical(&self, world: &mut World) {
+        if !self.objectives.is_empty() && world.objective_list().is_empty() {
+            world.set_objectives(&self.objectives);
+            for p in &self.objectives {
+                world.add_supply_point(p.id, p.pos);
+            }
+        }
+        // The compact M0 test map cannot accommodate the full M1 HQ protection zones.
+        let hq = self.spawns.hq.map(|h| Vec3::new(h.x, h.y, h.z));
+        if frontline_sim::supply::dist_xz(hq[0], hq[1])
+            > 2.0 * frontline_sim::spawn::HQ_ZONE_RADIUS_M
+        {
+            for team in [Team::Us, Team::Ger] {
+                world.set_hq(team, hq[team as usize]);
+                world.add_depot(team, hq[team as usize]);
+            }
+        }
+    }
+
+    pub(crate) fn bot_navigation(&self, mut map: frontline_bots::BotMap) -> frontline_bots::BotMap {
+        let nav = self.dir.join("navmesh.bin");
+        if nav.is_file() {
+            if let Some(mesh) = frontline_bots::nav::NavMesh::load_or_log(&nav) {
+                map = map.with_navmesh(mesh);
+            }
+        }
+        let cover = self.dir.join("cover_points.json");
+        if cover.is_file() {
+            match json::<std::collections::BTreeMap<String, Vec<PatrolEntry>>>(&cover) {
+                Ok(zones) => {
+                    map = map.with_cover(zones.into_values().flatten().map(|p| p.pos).collect())
+                }
+                Err(reason) => tracing::warn!(?reason, "could not load bot cover points"),
+            }
+        }
+        map
+    }
+
+    pub(crate) fn has_bot_navigation(&self) -> bool {
+        self.dir.join("navmesh.bin").is_file() || self.dir.join("cover_points.json").is_file()
     }
 
     /// Where a joining player appears: a deterministic spiral around the team's HQ point (inside

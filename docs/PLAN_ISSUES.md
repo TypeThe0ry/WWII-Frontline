@@ -1029,11 +1029,21 @@ M1-038 体量为 L。先交付与场景无关的引擎（行为树、效用、�
 ## PI-088 M1-038b：战术逻辑纯函数化，接入延后（2026-11-18）
 目标打分与战斗树做成与世界无关的纯函数(`bots::tactics`)，用 Situation 输入做场景测试；接入 `SoldierBrain` 会改变 M0 golden 回放哈希，且需要 M1-039 的 `SquadOrder`，故合并到 038c/M1-039 一起做并重钉哈希。参数(阈值/曲线)均为 `initial`。
 
+## PI-088 续：M1-038c 战术接线与验证范围（2026-11-19）
+- **兼容性**：M1 tactical brain 单独启用，静态 `--bots`/M0 golden 仍走原状态机，无需重钉。M1 听觉缓存只有事件位置，没有敌方身份；视觉记忆到期删除；实际发出 `FIRE` 前重验 LoS（含 sim 烟雾遮挡）。行为树叶子输出标准 `InputCmd`，不绕过武器、医疗或补给系统。
+- **实测**：`bt_scenarios` 里墙后 1,000 tick 零开火，并覆盖此前见过的目标断视线。脚本视野内 9 m、各 200 个种子，识别至首次发出 `FIRE` 的均值 Recruit 746.00 ms、Veteran 403.50 ms；这是输入级、无 ADS/网络等待的场景，不是全距离真人实战统计。共享 EPYC 7402 工作站（非参考机，PI-109）：M0 地形 10v10 跑 M1 brain，8,290 次完整决策 P50 1.48 µs / P95 5.39 µs（`reports/m1-bots-bt.json`）。
+- **partial**：防守使用烘焙掩体点，缺点位时以据点内站位兜底；听觉按距离，不做声学遮挡；可见性仍缺姿态/植被衰减；未覆盖武器类型威胁、off-mesh 翻越/楼梯、已知雷障/载具动态绕行、4 m 占点间距保证、完备医疗呼救/包扎、真实局烟雾救治成功率与参考机基准。保持 `initial`，待场景与平衡校准。
+
 ## PI-089 M1-039a：纯逻辑先行（2026-11-18）
 兵种选择直接复用 sim 的 `role_available`（不重复校验，符合任务备注）；填充/让位/重连宽限与小队长选点做成纯函数，host 接线与 Officer/Support 行为留 039b。`SquadOrder` 暂定义在 `bots::squad_leader`，接线时再决定是否上移到 sim/protocol。
 
 ## PI-090 M1-039b：先补指标与常量统一（2026-11-18）
 `bots_active{team}` 与 `[BOT]` 前缀共用已落地；FillManager 接入 `sim_thread` 需要动态 spawn/移除 bot 的部署路径（M1-026 处理器）及 20 人无头局，留 039c，与 Officer/Support 行为合做。
+
+## PI-090 续：M1-039c 动态 bot（2026-11-19）
+- `--bot-fill` 用正常小队/部署校验管理 bot，按目标排序尝试可用 Garrison，HQ 兜底。紧凑地图可用队伍重生点部署，不开启重叠的 HQ 保护区。队长只根据可公开的据点占领状态和友方人数下令。Officer/Support 请求经 sim 校验，拒绝后退避；Support 根据附近友军低弹药和候选补给点行动，不是 Need Ammo/Supply ping 响应。
+- Carentan 选实图距两 HQ 中点最近的一个据点做交战场景，不代表全活动线；混合用例走进程内 C0/C1 输入队列，无 socket、认证、快照客户端或真人。两组各跑 9,000 tick，均零部署拒绝、零踢出，详见 `reports/m1-acceptance.md`。
+- **partial**：首次部署同步 Officer/Support/Medic 能力；自选配装的实际武器和重生装备仍走既有默认路径，未验收。短场景已验证 Support 取放补给触发 Officer 开工；未做真人 30 min 联测、Officer Garrison 完工与 Garrison 重生的 bot 端到端、全地图 Support 搬运与 Ammo/Supply 请求、60 bot 性能和参考机预算。Outpost 留后续里程碑。此批不涉及 M1-064 素材或 M1-067 账号。
 
 ## PI-091 M1-040a：先做纯状态模块（2026-11-18）
 部署状态机、去重、击杀信息环、roster 合并先作为与 signals/协议解码无关的纯类落地并测试；roster 增量采用 per-player `seq` 取最大（假定 M1-010 的 `PlayerRoster` 增量带可比较序号，若实际字段不同按 protocol 为准再改）。`apply.ts` 与 EventMap 扩展留 040b。

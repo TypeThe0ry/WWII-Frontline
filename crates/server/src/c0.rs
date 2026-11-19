@@ -129,13 +129,12 @@ impl C0Handler {
         out: &mut Outbox,
     ) {
         match msg {
-            ClientMsgC0::DeployRequest(r) => out.push((from, deploy(world, metrics, from, r))),
+            ClientMsgC0::DeployRequest(r) => out.push((
+                from,
+                ServerMsgC0::DeployResult(deploy(world, metrics, from, r)),
+            )),
             ClientMsgC0::SquadOp(op) => {
-                let res = squad_op(world, from, &op);
-                metrics
-                    .squad_ops_total
-                    .with_label_values(&[if res { "ok" } else { "rejected" }])
-                    .inc();
+                squad_op(world, metrics, from, &op);
             }
             ClientMsgC0::Chat(c) => self.chat(world, metrics, from, c, out),
             ClientMsgC0::Report(r) => {
@@ -211,14 +210,22 @@ impl C0Handler {
     }
 }
 
-fn deploy(world: &mut World, metrics: &Metrics, from: PlayerId, r: DeployRequest) -> ServerMsgC0 {
-    let req = DeployReq {
+pub(crate) fn deploy_req(r: DeployRequest) -> DeployReq {
+    DeployReq {
         spawn_point: r.spawn_point,
         role: r.role,
         loadout: r.loadout,
         squad: r.squad,
-    };
-    let (label, res) = match world.deploy(from, &req) {
+    }
+}
+
+pub(crate) fn deploy(
+    world: &mut World,
+    metrics: &Metrics,
+    from: PlayerId,
+    r: DeployRequest,
+) -> DeployResult {
+    let (label, res) = match world.deploy(from, &deploy_req(r)) {
         Ok(done) => (
             "ok",
             DeployResult {
@@ -240,11 +247,11 @@ fn deploy(world: &mut World, metrics: &Metrics, from: PlayerId, r: DeployRequest
         .deploy_requests_total
         .with_label_values(&[label])
         .inc();
-    ServerMsgC0::DeployResult(res)
+    res
 }
 
 /// Maps the wire op onto the sim API; `true` when the sim accepted it.
-fn squad_op(world: &mut World, from: PlayerId, op: &SquadOp) -> bool {
+pub(crate) fn squad_op(world: &mut World, metrics: &Metrics, from: PlayerId, op: &SquadOp) -> bool {
     let sim = match op.op {
         SquadOpKind::Create => SimSquadOp::Create {
             kind: match op.squad {
@@ -269,7 +276,12 @@ fn squad_op(world: &mut World, from: PlayerId, op: &SquadOp) -> bool {
         SquadOpKind::Unlock => SimSquadOp::Unlock,
         SquadOpKind::Invite => SimSquadOp::Invite { target: op.target },
     };
-    world.squad_op(from, sim).is_ok()
+    let ok = world.squad_op(from, sim).is_ok();
+    metrics
+        .squad_ops_total
+        .with_label_values(&[if ok { "ok" } else { "rejected" }])
+        .inc();
+    ok
 }
 
 /// How long the net layer waits before it forgets rate-limit history (kept for tests).

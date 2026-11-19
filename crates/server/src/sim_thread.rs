@@ -243,6 +243,7 @@ pub struct SimLoop<C: Clock> {
     bot_host: Option<BotHost>,
     /// Per-team target for dynamic bot fill; `None` keeps the static `--bots N`.
     bot_fill: Option<u8>,
+    tactical_map_ready: bool,
     /// Running count of the sim's gameplay events (shots, hits, kills, spawns).
     tally: EventTally,
 }
@@ -351,6 +352,7 @@ pub fn build_loop_with_bots<C: Clock>(
         outgoing: Vec::new(),
         bot_host,
         bot_fill: None,
+        tactical_map_ready: false,
         tally: EventTally::default(),
     };
     (lp, InputSender { tx: itx, metrics }, ctx)
@@ -574,6 +576,9 @@ impl<C: Clock> SimLoop<C> {
         if !kicked.is_empty() {
             for player in kicked {
                 self.seat_input.forget(player);
+                if let Some(host) = self.bot_host.as_mut() {
+                    host.forget(player);
+                }
             }
             self.update_player_gauges();
         }
@@ -629,8 +634,14 @@ impl<C: Clock> SimLoop<C> {
                         .handle(&mut self.world, &self.metrics, player, msg, &mut out);
                     self.send_c0(out);
                 }
-                Command::SetBotFill(n) => self.bot_fill = (n > 0).then_some(n),
+                Command::SetBotFill(n) => self.set_bot_fill(n),
                 Command::RemovePlayer(p) | Command::ClientGone(p) => {
+                    if let Some(host) = self.bot_host.as_mut() {
+                        if let Some(s) = self.bridge.session(p) {
+                            host.human_left(p, s.team, self.world.tick().0);
+                        }
+                        host.forget(p);
+                    }
                     self.c0.forget(p);
                     self.bridge.anticheat.forget(p);
                     self.seat_input.forget(p);
@@ -639,6 +650,38 @@ impl<C: Clock> SimLoop<C> {
                 }
             }
         }
+    }
+
+    fn set_bot_fill(&mut self, target: u8) {
+        self.bot_fill = (target > 0).then_some(target);
+        if target == 0 || self.tactical_map_ready {
+            return;
+        }
+        let map = self.bridge.map().cloned();
+        if let Some(map) = &map {
+            map.apply_tactical(&mut self.world);
+        } else {
+            // Bare sim fixtures have no map loader to supply deploy points.
+            for team in [Team::Us, Team::Ger] {
+                self.world.set_team_spawn(
+                    team,
+                    frontline_sim::Vec3::new(0.0, 0.0, (team as u8 as f32) * 16.0),
+                );
+            }
+        }
+        if self.bot_host.is_none() {
+            let sessions = self.bridge.net().map(|link| link.sessions.clone());
+            self.bot_host = Some(BotHost::with_soldiers(
+                0,
+                self.world.config().match_seed,
+                &mut self.world,
+                &mut self.bridge,
+                map.as_deref(),
+                sessions.as_ref(),
+                self.metrics.clone(),
+            ));
+        }
+        self.tactical_map_ready = true;
     }
 
     /// Delivers C0 replies / routed chat over each recipient's reliable stream.
@@ -707,12 +750,18 @@ impl<C: Clock> SimLoop<C> {
         self.tally.add(&self.step_events);
         let mut changed = false;
         if let Some(host) = self.bot_host.as_mut() {
+            let start = std::time::Instant::now();
             let now = self.world.tick().0;
             // Once a second: top up / make room (M1-039c). Spawned bots think from the next tick.
             if let (Some(target), true) = (self.bot_fill, now.is_multiple_of(30)) {
                 changed = host.reconcile(now, &mut self.world, &mut self.bridge, target) != (0, 0);
             }
-            host.tick(&self.world, &mut self.bridge);
+            host.gameplay(
+                &mut self.world,
+                &self.step_events,
+                self.bridge.map().map(AsRef::as_ref),
+            );
+            host.tick_started(&self.world, &mut self.bridge, start);
         }
         if changed {
             self.update_player_gauges();

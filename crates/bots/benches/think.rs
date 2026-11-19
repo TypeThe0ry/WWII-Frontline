@@ -5,6 +5,7 @@
 //! the other benches; writes `reports/baselines/bots-m0.json`. Needs the git-ignored terrain:
 //! `PYTHONPATH=tools/map-pipeline python3 -m map_pipeline m0 --seed 1 --out data/maps/m0`.
 //! Run with `cargo bench -p frontline-bots --bench think`.
+//! Use `cargo bench -p frontline-bots --bench think -- --m1` for the tactical brain.
 
 #[path = "../tests/common/mod.rs"]
 mod common;
@@ -12,7 +13,7 @@ mod common;
 use std::time::Instant;
 
 use common::*;
-use frontline_bots::PathFinder;
+use frontline_bots::{BotBrain, PathFinder, SoldierBrain};
 
 fn q(v: &mut [f64], p: f64) -> f64 {
     v.sort_by(|a, b| a.total_cmp(b));
@@ -104,6 +105,10 @@ fn path_bench(col: &frontline_sim::CollisionData) -> serde_json::Value {
 
 fn main() {
     let Some(col) = terrain() else { return };
+    if std::env::args().any(|arg| arg == "--m1") {
+        m1_think(&col);
+        return;
+    }
     let think_10 = think_bench(&col, 5, 300, 3600);
     let think_60 = think_bench(&col, 30, 300, 1800);
     let think_100 = think_bench(&col, 50, 300, 1800);
@@ -124,4 +129,40 @@ fn main() {
             println!("wrote {}", f.display());
         }
     }
+}
+
+fn m1_think(col: &frontline_sim::CollisionData) {
+    const WARMUP: u32 = 300;
+    const TICKS: u32 = 1800;
+    let mut a = Arena::new(col, 5);
+    let map = a.bot_map();
+    a.add_squads(&map, 10);
+    for (_, _, brain) in &mut a.brains {
+        *brain = SoldierBrain::with_tactics(map.clone());
+    }
+    let mut samples = Vec::new();
+    let mut commands = Vec::with_capacity(a.brains.len());
+    for tick in 1..=WARMUP + TICKS {
+        commands.clear();
+        for (id, team, brain) in &mut a.brains {
+            let c = ctx(*id, *team, tick, a.world.weapon_state(*id));
+            let start = Instant::now();
+            let cmd = brain.think(a.world.view(), &c);
+            let us = start.elapsed().as_secs_f64() * 1e6;
+            if brain.take_stats().thought && tick > WARMUP {
+                samples.push(us);
+            }
+            commands.push((*id, cmd));
+        }
+        a.world.step(&commands);
+    }
+    let n = samples.len();
+    let report = serde_json::json!({
+        "fixture": "M0 collision, 10v10 M1 tactical brains; no host or squad/role intel",
+        "build": if cfg!(debug_assertions) { "debug" } else { "release" },
+        "samples": n, "warmup_ticks": WARMUP, "measured_ticks": TICKS,
+        "median_us": q(&mut samples, 0.5), "p95_us": q(&mut samples, 0.95),
+        "max_us": samples.last().unwrap(),
+    });
+    println!("{}", serde_json::to_string_pretty(&report).unwrap());
 }
