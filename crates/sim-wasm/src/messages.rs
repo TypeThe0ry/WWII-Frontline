@@ -24,6 +24,7 @@ pub fn layout_table() -> &'static [(&'static str, u32)] {
         ("C0_PING", c0_type::PING as u32),
         ("C0_PONG", c0_type::PONG as u32),
         ("C0_DISCONNECT", c0_type::DISCONNECT as u32),
+        ("C0_DEPLOY_RESULT", c0_type::DEPLOY_RESULT as u32),
         ("FIRE_CMD_BYTES", FIRE_CMD_BYTES as u32),
         ("MAX_BUNDLE_CMDS", MAX_BUNDLE_CMDS as u32),
         ("MAX_BUNDLE_FIRE", MAX_BUNDLE_FIRE as u32),
@@ -271,7 +272,7 @@ pub fn encode_c0(kind: u32, payload: &[u8]) -> Result<Vec<u8>, JsError> {
 #[wasm_bindgen]
 #[derive(Debug, Clone, Copy, Default)]
 pub struct ServerC0 {
-    /// `C0_WELCOME` / `C0_REJECT` / `C0_PONG` / `C0_DISCONNECT`.
+    /// Server C0 message type.
     pub kind: u8,
     // Welcome
     #[wasm_bindgen(js_name = playerId)]
@@ -290,8 +291,12 @@ pub struct ServerC0 {
     pub team: u8,
     #[wasm_bindgen(js_name = clientTickOffset)]
     pub client_tick_offset: i16,
-    // Reject / Disconnect
+    // Reject / Disconnect / DeployResult
     pub reason: u8,
+    // DeployResult
+    pub ok: bool,
+    #[wasm_bindgen(js_name = spawnTick)]
+    pub spawn_tick: u32,
     // Pong
     #[wasm_bindgen(js_name = clientTime)]
     pub client_time: u32,
@@ -324,10 +329,10 @@ pub(crate) fn decode_server_core(bytes: &[u8]) -> Result<ServerC0, String> {
             o.server_time_ms = p.server_time_ms;
         }
         ServerMsgC0::Disconnect(d) => o.reason = d.reason,
-        // Exposed to JS in M1-040.
         ServerMsgC0::DeployResult(d) => {
+            o.ok = d.ok;
             o.reason = d.reason;
-            o.server_tick = d.spawn_tick;
+            o.spawn_tick = d.spawn_tick;
         }
         ServerMsgC0::Chat(_) => {}
     }
@@ -502,5 +507,21 @@ mod tests {
         );
         assert!(decode_server_core(&b[..2]).is_err());
         assert!(decode_server_core(&[0xff]).is_err());
+    }
+
+    #[test]
+    fn deploy_result_keeps_ok_spawn_tick_and_reason() {
+        use frontline_protocol::msg::c0::{encode_c0_server, DeployResult};
+        for (ok, spawn_tick, reason) in [(true, 0, 0), (true, 0xf1234567, 0), (false, 0, 21)] {
+            let bytes = encode_c0_server(&ServerMsgC0::DeployResult(DeployResult {
+                ok,
+                spawn_tick,
+                reason,
+            }))
+            .unwrap();
+            let d = decode_server_core(&bytes).unwrap();
+            assert_eq!(d.kind, c0_type::DEPLOY_RESULT);
+            assert_eq!((d.ok, d.spawn_tick, d.reason), (ok, spawn_tick, reason));
+        }
     }
 }

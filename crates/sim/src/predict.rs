@@ -89,6 +89,10 @@ impl PredictSim {
         self.tick
     }
 
+    pub fn collision(&self) -> &CollisionData {
+        &self.collision
+    }
+
     pub fn collision_mut(&mut self) -> &mut CollisionData {
         &mut self.collision
     }

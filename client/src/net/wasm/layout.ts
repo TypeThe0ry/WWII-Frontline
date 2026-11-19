@@ -55,6 +55,7 @@ export const LAYOUT_C0_REJECT = 3;
 export const LAYOUT_C0_PING = 4;
 export const LAYOUT_C0_PONG = 5;
 export const LAYOUT_C0_DISCONNECT = 6;
+export const LAYOUT_C0_DEPLOY_RESULT = 17;
 export const LAYOUT_FIRE_CMD_BYTES = 17;
 export const LAYOUT_MAX_BUNDLE_CMDS = 3;
 export const LAYOUT_MAX_BUNDLE_FIRE = 2;

@@ -36,6 +36,17 @@ pub struct Objective {
     pub last_change: Option<u32>,
 }
 
+impl From<&Objective> for ObjectiveSpec {
+    fn from(o: &Objective) -> Self {
+        Self {
+            id: o.id,
+            pos: o.pos,
+            radius_m: o.radius_m,
+            owner: o.owner,
+        }
+    }
+}
+
 impl Objective {
     pub fn new(s: ObjectiveSpec) -> Self {
         Self {
