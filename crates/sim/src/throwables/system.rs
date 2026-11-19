@@ -18,7 +18,7 @@ use crate::data::GameData;
 use crate::health::{Health, HitLog, HitRec, LifeState};
 use crate::ids::EntityId;
 use crate::step::SimEvent;
-use crate::throwables::explosion::{explosion_damage, Occlusion, FF_MULT};
+use crate::throwables::explosion::{explosion_damage, FF_MULT, RAY_LIFT_M};
 use crate::throwables::grenade::{self, Flight, THROW_LIFT_DEG};
 use crate::throwables::smoke::{SmokeCloud, SmokeParams};
 use crate::throwables::EXPLOSIVE_WEAPON_IDX;
@@ -200,11 +200,7 @@ pub(crate) fn explode(
         if r >= radius_m {
             continue;
         }
-        let occ = if col.los(center + Vec3::Y * 0.05, chest) {
-            Occlusion::Clear
-        } else {
-            Occlusion::Solid
-        };
+        let occ = col.blast_cover(center + Vec3::Y * RAY_LIFT_M, chest);
         let mut d = explosion_damage(dmax, r, radius_m, occ);
         if id != owner && *vteam == team {
             d *= FF_MULT;
@@ -308,10 +304,15 @@ pub fn throwables(
                 let (pos, vel) = if alive {
                     let pitch = t.pitch + THROW_LIFT_DEG.to_radians();
                     let dir = view_dir(t.yaw, pitch);
-                    (
-                        t.pos + Vec3::Y * HAND_HEIGHT_M + dir * 0.4,
-                        dir * p.speed_mps,
-                    )
+                    let hand = t.pos + Vec3::Y * HAND_HEIGHT_M;
+                    let release = hand + dir * 0.4;
+                    // Start behind nearby cover rather than spawning through it.
+                    let pos = if col.0.raycast_cover_segment(hand, release).is_some() {
+                        hand
+                    } else {
+                        release
+                    };
+                    (pos, dir * p.speed_mps)
                 } else {
                     (t.pos + Vec3::Y * 0.3, Vec3::ZERO)
                 };

@@ -171,6 +171,8 @@ pub struct WeaponGameplay {
     pub fire: Fire,
     pub reload: Reload,
     pub ads_ms: f64,
+    #[serde(default)]
+    pub swap_in_ms: Option<u32>,
     pub spread: Spread,
     pub recoil: Recoil,
     pub ballistics: Ballistics,

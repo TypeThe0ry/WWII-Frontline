@@ -11,6 +11,8 @@ use std::path::{Path, PathBuf};
 use frontline_sim::{CollisionChunk, CollisionData, Team, Vec3, World};
 use serde::Deserialize;
 
+mod cover;
+
 /// Regeneration command quoted in every "map missing" error.
 pub const REGEN_COMMAND: &str =
     "PYTHONPATH=tools/map-pipeline python3 -m map_pipeline m0 --seed 1 --out data/maps/m0";
@@ -256,7 +258,9 @@ pub fn load_map(data_dir: &Path, map: &str) -> Result<LoadedMap, MapError> {
         })?);
     }
     let chunk_count = chunks.len();
-    let collision = CollisionData::from_chunks(chunks);
+    let mut collision = CollisionData::from_chunks(chunks);
+    let cover = cover::load(&dir, &collision)?;
+    collision.install_cover(cover);
 
     let spawns_file: SpawnsFile = json(&dir.join("spawns.json"))?;
     let hq_of = |key: &str, team: &'static str| -> Result<HqSpawn, MapError> {

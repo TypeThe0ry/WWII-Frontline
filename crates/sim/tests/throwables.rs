@@ -4,6 +4,8 @@ mod common;
 
 use common::*;
 use frontline_protocol::msg::input::{buttons, InputCmd};
+use frontline_sim::ballistics::materials::MaterialId;
+use frontline_sim::collision::CoverSlab;
 use frontline_sim::throwables::grenade::{self, Flight};
 use frontline_sim::throwables::SmokeParams;
 use frontline_sim::throwables::{explosion_damage, smoke_blocks_los, Occlusion, SmokeCloud};
@@ -11,6 +13,31 @@ use frontline_sim::{SimEvent, Team, Tick, Vec3, World};
 
 fn arena() -> frontline_sim::CollisionData {
     synth_data(14, 2, &|_, _| 5.0)
+}
+
+fn cover_arena(x: f32, cover: Occlusion) -> frontline_sim::CollisionData {
+    let mut col = flat(1, 5.0);
+    let material = match cover {
+        Occlusion::Clear => return col,
+        Occlusion::Thin => "thin_wood",
+        Occlusion::Solid => "brick",
+    };
+    let index = data()
+        .materials
+        .iter()
+        .position(|m| m.id == material)
+        .unwrap();
+    col.install_cover(vec![CoverSlab::new(
+        [x, 55.0],
+        [x, 63.0],
+        5.0,
+        9.0,
+        0.2,
+        MaterialId(u8::try_from(index).unwrap()),
+        cover,
+    )
+    .unwrap()]);
+    col
 }
 
 #[test]
@@ -35,6 +62,56 @@ fn occlusion_levels() {
     let clear = explosion_damage(220.0, 3.0, 8.0, Occlusion::Clear);
     assert!((explosion_damage(220.0, 3.0, 8.0, Occlusion::Solid) - clear * 0.25).abs() < 1e-3);
     assert!((explosion_damage(220.0, 3.0, 8.0, Occlusion::Thin) - clear * 0.6).abs() < 1e-3);
+}
+
+#[test]
+fn static_cover_attenuates_frag_damage_and_suppression() {
+    let run = |cover| {
+        let mut w = duel_world(
+            data(),
+            &cover_arena(23.0, cover),
+            3,
+            &[
+                (0, Team::Us, 20.0, 60.0, 16384),
+                (1, Team::Ger, 26.0, 60.0, 49152),
+            ],
+        );
+        let (_, _, ev) = throw(&mut w, 126, 0.0, 0);
+        assert_eq!(
+            ev.iter()
+                .filter(|e| matches!(e, SimEvent::Explosion { kind: 0, .. }))
+                .count(),
+            1
+        );
+        let damage = ev
+            .iter()
+            .find_map(|e| match e {
+                SimEvent::Hit {
+                    target: 1,
+                    damage_hp,
+                    ..
+                } => Some(*damage_hp),
+                _ => None,
+            })
+            .unwrap();
+        let s = w.suppression(1).unwrap();
+        // No decay through tick 15; cover accelerates the first decay tick.
+        for _ in 0..15 {
+            w.step(&[]);
+        }
+        assert_eq!(w.suppression(1), Some(s));
+        w.step(&[]);
+        (damage, s, s - w.suppression(1).unwrap())
+    };
+    let (clear_damage, clear_s, clear_decay) = run(Occlusion::Clear);
+    assert!((clear_damage - 96.1).abs() < 0.1, "{clear_damage}");
+    assert!((clear_s - 13.9).abs() < 0.1, "{clear_s}");
+    for (cover, mult) in [(Occlusion::Thin, 0.6), (Occlusion::Solid, 0.25)] {
+        let (damage, s, decay) = run(cover);
+        assert!((damage - clear_damage * mult).abs() < 1e-4, "{cover:?}");
+        assert!((s - clear_s * 0.5).abs() < 1e-4, "{cover:?}");
+        assert!(decay > clear_decay, "{cover:?}: {decay} vs {clear_decay}");
+    }
 }
 
 fn gadget(buttons: u16, pitch_deg: f32) -> InputCmd {
@@ -139,6 +216,48 @@ fn throw_distance_matches_45_degrees() {
     }
     let range = f.pos.x - x0;
     assert!((range - 33.0).abs() / 33.0 < 0.1, "{range}");
+}
+
+#[test]
+fn frag_and_smoke_bounce_off_static_cover_without_spawning_through_it() {
+    // One wall intersects the 0.4 m release offset; the other is hit in flight.
+    for wall_x in [20.25, 21.0] {
+        for smoke in [false, true] {
+            let mut w = duel_world(
+                data(),
+                &cover_arena(wall_x, Occlusion::Thin),
+                3,
+                &[(0, Team::Us, 20.0, 60.0, 16384)],
+            );
+            let extra = if smoke { buttons::AIM } else { 0 };
+            let (_, _, ev) = throw(&mut w, 1, 0.0, extra);
+            let (launch, end) = (
+                ev.iter()
+                    .find_map(|e| match e {
+                        SimEvent::Thrown { pos, smoke: s, .. } if *s == smoke => Some(*pos),
+                        _ => None,
+                    })
+                    .unwrap(),
+                ev.iter()
+                    .find_map(|e| match e {
+                        SimEvent::SmokeStarted { pos, .. } if smoke => Some(*pos),
+                        SimEvent::Explosion { pos, .. } if !smoke => Some(*pos),
+                        _ => None,
+                    })
+                    .unwrap(),
+            );
+            assert!(
+                launch.x < wall_x - 0.1,
+                "launched inside or past wall: {launch:?}"
+            );
+            assert!(end.x < 19.0, "did not bounce back from x={wall_x}: {end:?}");
+            if smoke {
+                assert!(!ev
+                    .iter()
+                    .any(|e| matches!(e, SimEvent::Explosion { .. } | SimEvent::Suppress { .. })));
+            }
+        }
+    }
 }
 
 #[test]
