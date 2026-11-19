@@ -8,7 +8,8 @@ use std::time::{Duration, Instant};
 use arrayvec::ArrayVec;
 use frontline_protocol::codec::CodecError;
 use frontline_protocol::msg::c0::{
-    decode_c0_server, encode_c0_client, ClientMsgC0, Disconnect, Hello, Ping, ServerMsgC0, Welcome,
+    decode_c0_server, encode_c0_client, ClientMsgC0, DeployRequest, Disconnect, Hello, Ping,
+    ServerMsgC0, Welcome,
 };
 use frontline_protocol::msg::input::{encode_input_bundle, InputBundle, InputCmd};
 use frontline_protocol::snapshot::events::Event;
@@ -34,6 +35,7 @@ pub struct Ctx {
     pub map: Option<Arc<MapData>>,
     pub empty_collision: frontline_sim::CollisionData,
     pub waypoints: Vec<[f32; 2]>,
+    pub deploy_hq: bool,
     pub drive_vehicle: bool,
     #[cfg(feature = "anticheat-test")]
     pub anticheat_mix: bool,
@@ -72,11 +74,12 @@ async fn handshake(ctx: &Ctx, link: &mut Link) -> Result<(Welcome, Instant, Dura
         data_hash: ctx.data_hash,
         ticket: Vec::new(),
         client_build: 1,
-        caps: if ctx.target.kind == transport::Kind::Wt {
-            0b10
-        } else {
-            0
-        },
+        caps: frontline_protocol::msg::c0::CAP_TEAM_MARKERS
+            | if ctx.target.kind == transport::Kind::Wt {
+                0b10
+            } else {
+                0
+            },
     }))
     .map_err(|e| format!("encode hello: {e:?}"))?;
     let sent = Instant::now();
@@ -107,6 +110,57 @@ async fn handshake(ctx: &Ctx, link: &mut Link) -> Result<(Welcome, Instant, Dura
             Ok(Some(Incoming::Frame(..))) => {}
         }
     }
+}
+
+fn hq_request(team: u8) -> Result<DeployRequest, String> {
+    let data = frontline_sim::GameData::embedded();
+    let id = match team {
+        0 => "us_rifleman_1",
+        1 => "ger_rifleman_1",
+        _ => return Err(format!("unexpected team {team}")),
+    };
+    let index = |pos: Option<usize>, id: &str| {
+        pos.and_then(|i| u8::try_from(i).ok())
+            .ok_or_else(|| format!("no wire index for {id}"))
+    };
+    Ok(DeployRequest {
+        spawn_point: frontline_sim::deploy::SPAWN_HQ,
+        role: index(
+            data.roles.iter().position(|r| r.id == "rifleman"),
+            "rifleman",
+        )?,
+        loadout: index(data.loadouts.iter().position(|l| l.id == id), id)?,
+        squad: 0,
+    })
+}
+
+async fn deploy_hq(link: &mut Link, team: u8) -> Result<u32, String> {
+    let payload = encode_c0_client(&ClientMsgC0::DeployRequest(hq_request(team)?))
+        .map_err(|e| format!("encode deploy: {e:?}"))?;
+    if !link.send(Channel::C0, payload) {
+        return Err("connection closed before deployment".into());
+    }
+    tokio::time::timeout(HANDSHAKE_TIMEOUT, async {
+        while let Some(frame) = link.rx.recv().await {
+            match frame {
+                Incoming::Frame(Channel::C0, payload) => match decode_c0_server(&payload) {
+                    Ok(ServerMsgC0::DeployResult(r)) if r.ok => return Ok(r.spawn_tick),
+                    Ok(ServerMsgC0::DeployResult(r)) => {
+                        return Err(format!("deployment rejected: {}", r.reason))
+                    }
+                    Ok(ServerMsgC0::Disconnect(d)) => {
+                        return Err(format!("disconnected before deployment: {}", d.reason))
+                    }
+                    _ => {}
+                },
+                Incoming::Closed(r) => return Err(r),
+                Incoming::Frame(..) => {}
+            }
+        }
+        Err("connection dropped before deployment".into())
+    })
+    .await
+    .map_err(|_| "deployment timed out (no DeployResult)".to_string())?
 }
 
 struct Life {
@@ -141,14 +195,27 @@ pub async fn run_client(ctx: Arc<Ctx>, id: u32) -> (ClientReport, Series) {
         Ok(x) => x,
         Err(e) => return failed(id, bind, e),
     };
+    let (t_start, hq_spawn_tick) = if ctx.deploy_hq {
+        match deploy_hq(&mut link, welcome.team).await {
+            Ok(tick) => (Instant::now(), Some(tick)),
+            Err(e) => return failed(id, bind, e),
+        }
+    } else {
+        (t_start, None)
+    };
     let mut rep = ClientReport {
         id,
+        hq_spawn_tick,
         player_id: Some(welcome.player_id),
         team: Some(welcome.team),
         bind_ip: bind,
         ..ClientReport::default()
     };
-    let mut clock = Clock::new(welcome.server_tick, t_start, hs_rtt);
+    let mut clock = Clock::new(
+        hq_spawn_tick.unwrap_or(welcome.server_tick),
+        t_start,
+        hs_rtt,
+    );
     let empty = frontline_sim::CollisionData::empty();
     let collision = ctx.map.as_ref().map_or(&empty, |m| &m.collision);
     let first_seq: u16 = 1;
@@ -222,6 +289,16 @@ pub async fn run_client(ctx: Arc<Ctx>, id: u32) -> (ClientReport, Series) {
                         Ok(_) => {}
                         Err(_) => rep.decode_errors += 1,
                     },
+                    Some(Incoming::Frame(Channel::C3, p)) => {
+                        down.add(sec, p.len());
+                        match frontline_protocol::msg::team::decode_team_state_with_markers(&p) {
+                            Ok(team) => {
+                                rep.team_packets += 1;
+                                rep.team_markers += team.markers.len() as u64;
+                            }
+                            Err(_) => rep.decode_errors += 1,
+                        }
+                    }
                     Some(Incoming::Frame(Channel::C2, p)) => {
                         down.add(sec, p.len());
                         match dec.decode(&p) {
@@ -394,4 +471,21 @@ pub async fn run_client(ctx: Arc<Ctx>, id: u32) -> (ClientReport, Series) {
         rtt: rtts,
     };
     (rep, series)
+}
+
+#[cfg(test)]
+mod hq_tests {
+    use super::*;
+
+    #[test]
+    fn deployment_chooses_faction_loadout() {
+        let data = frontline_sim::GameData::embedded();
+        for (team, expected) in [(0, "us_rifleman_1"), (1, "ger_rifleman_1")] {
+            let req = hq_request(team).unwrap();
+            assert_eq!(req.spawn_point, frontline_sim::deploy::SPAWN_HQ);
+            assert_eq!(data.roles[usize::from(req.role)].id, "rifleman");
+            assert_eq!(data.loadouts[usize::from(req.loadout)].id, expected);
+        }
+        assert!(hq_request(2).is_err());
+    }
 }

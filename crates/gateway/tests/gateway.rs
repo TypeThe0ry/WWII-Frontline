@@ -3,15 +3,17 @@
 use axum::body::Body;
 use axum::http::{header, Method, Request, StatusCode};
 use axum::Router;
-use ed25519_dalek::SigningKey;
+use base64::Engine;
+use ed25519_dalek::{SigningKey, VerifyingKey};
 use frontline_gateway::app::{router, AppState};
-use frontline_gateway::auth::ticket::{self, JtiCache};
+use frontline_gateway::auth::ticket::{self, JtiCache, TicketError};
 use frontline_gateway::clock::Clock;
 use frontline_gateway::config::Config;
 use frontline_gateway::registry::from_hex;
 use frontline_protocol::PROTOCOL_VERSION;
 use http_body_util::BodyExt;
 use serde_json::{json, Value};
+use sha2::{Digest, Sha256};
 use tower::ServiceExt;
 
 const T0: u64 = 1_800_000_000_000;
@@ -70,6 +72,13 @@ async fn guest(r: &Rig, ip: &str) -> (StatusCode, Value) {
 }
 
 async fn register(r: &Rig, version: u16, cap: u8) -> String {
+    register_response(r, version, cap).await["match_id"]
+        .as_str()
+        .unwrap()
+        .to_owned()
+}
+
+async fn register_response(r: &Rig, version: u16, cap: u8) -> Value {
     let (s, _, v) = call(
         &r.app,
         Method::POST,
@@ -82,7 +91,7 @@ async fn register(r: &Rig, version: u16, cap: u8) -> String {
     )
     .await;
     assert_eq!(s, StatusCode::OK);
-    v["match_id"].as_str().unwrap().to_owned()
+    v
 }
 
 async fn beat(r: &Rig, id: &str, humans: u8) -> StatusCode {
@@ -163,9 +172,11 @@ async fn a_valid_token_renews_the_same_guest() {
 // ------------------------------------------------------------------ ticket
 
 #[tokio::test]
-async fn ticket_verifies_with_the_public_key_and_is_single_use() {
+async fn ticket_verifies_with_the_registered_match_identity_and_is_single_use() {
     let r = rig().await;
-    let id = register(&r, PROTOCOL_VERSION, 16).await;
+    let registration = register_response(&r, PROTOCOL_VERSION, 16).await;
+    let id = registration["match_id"].as_str().unwrap();
+    let other_id = register(&r, PROTOCOL_VERSION, 16).await;
     let (_, g) = guest(&r, "3.3.3.3").await;
     let (s, _, t) = call(
         &r.app,
@@ -173,7 +184,7 @@ async fn ticket_verifies_with_the_public_key_and_is_single_use() {
         &format!("/v1/servers/{id}/ticket"),
         "3.3.3.3",
         g["token"].as_str(),
-        json!({"nick":"Ｇａｉｕｓ"}),
+        json!({"nick":"Ｇａｉｕｓ", "player_id":127, "is_admin":true, "match_id":other_id}),
     )
     .await;
     assert_eq!(s, StatusCode::OK);
@@ -182,15 +193,35 @@ async fn ticket_verifies_with_the_public_key_and_is_single_use() {
         (t["wt_port"].as_u64(), t["ws_port"].as_u64()),
         (Some(4433), Some(8443))
     );
-    let pk = SigningKey::from_bytes(&[5u8; 32]).verifying_key();
-    let mid = from_hex(&id).unwrap();
+    let key_bytes: [u8; 32] = base64::engine::general_purpose::URL_SAFE_NO_PAD
+        .decode(registration["ticket_public_key"].as_str().unwrap())
+        .unwrap()
+        .try_into()
+        .unwrap();
+    let fingerprint: String = Sha256::digest(key_bytes)[..8]
+        .iter()
+        .map(|b| format!("{b:02x}"))
+        .collect();
+    assert_eq!(registration["ticket_key_fingerprint"], fingerprint);
+    let pk = VerifyingKey::from_bytes(&key_bytes).unwrap();
+    let mid = from_hex(id).unwrap();
     let mut cache = JtiCache::default();
     let now = r.clock.now_s();
     let tk = t["ticket"].as_str().unwrap();
+    assert_eq!(
+        ticket::verify(&pk, tk, now + 1, &from_hex(&other_id).unwrap(), &mut cache),
+        Err(TicketError::WrongMatch)
+    );
     let c = ticket::verify(&pk, tk, now + 1, &mid, &mut cache).unwrap();
+    assert_eq!(c.match_id, mid);
+    assert_eq!(c.player_id, 0);
     assert_eq!(c.nick, "Gaius");
+    assert!(!c.is_admin);
     assert_eq!(c.exp, now + 60);
-    assert!(ticket::verify(&pk, tk, now + 2, &mid, &mut cache).is_err());
+    assert_eq!(
+        ticket::verify(&pk, tk, now + 2, &mid, &mut cache),
+        Err(TicketError::Replayed)
+    );
 }
 
 #[tokio::test]
@@ -309,6 +340,37 @@ async fn list_hides_servers_without_a_heartbeat_and_flags_old_versions() {
     assert_eq!(find(&c).unwrap()["compatible"], false);
 }
 
+#[tokio::test]
+async fn ticket_refuses_an_incompatible_registration() {
+    let r = rig().await;
+    let id = register(&r, PROTOCOL_VERSION - 1, 16).await;
+    let (_, g) = guest(&r, "7.7.7.7").await;
+    let token = g["token"].as_str().unwrap();
+    let (status, _, body) = call(
+        &r.app,
+        Method::POST,
+        &format!("/v1/servers/{id}/ticket"),
+        "7.7.7.7",
+        Some(token),
+        json!({"nick":"Refused Nick"}),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CONFLICT);
+    assert_eq!(body, json!({"error":"protocol_mismatch"}));
+
+    let (status, _, renewed) = call(
+        &r.app,
+        Method::POST,
+        "/v1/guest",
+        "7.7.7.7",
+        None,
+        json!({"token":token}),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(renewed["nick_suggestion"], g["nick_suggestion"]);
+}
+
 // ------------------------------------------------------------------ internal API
 
 #[tokio::test]
@@ -366,23 +428,6 @@ async fn internal_api_requires_the_token_and_known_ids() {
         post("/internal/matches/register".into(), None, json!({})).await,
         StatusCode::UNAUTHORIZED
     );
-}
-
-#[tokio::test]
-async fn register_returns_the_ticket_key_fingerprint() {
-    let r = rig().await;
-    let (_, _, v) = call(
-        &r.app,
-        Method::POST,
-        "/internal/matches/register",
-        "9.9.9.9",
-        Some(INTERNAL),
-        json!({"name":"S","map":"m","mode":"c","region":"eu","version":"1","protocol_version":PROTOCOL_VERSION,
-               "data_hash":1,"cap":8,"addr":"a","ws_port":1,"wt_port":2}),
-    )
-    .await;
-    assert_eq!(v["ticket_key_fingerprint"].as_str().unwrap().len(), 16);
-    assert!(v["ticket_public_key"].as_str().unwrap().len() >= 43);
 }
 
 // ------------------------------------------------------------------ headers
@@ -573,17 +618,19 @@ async fn prometheus_counts_bounded_routes_auth_failures_and_storage_errors() {
         ticket_req(&r, &id, "1.2.3.4", Some("bad-fixture-token"), "Guest").await,
         StatusCode::UNAUTHORIZED
     );
+    let (status, _, profile) = call(
+        &r.app,
+        Method::POST,
+        "/v1/guest",
+        "1.2.3.4",
+        None,
+        json!({"token":"bad-fixture-token"}),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    let token = profile["token"].as_str().unwrap();
     assert_eq!(
-        call(
-            &r.app,
-            Method::POST,
-            "/v1/guest",
-            "1.2.3.4",
-            None,
-            json!({"token":"bad-fixture-token"})
-        )
-        .await
-        .0,
+        ticket_req(&r, &id, "1.2.3.4", Some(token), "Guest").await,
         StatusCode::OK
     );
     let mut conn = SqliteConnection::connect(&cfg.database_url).await.unwrap();
@@ -602,6 +649,20 @@ async fn prometheus_counts_bounded_routes_auth_failures_and_storage_errors() {
     .await;
     assert_eq!(status, StatusCode::INTERNAL_SERVER_ERROR);
     assert_eq!(response, json!({"error":"storage_unavailable"}));
+    assert_eq!(
+        ticket_req(&r, &id, "1.2.3.4", Some(token), "Guest").await,
+        StatusCode::INTERNAL_SERVER_ERROR
+    );
+    let next_player: u8 = sqlx::query_scalar("SELECT next_player FROM matches WHERE id = ?")
+        .bind(&id)
+        .fetch_one(&mut conn)
+        .await
+        .unwrap();
+    assert_eq!(
+        next_player, 1,
+        "the failed guest write rolls the cursor back"
+    );
+
     let resp = r
         .app
         .oneshot(Request::get("/metrics").body(Body::empty()).unwrap())
@@ -618,6 +679,8 @@ async fn prometheus_counts_bounded_routes_auth_failures_and_storage_errors() {
         "gateway_http_requests_total{route=\"/v1/servers/{match_id}/ticket\",status_class=\"4xx\"} 1",
         "gateway_http_requests_total{route=\"/v1/guest\",status_class=\"5xx\"} 1",
         "gateway_http_request_duration_seconds_count{route=\"/v1/guest\"} 2",
+        "gateway_ticket_storage_duration_seconds_count{stage=\"pool_wait\"} 2",
+        "gateway_ticket_storage_duration_seconds_count{stage=\"transaction\"} 2",
         "gateway_auth_attempts_total{operation=\"ticket\",result=\"invalid\"} 1",
         "gateway_auth_attempts_total{operation=\"guest_renewal\",result=\"invalid\"} 1",
     ] {

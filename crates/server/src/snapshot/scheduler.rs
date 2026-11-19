@@ -708,7 +708,7 @@ impl SnapshotScheduler {
 
     fn select_candidates(
         &mut self,
-        terrain: &frontline_sim::CollisionData,
+        collision: &frontline_sim::CollisionData,
         p: PlayerId,
         o: &Observer,
         now: u32,
@@ -751,7 +751,15 @@ impl SnapshotScheduler {
                 if slot
                     .los
                     .blocked(f.entity, now, self.params.los_period_ticks, || {
-                        terrain_occludes(terrain, eye, f.pos, f.los_radius, f.los_height)
+                        let bottom = if f.state.kind == EntityKind::Vehicle {
+                            -f.los_height
+                        } else {
+                            0.0 // Infantry poses use a foot origin.
+                        };
+                        let min = f.pos + Vec3::new(-f.los_radius, bottom, -f.los_radius);
+                        let max = f.pos + Vec3::new(f.los_radius, f.los_height, f.los_radius);
+                        collision.solid_cover_occludes_box(eye + Vec3::Y * 0.25, min, max)
+                            || terrain_occludes(collision, eye, f.pos, f.los_radius, f.los_height)
                     })
                 {
                     continue;

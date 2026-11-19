@@ -16,6 +16,7 @@ use frontline_sim::{
 use crate::bot_host::BotHost;
 use crate::seat_input::SeatInput;
 use crate::sim_bridge::{NetLink, SimBridge};
+use crate::snapshot::team_channel::{MapFrame, TeamChannel};
 use crate::snapshot::{ClientIn, LinkInfo, Outgoing, SnapshotScheduler, DEGRADE_HOLD_TICKS};
 use crate::validate::ValidateCfg;
 use crate::world_loader::LoadedMap;
@@ -235,6 +236,8 @@ pub struct SimLoop<C: Clock> {
     bridge: SimBridge,
     seat_input: SeatInput,
     c0: crate::c0::C0Handler,
+    team_channel: TeamChannel,
+    team_outgoing: Vec<(PlayerId, Vec<u8>)>,
     c4: crate::c4::Broadcast,
     consecutive: i64,
     ticks: u64,
@@ -379,6 +382,16 @@ pub fn build_loop_with_bots<C: Clock>(
         bridge,
         seat_input: SeatInput::default(),
         c0: crate::c0::C0Handler::default(),
+        team_channel: TeamChannel::new(
+            GameData::embedded().rules.aoi.team_channel_period_s as f32,
+            1.0 / TICK_PERIOD.as_secs_f32(),
+            MapFrame {
+                origin_x: 0.0,
+                origin_z: 0.0,
+                extent_m: cfg.map_data.as_ref().map_or(256.0, |m| m.size_m),
+            },
+        ),
+        team_outgoing: Vec::new(),
         c4: crate::c4::Broadcast::default(),
         consecutive: 0,
         phase_ms: [0.0; 6],
@@ -668,9 +681,7 @@ impl<C: Clock> SimLoop<C> {
             &out.rule_changes,
         );
         self.bridge.anticheat_after_step(&self.step_events);
-        self.bridge
-            .anticheat
-            .report_if_due(std::time::Instant::now());
+        self.bridge.report_if_due(std::time::Instant::now());
         CURRENT_TICK.store(self.world.tick().0, Ordering::Relaxed);
         let lagcomp_after = self.world.lagcomp_stats();
         self.metrics
@@ -748,6 +759,17 @@ impl<C: Clock> SimLoop<C> {
                         "spawn_player rejected"
                     ),
                 },
+                Command::C0 {
+                    player,
+                    msg: frontline_protocol::msg::c0::ClientMsgC0::MarkerPlace(marker),
+                } => {
+                    let _ = self.team_channel.place_marker(
+                        &self.world,
+                        player,
+                        marker,
+                        self.world.tick().0,
+                    );
+                }
                 Command::C0 { player, msg } => {
                     let mut out = Vec::new();
                     self.c0
@@ -763,6 +785,7 @@ impl<C: Clock> SimLoop<C> {
                         host.forget(p);
                     }
                     self.c0.forget(p);
+                    self.team_channel.forget(p);
                     self.bridge.anticheat.forget(p);
                     self.seat_input.forget(p);
                     self.c4.leave(p);
@@ -942,6 +965,24 @@ impl<C: Clock> SimLoop<C> {
             now,
             &mut self.outgoing,
         );
+        if self.team_channel.due(now) {
+            if let Some(net) = self.bridge.net() {
+                let clients: Vec<_> = self
+                    .clients_in
+                    .iter()
+                    .filter_map(|c| {
+                        let h = net.sessions.handle_of(c.player)?;
+                        Some((c.player, c.team, h.accepts_team_markers()))
+                    })
+                    .collect();
+                self.team_outgoing = self.team_channel.tick_with_markers(
+                    &self.world,
+                    GameData::embedded(),
+                    &clients,
+                    now,
+                );
+            }
+        }
     }
 
     /// Step 7 (M0-019): hand the packets to the connection writers (never blocks).
@@ -955,6 +996,15 @@ impl<C: Clock> SimLoop<C> {
                 h.send(
                     frontline_protocol::Channel::C2,
                     bytes::Bytes::from(o.bytes),
+                    crate::net::transport::Rel::Unreliable,
+                );
+            }
+        }
+        for (player, payload) in self.team_outgoing.drain(..) {
+            if let Some(h) = net.sessions.handle_of(player) {
+                h.send(
+                    frontline_protocol::Channel::C3,
+                    bytes::Bytes::from(payload),
                     crate::net::transport::Rel::Unreliable,
                 );
             }

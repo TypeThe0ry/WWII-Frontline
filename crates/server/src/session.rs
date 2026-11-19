@@ -9,8 +9,8 @@ use frontline_sim::{PlayerId, Team};
 
 use crate::input_buffer::{InputBuffer, PushResult};
 use crate::validate::{
-    validate_input, Clamps, PlayerInputState, Reject, ValidateCfg, AUX_LEVEL_MASK, EDGE_BUTTONS,
-    FAR_FUTURE_TICKS,
+    seq_newer, validate_input, Clamps, PlayerInputState, Reject, ValidateCfg, AUX_LEVEL_MASK,
+    EDGE_BUTTONS, FAR_FUTURE_TICKS,
 };
 use frontline_protocol::msg::input::buttons;
 
@@ -42,6 +42,8 @@ pub enum Resolution {
 pub struct Resolved {
     pub cmd: InputCmd,
     pub kind: Resolution,
+    /// Untrusted origin codes tied to this exact input by `FireCmd.seq` (ARCHITECTURE §6.8.2).
+    pub(crate) fire_origin_hint: Option<[u16; 3]>,
     /// First tick of a stall (`gap == 9`) for a player that had sent input before.
     pub new_stall: bool,
 }
@@ -177,6 +179,9 @@ impl PlayerInput {
         self.state.last_pred_hash = b.pred_hash;
         let mut out = Vec::new();
         for f in &b.fire {
+            if self.had_real && !seq_newer(f.seq, self.last_cmd.seq) {
+                continue; // Already simulated; redundant metadata cannot attach to a later shot.
+            }
             if let Err(r) = self.state.record_fire(f) {
                 self.state.note(r);
                 out.push(r);
@@ -193,9 +198,13 @@ impl PlayerInput {
             self.stalled = false;
             self.had_real = true;
             self.last_cmd = c;
+            let fire = self.state.take_fire(c.seq);
             return Resolved {
                 cmd: c,
                 kind: Resolution::Real,
+                fire_origin_hint: fire
+                    .filter(|_| c.buttons & buttons::FIRE != 0)
+                    .map(|f| f.origin_hint),
                 new_stall: false,
             };
         }
@@ -222,6 +231,7 @@ impl PlayerInput {
         Resolved {
             cmd: c,
             kind,
+            fire_origin_hint: None,
             new_stall: new_stall && self.had_real,
         }
     }

@@ -30,6 +30,107 @@ fn idle(_p: u8, t: u32) -> InputCmd {
     cmd(t, 0, 0)
 }
 
+fn building_cover_scene(top: f32, masonry: bool, enemy: Vec3) -> Synth {
+    use frontline_sim::ballistics::materials::MaterialTable;
+    use frontline_sim::collision::{CoverSlab, CHUNK_CELLS, CHUNK_SAMPLES};
+    use frontline_sim::throwables::Occlusion;
+    use frontline_sim::{
+        CollisionChunk, CollisionData, GameData, GameMode, MapId, SimConfig, World,
+    };
+
+    let mut collision = CollisionData::from_chunks([CollisionChunk::new(
+        0,
+        0,
+        vec![0.0; CHUNK_SAMPLES * CHUNK_SAMPLES],
+        vec![0; CHUNK_CELLS * CHUNK_CELLS],
+    )]);
+    let (material, width, cover) = if masonry {
+        ("brick", 0.30, Occlusion::Solid)
+    } else {
+        ("thin_wood", 0.03, Occlusion::Thin)
+    };
+    let material = MaterialTable::embedded().id_of(material).unwrap();
+    collision.install_cover(vec![CoverSlab::new(
+        [17.0, 34.0],
+        [23.0, 34.0],
+        -0.4,
+        top,
+        width,
+        material,
+        cover,
+    )
+    .unwrap()]);
+    let mut s = Synth::new(World::new(
+        SimConfig {
+            tick_hz: 30,
+            match_seed: 7,
+            map: MapId(0),
+            mode: GameMode::Sandbox,
+            data: GameData::embedded(),
+        },
+        &collision,
+    ));
+    s.add(
+        0,
+        Team::Us,
+        Vec3::new(20.0, 0.0, 8.0),
+        0.0,
+        Some(LinkInfo::WS),
+    );
+    s.add(1, Team::Ger, enemy, 0.0, None);
+    s.add(2, Team::Us, Vec3::new(21.0, 0.0, 56.0), 0.0, None);
+    s.add(3, Team::Ger, Vec3::new(20.0, 0.0, 2.0), 0.0, None);
+    s
+}
+
+#[test]
+fn building_cover_removes_enemy_and_rechecks_on_the_los_interval() {
+    let mut s = building_cover_scene(3.0, true, Vec3::new(20.0, 0.0, 25.0));
+    for _ in 0..2 {
+        s.step(idle);
+    }
+    assert!(s.client(0).known.contains_key(&1));
+
+    s.world.debug_teleport(1, Vec3::new(20.0, 0.0, 56.0));
+    for _ in 0..2 {
+        s.step(idle);
+    }
+    assert!(!s.client(0).known.contains_key(&1));
+    assert!(s.client(0).last.as_ref().unwrap().removed_ids.contains(&1));
+
+    // Moving around the edge leaves a clear ray, but does not bypass the cached result.
+    s.world.debug_teleport(1, Vec3::new(28.0, 0.0, 56.0));
+    for _ in 0..6 {
+        s.step(idle);
+        assert!(!s.client(0).known.contains_key(&1));
+    }
+    assert_eq!(s.sched.stats.remove_records, 3);
+    for _ in 0..2 {
+        s.step(idle);
+    }
+    let c = s.client(0);
+    assert!(c.log.last().unwrap().kf_ids.contains(&1));
+    assert!(c.known.contains_key(&2), "friends are not occlusion culled");
+    assert!(
+        c.known.contains_key(&3),
+        "near enemies remain candidates outside the frustum"
+    );
+}
+
+#[test]
+fn building_cover_requires_a_solid_wall_hiding_the_whole_target() {
+    for (top, masonry, x) in [(1.5, true, 20.0), (3.0, false, 20.0), (3.0, true, 25.3)] {
+        let mut s = building_cover_scene(top, masonry, Vec3::new(x, 0.0, 56.0));
+        for _ in 0..2 {
+            s.step(idle);
+        }
+        assert!(
+            s.client(0).known.contains_key(&1),
+            "top={top}, masonry={masonry}, x={x}"
+        );
+    }
+}
+
 fn scene(players: &[(u8, Team, [f32; 3])], clients: &[u8]) -> Synth {
     let mut s = Synth::new(new_world(None));
     for &(id, team, p) in players {

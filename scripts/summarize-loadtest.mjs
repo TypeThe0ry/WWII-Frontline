@@ -10,6 +10,7 @@ import { readFileSync, readdirSync, writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import os from 'node:os';
 import { auditAoi } from './audit-loadtest-aoi.mjs';
+import { summarizeTickTrace } from './summarize-tick-trace.mjs';
 
 // ---- metrics text -------------------------------------------------------------------------------
 
@@ -114,8 +115,9 @@ export function summarize(opts) {
     leaks: agg.aoi_leaks ?? 0,
     worst_leak_m: r3(agg.aoi_worst_leak_m ?? 0),
   };
-  const sameTick = opts.aoiTraces ? auditAoi(
-    readFileSync(join(opts.aoiTraces, 'server.log'), 'utf8'),
+  const serverLog = opts.aoiTraces ? readFileSync(join(opts.aoiTraces, 'server.log'), 'utf8') : null;
+  const sameTick = serverLog != null ? auditAoi(
+    serverLog,
     readFileSync(join(opts.aoiTraces, 'headless.log'), 'utf8'),
   ) : null;
   const expectedSnapshots = agg.snapshots + headless.per_client.reduce((n, c) => n + (c.reordered_snapshots ?? 0), 0);
@@ -134,11 +136,17 @@ export function summarize(opts) {
     overrun_consecutive_max: srv.tick_overrun_consecutive_max,
     tick_skipped_slots_total: srv.tick_skipped_slots_total,
     input_queue_full_total: srv.input_queue_full_total,
+    ...(serverLog != null ? { slow_tick_trace: summarizeTickTrace(serverLog) } : {}),
     aoi_encode_ms: aoi ? { p99: hq(aoi, 0.99), p50: hq(aoi, 0.5), count: aoi.count, note: 'bucket upper bounds of the final scrape' } : null,
     snapshot_bytes: snap ? { p50: hq(snap, 0.5), p99: hq(snap, 0.99), count: snap.count } : null,
     bytes_out_per_client: perClient.map((h) => ({ labels: h.labels, p50_kbps: hq(h, 0.5), p99_kbps: hq(h, 0.99), count: h.count })),
     events: srv.events ?? null,
     input_rejected: rejected,
+    validation: Object.fromEntries([
+      'session_kicked_total', 'session_stall_total', 'suspicion_move_total', 'view_rate_clamped_total',
+      'fire_rate_rejected_total', 'origin_corrected_total', 'lagcomp_history_clamped_total',
+      'lagcomp_wall_reject_total', 'net_datagram_oversize_total',
+    ].map((name) => [name, gauge(name) ?? null])),
     bots: gauge('server_bots'),
     rss,
   };
@@ -190,6 +198,13 @@ export function summarize(opts) {
     };
     hard.push('vehicle_driver');
   }
+  if (opts.deployHq) {
+    const deployed = headless.per_client.filter((c) => Number.isInteger(c.hq_spawn_tick)).length;
+    const receivingTeam = headless.per_client.filter((c) => c.team_packets > 0).length;
+    checks.hq_deployed = { value: deployed, limit: headless.count, ok: deployed === headless.count };
+    checks.c3_receivers = { value: receivingTeam, limit: headless.count, ok: receivingTeam === headless.count };
+    hard.push('hq_deployed', 'c3_receivers');
+  }
   const verdict = {
     all_ok: Object.values(checks).every((c) => c.ok),
     hard_ok: hard.every((k) => checks[k].ok),
@@ -198,7 +213,8 @@ export function summarize(opts) {
 
   const TYPICAL = 54; // ARCHITECTURE §6.9.2 typical-case derivation, kbps per client
   const summary = {
-    task: 'M0-027',
+    task: opts.map && opts.map !== 'm0' ? 'M1-068' : 'M0-027',
+    ...(opts.map ? { map: opts.map, mode: opts.mode } : {}),
     generated_at: new Date().toISOString(),
     transport: opts.transport,
     count: headless.count,
@@ -214,8 +230,9 @@ export function summarize(opts) {
       os: `${os.type()} ${os.release()}`,
       loadavg_at_end: os.loadavg().map(r3),
       pinned: !!opts.pinned,
+      ...(opts.serverCpus ? { server_cpus: opts.serverCpus, client_cpus: opts.clientCpus } : {}),
       note: opts.pinned
-        ? 'server on CPUs 0-1 and headless client on CPUs 2-3 of the same VM (taskset); other tenants/jobs on the VM are not controlled'
+        ? 'server and clients have separate taskset affinity on the same host; other jobs can still share these CPUs'
         : 'server, headless client and the sampler share this host without pinning; P99 figures include that contention',
     },
     server,
@@ -254,6 +271,9 @@ export function summarize(opts) {
     verdict,
     per_client: headless.per_client.map((c) => ({
       id: c.id, player_id: c.player_id, team: c.team, join_error: c.join_error,
+      connected_s: c.connected_s,
+      ...(c.hq_spawn_tick != null ? { hq_spawn_tick: c.hq_spawn_tick } : {}),
+      team_packets: c.team_packets ?? 0, team_markers: c.team_markers ?? 0,
       down_kbps: c.down_kbps, up_kbps: c.up_kbps, rtt_ms: c.rtt_ms,
       decode_errors: c.decode_errors, missing_baseline: c.missing_baseline, disconnects: c.disconnects,
       snapshots: c.snapshots, keyframe_ratio: r3(c.keyframe_ratio), corrections: c.corrections,
@@ -289,6 +309,11 @@ if (process.argv[1] && import.meta.url === new URL(`file://${process.argv[1]}`).
     rss: arg(a, 'rss'),
     out: arg(a, 'out'),
     transport: arg(a, 'transport', 'wt'),
+    map: arg(a, 'map'),
+    mode: arg(a, 'mode'),
+    serverCpus: arg(a, 'server-cpus'),
+    clientCpus: arg(a, 'client-cpus'),
+    deployHq: a.includes('--deploy-hq'),
     bots: arg(a, 'bots', '0'),
     profile: arg(a, 'profile', 'release'),
     pinned: arg(a, 'pinned', '0') === '1',

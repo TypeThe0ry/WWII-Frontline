@@ -21,6 +21,7 @@ use tokio::time::timeout_at;
 use super::handshake::{check_hello, reject_label};
 use super::limits::*;
 use super::transport::{ClientHandle, ClientTransport, Recv, Rel};
+use crate::gateway_link::Admitted;
 use crate::metrics::Metrics;
 use crate::sim_thread::Command;
 
@@ -74,10 +75,15 @@ pub struct NetCtx {
 /// processing the old player's last snapshot cannot confuse it with a new one (M0-018).
 pub const ID_REUSE_DELAY: Duration = Duration::from_secs(1);
 
+struct LivePlayer {
+    handle: ClientHandle,
+    ticket_identity: Option<Admitted>,
+}
+
 struct SessionsInner {
     per_ip: HashMap<IpAddr, usize>,
     total: usize,
-    players: [Option<ClientHandle>; 128],
+    players: [Option<LivePlayer>; 128],
     /// Team of each occupied slot.
     team_of: [Team; 128],
     /// Players per team (`Team as usize`), counting occupied slots.
@@ -171,6 +177,14 @@ impl Sessions {
     /// and the team it joins: the team with fewer players, US on a tie (so joins alternate
     /// US, GER, US, ...).
     pub fn alloc_player_team(&self, handle: &ClientHandle) -> Option<(PlayerId, Team)> {
+        self.alloc_player_team_with_identity(handle, None)
+    }
+
+    fn alloc_player_team_with_identity(
+        &self,
+        handle: &ClientHandle,
+        ticket_identity: Option<Admitted>,
+    ) -> Option<(PlayerId, Team)> {
         let now = Instant::now();
         let mut g = self.lock();
         let id = (0..128usize).find(|&i| {
@@ -183,7 +197,10 @@ impl Sessions {
         } else {
             Team::Us
         };
-        g.players[id] = Some(handle.clone());
+        g.players[id] = Some(LivePlayer {
+            handle: handle.clone(),
+            ticket_identity,
+        });
         g.cooling_until[id] = None;
         g.team_of[id] = team;
         g.team_count[team as usize] += 1;
@@ -242,7 +259,22 @@ impl Sessions {
 
     /// Sending handle of a connected player (used by the snapshot sender, M0-019).
     pub fn handle_of(&self, id: PlayerId) -> Option<ClientHandle> {
-        self.lock().players.get(id as usize).and_then(|h| h.clone())
+        let g = self.lock();
+        g.players
+            .get(id as usize)?
+            .as_ref()
+            .map(|p| p.handle.clone())
+    }
+
+    /// Verified gateway metadata for this live server slot, if it joined with a ticket.
+    /// `gateway_player` is not the server slot, and `is_admin` grants no permissions here.
+    pub fn ticket_identity_of(&self, id: PlayerId) -> Option<Admitted> {
+        self.lock()
+            .players
+            .get(id as usize)?
+            .as_ref()?
+            .ticket_identity
+            .clone()
     }
 
     pub fn connections(&self) -> usize {
@@ -325,19 +357,30 @@ pub async fn run_connection<T: ClientTransport>(
         send_reject(&handle, reason);
         return;
     }
-    if let Some(gate) = &ctx.tickets {
+    let ticket_identity = if let Some(gate) = &ctx.tickets {
         // The ticket text is never logged (§19.1); only the reason is counted.
-        if let Err(why) = gate.check(&hello.ticket) {
-            ctx.metrics
-                .ticket_rejected_total
-                .with_label_values(&[why.label()])
-                .inc();
-            reject_label_count(&ctx, reject_label(RejectReason::InvalidTicket));
-            send_reject(&handle, RejectReason::InvalidTicket);
-            return;
+        match gate.check(&hello.ticket) {
+            Ok(identity) => Some(identity),
+            Err(why) => {
+                ctx.metrics
+                    .ticket_rejected_total
+                    .with_label_values(&[why.label()])
+                    .inc();
+                reject_label_count(&ctx, reject_label(RejectReason::InvalidTicket));
+                send_reject(&handle, RejectReason::InvalidTicket);
+                return;
+            }
         }
+    } else {
+        None
+    };
+    if hello.caps & frontline_protocol::msg::c0::CAP_TEAM_MARKERS != 0 {
+        handle.enable_team_markers();
     }
-    let Some((player, team)) = ctx.sessions.alloc_player_team(&handle) else {
+    let Some((player, team)) = ctx
+        .sessions
+        .alloc_player_team_with_identity(&handle, ticket_identity)
+    else {
         reject_label_count(&ctx, "server_full");
         send_reject(&handle, RejectReason::ServerFull);
         return;

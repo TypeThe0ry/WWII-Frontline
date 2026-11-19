@@ -156,7 +156,7 @@ impl C0Handler {
                 );
                 self.reports.push(ReportRec { from, report: r });
             }
-            // Markers need squad-leader targets in the sim (M1-021b); settings are client-only.
+            // The sim loop routes MarkerPlace through the C3 team channel. Settings are client-only.
             ClientMsgC0::MarkerPlace(_) | ClientMsgC0::Settings(_) => {}
             ClientMsgC0::Hello(_) | ClientMsgC0::Ping(_) | ClientMsgC0::Disconnect(_) => {}
         }

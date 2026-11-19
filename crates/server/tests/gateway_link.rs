@@ -19,11 +19,13 @@ use common::*;
 use ed25519_dalek::{Signer, SigningKey};
 use frontline_protocol::dto::{TicketClaims, TICKET_DOMAIN};
 use frontline_protocol::msg::c0::{RejectReason, ServerMsgC0};
-use frontline_protocol::PROTOCOL_VERSION;
+use frontline_protocol::{Channel, PROTOCOL_VERSION};
 use frontline_server::gateway_link::client::{GatewayClient, Heartbeat, RegisterReq};
 use frontline_server::gateway_link::result::{spool, MatchResult};
 use frontline_server::gateway_link::ticket_verify::TicketVerifier;
-use frontline_server::gateway_link::{heartbeat, TicketGate};
+use frontline_server::gateway_link::{heartbeat, Admitted, TicketGate};
+use frontline_server::sim_thread::Command;
+use frontline_sim::PlayerId;
 
 const T: Duration = Duration::from_secs(3);
 const MATCH: [u8; 16] = [1; 16];
@@ -32,25 +34,26 @@ fn sk() -> SigningKey {
     SigningKey::from_bytes(&[7u8; 32])
 }
 
-fn ticket(jti: u8, issued: u64) -> Vec<u8> {
-    let c = TicketClaims {
+fn claims(jti: u8, issued: u64) -> TicketClaims {
+    TicketClaims {
         player_id: 3,
         match_id: MATCH,
         nick: "Gaius".into(),
         exp: issued + 60,
         jti: [jti; 16],
         is_admin: false,
-    };
-    let bytes = c.encode();
+    }
+}
+
+fn ticket(jti: u8, issued: u64) -> Vec<u8> {
+    sign_claim_bytes(&claims(jti, issued).encode())
+}
+
+fn sign_claim_bytes(bytes: &[u8]) -> Vec<u8> {
     let mut m = TICKET_DOMAIN.to_vec();
-    m.extend_from_slice(&bytes);
+    m.extend_from_slice(bytes);
     let e = base64::engine::general_purpose::URL_SAFE_NO_PAD;
-    format!(
-        "{}.{}",
-        e.encode(&bytes),
-        e.encode(sk().sign(&m).to_bytes())
-    )
-    .into_bytes()
+    format!("{}.{}", e.encode(bytes), e.encode(sk().sign(&m).to_bytes())).into_bytes()
 }
 
 struct Gate {
@@ -68,14 +71,35 @@ fn gate(armed: bool) -> Gate {
     Gate { gate, now }
 }
 
-async fn join(h: &Harness, t: Vec<u8>) -> Option<ServerMsgC0> {
-    let mut c = Client::connect(&h.url).await.unwrap();
-    c.send(
-        frontline_protocol::Channel::C0,
-        &hello_msg(PROTOCOL_VERSION, DATA_HASH, t),
-    )
-    .await;
-    c.server_msg(T).await
+async fn join_live(h: &Harness, ticket: Vec<u8>) -> (Client, Option<ServerMsgC0>) {
+    let mut client = Client::connect(&h.url).await.unwrap();
+    assert!(
+        client
+            .send(Channel::C0, &hello_msg(PROTOCOL_VERSION, DATA_HASH, ticket))
+            .await
+    );
+    let reply = client.server_msg(T).await;
+    (client, reply)
+}
+
+async fn join(h: &Harness, ticket: Vec<u8>) -> Option<ServerMsgC0> {
+    join_live(h, ticket).await.1
+}
+
+async fn assert_disconnected(h: &Harness, slot: PlayerId) {
+    let command = tokio::time::timeout(T, async {
+        loop {
+            if let Ok(command) = h.commands.try_recv() {
+                break command;
+            }
+            tokio::time::sleep(Duration::from_millis(1)).await;
+        }
+    })
+    .await
+    .expect("ClientGone after disconnect");
+    assert!(matches!(command, Command::ClientGone(id) if id == slot));
+    assert!(h.ctx.sessions.handle_of(slot).is_none());
+    assert_eq!(h.ctx.sessions.ticket_identity_of(slot), None);
 }
 
 fn counted(h: &Harness, r: &str) -> u64 {
@@ -126,6 +150,70 @@ async fn ticket_handshake_accepts_once_and_refuses_replay_expired_tampered() {
 }
 
 #[tokio::test]
+async fn ws_ticket_identity_lives_and_dies_with_the_server_slot() {
+    let g = gate(true);
+    let h = Harness::start_full(Kind::Ws, T, 16, Some(g.gate)).await;
+    let mut signed = claims(1, 10_000);
+    signed.is_admin = true; // Retained as metadata, not used to authorize anything.
+    let (client, reply) = join_live(&h, sign_claim_bytes(&signed.encode())).await;
+    let Some(ServerMsgC0::Welcome(welcome)) = reply else {
+        panic!("expected Welcome, got {reply:?}");
+    };
+    let slot = welcome.player_id;
+    assert_eq!(slot, 0);
+    assert_ne!(slot, signed.player_id);
+    assert!(matches!(h.commands.try_recv(), Ok(Command::Join { player, .. }) if player == slot));
+    let identity = Admitted {
+        gateway_player: signed.player_id,
+        nick: signed.nick.clone(),
+        is_admin: true,
+    };
+    assert_eq!(
+        h.ctx.sessions.ticket_identity_of(slot),
+        Some(identity.clone())
+    );
+
+    let mut wrong_match = claims(2, 10_000);
+    wrong_match.match_id = [2; 16];
+    let mut malformed = claims(3, 10_000).encode();
+    malformed[0] = 0; // Signature is valid, but the claim format is not.
+    for (bytes, reason) in [
+        (wrong_match.encode(), "wrong_match"),
+        (malformed, "malformed"),
+    ] {
+        assert!(matches!(
+            join(&h, sign_claim_bytes(&bytes)).await,
+            Some(ServerMsgC0::Reject(r)) if r.reason == RejectReason::InvalidTicket
+        ));
+        assert_eq!(counted(&h, reason), 1);
+        assert!(h.commands.is_empty());
+        assert!(h.ctx.sessions.handle_of(1).is_none());
+        assert_eq!(h.ctx.sessions.ticket_identity_of(1), None);
+        assert_eq!(
+            h.ctx.sessions.ticket_identity_of(slot),
+            Some(identity.clone())
+        );
+    }
+
+    drop(client);
+    assert_disconnected(&h, slot).await;
+
+    let mut next = claims(4, 10_000);
+    next.nick = "New Guest".into();
+    let (_client, reply) = join_live(&h, sign_claim_bytes(&next.encode())).await;
+    assert!(matches!(reply, Some(ServerMsgC0::Welcome(w)) if w.player_id == slot));
+    assert_eq!(
+        h.ctx.sessions.ticket_identity_of(slot),
+        Some(Admitted {
+            gateway_player: next.player_id,
+            nick: next.nick,
+            is_admin: false,
+        })
+    );
+    h.stop().await;
+}
+
+#[tokio::test]
 async fn unarmed_gate_refuses_everyone_as_not_ready() {
     let g = gate(false);
     let h = Harness::start_full(Kind::Ws, T, 16, Some(g.gate.clone())).await;
@@ -140,10 +228,16 @@ async fn unarmed_gate_refuses_everyone_as_not_ready() {
 #[tokio::test]
 async fn no_gate_means_no_ticket_is_needed() {
     let h = Harness::start().await;
-    assert!(matches!(
-        join(&h, vec![]).await,
-        Some(ServerMsgC0::Welcome(_))
-    ));
+    let (client, reply) = join_live(&h, vec![]).await;
+    let Some(ServerMsgC0::Welcome(welcome)) = reply else {
+        panic!("expected anonymous Welcome, got {reply:?}");
+    };
+    let slot = welcome.player_id;
+    assert!(matches!(h.commands.try_recv(), Ok(Command::Join { player, .. }) if player == slot));
+    assert!(h.ctx.sessions.handle_of(slot).is_some());
+    assert_eq!(h.ctx.sessions.ticket_identity_of(slot), None);
+    drop(client);
+    assert_disconnected(&h, slot).await;
     h.stop().await;
 }
 

@@ -1,5 +1,5 @@
 use prometheus::{
-    Encoder, HistogramOpts, HistogramVec, IntCounterVec, Opts, Registry, TextEncoder,
+    Encoder, Histogram, HistogramOpts, HistogramVec, IntCounterVec, Opts, Registry, TextEncoder,
 };
 
 pub struct Metrics {
@@ -7,6 +7,8 @@ pub struct Metrics {
     requests: IntCounterVec,
     durations: HistogramVec,
     auth: IntCounterVec,
+    pub(crate) ticket_pool_wait: Histogram,
+    pub(crate) ticket_transaction: Histogram,
 }
 
 impl Default for Metrics {
@@ -39,10 +41,25 @@ impl Default for Metrics {
             &["operation", "result"],
         )
         .expect("valid auth counter");
+        let ticket_storage = HistogramVec::new(
+            HistogramOpts::new(
+                "gateway_ticket_storage_duration_seconds",
+                "Ticket SQLite pool wait and transaction latency, measured separately",
+            )
+            .buckets(vec![
+                0.0001, 0.0005, 0.001, 0.0025, 0.005, 0.01, 0.025, 0.04, 0.05, 0.075, 0.1, 0.25,
+                0.5, 1., 5., 30.,
+            ]),
+            &["stage"],
+        )
+        .expect("valid ticket storage histogram");
+        let ticket_pool_wait = ticket_storage.with_label_values(&["pool_wait"]);
+        let ticket_transaction = ticket_storage.with_label_values(&["transaction"]);
         for collector in [
             Box::new(requests.clone()) as Box<dyn prometheus::core::Collector>,
             Box::new(durations.clone()),
             Box::new(auth.clone()),
+            Box::new(ticket_storage),
         ] {
             registry.register(collector).expect("unique metric");
         }
@@ -51,6 +68,8 @@ impl Default for Metrics {
             requests,
             durations,
             auth,
+            ticket_pool_wait,
+            ticket_transaction,
         }
     }
 }

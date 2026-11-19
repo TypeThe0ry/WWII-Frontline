@@ -4,14 +4,17 @@
 
 use std::sync::Arc;
 
-use frontline_protocol::msg::input::{buttons, FireCmd, InputCmd};
+use frontline_protocol::msg::input::{
+    buttons, decode_input_bundle, encode_input_bundle, FireCmd, InputBundle, InputCmd,
+};
 use frontline_server::anticheat::{AntiCheat, DisconnectReason, RULES};
 use frontline_server::input_buffer::PushResult;
 use frontline_server::metrics::Metrics;
 use frontline_server::sim_bridge::SimBridge;
 use frontline_server::validate::{Reject, ValidateCfg};
 use frontline_sim::{
-    CollisionChunk, CollisionData, GameData, GameMode, MapId, SimConfig, Team, Vec3, World,
+    CollisionChunk, CollisionData, GameData, GameMode, MapId, SimConfig, SimEvent, Team, Vec3,
+    World,
 };
 
 const P: u8 = 3;
@@ -77,13 +80,11 @@ impl Rig {
         r
     }
 
-    /// Sends one command for the next tick (built by `f` from an idle command) and steps.
-    fn tick(&mut self, f: impl FnOnce(InputCmd) -> InputCmd) -> Vec<frontline_sim::SimEvent> {
-        let now = self.w.tick().0 + 1;
+    fn next_cmd(&mut self) -> InputCmd {
         self.seq = self.seq.wrapping_add(1);
-        let c = f(InputCmd {
+        InputCmd {
             seq: self.seq,
-            tick: now,
+            tick: self.w.tick().0 + 1,
             move_x: 0,
             move_z: 0,
             yaw: 16384,
@@ -92,8 +93,35 @@ impl Rig {
             weapon_slot: 0,
             aux: 0,
             view_tick: 0,
-        });
-        self.br.ingest_cmd(P, &c, now);
+        }
+    }
+
+    /// Sends one command for the next tick (built by `f` from an idle command) and steps.
+    fn tick(&mut self, f: impl FnOnce(InputCmd) -> InputCmd) -> Vec<SimEvent> {
+        let cmd = f(self.next_cmd());
+        self.br.ingest_cmd(P, &cmd, self.w.tick().0 + 1);
+        self.step()
+    }
+
+    fn bundled_tick(
+        &mut self,
+        cmd: InputCmd,
+        fire: impl IntoIterator<Item = FireCmd>,
+    ) -> Vec<SimEvent> {
+        let wire = encode_input_bundle(&InputBundle {
+            ack_snapshot_tick: 0,
+            pred_hash: 0,
+            cmds: [cmd].into_iter().collect(),
+            fire: fire.into_iter().collect(),
+        })
+        .unwrap();
+        self.br
+            .ingest_bundle(P, &decode_input_bundle(&wire).unwrap(), self.w.tick().0 + 1);
+        self.step()
+    }
+
+    fn step(&mut self) -> Vec<SimEvent> {
+        let now = self.w.tick().0 + 1;
         assert!(self.br.process_kicks(&mut self.w).is_empty());
         self.br.resolve(now);
         self.br.anticheat_before_step(&self.w);
@@ -273,6 +301,89 @@ fn fire_rate_hack_is_refused_and_counted() {
         (rejected * 10) >= (pulls - cap_shots) * 9,
         "only {rejected} rate rejections"
     );
+}
+
+// ------------------------------------------------------------------ shot-origin validation
+
+fn fire_metadata(seq: u16, origin_hint: [u16; 3]) -> FireCmd {
+    FireCmd {
+        seq,
+        origin_hint,
+        // Deliberately disagree with the authoritative shot's aim, seed and rewind.
+        view_tick: 100,
+        weapon: 0,
+        dir_yaw: 32768,
+        dir_pitch: 65535,
+        spread_seed: 65000,
+    }
+}
+
+#[test]
+fn redundant_origin_hints_count_only_for_matching_shots_and_do_not_move_them() {
+    let fire = |mut c: InputCmd| {
+        c.buttons = buttons::FIRE;
+        c.view_tick = 3;
+        c.move_x = 100;
+        c
+    };
+    let mut baseline = Rig::new();
+    let expected = baseline.tick(fire);
+    let muzzle = expected
+        .iter()
+        .find_map(|ev| match ev {
+            SimEvent::Shot { muzzle, .. } => Some(*muzzle),
+            _ => None,
+        })
+        .expect("fixture must fire a shot");
+    assert_eq!(baseline.w.projectiles().len(), 1);
+    assert_eq!(baseline.w.projectiles()[0].origin, muzzle);
+    assert_eq!(baseline.w.projectiles()[0].rewind, 3);
+    assert_eq!(baseline.m.origin_corrected_total.get(), 0);
+    let near = (muzzle + 0.25 * Vec3::X)
+        .to_array()
+        .map(|m| (64.0 * m).round() as u16);
+    for (codes, seq_delta, count) in [(near, 0, 0), ([0; 3], 0, 1), ([0; 3], 1, 0)] {
+        let mut trial = Rig::new();
+        let cmd = fire(trial.next_cmd());
+        let meta = fire_metadata(cmd.seq.wrapping_add(seq_delta), codes);
+        assert_eq!(trial.bundled_tick(cmd, [meta, meta]), expected);
+        assert_eq!(trial.w.projectiles(), baseline.w.projectiles());
+        assert_eq!(trial.w.state_hash(), baseline.w.state_hash());
+        assert_eq!(trial.m.origin_corrected_total.get(), count);
+        assert_eq!(trial.m.lagcomp_clamped_total.get(), 0);
+        assert_eq!(trial.br.anticheat.counts(P).total(), 0);
+        let idle = trial.next_cmd();
+        trial.bundled_tick(idle, [meta]);
+        assert_eq!(trial.m.origin_corrected_total.get(), count);
+        assert!(trial
+            .m
+            .render()
+            .lines()
+            .any(|l| l == format!("origin_corrected_total {count}")));
+    }
+}
+
+#[test]
+fn origin_hints_for_blocked_triggers_or_late_redundancy_do_not_count() {
+    let mut r = Rig::new();
+    let mut fire = r.next_cmd();
+    fire.buttons = buttons::FIRE;
+    assert!(r
+        .bundled_tick(fire, [])
+        .iter()
+        .any(|e| matches!(e, SimEvent::Shot { .. })));
+
+    // This is the first time the server sees a hint for the shot, but it has already stepped.
+    let idle = r.next_cmd();
+    r.bundled_tick(idle, [fire_metadata(fire.seq, [0; 3])]);
+    let mut blocked = r.next_cmd();
+    blocked.buttons = buttons::FIRE;
+    assert!(!r
+        .bundled_tick(blocked, [fire_metadata(blocked.seq, [0; 3])])
+        .iter()
+        .any(|e| matches!(e, SimEvent::Shot { .. })));
+    assert_eq!(r.m.fire_rate_rejected_total.get(), 1);
+    assert_eq!(r.m.origin_corrected_total.get(), 0);
 }
 
 // ------------------------------------------------------------------ acceptance 7: audit

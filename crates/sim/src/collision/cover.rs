@@ -91,6 +91,18 @@ impl CoverSlab {
         };
         Some((enter, exit, normal))
     }
+
+    fn crosses(&self, from: Vec3, to: Vec3, min_thickness_m: f32) -> bool {
+        let delta = to - from;
+        let len = delta.length();
+        len.is_finite()
+            && len > 0.0
+            && self
+                .intersect(from, delta / len, len)
+                .is_some_and(|(entry, exit, _)| {
+                    entry > 0.0 && exit < len && exit - entry >= min_thickness_m
+                })
+    }
 }
 
 #[derive(Debug, Default, Clone)]
@@ -214,6 +226,38 @@ impl CollisionData {
         self.cover
             .first(a, d / len, len, |_, _| true)
             .map(|(hit, _)| hit)
+    }
+
+    /// True if an installed solid wall lies strictly between the endpoints with at least
+    /// `min_thickness_m` of uninterrupted material along the ray.
+    pub(crate) fn solid_cover_between(&self, from: Vec3, to: Vec3, min_thickness_m: f32) -> bool {
+        !self.cover.slabs.is_empty()
+            && from.is_finite()
+            && to.is_finite()
+            && self.cover.candidates(from, to).any(|(_, slab)| {
+                slab.blast == Occlusion::Solid && slab.crosses(from, to, min_thickness_m)
+            })
+    }
+
+    /// Conservative AOI check: one installed solid wall must hide the whole target box.
+    /// A single slab's shadow is convex, so testing its eight corners is sufficient. Do not
+    /// combine different slabs' hits: there may be a gap between them.
+    pub fn solid_cover_occludes_box(&self, eye: Vec3, min: Vec3, max: Vec3) -> bool {
+        if self.cover.slabs.is_empty() || !eye.is_finite() || !min.is_finite() || !max.is_finite() {
+            return false;
+        }
+        self.cover.candidates(eye, min).any(|(_, slab)| {
+            // Even a thin masonry slab has substantial depth; reject grazing intersections.
+            slab.blast == Occlusion::Solid
+                && (0..8).all(|i| {
+                    let p = Vec3::new(
+                        if i & 1 != 0 { max.x } else { min.x },
+                        if i & 2 != 0 { max.y } else { min.y },
+                        if i & 4 != 0 { max.z } else { min.z },
+                    );
+                    slab.crosses(eye, p, 0.01)
+                })
+        })
     }
 
     pub(crate) fn ballistic_cover(

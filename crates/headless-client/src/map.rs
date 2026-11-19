@@ -26,9 +26,15 @@ struct Patrol {
     pos: [f32; 2],
 }
 
-/// `<explicit>` or the first ancestor of the cwd / executable holding `data/maps/<map>/meta.json`.
+/// Locate the map; the M1 slice takes its metadata from its parent map.
 pub fn locate_data_dir(explicit: Option<&Path>, map: &str) -> Result<PathBuf, String> {
-    let marker = |d: &Path| d.join("maps").join(map).join("meta.json").is_file();
+    let marker = |d: &Path| {
+        let dir = d.join("maps").join(map);
+        dir.join("meta.json").is_file()
+            || (dir.file_name().is_some_and(|n| n == "m1")
+                && dir.join("spawns.json").is_file()
+                && dir.parent().is_some_and(|p| p.join("meta.json").is_file()))
+    };
     if let Some(d) = explicit {
         return if marker(d) {
             Ok(d.to_path_buf())

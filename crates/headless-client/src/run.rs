@@ -16,8 +16,10 @@ pub fn build_ctx(args: &Args) -> Result<Ctx, String> {
         .and_then(|d| map::load(&d, &args.map))
     {
         Ok(m) => Some(Arc::new(m)),
-        Err(e) if args.drive_vehicle => {
-            return Err(format!("vehicle prediction requires terrain: {e}"))
+        Err(e) if args.drive_vehicle || args.deploy_hq => {
+            return Err(format!(
+                "driving and HQ deployment probes require terrain: {e}"
+            ))
         }
         Err(e) => {
             eprintln!("warning: no terrain, prediction runs on an empty world (players will not move): {e}");
@@ -43,6 +45,7 @@ pub fn build_ctx(args: &Args) -> Result<Ctx, String> {
         map: loaded,
         empty_collision: frontline_sim::CollisionData::empty(),
         waypoints,
+        deploy_hq: args.deploy_hq,
         drive_vehicle: args.drive_vehicle,
         #[cfg(feature = "anticheat-test")]
         anticheat_mix: args.anticheat_mix,
@@ -67,6 +70,7 @@ pub async fn run(args: &Args, ctx: Ctx) -> Report {
             map: ctx.map.clone(),
             empty_collision: frontline_sim::CollisionData::empty(),
             waypoints: ctx.waypoints.clone(),
+            deploy_hq: ctx.deploy_hq,
             drive_vehicle: ctx.drive_vehicle && i == 0,
             #[cfg(feature = "anticheat-test")]
             anticheat_mix: ctx.anticheat_mix,

@@ -97,6 +97,7 @@ pub struct Outbox {
     snapshots_dropped: AtomicU64,
     /// Current datagram size limit of the connection (0 = no datagram path, e.g. WebSocket).
     max_datagram: AtomicUsize,
+    team_markers: std::sync::atomic::AtomicBool,
 }
 
 /// Cloneable handle to a connection's outbound side.
@@ -123,7 +124,16 @@ impl ClientHandle {
             bytes_out: AtomicU64::new(0),
             snapshots_dropped: AtomicU64::new(0),
             max_datagram: AtomicUsize::new(0),
+            team_markers: std::sync::atomic::AtomicBool::new(false),
         }))
+    }
+
+    pub(crate) fn enable_team_markers(&self) {
+        self.0.team_markers.store(true, Ordering::Relaxed);
+    }
+
+    pub(crate) fn accepts_team_markers(&self) -> bool {
+        self.0.team_markers.load(Ordering::Relaxed)
     }
 
     fn lock(&self) -> MutexGuard<'_, OutState> {

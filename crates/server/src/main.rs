@@ -109,7 +109,7 @@ fn run(cfg: Config) -> Result<(), String> {
     let handle = sim_thread::spawn_with_bots(
         SimThreadConfig {
             match_seed: seed,
-            map: MapId(0),
+            map: MapId(u16::from(cfg.map_id())),
             mode,
             pin_core: cfg.pin_sim_core,
             map_data,
@@ -150,7 +150,7 @@ fn run(cfg: Config) -> Result<(), String> {
         data_hash: game_data.hash,
         match_seed: seed,
         tick_hz: 30,
-        map_id: 0,
+        map_id: cfg.map_id(),
         mode: cfg.mode_id(),
         server_tick: &logging::CURRENT_TICK,
         started: std::time::Instant::now(),

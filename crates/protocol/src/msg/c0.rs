@@ -14,6 +14,10 @@ use crate::codec::{Codec, CodecError};
 pub const MAX_TICKET_LEN: usize = 256;
 const TICKET_LEN_BITS: u8 = 9;
 
+/// Client understands the optional C3 tactical marker extension. Without this opt-in, the
+/// server must send the original member-only C3 payload, even when markers are active.
+pub const CAP_TEAM_MARKERS: u8 = 1 << 2;
+
 fn w8(w: &mut BitWriter, v: u8) -> Result<(), CodecError> {
     w.write_bits(v as u64, 8)
 }
@@ -29,7 +33,7 @@ pub struct Hello {
     /// Opaque join ticket, at most [`MAX_TICKET_LEN`] bytes.
     pub ticket: Vec<u8>,
     pub client_build: u32,
-    /// bit0 webgpu, bit1 webtransport.
+    /// bit0 webgpu, bit1 webtransport, bit2 [`CAP_TEAM_MARKERS`].
     pub caps: u8,
 }
 
@@ -335,9 +339,11 @@ impl Codec for Chat {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct MarkerPlace {
+    /// Manual marker tag (see [`super::team::TeamMarkerKind`]).
     pub kind: u8,
-    /// 16-bit quantised x/z codes.
+    /// Normalized x/z: `map_origin + code / 65535 * map_extent` in world metres.
     pub pos: [u16; 2],
+    /// Legacy field; ignored. The server sets lifespan by marker kind.
     pub ttl: u8,
 }
 impl Codec for MarkerPlace {

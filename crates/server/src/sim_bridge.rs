@@ -7,17 +7,18 @@
 
 use std::collections::BTreeMap;
 use std::sync::Arc;
+use std::time::{Duration, Instant};
 
 use crossbeam_channel::Receiver;
 use frontline_protocol::msg::input::{InputBundle, InputCmd};
-use frontline_sim::{PlayerId, SpawnError, SpawnReq, Team, World};
+use frontline_sim::{EntityId, PlayerId, SimEvent, SpawnError, SpawnReq, Team, World};
 
 use crate::anticheat::DisconnectReason;
 use crate::input_buffer::PushResult;
 use crate::metrics::Metrics;
 use crate::net::conn::{Inbound, Sessions};
 use crate::session::{yaw_code, PlayerSession, Resolution};
-use crate::validate::{Reject, ValidateCfg};
+use crate::validate::{fire_origin_hint_corrected, Reject, ValidateCfg};
 use crate::world_loader::LoadedMap;
 
 /// Bundles drained from the network per tick (bounded work; the queue itself holds 1024).
@@ -30,6 +31,12 @@ pub struct NetLink {
     pub sessions: Arc<Sessions>,
 }
 
+struct ShotOriginHint {
+    player: PlayerId,
+    shooter: Option<EntityId>,
+    codes: [u16; 3],
+}
+
 pub struct SimBridge {
     table: BTreeMap<PlayerId, PlayerSession>,
     metrics: Arc<Metrics>,
@@ -37,6 +44,9 @@ pub struct SimBridge {
     map: Option<Arc<LoadedMap>>,
     cfg: ValidateCfg,
     resolved: Vec<(PlayerId, InputCmd)>,
+    shot_origin_hints: Vec<ShotOriginHint>,
+    last_origin_report: Instant,
+    last_origin_total: u64,
     kicks: BTreeMap<PlayerId, DisconnectReason>,
     /// Per-player violation counts (M1-027).
     pub anticheat: crate::anticheat::AntiCheat,
@@ -52,6 +62,8 @@ impl SimBridge {
         map: Option<Arc<LoadedMap>>,
         cfg: ValidateCfg,
     ) -> Self {
+        let now = Instant::now();
+        let origin_total = metrics.origin_corrected_total.get();
         SimBridge {
             table: BTreeMap::new(),
             metrics,
@@ -59,8 +71,11 @@ impl SimBridge {
             map,
             cfg,
             resolved: Vec::new(),
+            shot_origin_hints: Vec::new(),
+            last_origin_report: now,
+            last_origin_total: origin_total,
             kicks: BTreeMap::new(),
-            anticheat: crate::anticheat::AntiCheat::new(std::time::Instant::now()),
+            anticheat: crate::anticheat::AntiCheat::new(now),
             parked: Vec::new(),
         }
     }
@@ -102,11 +117,52 @@ impl SimBridge {
     /// Anti-cheat look at the commands about to be stepped (call after `resolve`).
     pub fn anticheat_before_step(&mut self, world: &World) {
         self.anticheat.before_step(world, &self.resolved);
+        // Capture the identity before stepping: a shooter can die later in the same tick.
+        for hint in &mut self.shot_origin_hints {
+            hint.shooter = world
+                .view()
+                .players()
+                .iter()
+                .find(|v| v.player == hint.player)
+                .map(|v| v.entity);
+        }
     }
 
     /// Anti-cheat look at the events of the step just run.
-    pub fn anticheat_after_step(&mut self, events: &[frontline_sim::SimEvent]) {
+    pub fn anticheat_after_step(&mut self, events: &[SimEvent]) {
         self.anticheat.after_step(events, &self.metrics);
+        for hint in self.shot_origin_hints.drain(..) {
+            let Some(entity) = hint.shooter else { continue };
+            // Only a real shot provides the post-movement authoritative muzzle. A blocked
+            // trigger, missing FireCmd or replay must not produce an origin observation.
+            let muzzle = events.iter().find_map(|e| match e {
+                SimEvent::Shot {
+                    shooter, muzzle, ..
+                } if *shooter == entity => Some(*muzzle),
+                _ => None,
+            });
+            if muzzle.is_some_and(|m| fire_origin_hint_corrected(hint.codes, m)) {
+                self.metrics.origin_corrected_total.inc();
+            }
+        }
+    }
+
+    pub(crate) fn report_if_due(&mut self, now: Instant) {
+        self.anticheat.report_if_due(now);
+        if now.saturating_duration_since(self.last_origin_report) < Duration::from_secs(5) {
+            return;
+        }
+        self.last_origin_report = now;
+        let total = self.metrics.origin_corrected_total.get();
+        let corrected = total - self.last_origin_total;
+        self.last_origin_total = total;
+        if corrected > 0 {
+            tracing::info!(
+                event = "fire_origin_summary",
+                corrected,
+                origin_corrected_total = total
+            );
+        }
     }
 
     /// Per-player and per-kind bookkeeping of a rejection or clamp (M1-027).
@@ -277,6 +333,7 @@ impl SimBridge {
     /// Step 2: one command per joined player for `tick`, ascending by `PlayerId`.
     pub fn resolve(&mut self, tick: u32) -> &[(PlayerId, InputCmd)] {
         self.resolved.clear();
+        self.shot_origin_hints.clear();
         for (&p, s) in self.table.iter_mut() {
             let r = s.input.resolve(tick);
             if r.kind != Resolution::Real {
@@ -292,6 +349,13 @@ impl SimBridge {
                 );
             }
             self.resolved.push((p, r.cmd));
+            if let Some(codes) = r.fire_origin_hint {
+                self.shot_origin_hints.push(ShotOriginHint {
+                    player: p,
+                    shooter: None,
+                    codes,
+                });
+            }
         }
         &self.resolved
     }

@@ -3,7 +3,7 @@
 //! history, `rewind_ticks` behind the current tick. Rules (game rules live here, not in `server`):
 //! rewind is clamped to [`MAX_REWIND_TICKS`], a `view_tick` (a delta in ticks) of 0 means "no view
 //! time reported" (scripted fire, prediction) and rewinds nothing, and an origin hint further than
-//! [`ORIGIN_TOLERANCE_M`] from the authoritative eye position is ignored.
+//! [`ORIGIN_TOLERANCE_M`] from the authoritative muzzle is counted. Hints never move the muzzle.
 
 use bevy_ecs::prelude::{Resource, World};
 use glam::Vec3;
@@ -44,16 +44,20 @@ pub fn rewind_ticks(view_delta: u16) -> (u8, bool) {
     }
 }
 
-/// Time selection and origin check for one fire command.
+/// Whether an untrusted hint is invalid or more than 0.5 m from the authoritative muzzle.
+pub fn origin_needs_correction(origin_hint: Vec3, auth_origin: Vec3) -> bool {
+    !origin_hint.is_finite()
+        || origin_hint.distance_squared(auth_origin) > ORIGIN_TOLERANCE_M * ORIGIN_TOLERANCE_M
+}
+
+/// Time selection and origin check for one fire command. The origin is always authoritative.
 pub fn resolve_fire(view_delta: u16, origin_hint: Vec3, auth_origin: Vec3) -> FireResolution {
     let (r, clamped) = rewind_ticks(view_delta);
-    let corrected = !origin_hint.is_finite()
-        || origin_hint.distance_squared(auth_origin) > ORIGIN_TOLERANCE_M * ORIGIN_TOLERANCE_M;
     FireResolution {
         rewind_ticks: r,
-        origin: if corrected { auth_origin } else { origin_hint },
+        origin: auth_origin,
         clamped,
-        origin_corrected: corrected,
+        origin_corrected: origin_needs_correction(origin_hint, auth_origin),
     }
 }
 
@@ -182,7 +186,8 @@ pub(crate) fn protected_by_cover(
     let covered = |pose: PlayerHitboxes| {
         let torso = hitbox::volumes(pose.blend)[1];
         let chest = pose.foot + Vec3::Y * ((torso.y0 + torso.y1) * 0.5);
-        thick_terrain_between(collision, shooter_eye, chest, rules.cover_min_thickness_m)
+        collision.solid_cover_between(shooter_eye, chest, rules.cover_min_thickness_m)
+            || thick_terrain_between(collision, shooter_eye, chest, rules.cover_min_thickness_m)
     };
     covered(target)
         && (1..=oldest_age).all(|age| {
@@ -227,10 +232,16 @@ mod tests {
     #[test]
     fn origin_tolerance_edges() {
         let a = Vec3::new(10.0, 1.6, 10.0);
-        let near = resolve_fire(5, a + Vec3::X * 0.49, a);
-        assert!(!near.origin_corrected && near.origin.x > a.x);
-        let far = resolve_fire(5, a + Vec3::X * 0.51, a);
-        assert!(far.origin_corrected && far.origin == a);
+        for (offset, corrected) in [
+            (Vec3::X * 0.49, false),
+            (Vec3::X * 0.50, false),
+            (Vec3::X * 0.51, true),
+            (Vec3::new(0.375, 0.0, 0.375), true),
+        ] {
+            let result = resolve_fire(5, a + offset, a);
+            assert_eq!(result.origin_corrected, corrected);
+            assert_eq!(result.origin, a);
+        }
     }
 
     #[test]

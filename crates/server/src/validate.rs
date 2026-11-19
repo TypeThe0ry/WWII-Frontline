@@ -12,6 +12,24 @@
 //! previous commands) and never count towards the kick streak; everything else does.
 
 use frontline_protocol::msg::input::{buttons, FireCmd, InputCmd};
+use frontline_sim::{combat::lagcomp::origin_needs_correction, Vec3};
+
+use crate::snapshot::events_out::EVENT_POS_STEP_M;
+
+/// Provisional FireCmd decoding (PI-001/072 leave the wire semantics open): reuse the
+/// zero-based Shot/Impact position grid (PI-023). Outside its representable range we cannot
+/// measure the discrepancy, so skip the observation rather than compare against a clamped point.
+pub(crate) fn fire_origin_hint_corrected(codes: [u16; 3], muzzle: Vec3) -> bool {
+    const MAX_CODE: u16 = 0x3fff;
+    let max_m = f32::from(MAX_CODE) * EVENT_POS_STEP_M;
+    if codes.iter().any(|&c| c > MAX_CODE)
+        || !muzzle.to_array().iter().all(|m| (0.0..=max_m).contains(m))
+    {
+        return false;
+    }
+    let hint = Vec3::from_array(codes.map(|c| f32::from(c) * EVENT_POS_STEP_M));
+    origin_needs_correction(hint, muzzle)
+}
 
 /// Consecutive violating commands after which the connection is closed.
 pub const KICK_STREAK: u32 = 30;
@@ -177,7 +195,7 @@ pub struct PlayerInputState {
     pub gap: u32,
     pub last_ack_snapshot_tick: u16,
     pub last_pred_hash: u8,
-    /// The two most recent distinct `FireCmd`s (M0 only records them; M1-025 uses them).
+    /// Up to two distinct `FireCmd`s that have not yet passed their input sequence.
     pub pending_fire: [Option<FireCmd>; 2],
     /// A command has been accepted at least once.
     pub seen: bool,
@@ -215,8 +233,8 @@ impl PlayerInputState {
         }
     }
 
-    /// Stores a redundant fire command (dedupe by `seq`, keep the newest two). Returns `false`
-    /// for a duplicate or an invalid weapon.
+    /// Stores a redundant fire command (dedupe by `seq`, keep the newest two).
+    /// Returns `Ok(false)` for a duplicate.
     pub fn record_fire(&mut self, f: &FireCmd) -> Result<bool, Reject> {
         if f.weapon > self.cfg.max_weapon_slot {
             return Err(Reject::WeaponSlot);
@@ -227,6 +245,25 @@ impl PlayerInputState {
         self.pending_fire[1] = self.pending_fire[0];
         self.pending_fire[0] = Some(*f);
         Ok(true)
+    }
+
+    /// Consumes the hint tied to the input just executed and retires older hints. A hint never
+    /// produces its own shot or rolls over into a later input with the same sequence number.
+    pub(crate) fn take_fire(&mut self, input_seq: u16) -> Option<FireCmd> {
+        let mut matched = None;
+        for slot in &mut self.pending_fire {
+            if let Some(f) = slot {
+                if f.seq == input_seq {
+                    matched = slot.take();
+                } else if !seq_newer(f.seq, input_seq) {
+                    *slot = None;
+                }
+            }
+        }
+        if self.pending_fire[0].is_none() {
+            self.pending_fire.swap(0, 1);
+        }
+        matched
     }
 }
 
@@ -579,6 +616,37 @@ mod tests {
         assert_eq!(s.record_fire(&f(3)), Ok(true));
         assert_eq!(s.pending_fire[0].unwrap().seq, 3);
         assert_eq!(s.pending_fire[1].unwrap().seq, 2);
+    }
+
+    #[test]
+    fn fire_metadata_consumes_exact_seq_and_retires_stale_hints_across_wrap() {
+        let mut s = PlayerInputState::new(ValidateCfg::default());
+        let f = |seq| FireCmd {
+            seq,
+            view_tick: 0,
+            weapon: 0,
+            dir_yaw: 0,
+            dir_pitch: 0,
+            origin_hint: [0; 3],
+            spread_seed: 0,
+        };
+        assert_eq!(s.record_fire(&f(u16::MAX - 1)), Ok(true));
+        assert_eq!(s.record_fire(&f(0)), Ok(true));
+        assert_eq!(s.take_fire(u16::MAX), None);
+        assert_eq!(s.pending_fire, [Some(f(0)), None]);
+        assert_eq!(s.take_fire(0), Some(f(0)));
+        assert_eq!(s.take_fire(0), None);
+    }
+
+    #[test]
+    fn fire_origin_wire_grid_boundary_and_range() {
+        let muzzle = Vec3::new(10.0, 2.0, 10.0);
+        assert!(!fire_origin_hint_corrected([672, 128, 640], muzzle)); // exactly 0.5 m
+        assert!(fire_origin_hint_corrected([673, 128, 640], muzzle));
+        assert!(!fire_origin_hint_corrected([0x4000, 128, 640], muzzle)); // not a wire code
+        for x in [-1.0, 256.0, f32::NAN] {
+            assert!(!fire_origin_hint_corrected([0; 3], Vec3::new(x, 2.0, 10.0)));
+        }
     }
 
     #[test]

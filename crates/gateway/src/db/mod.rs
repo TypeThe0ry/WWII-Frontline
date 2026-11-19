@@ -4,11 +4,13 @@ use std::str::FromStr;
 use std::time::Duration;
 
 use frontline_protocol::dto::ServerInfo;
+use frontline_protocol::PROTOCOL_VERSION;
 use serde::{Deserialize, Serialize};
 use sqlx::sqlite::{SqliteConnectOptions, SqliteJournalMode, SqlitePoolOptions, SqliteSynchronous};
 use sqlx::types::Json;
-use sqlx::{ConnectOptions, FromRow, SqlitePool};
+use sqlx::{ConnectOptions, Connection, FromRow, SqlitePool};
 
+use crate::metrics::Metrics;
 use crate::registry::{from_hex, to_hex, MatchId};
 
 static MIGRATOR: sqlx::migrate::Migrator = sqlx::migrate!("./src/db/migrations");
@@ -51,6 +53,7 @@ struct ServerRow {
 pub enum SlotError {
     Unknown,
     Stale,
+    Incompatible,
     Full,
     Database(sqlx::Error),
 }
@@ -196,35 +199,45 @@ impl Database {
         timeout_ms: u64,
         guest_id: &str,
         nick: &str,
+        metrics: &Metrics,
     ) -> Result<(Registration, u8), SlotError> {
         let id = to_hex(id);
         let cutoff = timestamp(now_ms.saturating_sub(timeout_ms));
-        let mut txn = self.pool.begin().await?;
+        let mut conn = {
+            let _wait = metrics.ticket_pool_wait.start_timer();
+            self.pool.acquire().await?
+        };
+        let _transaction = metrics.ticket_transaction.start_timer();
+        let mut txn = conn.begin().await?;
         let slot: Option<(Json<Registration>, u8)> = sqlx::query_as(
             "UPDATE matches SET next_player = (next_player + 1) % 128
              WHERE id = ? AND ended = 0 AND ticket_key = ? AND last_heartbeat_ms >= ?
-                 AND humans + bots < cap
+                 AND json_extract(registration, '$.protocol_version') = ? AND humans + bots < cap
              RETURNING registration, (next_player + 127) % 128",
         )
         .bind(&id)
         .bind(self.ticket_key.as_slice())
         .bind(cutoff)
+        .bind(PROTOCOL_VERSION)
         .fetch_optional(&mut *txn)
         .await?;
         let Some((Json(registration), player_id)) = slot else {
-            let eligible: Option<bool> = sqlx::query_scalar(
-                "SELECT ended = 0 AND ticket_key = ? AND last_heartbeat_ms >= ?
+            let status: Option<(bool, bool)> = sqlx::query_as(
+                "SELECT ended = 0 AND ticket_key = ? AND last_heartbeat_ms >= ?,
+                        json_extract(registration, '$.protocol_version') = ?
                  FROM matches WHERE id = ?",
             )
             .bind(self.ticket_key.as_slice())
             .bind(cutoff)
+            .bind(PROTOCOL_VERSION)
             .bind(&id)
             .fetch_optional(&mut *txn)
             .await?;
-            return Err(match eligible {
+            return Err(match status {
                 None => SlotError::Unknown,
-                Some(false) => SlotError::Stale,
-                Some(true) => SlotError::Full,
+                Some((false, _)) => SlotError::Stale,
+                Some((true, false)) => SlotError::Incompatible,
+                Some((true, true)) => SlotError::Full,
             });
         };
         sqlx::query(

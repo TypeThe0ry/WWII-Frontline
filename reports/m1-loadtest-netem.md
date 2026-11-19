@@ -165,3 +165,7 @@ LOADTEST_SERVER_CPUS=29,33,34 LOADTEST_CLIENT_CPUS=15,17 \
 两轮 WS 的 P99 分别为 5.405 ms（v3）和 5.530 ms（v4）。>20 ms 的 tick 分别有 6 个和 3 个，on-CPU 均低于 3.7 ms，runq wait 为 18.335–43.441 ms。WS 与 WT 都没有重现 4929 或 28499 的旧尖峰。复跑在这两个 tick 中测到步兵移动占 step 的大部分时间，旧 WS 的 28499（on-CPU 37.536 ms、runq wait 0.465 ms）的具体子系统仍未定位。
 
 原始日志、按 10 s 抓取的 metrics、客户端和服务器 JSON 及汇总保留在工作站 `/data/scratch/batch/b2/G/`。`evidence.json` 联结了慢 tick 的两种 trace，核对了最大值、超时计数和监测窗口。独占核、参考机以及启用 bot-fill 后的 30 分钟 WT netem 工况未测。
+
+## B4-D1：Carentan M1 WT 30 分钟（PI-127D1）
+
+20 headless + 12 bot、固定核、实际 M1 烘焙地形；本轮未加 netem。同 tick 审计 2,682,547 条敌方记录，0 越界；tick P50/P99 3.519/9.810 ms，94 次超时、最长连续 2，连续超时门槛未达。运行队列与部分同步 trace 写盘已分辨，工况和原始数据索引见 `reports/m1-carentan-wt-b4-d1.md`。
