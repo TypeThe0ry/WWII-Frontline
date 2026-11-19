@@ -87,6 +87,10 @@ export interface FakeSnap {
   pitch: number[];
   removed: number[];
   events: Uint8Array;
+  /** Optional vehicle rows (`VEHICLE_STRIDE` floats / `VEHICLE_META_BYTES` bytes each). */
+  vehIds?: number[];
+  vehState?: number[];
+  vehMeta?: number[];
 }
 
 export class FakeSnapshotDecoder implements WasmSnapshotDecoder {
@@ -111,6 +115,15 @@ export class FakeSnapshotDecoder implements WasmSnapshotDecoder {
   }
   reset(): void {
     this.cur = undefined;
+  }
+  vehicleIds(): Uint8Array {
+    return Uint8Array.from(this.cur?.vehIds ?? []);
+  }
+  vehicleState(): Float32Array {
+    return Float32Array.from(this.cur?.vehState ?? []);
+  }
+  vehicleMeta(): Uint8Array {
+    return Uint8Array.from(this.cur?.vehMeta ?? []);
   }
   tick(): number {
     return this.cur?.tick ?? 0;

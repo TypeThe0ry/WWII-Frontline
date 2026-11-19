@@ -16,6 +16,7 @@ import {
 } from '../net/wasm';
 import type { EventBus, GameEvents } from './event-bus';
 import type { EntityStore } from './interpolation';
+import { RemoteVehicleStore, VEHICLE_ID_BASE } from './vehicle-store';
 
 export interface SnapshotSummary {
   tick: number;
@@ -53,6 +54,8 @@ export class SnapshotApplier {
   private readonly removedEv: GameEvents['entity.removed'] = { id: 0, reason: 'removed' };
   /** Entity ids that are not remote players (the local player's own record, when the server sends it). */
   ignoreId = -1;
+  /** Remote vehicles (wire ids >= 128) of the last decodes. */
+  readonly vehicles = new RemoteVehicleStore();
 
   constructor(
     readonly decoder: WasmSnapshotDecoder,
@@ -98,7 +101,7 @@ export class SnapshotApplier {
       const health = d.health();
       for (let i = 0; i < n; i++) {
         const id = ids[i] as number;
-        if (id === this.ignoreId) continue;
+        if (id === this.ignoreId || id >= VEHICLE_ID_BASE) continue;
         const x = pos[i * 3] as number;
         const y = pos[i * 3 + 1] as number;
         const z = pos[i * 3 + 2] as number;
@@ -114,10 +117,21 @@ export class SnapshotApplier {
         }
       }
     }
+    const vids = d.vehicleIds();
+    if (vids.length > 0) {
+      for (const id of this.vehicles.push(tick, nowMs, vids, d.vehicleState(), d.vehicleMeta())) {
+        const e = this.spawned;
+        e.id = id;
+        e.kind = 'vehicle';
+        e.pos.x = e.pos.y = e.pos.z = 0;
+        this.bus.emit('entity.spawned', e);
+        e.kind = 'player';
+      }
+    }
     const removed = d.removed();
     for (let i = 0; i < removed.length; i++) {
       const id = removed[i] as number;
-      if (this.store.remove(id)) {
+      if (id >= VEHICLE_ID_BASE ? this.vehicles.remove(id) : this.store.remove(id)) {
         this.removedEv.id = id;
         this.removedEv.reason = 'removed';
         this.bus.emit('entity.removed', this.removedEv);
