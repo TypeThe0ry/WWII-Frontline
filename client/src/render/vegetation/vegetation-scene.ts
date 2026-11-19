@@ -1,9 +1,8 @@
 import { Matrix, Vector3 } from '@babylonjs/core/Maths/math.vector';
-import type { UniversalCamera } from '@babylonjs/core/Cameras/universalCamera';
 import type { Mesh } from '@babylonjs/core/Meshes/mesh';
 import type { RenderContext } from '../engine';
 import { parseQuality } from '../quality-m0';
-import { Vegetation, type ChunkTable, type VegetationStats } from './vegetation';
+import { Vegetation, type VegetationOptions, type VegetationStats } from './vegetation';
 import type { ScatterPoint } from './scatter';
 import { loadVegMask } from '../world/veg-mask';
 
@@ -13,6 +12,8 @@ export interface VegetationHandle {
   /** `{ drawCalls, instances, tris }` of the vegetation meshes that passed culling in the last frame (for `__perf.dump()`). */
   perf(): { drawCalls: number; instances: number; tris: number };
   overlayLines(): string[];
+  /** Unsubscribe the frame callback and release all vegetation resources. Safe to call twice. */
+  dispose(): void;
   /** Project a world point to page pixels (same convention as `__terrain.project`). */
   project(x: number, y: number, z: number): { x: number; y: number; depth: number };
 }
@@ -41,7 +42,7 @@ async function loadSpawnPoints(baseUrl: string): Promise<ScatterPoint[]> {
  * Entry: `?scene=vegetation` (terrain + vegetation; `?scene=terrain` stays terrain only). Query: `quality=high|low`, `impostor=lowres` (64 px views), `veg_seed=n`, `veg_budget=ms` (re-bucket budget, `inf` = unbounded).
  */
 export async function attachVegetation(
-  ctx: RenderContext,
+  ctx: Pick<RenderContext, 'scene' | 'kind' | 'onFrame' | 'engine' | 'canvas'>,
   terrain: { heightAt(x: number, z: number): number },
   params: URLSearchParams,
 ): Promise<VegetationHandle> {
@@ -57,24 +58,44 @@ export async function attachVegetation(
   const mask = mapId === 'm0' || params.get('veg_mask') === '0' ? null : await loadVegMask(base, blockSizeM);
   const grassScale = mask ? Number(params.get('veg_grass') ?? 0.4) : 1;
   const groupChunks = Number(params.get('veg_group') ?? (mask ? 4 : 1)) | 0;
-  const tables: ChunkTable[] = Vegetation.scatterTables(blockSizeM, seed, terrain, spawns, mask ? { mask, grassScale } : {});
   const budget = params.get('veg_budget');
-  const veg = await Vegetation.create(ctx.scene, terrain, tables, {
+  const opts: VegetationOptions = {
     kind: ctx.kind,
     quality: parseQuality(params.get('quality')),
     groupChunks,
     cellPx: params.get('impostor') === 'lowres' ? 64 : 128,
     rebucketBudgetMs: budget === 'inf' ? Infinity : budget ? Number(budget) : undefined,
-  });
-  const cam = ctx.scene.activeCamera as UniversalCamera;
-  ctx.onFrame((dtMs) => veg.update(cam, dtMs / 1000), undefined, 'vegetation_update');
-  veg.settle(cam); // first full classification without the per-frame budget (no pop-in on the first frames)
+  };
+  const initialCamera = ctx.scene.activeCamera;
+  if (!initialCamera) throw new Error('vegetation: an active camera is required');
+  const veg = mapId === 'm0'
+    ? await Vegetation.create(ctx.scene, terrain, Vegetation.scatterTables(blockSizeM, seed, terrain, spawns), opts)
+    : await Vegetation.createProcedural(ctx.scene, terrain, { sizeM: blockSizeM, seed, exclusions: spawns, mask: mask ?? undefined, grassScale }, opts);
+  try {
+    veg.settle(ctx.scene.activeCamera ?? initialCamera);
+  } catch (error) {
+    veg.dispose();
+    throw error;
+  }
+  const detach = ctx.onFrame((dtMs) => {
+    const camera = ctx.scene.activeCamera;
+    if (camera) veg.update(camera, dtMs / 1000);
+  }, undefined, 'vegetation_update');
+  let disposed = false;
   const handle: VegetationHandle = {
     veg,
     loadMs: performance.now() - t0,
     perf: () => veg.perfStats(),
     overlayLines: () => veg.overlayLines(),
+    dispose() {
+      if (disposed) return;
+      disposed = true;
+      ctx.scene.onDisposeObservable.remove(sceneDisposal);
+      detach();
+      veg.dispose();
+    },
     project(x, y, z) {
+      const cam = ctx.scene.activeCamera ?? initialCamera;
       const eng = ctx.engine;
       const vp = cam.viewport.toGlobal(eng.getRenderWidth(), eng.getRenderHeight());
       const v = Vector3.Project(new Vector3(x, y, z), Matrix.IdentityReadOnly, cam.getTransformationMatrix(), vp);
@@ -82,6 +103,7 @@ export async function attachVegetation(
       return { x: r.left + (v.x * r.width) / eng.getRenderWidth(), y: r.top + (v.y * r.height) / eng.getRenderHeight(), depth: v.z };
     },
   };
+  const sceneDisposal = ctx.scene.onDisposeObservable.addOnce(() => handle.dispose());
   return handle;
 }
 

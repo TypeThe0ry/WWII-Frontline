@@ -5,6 +5,7 @@
  * the moment the flash was made visible (published as `window.__perf.fireEventFrame` / `muzzleFlashVisibleFrame`).
  */
 import type { Observer } from '@babylonjs/core/Misc/observable';
+import type { AbstractMesh } from '@babylonjs/core/Meshes/abstractMesh';
 import type { Scene } from '@babylonjs/core/scene';
 import type { TransformNode } from '@babylonjs/core/Meshes/transformNode';
 import type { EventBus, GameEvents } from '../../game/event-bus';
@@ -14,8 +15,9 @@ import { freshWorldMatrix } from '../actors/world';
 import { ImpactDustPool } from './impact-dust';
 import { MuzzleFlashPool } from './muzzle-flash';
 import { TracerPool } from './tracer';
-import { emitEffect } from '../vfx/emitters';
-import { ParticlePool, type VfxTier } from '../vfx/particle-pool';
+import { ImpactDecals } from '../vfx/decals';
+import { emitEffect, type EffectName, type EffectOptions, type ImpactPreset } from '../vfx/emitters';
+import { ParticlePool, TracerCadence, type VfxTier } from '../vfx/particle-pool';
 import { ParticleRenderer } from '../vfx/particle-render';
 
 export interface FxOptions {
@@ -37,6 +39,7 @@ const KIND_FLASH_LOCAL = 0;
 const KIND_FLASH_REMOTE = 1;
 const KIND_IMPACT = 2;
 const KIND_EXPLOSION = 3;
+const KIND_TANK = 4;
 const DEFAULT_FLASH_MS = 50;
 const LOG_CAP = 512;
 /** `damage_radius_m` of the reference grenade (data/explosives/us_mk2.json): the explosion preset is sized for it. */
@@ -55,6 +58,8 @@ interface Pending {
   frame: number;
   radius: number;
   own: boolean;
+  normal: number;
+  material: number;
 }
 
 export class FxManager {
@@ -64,6 +69,7 @@ export class FxManager {
   /** GPU particle pool / renderer (null when `particles` was not requested). */
   readonly particlePool: ParticlePool | null;
   readonly particles: ParticleRenderer | null;
+  private impactDecals: ImpactDecals | null = null;
   /** Engine frame ids at which each `fire.*` event was emitted / its flash became visible (same order). */
   readonly fireEventFrames: number[] = [];
   readonly muzzleFlashFrames: number[] = [];
@@ -71,6 +77,8 @@ export class FxManager {
 
   private readonly pending: Pending[] = [];
   private pendingCount = 0;
+  private readonly effectOptions: EffectOptions = {};
+  private readonly tracerCadence = new Map<number, TracerCadence>();
   private readonly offs: (() => void)[] = [];
   private readonly obs: Observer<Scene>;
   private lastNow: number;
@@ -86,18 +94,9 @@ export class FxManager {
     this.particlePool = o.particles ? new ParticlePool(o.particles.tier) : null;
     this.particles = o.particles && this.particlePool ? new ParticleRenderer(o.scene, this.particlePool, o.particles.wgsl) : null;
     const engine = o.scene.getEngine();
-    const slot = (): Pending => {
-      let p = this.pending[this.pendingCount];
-      if (!p) {
-        p = { kind: 0, weapon: 0, shooter: 0, x: 0, y: 0, z: 0, dx: 0, dy: 0, dz: 1, frame: 0, radius: 0, own: false };
-        this.pending[this.pendingCount] = p;
-      }
-      this.pendingCount++;
-      return p;
-    };
     this.offs.push(
       o.bus.on('fire.local', (e) => {
-        const p = slot();
+        const p = this.slot();
         p.kind = KIND_FLASH_LOCAL;
         p.weapon = e.weapon;
         p.shooter = -1;
@@ -110,7 +109,7 @@ export class FxManager {
         p.frame = engine.frameId;
       }),
       o.bus.on('fire.remote', (e) => {
-        const p = slot();
+        const p = this.slot();
         p.kind = KIND_FLASH_REMOTE;
         p.weapon = e.weapon;
         p.shooter = e.shooter;
@@ -123,15 +122,17 @@ export class FxManager {
         p.frame = engine.frameId;
       }),
       o.bus.on('impact', (e) => {
-        const p = slot();
+        const p = this.slot();
         p.kind = KIND_IMPACT;
         p.x = e.pos.x;
         p.y = e.pos.y;
         p.z = e.pos.z;
+        p.normal = e.normal;
+        p.material = e.material;
         p.frame = engine.frameId;
       }),
       o.bus.on('explosion', (e) => {
-        const p = slot();
+        const p = this.slot();
         p.kind = KIND_EXPLOSION;
         p.x = e.pos.x;
         p.y = e.pos.y;
@@ -140,8 +141,40 @@ export class FxManager {
         p.own = e.own;
         p.frame = engine.frameId;
       }),
+      o.bus.on('entity.removed', (e) => this.tracerCadence.delete(e.id)),
     );
     this.obs = o.scene.onBeforeRenderObservable.add(() => this.beforeRender());
+  }
+
+  private slot(): Pending {
+    let p = this.pending[this.pendingCount];
+    if (!p) {
+      p = { kind: 0, weapon: 0, shooter: 0, x: 0, y: 0, z: 0, dx: 0, dy: 0, dz: 1, frame: 0, radius: 0, own: false, normal: 0, material: 0 };
+      this.pending[this.pendingCount] = p;
+    }
+    this.pendingCount++;
+    return p;
+  }
+
+  /** Install static mesh receivers and the CPU height sampler for GPU-displaced terrain. Replaces old placements. */
+  setImpactSurfaces(meshes: readonly AbstractMesh[], heightAt?: (x: number, z: number) => number, getSurfaceAt?: (x: number, z: number) => number): void {
+    this.impactDecals ??= new ImpactDecals(this.o.scene);
+    this.impactDecals.setSurfaces(meshes, heightAt, getSurfaceAt);
+  }
+
+  get decals(): ImpactDecals | null {
+    return this.impactDecals;
+  }
+
+  private traceThisRound(shooter: number): boolean {
+    if (!this.tracersOn) return false;
+    if (!this.particles) return true; // M0 debug feedback
+    let cadence = this.tracerCadence.get(shooter);
+    if (!cadence) {
+      cadence = new TracerCadence();
+      this.tracerCadence.set(shooter, cadence);
+    }
+    return cadence.next();
   }
 
   private beforeRender(): void {
@@ -149,16 +182,25 @@ export class FxManager {
     const dtS = Math.max(0, Math.min(0.25, (now - this.lastNow) / 1000));
     this.lastNow = now;
     const frame = this.o.scene.getEngine().frameId;
+    const cam = this.o.scene.activeCamera;
+    cam?.getViewMatrix();
+    const eye = cam?.globalPosition;
+    this.particlePool?.update(dtS);
     for (let i = 0; i < this.pendingCount; i++) {
       const p = this.pending[i] as Pending;
       if (p.kind === KIND_IMPACT) {
-        this.dust.spawn(p.x, p.y, p.z);
+        if (!this.particles) this.dust.spawn(p.x, p.y, p.z, this.decals === null);
+        const preset = eye && this.decals?.impact(p.x, p.y, p.z, p.normal, p.material, eye);
         this.tracers.impactAt(p.x, p.y, p.z);
-        this.emitParticles('impact_dust', p.x, p.y, p.z, false, undefined, 1, p.frame);
+        this.emitParticles('impact_dust', p.x, p.y, p.z, false, p.frame, undefined, undefined, p.material, preset);
         continue;
       }
       if (p.kind === KIND_EXPLOSION) {
-        this.emitParticles('explosion', p.x, p.y, p.z, p.own, undefined, Math.max(0.25, p.radius / EXPLOSION_REF_RADIUS_M), p.frame);
+        this.emitParticles('explosion', p.x, p.y, p.z, p.own, p.frame, undefined, Math.max(0.25, p.radius / EXPLOSION_REF_RADIUS_M));
+        continue;
+      }
+      if (p.kind === KIND_TANK) {
+        this.emitParticles('tank_shot', p.x, p.y, p.z, p.own, p.frame);
         continue;
       }
       const def = this.o.weapons.get(p.weapon);
@@ -166,20 +208,15 @@ export class FxManager {
       this.fireEventFrames.push(p.frame);
       if (this.flashes.spawn(now, def?.muzzleFlashMs ?? DEFAULT_FLASH_MS, socket, p.x, p.y, p.z, frame)) this.muzzleFlashFrames.push(frame);
       else this.muzzleFlashFrames.push(-1);
-      this.emitParticles('muzzle', p.x, p.y, p.z, p.kind === KIND_FLASH_LOCAL, (def?.muzzleFlashMs ?? DEFAULT_FLASH_MS) / 1000, 1, p.frame);
-      // shell casing: off at the Low tier (ARCHITECTURE 13.5.3), only the local player's weapon ejects one [tbd]
-      if (this.o.particles && this.o.particles.tier !== 'low' && p.kind === KIND_FLASH_LOCAL) this.emitParticles('shell', p.x, p.y, p.z, true, undefined, 1, p.frame);
-      if (this.tracersOn) {
-        let ox = p.x;
-        let oy = p.y;
-        let oz = p.z;
-        if (socket) {
-          const m = freshWorldMatrix(socket).m;
-          ox = m[12] as number;
-          oy = m[13] as number;
-          oz = m[14] as number;
-        }
-        this.tracers.spawn(ox, oy, oz, p.dx, p.dy, p.dz, def?.muzzleVelocityMps ?? 600);
+      const matrix = socket ? freshWorldMatrix(socket).m : null;
+      const ox = matrix?.[12] ?? p.x;
+      const oy = matrix?.[13] ?? p.y;
+      const oz = matrix?.[14] ?? p.z;
+      const own = p.kind === KIND_FLASH_LOCAL;
+      this.emitParticles('muzzle', ox, oy, oz, own, p.frame, (def?.muzzleFlashMs ?? DEFAULT_FLASH_MS) / 1000);
+      if (own) this.emitParticles('shell', ox, oy, oz, true, p.frame);
+      if (this.traceThisRound(p.shooter)) {
+        this.tracers.spawn(ox, oy, oz, p.dx, p.dy, p.dz, def?.muzzleVelocityMps ?? 600, this.particles !== null);
       }
     }
     this.pendingCount = 0;
@@ -187,22 +224,34 @@ export class FxManager {
     this.flashes.update(now);
     this.tracers.update(dtS);
     this.dust.update(dtS);
-    const cam = this.o.scene.activeCamera;
-    if (this.particles && cam) this.particles.update(cam, dtS);
+    if (cam) this.particles?.upload(cam);
+    if (eye) this.decals?.update(eye);
   }
 
   /** Tank main-gun muzzle blast + smoke at (x, y, z) (M1-048b); priority follows the camera distance. */
   emitTankShot(x: number, y: number, z: number, own = false): void {
-    this.emitParticles('tank_shot', x, y, z, own, undefined, 1, this.o.scene.getEngine().frameId);
+    if (!this.particlePool) return;
+    const p = this.slot();
+    p.kind = KIND_TANK;
+    p.x = x;
+    p.y = y;
+    p.z = z;
+    p.own = own;
+    p.frame = this.o.scene.getEngine().frameId;
   }
 
-  private emitParticles(name: 'muzzle' | 'impact_dust' | 'explosion' | 'shell' | 'tank_shot', x: number, y: number, z: number, own: boolean, life: number | undefined, scale: number, seed: number): void {
+  private emitParticles(name: EffectName, x: number, y: number, z: number, own: boolean, seed: number, life?: number, scale?: number, material?: number, impactPreset?: ImpactPreset): void {
     const pool = this.particlePool;
     if (!pool) return;
     const cam = this.o.scene.activeCamera;
     const pos = cam?.globalPosition;
     const dist = pos ? Math.hypot(x - pos.x, y - pos.y, z - pos.z) : 0;
-    emitEffect(pool, name, x, y, z, own, dist, seed, { life, scale });
+    const opts = this.effectOptions;
+    opts.life = life;
+    opts.scale = scale;
+    opts.material = material;
+    opts.impactPreset = impactPreset;
+    emitEffect(pool, name, x, y, z, own, dist, seed, opts);
   }
 
   dispose(): void {
@@ -212,6 +261,7 @@ export class FxManager {
     this.tracers.dispose();
     this.dust.dispose();
     this.particles?.dispose();
+    this.decals?.dispose();
   }
 }
 

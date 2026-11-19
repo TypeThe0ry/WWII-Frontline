@@ -27,7 +27,10 @@ g_rust() {
   need cargo || return 2
   run cargo test --workspace --locked && run cargo test -p frontline-sim --features test-util --locked
 }
-g_ts() { need pnpm || return 2; run pnpm -C client test; }
+g_ts() {
+  need pnpm || return 2
+  run pnpm -C client run variant-count && run pnpm -C client test
+}
 g_data() {
   need pnpm node || return 2
   run pnpm -C tools/data-validate test && run node tools/data-validate/index.mjs --fixtures \

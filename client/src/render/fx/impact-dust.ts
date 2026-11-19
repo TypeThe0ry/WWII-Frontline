@@ -75,7 +75,7 @@ export class ImpactDustPool {
     return this.seed / 4294967296;
   }
 
-  spawn(x: number, y: number, z: number): void {
+  spawn(x: number, y: number, z: number, mark = true): void {
     for (let i = 0; i < DUST_PER_IMPACT; i++) {
       const d = this.freeDust.pop();
       if (!d) break;
@@ -88,6 +88,7 @@ export class ImpactDustPool {
       d.mesh.setEnabled(true);
       this.liveDust.push(d);
     }
+    if (!mark) return;
     let m = this.freeMark.pop();
     if (!m && this.liveMark.length > 0) {
       m = this.liveMark.shift() as Mark; // recycle the oldest mark

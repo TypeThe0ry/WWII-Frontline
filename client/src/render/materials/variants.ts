@@ -71,14 +71,22 @@ function maskToFlags(m: number): MaterialFlags {
   };
 }
 
+// These use their own shader sources, so PBR macro aliases cannot represent them.
+export const CUSTOM_VARIANTS = [
+  'csm:plain', 'csm:instanced', 'velocity:plain', 'velocity:instanced', 'velocity:terrain',
+] as const;
+export type CustomVariant = (typeof CUSTOM_VARIANTS)[number];
+
 export interface VariantStats {
   count: number;
   byPass: Record<Pass, number>;
+  custom: CustomVariant[];
 }
 
 /** Counts the variants currently in use; throws (dev-time error) above the limit. */
 export class VariantRegistry {
   private readonly keys = new Set<string>();
+  private readonly custom = new Set<CustomVariant>();
   constructor(readonly low = false) {}
 
   get limit(): number {
@@ -88,16 +96,26 @@ export class VariantRegistry {
   register(d: MaterialDesc): string {
     const k = variantKey(d, this.low);
     if (!this.keys.has(k)) {
-      if (this.keys.size >= this.limit) throw new Error(`PBR variant limit ${this.limit} exceeded by ${k}`);
+      this.checkCapacity(k);
       this.keys.add(k);
     }
     return k;
   }
 
+  registerCustom(k: CustomVariant): void {
+    if (this.custom.has(k)) return;
+    this.checkCapacity(k);
+    this.custom.add(k);
+  }
+
+  private checkCapacity(k: string): void {
+    if (this.keys.size + this.custom.size >= this.limit) throw new Error(`Shader variant limit ${this.limit} exceeded by ${k}`);
+  }
+
   stats(): VariantStats {
     const byPass: Record<Pass, number> = { opaque: 0, alpha: 0, depth: 0, shadow: 0 };
     for (const k of this.keys) byPass[k.split(':')[0] as Pass]++;
-    return { count: this.keys.size, byPass };
+    return { count: this.keys.size + this.custom.size, byPass, custom: [...this.custom].sort() };
   }
 }
 
