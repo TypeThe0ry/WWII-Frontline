@@ -3,6 +3,14 @@
 `PROTOCOL_VERSION` must match exactly at handshake. Fields are only appended at the end of a
 message; any other change bumps the version.
 
+## 4 — M1-041d (own vehicle seat)
+
+C2 `SelfState` reports `vehicle_slot` (128..=255, 0 on foot) and `seat` (0 driver, 1 gunner,
+2 commander). On-foot bits are unchanged. Seated packets use new position tags and repurpose
+the 11-bit deployment/cooldown tail: the deployment state is 0 and only the 5 defined cooldown
+bits are sent. Both forms remain 56 bits without and 101 bits with a position correction.
+Protocol 3 decoders reject the new tags; peers must upgrade together.
+
 ## 3 — M1-010b (vehicles, team channel)
 
 Breaking vs 2: the entity record tag changed (remove is now `id:8 000`, 11 bit) to make room for

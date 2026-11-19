@@ -780,7 +780,7 @@ impl SnapshotScheduler {
             .and_then(|e| world.view().entity_state(e))
             .map_or(0, |s| s.health_q);
         let corr = book.corr.pending.then_some(q);
-        let st = self_state::build(world, p, health_q, corr);
+        let st = self_state::build(world, p, health_q, corr, &self.veh_slot);
         let mut b = book
             .baselines
             .begin(now, c.link.budget)

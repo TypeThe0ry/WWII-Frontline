@@ -8,7 +8,7 @@ use wasm_bindgen::prelude::*;
 use crate::js_err;
 
 /// Floats in the `self` array.
-pub const SELF_LEN: usize = 13;
+pub const SELF_LEN: usize = 15;
 /// Bytes per packed event record (see `pack_event`).
 pub const EVENT_RECORD_BYTES: usize = 16;
 
@@ -33,6 +33,10 @@ pub mod self_idx {
     pub const STANCE: usize = 10;
     pub const DEPLOY_STATE: usize = 11;
     pub const COOLDOWN_BITS: usize = 12;
+    /// 0 on foot, otherwise the vehicle slot (128..=255).
+    pub const VEHICLE_SLOT: usize = 13;
+    /// Seat index (0..=2); 0 on foot.
+    pub const SEAT: usize = 14;
 }
 
 pub fn layout_table() -> &'static [(&'static str, u32)] {
@@ -51,6 +55,8 @@ pub fn layout_table() -> &'static [(&'static str, u32)] {
         ("SELF_STANCE", STANCE as u32),
         ("SELF_DEPLOY_STATE", DEPLOY_STATE as u32),
         ("SELF_COOLDOWN_BITS", COOLDOWN_BITS as u32),
+        ("SELF_VEHICLE_SLOT", VEHICLE_SLOT as u32),
+        ("SELF_SEAT", SEAT as u32),
         ("SELF_LEN", SELF_LEN as u32),
         ("EVENT_RECORD_BYTES", EVENT_RECORD_BYTES as u32),
     ]
@@ -188,6 +194,8 @@ impl SnapshotDecoder {
             s[STANCE] = f32::from(st.stance);
             s[DEPLOY_STATE] = f32::from(st.deploy_state);
             s[COOLDOWN_BITS] = f32::from(st.cooldown_bits);
+            s[VEHICLE_SLOT] = f32::from(st.vehicle_slot);
+            s[SEAT] = f32::from(st.seat);
         }
         self.events.clear();
         for e in &snap.events {

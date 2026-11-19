@@ -29,7 +29,7 @@ const ok = (name) => {
 
 // --- version / data hash agree with the native build (meta.json comes from the native example).
 {
-  assert.equal(wasm.protocolVersion(), 3);
+  assert.equal(wasm.protocolVersion(), 4);
   // The data hash changes with every /data edit, so compare against the native build's own value
   // (`cargo run --example trace` writes it) and fall back to the committed file only without a trace.
   const traceMeta = join(root, 'target/wasm-trace/meta.json');
@@ -62,7 +62,7 @@ const ok = (name) => {
 {
   assert.deepEqual([...wasm.encodePing(1234)], [...hex('ping.hex')]);
   // Parameters of protocol/tests/limits.rs `sample_messages` (Hello is bit packed: no byte offsets).
-  const out = wasm.encodeHello(3, 0x0123456789abcdefn, new Uint8Array(40).fill(7), 42, 3);
+  const out = wasm.encodeHello(wasm.protocolVersion(), 0x0123456789abcdefn, new Uint8Array(40).fill(7), 42, 3);
   assert.deepEqual([...out], [...hex('hello.hex')]);
   const pong = wasm.decodeServerC0(hex('pong.hex'));
   assert.equal(pong.kind, 5);
@@ -83,6 +83,7 @@ const ok = (name) => {
 // --- snapshot decoder vs. natively decoded golden (key frame, then delta on the same decoder).
 {
   const expected = JSON.parse(readFileSync(golden('snapshot_expected.json'), 'utf8'));
+  assert.deepEqual(expected.map((e) => [e.selfPresent, e.vehicleSlot, e.seat]), [[true, 255, 2], [true, 0, 0]]);
   const dec = new wasm.SnapshotDecoder();
   const arr = (a) => [...a];
   const f32 = (a) => [...a].map((v) => Math.fround(v));
@@ -94,10 +95,13 @@ const ok = (name) => {
     assert.equal(dec.inputSlack(), e.inputSlack);
     assert.equal(dec.count(), e.ids.length);
     const s = dec.selfState();
+    assert.equal(s.length, 15);
     assert.equal(s[0] === 1, e.selfPresent);
     if (e.selfPresent) {
       assert.deepEqual([s[5], s[6], s[7], s[8], s[9], s[10], s[11], s[12]], [e.ammoInMag, e.ammoReserve, e.health, e.stamina, e.suppression, e.stance, e.deployState, e.cooldownBits]);
-      assert.deepEqual(f32([s[2], s[3], s[4]]), f32(e.corr));
+      assert.deepEqual([s[13], s[14]], [e.vehicleSlot, e.seat]);
+      assert.equal(s[1], e.corr === null ? 0 : 1);
+      assert.deepEqual(f32([s[2], s[3], s[4]]), f32(e.corr ?? [0, 0, 0]));
     }
     assert.deepEqual(arr(dec.ids()), e.ids);
     assert.deepEqual(f32(dec.pos()), f32(e.pos));

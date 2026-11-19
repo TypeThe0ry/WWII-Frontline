@@ -33,11 +33,11 @@ fn json(d: &DecodedSnapshot, events: &[u8]) -> String {
     let st = d.self_state.unwrap_or_default();
     let c = corr.map(|c| c.to_meters());
     format!(
-        "{{\"tick\":{},\"ackInputSeq\":{},\"inputSlack\":{},\"selfPresent\":{},\"corr\":{},\"ammoInMag\":{},\"ammoReserve\":{},\"health\":{},\"stamina\":{},\"suppression\":{},\"stance\":{},\"deployState\":{},\"cooldownBits\":{},\"ids\":{},\"pos\":{},\"yaw\":{},\"pitch\":{},\"anim\":{},\"entStance\":{},\"weapon\":{},\"flags\":{},\"entHealth\":{},\"removed\":{},\"events\":{}}}",
+        "{{\"tick\":{},\"ackInputSeq\":{},\"inputSlack\":{},\"selfPresent\":{},\"corr\":{},\"ammoInMag\":{},\"ammoReserve\":{},\"health\":{},\"stamina\":{},\"suppression\":{},\"stance\":{},\"deployState\":{},\"cooldownBits\":{},\"vehicleSlot\":{},\"seat\":{},\"ids\":{},\"pos\":{},\"yaw\":{},\"pitch\":{},\"anim\":{},\"entStance\":{},\"weapon\":{},\"flags\":{},\"entHealth\":{},\"removed\":{},\"events\":{}}}",
         d.tick, d.ack_input_seq, d.input_slack, selfp,
         c.map_or("null".to_string(), |c| arr(&c)),
         st.ammo_in_mag, st.ammo_reserve, st.health, st.stamina, st.suppression, st.stance,
-        st.deploy_state, st.cooldown_bits,
+        st.deploy_state, st.cooldown_bits, st.vehicle_slot, st.seat,
         arr(&e.ids), arr(&e.pos), arr(&e.yaw), arr(&e.pitch), arr(&e.anim), arr(&e.stance),
         arr(&e.weapon), arr(&e.flags), arr(&e.health_q), arr(&d.removed_ids), arr(events)
     )

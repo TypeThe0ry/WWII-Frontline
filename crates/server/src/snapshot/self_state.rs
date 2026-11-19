@@ -1,7 +1,9 @@
 //! `self_state` of the receiving player (ARCHITECTURE §6.5.3), filled from the sim.
 
+use std::collections::BTreeMap;
+
 use frontline_protocol::snapshot::{QPos, SelfState};
-use frontline_sim::{PlayerAuthState, PlayerId, World};
+use frontline_sim::{EntityId, PlayerAuthState, PlayerId, World};
 
 /// Bits of `cooldown_bits` (M0 convention): 0..=2 weapon FSM code (0 ready, 1 cooldown,
 /// 2 bolt cycle, 3 reload (tactical), 4 reload (empty), 5 empty), bit 3 trigger held,
@@ -12,12 +14,25 @@ pub fn cooldown_bits(w: &frontline_sim::WeaponState) -> u8 {
 }
 
 /// Builds the player's own state. `health_q` is the quantised health from the entity view.
-pub fn build(world: &World, player: PlayerId, health_q: u8, pos_corr: Option<QPos>) -> SelfState {
+pub fn build(
+    world: &World,
+    player: PlayerId,
+    health_q: u8,
+    pos_corr: Option<QPos>,
+    veh_slot: &BTreeMap<EntityId, u8>,
+) -> SelfState {
     let mut s = SelfState {
         pos_corr,
         health: health_q,
         ..SelfState::default()
     };
+    // Without a wire slot (e.g. slot exhaustion), keep both fields at their foot defaults.
+    if let Some((vehicle, seat)) = world.seat_of(player) {
+        if let Some(&slot) = veh_slot.get(&vehicle) {
+            s.vehicle_slot = slot;
+            s.seat = seat;
+        }
+    }
     if let Some(w) = world.weapon_state(player) {
         s.ammo_in_mag = w.mag.min(255) as u8;
         s.ammo_reserve = w.reserve.min(4095);

@@ -33,14 +33,14 @@ pub use channel::Channel;
 pub use codec::{Codec, CodecError};
 
 /// Wire protocol version (bumped on any incompatible change, see module docs).
-pub const PROTOCOL_VERSION: u16 = 3;
+pub const PROTOCOL_VERSION: u16 = 4;
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn version_is_three() {
-        assert_eq!(PROTOCOL_VERSION, 3);
+    fn version_is_four() {
+        assert_eq!(PROTOCOL_VERSION, 4);
     }
 }

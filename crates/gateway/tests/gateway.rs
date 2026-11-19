@@ -9,6 +9,7 @@ use frontline_gateway::auth::ticket::{self, JtiCache};
 use frontline_gateway::clock::Clock;
 use frontline_gateway::config::Config;
 use frontline_gateway::registry::from_hex;
+use frontline_protocol::PROTOCOL_VERSION;
 use http_body_util::BodyExt;
 use serde_json::{json, Value};
 use tower::ServiceExt;
@@ -115,7 +116,7 @@ async fn ticket_req(r: &Rig, id: &str, ip: &str, tok: Option<&str>, nick: &str) 
 #[tokio::test]
 async fn guest_token_is_24h_and_expired_tokens_are_401() {
     let r = rig();
-    let id = register(&r, 3, 16).await;
+    let id = register(&r, PROTOCOL_VERSION, 16).await;
     let (s, g) = guest(&r, "1.1.1.1").await;
     assert_eq!(s, StatusCode::OK);
     assert_eq!(g["expires_in_s"], 86_400);
@@ -164,7 +165,7 @@ async fn a_valid_token_renews_the_same_guest() {
 #[tokio::test]
 async fn ticket_verifies_with_the_public_key_and_is_single_use() {
     let r = rig();
-    let id = register(&r, 3, 16).await;
+    let id = register(&r, PROTOCOL_VERSION, 16).await;
     let (_, g) = guest(&r, "3.3.3.3").await;
     let (s, _, t) = call(
         &r.app,
@@ -195,7 +196,7 @@ async fn ticket_verifies_with_the_public_key_and_is_single_use() {
 #[tokio::test]
 async fn ticket_refusals() {
     let r = rig();
-    let id = register(&r, 3, 1).await;
+    let id = register(&r, PROTOCOL_VERSION, 1).await;
     let (_, g) = guest(&r, "4.4.4.4").await;
     let tok = g["token"].as_str().unwrap();
     assert_eq!(
@@ -257,7 +258,7 @@ async fn ip_limit_is_10_per_minute_across_login_and_ticket() {
 #[tokio::test]
 async fn account_limit_is_6_tickets_per_minute() {
     let r = rig();
-    let id = register(&r, 3, 100).await;
+    let id = register(&r, PROTOCOL_VERSION, 100).await;
     let (_, g) = guest(&r, "6.0.0.0").await;
     let tok = g["token"].as_str().unwrap();
     for i in 0..6 {
@@ -282,9 +283,9 @@ async fn account_limit_is_6_tickets_per_minute() {
 #[tokio::test]
 async fn list_hides_servers_without_a_heartbeat_and_flags_old_versions() {
     let r = rig();
-    let a = register(&r, 3, 16).await;
-    let b = register(&r, 3, 16).await;
-    let c = register(&r, 2, 16).await;
+    let a = register(&r, PROTOCOL_VERSION, 16).await;
+    let b = register(&r, PROTOCOL_VERSION, 16).await;
+    let c = register(&r, PROTOCOL_VERSION - 1, 16).await;
     r.clock.advance_ms(3_000);
     beat(&r, &a, 4).await;
     beat(&r, &c, 1).await;
@@ -313,7 +314,7 @@ async fn list_hides_servers_without_a_heartbeat_and_flags_old_versions() {
 #[tokio::test]
 async fn internal_api_requires_the_token_and_known_ids() {
     let r = rig();
-    let id = register(&r, 3, 16).await;
+    let id = register(&r, PROTOCOL_VERSION, 16).await;
     let hb = json!({"humans":1,"bots":0,"phase":"live","time_left_s":1});
     let uri = format!("/internal/matches/{id}/heartbeat");
     let post = |uri: String, auth: Option<&'static str>, body: Value| {
@@ -377,7 +378,7 @@ async fn register_returns_the_ticket_key_fingerprint() {
         "/internal/matches/register",
         "9.9.9.9",
         Some(INTERNAL),
-        json!({"name":"S","map":"m","mode":"c","region":"eu","version":"1","protocol_version":3,
+        json!({"name":"S","map":"m","mode":"c","region":"eu","version":"1","protocol_version":PROTOCOL_VERSION,
                "data_hash":1,"cap":8,"addr":"a","ws_port":1,"wt_port":2}),
     )
     .await;
