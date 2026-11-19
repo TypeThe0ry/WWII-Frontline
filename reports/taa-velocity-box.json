@@ -1,0 +1,90 @@
+{
+  "frames": 60,
+  "mode": "box",
+  "renderers": {
+    "webgpu": {
+      "box": {
+        "x": 755.7100639766447,
+        "y": 376.54326412923604,
+        "w": 89.75839737052729,
+        "h": 89.75839737052729
+      },
+      "configs": {
+        "fxaa_only": {
+          "trail_dL": 2.0777853852087405,
+          "outside_dL": 0.8364388718961325
+        },
+        "taa_no_clamp": {
+          "trail_dL": 4.66797863413849,
+          "outside_dL": 0.8346615234819125
+        },
+        "taa_clamp": {
+          "trail_dL": 3.1089312210932993,
+          "outside_dL": 0.8297349854947242
+        },
+        "taa_clamp_velocity": {
+          "trail_dL": 0.921603453887091,
+          "outside_dL": 0.29262792588966435
+        },
+        "taa_clamp_velocity_flipy": {
+          "trail_dL": 0.9462228616710582,
+          "outside_dL": 0.2889047096965872
+        },
+        "taa_clamp_factor08": {
+          "trail_dL": 3.2475467535347327,
+          "outside_dL": 0.8069041770832384
+        },
+        "taa_clamp_factor095": {
+          "trail_dL": 3.0847168399014615,
+          "outside_dL": 0.8493023661138492
+        },
+        "taa_clamp_factor05": {
+          "trail_dL": 3.9819793624926083,
+          "outside_dL": 0.7914239059064035
+        }
+      }
+    },
+    "webgl2": {
+      "box": {
+        "x": 755.7100639766447,
+        "y": 376.54326412923604,
+        "w": 89.75839737052729,
+        "h": 89.75839737052729
+      },
+      "configs": {
+        "fxaa_only": {
+          "trail_dL": 2.0085775078106134,
+          "outside_dL": 0.8324731173836564
+        },
+        "taa_no_clamp": {
+          "trail_dL": 4.669486589551509,
+          "outside_dL": 0.8346472127827507
+        },
+        "taa_clamp": {
+          "trail_dL": 3.1089312210932993,
+          "outside_dL": 0.8297244087566868
+        },
+        "taa_clamp_velocity": {
+          "trail_dL": 0.9221729908165511,
+          "outside_dL": 0.2934566436926784
+        },
+        "taa_clamp_velocity_flipy": {
+          "trail_dL": 0.9463438194648889,
+          "outside_dL": 0.2894900510526741
+        },
+        "taa_clamp_factor08": {
+          "trail_dL": 3.2475467535347327,
+          "outside_dL": 0.8069049816491685
+        },
+        "taa_clamp_factor095": {
+          "trail_dL": 3.084511228365934,
+          "outside_dL": 0.849317251275644
+        },
+        "taa_clamp_factor05": {
+          "trail_dL": 3.9842503427714497,
+          "outside_dL": 0.791304318285895
+        }
+      }
+    }
+  }
+}

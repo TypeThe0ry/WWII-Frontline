@@ -20,7 +20,7 @@ export interface TaaSceneHandle {
 
 export const BOX_STEP = 0.12; // world units per frame (about 3 px at the default camera)
 
-export function attachTaaScene(ctx: RenderContext): TaaSceneHandle {
+export function attachTaaScene(ctx: RenderContext, mode: 'box' | 'pan' = 'box'): TaaSceneHandle {
   const scene = ctx.scene;
   scene.clearColor = new Color4(0.1, 0.1, 0.12, 1);
   const cam = new FreeCamera('taa_cam', new Vector3(0, 3.5, -9), scene);
@@ -47,7 +47,11 @@ export function attachTaaScene(ctx: RenderContext): TaaSceneHandle {
   box.position.y = 0.5;
   let f = 0;
   const place = (): void => {
-    box.position.x = -6 + ((f * BOX_STEP) % 12);
+    if (mode === 'pan') {
+      // camera pans sideways at BOX_STEP per frame, the box stays put
+      cam.position.x = -3 + ((f * BOX_STEP * 0.5) % 6);
+      cam.setTarget(new Vector3(cam.position.x, 0.6, 0));
+    } else box.position.x = -6 + ((f * BOX_STEP) % 12);
   };
   place();
   const eng = ctx.engine;

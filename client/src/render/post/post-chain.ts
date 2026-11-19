@@ -17,6 +17,8 @@ import type { Camera } from '@babylonjs/core/Cameras/camera';
 import type { Scene } from '@babylonjs/core/scene';
 import { ExposureController } from './post-math';
 import { PostBudgetGuard } from './post-guard';
+import { VelocityPass } from './velocity';
+import type { Terrain } from '../terrain/terrain';
 
 export type PostTier = 'high' | 'medium' | 'low';
 
@@ -32,6 +34,8 @@ export interface PostOptions {
   taaFactor?: number;
   /** Frame-interval limit (ms) of the TAA -> FXAA budget guard; `0` disables the guard. */
   guardMs?: number;
+  /** Own velocity pass for TAA reprojection (PI-118 follow-up): `terrain` adds the terrain velocity material. */
+  velocity?: { wgsl: boolean; terrain?: Terrain; flipY?: boolean };
 }
 
 export interface PostHandle {
@@ -45,6 +49,8 @@ export interface PostHandle {
   fallbackReason(): string | null;
   /** Switches TAA off and FXAA on (idempotent); returns false when TAA was not active. */
   fallbackToFxaa(reason: string): boolean;
+  /** The velocity pass when `velocity` was requested (diagnostics). */
+  velocity: VelocityPass | null;
   dispose(): void;
 }
 
@@ -71,10 +77,13 @@ export function attachPost(scene: Scene, camera: Camera, o: PostOptions): PostHa
   ip.exposure = 1;
   let taa: TAARenderingPipeline | null = null;
   let fallback: string | null = null;
+  let vel: VelocityPass | null = null;
   const fallbackToFxaa = (reason: string): boolean => {
     if (!stages.taa) return false;
     taa?.dispose();
     taa = null;
+    vel?.dispose();
+    vel = null;
     stages.taa = false;
     stages.fxaa = true;
     def.fxaaEnabled = true;
@@ -93,6 +102,19 @@ export function attachPost(scene: Scene, camera: Camera, o: PostOptions): PostHa
       fallbackToFxaa(`TAA unavailable: ${e instanceof Error ? e.message : String(e)}`);
     }
   }
+  if (taa && o.velocity) {
+    const flipY = o.velocity.flipY ?? false;
+    const t = o.velocity.terrain;
+    vel = new VelocityPass(scene, { wgsl: o.velocity.wgsl, flipY, terrain: t ? { mesh: t.mesh, material: t.createVelocityMaterial(o.velocity.wgsl, flipY) } : undefined, exclude: (m) => m.layerMask === 0x10000000 });
+    // switch Babylon's TAA shader to history reprojection and feed it OUR velocity texture (its PrePass source is not usable here).
+    // Babylon keeps the projection-matrix jitter in this mode because no material plugin manager exists.
+    const thin = (taa as unknown as { _taaThinPostProcess: { _reprojectHistory: boolean; _updateEffect(): void } })._taaThinPostProcess;
+    thin._reprojectHistory = true;
+    thin._updateEffect();
+    taa.disableOnCameraMove = false;
+    (taa as unknown as { _taaPostProcess: { onApplyObservable: { add(f: (e: { setTexture(n: string, t: unknown): void }) => void): void } } })._taaPostProcess.onApplyObservable.add((effect) => effect.setTexture('velocitySampler', vel!.rtt));
+    scene.onAfterRenderObservable.add(() => vel?.endFrame());
+  }
   const guard = o.guardMs === 0 ? null : new PostBudgetGuard(o.guardMs ?? 25);
   const exposure = new ExposureController(0);
   let targetEv = 0;
@@ -105,12 +127,17 @@ export function attachPost(scene: Scene, camera: Camera, o: PostOptions): PostHa
     },
     fallbackReason: () => fallback,
     fallbackToFxaa,
+    get velocity() {
+      return vel;
+    },
     update(dtSec) {
+      vel?.update(camera);
       if (guard && stages.taa && guard.observe(dtSec * 1000)) fallbackToFxaa(`frame budget: P95 over ${guard.limitMs} ms for ${guard.window} frames`);
       exposure.update(dtSec, targetEv);
       ip.exposure = 2 ** exposure.ev;
     },
     dispose() {
+      vel?.dispose();
       taa?.dispose();
       def.dispose();
     },

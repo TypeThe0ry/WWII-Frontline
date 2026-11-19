@@ -42,3 +42,16 @@ Babylon 的 `reprojectHistory` 用 PrePass 的速度纹理：本管线里开启�
 ## TAA→FXAA 运行时回退（`post-chain.ts`、`post-guard.ts`，2 项单测）
 - 触发：(1) TAA 管线创建抛错（例如不支持）；(2) 帧预算守卫：连续 90 帧窗口的帧间隔 P95 超过 25 ms（默认，`?post_guard=ms`，`0` 关闭）；(3) 手动 `fallbackToFxaa(reason)`。回退后释放 TAA 管线、打开 FXAA，`fallbackReason()` 给出原因，重复调用无副作用。
 - 实机验证（WebGPU 与 WebGL2）：60 fps 下默认守卫不触发；`post_guard=1`（人为把上限降到 1 ms）90 帧后触发并切到 FXAA，渲染循环继续（271 帧）；手动回退第二次调用返回 false。
+
+## TAA 速度重投影（`render/post/velocity.ts`，PI-118 续二）
+Babylon 的 PrePass 速度会让渲染循环卡死（见上），所以改成自己的速度通道：一个 FLOAT `RenderTargetTexture`，每帧用**不带抖动**的 VP 与上一帧的 VP / 世界矩阵写 NDC 速度；地形、植被/薄实例和普通网格各有一个速度材质（GLSL + WGSL 两份）。`post-chain.ts` 在 `?taa_vel=1` 时强制 Babylon 的重投影模式并把这张纹理绑为 `velocitySampler`，`disableOnCameraMove` 关掉（镜头移动时 TAA 不再关）。默认**仍关**（`taa_vel` 未设时行为不变），因为只在合成场景里测过。
+
+测量（`tools/perf/taa-ghost.mjs --frames 60`，工作站 GPU，WebGPU 与 WebGL2 数值几乎一致；原始数据 `reports/taa-velocity-box.json`、`taa-velocity-pan.json`）：
+| 配置 | 方块拖尾 trail ΔL | 其余区域 ΔL | 镜头平移 ΔL |
+| --- | --- | --- | --- |
+| FXAA | 2.01–2.08 | 0.83 | 0.84 |
+| TAA clamp（无速度） | 3.11 | 0.83 | 0（TAA 在镜头移动时被关，等于无抗锯齿） |
+| TAA clamp + 速度 | **0.92** | **0.29** | 0.29（TAA 全程开着） |
+| TAA clamp + 速度 + flipY | 0.95 | 0.29 | 0.29 |
+
+**诚实说明**：(1) 方块（单个网格）的拖尾从 3.11 降到 0.92，低于 FXAA 的 2.0；(2) flipY 两种取值差别在噪声内（0.92 vs 0.95），这一场景无法分辨方向约定，默认值不改；(3) 平移项的“0”只表示旧路径在镜头移动时关掉 TAA，不是更好；(4) **未做**：角色（薄实例）速度目前按静止处理，所以快速移动的角色仍可能有残影；YCoCg 邻域裁剪与运动遮罩没有实现，沿用 Babylon 自带的历史裁剪；(5) 没有在真实地图场景（地形+植被+载具）测，也没测帧时间开销，所以不改默认值。
