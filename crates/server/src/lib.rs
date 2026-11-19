@@ -3,6 +3,7 @@
 pub mod anticheat;
 pub mod bot_host;
 pub mod c0;
+mod c4;
 pub mod clock;
 pub mod config;
 pub mod gateway_link;

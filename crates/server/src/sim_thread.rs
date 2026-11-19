@@ -234,6 +234,7 @@ pub struct SimLoop<C: Clock> {
     bridge: SimBridge,
     seat_input: SeatInput,
     c0: crate::c0::C0Handler,
+    c4: crate::c4::Broadcast,
     consecutive: i64,
     ticks: u64,
     tick_ns: Samples,
@@ -363,6 +364,7 @@ pub fn build_loop_with_bots<C: Clock>(
         bridge,
         seat_input: SeatInput::default(),
         c0: crate::c0::C0Handler::default(),
+        c4: crate::c4::Broadcast::default(),
         consecutive: 0,
         phase_ms: [0.0; 6],
         ticks: 0,
@@ -598,6 +600,7 @@ impl<C: Clock> SimLoop<C> {
         if !kicked.is_empty() {
             for player in kicked {
                 self.seat_input.forget(player);
+                self.c4.leave(player);
                 if let Some(host) = self.bot_host.as_mut() {
                     host.forget(player);
                 }
@@ -612,6 +615,13 @@ impl<C: Clock> SimLoop<C> {
         let out = self.world.step(self.bridge.resolved());
         lap(1, &mut self.phase_ms);
         self.step_events = out.events;
+        self.c4.tick(
+            &self.world,
+            &self.bridge,
+            self.bot_host.as_ref(),
+            &self.step_events,
+            &out.rule_changes,
+        );
         self.bridge.anticheat_after_step(&self.step_events);
         self.bridge
             .anticheat
@@ -633,9 +643,20 @@ impl<C: Clock> SimLoop<C> {
                 Command::Join { player, team } => {
                     match self.bridge.join(&mut self.world, player, team) {
                         Ok(()) => {
-                            if self.dev_spawn_vehicle && player == 0 {
-                                self.setup_fixture_driver(player, team);
+                            if self.world.squads().entry(player).is_none() {
+                                if let Err(error) = self.world.roster_add(player, team) {
+                                    tracing::warn!(
+                                        event = "join_roster_rejected",
+                                        player,
+                                        ?error,
+                                        "player joined the sim without a roster seat"
+                                    );
+                                }
                             }
+                            if self.dev_spawn_vehicle && player == 0 {
+                                self.setup_fixture_driver(player);
+                            }
+                            self.c4.join(&self.bridge, player);
                             self.update_player_gauges();
                         }
                         Err(e) => tracing::warn!(
@@ -647,7 +668,10 @@ impl<C: Clock> SimLoop<C> {
                     }
                 }
                 Command::SpawnPlayer { req } => match self.bridge.spawn(&mut self.world, req) {
-                    Ok(()) => self.update_player_gauges(),
+                    Ok(()) => {
+                        self.c4.join(&self.bridge, req.player);
+                        self.update_player_gauges();
+                    }
                     Err(e) => tracing::warn!(
                         event = "spawn_failed",
                         player_id = req.player as u64,
@@ -672,6 +696,7 @@ impl<C: Clock> SimLoop<C> {
                     self.c0.forget(p);
                     self.bridge.anticheat.forget(p);
                     self.seat_input.forget(p);
+                    self.c4.leave(p);
                     self.bridge.leave(&mut self.world, p);
                     self.update_player_gauges();
                 }
@@ -679,12 +704,9 @@ impl<C: Clock> SimLoop<C> {
         }
     }
 
-    fn setup_fixture_driver(&mut self, player: PlayerId, team: Team) {
+    fn setup_fixture_driver(&mut self, player: PlayerId) {
         // Exercise the real boarding eligibility checks instead of bypassing them.
         let result = (|| {
-            self.world
-                .roster_add(player, team)
-                .map_err(|e| format!("roster: {e:?}"))?;
             self.world
                 .squad_op(
                     player,
@@ -904,6 +926,9 @@ impl<C: Clock> SimLoop<C> {
         }
     }
 }
+
+#[cfg(test)]
+mod c4_netem;
 
 #[cfg(test)]
 mod seat_input_tests;
