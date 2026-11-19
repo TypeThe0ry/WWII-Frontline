@@ -1,0 +1,21 @@
+# M1-041d 浏览器驾驶验收（2026-11-19）
+
+两轮均用 Playwright 驱动有头 Chromium 153.0.8010.12，在本机真实 WebSocket 对局中完成入座、前进、倒车和离座。被测代码为 `b317907`。服务器为 release 构建，M0 地图，1 个浏览器客户端、0 bot，以 `--dev-spawn-vehicle` 提供 Sherman 和 Crewman。客户端加载真实 sim-wasm，使用 1920×1080 WebGL2，CDP 确认 ANGLE 使用 NVIDIA RTX 3080（595.58.03）。按 PI-005 约束使用真实窗口，未使用 SwiftShader 或离屏 shim。PI-109 所述 RTX 3060 参考机未测。
+
+点击画布取得 Pointer Lock 后，以 Playwright 键盘事件短按 F 约 150 ms，确认槽 128 驾驶座 0 及本地驾驶预测激活。接着按住 W 约 12 s、S 约 8 s，松键约 3.5 s 后按住 F 直到确认回到徒步、驾驶预测清除。两轮权威槽位及座位均为 `(0,0) → (128,0) → (0,0)`，各入座和离座 1 次。两轮均记录 0 解码错误、0 意外断线、0 页面异常、0 控制台错误、0 Pointer Lock 丢失。
+
+| 本机 WebSocket 工况 | 驾驶窗口 RTT P50 / P95 | 最大水平位移：权威 / 预测 | 驾驶窗口 rAF 帧数 | 帧时间 P50 / P95 / P99 / 最大 | >50 ms 帧 |
+| --- | --- | --- | ---: | --- | ---: |
+| 回环，无注入 | 4.79 / 11.14 ms | 59.133 / 59.128 m | 1,199 | 16.7 / 16.7 / 16.8 / 16.8 ms | 0 |
+| 私有 netns，`tc netem delay 60ms loss 2%` | 143.12 / 176.99 ms | 59.102 / 59.129 m | 1,200 | 16.7 / 16.7 / 16.8 / 16.8 ms | 0 |
+
+帧时间为 W/S 约 20 s 驾驶输入窗口内完整的 `requestAnimationFrame` 间隔，含显示刷新节奏。分位数取最近秩。RTT 是客户端 `session.stats().rttMs` 在同一窗口的快照采样。netem 配置为单向 60 ms 和逐包 2% 丢包，WebSocket 使用 TCP，表中 RTT 为客户端实测。水平位移以首个带载具运动学的入座样本为起点。
+
+| 工况 | 全程入座期间同 tick 比较（W/S 窗口） | 平滑纠正 | 硬纠正 | 缺 tick 重锚 | 最大同 tick 位置误差 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 无注入 | 244（200） | 0 | 0 | 0 | 0.0316 m（未触发纠正） |
+| netem | 244（200） | 1 | 0 | 0 | 0.1215 m（唯一一次纠正，倒车段） |
+
+在浏览器内用探针包裹 `VehiclePredictor.reconcile`，保留原调用与返回值。按对账 tick 读取纠正前预测位置与同 tick 权威运动学位置，记录三维误差及 `none`、`blend`、`snap` 返回值。初次初始化不计为纠正。记录权威 `SelfState` 与载具快照，并观察预测是否激活和清除。复测前执行 `wasm-pack build crates/sim-wasm --target web --profile wasm-release`、`cargo build --release -p frontline-server` 和 `node client/scripts/sync-map.mjs m0`，用 Vite 在隔离命名空间提供真实客户端。
+
+**M1-041d 和 E1-12 保持 partial。** 本轮是短程前进、倒车测试，E1-12 的 120 ms RTT、2% 丢包、连续 60 s 直线驾驶门槛仍未测。WT 驾驶、其余两座与换座、联网载具模型和跟随镜头、乘车期间步兵预测均未验收。正式入场仍缺 Crewman 资格和地图载具接线（PI-123）。M1-064 的正式素材和 M1-067 的账号依赖阻塞了相应的素材和部署联验。此处帧时间仅适用于工作站 M0 夹具，E1-6/E1-7 结论沿用参考机门槛（PI-109）。
