@@ -84,6 +84,7 @@ struct SessionsInner {
     team_count: [usize; 2],
     /// Slot is unavailable until this instant (released recently).
     cooling_until: [Option<Instant>; 128],
+    bot_reserved: [bool; 128],
 }
 
 /// Connection admission (per IP / total) and `PlayerId` allocation.
@@ -135,6 +136,7 @@ impl Sessions {
                 team_of: [Team::Us; 128],
                 team_count: [0; 2],
                 cooling_until: [None; 128],
+                bot_reserved: [false; 128],
             }),
             metrics,
             max_per_ip,
@@ -171,8 +173,11 @@ impl Sessions {
     pub fn alloc_player_team(&self, handle: &ClientHandle) -> Option<(PlayerId, Team)> {
         let now = Instant::now();
         let mut g = self.lock();
-        let id = (0..128usize)
-            .find(|&i| g.players[i].is_none() && g.cooling_until[i].is_none_or(|t| t <= now))?;
+        let id = (0..128usize).find(|&i| {
+            !g.bot_reserved[i]
+                && g.players[i].is_none()
+                && g.cooling_until[i].is_none_or(|t| t <= now)
+        })?;
         let team = if g.team_count[Team::Ger as usize] < g.team_count[Team::Us as usize] {
             Team::Ger
         } else {
@@ -185,25 +190,29 @@ impl Sessions {
         Some((id as PlayerId, team))
     }
 
-    /// Takes `id` out of circulation for good (a bot lives there, M0-026) and counts it in
-    /// `team`'s seats so human joins keep balancing against the bots. Idempotent.
-    pub fn reserve_bot(&self, id: PlayerId, team: Team) {
+    /// Atomically claims a free seat and counts it for team balance. Returns false if occupied.
+    pub fn reserve_bot(&self, id: PlayerId, team: Team) -> bool {
         let i = id as usize;
         let mut g = self.lock();
-        if i >= 128 || g.players[i].is_some() || g.cooling_until[i].is_some() {
-            return;
+        if i >= 128
+            || g.bot_reserved[i]
+            || g.players[i].is_some()
+            || g.cooling_until[i].is_some_and(|until| until > Instant::now())
+        {
+            return false;
         }
-        g.cooling_until[i] = Some(Instant::now() + Duration::from_secs(10 * 365 * 24 * 3600));
+        g.bot_reserved[i] = true;
         g.team_of[i] = team;
         g.team_count[team as usize] += 1;
+        true
     }
 
     /// Gives a bot's id back (counterpart of [`Self::reserve_bot`]); the seat leaves the team count. Idempotent.
     pub fn unreserve_bot(&self, id: PlayerId) {
         let i = id as usize;
         let mut g = self.lock();
-        if i < 128 && g.players[i].is_none() && g.cooling_until[i].is_some() {
-            g.cooling_until[i] = None;
+        if i < 128 && g.bot_reserved[i] {
+            g.bot_reserved[i] = false;
             let t = g.team_of[i] as usize;
             g.team_count[t] = g.team_count[t].saturating_sub(1);
         }

@@ -79,6 +79,30 @@ fn rifle(squad: u8) -> DeployReq {
     }
 }
 
+#[test]
+fn compact_map_can_deploy_without_a_protected_hq() {
+    let mut f = fx_with(GameData::embedded(), false, false);
+    let pos = Vec3::new(60.0, 5.0, 60.0);
+    f.w.set_team_spawn(Team::Us, pos);
+    assert!(!f.w.has_hq(Team::Us));
+    assert_eq!(f.w.deploy(11, &rifle(1)).unwrap().spawn_in_ticks, 0);
+    assert_eq!(f.w.player_state(11).unwrap().pos, pos);
+    assert_eq!(f.w.spawn_protection_left(11), 0);
+}
+
+#[test]
+fn first_deploy_grants_role_abilities() {
+    let mut f = fx_with(GameData::embedded(), false, false);
+    let pos = Vec3::new(60.0, 5.0, 60.0);
+    f.w.set_team_spawn(Team::Us, pos);
+    f.w.deploy(10, &req("officer", "us_officer_1", SPAWN_HQ, 1))
+        .unwrap();
+    f.w.deploy(11, &req("support", "us_support_1", SPAWN_HQ, 1))
+        .unwrap();
+    assert!(f.w.place_garrison(10, pos).is_ok());
+    assert!(f.w.place_ammo_crate(11).is_ok());
+}
+
 fn req(role: &str, loadout: &str, point: u16, squad: u8) -> DeployReq {
     let d = GameData::embedded();
     DeployReq {

@@ -11,6 +11,14 @@ use frontline_sim::{PlayerId, Vec3, WorldView};
 
 use crate::difficulty::{Difficulty, Tuning};
 
+/// An audible location, not a player track. Never confers permission to shoot.
+#[derive(Debug, Clone, Copy)]
+pub struct Sound {
+    pub pos: Vec3,
+    pub tick: u32,
+    pub range_m: f32,
+}
+
 /// Height of the aimed-at point above an enemy's feet (centre of the torso capsule).
 pub const TORSO_Y: f32 = 1.23;
 /// Height of the head-sphere centre above the feet (standing).

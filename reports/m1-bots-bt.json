@@ -1,0 +1,12 @@
+{
+  "machine": "Shared EPYC 7402 workstation (PI-109); not the reference machine",
+  "command": "FRONTLINE_REQUIRE_TERRAIN=1 CARGO_INCREMENTAL=0 cargo bench -p frontline-bots --bench think --locked -- --m1",
+  "build": "release",
+  "fixture": "M0 collision, 10v10 M1 tactical brains; no host or squad/role intel",
+  "samples": 8290,
+  "warmup_ticks": 300,
+  "measured_ticks": 1800,
+  "median_us": 1.48,
+  "p95_us": 5.39,
+  "max_us": 97.539
+}

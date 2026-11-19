@@ -12,12 +12,18 @@ use std::cell::Cell;
 use std::sync::{Arc, OnceLock};
 use std::time::{Duration, Instant};
 
+use frontline_protocol::msg::c0::{ClientMsgC0, Report};
+use frontline_protocol::msg::input::{buttons, InputBundle, InputCmd};
 use frontline_server::clock::Clock;
 use frontline_server::metrics::Metrics;
+use frontline_server::net::conn::{Inbound, InboundQueue, Sessions};
+use frontline_server::session::yaw_code;
 use frontline_server::shutdown::StopFlag;
-use frontline_server::sim_thread::{build_loop_with_bots, EventTally, SimThreadConfig};
+use frontline_server::sim_bridge::NetLink;
+use frontline_server::sim_thread::{build_loop_with_bots, Command, EventTally, SimThreadConfig};
 use frontline_server::world_loader::{self, LoadedMap};
-use frontline_sim::{GameMode, MapId};
+use frontline_sim::rules::ObjectiveSpec;
+use frontline_sim::{GameMode, LifeState, MapId, Team, Vec3};
 
 struct StepClock {
     base: Instant,
@@ -249,4 +255,218 @@ fn bots_soak_5min() {
             s.tally.kills
         );
     }
+}
+
+/// Two scripted humans enter through the real Join/C0 command queue and C1 bundle queue.
+/// No sockets, handshake, or snapshot clients are started by this test.
+fn tactical_soak(mut map: LoadedMap, ticks: u32, mixed: bool) -> EventTally {
+    let metrics = Metrics::new();
+    let net = InboundQueue::new();
+    let mut cfg = SimThreadConfig::bare(39, MapId(0), GameMode::Sandbox);
+    if mixed {
+        let (x, z) = map.spawns.center;
+        map.objectives = vec![ObjectiveSpec {
+            id: 1,
+            pos: Vec3::new(x, map.collision.height_at(x, z).unwrap(), z),
+            radius_m: 25.0,
+            owner: None,
+        }];
+    }
+    assert!(
+        !map.objectives.is_empty(),
+        "tactical soak requires objectives"
+    );
+    let humans_per_team = u8::from(mixed);
+    let bots_per_team = 10 - usize::from(humans_per_team);
+    let label = if mixed { "M0 mixed" } else { "Carentan 10v10" };
+    let size = map.size_m;
+    cfg.map_data = Some(Arc::new(map));
+    cfg.net = Some(NetLink {
+        inbound: net.rx,
+        sessions: Sessions::new(metrics.clone()),
+    });
+    let (mut lp, _, commands) =
+        build_loop_with_bots(StepClock::new(), &cfg, 0, metrics.clone(), StopFlag::new());
+    if mixed {
+        for (player, team) in [(0, Team::Us), (1, Team::Ger)] {
+            commands.send(Command::Join { player, team }).unwrap();
+        }
+    }
+    commands.send(Command::SetBotFill(10)).unwrap();
+    let start = Instant::now();
+    let mut wall_ticks = Vec::with_capacity(ticks as usize);
+    let mut closest = f32::INFINITY;
+    for tick in 1..=ticks {
+        for player in 0..2 * humans_per_team {
+            let yaw = lp
+                .world()
+                .player_state(player)
+                .map_or(0, |p| yaw_code(p.yaw));
+            let cmd = InputCmd {
+                seq: tick as u16,
+                tick,
+                yaw,
+                move_x: 0,
+                move_z: if tick % 120 < 30 { 40 } else { 0 },
+                pitch: 0,
+                buttons: if tick.is_multiple_of(19) {
+                    buttons::FIRE
+                } else {
+                    0
+                },
+                weapon_slot: 0,
+                aux: 0,
+                view_tick: 0,
+            };
+            net.tx
+                .send(Inbound {
+                    player,
+                    bundle: InputBundle {
+                        ack_snapshot_tick: 0,
+                        pred_hash: 0,
+                        cmds: std::iter::once(cmd).collect(),
+                        fire: Default::default(),
+                    },
+                })
+                .unwrap();
+        }
+        // Benign synthetic C0 traffic; leaves deploy metrics bot-only.
+        if mixed && tick == 120 {
+            commands
+                .send(Command::C0 {
+                    player: 0,
+                    msg: ClientMsgC0::Report(Report {
+                        target: 1,
+                        reason: 0,
+                        note: "scripted soak traffic".into(),
+                    }),
+                })
+                .unwrap();
+        }
+        let tick_start = Instant::now();
+        lp.tick();
+        wall_ticks.push(tick_start.elapsed().as_secs_f64() * 1e3);
+        if tick == 30 {
+            for team in [Team::Us, Team::Ger] {
+                assert_eq!(lp.bot_host().unwrap().count_team(team), bots_per_team);
+                assert_eq!(lp.world().squads().team_count(team) as usize, bots_per_team);
+            }
+            let world = lp.world();
+            for id in lp.bot_host().unwrap().players() {
+                assert_eq!(world.player_life(id), Some(LifeState::Alive));
+                assert!(world.squads().entry(id).unwrap().loadout.is_some());
+            }
+            for role in ["officer", "medic", "support"] {
+                assert!(
+                    world.squads().roster().any(|(_, e)| e.role == Some(role)),
+                    "missing {role}"
+                );
+            }
+        }
+        if tick.is_multiple_of(30) {
+            let view = lp.world().view();
+            for a in view.players().iter().filter(|p| p.team == Team::Us) {
+                for b in view.players().iter().filter(|p| p.team == Team::Ger) {
+                    closest = closest.min(frontline_sim::supply::dist_xz(a.pos, b.pos));
+                }
+            }
+            assert!(
+                view.players().iter().all(|p| {
+                    p.pos.is_finite()
+                        && (0.0..=size).contains(&p.pos.x)
+                        && (0.0..=size).contains(&p.pos.z)
+                }),
+                "a player left the map at {tick}"
+            );
+        }
+    }
+    let wall = start.elapsed().as_secs_f64();
+    let tally = lp.tally();
+    let accepted = metrics
+        .deploy_requests_total
+        .with_label_values(&["ok"])
+        .get();
+    let rejected = metrics
+        .deploy_requests_total
+        .with_label_values(&["rejected"])
+        .get();
+    let kicks = metrics.session_kicked_total.get();
+    let bot_host = lp.bot_host().unwrap();
+    let mut think: Vec<_> = bot_host
+        .timings()
+        .iter()
+        .map(|s| s.total_ns as f64 / 1e6)
+        .collect();
+    eprintln!("M1-039c {label}: {ticks} ticks ({:.0} s sim), {wall:.3} s wall, tick P99 {:.3} ms, host P95 {:.3} ms / P99 {:.3} ms, {} C1 client bundles sent, {} C0 handled, nearest opponents {closest:.1} m, shots {}, kills {}, respawns {}, deploy ok {accepted} rejected {rejected}, kicks {kicks}",
+        f64::from(ticks) / 30.0, pct(&mut wall_ticks, 0.99), pct(&mut think, 0.95), pct(&mut think, 0.99), u32::from(2 * humans_per_team) * ticks,
+        metrics.reports_total.get(), tally.shots, tally.kills, tally.spawns);
+    assert_eq!(bot_host.len(), 2 * bots_per_team);
+    for team in ["us", "ger"] {
+        assert_eq!(
+            metrics.bots_active.with_label_values(&[team]).get(),
+            bots_per_team as i64
+        );
+        assert_eq!(
+            metrics.players.with_label_values(&[team]).get(),
+            i64::from(humans_per_team)
+        );
+    }
+    assert_eq!(metrics.reports_total.get(), u64::from(humans_per_team));
+    assert_eq!(
+        metrics
+            .input_rejected_total
+            .with_label_values(&["no_session"])
+            .get(),
+        0
+    );
+    if mixed {
+        assert!(tally.shots > 0, "no simulated combat traffic");
+    }
+    assert!(accepted >= 2 * bots_per_team as u64 && 100 * rejected < accepted + rejected);
+    assert_eq!(kicks, 0);
+    tally
+}
+
+#[test]
+fn fill_20_players() {
+    let Some(map) = terrain() else { return };
+    tactical_soak((*map).clone(), 120, true);
+}
+
+#[test]
+#[ignore = "measured 300-s tactical run; release recommended"]
+fn tactical_mixed_soak_5min() {
+    let map = terrain().expect("M0 terrain fixture is required for tactical soak");
+    tactical_soak((*map).clone(), 9_000, true);
+}
+
+#[test]
+#[ignore = "measured 300-s tactical run; requires raw Carentan collision fixture"]
+fn tactical_carentan_10v10_5min() {
+    let mut map = world_loader::locate_data_dir(None, "carentan/m1")
+        .and_then(|d| world_loader::load_map(&d, "carentan/m1"))
+        .expect("Carentan M1 fixture must contain raw c_*.bin collision chunks");
+    // With all objectives active, the two sides can stay at separate near-HQ objectives.
+    // Use one authored objective so the scenario actually tests contested movement.
+    let [us, ger] = map.spawns.hq;
+    let center = Vec3::new((us.x + ger.x) * 0.5, 0.0, (us.z + ger.z) * 0.5);
+    let objective = map
+        .objectives
+        .iter()
+        .min_by(|a, b| {
+            frontline_sim::supply::dist_xz(a.pos, center)
+                .total_cmp(&frontline_sim::supply::dist_xz(b.pos, center))
+        })
+        .copied()
+        .expect("Carentan objective data");
+    eprintln!(
+        "Carentan soak objective {} at {:?}",
+        objective.id, objective.pos
+    );
+    map.objectives = vec![objective];
+    let tally = tactical_soak(map, 9_000, false);
+    assert!(
+        tally.kills > 0,
+        "Carentan 10v10 did not demonstrate combat kills"
+    );
 }

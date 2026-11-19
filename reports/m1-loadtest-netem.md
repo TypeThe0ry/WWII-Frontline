@@ -71,7 +71,7 @@ scripts/loadtest-netem.sh --netem 'delay 25ms 10ms loss 2%' -- \
 
 服务器只在夹具模式下配置 Crewman 和 M4A1。客户端靠 `SelfState` 确认入座，在座位 0 沿同一方向前进、倒车折返，末尾制动并长按离座。载具统计在 `per_client[0].vehicle`，不混入步兵纠正：用同 tick 的量化权威位置计算误差，≥0.05 m 回滚并重放未确认且晚于该 tick 的命令；≥1.0 m 另记硬纠正。找不到预测 tick 的重新锚定单列，不给它填假误差。首次锚定不算纠正；没有有限纠正时 `error_m` 为 `null`。驾驶员乘车期间及离座后短暂跳过基于步兵预测位置的客户端 AOI 审计，其他客户端的审计逻辑不变。
 
-实测汇总：[ws-drive-netem-300s.json](loadtest-1119/ws-drive-netem-300s.json)。
+实测汇总：[ws-drive-netem-300s.json](loadtest-1119/ws-drive-netem-300s.json)。采集使用基线 `0f1c59e` 加本任务代码，早于上游 bot 行为改动 #129；下列数值不代表更新后的 bot 场景。
 
 | 项 | 实测 |
 | --- | --- |
@@ -82,5 +82,7 @@ scripts/loadtest-netem.sh --netem 'delay 25ms 10ms loss 2%' -- \
 | AOI | 服务器泄漏计数 0；独立客户端审计检查 302,361 条敌方记录，其中 51,798 条超出近距边界，报告 13 条异常（徒步客户端 2、6、8）。本轮未开启逐条审计 trace，无法确认是否是真实泄漏 |
 
 **判定：驾驶闭环通过；全场联测因 AOI 独立审计未通过（partial）。** 未放宽或关闭该硬判据。原始服务器和 headless 日志/JSON 保留在工作站 `/data/scratch/batch/A/loadtest-js6Dt4/`。
+
+合入 #129 后用同样的 netem 配置补跑了 12 s 冒烟（debug，2 WS + 12 bot）：汇总通过，入/出各 1 次，最大水平位移 9.283 m，96 次比较中 5 次纠正（最大 0.0748 m），硬纠正/缺 tick 重锚均 0，tick P99 12.741 ms。仅是回归检查，不代替 release 的 300 s 场景或 AOI 复查。
 
 **未测**：浏览器实车和画面平滑、WT 行车、120 ms RTT 直线对账门槛（E1-12），以及真实网络下的瞄准延迟补偿对照（E1-5）。

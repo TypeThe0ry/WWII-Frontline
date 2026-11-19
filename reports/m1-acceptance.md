@@ -19,8 +19,21 @@
 | E1-13 | 倒地/救起/压制 | 状态机全转移单测；压制被客户端音画消费 | 016/017 单测通过（转移 ≥10 条）；网络对局已订阅压制音频。工作站无头 Chromium 的合成 PCM 在第二次压制后 400 ms 恢复到基准：低频振幅与高低频比均约 1.00002×。真实素材、联网压制整链与音画联验未测（非 RTX 3060 参考机，PI-109） | M1-016/017；`client/e2e/audio-offline.spec.ts` | partial | PI-053、PI-124B |
 | E1-14 | 素材管线 | `.fpak` 往返一致；无独立 .glb/.ktx2/.ogg/.opus；缺失报告；无 PENDING 进主分支 | 台账 8 行：OK 4、PENDING 3、FLAGGED 1、REJECTED 0；仓库内 2 个 `.ktx2` 为测试夹具；PENDING 对应处理产物未入主分支 | `node tools/asset-pipeline/bin/asset-pipeline.mjs ledger-check --root .` | partial | PI-108 |
 | E1-15 | 基础反作弊 | 1.3× 速度、超射速被纠正/拒绝并计数 | 1.3× 注入：权威最高 6.34 m/s，`suspicion_move_total` ≥ 100；超射速 8 发出膛、56 次拒绝；甩枪 0 误报 | M1-027a | partial | PI-074 |
-| E1-16 | 数据与史实 | historical 100% 有出处或"未核实"；批 M1 回填与复测在容限 | 67 字段：13 有出处、54 标"未核实"（均保持 initial）；批 M1 录像为 0 | `docs/measurements/hist-review-m1.md`；M1-071 blocked | partial | M1-070b、H-011/025/026 |
+| E1-16 | 数据与史实 | historical 100% 有出处或"未核实"；批 M1 回填与复测在容限 | 070b 逐项在线比对 67 个字段：51 一致、10 不一致、6 未核实；JSON 来源未回填，结构审计仍为 13 已登记、54 缺口。Sherman 装甲/弹种全表验收未做；批 M1 录像为 0，未复测。 | `docs/measurements/hist-review-m1.md`；M1-071 blocked | partial | PI-124G、H-011/025/026 |
 | E1-17 | 占位决定 | 范围内占位需求 ID 有"决定"或明确推迟 | 72 个 M1 视觉需求 ID 全为占位，台账 OK 行仅 4 条（字体） | `reports/m1-placeholders.md` | partial | PI-108 |
+
+## Bot 行为补测（M1-038c / M1-039c）
+
+`bt_scenarios` 验证了墙后 1,000 tick 零开火、听声搜索不授权开火、视觉记忆到期、Move/Attack/Defend/Hold、倒地放弃输入、5 s 卡住跳跃及补给/救治输入。各 200 次脚本采样中，Recruit / Veteran 识别后首次发出 `FIRE` 的平均延迟为 746.00 / 403.50 ms；未测真人实战延迟。共享 EPYC 7402 工作站（PI-109，非 RTX 3060 参考机）上的 10v10 M1 brain / M0 地形发布构建，8,290 次完整决策 P50 1.48 µs / P95 5.39 µs（`reports/m1-bots-bt.json`）。这些结果不替代 E1-1 真人测试或 E1-2 服务器长跑。
+
+发布构建 soak（`cargo test --release --locked -p frontline-server --test bots_soak tactical_ -- --ignored --nocapture --test-threads=1`），同一共享工作站：
+
+| 场景 | 模拟时长 / 墙钟 | 发射 / 击杀 / 重生 | 部署成功 / 拒绝 / 踢出 | BotHost P95（全部 bot 思考和输入摄入） | tick P99 |
+| --- | --- | --- | --- | --- | --- |
+| Carentan 1/3、真实据点 5、20 bot | 9,000 tick / 300 s；10.703 s | 47 / 11 / 9 | 31 / 0 / 0 | 0.064 ms | 4.741 ms |
+| M0、18 bot + 2 脚本玩家 | 9,000 tick / 300 s；5.435 s | 227 / 55 / 54 | 72 / 0 / 0 | 0.134 ms | 1.217 ms |
+
+混合组第 30 tick 填到每队 9 bot + 1 脚本玩家，共发 18,000 个 C1 输入包、处理 1 个 C0。测试为进程内模拟，无真实传输或真人；Carentan 仅激活一个据点、使用烘焙 navmesh 与解压后的 380 个 `FCOL` 地形块，不等于多据点完整对局。碰撞夹具用 `map_pipeline chunks-m1` 生成，zlib 解压 `c_*.fcol` 到 `data/maps/carentan/m1/chunks/c_*.bin`；生成物不进仓库。E1-1 不改判定。
 
 ## 演示脚本（MILESTONES §2.4）
 
