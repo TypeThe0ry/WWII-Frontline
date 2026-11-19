@@ -17,12 +17,14 @@ import { ShaderMaterial } from '@babylonjs/core/Materials/shaderMaterial';
 import type { AbstractMesh } from '@babylonjs/core/Meshes/abstractMesh';
 import type { Scene } from '@babylonjs/core/scene';
 import type { RenderContext } from '../engine';
+import type { VariantRegistry } from '../materials/variants';
 import { csmConfig, type ShadowTier } from './csm-math';
 import { fitCascade, type CameraPose, type V3 } from './cascades';
 import { DEPTH_FRAGMENT_GLSL, DEPTH_FRAGMENT_WGSL, DEPTH_VERTEX_GLSL, DEPTH_VERTEX_WGSL, SHADOW_SAMPLERS } from './csm-shader';
 
 export interface CustomCsmOptions {
   tier: ShadowTier;
+  variants?: VariantRegistry;
   /** Direction the light travels (unit). */
   lightDir: V3;
   /** Depth bias (in the [0,1] depth range) and normal offset (in texels). */
@@ -82,6 +84,8 @@ export function attachCustomCsm(ctx: RenderContext, o: CustomCsmOptions): Custom
   const cfg = csmConfig(o.tier, o.webgl2Config ?? !wgsl);
   const n = Math.min(4, cfg.splits.length);
   const depthBack = o.depthBack ?? 150;
+  o.variants?.registerCustom('csm:plain');
+  o.variants?.registerCustom('csm:instanced');
   const plain = depthMaterial(scene, false, wgsl);
   const inst = depthMaterial(scene, true, wgsl);
   const rtts: RenderTargetTexture[] = [];

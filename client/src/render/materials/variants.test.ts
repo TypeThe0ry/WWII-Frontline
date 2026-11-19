@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { PH_NAME_RE, phName } from '../actors/names';
 import {
-  enumerateVariants, MAX_VARIANTS, MAX_VARIANTS_LOW, MaterialFactory, VariantRegistry, variantKey, variantMask, type MaterialDesc,
+  CUSTOM_VARIANTS, enumerateVariants, MAX_VARIANTS, MAX_VARIANTS_LOW, MaterialFactory, VariantRegistry, variantKey, variantMask, type MaterialDesc,
 } from './variants';
 
 const d = (pass: MaterialDesc['pass'], flags: MaterialDesc['flags'] = {}): MaterialDesc => ({ shading: 'pbr', pass, flags });
@@ -15,6 +15,18 @@ describe('PBR variants', () => {
     expect(low.length).toBeLessThanOrEqual(MAX_VARIANTS_LOW);
     expect(low.length).toBe(20);
     expect(new Set(all.map((v) => variantKey(v))).size).toBe(all.length);
+  });
+
+  it.each([[false, 37], [true, 25]] as const)('gates the total PBR and custom variants (Low=%s)', (low, count) => {
+    const inventory = new VariantRegistry(low);
+    for (const d of enumerateVariants(low)) inventory.register(d);
+    for (const key of CUSTOM_VARIANTS) {
+      inventory.registerCustom(key);
+      inventory.registerCustom(key);
+    }
+    expect(inventory.stats().count).toBeLessThanOrEqual(inventory.limit);
+    expect(inventory.stats()).toMatchObject({ count, custom: [...CUSTOM_VARIANTS].sort() });
+    console.info(`shader variant-count ${low ? 'Low' : 'High'}: ${inventory.stats().count}/${inventory.limit} per backend`);
   });
 
   it('macros a pass cannot use do not make new variants', () => {
@@ -35,6 +47,7 @@ describe('PBR variants', () => {
     Object.defineProperty(tiny, 'limit', { get: () => 2 });
     tiny.register(d('opaque'));
     tiny.register(d('alpha'));
+    expect(() => tiny.registerCustom('velocity:terrain')).toThrow(/limit/);
     expect(() => tiny.register(d('depth'))).toThrow(/limit/);
   });
 

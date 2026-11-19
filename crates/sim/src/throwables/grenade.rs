@@ -1,5 +1,5 @@
 //! Thrown-grenade flight and fuse (GAMEDESIGN 6.9.1): gravity, four sub-steps per tick, bounce
-//! with restitution and tangential friction against the terrain, rest detection.
+//! with restitution and tangential friction, rest detection.
 
 use glam::Vec3;
 
@@ -23,7 +23,7 @@ pub struct Flight {
 }
 
 /// Advances one tick of flight at `hz`; `restitution` scales the normal velocity kept on a bounce,
-/// `friction` the tangential one.
+/// `friction` the tangential one. Each sub-step uses the first terrain or static cover hit.
 pub fn step(f: &mut Flight, col: &CollisionData, hz: u8, restitution: f32, friction: f32) {
     let h = 1.0 / (f32::from(hz) * SUBSTEPS as f32);
     if f.vel == Vec3::ZERO {
@@ -39,10 +39,15 @@ pub fn step(f: &mut Flight, col: &CollisionData, hz: u8, restitution: f32, frict
         if len < 1e-9 {
             continue;
         }
-        match col.raycast(p0, seg, len) {
+        let terrain = col.raycast(p0, seg, len);
+        let hit = match col.raycast_cover_segment(p0, p0 + seg) {
+            Some(cover) if terrain.is_none_or(|ground| cover.t < ground.t) => Some(cover),
+            _ => terrain,
+        };
+        match hit {
             Some(hit) => {
-                touched = true;
                 let n = hit.normal;
+                touched |= n.y > 0.0;
                 let vn = n * f.vel.dot(n);
                 let vt = f.vel - vn;
                 f.vel = vt * friction - vn * restitution;
@@ -54,10 +59,15 @@ pub fn step(f: &mut Flight, col: &CollisionData, hz: u8, restitution: f32, frict
     // One tick of gravity alone adds `g / hz` m/s, so that much vertical speed still counts as rest.
     let slack = GRAVITY_MPS2 / f32::from(hz);
     let horiz = libm::sqrtf(f.vel.x * f.vel.x + f.vel.z * f.vel.z);
-    let near = col
-        .height_at(f.pos.x, f.pos.z)
-        .is_some_and(|g| f.pos.y - g < 0.1);
-    if (touched || near) && horiz < REST_SPEED_MPS && libm::fabsf(f.vel.y) < REST_SPEED_MPS + slack
+    if horiz < REST_SPEED_MPS
+        && libm::fabsf(f.vel.y) < REST_SPEED_MPS + slack
+        && (touched
+            || col
+                .height_at(f.pos.x, f.pos.z)
+                .is_some_and(|g| f.pos.y - g < 0.1)
+            || col
+                .raycast_cover_segment(f.pos, f.pos - Vec3::Y * 0.1)
+                .is_some_and(|hit| hit.normal.y > 0.0))
     {
         f.rest = f.rest.saturating_add(1);
         if f.rest >= REST_TICKS {

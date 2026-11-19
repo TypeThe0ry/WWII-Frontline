@@ -38,6 +38,7 @@ pub mod ballistics;
 pub mod hitbox;
 pub mod melee;
 pub mod recoil;
+pub mod sidearm;
 pub mod spread;
 pub mod state;
 
@@ -63,6 +64,7 @@ pub struct WeaponParams {
     pub reload_tactical_units: i32,
     pub reload_empty_units: i32,
     pub ads_units: i32,
+    pub swap_in_ticks: u32,
     pub recoil_delay_units: i32,
     pub hip_deg: f32,
     pub ads_deg: f32,
@@ -111,6 +113,11 @@ impl WeaponParams {
             reload_tactical_units: ms_to_units(g.reload.tactical_ms, hz),
             reload_empty_units: ms_to_units(g.reload.empty_ms, hz),
             ads_units: ms_to_units(g.ads_ms, hz),
+            swap_in_ticks: crate::respawn::ms_to_ticks(
+                g.swap_in_ms
+                    .unwrap_or(if def.class == "pistol" { 350 } else { 500 }),
+                hz,
+            ),
             recoil_delay_units: ms_to_units(recoil::RECOIL_DELAY_MS, hz),
             hip_deg: g.spread.hip_deg as f32,
             ads_deg: g.spread.ads_deg as f32,
@@ -182,16 +189,8 @@ fn eye_position(auth: &PlayerAuthState, mp: &MoveParams) -> Vec3 {
     auth.pos + Vec3::new(0.0, h, 0.0) + crate::movement::lean::head_offset(auth, mp)
 }
 
-/// Advances `w` by one tick. `auth` is the player's state **after** this tick's movement.
-pub fn step_weapon(
-    w: &mut WeaponState,
-    p: &WeaponParams,
-    cmd: &InputCmd,
-    auth: &PlayerAuthState,
-    mp: &MoveParams,
-    ctx: ShotCtx,
-) -> WeaponOut {
-    let mut out = WeaponOut::default();
+/// Advances pacing and recoil while either equipped or holstered. Returns reload completion.
+fn advance_weapon(w: &mut WeaponState, p: &WeaponParams) -> bool {
     let u = TICK_UNITS;
 
     // --- timers ---
@@ -219,7 +218,7 @@ pub fn step_weapon(
                 ammo::complete_reload(w, p.mag_capacity);
                 w.fsm = if w.mag == 0 { Fsm::Empty } else { Fsm::Ready };
                 w.timer_units = 0;
-                out.reload_finished = true;
+                return true;
             }
         }
         Fsm::Ready | Fsm::Empty => {
@@ -227,7 +226,23 @@ pub fn step_weapon(
             w.timer_units = (w.timer_units - u).max(-(u - 1));
         }
     }
+    false
+}
 
+/// Advances `w` by one tick. `auth` is the player's state **after** this tick's movement.
+pub fn step_weapon(
+    w: &mut WeaponState,
+    p: &WeaponParams,
+    cmd: &InputCmd,
+    auth: &PlayerAuthState,
+    mp: &MoveParams,
+    ctx: ShotCtx,
+) -> WeaponOut {
+    let u = TICK_UNITS;
+    let mut out = WeaponOut {
+        reload_finished: advance_weapon(w, p),
+        ..WeaponOut::default()
+    };
     let sprinting = is_sprinting(cmd);
     // Sprinting or vaulting interrupts a reload; the rounds are only moved when it completes,
     // so cancelling costs nothing (GAMEDESIGN 6.3, M1-013).

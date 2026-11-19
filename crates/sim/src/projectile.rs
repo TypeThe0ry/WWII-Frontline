@@ -3,8 +3,8 @@
 //! Each tick a projectile integrates [`SUBSTEPS`] sub-steps (gravity + quadratic drag, see
 //! [`crate::weapon::ballistics`]); every sub-step segment is tested against the terrain
 //! (`CollisionData::raycast`) and the hit volumes of the enemy players
-//! ([`crate::weapon::hitbox`]); the nearest hit ends the projectile. The shooter is ignored;
-//! teammates take `ff_mult` damage ([`crate::combat::damage`], M1-014; no penetration yet).
+//! ([`crate::weapon::hitbox`]); static cover may stop, deflect or ricochet the projectile.
+//! The shooter is ignored; teammates take `ff_mult` damage ([`crate::combat::damage`]).
 //! A projectile that leaves the loaded collision, lives longer than 4 s or drops below 150 m/s
 //! is removed silently. Damage `D = damage_torso_hp * falloff(d) * part_mult` is subtracted from
 //! the target's [`Health`] and reported as [`SimEvent::Hit`] (and logged in [`HitLog`] for the
@@ -13,12 +13,15 @@
 use bevy_ecs::prelude::*;
 use glam::Vec3;
 
+use crate::ballistics::materials::MaterialTable;
+use crate::ballistics::penetration::{contact, Contact};
+use crate::ballistics::ricochet;
 use crate::combat::damage::{damage_amount, DamageKind, HitInfo, TargetCtx};
 use crate::combat::lagcomp::{protected_by_cover, LagComp, LagCompRules, ProjectileClock};
 use crate::combat::lagcomp_history::{HitboxFrame, LagCompHistory, PlayerHitboxes};
 use crate::components::{
-    CollisionRes, CurrentTick, EntityTable, EventBuf, Motion, MoveParamsRes, SimCfgRes, Team,
-    Transform, WeaponTable,
+    CollisionRes, CurrentTick, EntityTable, EventBuf, Motion, MoveParamsRes, SimCfgRes, SimRng,
+    Team, Transform, WeaponTable,
 };
 use crate::data::defs::WeaponDef;
 use crate::health::{Health, HitLog, HitRec};
@@ -45,7 +48,31 @@ pub struct Projectile {
     pub substeps: u32,
     /// Initial lag-compensation rewind in ticks (M1-025); 0 = live from spawn.
     pub rewind: u8,
+    pub(crate) cover: ShotCover,
 }
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub(crate) struct ShotCover {
+    pub crossings: u8,
+    pub remaining: f32,
+    pub multiplier: f32,
+    /// Exit and deflected direction. Time spent inside doesn't need further collision queries.
+    pub transit: Option<(Vec3, Vec3)>,
+}
+
+impl Default for ShotCover {
+    fn default() -> Self {
+        Self {
+            crossings: 0,
+            remaining: 0.0,
+            multiplier: 1.0,
+            transit: None,
+        }
+    }
+}
+
+#[derive(Resource)]
+pub(crate) struct ProjectileMaterials(pub MaterialTable);
 
 /// All projectiles in spawn order.
 #[derive(Resource, Debug, Default)]
@@ -75,6 +102,7 @@ impl Projectiles {
             vel,
             substeps: 0,
             rewind: 0,
+            cover: ShotCover::default(),
         });
         id
     }
@@ -170,7 +198,7 @@ impl RewindCollision<'_> {
 
 /// The projectile stage (ARCHITECTURE 6.10 stage 4).
 #[allow(clippy::too_many_arguments)]
-pub fn projectile_system(
+pub(crate) fn projectile_system(
     cfg: Res<SimCfgRes>,
     wt: Res<WeaponTable>,
     col: Res<CollisionRes>,
@@ -185,6 +213,8 @@ pub fn projectile_system(
     mut sq: Query<&mut SuppressionState>,
     mut q: Query<(&Transform, &Motion, &Team, &mut Health)>,
     mut profiler: Option<ResMut<crate::step::StepProfiler>>,
+    materials: Res<ProjectileMaterials>,
+    rng: Res<SimRng>,
 ) {
     let _sample = crate::step::StepProfiler::measure(&mut profiler, |t| &mut t.projectiles);
     if projs.list.is_empty() {
@@ -267,6 +297,8 @@ pub fn projectile_system(
             &mut seen,
             &mut sq,
             rewind.as_ref(),
+            &materials.0,
+            rng.match_seed,
         );
         match fate {
             Fate::Alive => keep.push(pr),
@@ -300,6 +332,8 @@ fn advance(
     seen: &mut SuppressSeen,
     sq: &mut Query<&mut SuppressionState>,
     rewind: Option<&RewindCollision<'_>>,
+    materials: &MaterialTable,
+    match_seed: u64,
 ) -> Fate {
     for substep in 0..SUBSTEPS {
         let p0 = pr.pos;
@@ -314,6 +348,20 @@ fn advance(
         let p1 = pr.pos;
         let seg = p1 - p0;
         let len = libm::sqrtf(seg.x * seg.x + seg.y * seg.y + seg.z * seg.z);
+        if let Some((exit, dir)) = pr.cover.transit {
+            let to_exit = exit - p0;
+            pr.pos = if len >= to_exit.length() {
+                pr.cover.transit = None;
+                pr.vel = dir * pr.vel.length();
+                exit
+            } else {
+                p0 + to_exit.normalize_or_zero() * len
+            };
+            if expired(pr, col, max_substeps) {
+                return Fate::Gone;
+            }
+            continue;
+        }
 
         // Nearest body hit on this segment.
         let mut body: Option<(f32, HitZone, usize)> = None;
@@ -344,10 +392,18 @@ fn advance(
         } else {
             None
         };
-        let ground_t = ground.map(|g| g.t / len);
+        let dir = if len > 1e-6 { seg / len } else { Vec3::ZERO };
+        let cover = col.ballistic_cover(p0, dir, len, materials);
+        let cover_first = cover.is_some_and(|(c, _)| ground.is_none_or(|g| c.t < g.t));
+        let obstruction = if cover_first {
+            cover.map(|(c, _)| c)
+        } else {
+            ground
+        };
+        let stop_t = obstruction.map(|g| g.t / len);
         // Near misses along the part of the segment flown (M1-017).
         {
-            let (end, hit_id) = match (body, ground_t) {
+            let (end, hit_id) = match (body, stop_t) {
                 (Some((tb, _, i)), gt) if gt.is_none_or(|g| tb < g) => (tb, Some(targets[i].id)),
                 (_, Some(g)) => (g, None),
                 _ => (1.0, None),
@@ -376,7 +432,7 @@ fn advance(
                 events,
             );
         }
-        match (body, ground, ground_t) {
+        match (body, obstruction, stop_t) {
             (Some((tb, zone, i)), _, gt) if gt.is_none_or(|g| tb < g) => {
                 let hit_pos = p0 + seg * tb;
                 let dist = (hit_pos - pr.origin).length();
@@ -409,7 +465,7 @@ fn advance(
                     &HitInfo {
                         zone,
                         travelled_m: dist,
-                        pen_mult: 1.0,
+                        pen_mult: pr.cover.multiplier,
                         kind: DamageKind::Bullet,
                     },
                     &TargetCtx {
@@ -450,18 +506,76 @@ fn advance(
                     normal: g.normal,
                     material: g.material,
                 });
-                return Fate::Gone;
+                let Some((_, layer)) = cover.filter(|_| cover_first) else {
+                    return Fate::Gone;
+                };
+                let Some(mat) = materials.get(layer.material) else {
+                    return Fate::Gone;
+                };
+                let power = def.gameplay.pen_power as f32;
+                let remaining = if pr.cover.crossings == 0 {
+                    power
+                } else {
+                    pr.cover.remaining
+                };
+                let speed = pr.vel.length();
+                // Quantisation at large map coordinates can place a mathematically exact entry or
+                // exit inside the slab again. Offset only toward the clear side of the surface.
+                const SURFACE_EPS: f32 = 0.0005;
+                match contact(
+                    mat,
+                    &layer,
+                    dir,
+                    usize::from(pr.cover.crossings),
+                    remaining,
+                    power,
+                ) {
+                    Contact::Stop => return Fate::Gone,
+                    Contact::Bounce(reflect) => {
+                        pr.pos = g.point + g.normal * SURFACE_EPS;
+                        pr.vel = reflect * (speed * ricochet::speed_factor());
+                    }
+                    Contact::Through {
+                        remaining,
+                        multiplier,
+                    } => {
+                        let mut rng = crate::rng::Rng::for_(
+                            match_seed ^ u64::from(pr.id),
+                            tick,
+                            pr.owner,
+                            crate::rng::Purpose::Penetration,
+                        );
+                        let next =
+                            crate::weapon::spread::sample_cone(&mut rng, dir, mat.deflect_deg);
+                        let exit = layer.exit + dir * SURFACE_EPS;
+                        let to_exit = exit - g.point;
+                        let travel = (len - g.t).max(0.0);
+                        pr.cover.crossings += 1;
+                        pr.cover.remaining = remaining;
+                        pr.cover.multiplier *= multiplier;
+                        if travel >= to_exit.length() {
+                            pr.pos = exit;
+                            pr.vel = next * speed;
+                        } else {
+                            pr.pos = g.point + dir * travel;
+                            pr.cover.transit = Some((exit, next));
+                        }
+                    }
+                }
             }
             _ => {}
         }
         // Out of the loaded world, too old or too slow.
-        if col.height_at(p1.x, p1.z).is_none() || pr.substeps >= max_substeps {
-            return Fate::Gone;
-        }
-        let v = pr.vel;
-        if v.x * v.x + v.y * v.y + v.z * v.z < MIN_SPEED_MPS * MIN_SPEED_MPS {
+        if expired(pr, col, max_substeps) {
             return Fate::Gone;
         }
     }
     Fate::Alive
+}
+
+fn expired(pr: &Projectile, col: &crate::CollisionData, max_substeps: u32) -> bool {
+    let v = pr.vel;
+    col.height_at(pr.pos.x, pr.pos.z).is_none()
+        || pr.substeps >= max_substeps
+        || v.x * v.x + v.y * v.y + v.z * v.z < MIN_SPEED_MPS * MIN_SPEED_MPS
 }

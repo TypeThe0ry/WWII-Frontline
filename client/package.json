@@ -15,7 +15,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run --passWithNoTests",
     "i18n:check": "node src/ui/i18n/check-cli.mjs",
-    "variant-count": "vitest run src/render/materials/variants.test.ts",
+    "variant-count": "vitest run src/render/materials/variants.test.ts --disableConsoleIntercept",
     "test:e2e": "playwright test"
   },
   "dependencies": {

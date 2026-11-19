@@ -1,0 +1,25 @@
+# Multi-stage Dockerfile for frontline-gateway (M1-066)
+FROM rust:1.97-slim-bookworm AS builder
+WORKDIR /src
+COPY Cargo.toml Cargo.lock rust-toolchain.toml ./
+COPY crates/protocol crates/protocol
+COPY crates/gateway crates/gateway
+# Stub workspace members not needed for gateway so cargo --locked resolves workspace metadata
+COPY crates/sim/Cargo.toml crates/sim/Cargo.toml
+COPY crates/sim-wasm/Cargo.toml crates/sim-wasm/Cargo.toml
+COPY crates/bots/Cargo.toml crates/bots/Cargo.toml
+COPY crates/server/Cargo.toml crates/server/Cargo.toml
+COPY crates/headless-client/Cargo.toml crates/headless-client/Cargo.toml
+COPY crates/balance-sim/Cargo.toml crates/balance-sim/Cargo.toml
+RUN mkdir -p crates/sim/src crates/sim-wasm/src crates/bots/src crates/server/src crates/headless-client/src crates/balance-sim/src \
+    && for d in sim sim-wasm bots server headless-client balance-sim; do echo "" > "crates/$d/src/lib.rs"; done \
+    && cargo build --release --locked -p frontline-gateway --bin frontline-gateway
+
+FROM debian:bookworm-slim
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates curl && rm -rf /var/lib/apt/lists/* \
+    && useradd --system --uid 10001 --create-home --home-dir /var/lib/gateway frontline
+COPY --from=builder /src/target/release/frontline-gateway /usr/local/bin/frontline-gateway
+USER frontline
+WORKDIR /var/lib/gateway
+EXPOSE 8080
+ENTRYPOINT ["/usr/local/bin/frontline-gateway"]

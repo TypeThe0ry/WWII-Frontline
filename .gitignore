@@ -46,3 +46,6 @@ client/public/fonts/
 # Default gateway SQLite database and sidecars
 /gateway.sqlite3
 /gateway.sqlite3-*
+
+# M1-066: local dev stack runtime state (PIDs, logs, ephemeral secrets, spool)
+.dev-stack/

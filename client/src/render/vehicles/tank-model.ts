@@ -5,7 +5,7 @@
  * (`tank-math.ts`). Sockets are empty transform nodes under the part they belong to.
  */
 import { Color3 } from '@babylonjs/core/Maths/math.color';
-import { Matrix, Vector3, Vector4 } from '@babylonjs/core/Maths/math.vector';
+import { Quaternion, Vector3, Vector4, type Matrix } from '@babylonjs/core/Maths/math.vector';
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
 import { RawTexture } from '@babylonjs/core/Materials/Textures/rawTexture';
 import { Texture } from '@babylonjs/core/Materials/Textures/texture';
@@ -15,6 +15,7 @@ import type { Mesh } from '@babylonjs/core/Meshes/mesh';
 import { TransformNode } from '@babylonjs/core/Meshes/transformNode';
 import type { Scene } from '@babylonjs/core/scene';
 import { PlaceholderRegistry, phName, placeholderMaterial } from '../actors/names';
+import { freshWorldMatrix } from '../actors/world';
 import { TANK_SOCKETS, TANK_SOCKET_ALIASES, angleDiff, clampGunPitch, followAngle, hullBox, trackSpeeds, trackUvRate } from './tank-math';
 
 export const TANK_REQ = 'V-VEH-US-003';
@@ -52,6 +53,8 @@ export interface TankState {
   y: number;
   z: number;
   yaw: number;
+  /** Sampled hull rotation when available. Overrides yaw and preserves slope pitch and roll. */
+  hullQuat?: { readonly x: number; readonly y: number; readonly z: number; readonly w: number };
   /** Hull forward speed (m/s, negative = reverse) and yaw rate (rad/s, positive = turning right). */
   speed: number;
   yawRate: number;
@@ -82,12 +85,15 @@ export class TankModel {
   trackOffsetL = 0;
   trackOffsetR = 0;
   private readonly tex: [RawTexture, RawTexture];
+  private readonly trackMaterials: StandardMaterial[] = [];
+  private readonly hullRotation = new Quaternion();
   private readonly gauge: number;
+  private disposed = false;
 
   constructor(
     scene: Scene,
     readonly def: TankDef,
-    registry: PlaceholderRegistry,
+    private readonly registry: PlaceholderRegistry,
     instance: string | number = 0,
   ) {
     const part = (n: string): string => phName(TANK_REQ, `${instance}_${n}`);
@@ -113,6 +119,7 @@ export class TankModel {
       const m = new StandardMaterial(`PH_${TANK_REQ}__track_${instance}_${i}`, scene);
       m.diffuseTexture = this.tex[i];
       m.specularColor = Color3.Black();
+      this.trackMaterials.push(m);
       return m;
     };
     const trackH = hullH * 0.9;
@@ -153,11 +160,17 @@ export class TankModel {
     sock('socket_mg_coax', this.gun, 0.1, 0, 0.5);
   }
 
-  /** Place the hull, advance the turret/gun/track animation by `dtS`. */
-  update(s: TankState, dtS: number): void {
+  /** Place the hull and gun. Only unsampled target orders need rate-limited turret following. */
+  update(s: TankState, dtS: number, yawSource: 'target' | 'sampled' = 'target'): void {
     this.root.position.set(s.x, s.y, s.z);
-    this.root.rotation.y = s.yaw;
-    this.shownTurretYaw = followAngle(this.shownTurretYaw, s.turretYaw, dtS, this.def.turretTraverseRadS);
+    if (s.hullQuat) {
+      const { x, y, z, w } = s.hullQuat;
+      this.root.rotationQuaternion = this.hullRotation.set(x, y, z, w);
+    } else {
+      this.root.rotationQuaternion = null;
+      this.root.rotation.set(0, s.yaw, 0);
+    }
+    this.shownTurretYaw = yawSource === 'sampled' ? s.turretYaw : followAngle(this.shownTurretYaw, s.turretYaw, dtS, this.def.turretTraverseRadS);
     this.turret.rotation.y = this.shownTurretYaw;
     // the sim pitches positive = up; Babylon's x rotation is positive = nose down
     this.gun.rotation.x = -(clampGunPitch(s.gunPitchDeg, this.def.gunElevationDeg) * Math.PI) / 180;
@@ -170,10 +183,15 @@ export class TankModel {
 
   /** World position of a socket (fresh matrix; for spawning muzzle effects). */
   socketWorld(name: string, out: Vector3): Vector3 {
-    const n = this.sockets.get(TANK_SOCKET_ALIASES[name] ?? name);
-    if (!n) throw new Error(`tank socket ${name} missing`);
-    n.computeWorldMatrix(true);
-    return Vector3.TransformCoordinatesFromFloatsToRef(0, 0, 0, n.getWorldMatrix() as Matrix, out);
+    const matrix = this.socketMatrix(name);
+    if (!matrix) throw new Error(`tank socket ${name} missing`);
+    return matrix.getTranslationToRef(out);
+  }
+
+  /** Borrowed world transform of a data socket or its legacy alias. */
+  socketMatrix(name: string): Matrix | null {
+    const node = this.sockets.get(TANK_SOCKET_ALIASES[name] ?? name);
+    return node ? freshWorldMatrix(node) : null;
   }
 
   /** The tank's angular error between the displayed and the authoritative turret yaw (rad). */
@@ -182,12 +200,12 @@ export class TankModel {
   }
 
   dispose(): void {
-    for (const m of this.meshes) m.dispose();
-    for (const n of this.sockets.values()) n.dispose();
-    this.turret.dispose();
-    this.gun.dispose();
+    if (this.disposed) return;
+    this.disposed = true;
     this.root.dispose();
+    for (const material of this.trackMaterials) material.dispose();
     for (const t of this.tex) t.dispose();
+    this.registry.add(TANK_REQ, -this.meshes.length);
   }
 }
 

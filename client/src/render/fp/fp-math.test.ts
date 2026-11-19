@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { adsFovDeg, muzzleReach, RecoilSpring, reloadFrames, screenFraction, stepAds, walkBob, wallPushback } from './fp-math';
+import { adsFovDeg, muzzleReach, predictedReloadProgress, RecoilSpring, reloadFrames, screenFraction, stepAds, walkBob, wallPushback } from './fp-math';
 
 describe('wall pushback (fp_wall_pushback)', () => {
   it('no pushback in the open; muzzle never reaches the wall', () => {
@@ -69,4 +69,21 @@ describe('reload / recoil / bob', () => {
     expect(walkBob(1, 0)).toEqual([0, 0]);
     expect(Math.abs(walkBob(1.2, 1)[0])).toBeGreaterThan(Math.abs(walkBob(1.2, 0.5)[0]));
   });
+});
+
+it('samples tactical and empty progress from the predicted WeaponState bytes', () => {
+  const state = new Uint8Array(new ArrayBuffer(40), 4, 33);
+  const timer = new DataView(state.buffer, state.byteOffset);
+  const durations = { tactical: 3400, empty: 2800 };
+  expect(predictedReloadProgress(state, durations, 30)).toBeUndefined();
+  state[6] = 3;
+  timer.setInt32(8, 3400 * 30, true);
+  expect(predictedReloadProgress(state, durations, 30)).toBe(0);
+  timer.setInt32(8, 1700 * 30, true);
+  expect(predictedReloadProgress(state, durations, 30)).toBe(0.5);
+  state[6] = 4;
+  timer.setInt32(8, 700 * 30, true);
+  expect(predictedReloadProgress(state, durations, 30)).toBe(0.75);
+  state[6] = 0;
+  expect(predictedReloadProgress(state, durations, 30)).toBeUndefined();
 });

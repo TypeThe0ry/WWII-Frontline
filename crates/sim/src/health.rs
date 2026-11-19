@@ -1,8 +1,7 @@
-//! Hit points and life state (GAMEDESIGN 7.1 / 7.2, M0-013).
+//! Hit points and life state (GAMEDESIGN 7.1 / 7.2, M1-016).
 //!
-//! M0 has no downed / revive state (M1-016): `hp <= 0` is death. A dead player keeps its entity
-//! (stable `EntityId`, corpse position) in [`LifeState::Dead`] until the respawn tick; it takes no
-//! input, fires nothing and cannot be hit.
+//! A dead player keeps its entity (stable `EntityId`, corpse position) until the respawn tick;
+//! it takes no input, fires nothing and cannot be hit.
 
 use bevy_ecs::prelude::{Component, Resource};
 
@@ -22,7 +21,7 @@ impl Health {
     }
 }
 
-/// Alive or dead (with the data the kill feed and the respawn timer need).
+/// Alive, downed, or dead (with the data the kill feed and the respawn timer need).
 #[derive(Component, Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum LifeState {
     #[default]
@@ -70,8 +69,7 @@ impl LifeState {
 /// Public name used by `World::player_life`.
 pub type LifeStateView = LifeState;
 
-/// One damaging projectile hit, recorded by the projectile stage for the rules stage (kill
-/// attribution = last damager, GAMEDESIGN 7.5 minimal version).
+/// Damage already applied to HP by a producer, recorded for life-state resolution and credit.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct HitRec {
     pub target: EntityId,
@@ -82,7 +80,7 @@ pub struct HitRec {
     /// Hit points the hit took off.
     pub damage: f32,
     pub kind: crate::combat::DamageKind,
-    /// Kills outright (a melee backstab) instead of downing.
+    /// A lethal hit kills outright instead of downing (e.g. a backstab or a high fall).
     pub direct_kia: bool,
 }
 

@@ -7,7 +7,7 @@
  *
  * The card names `toktx` as the encoder; this pipeline uses the Basis Universal WASM encoder through `ktx2-encoder`
  * (same codecs, same KTX2 container, no native binary needed on the build machine; see PI-033).
- * Images must be PNG; JPEG / other sources are rejected with a clear message (convert upstream).
+ * Images may be PNG (decoded in-process via pngjs) or JPEG (decoded via ffmpeg, matching Poly Haven CC0 glTF textures).
  */
 import { type Document, type Material, type Texture } from '@gltf-transform/core';
 import { KHRTextureBasisu } from '@gltf-transform/extensions';
@@ -15,6 +15,7 @@ import { read as readKtx2 } from 'ktx-parse';
 import { encodeToKTX2 } from 'ktx2-encoder';
 import { PNG } from 'pngjs';
 import { assertAllowed } from './allowed.ts';
+import { ffmpeg } from './audio/ffmpeg.ts';
 import type { Ledger, LedgerRow } from './ledger.ts';
 import { ExitCode, GateError } from './errors.ts';
 import type { AssetClass, TextureProfile } from './asset-class.ts';
@@ -231,28 +232,41 @@ function channelRaster(r: Raster, ch: number): Raster {
   return { width: r.width, height: r.height, data };
 }
 
-function imageOf(t: Texture): Uint8Array {
+function imageOf(t: Texture): { bytes: Uint8Array; mime: string } {
   const img = t.getImage();
   if (!img) throw new GateError(ExitCode.Usage, `texture "${t.getName()}" has no image data`);
-  if (t.getMimeType() !== 'image/png') {
-    throw new GateError(ExitCode.Usage, `texture "${t.getName()}": only PNG sources are supported (got ${t.getMimeType() || 'unknown'}); convert upstream`);
+  const mime = t.getMimeType();
+  if (mime !== 'image/png' && mime !== 'image/jpeg' && mime !== 'image/jpg') {
+    throw new GateError(ExitCode.Usage, `texture "${t.getName()}": only PNG and JPEG sources are supported (got ${mime || 'unknown'}); convert upstream`);
   }
-  return img;
+  return { bytes: img, mime };
+}
+
+/** Decode PNG in-process or JPEG via build-machine ffmpeg into an 8-bit RGBA raster. */
+export async function decodeImage(bytes: Uint8Array, mime: string): Promise<Raster> {
+  if (mime === 'image/png') return decodePng(bytes);
+  if (mime === 'image/jpeg' || mime === 'image/jpg') {
+    const { stdout } = await ffmpeg(['-f', 'image2pipe', '-vcodec', 'mjpeg', '-i', 'pipe:0', '-f', 'image2pipe', '-vcodec', 'png', 'pipe:1'], { input: bytes });
+    return decodePng(new Uint8Array(stdout.buffer, stdout.byteOffset, stdout.byteLength));
+  }
+  throw new GateError(ExitCode.Usage, `unsupported image mime "${mime || 'unknown'}"`);
 }
 
 /** Pack AO + metallicRoughness of every material into one ORM texture (in place). Returns warnings. */
-export function packMaterialsOrm(doc: Document): string[] {
+export async function packMaterialsOrm(doc: Document): Promise<string[]> {
   const warnings: string[] = [];
   const done = new Map<string, Texture>();
   for (const mat of doc.getRoot().listMaterials()) {
     const ao = mat.getOcclusionTexture();
     const mr = mat.getMetallicRoughnessTexture();
     if (!ao || ao === mr) continue;
-    const aoR = decodePng(imageOf(ao));
+    const aoImg = imageOf(ao);
+    const aoR = await decodeImage(aoImg.bytes, aoImg.mime);
     let rough: Raster;
     let metal: Raster;
     if (mr) {
-      const mrR = decodePng(imageOf(mr));
+      const mrImg = imageOf(mr);
+      const mrR = await decodeImage(mrImg.bytes, mrImg.mime);
       if (mrR.width !== aoR.width || mrR.height !== aoR.height) {
         warnings.push(`${mat.getName()}: AO ${aoR.width}x${aoR.height} and metallicRoughness ${mrR.width}x${mrR.height} differ in size; not packed`);
         continue;
@@ -303,7 +317,7 @@ export async function processTextures(doc: Document, o: ProcessTexturesOptions):
   const warnings: string[] = [];
   if (doc.getRoot().listTextures().length === 0) return { textures: [], warnings };
   if (o.assetId) assertAllowed(o.assetId, 'TEXCOMP', o.ledger);
-  warnings.push(...packMaterialsOrm(doc));
+  warnings.push(...(await packMaterialsOrm(doc)));
   const slots = slotOf(doc);
   const ormTextures = new Set<Texture>();
   for (const mat of doc.getRoot().listMaterials()) {
@@ -318,7 +332,7 @@ export async function processTextures(doc: Document, o: ProcessTexturesOptions):
     const profile = profileFor(o.cls, name, slot === 'orm' ? 'data' : slot);
     const format = selectFormat(profile, slot);
     const src = imageOf(tex);
-    let raster = decodePng(src);
+    let raster = await decodeImage(src.bytes, src.mime);
     const pad = padToMultipleOf4(raster);
     if (pad.padded) {
       warnings.push(`${name}: ${raster.width}x${raster.height} is not a multiple of 4; padded to ${pad.raster.width}x${pad.raster.height} (UVs are not rescaled)`);
@@ -332,7 +346,7 @@ export async function processTextures(doc: Document, o: ProcessTexturesOptions):
     tex.setImage(out).setMimeType('image/ktx2');
     results.push({
       name, slot, profile, format: info.format === 'other' ? format : info.format, width: info.width, height: info.height,
-      levels: info.levels, channels, bytes: out.byteLength, sourceBytes: src.byteLength, padded: pad.padded,
+      levels: info.levels, channels, bytes: out.byteLength, sourceBytes: src.bytes.byteLength, padded: pad.padded,
     });
   }
   const ext = doc.createExtension(KHRTextureBasisu).setRequired(true);

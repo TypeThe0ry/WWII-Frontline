@@ -24,7 +24,8 @@ import {
 import { frustumPlanes } from './frustum';
 import { buildGridMesh } from './grid-mesh';
 import { NEAR_BLEND_M, type TerrainData } from './terrain-data';
-import type { SplatMaps } from './terrain-splat';
+import { LAYER, macroSplatMip, splatExtent, surfaceAt, type SplatMaps } from './terrain-splat';
+import type { QualityTier } from '../quality-m0';
 import { dummyShadowTexture } from '../lighting/custom-csm';
 import { TERRAIN_VELOCITY_FRAGMENT_GLSL, TERRAIN_VELOCITY_FRAGMENT_WGSL } from '../post/velocity';
 import { SHADOW_SAMPLERS, SHADOW_UNIFORMS } from '../lighting/csm-shader';
@@ -62,6 +63,7 @@ export interface TerrainOptions {
   stitch?: boolean;
   /** Procedural placeholder splat (M1-050b); omit for the M0 slope/height colouring. */
   splat?: SplatMaps;
+  quality?: QualityTier;
 }
 
 const MAX_NODES = 2048;
@@ -75,6 +77,7 @@ export class Terrain {
   readonly material: ShaderMaterial;
   readonly stats: TerrainStats;
   private readonly data: TerrainData;
+  private readonly splat?: SplatMaps;
   private readonly tree: CdlodQuadtree;
   private readonly selection: NodeSelection;
   private readonly instances: Buffer;
@@ -147,10 +150,11 @@ export class Terrain {
     mat.setVector2('uMap2', new Vector2(data.meta.far_ring.samples, NEAR_BLEND_M));
     mat.setFloat('uDebug', DEBUG_CODE[this.debug]);
     mat.setFloat('uYScale', 1);
-    // splat textures (RGBA8, bilinear): real ones when given, 1x1 dummies otherwise (`uSplat.y` = 0 keeps the M0 colouring)
+    // Splat mip 0 preserves local map detail. Coarser mips provide the procedural far-field macro colour.
     const sp = opts.splat;
+    this.splat = sp;
     const mkSplat = (name: string, px: Uint8Array, n: number): RawTexture => {
-      const t = new RawTexture(px, n, n, Constants.TEXTUREFORMAT_RGBA, scene, false, false, Constants.TEXTURE_BILINEAR_SAMPLINGMODE, Constants.TEXTURETYPE_UNSIGNED_BYTE);
+      const t = new RawTexture(px, n, n, Constants.TEXTUREFORMAT_RGBA, scene, n > 1, false, Constants.TEXTURE_TRILINEAR_SAMPLINGMODE, Constants.TEXTURETYPE_UNSIGNED_BYTE);
       t.name = name;
       t.wrapU = Constants.TEXTURE_CLAMP_ADDRESSMODE;
       t.wrapV = Constants.TEXTURE_CLAMP_ADDRESSMODE;
@@ -161,7 +165,7 @@ export class Terrain {
     this.textures.push(sa, sb);
     mat.setTexture('splatA', sa);
     mat.setTexture('splatB', sb);
-    mat.setVector4('uSplat', new Vector4(sp ? sp.sizeM : 1, sp ? 1 : 0, 0, 0));
+    mat.setVector4('uSplat', new Vector4(sp ? splatExtent(sp) : 1, sp ? 1 : 0, opts.quality === 'low' ? 4 : 8, sp ? macroSplatMip(sp) : 0));
     // shadow contract (custom CSM, PI-117): dummy depth-1 maps and `uShadowInfo.x = 0` until `CustomCsm.attach` binds the real ones
     const dummy = dummyShadowTexture(scene);
     this.textures.push(dummy);
@@ -236,6 +240,11 @@ export class Terrain {
   /** CPU surface height (same function as the vertex shader; inside the near block it equals sim `height_at`). */
   heightAt(x: number, z: number): number {
     return this.data.heightAt(x, z);
+  }
+
+  /** Dominant splat layer for footsteps/impacts. The M0 path defaults to grass. */
+  getSurfaceAt(x: number, z: number): number {
+    return this.splat ? surfaceAt(this.splat, x, z) : LAYER.grass;
   }
 
   /** Per-frame: select nodes for `camera` and upload the instance buffer (once). */
