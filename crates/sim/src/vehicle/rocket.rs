@@ -33,7 +33,7 @@ fn faction(t: Team) -> Faction {
 }
 
 /// Launch: FIRE (rising edge) with a rocket in hand and not seated in a vehicle.
-#[allow(clippy::type_complexity)]
+#[allow(clippy::too_many_arguments, clippy::type_complexity)]
 pub fn rockets(
     cfg: Res<SimCfgRes>,
     table: Res<EntityTable>,
@@ -49,7 +49,9 @@ pub fn rockets(
         &mut Gadgets,
     )>,
     mut victims: Query<(&Transform, &Team, &LifeState, &mut Health), Without<Gadgets>>,
+    mut profiler: Option<ResMut<crate::step::StepProfiler>>,
 ) {
+    let _sample = crate::step::StepProfiler::measure(&mut profiler, |t| &mut t.rockets);
     let mut launches: Vec<(crate::ids::EntityId, Transform, Team)> = Vec::new();
     for (id, e) in table.sorted() {
         let Ok((t, last, team, life, inv, mut g)) = shooters.get_mut(e) else {

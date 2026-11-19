@@ -16,7 +16,7 @@ use crate::movement::{MoveParams, PlayerAuthState};
 use crate::projectile::{Projectile, Projectiles};
 use crate::respawn::{RespawnPolicy, RespawnQueue, SpawnPoints};
 use crate::schedule::build_schedule;
-use crate::step::{SimEvent, StepOutput};
+use crate::step::{SimEvent, StepOutput, StepProfiler, StepTimings};
 use crate::view::*;
 use crate::weapon::WeaponState;
 
@@ -178,8 +178,26 @@ impl World {
         &self.cfg
     }
 
+    /// Enables diagnostic system timing. The clock returns monotonic nanoseconds and is
+    /// used only for measurement, never to advance or make decisions in the simulation.
+    pub fn enable_step_profiling(&mut self, clock_ns: fn() -> u64) {
+        self.ecs.insert_resource(StepProfiler {
+            clock_ns,
+            timings: StepTimings::default(),
+        });
+    }
+
+    /// Timings for the last step, when profiling is enabled.
+    pub fn step_timings(&self) -> Option<StepTimings> {
+        self.ecs.get_resource::<StepProfiler>().map(|p| p.timings)
+    }
+
     /// Advances one tick. Inputs must be ascending by `PlayerId` (see [`normalize_inputs`]).
     pub fn step(&mut self, inputs: &[(PlayerId, InputCmd)]) -> StepOutput {
+        let profile_start = self.ecs.get_resource_mut::<StepProfiler>().map(|mut p| {
+            p.timings = StepTimings::default();
+            (p.clock_ns)()
+        });
         let inputs = normalize_inputs(inputs);
         {
             let mut t = self.ecs.resource_mut::<CurrentTick>();
@@ -198,12 +216,27 @@ impl World {
         self.refresh_views();
         let produced = std::mem::take(&mut self.ecs.resource_mut::<EventBuf>().0);
         self.pending_events.extend(produced);
-        StepOutput {
+        let out = StepOutput {
             events: std::mem::take(&mut self.pending_events),
             rule_changes: std::mem::take(
                 &mut self.ecs.resource_mut::<crate::rules::RuleChangeBuf>().0,
             ),
+        };
+        if let Some(start) = profile_start {
+            let mut profiler = self.ecs.resource_mut::<StepProfiler>();
+            let total = (profiler.clock_ns)().saturating_sub(start);
+            let t = &mut profiler.timings;
+            t.other = total.saturating_sub(
+                t.movement
+                    + t.weapons
+                    + t.projectiles
+                    + t.vehicles
+                    + t.rockets
+                    + t.shells
+                    + t.throwables,
+            );
         }
+        out
     }
 
     /// Writes this tick's player hitbox frame (M1-025), ascending entity id.
