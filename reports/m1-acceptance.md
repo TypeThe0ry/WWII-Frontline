@@ -19,7 +19,7 @@
 | E1-13 | 倒地/救起/压制 | 状态机全转移单测；压制被客户端音画消费 | 016/017 单测通过（转移 ≥10 条）；网络对局已订阅压制音频。工作站无头 Chromium 的合成 PCM 在第二次压制后 400 ms 恢复到基准：低频振幅与高低频比均约 1.00002×。真实素材、联网压制整链与音画联验未测（非 RTX 3060 参考机，PI-109） | M1-016/017；`client/e2e/audio-offline.spec.ts` | partial | PI-053、PI-124B |
 | E1-14 | 素材管线 | `.fpak` 往返一致；无独立 .glb/.ktx2/.ogg/.opus；缺失报告；无 PENDING 进主分支 | 台账 8 行：OK 4、PENDING 3、FLAGGED 1、REJECTED 0；仓库内 2 个 `.ktx2` 为测试夹具；PENDING 对应处理产物未入主分支 | `node tools/asset-pipeline/bin/asset-pipeline.mjs ledger-check --root .` | partial | PI-108 |
 | E1-15 | 基础反作弊 | 1.3× 速度、超射速被纠正/拒绝并计数 | 1.3× 注入：权威最高 6.34 m/s，`suspicion_move_total` ≥ 100；超射速 8 发出膛、56 次拒绝；甩枪 0 误报 | M1-027a | partial | PI-074 |
-| E1-16 | 数据与史实 | historical 100% 有出处或"未核实"；批 M1 回填与复测在容限 | 67 字段：13 有出处、54 标"未核实"（均保持 initial）；批 M1 录像为 0 | `docs/measurements/hist-review-m1.md`；M1-071 blocked | partial | M1-070b、H-011/025/026 |
+| E1-16 | 数据与史实 | historical 100% 有出处或"未核实"；批 M1 回填与复测在容限 | 070b 逐项在线比对 67 个字段：51 一致、10 不一致、6 未核实；JSON 来源未回填，结构审计仍为 13 已登记、54 缺口。Sherman 装甲/弹种全表验收未做；批 M1 录像为 0，未复测。 | `docs/measurements/hist-review-m1.md`；M1-071 blocked | partial | PI-124G、H-011/025/026 |
 | E1-17 | 占位决定 | 范围内占位需求 ID 有"决定"或明确推迟 | 72 个 M1 视觉需求 ID 全为占位，台账 OK 行仅 4 条（字体） | `reports/m1-placeholders.md` | partial | PI-108 |
 
 ## 演示脚本（MILESTONES §2.4）
