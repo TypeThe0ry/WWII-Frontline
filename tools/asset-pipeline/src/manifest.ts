@@ -42,6 +42,7 @@ export interface ManifestAsset {
   license_ref?: string;
   req_id?: string;
   lods?: ManifestLod[];
+  chunk?: ManifestEntryRef;
   collision?: ManifestEntryRef;
   textures?: (ManifestEntryRef & { name: string })[];
   audio?: (ManifestEntryRef & { codec: 'opus' | 'aac' })[];
@@ -190,7 +191,8 @@ export async function buildManifest(o: BuildManifestOptions): Promise<Manifest> 
         const chain = st?.chains.find((c) => c.suffix === (lod[2] ?? ''));
         const tris = chain?.lods.find((l) => l.lod === Number(lod[1]))?.tris;
         (a.lods ??= []).push({ lod: Number(lod[1]), suffix: lod[2] ?? '', ...(tris !== undefined ? { tris } : {}), ...ref(e) });
-      } else if (variant === 'collision') a.collision = ref(e);
+      } else if (variant === 'chunk') a.chunk = ref(e);
+      else if (variant === 'collision') a.collision = ref(e);
       else if (variant.startsWith('tex_')) (a.textures ??= []).push({ name: variant, ...ref(e) });
       else if (variant === 'opus' || variant === 'aac') {
         a.kind = 'audio';
@@ -216,9 +218,9 @@ export async function buildManifest(o: BuildManifestOptions): Promise<Manifest> 
   };
 }
 
-/** Every entry reference of an asset (lods, collision, textures, audio, meta). */
+/** Every entry reference of an asset (lods, chunk, collision, textures, audio, meta). */
 export function assetRefs(a: ManifestAsset): ManifestEntryRef[] {
-  return [...(a.lods ?? []), ...(a.collision ? [a.collision] : []), ...(a.textures ?? []), ...(a.audio ?? []), ...(a.meta ? [a.meta] : [])];
+  return [...(a.lods ?? []), ...(a.chunk ? [a.chunk] : []), ...(a.collision ? [a.collision] : []), ...(a.textures ?? []), ...(a.audio ?? []), ...(a.meta ? [a.meta] : [])];
 }
 
 function sortKeys(v: unknown): unknown {

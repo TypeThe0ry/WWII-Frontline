@@ -124,3 +124,68 @@ def write(path: Path, verts, tris):
         fh.write(struct.pack("<II", len(verts), len(tris)))
         fh.write(verts.astype("<f4").tobytes())
         fh.write(tris.astype("<u4").tobytes())
+
+
+def area_boxes(out: Path, h: np.ndarray, vehicle: bool) -> list[dict]:
+    """Axis-aligned Recast area volumes inside the M1 slice:
+    - area 2 (wade): shallow/wadeable water (wetland, stream, ditch, flood_marsh with walkable_depth_m <= 1.4)
+    - area 3 (door): enterable building doorway thresholds (walk mode only)"""
+    from map_pipeline import apply_edits
+
+    boxes: list[dict] = []
+    water = json.loads((out / "water.geojson").read_text(encoding="utf-8"))["features"]
+    res = 2.0
+    ix0, iz0, ix1, iz1 = int(RECT[0] // res), int(RECT[1] // res), int(RECT[2] // res), int(RECT[3] // res)
+    nx, nz = ix1 - ix0, iz1 - iz0
+    wade = np.zeros((nz, nx), dtype=bool)
+    X, Y = np.meshgrid((np.arange(ix0, ix1) + 0.5) * res, (np.arange(iz0, iz1) + 0.5) * res)
+    for f in water:
+        p, g = f["properties"], f["geometry"]
+        kind = p.get("kind")
+        wd = float(p.get("walkable_depth_m", 0.5))
+        if wd > 1.4:
+            continue
+        if g["type"] == "Polygon" and kind in ("wetland", "flood_marsh"):
+            ring = [tuple(q) for q in g["coordinates"][0][:-1]]
+            wade |= apply_edits._inside(X, Y, ring)
+        elif g["type"] == "LineString" and kind in ("stream", "ditch"):
+            half = max(1.5, float(p.get("width_m", 2.0)) / 2.0)
+            pts = g["coordinates"]
+            for a, b in zip(pts, pts[1:]):
+                dx, dy = b[0] - a[0], b[1] - a[1]
+                L = dx * dx + dy * dy
+                t = np.clip(((X - a[0]) * dx + (Y - a[1]) * dy) / L, 0.0, 1.0) if L else np.zeros_like(X)
+                d = np.hypot(X - a[0] - t * dx, Y - a[1] - t * dy)
+                wade |= d <= half
+    # Compress horizontal runs of wade cells into boxes
+    for r in range(nz):
+        row = wade[r]
+        if not row.any():
+            continue
+        c = 0
+        while c < nx:
+            if not row[c]:
+                c += 1
+                continue
+            c0 = c
+            while c < nx and row[c]:
+                c += 1
+            x0, x1 = (ix0 + c0) * res, (ix0 + c) * res
+            z0, z1 = (iz0 + r) * res, (iz0 + r + 1) * res
+            sub = h[int(z0) : min(h.shape[0], int(z1) + 1), int(x0) : min(h.shape[1], int(x1) + 1)]
+            y0, y1 = float(sub.min()) - 1.5, float(sub.max()) + 2.5
+            boxes.append({"area": 2, "bmin": [round(x0, 2), round(y0, 2), round(z0, 2)],
+                          "bmax": [round(x1, 2), round(y1, 2), round(z1, 2)]})
+    if not vehicle:
+        blds = json.loads((out / "buildings.geojson").read_text(encoding="utf-8"))["features"]
+        for f in blds:
+            p = f["properties"]
+            if not (p.get("enterable") and p.get("door")):
+                continue
+            dx, dz = p["door"]["center"]
+            if not (RECT[0] <= dx <= RECT[2] and RECT[1] <= dz <= RECT[3]):
+                continue
+            y = float(h[int(dz), int(dx)])
+            boxes.append({"area": 3, "bmin": [round(dx - 1.6, 2), round(y - 1.5, 2), round(dz - 1.6, 2)],
+                          "bmax": [round(dx + 1.6, 2), round(y + 2.5, 2), round(dz + 1.6, 2)]})
+    return boxes

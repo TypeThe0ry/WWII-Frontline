@@ -106,12 +106,21 @@ def run(repo: Path, out: Path, incoming: Path) -> int:
         for f in _load(f_flood)["features"]:
             if f["geometry"]["type"] != "Polygon":
                 continue
-            water.append({"type": "Feature", "geometry": f["geometry"],
+            coords = f["geometry"]["coordinates"]
+            rings, _why = clean.clean_polygon(coords[0][:-1] if coords[0][0] == coords[0][-1] else coords[0],
+                                              [h[:-1] if h[0] == h[-1] else h for h in coords[1:]])
+            if rings is None:
+                continue
+            water.append({"type": "Feature", "geometry": {"type": "Polygon", "coordinates": [[list(pt) for pt in rg] for rg in rings]},
                           "properties": {"kind": "flood_marsh", "depth_m": FLOOD_DEPTH_M, "walkable_depth_m": FLOOD_WALKABLE_M,
                                          "vehicle_blocking": True, "verified": True, "_osm_id": "relation/0", "_derived": ["depth_m", "walkable_depth_m"]}})
     layers["water"]["features"] = water
     for k in ("hedgerows", "water", "roads", "buildings"):
         _dump(out / f"{k}.geojson", layers[k])
+    oob_verts = sum(1 for k in ("hedgerows", "water", "roads", "buildings")
+                    for f in layers[k]["features"] for x, y in osm.iter_coords(f)
+                    if not (0 <= x <= 2048 and 0 <= y <= 2048))
+    road_conn = osm.connectivity(layers["roads"]["features"])
 
     # --- terrain edits
     edits = _load(f_edits)["features"] if f_edits.is_file() else []
@@ -135,7 +144,8 @@ def run(repo: Path, out: Path, incoming: Path) -> int:
            "hedgerow_slice_total_m": hed_m, "hedgerow_target_m": target, "hedgerow_deviation_pct": dev,
            "hedgerow_sources": {s: sum(1 for f in layers["hedgerows"]["features"] if f["properties"].get("source") == s) for s in ("traced", "osm_draft")},
            "flood_marsh_polygons": sum(1 for f in water if f["properties"]["kind"] == "flood_marsh"),
-           "removed_modern": len(removed), "removed_by_human_list": len(rm_ids), "terrain_edits": len(edits)}
+           "removed_modern": len(removed), "removed_by_human_list": len(rm_ids), "terrain_edits": len(edits),
+           "out_of_range_vertices": oob_verts, "road_connectivity": road_conn}
     _dump_pretty(repo / "reports" / "m1-1944-edits.json", rep)
     print(json.dumps(rep, ensure_ascii=False))
     return EXIT_PARTIAL if missing else 0

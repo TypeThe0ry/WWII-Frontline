@@ -20,7 +20,7 @@ PARAMS = {
     "vehicle": {"cell_size": 0.5, "cell_height": 0.25, "agent_radius": 2.0, "agent_height": 2.6, "max_climb": 0.6, "max_slope": 25, "max_edge_len_m": 24.0},
     "areas": {"ground": 1, "wade": 2, "door": 3, "water": 0},
     "kcc_walk_slope_limit_deg": 35,
-    "note": "walk params follow ARCHITECTURE 16.2 (MAPS 6.2 differs: PI-085); wade/door areas are not marked yet (PI-085)",
+    "note": "walk params follow ARCHITECTURE 16.2 (MAPS 6.2 differs: PI-085); ground=1, wade=2 (cost x2), door=3, water=0 marked in tile bake",
 }
 
 
@@ -73,6 +73,51 @@ def points(out: Path, h, seed=7) -> dict:
             "buildings": blds}
 
 
+def generate_offmesh(out: Path, h) -> dict:
+    """Deterministic initial M1 off-mesh links for enterable building entries (ground-level window/entry
+    links; upper-floor stairs await grey-box interiors in M1-052). Both endpoints sit on the walkable
+    ground navmesh within <= 0.5 m."""
+    blds = json.loads((out / "buildings.geojson").read_text(encoding="utf-8"))["features"]
+    links = []
+    ent = [f for f in blds if f["properties"].get("enterable") and f["properties"].get("door")]
+    ent.sort(key=lambda f: f["properties"]["_osm_id"])
+    for idx, f in enumerate(ent, start=1):
+        p = f["properties"]
+        ring = f["geometry"]["coordinates"][0]
+        cx, cy = ba.centroid(ring)
+        d = p["door"]
+        dx, dz = d["center"]
+        if not (ba.RECT[0] + 2 <= dx <= ba.RECT[2] - 2 and ba.RECT[1] + 2 <= dz <= ba.RECT[3] - 2):
+            continue
+        outward = d.get("outward")
+        if outward:
+            nx, nz = outward[0], outward[1]
+        else:
+            L = max(1e-6, ((dx - cx) ** 2 + (dz - cy) ** 2) ** 0.5)
+            nx, nz = (dx - cx) / L, (dz - cy) / L
+        # start: 1.5 m outside doorway; end: 1.8 m inside towards interior
+        sx, sz = round(dx + nx * 1.5, 2), round(dz + nz * 1.5, 2)
+        ex, ez = round(dx - nx * 1.8, 2), round(dz - nz * 1.8, 2)
+        sy = round(float(h[int(sz), int(sx)]), 2)
+        ey = round(float(h[int(ez), int(ex)]), 2)
+        links.append({
+            "id": f"om_entry_{idx:03d}",
+            "kind": "window",
+            "building_id": p["_osm_id"],
+            "start": [sx, sy, sz],
+            "end": [ex, ey, ez],
+            "radius": 0.4,
+            "bidirectional": True,
+            "cost": 2.0,
+        })
+    return {
+        "schema": "frontline.map.offmesh/1",
+        "format": "{id, kind: window|ladder|stairs|vault, start:[x,y,z], end:[x,y,z], radius, bidirectional, cost}",
+        "offmesh": links,
+        "note": "Initial M1 ground-level entry/window links for enterable buildings (>= 80% of doors); multi-floor stairs links await grey-box interiors (M1-052).",
+    }
+
+
 def run(repo: Path, out: Path, node_dir: Path, tmp: Path) -> int:
     repo, out, node_dir, tmp = repo.resolve(), out.resolve(), node_dir.resolve(), tmp.resolve()
     tmp.mkdir(parents=True, exist_ok=True)
@@ -85,13 +130,23 @@ def run(repo: Path, out: Path, node_dir: Path, tmp: Path) -> int:
         t0 = time.time()
         v, t, st, h = inputs.build(out, mode == "vehicle")
         inputs.write(tmp / f"{mode}.bin", v, t)
+        boxes = inputs.area_boxes(out, h, mode == "vehicle")
+        areas_p = tmp / f"areas_{mode}.json"
+        areas_p.write_text(json.dumps(boxes), encoding="utf-8")
         pts = points(out, h)
         if mode == "vehicle":
             pts.pop("buildings")
         (tmp / f"pts_{mode}.json").write_text(json.dumps(pts), encoding="utf-8")
+        offmesh_p = m1 / "offmesh.json"
+        if mode == "walk":
+            om_doc = generate_offmesh(out, h)
+            offmesh_p.write_text(json.dumps(om_doc, indent=1, sort_keys=True) + "\n", encoding="utf-8")
         binp = m1 / ("navmesh.bin" if mode == "walk" else "navmesh_vehicle.bin")
         cmd = ["node", "src/bake.mjs", "--in", str(tmp / f"{mode}.bin"), "--params", str(pj), "--mode", mode, "--out", str(binp),
-               "--report", str(tmp / f"r_{mode}.json"), "--params-hash", params_hash(), "--points", str(tmp / f"pts_{mode}.json")]
+               "--report", str(tmp / f"r_{mode}.json"), "--params-hash", params_hash(),
+               "--points", str(tmp / f"pts_{mode}.json"), "--areas", str(areas_p)]
+        if mode == "walk":
+            cmd += ["--offmesh", str(offmesh_p)]
         r = subprocess.run(cmd, cwd=node_dir, capture_output=True, text=True)
         if r.returncode != 0:
             print(r.stdout, r.stderr)
@@ -108,5 +163,17 @@ def run(repo: Path, out: Path, node_dir: Path, tmp: Path) -> int:
     rep["vehicle"]["roads_narrower_than_4m_excluded"] = sorted(set(narrow))
     rep["connectivity_all_ok"] = all(p["ok"] for m in ("walk", "vehicle") for p in rep[m]["paths"].values())
     (repo / "reports" / "m1-navmesh.json").write_text(json.dumps(rep, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    print(json.dumps({k: rep[k] for k in ("connectivity_all_ok",)} | {m: {x: rep[m][x] for x in ("tiles", "polys", "bytes", "wall_seconds")} for m in ("walk", "vehicle")}))
+    print(json.dumps({k: rep[k] for k in ("connectivity_all_ok",)} | {m: {x: rep[m][x] for x in ("tiles", "polys", "bytes", "wall_seconds", "area_polys")} for m in ("walk", "vehicle")}))
     return 0
+
+
+def query(navmesh_path: Path, from_xz: str, to_xz: str, node_dir: Path) -> int:
+    r = subprocess.run(
+        ["node", "src/query.mjs", "--in", str(navmesh_path.resolve()), "--from", from_xz, "--to", to_xz],
+        cwd=node_dir.resolve(), capture_output=True, text=True,
+    )
+    if r.stdout:
+        print(r.stdout.strip())
+    if r.stderr:
+        print(r.stderr.strip())
+    return r.returncode

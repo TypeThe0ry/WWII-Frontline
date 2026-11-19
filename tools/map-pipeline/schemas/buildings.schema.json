@@ -68,6 +68,14 @@
                     "minItems": 2,
                     "type": "array"
                   },
+                  "outward": {
+                    "items": {
+                      "type": "number"
+                    },
+                    "maxItems": 2,
+                    "minItems": 2,
+                    "type": "array"
+                  },
                   "width_m": {
                     "type": "number"
                   }

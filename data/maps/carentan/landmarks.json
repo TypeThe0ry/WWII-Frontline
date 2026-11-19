@@ -12,6 +12,11 @@
       1288.15,
       885.1
      ],
+     "exterior_clear": true,
+     "outward": [
+      0.0732,
+      -0.9973
+     ],
      "width_m": 1.2
     }
    ],
@@ -75,11 +80,17 @@
     900,
     1450
    ],
+   "dims_source": "design_placeholder",
    "fidelity": "B",
    "found_in_osm": false,
    "id": "farm_ingouf",
    "kind": "farm",
-   "name": "Ferme Ingouf"
+   "name": "Ferme Ingouf",
+   "placeholder_dims_m": {
+    "h": 7.0,
+    "l": 24.0,
+    "w": 18.0
+   }
   },
   {
    "asset_ref": "V-BLD-ARCADE",
@@ -90,8 +101,13 @@
    "doors": [
     {
      "center": [
-      1375.09,
-      996.24
+      1371.53,
+      996.32
+     ],
+     "exterior_clear": true,
+     "outward": [
+      -0.5855,
+      0.8107
      ],
      "width_m": 1.2
     }
@@ -132,11 +148,17 @@
     560,
     1700
    ],
+   "dims_source": "design_placeholder",
    "fidelity": "A",
    "found_in_osm": false,
    "id": "bridge_south",
    "kind": "bridge",
-   "name": "Southern Bridge (L1b)"
+   "name": "Southern Bridge (L1b)",
+   "placeholder_dims_m": {
+    "h": 2.5,
+    "l": 18.0,
+    "w": 8.0
+   }
   }
  ],
  "schema": "frontline.map.landmarks/1"

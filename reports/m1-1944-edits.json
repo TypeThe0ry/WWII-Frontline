@@ -13,8 +13,18 @@
     "remove_ids list",
     "hedgerow_total_m_target"
   ],
+  "out_of_range_vertices": 0,
   "removed_by_human_list": 0,
   "removed_modern": 63,
+  "road_connectivity": {
+    "causeway_candidates_in_main_component": [],
+    "components": 9,
+    "largest_m": [
+      48024.2,
+      474.7,
+      411.6
+    ]
+  },
   "schema": 1,
   "status": "partial",
   "terrain_edits": 0

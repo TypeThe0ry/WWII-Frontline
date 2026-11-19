@@ -190,6 +190,7 @@ def extract(data: dict, origin) -> tuple[dict, dict]:
     for k in layers:
         layers[k].sort(key=lambda f: (f["properties"].get("class") or f["properties"].get("kind") or "",
                                       f["properties"]["_osm_id"], json.dumps(f["geometry"]["coordinates"][0][:1])))
+    st["dangles_extended"] = clean.extend_dangles(layers["roads"])
     st.update({f"dropped_modern[{k}]": v for k, v in dropped.items()})
     return layers, dict(st)
 
@@ -210,7 +211,7 @@ def iter_coords(f):
             yield from ring
 
 
-def summary(layers: dict, stats: dict, hashes: dict, meta: dict) -> dict:
+def summary(layers: dict, stats: dict, hashes: dict, meta: dict, raw_data: dict | None = None, origin=None) -> dict:
     out = {"schema": 1, "osm_timestamp": meta.get("timestamp_osm_base"), "input_sha256": meta.get("sha256"),
            "counts": {k: len(v) for k, v in layers.items()}, "layer_sha256": hashes, "clean": stats}
     roads = layers["roads"]
@@ -228,7 +229,84 @@ def summary(layers: dict, stats: dict, hashes: dict, meta: dict) -> dict:
     out["slice_m1"] = {"buildings": sum(1 for f in layers["buildings"] if inside(f)),
                        "roads": sum(1 for f in roads if inside(f))}
     out["road_connectivity"] = connectivity(roads)
+    if raw_data is not None and origin is not None:
+        out["intersection_utm_check"] = check_intersections(raw_data, roads, origin)
     return out
+
+
+def check_intersections(raw_data: dict, roads: list[dict], origin: tuple[float, float], sample_n: int = 10) -> dict:
+    """Sample >= ``sample_n`` road intersections (vertices shared by >= 2 road features), match each
+    to its raw Overpass WGS84 coordinate -> UTM30N -> local metres, and measure round-trip error
+    (M1-032 acceptance 2: < 0.1 m)."""
+    import math
+    import statistics
+
+    # Build map of (osm_id) -> raw local coords from Overpass WGS84
+    raw_by_id: dict[str, list[tuple[float, float, float, float]]] = {}
+    for e in raw_data.get("elements", []):
+        if e.get("type") == "way" and "geometry" in e:
+            pts = []
+            for g in e["geometry"]:
+                ee, nn = geo.to_utm(g["lat"], g["lon"])
+                lx, ly = geo.to_local(ee, nn, *origin)
+                pts.append((lx, ly, ee, nn))
+            raw_by_id[f"way/{e['id']}"] = pts
+
+    # Find vertices shared by >= 2 distinct road _osm_ids inside the interior
+    vert_ways: dict[tuple[float, float], set[str]] = {}
+    for f in roads:
+        oid = f["properties"]["_osm_id"]
+        for x, y in f["geometry"]["coordinates"]:
+            if 1.0 < x < 2047.0 and 1.0 < y < 2047.0:
+                vert_ways.setdefault((x, y), set()).add(oid)
+    intersections = sorted((pt, sorted(wids)) for pt, wids in vert_ways.items() if len(wids) >= 2)
+    if not intersections:
+        return {"sampled": 0, "max_err_m": None, "median_err_m": None, "ok": False, "samples": []}
+    step = max(1, len(intersections) // sample_n)
+    chosen = intersections[::step][:sample_n]
+    errs, samples = [], []
+    for (x, y), wids in chosen:
+        # Check against the first way's closest raw Overpass UTM point
+        raw_pts = raw_by_id.get(wids[0], [])
+        if not raw_pts:
+            continue
+        best = min(raw_pts, key=lambda p: math.hypot(p[0] - x, p[1] - y))
+        err = math.hypot(best[0] - x, best[1] - y)
+        errs.append(err)
+        samples.append({
+            "local_m": [x, y],
+            "utm_e": round(best[2], 3),
+            "utm_n": round(best[3], 3),
+            "err_m": round(err, 5),
+            "ways": wids[:3],
+        })
+    max_err = max(errs) if errs else None
+    med_err = statistics.median(errs) if errs else None
+    return {
+        "total_intersections": len(intersections),
+        "sampled": len(samples),
+        "max_err_m": round(max_err, 5) if max_err is not None else None,
+        "median_err_m": round(med_err, 5) if med_err is not None else None,
+        "ok": len(samples) >= sample_n and max_err is not None and max_err < 0.1,
+        "samples": samples,
+    }
+
+
+def update_meta_sources(meta_path: Path, src_path: Path, ometa: dict) -> None:
+    """Record OSM input hash/date and timestamp in ``meta.json.sources[id=osm]`` (M1-032)."""
+    if not meta_path.is_file():
+        return
+    meta = json.loads(meta_path.read_text(encoding="utf-8"))
+    inp = {"file": src_path.name, "sha256": ometa.get("sha256") or sha256(src_path)}
+    if ometa.get("retrieved"):
+        inp["downloaded"] = ometa["retrieved"]
+    for s in meta.get("sources", []):
+        if s.get("id") == "osm":
+            s["inputs"] = [inp]
+            if ometa.get("timestamp_osm_base"):
+                s["osm_timestamp"] = ometa["timestamp_osm_base"]
+            break
+    meta_path.write_text(json.dumps(meta, indent=2, ensure_ascii=False, sort_keys=True) + "\n", encoding="utf-8")
 
 
 def connectivity(roads) -> dict:
@@ -253,4 +331,15 @@ def connectivity(roads) -> dict:
             pts = [tuple(p) for p in f["geometry"]["coordinates"]]
             comp_len[find(pts[0])] += clean.length(pts)
     top = comp_len.most_common(3)
-    return {"components": len(comp_len), "largest_m": [round(v, 1) for _, v in top]}
+    largest_root = top[0][0] if top else None
+    causeway_in_main = []
+    for f in roads:
+        if f["properties"].get("causeway_candidate") and f["properties"].get("vehicle_ok"):
+            pts = [tuple(p) for p in f["geometry"]["coordinates"]]
+            if pts and find(pts[0]) == largest_root:
+                causeway_in_main.append(f["properties"]["_osm_id"])
+    return {
+        "components": len(comp_len),
+        "largest_m": [round(v, 1) for _, v in top],
+        "causeway_candidates_in_main_component": sorted(set(causeway_in_main)),
+    }

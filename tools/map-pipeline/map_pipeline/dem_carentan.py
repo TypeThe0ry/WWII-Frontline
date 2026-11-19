@@ -55,7 +55,15 @@ def build(incoming: Path, out: Path, root: Path) -> dict:
     # keep the ring continuous with the 1 m data at shared sample points
     lo = int((0 - sl.FAR_ORIGIN_M) // FAR_RES)  # far index at local x = 0
     far[lo : lo + 257, lo : lo + 257] = near[::8, ::8]
-    offset = dem_prep.datum_offset(near)
+    water_path = out / "water.geojson"
+    water_mask = None
+    if water_path.is_file():
+        wf = json.loads(water_path.read_text(encoding="utf-8")).get("features", [])
+        wm = dem_prep.water_mask_from_features(wf, near.shape, res=1.0)
+        if wm.any():
+            water_mask = wm
+    offset = dem_prep.datum_offset(near, water_mask)
+    offset_method = "min water surface (water.geojson)" if water_mask is not None else "p0.1 of the 1 m DEM (no water mask yet)"
     near_h, far_h = near - offset, far - offset
     heights, _ = sl.blend(near_h, far_h)
     hmin, hmax = dem_prep.round_range(float(min(heights.min(), far_h.min())), float(max(heights.max(), far_h.max())))
@@ -66,7 +74,7 @@ def build(incoming: Path, out: Path, root: Path) -> dict:
     meta = json.loads(meta_path.read_text(encoding="utf-8"))
     meta["height"] = {
         "res_m": 1, "samples": NEAR_N, "hmin_m": hmin, "hmax_m": hmax, "datum": "IGN69",
-        "offset_m": round(offset, 3), "offset_method": "p0.1 of the 1 m DEM (no water mask yet)",
+        "offset_m": round(offset, 3), "offset_method": offset_method,
         "source": "ign_lidar_hd", "row_order": "south_to_north",
         "nodata_filled_points": filled, "far_ring_lidar_coverage_pct": round(far_cov * 100, 2),
         "inputs": dem_prep.input_manifest(files),

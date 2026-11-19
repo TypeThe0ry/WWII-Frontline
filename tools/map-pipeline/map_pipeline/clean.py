@@ -173,3 +173,60 @@ def ring_key(ring):
     i = t.index(min(t))
     t = t[i:] + t[:i]
     return t
+
+
+def extend_dangles(road_features: list[dict], max_gap_m: float = 1.5) -> int:
+    """Extend/snap dangling endpoints of vehicle_ok road LineStrings onto the nearest vertex of
+    another vehicle_ok road within ``max_gap_m`` (0 < d <= max_gap_m), closing tiny OSM digitising
+    gaps deterministically without creating out-of-bounds coordinates."""
+    from collections import Counter
+
+    deg: Counter = Counter()
+    veh_idx = []
+    for i, f in enumerate(road_features):
+        if not f["properties"].get("vehicle_ok"):
+            continue
+        pts = f["geometry"]["coordinates"]
+        if len(pts) < 2:
+            continue
+        veh_idx.append(i)
+        for p in pts:
+            deg[(p[0], p[1])] += 1
+
+    # All candidate target vertices from vehicle_ok roads (sorted for determinism)
+    all_verts = []
+    for i in veh_idx:
+        for p in road_features[i]["geometry"]["coordinates"]:
+            all_verts.append((p[0], p[1], i))
+    all_verts.sort()
+
+    extended = 0
+    for i in veh_idx:
+        coords = road_features[i]["geometry"]["coordinates"]
+        for end_idx in (0, -1):
+            ep = (coords[end_idx][0], coords[end_idx][1])
+            if deg[ep] > 1:
+                continue  # already connected to another vertex/road
+            # Skip boundary endpoints clipped on the map edge
+            if ep[0] <= 0.01 or ep[0] >= SIZE - 0.01 or ep[1] <= 0.01 or ep[1] >= SIZE - 0.01:
+                continue
+            best = None
+            for vx, vy, j in all_verts:
+                if j == i:
+                    continue
+                d = math.hypot(vx - ep[0], vy - ep[1])
+                if 0.0 < d <= max_gap_m:
+                    cand = (round(d, 6), vx, vy)
+                    if best is None or cand < best:
+                        best = cand
+            if best is not None:
+                _, tx, ty = best
+                if 0.0 <= tx <= SIZE and 0.0 <= ty <= SIZE:
+                    if end_idx == 0:
+                        coords.insert(0, [r(tx), r(ty)])
+                    else:
+                        coords.append([r(tx), r(ty)])
+                    deg[(r(tx), r(ty))] += 1
+                    deg[ep] += 1
+                    extended += 1
+    return extended

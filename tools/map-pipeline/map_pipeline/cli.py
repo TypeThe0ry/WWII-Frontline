@@ -82,9 +82,14 @@ def main(argv=None) -> int:
     dm.add_argument("--incoming", default="assets/incoming/maps/carentan/dem")
     dm.add_argument("--out", default="data/maps/carentan")
     dm.add_argument("--repo", default=".")
+    dq = sub.add_parser("dem-qa", help="GDAL-free water-mask datum & canal-bed elevation check (M1-031)")
+    dq.add_argument("dir", nargs="?", default="data/maps/carentan")
+    dq.add_argument("--report", default="reports/m1-dem-water-check.json")
     om = sub.add_parser("osm", help="Carentan OSM Overpass extract -> vector layers (M1-032)")
     om.add_argument("--repo", default=".")
     om.add_argument("--out", default="data/maps/carentan")
+    cr = sub.add_parser("check-roads", help="check vehicle_ok road connectivity (M1-032)")
+    cr.add_argument("dir", nargs="?", default="data/maps/carentan")
     vv = sub.add_parser("validate-vectors", help="schema + range check of a map's vector layers")
     vv.add_argument("dir")
     ed = sub.add_parser("edits-1944", help="merge human 1944 inputs into the OSM draft (M1-033)")
@@ -96,11 +101,23 @@ def main(argv=None) -> int:
     ch.add_argument("--out", default="data/maps/carentan")
     ch.add_argument("--dest", default="assets/processed/maps/carentan/m1/chunks")
     ch.add_argument("--workers", type=int, default=4)
+    pc = sub.add_parser("pack-chunks", help="pack M1 chunks into FPAK v1 + manifest fragment (M1-035)")
+    pc.add_argument("--repo", default=".")
+    pc.add_argument("--chunks", default="assets/processed/maps/carentan/m1/chunks")
+    pc.add_argument("--out", default="assets/processed/maps/carentan/m1/fpak")
+    pc.add_argument("--manifest", default="assets/manifests/terrain_carentan.json")
+    pc.add_argument("--report", default="reports/m1-chunk-bake.json")
     nv = sub.add_parser("nav", help="bake the M1 slice navmeshes (M1-036, needs tools/nav-bake deps)")
     nv.add_argument("--slice", default="m1")
     nv.add_argument("--repo", default=".")
     nv.add_argument("--out", default="data/maps/carentan")
     nv.add_argument("--tmp", default="assets/processed/maps/carentan/m1/nav")
+    nq = sub.add_parser("nav-query", help="query a path on a baked FNAV navmesh (M1-036)")
+    nq.add_argument("--from", dest="src", required=True, help="start x,z in metres")
+    nq.add_argument("--to", dest="dst", required=True, help="goal x,z in metres")
+    nq.add_argument("--mode", choices=("walk", "vehicle"), default="walk")
+    nq.add_argument("--navmesh", default=None)
+    nq.add_argument("--repo", default=".")
     a = ap.parse_args(argv)
 
     if a.cmd == "nav":
@@ -110,8 +127,35 @@ def main(argv=None) -> int:
 
         root = Path(a.repo)
         return nav_run.run(root, Path(a.out), root / "tools" / "nav-bake", root / a.tmp)
+    if a.cmd == "nav-query":
+        import sys as _s
+        _s.path.insert(0, str(Path(__file__).resolve().parent.parent))
+        from nav import run as nav_run
+
+        root = Path(a.repo)
+        navp = Path(a.navmesh) if a.navmesh else root / "data/maps/carentan/m1" / ("navmesh.bin" if a.mode == "walk" else "navmesh_vehicle.bin")
+        return nav_run.query(navp, a.src, a.dst, root / "tools" / "nav-bake")
     if a.cmd == "chunks-m1":
         return _chunks(a)
+    if a.cmd == "pack-chunks":
+        return _pack_chunks(a)
+    if a.cmd == "dem-qa":
+        from . import qa
+
+        rep = qa.water_elevation_check(Path(a.dir))
+        if a.report:
+            rp = Path(a.report)
+            rp.parent.mkdir(parents=True, exist_ok=True)
+            rp.write_text(json.dumps(rep, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        print(json.dumps(rep, indent=2, sort_keys=True))
+        return 0
+    if a.cmd == "check-roads":
+        from . import osm
+
+        roads = json.loads((Path(a.dir) / "roads.geojson").read_text(encoding="utf-8"))["features"]
+        conn = osm.connectivity(roads)
+        print(json.dumps(conn, indent=2, sort_keys=True))
+        return 0 if conn["components"] >= 1 and conn["largest_m"] else 1
     if a.cmd == "zones-m1":
         from . import zones
 
@@ -247,15 +291,20 @@ def _osm(a) -> int:
         return osm.EXIT_MISSING_OSM
     meta_p = root / "data/maps/carentan/source/overpass_carentan.meta.json"
     ometa = json.loads(meta_p.read_text(encoding="utf-8")) if meta_p.is_file() else {}
-    mp = json.loads((root / "data/maps/carentan/meta.json").read_text(encoding="utf-8"))
+    mp_path = root / "data/maps/carentan/meta.json"
+    mp = json.loads(mp_path.read_text(encoding="utf-8"))
     crs = mp["crs"]
-    layers, stats = osm.extract(osm.load(src), (crs["origin_e"], crs["origin_n"]))
+    origin = (crs["origin_e"], crs["origin_n"])
+    raw_data = osm.load(src)
+    layers, stats = osm.extract(raw_data, origin)
     out = Path(a.out)
     hashes = {k: osm.dump_layer(out / f"{k}.geojson", v) for k, v in layers.items()}
-    summ = osm.summary(layers, stats, hashes, ometa)
+    osm.update_meta_sources(out / "meta.json", src, ometa)
+    summ = osm.summary(layers, stats, hashes, ometa, raw_data=raw_data, origin=origin)
     rp = root / "reports" / "m1-osm-summary.json"
     rp.write_text(json.dumps(summ, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    print(json.dumps({"counts": summ["counts"], "slice_m1": summ["slice_m1"], "connectivity": summ["road_connectivity"]}))
+    print(json.dumps({"counts": summ["counts"], "slice_m1": summ["slice_m1"], "connectivity": summ["road_connectivity"],
+                      "intersection_utm_check": {k: summ["intersection_utm_check"][k] for k in ("sampled", "max_err_m", "ok")}}))
     return 0
 
 
@@ -296,3 +345,17 @@ def _chunks(a) -> int:
     (root / "reports" / "m1-chunk-bake.json").write_text(json.dumps(rep, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(json.dumps({k: rep[k] for k in ("chunks", "bytes", "chunks_over_limit", "verify", "bake_seconds")}))
     return 1 if rep["chunks_over_limit"] else 0
+
+
+def _pack_chunks(a) -> int:
+    from . import pack_chunks as pc
+
+    root = Path(a.repo)
+    stats = pc.pack_chunks(root / a.chunks, root / a.out, root / a.manifest)
+    rp = root / a.report
+    if rp.is_file():
+        rep = json.loads(rp.read_text(encoding="utf-8"))
+        rep["fpak"] = stats
+        rp.write_text(json.dumps(rep, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    print(json.dumps(stats, indent=2, sort_keys=True))
+    return 0

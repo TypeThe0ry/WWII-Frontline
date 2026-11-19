@@ -73,9 +73,20 @@ def test_real_report():
     assert r["connectivity_all_ok"]
     for m in ("walk", "vehicle"):
         assert all(v["ok"] and v["end_gap_m"] < 3.0 for v in r[m]["paths"].values()), "partial paths must not count as connected"
-    assert r["walk"]["buildings"]["unreachable"] <= 0.05 * r["walk"]["buildings"]["n"]
+        assert r[m]["max_tile_ms"] > 0
+    assert r["walk"]["buildings"]["unreachable"] == 0 and r["walk"]["buildings"]["n"] > 0
+    assert r["walk"]["area_polys"]["ground"] > 0 and r["walk"]["area_polys"]["wade"] > 0 and r["walk"]["area_polys"]["door"] > 0
+    assert r["walk"]["offmesh"]["violations"] == 0
+    assert r["walk"]["offmesh"]["count"] >= 0.8 * r["walk"]["buildings"]["n"]
     assert r["walk"]["water"]["covered"] == 0 and r["walk"]["road"]["covered"] / r["walk"]["road"]["n"] >= 0.99
     assert r["walk"]["bytes"] <= 6 * 1024 * 1024 and r["walk"]["tiles"] == 100
     assert r["walk"]["params_hash"] == r["vehicle"]["params_hash"]
     head = (ROOT / "data/maps/carentan/m1/navmesh.bin").read_bytes()[:16]
     assert head[:4] == b"FNAV" and head[8:16].hex() == nav_run.params_hash()
+
+
+@pytest.mark.skipif(not (NODE_DIR / "node_modules").exists() or not shutil.which("node"), reason="needs tools/nav-bake deps")
+def test_nav_query_cli():
+    from map_pipeline.cli import main
+    rc = main(["nav-query", "--from", "476,1600", "--to", "1273,911", "--repo", str(ROOT)])
+    assert rc == 0
