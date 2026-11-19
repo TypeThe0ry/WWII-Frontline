@@ -344,3 +344,23 @@ FRONTLINE_UI_LIVE=1 pnpm -C client exec playwright test -c playwright.ui.config.
 ```
 
 Use `FRONTLINE_CHROME` (lobby/match suite) or `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` (settings/audio suite) to select an installed Chromium executable instead of the Playwright bundle. The local M0 match spawns on join, so the live join test is **not** evidence for the M1 deploy/respawn loop or M1 performance budgets.
+
+## Local dev stack (M1-066)
+
+`./dev.sh` starts the full local development stack (`frontline-gateway` + `frontline-server` + Vite client dev server) in one command, generates ephemeral local tokens into `.dev-stack/` (git-ignored), and maintains a 13-day WebTransport dev certificate in `dev-cert/`:
+
+```sh
+./dev.sh up       # build if needed, generate dev-cert + sim-wasm, start gateway/server/vite
+./dev.sh status   # check PIDs, gateway /healthz, and registered match servers
+./dev.sh logs     # view recent logs (.dev-stack/{gateway,server,client}.log)
+./dev.sh down     # stop all stack processes
+./dev.sh reset    # stop stack and wipe .dev-stack/ and dev-cert/
+./dev.sh check    # run tools/dev/check-dev-stack.sh (2-round E2E + reset idempotency)
+```
+
+Default ports (override with `GATEWAY_PORT`, `FRONTLINE_WS_PORT`, `FRONTLINE_WT_PORT`, `FRONTLINE_METRICS_PORT`, `CLIENT_PORT`):
+- Client dev server: `http://127.0.0.1:5173/` (proxies `/v1` → gateway, `/game-ws` → server WS)
+- Gateway: `http://127.0.0.1:8080/healthz`
+- Match server: `ws://127.0.0.1:7000`, `https://127.0.0.1:7001/wt`, `http://127.0.0.1:9100/metrics`
+
+Containerized templates (`deploy/dev/docker-compose.yml`, `Dockerfile.gateway`, `Dockerfile.server`, `.env.example`) are also provided for static-build testing; see `deploy/dev/README.md`.
