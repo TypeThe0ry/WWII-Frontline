@@ -87,6 +87,13 @@ fn fnv(mut h: u64, bytes: &[u8]) -> u64 {
     h
 }
 
+pub(crate) fn hash_cmd(mut h: u64, cmd: &InputCmd) -> u64 {
+    h = fnv(h, &[cmd.move_x as u8, cmd.move_z as u8]);
+    h = fnv(h, &cmd.yaw.to_le_bytes());
+    h = fnv(h, &cmd.pitch.to_le_bytes());
+    fnv(h, &cmd.buttons.to_le_bytes())
+}
+
 impl SynthInput {
     /// `client` distinguishes the clients of one process; the waypoint list may be empty (a
     /// fallback box is used then).
@@ -249,12 +256,7 @@ impl SynthInput {
             self.until_crouch -= 1;
         }
 
-        let mut h = self.hash;
-        h = fnv(h, &[cmd.move_x as u8, cmd.move_z as u8]);
-        h = fnv(h, &cmd.yaw.to_le_bytes());
-        h = fnv(h, &cmd.pitch.to_le_bytes());
-        h = fnv(h, &cmd.buttons.to_le_bytes());
-        self.hash = h;
+        self.hash = hash_cmd(self.hash, &cmd);
         self.active_cmds += 1;
         cmd
     }

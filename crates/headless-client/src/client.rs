@@ -17,11 +17,12 @@ use frontline_protocol::{Channel, PROTOCOL_VERSION};
 
 use crate::clock::Clock;
 use crate::map::MapData;
-use crate::predictor::Predictor;
+use crate::predictor::{new_sim, Predictor};
 use crate::report::ClientReport;
 use crate::stats::{Dist, Meter};
-use crate::synth_input::{Pose, SynthInput};
+use crate::synth_input::{hash_cmd, Pose, SynthInput};
 use crate::transport::{self, Incoming, Link, Target};
+use crate::vehicle::Driver;
 
 /// Everything shared by the clients of one process.
 pub struct Ctx {
@@ -33,6 +34,7 @@ pub struct Ctx {
     pub map: Option<Arc<MapData>>,
     pub empty_collision: frontline_sim::CollisionData,
     pub waypoints: Vec<[f32; 2]>,
+    pub drive_vehicle: bool,
     /// Print every rollback to stderr (`HEADLESS_TRACE=1`).
     pub trace: bool,
 }
@@ -156,6 +158,15 @@ pub async fn run_client(ctx: Arc<Ctx>, id: u32) -> (ClientReport, Series) {
         first_seq,
     );
     let mut synth = SynthInput::new(ctx.seed, id, &ctx.waypoints);
+    let mut driver_hash = synth.input_hash();
+    let mut driver = ctx.drive_vehicle.then(|| {
+        Driver::new(new_sim(
+            welcome.match_seed,
+            welcome.map_id,
+            welcome.player_id,
+            collision,
+        ))
+    });
     let mut dec = SnapshotDecoder::new();
     // team 0 = US, 1 = GER; the snapshot's `flags` bit 7 is the faction (PI-024). Tolerances: see audit.rs.
     let mut audit = crate::audit::AoiAudit::new(welcome.team & 1, 4.0, 5.0);
@@ -241,6 +252,11 @@ pub async fn run_client(ctx: Arc<Ctx>, id: u32) -> (ClientReport, Series) {
                                     let jump = match (corr, pred.pos()) { (Some(c), Some(p)) => (frontline_sim::Vec3::new(c[0], c[1], c[2]) - p).length() > 5.0, _ => false };
                                     if jump || life.last_death == Some(now) || life.last_respawn == Some(now) { audit_skip_until = now + Duration::from_secs(2); }
                                 }
+                                if let Some(d) = &mut driver {
+                                    if d.seated() { audit_skip_until = now + Duration::from_secs(2); }
+                                    d.on_snapshot(&s);
+                                    if d.seated() { audit_skip_until = now + Duration::from_secs(2); }
+                                }
                                 audit.tick = s.tick;
                                 if life.alive && now >= audit_skip_until { if let Some(p) = pred.pos() { audit.check(p, &s.entities); } else { audit.skipped += 1; } } else { audit.skipped += 1; }
                                 let before = pred.stats.total;
@@ -278,8 +294,18 @@ pub async fn run_client(ctx: Arc<Ctx>, id: u32) -> (ClientReport, Series) {
                 let mut generated = 0u32;
                 while t <= target && generated < 30 {
                     let pose = Pose { xz: pred.pos().map(|p| (p.x, p.z)), alive: life.alive };
-                    let cmd = synth.next(seq, t, pose);
-                    pred.push(&cmd);
+                    let cmd = if let Some(d) = &mut driver {
+                        let c = d.cmd(seq, t, life.alive && last_health.is_some(), end.saturating_duration_since(now));
+                        driver_hash = hash_cmd(driver_hash, &c);
+                        c
+                    } else {
+                        synth.next(seq, t, pose)
+                    };
+                    // Do not interpret throttle as an infantry movement command while seated.
+                    let foot_cmd = if driver.as_ref().is_some_and(Driver::seated) {
+                        InputCmd { move_x: 0, move_z: 0, buttons: 0, ..cmd }
+                    } else { cmd };
+                    pred.push(&foot_cmd);
                     audit.push_orientation(frontline_protocol::quant::dequant_yaw(cmd.yaw, 16), frontline_protocol::quant::pitch_i16_to_rad(cmd.pitch));
                     if let (Some(a), Some(b)) = (last_pos, pred.pos()) { rep.distance_m += f64::from((a - b).length()); }
                     last_pos = pred.pos();
@@ -343,7 +369,15 @@ pub async fn run_client(ctx: Arc<Ctx>, id: u32) -> (ClientReport, Series) {
     rep.aoi_worst_leak_m = audit.worst_leak_m;
     rep.final_health = last_health;
     rep.final_pos = pred.pos().map(|p| [p.x, p.y, p.z]);
-    rep.input_hash = format!("{:016x}", synth.input_hash());
+    rep.input_hash = format!(
+        "{:016x}",
+        if driver.is_some() {
+            driver_hash
+        } else {
+            synth.input_hash()
+        }
+    );
+    rep.vehicle = driver.map(Driver::finish);
     let series = Series {
         down: down.series_wire(total_secs, warm),
         up: up.series_wire(total_secs, warm),

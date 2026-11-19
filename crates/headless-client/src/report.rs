@@ -29,6 +29,44 @@ pub struct Corrections {
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct VehicleCorrections {
+    pub comparisons: u64,
+    /// Finite, same-tick errors >= 5 cm, including those >= 1 m (`snaps`).
+    pub total: u64,
+    pub snaps: u64,
+    /// Re-anchors without a predicted pose at this tick; excluded from the error distribution.
+    pub missing_ticks: u64,
+    /// P50/P99/max of corrected position errors, or null when there were no finite corrections.
+    pub error_m: Option<Dist>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct VehicleReport {
+    pub entries: u64,
+    pub exits: u64,
+    pub driver_vehicle_slot: Option<u8>,
+    pub driver_snapshots: u64,
+    pub driver_input_ticks: u64,
+    pub last_vehicle_slot: u8,
+    pub last_seat: u8,
+    /// Largest horizontal displacement from the first authoritative pose of a driving stint.
+    pub max_displacement_m: f32,
+    pub corrections: VehicleCorrections,
+}
+
+impl VehicleReport {
+    pub fn completed(&self) -> bool {
+        self.entries > 0
+            && self.exits > 0
+            && self.last_vehicle_slot == 0
+            && self.last_seat == 0
+            && self.corrections.comparisons > 0
+            && self.driver_input_ticks > 0
+            && self.max_displacement_m >= 1.0
+    }
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct ClientReport {
     /// Index of the client in this process.
     pub id: u32,
@@ -62,6 +100,8 @@ pub struct ClientReport {
     pub bundles_sent: u64,
     pub cmds_generated: u64,
     pub corrections: Corrections,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub vehicle: Option<VehicleReport>,
     /// Deaths / respawns seen in `self_state.health`.
     pub deaths: u64,
     pub respawns: u64,

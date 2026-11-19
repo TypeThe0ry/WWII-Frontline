@@ -110,6 +110,7 @@ fn run(cfg: Config) -> Result<(), String> {
             mode,
             pin_core: cfg.pin_sim_core,
             map_data,
+            dev_spawn_vehicle: cfg.dev_spawn_vehicle,
             // --dev-echo hands the inbound queue to the echo scaffold instead.
             net: (!cfg.dev_echo).then(|| frontline_server::sim_bridge::NetLink {
                 inbound: inbound.rx.clone(),

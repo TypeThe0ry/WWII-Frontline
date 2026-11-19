@@ -84,7 +84,18 @@ fn main() -> ExitCode {
             }
         }
     }
-    if a.clients_failed > 0 || a.disconnects > 0 || a.decode_errors > 0 {
+    let drive_completed = !args.drive_vehicle
+        || report
+            .per_client
+            .first()
+            .and_then(|c| c.vehicle.as_ref())
+            .is_some_and(|v| v.completed());
+    if !drive_completed {
+        eprintln!(
+            "  client 0 did not complete the drive scenario (board, move at least 1 m, reconcile, exit)"
+        );
+    }
+    if a.clients_failed > 0 || a.disconnects > 0 || a.decode_errors > 0 || !drive_completed {
         return ExitCode::FAILURE;
     }
     ExitCode::SUCCESS

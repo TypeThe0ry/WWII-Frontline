@@ -8,6 +8,7 @@ use std::time::Duration;
 
 use crossbeam_channel::{bounded, Receiver, Sender, TrySendError};
 use frontline_protocol::msg::input::InputCmd;
+use frontline_sim::squad::{SquadKind, SquadOp};
 use frontline_sim::{
     CollisionData, GameData, GameMode, MapId, PlayerId, SimConfig, SimEvent, SpawnReq, Team, World,
 };
@@ -197,6 +198,8 @@ pub struct SimThreadConfig {
     /// Loaded terrain and spawn points; `None` = empty collision world (tests only: players
     /// cannot move without terrain).
     pub map_data: Option<Arc<LoadedMap>>,
+    /// M0 load-test fixture; no vehicles are added to ordinary matches.
+    pub dev_spawn_vehicle: bool,
     /// The network side (inbound C1 queue, connection handles); `None` in pure-sim tests.
     pub net: Option<NetLink>,
 }
@@ -210,6 +213,7 @@ impl SimThreadConfig {
             mode,
             pin_core: None,
             map_data: None,
+            dev_spawn_vehicle: false,
             net: None,
         }
     }
@@ -222,6 +226,7 @@ pub struct SimLoop<C: Clock> {
     clock: C,
     schedule: TickSchedule,
     world: World,
+    dev_spawn_vehicle: bool,
     metrics: Arc<Metrics>,
     inputs_rx: Receiver<InputEnvelope>,
     commands_rx: Receiver<Command>,
@@ -310,6 +315,22 @@ pub fn build_loop_with_bots<C: Clock>(
     );
     if let Some(m) = &cfg.map_data {
         m.apply_to(&mut world);
+        if cfg.dev_spawn_vehicle {
+            // Bots alternate US/GER before the first human joins; US wins ties.
+            let team = if bots.is_multiple_of(2) {
+                Team::Us
+            } else {
+                Team::Ger
+            };
+            let (mut pos, yaw) = m.join_spawn(0, team);
+            // Both HQs are flat pads. Place the hull clear of the player's feet but in boarding range.
+            pos.x += 5.0 * yaw.sin();
+            pos.z += 5.0 * yaw.cos();
+            pos.y = m.collision.height_at(pos.x, pos.z).unwrap_or(pos.y) + 0.9;
+            world
+                .spawn_vehicle("us_m4a1_75", team, pos, yaw)
+                .expect("embedded M0 load-test vehicle fixture");
+        }
     }
     let mut bridge = SimBridge::new(
         metrics.clone(),
@@ -334,6 +355,7 @@ pub fn build_loop_with_bots<C: Clock>(
         started: now,
         clock,
         world,
+        dev_spawn_vehicle: cfg.dev_spawn_vehicle,
         metrics: metrics.clone(),
         inputs_rx: irx,
         commands_rx: crx,
@@ -610,7 +632,12 @@ impl<C: Clock> SimLoop<C> {
             match c {
                 Command::Join { player, team } => {
                     match self.bridge.join(&mut self.world, player, team) {
-                        Ok(()) => self.update_player_gauges(),
+                        Ok(()) => {
+                            if self.dev_spawn_vehicle && player == 0 {
+                                self.setup_fixture_driver(player, team);
+                            }
+                            self.update_player_gauges();
+                        }
                         Err(e) => tracing::warn!(
                             event = "join_failed",
                             player_id = player as u64,
@@ -649,6 +676,34 @@ impl<C: Clock> SimLoop<C> {
                     self.update_player_gauges();
                 }
             }
+        }
+    }
+
+    fn setup_fixture_driver(&mut self, player: PlayerId, team: Team) {
+        // Exercise the real boarding eligibility checks instead of bypassing them.
+        let result = (|| {
+            self.world
+                .roster_add(player, team)
+                .map_err(|e| format!("roster: {e:?}"))?;
+            self.world
+                .squad_op(
+                    player,
+                    SquadOp::Create {
+                        kind: SquadKind::ArmorCrew,
+                        suffix: String::new(),
+                    },
+                )
+                .map_err(|e| format!("armor squad: {e:?}"))?;
+            self.world
+                .set_role(player, Some("crewman"))
+                .map_err(|e| format!("crewman: {e:?}"))
+        })();
+        if let Err(error) = result {
+            tracing::warn!(
+                event = "vehicle_fixture_driver_setup_failed",
+                error,
+                "could not configure the load-test driver"
+            );
         }
     }
 
