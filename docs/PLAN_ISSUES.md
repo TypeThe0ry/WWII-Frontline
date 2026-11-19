@@ -914,6 +914,12 @@
 - **受影响任务**：M1-026b、M1-040、M1-056。
 - **裁决（Fable 填写）**：
 
+#### PI-073 续：M1-026b C4 广播与私有 netns（2026-11-19）
+
+- **联调实测。** 同机 EPYC 工作站（PI-109，非 RTX 3060 参考机），每路 2 个 headless 客户端，私有 netns 配置 5% 丢包：WS 600.000 s / 2,912 丢包 / 实测 5.006%，WT 600.001 s / 2,874 丢包 / 实测 5.019%。每客户端 6,000 条编号探针，缺失/重复/乱序均 0；US/GER 分别接收 4/6 条业务 C4，最终状态一致，两路命令退出 0。
+- **服务端契约。** 复用生产 C4 可靠队列。击杀给击杀者阵营（无归因则给死者阵营）；Garrison 状态仅给本队；据点所有权变化给双方。真人 `Join` 保留 M0 自动生成并登记 sim 名册；首次入队发本队基线，之后发替换行或 `LEFT`。`role=0` 未分配，非零为一基规则数据索引；暂用 `Player <id>` 占位昵称。超出 wire 宽度的 ID 记 warning，不能截断为别人的 ID。WS/WT 均可能在 `Welcome` 前观察到 C4；现有浏览器缓冲和 headless 探针保留这些帧。本次未改 `snapshot.rs`、`client/src/net/`、`net-game.ts` 或 `vehicle-predict.ts`。
+- **仍为 partial。** M0 自动入场不等同 M1 完整部署。C0 HQ `spawn_tick` 验的是既有处理/排程语义，不是玩家实际复生时刻。未做 90 s 身份/角色恢复和 phase/objective 全量重放；死亡倒计时可被 sim 重排，尚无权威 C4 `Death` 同步。需确认较长对局中 u8 squad/objective ID 的范围契约，以及票据昵称接线。`c4_events_total{type}`、剩余事件映射、慢客户端背压隔离、20 客户端小队操作、C0 `/metrics` 端到端矩阵、规则泄漏脚本及性能预算未验。M1-067 阻塞线上，M1-064 阻塞实素材表现。联调证据见 `reports/m1-c4-netem.md`。
+
 ### PI-074 M1-027 范围、视角限幅与 view_tick 语义
 - **提出者 / 日期**：M1 线程 / 2026-11-18
 - **做法**：①协议文档把 `view_tick` 定义为相对 tick 的差值，M1-025a 误按绝对 tick 实现，本次改为差值（`rewind_ticks(delta)`，0 = 未上报，>8 夹紧）；②8000°/s 限幅在 30 Hz 下永远不会触发（单 tick 最大转角 180° = 5400°/s），验收 3 的“180° 瞬转被钳制到 266.7°/tick”自相矛盾；限幅保持可配置，测试用 3600°/s，建议 Fable 裁定新的默认值（合法甩枪峰值 3000°/s = 100°/tick）；③“射速拒绝”定义为武器仍在冷却/拉栓时的扳机上升沿且 sim 未发射（连发持枪不计）；④`suspicion_move` 计移动向量超限（`move_clamped`/`bad_move`），因协议不含位置；⑤`anticheat.json` 数据化、`pred_hash` 统计、origin_hint 校正计数、分级断开、headless 注入器、20 客户端混合与 criterion 拆为 M1-027b。
@@ -1055,7 +1061,7 @@ M1-038 体量为 L。先交付与场景无关的引擎（行为树、效用、�
 - **已做**：`sim-wasm` 将 `DeployResult.ok/spawn_tick/reason` 原样暴露，未改线协议。`net-game.ts` 在连接时接入每个会话独立的 `GameState`；C0 仅在部署状态为 `Requested` 时更新并发布 `deploy.state`（拒绝码转 `deploy.reject.*` 键，未知码使用 `deploy.reject.unknown`）。C4 复用 `NetCodec.decodeC4`，由 `GameState.apply` 更新状态并发布 `kill.feed` 等已有事件；`ScoreDelta` 只更新状态。WT 的 C4 可先于 Welcome，握手期最多暂存 64 KiB（含帧头），验证成功后有序投递；握手失败不发布。无效载荷不阻断后续帧。
 - **改动边界**：`client/src/net/` 和 `client/src/game/net-game.ts` 只改 C0/C4 接收与状态挂载所需接口；未改 `snapshot.rs`、载具预测或 C2 解码。
 - **已测**：vitest 定向 51 例通过，含 4 个新增真实 WASM + 模拟传输用例：WS / WT 的部署结果和 C4，以及提前到达的 C4 在接受 / 拒绝握手时的处理。不是与真实服务器或浏览器的端到端验收。
-- **仍为 partial**：部署请求 UI/RPC 与实际出生流程待 M1-056b；`self_state` 部署同步、自动重连及完整 roster 恢复未做。真实服务器 C4 广播与丢包联调仍待 M1-026b；聊天 / 小队回执、本次未覆盖的 C2 事件及 M1-040 专项覆盖率、堆增量和 Kill 延迟基准未验收。
+- **仍为 partial**：部署请求 UI/RPC 与实际出生流程待 M1-056b；`self_state` 部署同步、自动重连及完整 roster 恢复未做。M1-026b 的无头 C4 联调见 PI-073 续；此证据不替代实服浏览器验收。聊天 / 小队回执、本次未覆盖的 C2 事件及 M1-040 专项覆盖率、堆增量和 Kill 延迟基准未验收。
 
 ## PI-093 M1-041a：先做座位状态机与外推辅助（2026-11-18）
 载具预测本体依赖 sim-wasm 导出载具步进（需 wasm 重编与对账接线），在云端无法完成端到端验收(netem/headless)，故先落地与 wasm 无关的纯逻辑。换座 2 s 取 60 tick（30 Hz）；停车阈值 5 km/h 取自 GD 14.7，均为 `initial`。
