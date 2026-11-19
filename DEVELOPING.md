@@ -47,8 +47,10 @@ scripts/local-ci.sh lint
 
 If `cargo-deny` is missing, `lint` is skipped and running it alone exits 3.
 The group runs all four dependency checks against `Cargo.lock`. The advisory
-check needs access to the RustSec advisory database. The `deny.toml` license
-allow-list is pending H-037.
+check needs access to the RustSec advisory database. `deny.toml` uses the
+provisional H-037 permissive allow-list (`MIT`, `Apache-2.0`, `BSD-2-Clause`,
+`BSD-3-Clause`, `ISC`, `Zlib`, `CC0-1.0`, `Unicode-3.0`, `Unicode-DFS-2016`,
+plus `MPL-2.0` for dependencies only; see `docs/PLAN_ISSUES.md` PI-128).
 
 To run the repo-specific checks directly:
 

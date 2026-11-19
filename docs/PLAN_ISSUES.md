@@ -1386,3 +1386,12 @@ PrePass 速度会卡死渲染循环，改用自有速度 RTT（地形/薄实例/
 - **确定性复验**：连续两轮全流程运行 `osm` → `zones-m1` → `chunks-m1` → `pack-chunks` → `nav --slice m1`，18 个核心输出文件（含 `navmesh.bin`、`navmesh_vehicle.bin`、`chunks/index.json`、`terrain_carentan.json`）SHA-256 全部一致（0 差异）。
 - **受影响任务**：M1-031…M1-036、M1-037、M1-049、M1-050、M1-052。
 - **裁决（Fable 填写）**：
+
+## PI-128 B3-C8：M0-002 / H-037 许可名单临时决定（2026-11-19）
+
+- **临时决定，TT 可推翻。** 为解除 H-037 对 M0-002 许可名单的长期阻塞，将 `deny.toml` 的 `[licenses].allow` 设为宽松许可集合：`MIT`、`Apache-2.0`、`BSD-2-Clause`、`BSD-3-Clause`、`ISC`、`Zlib`、`CC0-1.0`、`Unicode-3.0`、`Unicode-DFS-2016`，以及 `MPL-2.0`（**仅限依赖**，workspace crate 本身保持 `publish = false` 且不采用 MPL-2.0；LGPL/GPL/AGPL 与未知许可证继续阻止）。移除了原保守列表中的 `Apache-2.0 WITH LLVM-exception` 与 `BSL-1.0`。
+- **实测（工作站，`cargo-deny 0.21.0`）：**
+  - `cargo deny --locked check` 4/4 通过（`advisories ok, bans ok, licenses ok, sources ok`），**0 条错误**、**21 条警告**（18 条依赖多版本重复 + 3 条当前 `Cargo.lock` 未遇到的 `license-not-encountered`：`CC0-1.0`、`Unicode-DFS-2016`、`MPL-2.0`）。
+  - 当前全部 Rust 依赖均落在上述 10 个允许许可证内，**0 个例外**（`exceptions = []` 无需新增）。
+- **受影响任务**：M0-002（仍因 H-102 GitHub Actions 未实跑保持 `partial`）、H-037。
+- **裁决（TT 可推翻）：** 临时采用上述宽松许可 + 依赖仅限 `MPL-2.0` 政策。
