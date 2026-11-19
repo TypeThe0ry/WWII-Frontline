@@ -5,7 +5,7 @@
 //
 // usage: node scripts/summarize-loadtest.mjs --headless h.json --server-report s.json
 //          --metrics-dir DIR --rss rss.tsv --out OUT.json --transport wt|ws --bots N
-//          [--profile release|debug] [--sample-interval S]
+//          [--profile release|debug] [--sample-interval S] [--drive-vehicle]
 import { readFileSync, readdirSync, writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import os from 'node:os';
@@ -148,6 +148,18 @@ export function summarize(opts) {
     server_rss_growth_pct: rss.growth_pct == null ? { value: null, limit: 2, ok: true, note: rss.note } : { value: rss.growth_pct, limit: 2, ok: rss.growth_pct < 2, window_s: rss.window_s },
   };
   const hard = ['tick_p99', 'overrun_consecutive_max', 'down_p50_each_client', 'up_p50_each_client', 'disconnects', 'decode_errors', 'aoi_leaks_server', 'aoi_leaks_client_audit'];
+  const vehicle = headless.per_client.find((c) => c.id === 0)?.vehicle;
+  if (opts.driveVehicle) {
+    const comparisons = vehicle?.corrections?.comparisons ?? null;
+    checks.vehicle_driver = {
+      ok: vehicle?.entries > 0 && vehicle?.exits > 0 && vehicle?.last_vehicle_slot === 0 &&
+        vehicle?.driver_snapshots > 0 && vehicle?.driver_input_ticks > 0 && vehicle?.max_displacement_m >= 1 && comparisons > 0,
+      displacement_m: vehicle?.max_displacement_m ?? null,
+      comparisons,
+      note: 'client 0 must board, drive at least 1 m, have a same-tick reconciliation comparison and exit',
+    };
+    hard.push('vehicle_driver');
+  }
   const verdict = {
     all_ok: Object.values(checks).every((c) => c.ok),
     hard_ok: hard.every((k) => checks[k].ok),
@@ -165,6 +177,7 @@ export function summarize(opts) {
     warmup_s: headless.warmup_s,
     seed: headless.seed,
     build: opts.profile,
+    ...(opts.netem ? { netem: opts.netem, netem_note: 'private netns loopback; delay is one-way per packet' } : {}),
     host: {
       cpus: os.cpus().length,
       cpu_model: os.cpus()[0]?.model,
@@ -210,6 +223,7 @@ export function summarize(opts) {
       decode_errors: c.decode_errors, missing_baseline: c.missing_baseline, disconnects: c.disconnects,
       snapshots: c.snapshots, keyframe_ratio: r3(c.keyframe_ratio), corrections: c.corrections,
       deaths: c.deaths, respawns: c.respawns,
+      ...(c.vehicle != null ? { vehicle: c.vehicle } : {}),
     })),
     rss_samples: rows,
   };
@@ -242,6 +256,8 @@ if (process.argv[1] && import.meta.url === new URL(`file://${process.argv[1]}`).
     bots: arg(a, 'bots', '0'),
     profile: arg(a, 'profile', 'release'),
     pinned: arg(a, 'pinned', '0') === '1',
+    driveVehicle: a.includes('--drive-vehicle'),
+    netem: process.env.LOADTEST_NETEM,
   };
   if (!opts.headless || !opts.serverReport || !opts.out) {
     console.error('usage: summarize-loadtest.mjs --headless h.json --server-report s.json --metrics-dir DIR --rss rss.tsv --out OUT.json [--transport wt|ws] [--bots N] [--profile release|debug]');

@@ -8,6 +8,7 @@
 # Env: LOADTEST_SERVER_CPUS / LOADTEST_CLIENT_CPUS (default 0,1 / 2,3) pick the pinned CPUs on big shared machines.
 # Options: --transport wt|ws  --duration S  --count N  --bots N  --seed N  --warmup S
 #          --sample-interval S (default 10)  --out FILE  --debug (use the debug build)  --no-build
+#          --drive-vehicle (client 0 drives; uses a local M0 test vehicle at its join point)
 #          --no-pin (by default, with `taskset` and >= 4 CPUs, the server is pinned to CPUs 0-1 and the
 #          headless client to CPUs 2-3 so the two do not steal each other's cycles)
 #
@@ -18,7 +19,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-TRANSPORT=wt DURATION=60 COUNT=10 BOTS=10 SEED=1 WARMUP=5 INTERVAL=10 OUT="" PROFILE=release BUILD=1 PIN=1
+TRANSPORT=wt DURATION=60 COUNT=10 BOTS=10 SEED=1 WARMUP=5 INTERVAL=10 OUT="" PROFILE=release BUILD=1 PIN=1 DRIVE=0
 while [ $# -gt 0 ]; do
   case "$1" in
     --transport) TRANSPORT="$2"; shift 2 ;;
@@ -32,7 +33,8 @@ while [ $# -gt 0 ]; do
     --debug) PROFILE=debug; shift ;;
     --no-build) BUILD=0; shift ;;
     --no-pin) PIN=0; shift ;;
-    -h|--help) sed -n '2,15p' "$0"; exit 0 ;;
+    --drive-vehicle) DRIVE=1; shift ;;
+    -h|--help) sed -n '2,16p' "$0"; exit 0 ;;
     *) echo "unknown option: $1" >&2; exit 2 ;;
   esac
 done
@@ -58,16 +60,26 @@ fi
 
 T="$(mktemp -d "${TMPDIR:-/tmp}/loadtest-XXXXXX")"
 SERVER_PID="" HEADLESS_PID="" SAMPLER_PID=""
+# shellcheck disable=SC2329 # Called by the EXIT trap.
 cleanup() {
   for p in "$SAMPLER_PID" "$HEADLESS_PID" "$SERVER_PID"; do
     [ -n "$p" ] && kill "$p" 2>/dev/null || true
   done
   wait 2>/dev/null || true
 }
-trap cleanup EXIT INT TERM
+trap cleanup EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
 
+SERVER_EXTRA=() CLIENT_EXTRA=() DRIVER=()
+if [ "$DRIVE" = 1 ]; then
+  SERVER_EXTRA=(--map m0 --mode sandbox --data-dir "$PWD/data" --dev-spawn-vehicle)
+  # Give client 0 a head start on admission so it spawns next to the fixture.
+  CLIENT_EXTRA=(--map m0 --data-dir "$PWD/data" --ramp-ms 250)
+  DRIVER=(--drive-vehicle)
+fi
 ${SRV_PIN[@]+"${SRV_PIN[@]}"} "$SERVER" --ws-port 0 --wt-port 0 --metrics-port 0 --dev-cert --bots "$BOTS" \
-  --report "$T/server.json" >"$T/server.log" 2>&1 &
+  "${SERVER_EXTRA[@]}" --report "$T/server.json" >"$T/server.log" 2>&1 &
 SERVER_PID=$!
 # wait for the three listening lines
 for _ in $(seq 1 100); do
@@ -99,7 +111,7 @@ sample() { # $1 = label (elapsed seconds)
 
 START=$(date +%s)
 ${HL_PIN[@]+"${HL_PIN[@]}"} "$HEADLESS" --url "$URL" --transport "$TRANSPORT" "${EXTRA[@]}" --count "$COUNT" --duration "$DURATION" \
-  --seed "$SEED" --warmup "$WARMUP" --report "$T/headless.json" 2>"$T/headless.log" &
+  "${DRIVER[@]}" "${CLIENT_EXTRA[@]}" --seed "$SEED" --warmup "$WARMUP" --report "$T/headless.json" 2>"$T/headless.log" &
 HEADLESS_PID=$!
 (
   while kill -0 "$HEADLESS_PID" 2>/dev/null; do
@@ -121,9 +133,12 @@ wait "$SERVER_PID" 2>/dev/null || true
 SERVER_PID=""
 
 cat "$T/headless.log" >&2
+echo "(raw files kept in $T)"
+[ -s "$T/headless.json" ] && [ -s "$T/server.json" ] || { echo "missing headless or server report" >&2; exit 1; }
 RC=0
 node scripts/summarize-loadtest.mjs --headless "$T/headless.json" --server-report "$T/server.json" \
   --metrics-dir "$T" --rss "$T/rss.tsv" --out "$OUT" --transport "$TRANSPORT" --bots "$BOTS" \
-  --profile "$PROFILE" --sample-interval "$INTERVAL" --pinned "$([ ${#SRV_PIN[@]} -gt 0 ] && echo 1 || echo 0)" || RC=$?
-echo "(raw files kept in $T)"
+  --profile "$PROFILE" --sample-interval "$INTERVAL" --pinned "$([ ${#SRV_PIN[@]} -gt 0 ] && echo 1 || echo 0)" \
+  "${DRIVER[@]}" || RC=$?
+[ "$HL_STATUS" = 0 ] || exit "$HL_STATUS"
 exit "$RC"

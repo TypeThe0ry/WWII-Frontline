@@ -67,6 +67,9 @@ pub struct Config {
         default_value_t = false
     )]
     pub empty_world: bool,
+    /// Test fixture: spawn a driveable M4A1 beside the first player's M0 join point.
+    #[arg(long, hide = true, conflicts_with_all = ["empty_world", "dev_echo", "gateway_url"])]
+    pub dev_spawn_vehicle: bool,
     /// Prometheus `/metrics` port. 0 = ephemeral (actual port is logged).
     #[arg(long, env = "FRONTLINE_METRICS_PORT", default_value_t = 9100)]
     pub metrics_port: u16,

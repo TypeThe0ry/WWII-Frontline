@@ -52,6 +52,22 @@ fn dist(a: Vec3, b: Vec3) -> f32 {
     (a - b).length()
 }
 
+pub(crate) fn new_sim(
+    match_seed: u64,
+    map: u8,
+    player: u8,
+    collision: &CollisionData,
+) -> frontline_sim::predict::PredictSim {
+    let cfg = SimConfig {
+        tick_hz: 30,
+        match_seed,
+        map: MapId(u16::from(map)),
+        mode: GameMode::Sandbox,
+        data: GameData::embedded(),
+    };
+    frontline_sim::predict::PredictSim::new(cfg, collision, player)
+}
+
 impl Predictor {
     /// `first_seq` is the sequence number of the first command that will be pushed.
     pub fn new(
@@ -61,14 +77,7 @@ impl Predictor {
         collision: &CollisionData,
         first_seq: u16,
     ) -> Self {
-        let cfg = SimConfig {
-            tick_hz: 30,
-            match_seed,
-            map: MapId(u16::from(map)),
-            mode: GameMode::Sandbox,
-            data: GameData::embedded(),
-        };
-        let sim = frontline_sim::predict::PredictSim::new(cfg, collision, player);
+        let sim = new_sim(match_seed, map, player, collision);
         Predictor {
             sim,
             base_seq: first_seq.wrapping_sub(1),

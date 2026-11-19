@@ -64,6 +64,9 @@ pub struct Args {
     /// connections per IP, so loopback runs of more than 4 clients need the spread).
     #[arg(long)]
     pub no_bind_spread: bool,
+    /// Client 0 boards a nearby friendly M4A1, drives, then holds the exit button before disconnecting.
+    #[arg(long, conflicts_with = "hash_only")]
+    pub drive_vehicle: bool,
     /// Print the kinematic input-sequence hash of each client for this many ticks and exit
     /// (determinism check: equal for equal `--seed`).
     #[arg(long, value_name = "TICKS")]
@@ -80,6 +83,9 @@ impl Args {
         }
         if !(self.duration.is_finite() && self.duration > 0.0) {
             return Err("--duration must be positive".into());
+        }
+        if self.drive_vehicle && self.duration < 5.0 {
+            return Err("--drive-vehicle needs at least 5 seconds to board, drive and exit".into());
         }
         if self.transport == TransportArg::Wt && self.cert_hash.is_none() {
             return Err("--transport wt needs --cert-hash (see tools/dev/gen-dev-cert.sh)".into());

@@ -57,3 +57,30 @@
 
 ## 对 E1-2 的含义
 P99 4.8–5.8 ms、三组最大 26–43 ms；P99 门槛 28 ms 有 5 倍余量。最大值超过 28 ms 的只有 ws 一组两次，其中 41 ms 一次是纯调度、一次 37.5 ms 是真实 step 开销（仍在 50 ms 周期内，没有造成连续超时）。
+
+## M1-041d 第 4 部分：带驾驶客户端的短联测（2026-11-19）
+
+在 EPYC 7402 工作站同机运行 release 构建，M0 sandbox，20 个 WS headless（客户端 0 驾驶，其余徒步）+ 12 个服务器 bot。服务器固定在 CPU 0–1，客户端固定在 CPU 2–3。`tc netem` 只作用在私有 netns 的 `lo`，25±10 ms 是配置的单向延迟，2 % 是配置的包丢失率；WS/TCP 会重传，不能把这个百分比当作应用快照丢失率。工作站数字不替代 RTX 3060 参考机（PI-109）。
+
+```sh
+cargo build --locked --release -p frontline-server -p frontline-headless-client
+scripts/loadtest-netem.sh --netem 'delay 25ms 10ms loss 2%' -- \
+  --no-build --transport ws --count 20 --bots 12 --drive-vehicle --duration 300 \
+  --out /data/scratch/batch/A/ws-drive-25ms-loss2-300s.json
+```
+
+服务器只在夹具模式下配置 Crewman 和 M4A1。客户端靠 `SelfState` 确认入座，在座位 0 沿同一方向前进、倒车折返，末尾制动并长按离座。载具统计在 `per_client[0].vehicle`，不混入步兵纠正：用同 tick 的量化权威位置计算误差，≥0.05 m 回滚并重放未确认且晚于该 tick 的命令；≥1.0 m 另记硬纠正。找不到预测 tick 的重新锚定单列，不给它填假误差。首次锚定不算纠正；没有有限纠正时 `error_m` 为 `null`。驾驶员乘车期间及离座后短暂跳过基于步兵预测位置的客户端 AOI 审计，其他客户端的审计逻辑不变。
+
+实测汇总：[ws-drive-netem-300s.json](loadtest-1119/ws-drive-netem-300s.json)。
+
+| 项 | 实测 |
+| --- | --- |
+| 驾驶闭环 | 300.031 s 在线，入座/离座各 1 次；驾驶槽 128 / 座位 0，离座后 `(0, 0)`。2,951 份驾驶快照、8,827 条驱动指令，权威最大水平位移 13.564 m |
+| 载具对账 | 2,950 次同 tick 比较，59 次有限纠正（硬纠正 0），缺 tick 重锚 0；纠正幅度 P50 / P99 / max = 0.0614 / 0.0979 / 0.0979 m |
+| 服务器 tick | P50 / P99 / max = 2.145 / 7.148 / 410.372 ms，超时 15 次、最长连续 1 次，跳过定时槽 80 次；最大尖峰 trace：on-CPU 2.919 ms，运行队列等待 408.058 ms |
+| 网络 | RTT P50 / P99 = 52.819 / 173.601 ms（所有客户端）；下行 P50 / P99 = 18.680 / 27.760 kbps，上行 P50 = 20.384 kbps；20/20 加入，解码错/缺基线/断线均 0 |
+| AOI | 服务器泄漏计数 0；独立客户端审计检查 302,361 条敌方记录，其中 51,798 条超出近距边界，报告 13 条异常（徒步客户端 2、6、8）。本轮未开启逐条审计 trace，无法确认是否是真实泄漏 |
+
+**判定：驾驶闭环通过；全场联测因 AOI 独立审计未通过（partial）。** 未放宽或关闭该硬判据。原始服务器和 headless 日志/JSON 保留在工作站 `/data/scratch/batch/A/loadtest-js6Dt4/`。
+
+**未测**：浏览器实车和画面平滑、WT 行车、120 ms RTT 直线对账门槛（E1-12），以及真实网络下的瞄准延迟补偿对照（E1-5）。

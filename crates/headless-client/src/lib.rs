@@ -12,3 +12,4 @@ pub mod run;
 pub mod stats;
 pub mod synth_input;
 pub mod transport;
+mod vehicle;
