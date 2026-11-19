@@ -4,6 +4,7 @@
  * `game` imports nothing from render / ui / audio (ARCHITECTURE 4.3.9).
  */
 import { signal, type ReadonlySignal } from '@preact/signals';
+import type { DeployResultMsg } from '../../net/codec';
 import type { EventBus, GameEvents } from '../event-bus';
 import { DIST_Q_M, type C4Event } from './c4';
 import { DeployFsm, type DeployEvent } from './deploy-fsm';
@@ -22,6 +23,15 @@ export interface SpawnPointInfo {
   state: number;
 }
 
+// Index = fixed protocol reason from sim's DeployError::code(). Index 0 is success.
+const DEPLOY_REJECT_REASONS = [
+  'unknown', 'not_on_roster', 'not_deployable', 'wrong_squad', 'unknown_role', 'role_full',
+  'role_team_full', 'squad_too_small', 'leader_only', 'not_in_armor', 'wrong_squad_kind',
+  'unassigned_role', 'unknown_loadout', 'loadout_wrong_role', 'loadout_wrong_faction',
+  'loadout_locked', 'unassigned_needs_hq', 'no_hq', 'no_such_point', 'point_wrong_team',
+  'point_not_active', 'point_blocked', 'point_no_slots', 'role_cooldown',
+] as const;
+
 export class GameState {
   readonly roster = new Roster();
   readonly killFeed = new KillFeed();
@@ -36,6 +46,13 @@ export class GameState {
   readonly version: ReadonlySignal<number> = this.versionSig;
 
   constructor(private readonly bus: EventBus<GameEvents>) {}
+
+  /** An unsolicited/duplicate result cannot change the FSM outside Requested. */
+  applyDeployResult(result: DeployResultMsg): boolean {
+    return this.applyDeploy(result.ok
+      ? { type: 'result', ok: true, spawnTick: result.spawnTick }
+      : { type: 'result', ok: false, reason: `deploy.reject.${DEPLOY_REJECT_REASONS[result.reason] ?? 'unknown'}` });
+  }
 
   /** Deploy transitions come from C0 / `self_state`, not C4. */
   applyDeploy(ev: DeployEvent): boolean {

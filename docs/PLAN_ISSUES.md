@@ -1041,6 +1041,12 @@ M1-038 体量为 L。先交付与场景无关的引擎（行为树、效用、�
 ## PI-092 M1-040b：C4 事件无 event_id，去重只用于 C2.events（2026-11-18）
 任务写的"C4 按 event_id 去重"与协议不符：`ServerEventC4` 各消息没有 event_id（C4 是可靠流，不会重复），重复投递只发生在 C2.events 的冗余发送。因此 `GameState.apply` 不做去重；`EventDedup` 留给 C2.events 解码层。热路径堆增量验收改为结构性断言（槽位对象复用），数值验收待专用 `--expose-gc` 基准。
 
+### PI-092 续：M1-040c 客户端 C0 / C4 接线（2026-11-19）
+- **已做**：`sim-wasm` 将 `DeployResult.ok/spawn_tick/reason` 原样暴露，未改线协议。`net-game.ts` 在连接时接入每个会话独立的 `GameState`；C0 仅在部署状态为 `Requested` 时更新并发布 `deploy.state`（拒绝码转 `deploy.reject.*` 键，未知码使用 `deploy.reject.unknown`）。C4 复用 `NetCodec.decodeC4`，由 `GameState.apply` 更新状态并发布 `kill.feed` 等已有事件；`ScoreDelta` 只更新状态。WT 的 C4 可先于 Welcome，握手期最多暂存 64 KiB（含帧头），验证成功后有序投递；握手失败不发布。无效载荷不阻断后续帧。
+- **改动边界**：`client/src/net/` 和 `client/src/game/net-game.ts` 只改 C0/C4 接收与状态挂载所需接口；未改 `snapshot.rs`、载具预测或 C2 解码。
+- **已测**：vitest 定向 51 例通过，含 4 个新增真实 WASM + 模拟传输用例：WS / WT 的部署结果和 C4，以及提前到达的 C4 在接受 / 拒绝握手时的处理。不是与真实服务器或浏览器的端到端验收。
+- **仍为 partial**：部署请求 UI/RPC 与实际出生流程待 M1-056b；`self_state` 部署同步、自动重连及完整 roster 恢复未做。真实服务器 C4 广播与丢包联调仍待 M1-026b；聊天 / 小队回执、本次未覆盖的 C2 事件及 M1-040 专项覆盖率、堆增量和 Kill 延迟基准未验收。
+
 ## PI-093 M1-041a：先做座位状态机与外推辅助（2026-11-18）
 载具预测本体依赖 sim-wasm 导出载具步进（需 wasm 重编与对账接线），在云端无法完成端到端验收(netem/headless)，故先落地与 wasm 无关的纯逻辑。换座 2 s 取 60 tick（30 Hz）；停车阈值 5 km/h 取自 GD 14.7，均为 `initial`。
 
