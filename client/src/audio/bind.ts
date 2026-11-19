@@ -17,30 +17,40 @@ export interface AudioBindDeps {
   listener: () => Vec3;
   /** Ground material under a footstep; default grass. */
   surfaceAt?: (pos: Vec3) => Surface;
+  /** Drop events instead of queueing them against a suspended realtime audio clock. */
+  canPlay?: () => boolean;
+  /** Apply the director's new filter immediately, on the event's audio clock. */
+  onSuppress?: (atS: number) => void;
 }
 
 /** Returns the unsubscribe function. */
 export function bindAudioEvents(bus: EventBus<GameEvents>, dir: AudioDirector, d: AudioBindDeps): () => void {
   const offs = [
     bus.on('fire.remote', (e) => {
+      if (d.canPlay?.() === false) return;
       const w = d.weaponId(e.weapon);
       if (w === undefined) return;
       dir.listener = d.listener();
       dir.handle({ kind: 'shot', weapon: w, pos: { x: e.muzzlePos.x, y: e.muzzlePos.y, z: e.muzzlePos.z } }, d.now());
     }),
     bus.on('fire.local', (e) => {
+      if (d.canPlay?.() === false) return;
       const w = d.weaponId(e.weapon);
       if (w === undefined) return;
       dir.listener = d.listener();
       dir.handle({ kind: 'shot', weapon: w, pos: { x: e.muzzlePos.x, y: e.muzzlePos.y, z: e.muzzlePos.z } }, d.now());
     }),
     bus.on('entity.footstep', (e) => {
+      if (d.canPlay?.() === false) return;
       dir.listener = d.listener();
       const pos = { x: e.pos.x, y: e.pos.y, z: e.pos.z };
       dir.handle({ kind: 'footstep', pos, gait: e.stance === 0 ? 'walk' : 'crouch', surface: d.surfaceAt?.(pos) ?? 'grass', actor: e.entity }, d.now());
     }),
     bus.on('suppress', (e) => {
-      dir.handle({ kind: 'suppress', intensity: e.intensity * 255 }, d.now());
+      if (d.canPlay?.() === false) return;
+      const at = d.now();
+      dir.handle({ kind: 'suppress', intensity: e.intensity * 255 }, at);
+      d.onSuppress?.(at);
     }),
   ];
   return () => offs.forEach((off) => off());
