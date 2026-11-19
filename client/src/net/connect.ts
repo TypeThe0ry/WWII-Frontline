@@ -11,8 +11,9 @@
  * never falls back.
  */
 import { EventBus, type GameEvents } from '../game/event-bus';
+import type { C4Event } from '../game/state/c4';
 import { ClockSync, TICK_MS } from './clock';
-import { NetCodec, type WelcomeMsg } from './codec';
+import { NetCodec, type DeployResultMsg, type WelcomeMsg } from './codec';
 import { wsUrl, wtUrl, type NetConfig } from './config';
 import { handshake, NetError, type HandshakeOptions } from './handshake';
 import type { Transport, TransportKind } from './transport';
@@ -22,6 +23,7 @@ import { WtTransport, type WebTransportCtor } from './wt-transport';
 
 export const WT_TIMEOUT_MS = 3000;
 export const TOTAL_BUDGET_MS = 5000;
+const EARLY_C4_MAX_BYTES = 64 * 1024;
 
 export interface NetStats {
   bytesIn: number;
@@ -37,6 +39,9 @@ export interface ConnectOptions {
   config: NetConfig;
   wasm: SimWasmModule;
   bus?: EventBus<GameEvents>;
+  /** Reliable game messages; subscribe at connect time to receive the initial C4 state. */
+  onC4Event?: (event: C4Event) => void;
+  onDeployResult?: (result: DeployResultMsg) => void;
   /** Handshake overrides (tests: wrong protocol version / data hash). */
   hello?: Pick<HandshakeOptions, 'protocolVersion' | 'dataHash' | 'clientBuild' | 'ticket'>;
   /** Injection points for tests; default to the browser globals. */
@@ -90,9 +95,12 @@ class SessionImpl implements Session {
     codec: NetCodec,
     private readonly bus: EventBus<GameEvents> | undefined,
     now: () => number,
+    onDeployResult: ConnectOptions['onDeployResult'],
+    offC4: () => void,
   ) {
-    // C0 after the handshake: Pong feeds the clock, Disconnect ends the session.
+    // C0 after the handshake.
     this.unsubs.push(
+      offC4,
       transport.onC0((bytes) => {
         let m;
         try {
@@ -102,6 +110,7 @@ class SessionImpl implements Session {
         }
         if (m.kind === 'pong') clock.onPong(m.clientTime, m.serverTick, now());
         else if (m.kind === 'disconnect') this.fail(`server disconnect: ${m.reasonName}`);
+        else if (m.kind === 'deployResult') onDeployResult?.(m);
       }),
       transport.onClose((why) => this.fail(why)),
     );
@@ -192,23 +201,53 @@ export async function connect(opts: ConnectOptions): Promise<Session> {
 
   let fallbackReason: string | undefined;
   const attempt = async (t: Transport, connectTimeoutMs: number, hsTimeoutMs: number): Promise<Session> => {
+    const onC4Event = opts.onC4Event;
+    let earlyC4: Uint8Array[] | undefined = [];
+    let earlyC4Bytes = 0;
+    const dispatchC4 = (bytes: Uint8Array): void => {
+      let event;
+      try {
+        event = codec.decodeC4(bytes);
+      } catch {
+        return; // A malformed payload must not stop subsequent framed events.
+      }
+      try {
+        onC4Event?.(event);
+      } catch (e) {
+        console.error('[net] C4 handler threw', e);
+      }
+    };
+    // WT's independent C4 stream can arrive before C0 Welcome. Keep those frames in order,
+    // but don't apply them until the handshake has validated this attempt.
+    const offC4 = onC4Event ? t.onC4((bytes) => {
+      if (!earlyC4) return dispatchC4(bytes);
+      if (earlyC4Bytes > EARLY_C4_MAX_BYTES) return;
+      earlyC4Bytes += bytes.length + 2; // Count framing so even empty frames have a cost.
+      if (earlyC4Bytes <= EARLY_C4_MAX_BYTES) earlyC4.push(bytes);
+    }) : () => undefined;
     const caps = (hasGpu ? 1 : 0) | (t.kind === 'wt' ? 2 : 0);
     try {
       await withTimeout(t.connect(), connectTimeoutMs, () => new NetError('transport_failed', `${t.kind} connection not ready after ${connectTimeoutMs} ms`));
     } catch (e) {
+      offC4();
       t.close();
       throw e instanceof NetError ? e : new NetError('transport_failed', `${t.kind} connection failed: ${describe(e)}`);
     }
     let hs;
     try {
       hs = await handshake(t, codec, { ...opts.hello, caps, timeoutMs: hsTimeoutMs, now });
+      if (earlyC4Bytes > EARLY_C4_MAX_BYTES) throw new NetError('transport_failed', 'too much C4 data before Welcome');
     } catch (e) {
+      offC4();
       t.close();
       throw e;
     }
     const clock = new ClockSync({ now, sendPing: (ct) => t.sendC0(codec.encodePing(ct)), tickMs: hs.welcome.tickHz > 0 ? 1000 / hs.welcome.tickHz : TICK_MS });
     clock.seed(hs.welcome.serverTick, hs.rttMs, hs.recvAt);
-    const s = new SessionImpl(t, clock, hs.welcome, hs.rttMs, now() - t0, fallbackReason, codec, opts.bus, now);
+    const s = new SessionImpl(t, clock, hs.welcome, hs.rttMs, now() - t0, fallbackReason, codec, opts.bus, now, opts.onDeployResult, offC4);
+    const buffered = earlyC4;
+    earlyC4 = undefined;
+    for (const bytes of buffered) dispatchC4(bytes);
     clock.start();
     opts.bus?.emit('net.connected', { transport: t.kind, rtt: hs.rttMs });
     return s;

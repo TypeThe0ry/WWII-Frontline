@@ -37,6 +37,12 @@ describe('shot dispatch', () => {
     for (let i = 0; i < 20; i++) d.handle({ kind: 'shot', weapon: 'garand', pos: at(5) }, i);
     for (let i = 1; i < played.length; i++) expect(played[i]!.id).not.toBe(played[i - 1]!.id);
   });
+  it('schedules only four individual shots and one group voice in the same window', () => {
+    const { d, played } = make();
+    const started = Array.from({ length: 10 }, () => d.handle({ kind: 'shot', weapon: 'garand', pos: at(0) }, 0));
+    expect(started.reduce((sum, n) => sum + n, 0)).toBe(5);
+    expect(played).toHaveLength(5);
+  });
 });
 
 describe('footsteps and suppression', () => {

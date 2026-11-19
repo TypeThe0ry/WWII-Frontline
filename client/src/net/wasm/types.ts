@@ -60,6 +60,8 @@ export interface WasmServerC0 {
   team: number;
   clientTickOffset: number;
   reason: number;
+  ok: boolean;
+  spawnTick: number;
   clientTime: number;
   serverTimeMs: number;
   free(): void;
