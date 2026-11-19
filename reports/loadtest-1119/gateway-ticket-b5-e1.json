@@ -1,0 +1,438 @@
+{
+  "stock-baseline": {
+    "p50_ms": {
+      "median": 35.538,
+      "min": 34.168,
+      "max": 40.622
+    },
+    "p95_ms": {
+      "median": 60.787,
+      "min": 57.964,
+      "max": 65.431
+    },
+    "max_ms": {
+      "median": 63.872,
+      "min": 61.141,
+      "max": 68.312
+    },
+    "passes": 0,
+    "p95_runs_ms": [
+      57.964,
+      62.322,
+      65.431,
+      60.787,
+      62.309,
+      58.328,
+      60.646
+    ],
+    "runs": [
+      {
+        "requests": 200,
+        "unique_tickets": 200,
+        "p50_ms": 35.538,
+        "p95_ms": 57.964,
+        "max_ms": 61.886,
+        "exit": 1
+      },
+      {
+        "requests": 200,
+        "unique_tickets": 200,
+        "p50_ms": 36.923,
+        "p95_ms": 62.322,
+        "max_ms": 65.056,
+        "exit": 1
+      },
+      {
+        "requests": 200,
+        "unique_tickets": 200,
+        "p50_ms": 40.622,
+        "p95_ms": 65.431,
+        "max_ms": 68.312,
+        "exit": 1
+      },
+      {
+        "requests": 200,
+        "unique_tickets": 200,
+        "p50_ms": 35.322,
+        "p95_ms": 60.787,
+        "max_ms": 63.343,
+        "exit": 1
+      },
+      {
+        "requests": 200,
+        "unique_tickets": 200,
+        "p50_ms": 36.605,
+        "p95_ms": 62.309,
+        "max_ms": 65.101,
+        "exit": 1
+      },
+      {
+        "requests": 200,
+        "unique_tickets": 200,
+        "p50_ms": 34.168,
+        "p95_ms": 58.328,
+        "max_ms": 61.141,
+        "exit": 1
+      },
+      {
+        "requests": 200,
+        "unique_tickets": 200,
+        "p50_ms": 34.648,
+        "p95_ms": 60.646,
+        "max_ms": 63.872,
+        "exit": 1
+      }
+    ]
+  },
+  "stock-optimized": {
+    "p50_ms": {
+      "median": 31.745,
+      "min": 21.145,
+      "max": 46.008
+    },
+    "p95_ms": {
+      "median": 51.639,
+      "min": 39.823,
+      "max": 58.562
+    },
+    "max_ms": {
+      "median": 53.859,
+      "min": 41.694,
+      "max": 61.214
+    },
+    "passes": 3,
+    "p95_runs_ms": [
+      51.639,
+      39.823,
+      53.732,
+      54.226,
+      58.562,
+      48.253,
+      47.45
+    ],
+    "runs": [
+      {
+        "requests": 200,
+        "unique_tickets": 200,
+        "p50_ms": 32.101,
+        "p95_ms": 51.639,
+        "max_ms": 53.859,
+        "exit": 1
+      },
+      {
+        "requests": 200,
+        "unique_tickets": 200,
+        "p50_ms": 21.145,
+        "p95_ms": 39.823,
+        "max_ms": 41.694,
+        "exit": 0
+      },
+      {
+        "requests": 200,
+        "unique_tickets": 200,
+        "p50_ms": 32.741,
+        "p95_ms": 53.732,
+        "max_ms": 55.921,
+        "exit": 1
+      },
+      {
+        "requests": 200,
+        "unique_tickets": 200,
+        "p50_ms": 31.745,
+        "p95_ms": 54.226,
+        "max_ms": 56.241,
+        "exit": 1
+      },
+      {
+        "requests": 200,
+        "unique_tickets": 200,
+        "p50_ms": 46.008,
+        "p95_ms": 58.562,
+        "max_ms": 61.214,
+        "exit": 1
+      },
+      {
+        "requests": 200,
+        "unique_tickets": 200,
+        "p50_ms": 30.062,
+        "p95_ms": 48.253,
+        "max_ms": 50.52,
+        "exit": 0
+      },
+      {
+        "requests": 200,
+        "unique_tickets": 200,
+        "p50_ms": 28.454,
+        "p95_ms": 47.45,
+        "max_ms": 49.864,
+        "exit": 0
+      }
+    ]
+  },
+  "with-metrics-baseline": {
+    "p50_ms": {
+      "median": 36.301,
+      "min": 31.055,
+      "max": 50.494
+    },
+    "p95_ms": {
+      "median": 62.734,
+      "min": 52.007,
+      "max": 84.039
+    },
+    "max_ms": {
+      "median": 65.862,
+      "min": 54.684,
+      "max": 86.959
+    },
+    "tickets_per_s": {
+      "median": 3036.6,
+      "min": 2299.9,
+      "max": 3657.4
+    },
+    "pool_wait_mean_ms": {
+      "median": 30.7935,
+      "min": 27.04169,
+      "max": 44.46046
+    },
+    "transaction_mean_ms": {
+      "median": 0.17768,
+      "min": 0.15144,
+      "max": 0.2494
+    },
+    "handler_le_50ms": {
+      "median": 176,
+      "min": 118,
+      "max": 200
+    },
+    "passes": 0,
+    "p95_runs_ms": [
+      62.656,
+      52.007,
+      84.039,
+      63.074,
+      63.229,
+      60.912,
+      62.734
+    ],
+    "runs": [
+      {
+        "requests": 200,
+        "unique_tickets": 200,
+        "p50_ms": 37.836,
+        "p95_ms": 62.656,
+        "max_ms": 66.097,
+        "tickets_per_s": 3025.9,
+        "exit": 1,
+        "pool_wait_mean_ms": 30.412371764999985,
+        "transaction_mean_ms": 0.16125404499999996,
+        "handler_le_50ms": 176
+      },
+      {
+        "requests": 200,
+        "unique_tickets": 200,
+        "p50_ms": 31.055,
+        "p95_ms": 52.007,
+        "max_ms": 54.684,
+        "tickets_per_s": 3657.4,
+        "exit": 1,
+        "pool_wait_mean_ms": 27.041692415000004,
+        "transaction_mean_ms": 0.15143926500000007,
+        "handler_le_50ms": 200
+      },
+      {
+        "requests": 200,
+        "unique_tickets": 200,
+        "p50_ms": 50.494,
+        "p95_ms": 84.039,
+        "max_ms": 86.959,
+        "tickets_per_s": 2299.9,
+        "exit": 1,
+        "pool_wait_mean_ms": 44.460459375000006,
+        "transaction_mean_ms": 0.24940386000000003,
+        "handler_le_50ms": 118
+      },
+      {
+        "requests": 200,
+        "unique_tickets": 200,
+        "p50_ms": 36.301,
+        "p95_ms": 63.074,
+        "max_ms": 66.27,
+        "tickets_per_s": 3017.9,
+        "exit": 1,
+        "pool_wait_mean_ms": 31.87405469499999,
+        "transaction_mean_ms": 0.17767926500000011,
+        "handler_le_50ms": 169
+      },
+      {
+        "requests": 200,
+        "unique_tickets": 200,
+        "p50_ms": 37.298,
+        "p95_ms": 63.229,
+        "max_ms": 65.862,
+        "tickets_per_s": 3036.6,
+        "exit": 1,
+        "pool_wait_mean_ms": 31.607520065,
+        "transaction_mean_ms": 0.17849723,
+        "handler_le_50ms": 178
+      },
+      {
+        "requests": 200,
+        "unique_tickets": 200,
+        "p50_ms": 34.749,
+        "p95_ms": 60.912,
+        "max_ms": 63.753,
+        "tickets_per_s": 3137.1,
+        "exit": 1,
+        "pool_wait_mean_ms": 30.722386739999997,
+        "transaction_mean_ms": 0.18271502,
+        "handler_le_50ms": 176
+      },
+      {
+        "requests": 200,
+        "unique_tickets": 200,
+        "p50_ms": 36.169,
+        "p95_ms": 62.734,
+        "max_ms": 65.789,
+        "tickets_per_s": 3040.0,
+        "exit": 1,
+        "pool_wait_mean_ms": 30.79349784999999,
+        "transaction_mean_ms": 0.17356522499999996,
+        "handler_le_50ms": 173
+      }
+    ]
+  },
+  "with-metrics-optimized": {
+    "p50_ms": {
+      "median": 28.203,
+      "min": 23.028,
+      "max": 117.471
+    },
+    "p95_ms": {
+      "median": 53.495,
+      "min": 43.63,
+      "max": 118.043
+    },
+    "max_ms": {
+      "median": 56.146,
+      "min": 46.146,
+      "max": 118.107
+    },
+    "tickets_per_s": {
+      "median": 3562.1,
+      "min": 1693.4,
+      "max": 4334.0
+    },
+    "pool_wait_mean_ms": {
+      "median": 23.54024,
+      "min": 19.68767,
+      "max": 26.60766
+    },
+    "transaction_mean_ms": {
+      "median": 0.09244,
+      "min": 0.07937,
+      "max": 0.13082
+    },
+    "handler_le_50ms": {
+      "median": 200,
+      "min": 200,
+      "max": 200
+    },
+    "passes": 3,
+    "p95_runs_ms": [
+      53.495,
+      46.623,
+      48.383,
+      43.63,
+      68.713,
+      54.266,
+      118.043
+    ],
+    "runs": [
+      {
+        "requests": 200,
+        "unique_tickets": 200,
+        "p50_ms": 30.99,
+        "p95_ms": 53.495,
+        "max_ms": 56.146,
+        "tickets_per_s": 3562.1,
+        "exit": 1,
+        "pool_wait_mean_ms": 26.607659749999986,
+        "transaction_mean_ms": 0.11387158500000005,
+        "handler_le_50ms": 200
+      },
+      {
+        "requests": 200,
+        "unique_tickets": 200,
+        "p50_ms": 27.024,
+        "p95_ms": 46.623,
+        "max_ms": 48.581,
+        "tickets_per_s": 4116.8,
+        "exit": 0,
+        "pool_wait_mean_ms": 22.947617025000003,
+        "transaction_mean_ms": 0.09244110000000001,
+        "handler_le_50ms": 200
+      },
+      {
+        "requests": 200,
+        "unique_tickets": 200,
+        "p50_ms": 28.203,
+        "p95_ms": 48.383,
+        "max_ms": 50.546,
+        "tickets_per_s": 3956.8,
+        "exit": 0,
+        "pool_wait_mean_ms": 23.540242040000006,
+        "transaction_mean_ms": 0.10271259999999995,
+        "handler_le_50ms": 200
+      },
+      {
+        "requests": 200,
+        "unique_tickets": 200,
+        "p50_ms": 23.028,
+        "p95_ms": 43.63,
+        "max_ms": 46.146,
+        "tickets_per_s": 4334.0,
+        "exit": 0,
+        "pool_wait_mean_ms": 19.687667345000005,
+        "transaction_mean_ms": 0.09095610499999998,
+        "handler_le_50ms": 200
+      },
+      {
+        "requests": 200,
+        "unique_tickets": 200,
+        "p50_ms": 27.091,
+        "p95_ms": 68.713,
+        "max_ms": 68.792,
+        "tickets_per_s": 2907.3,
+        "exit": 1,
+        "pool_wait_mean_ms": 21.49874016,
+        "transaction_mean_ms": 0.07937011499999999,
+        "handler_le_50ms": 200
+      },
+      {
+        "requests": 200,
+        "unique_tickets": 200,
+        "p50_ms": 29.26,
+        "p95_ms": 54.266,
+        "max_ms": 56.919,
+        "tickets_per_s": 3513.8,
+        "exit": 1,
+        "pool_wait_mean_ms": 26.024453180000005,
+        "transaction_mean_ms": 0.13081634499999995,
+        "handler_le_50ms": 200
+      },
+      {
+        "requests": 200,
+        "unique_tickets": 200,
+        "p50_ms": 117.471,
+        "p95_ms": 118.043,
+        "max_ms": 118.107,
+        "tickets_per_s": 1693.4,
+        "exit": 1,
+        "pool_wait_mean_ms": 25.433202070000004,
+        "transaction_mean_ms": 0.09147103000000006,
+        "handler_le_50ms": 200
+      }
+    ]
+  }
+}

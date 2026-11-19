@@ -238,7 +238,7 @@ pub fn step_player_ex(
     stance::advance(&mut s, want, p);
 
     // Out-of-bounds protection (ARCHITECTURE 9.3): never move on or into unloaded terrain.
-    if !s.pos.is_finite() || !s.vel.is_finite() || col.height_at(s.pos.x, s.pos.z).is_none() {
+    if !s.pos.is_finite() || !s.vel.is_finite() || !col.has_terrain_at(s.pos.x, s.pos.z) {
         s.vel = Vec3::ZERO;
         s.blocked = true;
         if !state.pos.is_finite() {
@@ -362,7 +362,9 @@ pub fn step_player_ex(
     let height = capsule_height(s.stance_blend, p);
     let m = move_capsule(col, p, s.pos, height, desired, state.grounded);
     let new_pos = s.pos + m.translation;
-    if !new_pos.is_finite() || col.height_at(new_pos.x, new_pos.z).is_none() {
+    // With unchanged horizontal coordinates, the check above already found this chunk.
+    let same_xz = new_pos.x == s.pos.x && new_pos.z == s.pos.z;
+    if !new_pos.is_finite() || (!same_xz && !col.has_terrain_at(new_pos.x, new_pos.z)) {
         s.vel = Vec3::ZERO;
         s.blocked = true;
         return s;

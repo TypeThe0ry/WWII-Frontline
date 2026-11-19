@@ -8,7 +8,7 @@ use frontline_protocol::PROTOCOL_VERSION;
 use serde::{Deserialize, Serialize};
 use sqlx::sqlite::{SqliteConnectOptions, SqliteJournalMode, SqlitePoolOptions, SqliteSynchronous};
 use sqlx::types::Json;
-use sqlx::{ConnectOptions, Connection, FromRow, SqlitePool};
+use sqlx::{ConnectOptions, Connection, FromRow, SqliteConnection, SqlitePool};
 
 use crate::metrics::Metrics;
 use crate::registry::{from_hex, to_hex, MatchId};
@@ -208,20 +208,19 @@ impl Database {
             self.pool.acquire().await?
         };
         let _transaction = metrics.ticket_transaction.start_timer();
+        // When the guest already has this nickname, check it in the cursor UPDATE itself.
+        // One autocommit statement then replaces BEGIN, UPDATE, UPSERT, and COMMIT.
+        if let Some(slot) = self
+            .advance_slot(&mut conn, &id, cutoff, Some((guest_id, nick)))
+            .await?
+        {
+            return Ok(slot);
+        }
+
+        // Nick changes and guest backfills still commit atomically with the cursor. A miss
+        // above may also be a refused match, so recheck eligibility in this transaction.
         let mut txn = conn.begin().await?;
-        let slot: Option<(Json<Registration>, u8)> = sqlx::query_as(
-            "UPDATE matches SET next_player = (next_player + 1) % 128
-             WHERE id = ? AND ended = 0 AND ticket_key = ? AND last_heartbeat_ms >= ?
-                 AND json_extract(registration, '$.protocol_version') = ? AND humans + bots < cap
-             RETURNING registration, (next_player + 127) % 128",
-        )
-        .bind(&id)
-        .bind(self.ticket_key.as_slice())
-        .bind(cutoff)
-        .bind(PROTOCOL_VERSION)
-        .fetch_optional(&mut *txn)
-        .await?;
-        let Some((Json(registration), player_id)) = slot else {
+        let Some(slot) = self.advance_slot(&mut txn, &id, cutoff, None).await? else {
             let status: Option<(bool, bool)> = sqlx::query_as(
                 "SELECT ended = 0 AND ticket_key = ? AND last_heartbeat_ms >= ?,
                         json_extract(registration, '$.protocol_version') = ?
@@ -249,7 +248,37 @@ impl Database {
         .execute(&mut *txn)
         .await?;
         txn.commit().await?;
-        Ok((registration, player_id))
+        Ok(slot)
+    }
+
+    async fn advance_slot(
+        &self,
+        conn: &mut SqliteConnection,
+        id: &str,
+        cutoff: i64,
+        unchanged_guest: Option<(&str, &str)>,
+    ) -> Result<Option<(Registration, u8)>, sqlx::Error> {
+        let (guest_id, nick) = unchanged_guest.unzip();
+        let mut rows: Vec<(Json<Registration>, u8)> = sqlx::query_as(
+            "UPDATE matches SET next_player = (next_player + 1) % 128
+             WHERE id = ?1 AND ended = 0 AND ticket_key = ?2 AND last_heartbeat_ms >= ?3
+                 AND json_extract(registration, '$.protocol_version') = ?4 AND humans + bots < cap
+                 AND (?5 IS NULL OR EXISTS (SELECT 1 FROM guests WHERE id = ?5 AND nick = ?6))
+             RETURNING registration, (next_player + 127) % 128",
+        )
+        .bind(id)
+        .bind(self.ticket_key.as_slice())
+        .bind(cutoff)
+        .bind(PROTOCOL_VERSION)
+        .bind(guest_id)
+        .bind(nick)
+        // At most one row. Drain through statement completion to catch commit errors
+        // after RETURNING produces its row in the autocommit case.
+        .fetch_all(conn)
+        .await?;
+        Ok(rows
+            .pop()
+            .map(|(Json(registration), player_id)| (registration, player_id)))
     }
 
     /// A result is terminal. Retrying a delivery is safe and preserves the first payload.

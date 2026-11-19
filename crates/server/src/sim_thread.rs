@@ -612,9 +612,13 @@ impl<C: Clock> SimLoop<C> {
             tracing::info!(
                 event = "tick_step_trace",
                 tick = self.ticks,
+                world_tick = self.world.tick().0,
                 tick_ms = dur.as_secs_f64() * 1e3,
                 phase_step_ms = self.phase_ms[1],
                 movement_ms = ms(t.movement),
+                movement_players_ms = ms(t.movement_players),
+                movement_slowest_player_ms = ms(t.movement_slowest_player),
+                movement_slowest_entity = t.movement_slowest_entity,
                 weapons_ms = ms(t.weapons),
                 projectiles_ms = ms(t.projectiles),
                 vehicles_ms = ms(t.vehicles),
@@ -622,6 +626,13 @@ impl<C: Clock> SimLoop<C> {
                 shells_ms = ms(t.shells),
                 throwables_ms = ms(t.throwables),
                 other_ms = ms(t.other),
+                prepare_ms = ms(t.prepare),
+                schedule_other_ms = ms(t.schedule_other),
+                lagcomp_ms = ms(t.lagcomp),
+                reap_wrecks_ms = ms(t.reap_wrecks),
+                sync_squads_ms = ms(t.sync_squads),
+                refresh_views_ms = ms(t.refresh_views),
+                collect_output_ms = ms(t.collect_output),
                 "simulation step system timings"
             );
         }

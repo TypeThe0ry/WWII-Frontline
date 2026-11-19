@@ -198,10 +198,18 @@ impl World {
 
     /// Advances one tick. Inputs must be ascending by `PlayerId` (see [`normalize_inputs`]).
     pub fn step(&mut self, inputs: &[(PlayerId, InputCmd)]) -> StepOutput {
-        let profile_start = self.ecs.get_resource_mut::<StepProfiler>().map(|mut p| {
+        let profile_clock = self.ecs.get_resource_mut::<StepProfiler>().map(|mut p| {
             p.timings = StepTimings::default();
-            (p.clock_ns)()
+            p.clock_ns
         });
+        let start = profile_clock.map_or(0, |clock| clock());
+        let mut previous = start;
+        let mut lap = || {
+            let now = profile_clock.map_or(0, |clock| clock());
+            let elapsed = now.saturating_sub(previous);
+            previous = now;
+            elapsed
+        };
         let inputs = normalize_inputs(inputs);
         {
             let mut t = self.ecs.resource_mut::<CurrentTick>();
@@ -213,11 +221,17 @@ impl World {
             q.0.extend_from_slice(&inputs);
         }
         self.apply_warmup_wait();
+        let prepare = lap();
         self.schedule.run(&mut self.ecs);
+        let schedule = lap();
         self.record_lagcomp();
+        let lagcomp = lap();
         self.reap_wrecks();
+        let reap_wrecks = lap();
         self.sync_squads();
+        let sync_squads = lap();
         self.refresh_views();
+        let refresh_views = lap();
         let produced = std::mem::take(&mut self.ecs.resource_mut::<EventBuf>().0);
         self.pending_events.extend(produced);
         let out = StepOutput {
@@ -226,19 +240,24 @@ impl World {
                 &mut self.ecs.resource_mut::<crate::rules::RuleChangeBuf>().0,
             ),
         };
-        if let Some(start) = profile_start {
-            let mut profiler = self.ecs.resource_mut::<StepProfiler>();
-            let total = (profiler.clock_ns)().saturating_sub(start);
-            let t = &mut profiler.timings;
-            t.other = total.saturating_sub(
-                t.movement
-                    + t.weapons
-                    + t.projectiles
-                    + t.vehicles
-                    + t.rockets
-                    + t.shells
-                    + t.throwables,
-            );
+        if profile_clock.is_some() {
+            let collect_output = lap();
+            let t = &mut self.ecs.resource_mut::<StepProfiler>().timings;
+            let systems = t.movement
+                + t.weapons
+                + t.projectiles
+                + t.vehicles
+                + t.rockets
+                + t.shells
+                + t.throwables;
+            t.other = previous.saturating_sub(start).saturating_sub(systems);
+            t.prepare = prepare;
+            t.schedule_other = schedule.saturating_sub(systems);
+            t.lagcomp = lagcomp;
+            t.reap_wrecks = reap_wrecks;
+            t.sync_squads = sync_squads;
+            t.refresh_views = refresh_views;
+            t.collect_output = collect_output;
         }
         out
     }

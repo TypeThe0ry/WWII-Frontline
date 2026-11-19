@@ -133,6 +133,11 @@ impl CollisionData {
         Some((ch, i as usize, j as usize, lx - i as f32, lz - j as f32))
     }
 
+    /// Checks terrain coverage with the same chunk-border rules as `height_at`.
+    pub(crate) fn has_terrain_at(&self, x: f32, z: f32) -> bool {
+        self.locate(x, z).is_some()
+    }
+
     /// Bilinear terrain height; `None` where no chunk is loaded.
     pub fn height_at(&self, x: f32, z: f32) -> Option<f32> {
         let (ch, i, j, u, v) = self.locate_cell(x, z)?;

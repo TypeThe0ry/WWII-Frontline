@@ -4,11 +4,12 @@
 //! window as a `log_suppressed` line.
 
 use std::collections::HashMap;
-use std::io::Write;
-use std::sync::atomic::{AtomicU32, Ordering};
-use std::sync::Mutex;
+use std::io::{self, BufWriter, Write};
+use std::sync::atomic::{AtomicU32, AtomicU64, Ordering};
+use std::sync::{Arc, Mutex, OnceLock};
 use std::time::{Duration, Instant};
 
+use crossbeam_channel::{bounded, Receiver, Sender};
 use serde_json::{Map, Value};
 use tracing::field::{Field, Visit};
 use tracing::{Event, Subscriber};
@@ -201,14 +202,143 @@ impl CallsiteKey for tracing::callsite::Identifier {
     }
 }
 
-/// Installs the global subscriber writing JSON lines to stdout.
-pub fn init(match_id: &str, level: &str, rate_limit: u32) -> Result<(), String> {
+const OUTPUT_CAPACITY: usize = 8192;
+const FLUSH_INTERVAL: Duration = Duration::from_millis(50);
+
+static AOI_OUTPUT: OnceLock<Output> = OnceLock::new();
+
+enum OutputLine {
+    Json(Vec<u8>),
+    Aoi(u8, u32, crate::snapshot::priority::Observer),
+    Stop,
+}
+
+#[derive(Default)]
+struct Dropped {
+    json: AtomicU64,
+    aoi: AtomicU64,
+}
+
+#[derive(Clone)]
+pub(crate) struct Output {
+    tx: Sender<OutputLine>,
+    dropped: Arc<Dropped>,
+}
+
+impl Output {
+    pub(crate) fn aoi(&self, player: u8, tick: u32, observer: crate::snapshot::priority::Observer) {
+        if self
+            .tx
+            .try_send(OutputLine::Aoi(player, tick, observer))
+            .is_err()
+        {
+            self.dropped.aoi.fetch_add(1, Ordering::Relaxed);
+        }
+    }
+}
+
+pub(crate) fn aoi_output() -> Option<Output> {
+    if std::env::var_os("FL_AOI_TRACE").is_some() {
+        AOI_OUTPUT.get().cloned()
+    } else {
+        None
+    }
+}
+
+impl Write for Output {
+    fn write(&mut self, line: &[u8]) -> io::Result<usize> {
+        if self.tx.try_send(OutputLine::Json(line.to_vec())).is_err() {
+            self.dropped.json.fetch_add(1, Ordering::Relaxed);
+        }
+        Ok(line.len())
+    }
+
+    // The logging producer never flushes the OS stream.
+    fn flush(&mut self) -> io::Result<()> {
+        Ok(())
+    }
+}
+
+fn write_output(
+    rx: Receiver<OutputLine>,
+    dropped: &Dropped,
+    stdout: impl Write,
+    stderr: impl Write,
+) {
+    let mut stdout = BufWriter::new(stdout);
+    let mut stderr = BufWriter::new(stderr);
+    let mut write_errors = 0u64;
+    let timer = crossbeam_channel::tick(FLUSH_INTERVAL);
+    loop {
+        crossbeam_channel::select! {
+            recv(rx) -> line => {
+                let result = match line {
+                    Ok(OutputLine::Json(line)) => stdout.write_all(&line),
+                    Ok(OutputLine::Aoi(p, tick, o)) => writeln!(
+                        stderr, "[aoi-pose] {p} {tick} {} {} {} {} {} {} {} {}",
+                        o.team, o.pos.x, o.pos.y, o.pos.z, o.yaw, o.pitch, o.prev_yaw, o.prev_pitch,
+                    ),
+                    Ok(OutputLine::Stop) | Err(_) => break,
+                };
+                write_errors += u64::from(result.is_err());
+            }
+            recv(timer) -> _ => {
+                write_errors += u64::from(stdout.flush().is_err()) + u64::from(stderr.flush().is_err());
+            }
+        }
+    }
+    write_errors += u64::from(stdout.flush().is_err()) + u64::from(stderr.flush().is_err());
+    let json = dropped.json.load(Ordering::Relaxed);
+    let aoi = dropped.aoi.load(Ordering::Relaxed);
+    if json + aoi + write_errors != 0 {
+        let _ = writeln!(
+            stderr,
+            "[log-output-loss] json_dropped={json} aoi_dropped={aoi} write_errors={write_errors}"
+        );
+        let _ = stderr.flush();
+    }
+}
+
+/// Keeps the output worker alive and drains queued lines after the sim and network have stopped.
+#[must_use]
+pub struct LogGuard {
+    tx: Sender<OutputLine>,
+    thread: Option<std::thread::JoinHandle<()>>,
+}
+
+impl Drop for LogGuard {
+    fn drop(&mut self) {
+        let _ = self.tx.send(OutputLine::Stop);
+        if let Some(thread) = self.thread.take() {
+            let _ = thread.join();
+        }
+    }
+}
+
+/// Installs the global subscriber. Disk/pipe backpressure only blocks the output worker.
+pub fn init(match_id: &str, level: &str, rate_limit: u32) -> Result<LogGuard, String> {
     let lvl: tracing::level_filters::LevelFilter = level
         .parse()
         .map_err(|_| format!("bad log level '{level}'"))?;
-    let layer = JsonLayer::new(match_id, rate_limit, std::io::stdout()).with_filter(lvl);
+    let (tx, rx) = bounded(OUTPUT_CAPACITY);
+    let dropped = Arc::new(Dropped::default());
+    let output = Output {
+        tx: tx.clone(),
+        dropped: dropped.clone(),
+    };
+    let thread = std::thread::Builder::new()
+        .name("log-output".into())
+        .spawn(move || write_output(rx, &dropped, io::stdout(), io::stderr()))
+        .map_err(|e| e.to_string())?;
+    let guard = LogGuard {
+        tx,
+        thread: Some(thread),
+    };
+    let layer = JsonLayer::new(match_id, rate_limit, output.clone()).with_filter(lvl);
     let sub = tracing_subscriber::registry().with(layer);
-    tracing::subscriber::set_global_default(sub).map_err(|e| e.to_string())
+    tracing::subscriber::set_global_default(sub).map_err(|e| e.to_string())?;
+    let _ = AOI_OUTPUT.set(output);
+    Ok(guard)
 }
 
 #[cfg(test)]
@@ -236,6 +366,38 @@ mod tests {
                 .map(|l| serde_json::from_str(l).expect("valid JSON line"))
                 .collect()
         }
+    }
+
+    #[test]
+    fn output_queue_is_bounded_and_drains_both_streams() {
+        let (tx, rx) = bounded(2);
+        let dropped = Arc::new(Dropped::default());
+        let mut output = Output {
+            tx,
+            dropped: dropped.clone(),
+        };
+        let observer = crate::snapshot::priority::Observer {
+            pos: frontline_sim::Vec3::new(1.0, 2.0, 3.0),
+            team: 0,
+            yaw: 4.0,
+            pitch: 5.0,
+            prev_yaw: 6.0,
+            prev_pitch: 7.0,
+        };
+        output.write_all(b"{\"event\":\"first\"}\n").unwrap();
+        output.aoi(8, 9, observer);
+        // No receiver is polling yet. Both calls must return even when the queue is full.
+        output.write_all(b"discarded\n").unwrap();
+        output.aoi(8, 10, observer);
+        drop(output);
+        let mut stdout = Vec::new();
+        let mut stderr = Vec::new();
+        write_output(rx, &dropped, &mut stdout, &mut stderr);
+        assert_eq!(stdout, b"{\"event\":\"first\"}\n");
+        assert_eq!(
+            stderr,
+            b"[aoi-pose] 8 9 0 1 2 3 4 5 6 7\n[log-output-loss] json_dropped=1 aoi_dropped=1 write_errors=0\n",
+        );
     }
 
     fn frozen() -> NowFn {
