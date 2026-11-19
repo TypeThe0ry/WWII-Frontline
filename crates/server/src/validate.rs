@@ -326,8 +326,7 @@ pub const EDGE_BUTTONS: u16 = buttons::FIRE
     | buttons::USE
     | buttons::MELEE
     | buttons::GADGET
-    | buttons::SWAP
-    | buttons::VEHICLE_SEAT;
+    | buttons::SWAP;
 /// `aux` bit 0 is the walk modifier (level); the other bits belong to fire/one-shot actions.
 pub const AUX_LEVEL_MASK: u8 = 0x01;
 

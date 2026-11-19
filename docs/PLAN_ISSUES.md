@@ -1162,3 +1162,9 @@ PrePass 速度会卡死渲染循环，改用自有速度 RTT（地形/薄实例/
 ## PI-123 M1-041d：载具驾驶的服务器指令通路与客户端状态缺口（2026-11-19）
 - 发现（读代码）：`World::seat_enter/seat_switch/seat_exit_begin` 已存在，但服务器没有任何调用方——线上没有座位请求消息（只有输入位 `VEHICLE_SEAT`，服务器校验放行但未映射到 `seat_enter`），自身状态（`SelfState`）也不告诉客户端「我坐在哪辆车的哪个座位」。因此 `VehiclePredictor`、`RemoteVehicleStore` 已就绪，但客户端无从知道何时进入/退出驾驶预测。
 - 决定（拆 M1-041d，顺序）：① 服务器：`VEHICLE_SEAT` 边沿 → 就近可上座位的 `seat_enter`，按住 0.8 s → `seat_exit_begin`；座位上的驾驶员 `InputCmd` → `set_vehicle_ctrl`（核对 `step_vehicles` 是否已读座位驾驶员指令）；② 协议/自身状态：在 `SelfState` 增加 `vehicle_slot`（线上 id 128–255 或 0=徒步）与座位号，保持比特预算；③ 客户端 `net-game`：随 `vehicle_slot` 切换 `VehiclePredictor.enter/leave`，驾驶时把输入送入载具预测、快照到达时用 `RemoteVehicleStore` 权威运动学对账；④ headless 驾驶 + netem 验收。041b/041c 状态不变（partial）。该链条属于 P3（坦克/Carentan），不阻塞 P1/P2 可玩；先做不依赖它的 *b 余项。
+
+## PI-123 续：M1-041d 第 1 部分，服务器座位输入（2026-11-19）
+- **已做**：服务器从 `SimBridge::resolved()` 读取 `VEHICLE_SEAT`，在 `World::step` 前处理。徒步时仅在上升沿选择登车距离内最近的同队载具（距离判定沿用 `seat_enter` 的 `BOARD_RANGE_M +` 车身半长），依次尝试驾驶、炮手、车长座位；乘员资格仍由 `World::seat_enter` 校验。已入座时持续按住 0.8 s 下车，提前松开取消。缺帧时沿用现有 5 tick 补帧窗口，第 6 个缺帧 tick 视为松开。
+- **核对（读代码）**：`step_vehicles` 已用驾驶员的 `LastInput` 驱动车辆，用炮手输入控制炮术，并读取车长在席状态；无需另接 `set_vehicle_ctrl`，未改 sim。
+- **已测**：7 项服务器 tick 集成测试通过，覆盖最近同队车辆、登车距离、上升沿、拒绝异队和非乘员、座位顺延至车长及全满、24 tick 下车且持续按住不重新上车、松开取消和缺帧处理。格式检查、服务器全目标 Clippy 通过；服务器全量测试 234 通过、0 失败、6 项按原配置忽略。sim 未改，未单独运行 sim 测试。
+- **未做**：`SelfState` 的车辆槽和座位号、sim-wasm 快照解码、客户端联网和预测对账接线。**未测**：客户端实际进出座、端到端 headless 驾驶和 netem 验收。M1-041d 仍为 partial，本次只完成服务器座位输入。
