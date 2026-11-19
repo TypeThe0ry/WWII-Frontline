@@ -5,7 +5,10 @@ import { EventBus, type GameEvents } from '../../game/event-bus';
 import { GameState } from '../../game/state';
 import { ActorManager } from './actor-manager';
 import { weaponLayout } from './placeholder-weapon';
-import { PH_NAME_RE, PlaceholderRegistry, REQ } from './names';
+import { PH_NAME_RE, PlaceholderRegistry, REQ, SOCKET, phName } from './names';
+import { JOINT_PARENT, type HumanoidJoint } from './skeleton';
+import { MOTION, RELOAD_BIT } from './anim-graph';
+import { freshWorldMatrix } from './world';
 import { HAVE_WASM, makeScene, realData, type TestScene } from './test-support';
 
 const d = describe.skipIf(!HAVE_WASM);
@@ -81,15 +84,28 @@ d('placeholder naming', () => {
 });
 
 d('sockets', () => {
-  it('weapons have socket_muzzle / socket_ejection / socket_magazine, characters socket_hand_r/_l and socket_head', async () => {
+  it('parents Humanoid joints and namespaced sockets, retaining the weapon-local muzzle', async () => {
     const { mgr: m, state } = await setup(2);
     m.update(1, 16);
     expect(state.entities.count).toBe(2);
     const wnames = (root: { getChildTransformNodes(d: boolean): { name: string }[] }) => root.getChildTransformNodes(true).map((n) => n.name);
     for (const s of m.allActors()) {
       const a = s.actor;
-      const sockets = a.root.getChildTransformNodes(false).map((n) => n.name);
-      for (const n of ['socket_hand_r', 'socket_hand_l', 'socket_head']) expect(sockets, `${a.id}`).toContain(n);
+      const { joints, sockets } = a.skeleton;
+      const req = s.faction === 'us' ? REQ.CHR_US : REQ.CHR_GE;
+      for (const joint of Object.keys(JOINT_PARENT) as HumanoidJoint[]) {
+        const parent = JOINT_PARENT[joint];
+        expect(joints[joint].name).toBe(phName(req, `${a.id}_${joint}`));
+        expect(joints[joint].parent).toBe(parent ? joints[parent] : a.root);
+      }
+      expect(sockets[SOCKET.head].parent).toBe(joints.Head);
+      expect(sockets[SOCKET.handR].parent).toBe(joints.RightHand);
+      expect(sockets[SOCKET.handL].parent).toBe(joints.LeftHand);
+      expect(sockets[SOCKET.back].parent).toBe(joints.Chest);
+      for (const key of Object.keys(sockets) as (keyof typeof sockets)[]) {
+        expect(sockets[key].name).toBe(phName(req, `${a.id}_${key}`));
+        expect(sockets[key].name).toMatch(PH_NAME_RE);
+      }
       expect(a.weapon).not.toBeNull();
       expect(wnames(a.weapon!.root)).toEqual(expect.arrayContaining(['socket_muzzle', 'socket_ejection', 'socket_magazine']));
       expect(a.weapon!.root.parent).toBe(a.socketHandR);
@@ -116,21 +132,23 @@ d('sockets', () => {
 });
 
 d('stance, orientation and death', () => {
-  it('body height follows data and eases between stand and crouch over stance_transition_ms', async () => {
+  it('uses data heights and the GD 9.2 time for stand → crouch → prone', async () => {
     const { mgr: m, state, data } = await setup(1);
     const c = data.capsule;
     m.update(1, 16);
     const a = m.actor(10)!;
     expect(a.height).toBeCloseTo(c.heightStand, 6);
     state.entities.stance[0] = 1;
-    m.update(1, data.stanceTransitionMs / 2);
-    expect(a.height).toBeLessThan(c.heightStand);
-    expect(a.height).toBeGreaterThan(c.heightCrouch);
-    m.update(1, data.stanceTransitionMs);
+    m.update(1, 125);
+    expect(a.height).toBeCloseTo((c.heightStand + c.heightCrouch) / 2, 6);
+    m.update(1, 125);
     expect(a.height).toBeCloseTo(c.heightCrouch, 6);
-    state.entities.stance[0] = 0;
-    m.update(1, data.stanceTransitionMs * 2);
-    expect(a.height).toBeCloseTo(c.heightStand, 6);
+    state.entities.stance[0] = 2;
+    m.update(1, 499);
+    const prone = Math.min(c.heightCrouch, c.radius * 2.2);
+    expect(a.height).toBeGreaterThan(prone);
+    m.update(1, 1);
+    expect(a.height).toBeCloseTo(prone, 6);
   });
 
   it('position / yaw / pitch follow the entity state; dead entities lie down', async () => {
@@ -160,8 +178,13 @@ d('stance, orientation and death', () => {
     state.entities.count = 1; // id 11 gone from the frame data
     m.update(1, 16);
     expect(m.actorCount).toBe(1);
+    const a = m.actor(10)!;
+    const muzzle = a.weapon!.muzzle;
     bus.emit('entity.removed', { id: 10, reason: 'removed' });
     expect(m.actorCount).toBe(0);
+    expect(a.skeleton.joints.Hips.isDisposed()).toBe(true);
+    expect(a.socketHandL.isDisposed()).toBe(true);
+    expect(muzzle.isDisposed()).toBe(true);
     expect(m.registry.report().find((r) => r.id === REQ.CHR_US)!.instances).toBe(0);
     // no character node named after a local id: the local player has no capsule
     expect(ts!.scene.meshes.filter((x) => /^PH_V-CHR-(US|GE)-001__\d+_body$/.test(x.name)).length).toBe(0);
@@ -234,7 +257,7 @@ d('M1-045b: footsteps, prone, LOD, recoil layer', () => {
     const a = m.actor(10)!;
     expect(a.height).toBeCloseTo(data.capsule.heightStand, 6);
     state.entities.stance[0] = 2;
-    m.update(1, 100); // 100 ms into a 0.9 s transition: still tall
+    m.update(1, 100); // 100 ms into a 0.75 s transition: still tall
     expect(a.height).toBeGreaterThan(data.capsule.heightCrouch);
     for (let i = 0; i < 200; i++) m.update(1, 16); // 3.2 s: settled
     expect(a.height).toBeLessThan(data.capsule.heightCrouch);
@@ -264,6 +287,26 @@ d('M1-045b: footsteps, prone, LOD, recoil layer', () => {
     expect(a.lod).toBe(2);
     place(20);
     expect(a.lod).toBe(0);
+  });
+
+  it('applies locomotion to the lower pivots and reload to the attached weapon without changing the feed', async () => {
+    const { state, mgr: m } = await setup(2);
+    m.update(1, 16);
+    const a = m.actor(10)!;
+    const other = m.actor(11)!;
+    const z = freshWorldMatrix(a.weapon!.muzzle).m[14];
+    state.entities.anim[0] = MOTION.walk | RELOAD_BIT;
+    state.entities.pos[0] = 0.3;
+    m.update(1, 100);
+    expect(a.animation.state).toBe('walk');
+    expect(a.animation.upper).toBe('reload');
+    expect(a.skeleton.joints.RightUpperLeg.rotation.x).toBeCloseTo(-a.skeleton.joints.LeftUpperLeg.rotation.x);
+    expect(Math.abs(a.skeleton.joints.RightUpperLeg.rotation.x)).toBeGreaterThan(0.01);
+    expect(freshWorldMatrix(a.weapon!.muzzle).m[14]).not.toBeCloseTo(z!);
+    expect(other.animation.state).toBe('idle');
+    expect(other.animation.upper).toBe('aim');
+    expect(state.entities.anim[0]).toBe(MOTION.walk | RELOAD_BIT);
+    expect(state.entities.pos[0]).toBeCloseTo(0.3);
   });
 
   it('fire.remote kicks the shooter aim pivot up and it decays', async () => {

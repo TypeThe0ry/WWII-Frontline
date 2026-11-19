@@ -6,8 +6,10 @@
 //! names the command, never a silent fall-back to an empty (walls-everywhere) world.
 
 use std::fmt;
+use std::io::Read;
 use std::path::{Path, PathBuf};
 
+use frontline_sim::collision::{BuildingCollision, MAX_BUILDING_COLLISION_BYTES};
 use frontline_sim::{CollisionChunk, CollisionData, Team, Vec3, World};
 use serde::Deserialize;
 
@@ -222,6 +224,45 @@ fn json<T: for<'de> Deserialize<'de>>(path: &Path) -> Result<T, MapError> {
     })
 }
 
+/// M1's slice-local map vectors can override the shared Carentan assets.
+fn map_asset_root(dir: &Path) -> &Path {
+    if dir.file_name().is_some_and(|name| name == "m1") {
+        dir.parent().unwrap_or(dir)
+    } else {
+        dir
+    }
+}
+
+fn load_building_collision(dir: &Path) -> Result<BuildingCollision, MapError> {
+    let filename = "building-interiors.json";
+    let root = map_asset_root(dir);
+    let paths = [dir.join(filename), root.join(filename)];
+    for path in paths.into_iter().take(if root == dir { 1 } else { 2 }) {
+        let file = match std::fs::File::open(&path) {
+            Ok(file) => file,
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => continue,
+            Err(e) => {
+                return Err(MapError::Io {
+                    path,
+                    error: e.to_string(),
+                })
+            }
+        };
+        let mut bytes = Vec::new();
+        file.take((MAX_BUILDING_COLLISION_BYTES + 1) as u64)
+            .read_to_end(&mut bytes)
+            .map_err(|e| MapError::Io {
+                path: path.clone(),
+                error: e.to_string(),
+            })?;
+        return BuildingCollision::from_bytes(&bytes).map_err(|e| MapError::BadJson {
+            path,
+            error: e.to_string(),
+        });
+    }
+    Ok(BuildingCollision::default())
+}
+
 /// Parses `c_{bx}_{bz}.bin`.
 fn parse_chunk_name(name: &str) -> Option<(i32, i32)> {
     let rest = name.strip_prefix("c_")?.strip_suffix(".bin")?;
@@ -259,6 +300,7 @@ pub fn load_map(data_dir: &Path, map: &str) -> Result<LoadedMap, MapError> {
     }
     let chunk_count = chunks.len();
     let mut collision = CollisionData::from_chunks(chunks);
+    collision.install_building_collision(load_building_collision(&dir)?);
     let cover = cover::load(&dir, &collision)?;
     collision.install_cover(cover);
 

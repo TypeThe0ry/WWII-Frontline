@@ -107,6 +107,8 @@ def main(argv=None) -> int:
     pc.add_argument("--out", default="assets/processed/maps/carentan/m1/fpak")
     pc.add_argument("--manifest", default="assets/manifests/terrain_carentan.json")
     pc.add_argument("--report", default="reports/m1-chunk-bake.json")
+    bi = sub.add_parser("building-interiors", help="bake shared M1 building graybox geometry")
+    bi.add_argument("--out", default="data/maps/carentan")
     nv = sub.add_parser("nav", help="bake the M1 slice navmeshes (M1-036, needs tools/nav-bake deps)")
     nv.add_argument("--slice", default="m1")
     nv.add_argument("--repo", default=".")
@@ -120,6 +122,11 @@ def main(argv=None) -> int:
     nq.add_argument("--repo", default=".")
     a = ap.parse_args(argv)
 
+    if a.cmd == "building-interiors":
+        from .building_interiors import bake
+
+        print(json.dumps(bake(Path(a.out))))
+        return 0
     if a.cmd == "nav":
         import sys as _s
         _s.path.insert(0, str(Path(__file__).resolve().parent.parent))

@@ -80,9 +80,20 @@ pub fn move_capsule(
     let mut grounded = m.grounded;
     if was_grounded && desired.y <= 0.0 && translation.y <= 0.0 {
         let end = foot + translation;
-        if let Some(g) = col.ground_probe(end, p.snap_to_ground_m + height) {
-            let ny = g.normal.y.max(1e-3);
-            let rest = g.point.y + p.radius_m * (1.0 / ny - 1.0) + REST_HOVER_M / ny;
+        let range = p.snap_to_ground_m + height;
+        let terrain = col.ground_probe(end, range).map(|g| (g.point.y, g.normal));
+        let building = col
+            .vertical_building_hit(end, false, range)
+            .map(|(t, normal)| (end.y - t, normal));
+        // Never snap to terrain through a floor or ramp. The analytic height field alone
+        // cannot distinguish the stacked surfaces of a building.
+        let support = match building {
+            Some(b) if terrain.is_none_or(|(y, _)| b.0 >= y) => Some(b),
+            _ => terrain,
+        };
+        if let Some((y, normal)) = support {
+            let ny = normal.y.max(1e-3);
+            let rest = y + p.radius_m * (1.0 / ny - 1.0) + REST_HOVER_M / ny;
             let drop = end.y - rest;
             if drop > SNAP_EPS_M && drop <= p.snap_to_ground_m {
                 translation.y -= drop;

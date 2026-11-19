@@ -1,7 +1,7 @@
 /**
  * Building massing (M1-052b, MAPS 3.7): footprint polygon -> extruded walls + flat roof, merged per cell into plain
  * vertex arrays. Pure (no Babylon), so it is unit-tested; `world-scene.ts` uploads the arrays. This is the placeholder
- * massing stage: no openings/interiors/stairs yet (enterable buildings are drawn as solid blocks, see PI-110).
+ * fallback for unmodified exterior massing. Managed enterable shells are appended from `building-interiors.ts`.
  * Coordinates are map-local metres, x east, z north, y up.
  */
 import { LEVEL_HEIGHT_M, type Ring } from './building-math';
