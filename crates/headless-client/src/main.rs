@@ -95,7 +95,24 @@ fn main() -> ExitCode {
             "  client 0 did not complete the drive scenario (board, move at least 1 m, reconcile, exit)"
         );
     }
-    if a.clients_failed > 0 || a.disconnects > 0 || a.decode_errors > 0 || !drive_completed {
+    let disconnects_ok = a.disconnects == 0;
+    #[cfg(feature = "anticheat-test")]
+    let disconnects_ok = if args.anticheat_mix {
+        report.per_client.iter().all(|c| match c.id {
+            3 => {
+                c.disconnects == 1
+                    && c.disconnect_reason.as_deref() == Some("server Disconnect, reason 2")
+            }
+            4 => {
+                c.disconnects == 1
+                    && c.disconnect_reason.as_deref() == Some("server Disconnect, reason 1")
+            }
+            _ => c.disconnects == 0,
+        })
+    } else {
+        disconnects_ok
+    };
+    if a.clients_failed > 0 || !disconnects_ok || a.decode_errors > 0 || !drive_completed {
         return ExitCode::FAILURE;
     }
     ExitCode::SUCCESS

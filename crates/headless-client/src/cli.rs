@@ -67,6 +67,10 @@ pub struct Args {
     /// Client 0 boards a nearby friendly M4A1, drives, then holds the exit button before disconnecting.
     #[arg(long, conflicts_with = "hash_only")]
     pub drive_vehicle: bool,
+    /// Exercise mixed anticheat input fixtures on a local server.
+    #[cfg(feature = "anticheat-test")]
+    #[arg(long, conflicts_with_all = ["hash_only", "drive_vehicle"])]
+    pub anticheat_mix: bool,
     /// Print the kinematic input-sequence hash of each client for this many ticks and exit
     /// (determinism check: equal for equal `--seed`).
     #[arg(long, value_name = "TICKS")]
@@ -78,6 +82,16 @@ pub struct Args {
 
 impl Args {
     pub fn validate(&self) -> Result<(), String> {
+        #[cfg(feature = "anticheat-test")]
+        if self.anticheat_mix {
+            let literal_loopback = self
+                .url
+                .parse::<std::net::SocketAddr>()
+                .is_ok_and(|addr| addr.ip().is_loopback());
+            if !literal_loopback || self.count < 6 || self.duration < 5.0 {
+                return Err("--anticheat-mix needs a literal loopback address, six clients and at least five seconds".into());
+            }
+        }
         if self.count == 0 || self.count > 120 {
             return Err("--count must be 1..=120 (PlayerId space is 128)".into());
         }
@@ -119,6 +133,18 @@ mod tests {
 
     fn parse(a: &[&str]) -> Args {
         Args::try_parse_from(std::iter::once("headless-client").chain(a.iter().copied())).unwrap()
+    }
+
+    #[cfg(feature = "anticheat-test")]
+    #[test]
+    fn anticheat_mix_restricts_injection_to_literal_loopback() {
+        assert!(parse(&["--anticheat-mix"]).validate().is_ok());
+        assert!(parse(&["--anticheat-mix", "--url", "127.example.com:7000"])
+            .validate()
+            .is_err());
+        assert!(parse(&["--anticheat-mix", "--count", "5"])
+            .validate()
+            .is_err());
     }
 
     #[test]

@@ -15,8 +15,6 @@ use frontline_protocol::msg::input::{buttons, FireCmd, InputCmd};
 
 /// Consecutive violating commands after which the connection is closed.
 pub const KICK_STREAK: u32 = 30;
-/// Hard turn-rate cap (degrees per second), 【待调参】: real mouse flicks must stay legal.
-pub const MAX_TURN_DPS: f32 = 8000.0;
 /// Highest accepted `weapon_slot` (primary, secondary, melee, two gadgets; M0 uses slot 0).
 pub const MAX_WEAPON_SLOT: u8 = 4;
 /// `buttons` bits 14 and 15 are reserved and must be zero.
@@ -53,9 +51,9 @@ pub enum Reject {
     BadMove,
     /// Clamp: move vector longer than allowed (scaled down).
     MoveClamped,
-    /// Clamp: yaw turned faster than [`MAX_TURN_DPS`].
+    /// Clamp: yaw turned faster than the configured turn cap.
     YawRate,
-    /// Clamp: pitch turned faster than [`MAX_TURN_DPS`].
+    /// Clamp: pitch turned faster than the configured turn cap.
     PitchRate,
     /// C1 for a player without a joined session.
     NoSession,
@@ -160,7 +158,7 @@ impl Default for ValidateCfg {
     fn default() -> Self {
         ValidateCfg {
             max_weapon_slot: MAX_WEAPON_SLOT,
-            max_turn_dps: MAX_TURN_DPS,
+            max_turn_dps: crate::anticheat::RULES.view_max_deg_s,
             tick_hz: 30.0,
         }
     }

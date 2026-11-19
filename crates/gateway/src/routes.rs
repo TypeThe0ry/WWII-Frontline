@@ -8,12 +8,14 @@
 //! POST /internal/matches/{id}/heartbeat  match server heartbeat
 //! POST /internal/matches/{id}/result     match result
 //! GET  /healthz                          liveness
+//! GET  /metrics                          Prometheus exposition
 //! ```
 
 use std::net::SocketAddr;
+use std::time::Instant;
 
 use axum::body::Bytes;
-use axum::extract::{ConnectInfo, Path, Request, State};
+use axum::extract::{ConnectInfo, MatchedPath, Path, Request, State};
 use axum::http::{header, HeaderMap, HeaderValue, StatusCode};
 use axum::middleware::{self, Next};
 use axum::response::{IntoResponse, Response};
@@ -28,8 +30,9 @@ use sha2::{Digest, Sha256};
 
 use crate::app::Shared;
 use crate::auth::{ct_eq, ticket, token};
+use crate::db::{Registration, SlotError};
 use crate::nick::validate_nick;
-use crate::registry::{from_hex, to_hex, MatchEntry, SlotError};
+use crate::registry::{from_hex, to_hex};
 
 pub const ROUTE_TABLE: &[&str] = &[
     "POST /v1/guest",
@@ -39,6 +42,7 @@ pub const ROUTE_TABLE: &[&str] = &[
     "POST /internal/matches/{id}/heartbeat",
     "POST /internal/matches/{id}/result",
     "GET /healthz",
+    "GET /metrics",
 ];
 
 #[derive(Clone)]
@@ -53,12 +57,15 @@ pub fn router(state: Shared) -> Router {
         .route("/internal/matches/{id}/heartbeat", post(heartbeat))
         .route("/internal/matches/{id}/result", post(result))
         .route("/healthz", get(|| async { "ok" }))
+        .route("/metrics", get(metrics))
         .layer(middleware::from_fn_with_state(state.clone(), edge))
         .with_state(state)
 }
 
 /// Client IP, `Cache-Control: no-store`, CORS for the configured origins only.
 async fn edge(State(st): State<Shared>, mut req: Request, next: Next) -> Response {
+    let started = Instant::now();
+    let route = req.extensions().get::<MatchedPath>().cloned();
     let peer = req
         .extensions()
         .get::<ConnectInfo<SocketAddr>>()
@@ -105,7 +112,36 @@ async fn edge(State(st): State<Shared>, mut req: Request, next: Next) -> Respons
             }
         }
     }
+    let route = route.as_ref().map_or("unmatched", MatchedPath::as_str);
+    let elapsed = started.elapsed();
+    let status = resp.status().as_u16();
+    if route != "/metrics" {
+        st.metrics.request(route, status, elapsed.as_secs_f64());
+        tracing::debug!(
+            route,
+            status,
+            elapsed_us = elapsed.as_micros(),
+            "gateway request"
+        );
+    }
     resp
+}
+
+async fn metrics(State(st): State<Shared>) -> Response {
+    match st.metrics.encode() {
+        Ok((content_type, body)) => ([(header::CONTENT_TYPE, content_type)], body).into_response(),
+        Err(_) => err(StatusCode::INTERNAL_SERVER_ERROR, "metrics_unavailable"),
+    }
+}
+
+fn db_error(error: &sqlx::Error) -> Response {
+    let kind = match error {
+        sqlx::Error::PoolTimedOut => "pool_timeout",
+        sqlx::Error::Database(_) => "sqlite",
+        _ => "storage",
+    };
+    tracing::error!(kind, "gateway database operation failed");
+    err(StatusCode::INTERNAL_SERVER_ERROR, "storage_unavailable")
 }
 
 fn err(code: StatusCode, msg: &'static str) -> Response {
@@ -155,18 +191,35 @@ async fn guest(
 ) -> Response {
     let now = st.clock.now_ms();
     if let Err(r) = st.ip_limiter.check(&ip.0, now) {
+        st.metrics.auth("guest_login", "rate_limited");
         return too_many(r);
     }
     let req: GuestReq = serde_json::from_slice(&body).unwrap_or_default();
-    // A valid old token renews the same guest; anything else makes a new one.
-    let guest_id = req
-        .token
-        .as_deref()
-        .and_then(|t| token::verify(&st.cfg.token_secret, t, now / 1000).ok())
-        .map_or_else(|| to_hex(&random_16()), |c| c.sub);
+    // Invalid renewal still creates a new guest, but counts as an authentication failure.
+    let renewed = req.token.as_deref().and_then(|t| {
+        token::verify(&st.cfg.token_secret, t, now / 1000)
+            .ok()
+            .filter(|claims| from_hex(&claims.sub).is_some())
+    });
+    if req.token.is_some() {
+        st.metrics.auth(
+            "guest_renewal",
+            if renewed.is_some() { "ok" } else { "invalid" },
+        );
+    }
+    let guest_id = renewed.map_or_else(|| to_hex(&random_16()), |c| c.sub);
+    let suggestion = format!("Guest-{}", &guest_id[..4]);
+    let nick_suggestion = match st.db.guest(&guest_id, &suggestion).await {
+        Ok(nick) => nick,
+        Err(error) => {
+            st.metrics.auth("guest_login", "storage_error");
+            return db_error(&error);
+        }
+    };
+    st.metrics.auth("guest_login", "ok");
     let tok = token::issue(&st.cfg.token_secret, &guest_id, now / 1000);
     Json(GuestResp {
-        nick_suggestion: format!("Guest-{}", &guest_id[..4]),
+        nick_suggestion,
         guest_id,
         token: tok,
         expires_in_s: token::TOKEN_TTL_S,
@@ -194,11 +247,18 @@ struct ServerJson {
 }
 
 async fn servers(State(st): State<Shared>) -> Response {
-    let list = st.registry.list(
-        st.clock.now_ms(),
-        st.cfg.heartbeat_timeout_ms,
-        st.cfg.protocol_version,
-    );
+    let list = match st
+        .db
+        .list(
+            st.clock.now_ms(),
+            st.cfg.heartbeat_timeout_ms,
+            st.cfg.protocol_version,
+        )
+        .await
+    {
+        Ok(list) => list,
+        Err(error) => return db_error(&error),
+    };
     Json(
         list.into_iter()
             .map(|s| ServerJson {
@@ -248,11 +308,14 @@ async fn issue_ticket(
     if let Err(r) = st.ip_limiter.check(&ip.0, now_ms) {
         return too_many(r);
     }
-    let Some(claims) =
-        bearer(&headers).and_then(|t| token::verify(&st.cfg.token_secret, t, now_ms / 1000).ok())
+    let Some(claims) = bearer(&headers)
+        .and_then(|t| token::verify(&st.cfg.token_secret, t, now_ms / 1000).ok())
+        .filter(|claims| from_hex(&claims.sub).is_some())
     else {
+        st.metrics.auth("ticket", "invalid");
         return err(StatusCode::UNAUTHORIZED, "unauthorized");
     };
+    st.metrics.auth("ticket", "ok");
     if let Err(r) = st.account_limiter.check(&claims.sub, now_ms) {
         return too_many(r);
     }
@@ -266,13 +329,15 @@ async fn issue_ticket(
         return err(StatusCode::NOT_FOUND, "no_such_match");
     };
     let (m, player_id) = match st
-        .registry
-        .reserve_slot(&id, now_ms, st.cfg.heartbeat_timeout_ms)
+        .db
+        .reserve_slot(&id, now_ms, st.cfg.heartbeat_timeout_ms, &claims.sub, &nick)
+        .await
     {
         Ok(x) => x,
         Err(SlotError::Unknown) => return err(StatusCode::NOT_FOUND, "no_such_match"),
         Err(SlotError::Stale) => return err(StatusCode::GONE, "match_unavailable"),
         Err(SlotError::Full) => return err(StatusCode::CONFLICT, "match_full"),
+        Err(SlotError::Database(error)) => return db_error(&error),
     };
     let t = ticket::issue(
         &st.ticket_key,
@@ -302,53 +367,17 @@ fn internal_ok(st: &Shared, h: &HeaderMap) -> bool {
     bearer(h).is_some_and(|t| ct_eq(t.as_bytes(), st.cfg.internal_token.as_bytes()))
 }
 
-#[derive(Deserialize)]
-struct RegisterReq {
-    name: String,
-    map: String,
-    mode: String,
-    region: String,
-    #[serde(default)]
-    tags: Vec<String>,
-    version: String,
-    protocol_version: u16,
-    data_hash: u64,
-    cap: u8,
-    addr: String,
-    ws_port: u16,
-    wt_port: u16,
-}
-
 async fn register(State(st): State<Shared>, headers: HeaderMap, body: Bytes) -> Response {
     if !internal_ok(&st, &headers) {
         return err(StatusCode::UNAUTHORIZED, "unauthorized");
     }
-    let Ok(r) = serde_json::from_slice::<RegisterReq>(&body) else {
+    let Ok(r) = serde_json::from_slice::<Registration>(&body) else {
         return err(StatusCode::UNPROCESSABLE_ENTITY, "bad_body");
     };
     let id = random_16();
-    st.registry.register(MatchEntry {
-        id,
-        name: r.name,
-        map: r.map,
-        mode: r.mode,
-        region: r.region,
-        tags: r.tags,
-        version: r.version,
-        protocol_version: r.protocol_version,
-        data_hash: r.data_hash,
-        cap: r.cap,
-        addr: r.addr,
-        ws_port: r.ws_port,
-        wt_port: r.wt_port,
-        phase: "lobby".into(),
-        time_left_s: 0,
-        humans: 0,
-        bots: 0,
-        last_heartbeat_ms: st.clock.now_ms(),
-        ended: false,
-        next_player: 0,
-    });
+    if let Err(error) = st.db.register(&id, r, st.clock.now_ms()).await {
+        return db_error(&error);
+    }
     let pk = st.ticket_key.verifying_key();
     let fp = Sha256::digest(pk.as_bytes());
     Json(json!({
@@ -382,16 +411,21 @@ async fn heartbeat(
     let Some(id) = from_hex(&id) else {
         return err(StatusCode::NOT_FOUND, "no_such_match");
     };
-    let ok = st.registry.heartbeat(&id, st.clock.now_ms(), |e| {
-        e.humans = r.humans;
-        e.bots = r.bots;
-        e.phase = r.phase;
-        e.time_left_s = r.time_left_s;
-    });
-    if ok {
-        StatusCode::NO_CONTENT.into_response()
-    } else {
-        err(StatusCode::NOT_FOUND, "no_such_match")
+    match st
+        .db
+        .heartbeat(
+            &id,
+            st.clock.now_ms(),
+            r.humans,
+            r.bots,
+            &r.phase,
+            r.time_left_s,
+        )
+        .await
+    {
+        Ok(true) => StatusCode::NO_CONTENT.into_response(),
+        Ok(false) => err(StatusCode::NOT_FOUND, "no_such_match"),
+        Err(error) => db_error(&error),
     }
 }
 
@@ -410,9 +444,9 @@ async fn result(
     let Some(id) = from_hex(&id) else {
         return err(StatusCode::NOT_FOUND, "no_such_match");
     };
-    if st.registry.store_result(&id, v) {
-        StatusCode::NO_CONTENT.into_response()
-    } else {
-        err(StatusCode::NOT_FOUND, "no_such_match")
+    match st.db.store_result(&id, v).await {
+        Ok(true) => StatusCode::NO_CONTENT.into_response(),
+        Ok(false) => err(StatusCode::NOT_FOUND, "no_such_match"),
+        Err(error) => db_error(&error),
     }
 }

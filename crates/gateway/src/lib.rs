@@ -6,6 +6,8 @@ pub mod app;
 pub mod auth;
 pub mod clock;
 pub mod config;
+pub mod db;
+mod metrics;
 pub mod nick;
 pub mod ratelimit;
 pub mod registry;

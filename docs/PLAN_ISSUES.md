@@ -901,12 +901,14 @@
 - **做法**：①审计以离开阈值作硬上界；②转身并集取 100 ms（3 tick@30 Hz）；③3D 视锥；④参数全部来自 `aoi.json`；⑤团队通道已实现但传输接线推迟到 M1-026/029；⑥载具快照实体/24 B 记录/调度 ×1.5、LoS 缓存、netem 带宽、`reports/m1-aoi.json`、criterion `aoi_select` 拆为 M1-024b。
 - **受影响任务**：M1-026、M1-029、M1-024b。
 - **裁决（Fable 填写）**：
+- **B3-C2（2026-11-19）**：接入载具 AOI 调度、首次全量、乘员随车位置和地形视线缓存。只有实际装入快照的删除记录才消耗重发次数。R3 转身并集按当前朝向与精确 3 tick 前朝向审核。99 m 夹具 10 s 内载具/步兵更新 75/50 次，9,999 条载具 delta 平均 15.76 B、最大 20 B。工作站（PI-109）WS netem 90 s，20 客户端 + 12 bot，实测丢包 2.006%，审核 81,603 条敌方记录，违规 0。下行 P50/P99 15.40/28.76 kbps，上行 P50 19.92 kbps。60 候选选择 Criterion 8.22 µs，20 接收者夹具选择加编码 P50/P99 0.380/0.944 ms，实网格 AOI 编码 P99 落在 8 ms 桶。见 `reports/m1-aoi.json`。49 人 C3 编码为 199 B，每 30 tick 一包的夹具已覆盖。正式 C3 传输和标记敌人不在本次联测内。建筑遮挡需权威碰撞数据，完整地图与 30 分钟及参考机未测。
 
 ### PI-072 M1-025 延迟补偿范围与落点
 - **提出者 / 日期**：M1 线程 / 2026-11-18
 - **做法**：①历史记录与回溯时间选择放在 `sim`（弹丸阶段需要读取，且预测端同源），`server` 只做计数；②`view_tick==0` 视为“未上报视角”，不补偿（脚本/机器人/预测开火不受影响）；③弹丸在飞行全程使用恒定偏移 `tick−rewind`（弹速下飞行 ≤ 数 tick）；④起点始终取射手权威位姿，0.5 m 校验仅作函数与单测，起点校正指标待 025b；⑤墙体保护、`lagcomp.json`、载具历史、netem 命中率场景、criterion、20 客户端 P99 拆为 M1-025b。
 - **受影响任务**：M1-026、M1-027、M3-022、M1-025b。
 - **裁决（Fable 填写）**：
+- **B3-C2（2026-11-19）**：模拟层在回溯期间插值历史姿态，耗尽回溯窗口后改用当前碰撞。历史记录包括载具车体/炮塔与步兵姿态。0.3 s、厚度 0.5 m 的地形遮挡守卫通过 `lagcomp.json` 配置，服务端导出 `lagcomp_wall_reject_total` 与 `lagcomp_history_clamped_total`。工作站模拟 0/150 ms RTT 各 489/600（81.5%），±1 tick 抖动组 481/600（80.2%）。Criterion 写入 100 步兵和 40 载具单帧约 8.12 µs，`resolve_fire` 约 3.95 ns。建筑遮挡、真实网络命中率、完整 20 客户端 30 分钟与参考机未测。`FireCmd.origin_hint` 的坐标语义仍待协议与客户端约定，权威枪口保留，未导出网络起点校正计数。
 
 ### PI-073 M1-026 范围与 NFKC
 - **提出者 / 日期**：M1 线程 / 2026-11-18
@@ -925,18 +927,21 @@
 - **做法**：①协议文档把 `view_tick` 定义为相对 tick 的差值，M1-025a 误按绝对 tick 实现，本次改为差值（`rewind_ticks(delta)`，0 = 未上报，>8 夹紧）；②8000°/s 限幅在 30 Hz 下永远不会触发（单 tick 最大转角 180° = 5400°/s），验收 3 的“180° 瞬转被钳制到 266.7°/tick”自相矛盾；限幅保持可配置，测试用 3600°/s，建议 Fable 裁定新的默认值（合法甩枪峰值 3000°/s = 100°/tick）；③“射速拒绝”定义为武器仍在冷却/拉栓时的扳机上升沿且 sim 未发射（连发持枪不计）；④`suspicion_move` 计移动向量超限（`move_clamped`/`bad_move`），因协议不含位置；⑤`anticheat.json` 数据化、`pred_hash` 统计、origin_hint 校正计数、分级断开、headless 注入器、20 客户端混合与 criterion 拆为 M1-027b。
 - **受影响任务**：M1-025b、M1-027b、M1-040。
 - **裁决（Fable 填写）**：
+- **B3-C2（2026-11-19）**：阈值从 `anticheat.json` 读入。输入违规按 300 tick 滚动窗口计数，30 次告警，90 次重复违规或连续 9 个仅收到无效命令的 tick 触发不同 C0 `Disconnect` 原因。网络时序/重放和 `pred_hash` 漂移仅统计。真实 ACK 去重后统计 `pred_hash`，不作为踢出依据。工作站（PI-109）20 客户端混合 WS 300 s 有 20 个入场、2 个预期断开（原因 1、2 各一次），移动超限 1,819、拒绝扳机上升沿 183、预测哈希不匹配 39,290。默认 8,000°/s 下视角钳制 0，180° 钳制已由 3,600°/s 的回归夹具覆盖。短程混合版 CLI 在 WS/WT 均验证了预期断开的原因码。300 s 实测使用旧 CLI，原退出码 1 源于把预期断开计为失败。Criterion 直连桥接单条 0.0506 µs，100 玩家每人三条 17.3 µs。干净对照在约 726 s 手动结束，停止前 20 人均在线且踢出计数为 0。默认阈值重标定、完整 30 分钟对照及协议起点提示仍 partial。
 
 ### PI-075 M1-028 范围与实现选择
 - **提出者 / 日期**：M1 线程 / 2026-11-18
 - **做法**：①首个切片用内存注册表/结果表，SQLite（sqlx）迁移、`guests` 表与指标拆 M1-028b（sqlx/libsqlite3 编译体量大，先验证 HTTP 面）；②游客 token 手写 HS256 JWT（hmac+sha2+base64，不引 `jsonwebtoken`），ticket 为 Ed25519（`ed25519-dalek`）；③`ServerInfo`/`TicketClaims` 在 `protocol::dto`，JSON 形态由 gateway 自带镜像结构，protocol 保持无 serde；④`ticket::verify`+`JtiCache` 目前在 gateway，M1-029 需要同样的验签：优先复制到 server（避免 server 依赖 gateway，§4.5），或抽出共享小 crate，待 Fable 裁定；⑤ticket 的 `player_id` 由 gateway 按对局轮转分配（0..127），与 server 的 `alloc_player_team` 需在 M1-029 对账；⑥所有鉴权先于请求体解析（未认证返回 401 而非 422）；⑦内部 API 的传输安全属部署（M1-066/067）。
 - **受影响任务**：M1-029、M1-028b、M1-055。
 - **裁决（Fable 填写）**：
+- **B3-C2（2026-11-19）**：由 `DATABASE_URL` 指向 SQLx SQLite，在启动阶段执行内置迁移，默认 `sqlite://gateway.sqlite3`。SQLite 持久化游客昵称、对局注册/心跳/票据游标与结果。结果写入与结束状态在同一事务中提交，重复上报保留首份。读取时通过 5 s 心跳截止时间判定失联，恢复心跳可重新可见。重启后旧注册只接受相同签票公钥的心跳与新票请求，结果仍可补投。WAL NORMAL 保证 SQLite 一致性，突然断电可能丢失尚未 checkpoint 的提交。SQLx 0.9.1 锁定已修复的 SQLite 绑定 `libsqlite3-sys` 0.39.1，`cargo deny --locked check` 通过。昵称改用完整 NFKC，网关与票据 wire 格式兼容。`/metrics` 暴露按路由模板的延迟直方图、状态类及认证结果计数。重启、迁移、重复结果、换钥、4xx/5xx、日志无票据/令牌用集成测试验证。工作站（PI-109）三轮 SQLite HTTP 各 200 请求且各 200 张唯一票，P95 为 65.587/71.633/59.043 ms，50 ms 门槛未达。Criterion 签票估计 23.798 µs。SQL 由内存与文件库联测覆盖，未运行 `cargo sqlx prepare`。
 
 ### PI-076 M1-029 范围与实现选择
 - **提出者 / 日期**：M1 线程 / 2026-11-18
 - **做法**：①gateway 在注册时分配 `match_id` 并随响应下发 ticket 公钥，server 以此装载验签器（`TICKET_PUBLIC_KEY_FILE` 仅作“钉住”校验：不一致则拒绝启动），server 自己的 `--match-id` 只用于日志；注册完成前到达的连接以 `not_ready` 拒绝；②ticket 无 `kid` 字段，多公钥时逐个尝试（轮换期 ≤2 把，验签 <0.1 ms 量级），不改 ticket 格式；③验收写“容忍时钟偏差 ±2 s”与“61 s 必须过期”互相矛盾：默认偏差容忍为 0（`with_skew` 可配），exp 严格判定；④`Reject.reason` 线上仍只有 `InvalidTicket`（协议码表不改），细分原因（expired/replayed/bad_signature/malformed/wrong_match/not_ready）只进 `ticket_rejected_total{reason}`；⑤server↔gateway 链路用明文 HTTP（reqwest 不开 TLS 特性，避免 webpki-roots 的 CDLA 许可证与 deny 清单冲突），传输安全交部署层（内网/反代，M1-066/067），`https://` 的 GATEWAY_URL 被拒绝；⑥JSON 体（注册/心跳/结果）由 server 自带结构，与 gateway 的 `RegisterReq` 镜像，`MatchRegister` 未放进 protocol（protocol 保持无 serde）；⑦发布构建不强制配置 gateway（M0 压测脚本在 release 下无 gateway 运行），仅 `--dev-no-gateway` 在 release 下为配置错误；未配置 GATEWAY_URL 时启动日志 warn 且不验 ticket；M1-066 部署必须传 GATEWAY_URL；⑧ticket 的 `player_id`/`nick`/`is_admin` 暂不写入会话（server 仍按 `alloc_player_team` 分配 PlayerId，与 PI-075⑤对账结论：以 server 为准），写入会话与重连令牌拆 M1-029b；⑨局终 result 目前只含人数/bot 数/时长/tick，据点数在沙盒图恒为 0，击杀/死亡/得分行待 M1 模式任务。
 - **受影响任务**：M1-029b、M1-055、M1-066/067。
 - **裁决（Fable 填写）**：
+- **B3-C2（2026-11-19）**：心跳上报在线真人、bot 与限时模式倒计时。结束心跳后才提交终局。投递失败时原子落盘，下一次注册成功后按原 match ID 逐份补投，成功后清理。工作站真网关 WS 夹具签票可入场，重放、过期、篡改各触发对应计数 1，注册指标为 1。三轮失联下线距最后一次观察到的心跳 4.968–5.013 s。两次 60 s HTTP 心跳夹具分别收到 61/60 次，间隔抖动 P99 20.183/6.252 ms，连续三个 503 触发一次告警后恢复。注册失败重试 3 次后退出 1，release `--dev-no-gateway` 退出 2。Criterion 绑核验签单钥/匹配第二把钥分别为 42.8/86.7 µs，64 个满载 4,096 条缓存测得平均 RSS 增量 251,776 B/缓存。重连令牌、票据昵称/管理员会话接线、真实阶段与逐人结果仍 partial，未测独立 headless CLI 的真实签票入场。线上账号/域名归 M1-067。
 
 ### PI-077 M1-030 范围与实现选择
 - **提出者 / 日期**：M1 线程 / 2026-11-18

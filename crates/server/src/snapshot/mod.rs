@@ -15,6 +15,7 @@
 pub mod aoi_grid;
 pub mod baseline_book;
 pub mod events_out;
+mod occlusion;
 pub mod priority;
 pub mod scheduler;
 pub mod self_state;

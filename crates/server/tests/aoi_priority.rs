@@ -502,3 +502,236 @@ fn degradation_guard_halves_to_15hz_for_3_seconds_then_recovers() {
     assert!((19.5..=20.5).contains(&after));
     assert_eq!(s.sched.stats.degraded_ticks, 90);
 }
+
+#[test]
+fn confirmed_terrain_cover_removes_enemy_until_cache_refresh() {
+    use frontline_sim::collision::{CHUNK_CELLS, CHUNK_SAMPLES};
+    use frontline_sim::{
+        CollisionChunk, CollisionData, GameData, GameMode, MapId, SimConfig, World,
+    };
+
+    let heights = (0..CHUNK_SAMPLES)
+        .flat_map(|z| {
+            let height = if (33..=38).contains(&z) { 7.0 } else { 0.0 };
+            [height; CHUNK_SAMPLES]
+        })
+        .collect();
+    let terrain = CollisionData::from_chunks([CollisionChunk::new(
+        0,
+        0,
+        heights,
+        vec![0; CHUNK_CELLS * CHUNK_CELLS],
+    )]);
+    let mut s = Synth::new(World::new(
+        SimConfig {
+            tick_hz: 30,
+            match_seed: 7,
+            map: MapId(0),
+            mode: GameMode::Sandbox,
+            data: GameData::embedded(),
+        },
+        &terrain,
+    ));
+    s.add(
+        0,
+        Team::Us,
+        Vec3::new(20.0, 0.0, 8.0),
+        0.0,
+        Some(LinkInfo::WS),
+    );
+    s.add(1, Team::Ger, Vec3::new(20.0, 0.0, 25.0), 0.0, None);
+    s.add(2, Team::Us, Vec3::new(25.0, 0.0, 56.0), 0.0, None);
+    for _ in 0..2 {
+        s.step(idle);
+    }
+    assert!(s.client(0).known.contains_key(&1));
+    assert!(s.client(0).known.contains_key(&2));
+
+    s.world.debug_teleport(1, Vec3::new(20.0, 0.0, 56.0));
+    for _ in 0..2 {
+        s.step(idle);
+    }
+    assert!(!s.client(0).known.contains_key(&1));
+    assert!(s.client(0).last.as_ref().unwrap().removed_ids.contains(&1));
+
+    // A now-clear path beyond 20 m retains the cached answer through tick 11.
+    s.world.debug_teleport(1, Vec3::new(20.0, 0.0, 30.0));
+    for _ in 0..6 {
+        s.step(idle);
+        assert!(!s.client(0).known.contains_key(&1));
+    }
+    assert_eq!(s.sched.stats.remove_records, 3);
+    for _ in 0..2 {
+        s.step(idle);
+    }
+    assert_eq!(s.tick, 12);
+    assert!(s.client(0).known.contains_key(&1));
+    assert!(s.client(0).log.last().unwrap().kf_ids.contains(&1));
+    assert!(s.client(0).known.contains_key(&2));
+}
+
+#[test]
+fn vehicle_multiplier_reaches_the_wire_and_enemy_hulls_follow_r3() {
+    use frontline_sim::collision::{CHUNK_CELLS, CHUNK_SAMPLES};
+    use frontline_sim::{
+        CollisionChunk, CollisionData, GameData, GameMode, MapId, SimConfig, World,
+    };
+
+    let terrain = CollisionData::from_chunks((0..4).flat_map(|z| {
+        (0..3).map(move |x| {
+            CollisionChunk::new(
+                x,
+                z,
+                vec![0.0; CHUNK_SAMPLES * CHUNK_SAMPLES],
+                vec![0; CHUNK_CELLS * CHUNK_CELLS],
+            )
+        })
+    }));
+    let mut s = Synth::new(World::new(
+        SimConfig {
+            tick_hz: 30,
+            match_seed: 7,
+            map: MapId(0),
+            mode: GameMode::Sandbox,
+            data: GameData::embedded(),
+        },
+        &terrain,
+    ));
+    s.add(
+        0,
+        Team::Us,
+        Vec3::new(90.0, 0.0, 120.0),
+        0.0,
+        Some(LinkInfo::DATAGRAM),
+    );
+    s.add(1, Team::Us, Vec3::new(110.0, 0.0, 217.0), 0.0, None);
+    for (team, pos) in [
+        (Team::Us, Vec3::new(70.0, 0.8, 217.0)),
+        (Team::Ger, Vec3::new(90.0, 0.8, 10.0)),
+    ] {
+        s.world.spawn_vehicle("us_m4a1_75", team, pos, 0.0).unwrap();
+    }
+    for _ in 0..330 {
+        s.step(idle);
+    }
+    let player = sends_of(&s, 0, 1, 31);
+    let vehicle = sends_of(&s, 0, 128, 31);
+    eprintln!("99 m over 10 s: infantry {player}, vehicle {vehicle} records");
+    assert!((49..=51).contains(&player));
+    assert!((74..=76).contains(&vehicle));
+    assert!(vehicle as f64 >= player as f64 * 1.4);
+    assert!(!s.client(0).ever_ids.contains(&129));
+    assert_eq!(s.sched.stats.enemy_leaks, 0);
+}
+
+#[test]
+#[ignore = "manual optimized scheduler timing"]
+fn aoi_select_sixty_candidates() {
+    let Some(map) = terrain() else { return };
+    let mut s = Synth::new(new_world(Some(&map)));
+    for id in 0..61 {
+        // 20 recipients, 60 neighbors per recipient in the grid query. Mix eligible friends
+        // and enemies and give the latter positive/negative static LoS on the fixture terrain.
+        let team = if id % 2 == 0 { Team::Us } else { Team::Ger };
+        let x = 30.0 + f32::from(id % 8) * 22.0;
+        let z = 35.0 + f32::from(id / 8) * 22.0;
+        let y = map.collision.height_at(x, z).expect("fixture terrain");
+        s.add(
+            id,
+            team,
+            Vec3::new(x, y, z),
+            0.0,
+            (id < 20).then_some(LinkInfo::DATAGRAM),
+        );
+    }
+    for _ in 0..120 {
+        s.step(idle);
+    }
+    s.sched.stats.pass_ns.clear();
+    for _ in 0..900 {
+        s.step(idle);
+    }
+    let samples = &mut s.sched.stats.pass_ns;
+    samples.sort_unstable();
+    assert_eq!(samples.len(), 900);
+    let ms = |n| f64::from(samples[n]) / 1_000_000.0;
+    eprintln!(
+        "scheduler (selection + encode), 20 recipients / 60 grid neighbors, {} ticks: p50 {:.3} ms, p99 {:.3} ms, max {:.3} ms",
+        samples.len(),
+        ms(samples.len() / 2),
+        ms(samples.len() * 99 / 100),
+        ms(samples.len() - 1),
+    );
+}
+
+#[test]
+fn occupied_hull_replaces_remote_player_position_until_exit() {
+    use frontline_sim::squad::{SquadKind, SquadOp};
+
+    let mut s = scene(
+        &[
+            (0, Team::Us, [32.0, 0.0, 32.0]),
+            (1, Team::Us, [36.0, 0.0, 32.0]),
+        ],
+        &[0],
+    );
+    s.world.roster_add(1, Team::Us).unwrap();
+    s.world.roster_add(100, Team::Ger).unwrap();
+    s.world
+        .squad_op(
+            1,
+            SquadOp::Create {
+                kind: SquadKind::ArmorCrew,
+                suffix: String::new(),
+            },
+        )
+        .unwrap();
+    s.world.set_role(1, Some("crewman")).unwrap();
+    let vehicle = s
+        .world
+        .spawn_vehicle("us_m4a1_75", Team::Us, Vec3::new(39.0, 0.0, 32.0), 0.0)
+        .unwrap();
+    for _ in 0..6 {
+        s.step(idle);
+    }
+    assert!(s.client(0).known.contains_key(&1));
+    s.world.seat_enter(1, vehicle, 2).unwrap();
+    for _ in 0..9 {
+        s.step(idle);
+    }
+    assert!(!s.client(0).known.contains_key(&1));
+    assert_eq!(s.client(0).known[&128].vehicle.unwrap().seats, 1 << 2);
+    assert_eq!(s.sched.stats.remove_records, 3);
+
+    s.world.seat_exit_begin(1).unwrap();
+    for _ in 0..30 {
+        s.step(idle);
+    }
+    assert!(s.client(0).known.contains_key(&1));
+    assert_eq!(s.client(0).known[&128].vehicle.unwrap().seats, 0);
+}
+
+#[test]
+fn removals_wait_for_packet_space_before_counting_repeats() {
+    let players: Vec<_> = (0..=80)
+        .map(|id| {
+            (
+                id,
+                Team::Us,
+                [500.0 + f32::from(id % 10), 0.0, 500.0 + f32::from(id / 10)],
+            )
+        })
+        .collect();
+    let mut s = scene(&players, &[0]);
+    for _ in 0..15 {
+        s.step(idle);
+    }
+    assert_eq!(s.client(0).known.len(), 80);
+    s.client_mut(0).link.budget = 64;
+    s.world.debug_teleport(0, Vec3::new(1000.0, 0.0, 1000.0));
+    for _ in 0..30 {
+        s.step(idle);
+    }
+    assert!(s.client(0).known.is_empty());
+    assert_eq!(s.sched.stats.remove_records, 3 * 80);
+}

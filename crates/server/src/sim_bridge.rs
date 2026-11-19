@@ -12,6 +12,7 @@ use crossbeam_channel::Receiver;
 use frontline_protocol::msg::input::{InputBundle, InputCmd};
 use frontline_sim::{PlayerId, SpawnError, SpawnReq, Team, World};
 
+use crate::anticheat::DisconnectReason;
 use crate::input_buffer::PushResult;
 use crate::metrics::Metrics;
 use crate::net::conn::{Inbound, Sessions};
@@ -36,7 +37,7 @@ pub struct SimBridge {
     map: Option<Arc<LoadedMap>>,
     cfg: ValidateCfg,
     resolved: Vec<(PlayerId, InputCmd)>,
-    kicks: Vec<PlayerId>,
+    kicks: BTreeMap<PlayerId, DisconnectReason>,
     /// Per-player violation counts (M1-027).
     pub anticheat: crate::anticheat::AntiCheat,
     /// Bundles of players the sim has not joined yet (their `Join` command raced the first C1
@@ -58,7 +59,7 @@ impl SimBridge {
             map,
             cfg,
             resolved: Vec::new(),
-            kicks: Vec::new(),
+            kicks: BTreeMap::new(),
             anticheat: crate::anticheat::AntiCheat::new(std::time::Instant::now()),
             parked: Vec::new(),
         }
@@ -109,7 +110,7 @@ impl SimBridge {
     }
 
     /// Per-player and per-kind bookkeeping of a rejection or clamp (M1-027).
-    fn suspect(&mut self, p: PlayerId, r: Reject) {
+    fn suspect(&mut self, p: PlayerId, r: Reject, now: u32) {
         match r {
             Reject::YawRate | Reject::PitchRate => self.metrics.view_rate_clamped_total.inc(),
             Reject::MoveClamped | Reject::BadMove => self.metrics.suspicion_move_total.inc(),
@@ -117,6 +118,9 @@ impl SimBridge {
         }
         if let Some(v) = crate::anticheat::Violation::of(r) {
             self.anticheat.note(p, v);
+        }
+        if let Some(reason) = self.anticheat.input_violation(p, r, now) {
+            self.kicks.entry(p).or_insert(reason);
         }
     }
 
@@ -164,6 +168,8 @@ impl SimBridge {
     pub fn leave(&mut self, world: &mut World, player: PlayerId) -> bool {
         world.remove_player(player);
         world.roster_remove(player);
+        self.anticheat.forget(player);
+        self.kicks.remove(&player);
         match self.table.remove(&player) {
             Some(mut s) => {
                 s.gone();
@@ -185,20 +191,23 @@ impl SimBridge {
             self.metrics.lagcomp_clamped_total.inc();
         }
         let out = s.input.ingest(cmd, now);
-        let kick = s.input.state.should_kick();
-        if out.result.is_accepted() {
+        let accepted = out.result.is_accepted();
+        if accepted {
             self.metrics.input_accepted_total.inc();
         }
-        if let Some(r) = out.result.reject() {
+        let rejection = out.result.reject();
+        self.anticheat.input_outcome(
+            player,
+            accepted,
+            rejection.is_some_and(Reject::is_violation),
+        );
+        if let Some(r) = rejection {
             self.count(r);
-            self.suspect(player, r);
+            self.suspect(player, r, now);
         }
         for r in out.clamps.reasons() {
             self.count(r);
-            self.suspect(player, r);
-        }
-        if kick && !self.kicks.contains(&player) {
-            self.kicks.push(player);
+            self.suspect(player, r, now);
         }
         out.result
     }
@@ -216,12 +225,9 @@ impl SimBridge {
             return;
         };
         let refused = s.input.note_bundle(b);
-        let kick = s.input.state.should_kick();
         for r in refused {
             self.count(r);
-        }
-        if kick && !self.kicks.contains(&player) {
-            self.kicks.push(player);
+            self.suspect(player, r, now);
         }
     }
 
@@ -246,26 +252,26 @@ impl SimBridge {
         }
     }
 
-    /// Disconnects players with 30 consecutive violations: removed from the world at once, and
-    /// the connection is closed (the net layer then publishes `ClientGone`, which is a no-op).
+    /// Finalizes the input tick, then removes offenders and queues an ordered C0 disconnect.
     pub fn process_kicks(&mut self, world: &mut World) -> Vec<PlayerId> {
+        let now = world.tick().0.wrapping_add(1);
+        self.anticheat.finish_input_tick(now, |p, reason| {
+            self.kicks.entry(p).or_insert(reason);
+        });
         let kicked = std::mem::take(&mut self.kicks);
-        for &p in &kicked {
+        for (&p, &reason) in &kicked {
             self.metrics.session_kicked_total.inc();
-            tracing::warn!(
-                event = "session_kicked",
-                player_id = p as u64,
-                reason = "input_violation_streak",
-                "closing connection after 30 consecutive invalid inputs"
-            );
-            if let Some(link) = &self.link {
-                if let Some(h) = link.sessions.handle_of(p) {
-                    h.close_now();
-                }
+            tracing::warn!(event = "session_kicked", player_id = p, tick = now, ?reason);
+            if let Some(h) = self
+                .link
+                .as_ref()
+                .and_then(|link| link.sessions.handle_of(p))
+            {
+                crate::net::conn::disconnect_for_input(&h, reason);
             }
             self.leave(world, p);
         }
-        kicked
+        kicked.into_keys().collect()
     }
 
     /// Step 2: one command per joined player for `tick`, ascending by `PlayerId`.

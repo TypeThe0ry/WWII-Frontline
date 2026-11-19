@@ -140,6 +140,10 @@ fn rand_tag() -> u128 {
 }
 
 fn run_clients(s: &Server, transport: &str, count: u32, secs: u32) -> Report {
+    run_clients_with(s, transport, count, secs, &[])
+}
+
+fn run_clients_with(s: &Server, transport: &str, count: u32, secs: u32, flags: &[&str]) -> Report {
     let (port, extra) = if transport == "wt" {
         (s.wt, vec!["--cert-hash".to_string(), s.cert_hex.clone()])
     } else {
@@ -161,6 +165,7 @@ fn run_clients(s: &Server, transport: &str, count: u32, secs: u32) -> Report {
         "20".into(),
     ];
     argv.extend(extra);
+    argv.extend(flags.iter().map(|f| f.to_string()));
     let args = Args::try_parse_from(argv).expect("args");
     args.validate().expect("valid");
     let ctx = build_ctx(&args).expect("ctx");
@@ -255,4 +260,52 @@ fn loadtest_smoke() {
     let Some(s) = start_server(10) else { return };
     check(&run_clients(&s, "wt", 3, 60), 3, 800);
     check(&run_clients(&s, "ws", 3, 60), 3, 600);
+}
+
+#[cfg(feature = "anticheat-test")]
+fn check_anticheat_mix(transport: &str, count: u32, duration: u32) {
+    let Some(s) = start_server(0) else { return };
+    let r = run_clients_with(&s, transport, count, duration, &["--anticheat-mix"]);
+    assert_eq!(r.aggregate.clients_joined, count);
+    assert_eq!(r.aggregate.decode_errors, 0);
+    for c in &r.per_client {
+        let reason = match c.id {
+            3 => Some("server Disconnect, reason 2"),
+            4 => Some("server Disconnect, reason 1"),
+            _ => None,
+        };
+        assert_eq!(c.disconnect_reason.as_deref(), reason, "client {}", c.id);
+        assert_eq!(
+            c.disconnects,
+            u64::from(reason.is_some()),
+            "client {}",
+            c.id
+        );
+        if reason.is_none() {
+            assert!(
+                c.connected_s >= f64::from(duration) - 0.1,
+                "client {}",
+                c.id
+            );
+        }
+    }
+}
+
+#[cfg(feature = "anticheat-test")]
+#[test]
+fn anticheat_mix_ws() {
+    check_anticheat_mix("ws", 6, 6);
+}
+
+#[cfg(feature = "anticheat-test")]
+#[test]
+fn anticheat_mix_wt() {
+    check_anticheat_mix("wt", 6, 6);
+}
+
+#[cfg(feature = "anticheat-test")]
+#[test]
+#[ignore = "five-minute loopback anti-cheat mix"]
+fn anticheat_mix_20_clients() {
+    check_anticheat_mix("ws", 20, 300);
 }

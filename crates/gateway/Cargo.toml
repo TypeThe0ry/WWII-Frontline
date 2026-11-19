@@ -20,7 +20,7 @@ path = "src/main.rs"
 
 [dependencies]
 frontline-protocol = { path = "../protocol" }
-axum = { version = "0.8", default-features = false, features = ["http1", "json", "tokio", "query"] }
+axum = { version = "0.8", default-features = false, features = ["http1", "json", "tokio", "query", "matched-path"] }
 tokio = { version = "1", default-features = false, features = ["rt-multi-thread", "net", "macros", "time", "signal"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
@@ -29,9 +29,18 @@ rand = "0.8"
 hmac = "0.12"
 sha2 = "0.10"
 base64 = "0.22"
+prometheus = { version = "0.14", default-features = false }
+sqlx = { version = "0.9", default-features = false, features = ["runtime-tokio", "sqlite", "migrate", "macros", "json"] }
+unicode-normalization = "0.1"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", default-features = false, features = ["std", "fmt"] }
 
 [dev-dependencies]
+criterion = { version = "0.7", default-features = false }
 tower = { version = "0.5", features = ["util"] }
 http-body-util = "0.1"
+tempfile = "3"
+
+[[bench]]
+name = "ticket_issue"
+harness = false

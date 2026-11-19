@@ -48,7 +48,7 @@ pub struct Metrics {
     pub input_missing_ticks_total: IntCounter,
     /// Players whose input stream stalled for >= 9 ticks (one count per stall episode).
     pub session_stall_total: IntCounter,
-    /// Connections closed by the server because of 30 consecutive input violations.
+    /// Connections closed by the server input policy.
     pub session_kicked_total: IntCounter,
     pub players: IntGaugeVec,
     pub bots: IntGauge,
@@ -99,6 +99,7 @@ pub struct Metrics {
     pub fire_rate_rejected_total: IntCounter,
     /// Movement commands faster than the character can go (clamped or invalid; M1-027).
     pub suspicion_move_total: IntCounter,
+    pub pred_hash_mismatch_total: IntCounter,
     pub deploy_requests_total: IntCounterVec,
     pub squad_ops_total: IntCounterVec,
     pub chat_rejected_total: IntCounterVec,
@@ -106,6 +107,8 @@ pub struct Metrics {
     pub reports_total: IntCounter,
     /// Fire commands whose view tick lay more than 8 ticks back (rewind clamped; M1-025).
     pub lagcomp_clamped_total: IntCounter,
+    pub lagcomp_history_clamped_total: IntCounter,
+    pub lagcomp_wall_reject_total: IntCounter,
     /// Wall time of steps 6+7 (AOI + encode) per tick (ms).
     pub aoi_encode_ms: Histogram,
     pub snapshots_sent_total: IntCounter,
@@ -183,7 +186,7 @@ impl Metrics {
             ),
             session_kicked_total: counter(
                 "session_kicked_total",
-                "Connections closed after 30 consecutive input violations",
+                "Connections closed by anti-cheat input policy",
             ),
             players: IntGaugeVec::new(Opts::new("server_players", "Connected players"), &["team"])
                 .expect("players"),
@@ -289,6 +292,10 @@ impl Metrics {
                 "fire_rate_rejected_total",
                 "Trigger pulls refused while the weapon was cycling",
             ),
+            pred_hash_mismatch_total: counter(
+                "pred_hash_mismatch_total",
+                "Distinct acknowledged snapshots with a mismatched prediction hash",
+            ),
             suspicion_move_total: counter(
                 "suspicion_move_total",
                 "Movement commands beyond the speed limit",
@@ -313,6 +320,14 @@ impl Metrics {
             lagcomp_clamped_total: counter(
                 "lagcomp_clamped_total",
                 "Fire commands whose lag-compensation rewind was clamped to 8 ticks",
+            ),
+            lagcomp_history_clamped_total: counter(
+                "lagcomp_history_clamped_total",
+                "Rewind samples that used an available history frame instead of the requested one",
+            ),
+            lagcomp_wall_reject_total: counter(
+                "lagcomp_wall_reject_total",
+                "Historical contacts rejected by the current sustained terrain cover check",
             ),
             aoi_encode_ms: hist(
                 "aoi_encode_ms",
@@ -413,10 +428,13 @@ impl Metrics {
             Box::new(m.aoi_starved_total.clone()),
             Box::new(m.aoi_enemy_leak_total.clone()),
             Box::new(m.lagcomp_clamped_total.clone()),
+            Box::new(m.lagcomp_history_clamped_total.clone()),
+            Box::new(m.lagcomp_wall_reject_total.clone()),
             Box::new(m.c0_rate_limited_total.clone()),
             Box::new(m.view_rate_clamped_total.clone()),
             Box::new(m.fire_rate_rejected_total.clone()),
             Box::new(m.suspicion_move_total.clone()),
+            Box::new(m.pred_hash_mismatch_total.clone()),
             Box::new(m.deploy_requests_total.clone()),
             Box::new(m.squad_ops_total.clone()),
             Box::new(m.chat_rejected_total.clone()),
@@ -533,6 +551,8 @@ mod tests {
             "net_frames_malformed_total",
             "net_handshake_timeout_total",
             "net_snapshots_dropped_total",
+            "lagcomp_history_clamped_total",
+            "lagcomp_wall_reject_total",
         ] {
             assert!(text.contains(name), "missing {name}");
         }

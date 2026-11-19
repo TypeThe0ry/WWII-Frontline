@@ -1,6 +1,6 @@
 //! M0-018 acceptance 4: the session flow end to end. Real WebSocket + WebTransport listeners feed
 //! a real `SimLoop` that the test drives tick by tick (lock-step, deterministic): join, team
-//! balance, input -> position equality with an offline `World`, kick on 30 violations, disconnect.
+//! balance, input -> position equality with an offline `World`, graded input disconnect.
 //! Needs the generated terrain (see DEVELOPING.md); skipped with a message when absent
 //! (`FRONTLINE_REQUIRE_TERRAIN=1` makes that a failure).
 
@@ -11,9 +11,10 @@ use std::time::{Duration, Instant};
 
 use common::sim_harness::*;
 use common::*;
-use frontline_protocol::msg::c0::ServerMsgC0;
+use frontline_protocol::msg::c0::{decode_c0_server, Disconnect, ServerMsgC0};
 use frontline_protocol::msg::input::InputBundle;
 use frontline_protocol::Channel;
+use frontline_server::anticheat::DisconnectReason;
 use frontline_server::metrics::Metrics;
 use frontline_server::net::conn::{InboundQueue, Sessions};
 use frontline_server::shutdown::StopFlag;
@@ -242,7 +243,7 @@ async fn two_ws_two_wt_clients_join_balanced_move_like_the_offline_world_and_lea
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
-async fn thirty_violations_in_a_row_close_the_connection_and_remove_the_player() {
+async fn nine_invalid_input_ticks_send_disconnect_and_remove_the_player() {
     let Some(mut r) = rig(false, Duration::ZERO).await else {
         return;
     };
@@ -251,7 +252,7 @@ async fn thirty_violations_in_a_row_close_the_connection_and_remove_the_player()
     tick(&mut r.lp); // join
     assert!(r.lp.world().player_state(w.player_id).is_some());
     let mut seq = 0u16;
-    for step in 0..10u32 {
+    for step in 1..=9u64 {
         let now = r.lp.world().tick().0 + 1;
         let cmds = (0..3u32)
             .map(|j| {
@@ -269,10 +270,29 @@ async fn thirty_violations_in_a_row_close_the_connection_and_remove_the_player()
             fire: Default::default(),
         };
         c.send(Channel::C1, &encode(&b)).await;
-        wait_c1(&m, step as u64 + 1).await;
+        wait_c1(&m, step).await;
         tick(&mut r.lp);
+        assert_eq!(m.session_kicked_total.get(), u64::from(step == 9));
     }
-    assert_eq!(rejected(&m, "reserved_bits"), 30);
+    assert_eq!(rejected(&m, "reserved_bits"), 27);
+    let msg = tokio::time::timeout(Duration::from_secs(5), async {
+        loop {
+            match c.recv_within(Duration::from_secs(5)).await {
+                Got::Frame(Channel::C0, bytes) => break decode_c0_server(&bytes).unwrap(),
+                Got::Frame(..) => {}
+                Got::Closed => panic!("connection closed before C0 Disconnect"),
+                Got::Timeout => panic!("C0 Disconnect timeout"),
+            }
+        }
+    })
+    .await
+    .expect("C0 Disconnect timeout");
+    assert_eq!(
+        msg,
+        ServerMsgC0::Disconnect(Disconnect {
+            reason: DisconnectReason::InvalidInputStreak as u8,
+        })
+    );
     assert_eq!(m.session_kicked_total.get(), 1);
     assert!(
         c.expect_closed(Duration::from_secs(5)).await,

@@ -22,6 +22,9 @@ pub async fn run(
     mut stop: tokio::sync::watch::Receiver<bool>,
     interval: Duration,
 ) {
+    if *stop.borrow() {
+        return;
+    }
     let mut tick = tokio::time::interval(interval);
     tick.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
     let mut failures = 0u32;
@@ -30,7 +33,13 @@ pub async fn run(
             _ = tick.tick() => {}
             _ = stop.changed() => return,
         }
-        match client.heartbeat(&match_id, &source()).await {
+        let beat = source();
+        let result = tokio::select! {
+            biased;
+            _ = stop.changed() => return,
+            r = client.heartbeat(&match_id, &beat) => r,
+        };
+        match result {
             Ok(()) => {
                 if failures >= WARN_AFTER {
                     tracing::info!(
@@ -45,7 +54,7 @@ pub async fn run(
                     .inc();
             }
             Err(e) => {
-                failures += 1;
+                failures = failures.saturating_add(1);
                 metrics
                     .gateway_heartbeat_total
                     .with_label_values(&["error"])
