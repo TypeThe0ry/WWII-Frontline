@@ -5,10 +5,11 @@
 //
 // usage: node scripts/summarize-loadtest.mjs --headless h.json --server-report s.json
 //          --metrics-dir DIR --rss rss.tsv --out OUT.json --transport wt|ws --bots N
-//          [--profile release|debug] [--sample-interval S] [--drive-vehicle]
+//          [--profile release|debug] [--sample-interval S] [--drive-vehicle] [--aoi-traces DIR]
 import { readFileSync, readdirSync, writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import os from 'node:os';
+import { auditAoi } from './audit-loadtest-aoi.mjs';
 
 // ---- metrics text -------------------------------------------------------------------------------
 
@@ -107,6 +108,17 @@ export function summarize(opts) {
   const aoiLeakServer = last.find((x) => x.name === 'aoi_enemy_leak_total')?.value;
   const rows = existsRss(opts.rss);
   const agg = headless.aggregate;
+  const legacyAoi = {
+    records_checked: agg.aoi_records_checked ?? 0,
+    beyond_close_records: agg.aoi_beyond_close ?? 0,
+    leaks: agg.aoi_leaks ?? 0,
+    worst_leak_m: r3(agg.aoi_worst_leak_m ?? 0),
+  };
+  const sameTick = opts.aoiTraces ? auditAoi(
+    readFileSync(join(opts.aoiTraces, 'server.log'), 'utf8'),
+    readFileSync(join(opts.aoiTraces, 'headless.log'), 'utf8'),
+  ) : null;
+  const expectedSnapshots = agg.snapshots + headless.per_client.reduce((n, c) => n + (c.reordered_snapshots ?? 0), 0);
   const isWt = opts.transport === 'wt';
   const th = isWt
     ? { tick_p99_ms: 28, overrun_consecutive_max: 1, down_p50_kbps: 128, up_p50_kbps: 32 }
@@ -142,12 +154,30 @@ export function summarize(opts) {
     disconnects: { value: agg.disconnects, limit: 0, ok: agg.disconnects === 0 && agg.clients_failed === 0 },
     decode_errors: { value: agg.decode_errors, limit: 0, ok: agg.decode_errors === 0 },
     // M1-068b / E1-4: no enemy record outside the R3 rule, by the server's own audit counter and by the clients' independent audit
-    aoi_leaks_server: { value: aoiLeakServer ?? null, limit: 0, ok: (aoiLeakServer ?? 0) === 0 },
-    aoi_leaks_client_audit: { value: agg.aoi_leaks ?? null, limit: 0, ok: (agg.aoi_leaks ?? 0) === 0, records_checked: agg.aoi_records_checked ?? 0, beyond_close: agg.aoi_beyond_close ?? 0 },
+    aoi_leaks_server: { value: aoiLeakServer ?? null, limit: 0, ok: sameTick ? aoiLeakServer === 0 : (aoiLeakServer ?? 0) === 0 },
+    aoi_leaks_client_audit: {
+      value: sameTick?.leaks ?? agg.aoi_leaks ?? null,
+      limit: 0,
+      ok: (sameTick?.leaks ?? legacyAoi.leaks) === 0,
+      records_checked: sameTick?.records_checked ?? legacyAoi.records_checked,
+      beyond_close: sameTick?.beyond_close_records ?? legacyAoi.beyond_close_records,
+    },
     client_cpu_pct_of_one_core: { value: r3(headless.env.client_cpu_pct_of_one_core), limit: 50, ok: headless.env.client_cpu_pct_of_one_core < 50 },
     server_rss_growth_pct: rss.growth_pct == null ? { value: null, limit: 2, ok: true, note: rss.note } : { value: rss.growth_pct, limit: 2, ok: rss.growth_pct < 2, window_s: rss.window_s },
   };
   const hard = ['tick_p99', 'overrun_consecutive_max', 'down_p50_each_client', 'up_p50_each_client', 'disconnects', 'decode_errors', 'aoi_leaks_server', 'aoi_leaks_client_audit'];
+  if (sameTick) {
+    checks.aoi_trace_coverage = {
+      ok: expectedSnapshots > 0 && sameTick.matched_snapshots === expectedSnapshots &&
+        sameTick.missing_pose_snapshots === 0 && sameTick.legacy_candidates.length === legacyAoi.leaks &&
+        (isWt || agg.missing_baseline === 0),
+      expected_snapshots: expectedSnapshots,
+      matched_snapshots: sameTick.matched_snapshots,
+      missing_pose_snapshots: sameTick.missing_pose_snapshots,
+      missing_baselines: agg.missing_baseline,
+    };
+    hard.push('aoi_trace_coverage');
+  }
   const vehicle = headless.per_client.find((c) => c.id === 0)?.vehicle;
   if (opts.driveVehicle) {
     const comparisons = vehicle?.corrections?.comparisons ?? null;
@@ -206,7 +236,12 @@ export function summarize(opts) {
       deaths_observed: agg.deaths,
       respawns_observed: agg.respawns,
       shots_fired_observed: agg.shots_fired,
-      aoi_audit: { records_checked: agg.aoi_records_checked ?? 0, beyond_close_records: agg.aoi_beyond_close ?? 0, leaks: agg.aoi_leaks ?? 0, worst_leak_m: r3(agg.aoi_worst_leak_m ?? 0), server_enemy_leak_total: aoiLeakServer ?? null, note: 'client-side audit uses the client predicted position and a 24-tick orientation history with +4 m / +5 deg tolerance: looser than the server, so a reported leak is a real violation (audit.rs)' },
+      aoi_audit: {
+        ...(sameTick ?? legacyAoi),
+        mode: sameTick ? 'same_tick' : 'predicted_pose',
+        ...(sameTick ? { predicted_pose: legacyAoi } : {}),
+        server_enemy_leak_total: aoiLeakServer ?? null,
+      },
       client_cpu_pct_of_one_core: r3(headless.env.client_cpu_pct_of_one_core),
     },
     reference: {
@@ -250,6 +285,7 @@ if (process.argv[1] && import.meta.url === new URL(`file://${process.argv[1]}`).
     headless: arg(a, 'headless'),
     serverReport: arg(a, 'server-report'),
     metricsDir: arg(a, 'metrics-dir'),
+    aoiTraces: arg(a, 'aoi-traces'),
     rss: arg(a, 'rss'),
     out: arg(a, 'out'),
     transport: arg(a, 'transport', 'wt'),

@@ -224,6 +224,7 @@ pub async fn run_client(ctx: Arc<Ctx>, id: u32) -> (ClientReport, Series) {
                         down.add(sec, p.len());
                         match dec.decode(&p) {
                             Ok(s) => {
+                                audit.trace_wire(welcome.player_id, s.tick, &s.entities);
                                 let stale = newest_snapshot.is_some_and(|n| (s.tick.wrapping_sub(n) as i32) <= 0);
                                 if stale { rep.reordered_snapshots += 1; continue; }
                                 newest_snapshot = Some(s.tick);
@@ -257,8 +258,7 @@ pub async fn run_client(ctx: Arc<Ctx>, id: u32) -> (ClientReport, Series) {
                                     d.on_snapshot(&s);
                                     if d.seated() { audit_skip_until = now + Duration::from_secs(2); }
                                 }
-                                audit.tick = s.tick;
-                                if life.alive && now >= audit_skip_until { if let Some(p) = pred.pos() { audit.check(p, &s.entities); } else { audit.skipped += 1; } } else { audit.skipped += 1; }
+                                if life.alive && now >= audit_skip_until { if let Some(p) = pred.pos() { audit.check(welcome.player_id, s.tick, p, &s.entities); } else { audit.skipped += 1; } } else { audit.skipped += 1; }
                                 let before = pred.stats.total;
                                 report_hash = pred.on_self(s.ack_input_seq, corr, life.alive, life.death_window(now));
                                 if ctx.trace && pred.stats.total != before {

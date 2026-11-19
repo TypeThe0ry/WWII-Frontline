@@ -71,6 +71,8 @@ trap cleanup EXIT
 trap 'exit 130' INT
 trap 'exit 143' TERM
 
+# Use the offline join of decoded C2 records and same-tick server observer samples for E1-4.
+export FL_AOI_TRACE=1
 SERVER_EXTRA=() CLIENT_EXTRA=() DRIVER=()
 if [ "$DRIVE" = 1 ]; then
   SERVER_EXTRA=(--map m0 --mode sandbox --data-dir "$PWD/data" --dev-spawn-vehicle)
@@ -132,12 +134,12 @@ kill -TERM "$SERVER_PID" 2>/dev/null || true
 wait "$SERVER_PID" 2>/dev/null || true
 SERVER_PID=""
 
-cat "$T/headless.log" >&2
+sed '/^\[aoi-\(wire\|pred\)\] /d' "$T/headless.log" >&2
 echo "(raw files kept in $T)"
 [ -s "$T/headless.json" ] && [ -s "$T/server.json" ] || { echo "missing headless or server report" >&2; exit 1; }
 RC=0
 node scripts/summarize-loadtest.mjs --headless "$T/headless.json" --server-report "$T/server.json" \
-  --metrics-dir "$T" --rss "$T/rss.tsv" --out "$OUT" --transport "$TRANSPORT" --bots "$BOTS" \
+  --aoi-traces "$T" --metrics-dir "$T" --rss "$T/rss.tsv" --out "$OUT" --transport "$TRANSPORT" --bots "$BOTS" \
   --profile "$PROFILE" --sample-interval "$INTERVAL" --pinned "$([ ${#SRV_PIN[@]} -gt 0 ] && echo 1 || echo 0)" \
   "${DRIVER[@]}" || RC=$?
 [ "$HL_STATUS" = 0 ] || exit "$HL_STATUS"
