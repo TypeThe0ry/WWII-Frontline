@@ -1274,3 +1274,22 @@ PrePass 速度会卡死渲染循环，改用自有速度 RTT（地形/薄实例/
 - **门禁绕过已修复。** 旧版 `lint` 在缺少 `cargo-deny` 时只打印警告。现在先检查工具，再执行 `cargo deny --locked check`。工作站以隔离 `PATH` 验证，缺工具时单独运行 `scripts/local-ci.sh lint` 显示 `skipped=[lint]`，退出码为 3。
 - **实测。** 在 `~/.cargo/bin` 安装 `cargo-deny 0.21.0`，RustSec 数据库更新至 `472a4c9`。使用现有 `deny.toml`，`advisories`、`bans`、`licenses`、`sources` 4/4 通过。0 条错误、20 条警告，其中 18 条来自依赖多版本，2 条来自当前图未用的 `CC0-1.0` 和 `Unicode-DFS-2016`。许可名单保持原样。`scripts/local-ci.sh lint` 退出 0，CI 工具单测 30/30 通过。
 - **待裁决。** H-037 仍需确认许可名单。M0-002 保持 partial，历史 GitHub Actions 红绿对和墙钟未测（H-102）。现行合并按 PI-078 使用本地门禁。
+
+## PI-agy AGY-1：`agy` 与 Codex CLI 实测对比（2026-11-19）
+
+- **对比边界（非同任务口径）**：AGY-1 为**仅文档**核对任务（无 Rust/WASM 编译、无浏览器 E2E、无 600–1800 s 长跑），而 Codex Batch 1（A–G，#126–#132）与 Batch 2（B2-A–G，#133–#139）均为代码改动＋实机/长跑测试任务。以下墙钟与返工数如实记录，**不可直接拿 AGY-1 的耗时去和长跑任务比快慢**。
+
+| 维度 | `agy` CLI（AGY-1） | `codex` CLI（Batch 1 / Batch 2 样本） |
+| --- | --- | --- |
+| 版本 / 模型 | `agy 1.5.12`；Gemini 4 Neon (High) | `codex-cli 0.169.1`；`gpt-6.2-sol`（`provider: custom`，`reasoning effort: high/xhigh`） |
+| 任务 | 仅文档：对照 #117–#139 的 `STATUS`/`PI`/`reports` 核对 `reports/m1-acceptance.md`（E1-1…E1-17）并补 `PI-agy` | Batch 1（7 项：载具驾驶 netem、WebAudio、C0/C4、bot 接线、放置预判、无样式 UI、史实核对）；Batch 2（7 项：AOI 同 tick 审计、史实回填、C4 netem 600 s×2、有头 Chromium 驾驶、放置槽位、cargo-deny 门禁、WT 30 min bot-fill soak） |
+| 墙钟时间 | 截至提交前约 9 min（起算自 `agy1.start` `12:33:23+08:00`；含全流程合并清理的最终墙钟记于 `/data/scratch/batch/b2/DONE-AGY1.txt`） | Batch 2 已完成 6 项（自 prompt 生成至 DONE 落盘）：B2-F 5.4 min（324 s）、B2-D 8.3 min（498 s）、B2-A 23.9 min（1,432 s）、B2-C 36.4 min（2,185 s）、B2-B 40.8 min（2,447 s）、B2-G 52.8 min（3,169 s），B2-E 在途；Batch 1 的 7 项为 20.5–91.7 min |
+| 返工次数 | 文档/代码返工 **0 次**（仅在干净 worktree 补 `pnpm install --frozen-lockfile` 与 `tools/asset-pipeline` 构建以便实跑 `data` 门禁和 `ledger-check`） | 典型 **0–2 次**：如 B2-F 0 次；B2-B 首次 Rust 门禁发现 1 处旧限速断言后修正；B2-C 首轮脚本在运行期间被改导致外层退出 2 后重跑完整 600 s×2；B2-A/C/G 整合并发 PR 后各复跑 1 次本地门禁 |
+| 测试与门禁结果 | `scripts/local-ci.sh data` 通过（75/75 单测、21 valid / 47 invalid 夹具、76 个 `/data` 文件 0 错）；`node tools/ci/check-layout.mjs` 通过（24 目录、4 文件）；`node tools/ci/check-acceptance.mjs` 从 **6 错降至 0 错**（0 open task）；`node --test tools/ci/test/*.test.mjs` 36/36 通过；`asset-pipeline ledger-check` 实核 241 行 | 各任务均通过对应 `scripts/local-ci.sh` 子集与专项实测（详见 B2 `DONE-{A,B,C,D,F,G}.txt`）；均遵守不使用 GitHub Actions 的本地门禁约束 |
+| 质量备注 | 核出多处跨文档陈旧/矛盾并按证据修正：① E1-14/E1-17 与 `STATUS` M1-072 仍写旧的 8 行台账（OK 4）与“72 视觉全占位”，实际 `ledger-check` 已为 241 行（OK 231/PENDING 3/FLAGGED 1/REJECTED 0/INTERNAL 6）且 `missing-report.json` M1 72 项含非视觉（5 real/7 placeholder/56 missing/4 internal-only，仅来源级元数据）；② E1-8 仍写 `variant-count` 未产出，实际 M1-042a/b（`reports/m1-pbr.md`）已出 32 High / 20 Low PBR 变体，真正缺口是未接 `local-ci.sh` 与世界场景/CSM/TAA 速度着色器；③ E1-1 遗留误引 `PI-104`（建筑占比）而非 H-054/H-056，且仅写 300 s；④ 补齐 E1-2（#119）、E1-3（B2-G 下行 P99 30.3 kbps）、E1-4（B2-G 1,612,038 条）、E1-6（83.3 ms 及 #117/#122）、E1-12（B2-A 51/2,966 与 #137 Sherman 限速变更未重测）；⑤ 严格未升级任何 PASS，将 6 处非标结论格统一为 `partial`/`未测`，使 `check-acceptance.mjs` 归零 | Batch 1/2 产出的工程代码与实测报告严谨、诚实标 partial、能定位真实根因（如 #135 AOI 同 tick 归因、#132 网关 `data_hash` HTTP 422），但并发 PR 逐个更新 `reports/m1-acceptance.md` 时未同步清扫早期非标结论格（如 B2-D 记到既有格式问题但未顺手改他行）及 M1-064 更新后的 E1-14/E1-17/M1-072 汇总 |
+
+- **CLI 能力与运维特点对比**：
+  - **模型选择**：`agy models` 原生提供多家族模型与思考深度档位（Gemini 4 Neon/Argon/Hydrogen、Orchestrator、Gemini 3.8 Flash、Claude Opus/Sonnet 5.5、GPT-OSS 120B，`--model` / `--effort low|medium|high|xhigh|max`）；`codex` 通过 `~/.codex/config.toml` 或 `-c model=...` 对接 OpenAI/自定义 provider（本机 `gpt-6.2-sol`）。
+  - **认证方式**：`agy` 走 Antigravity/Google OAuth（本机落盘 `~/.gemini/antigravity-cli/antigravity-oauth-token`，权限 `0600`），无需手配第三方 API 中转；`codex` 走 `codex login` 或 `config.toml` 自定义 provider。
+  - **沙箱与批处理**：`agy` 提供 `--sandbox`（终端限制）、`--mode`（`accept-edits`/`auto`/`plan`）及批处理无交互开关（`-p`/`--print`、`--dangerously-skip-permissions`、`--output-format text|json|stream-json`、`--print-timeout`），并内置 subagent、`run_workflow`、swarm、MCP、plugin 与 ACP 协议（`agy acp`、`--remote-agent`/`--remote-control`）；`codex` 提供 `codex exec`、`codex review`、`codex sandbox`、`codex apply` 与 `sandbox_mode`/`approval_policy`（本工作站批处理为 `danger-full-access` + `approval: never`）。
+- **开放问题**：`reports/m1-placeholders.md` 与 `reports/m1-review-pack.md` 中仍残留早期“台账 OK 4 字体 / 仅无损同机”描述；本次仅修改 `reports/m1-acceptance.md`、`tasks/STATUS.md`、`docs/PLAN_ISSUES.md`，建议下次整理检查点 1 审阅包时一并同步。
