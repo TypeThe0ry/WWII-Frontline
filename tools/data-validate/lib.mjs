@@ -11,9 +11,9 @@ import { checkRefs } from './rules/refs.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 export const REPO_ROOT = resolve(here, '..', '..');
-export const KINDS = ['weapon', 'explosive', 'melee', 'ammo', 'material', 'gadget', 'role', 'loadout', 'vehicle', 'map_meta', 'spawns', 'rules', 'rule_capture', 'rule_match', 'rule_spawn', 'rule_supplies', 'rule_squads', 'rule_aoi', 'bots', 'audio_params'];
+export const KINDS = ['weapon', 'explosive', 'melee', 'ammo', 'material', 'gadget', 'role', 'loadout', 'vehicle', 'map_meta', 'spawns', 'rules', 'rule_capture', 'rule_match', 'rule_spawn', 'rule_supplies', 'rule_squads', 'rule_aoi', 'rule_anticheat', 'rule_lagcomp', 'bots', 'audio_params'];
 const DIR_KIND = { weapons: 'weapon', explosives: 'explosive', melee: 'melee', ammo: 'ammo', materials: 'material', gadgets: 'gadget', roles: 'role', loadouts: 'loadout', vehicles: 'vehicle' };
-const RULE_FILE_KIND = { 'rules/capture.json': 'rule_capture', 'rules/match_m1.json': 'rule_match', 'rules/spawn.json': 'rule_spawn', 'rules/supplies.json': 'rule_supplies', 'rules/squads.json': 'rule_squads', 'rules/aoi.json': 'rule_aoi', 'rules/bots.json': 'bots' };
+const RULE_FILE_KIND = { 'rules/capture.json': 'rule_capture', 'rules/match_m1.json': 'rule_match', 'rules/spawn.json': 'rule_spawn', 'rules/supplies.json': 'rule_supplies', 'rules/squads.json': 'rule_squads', 'rules/aoi.json': 'rule_aoi', 'rules/anticheat.json': 'rule_anticheat', 'rules/lagcomp.json': 'rule_lagcomp', 'rules/bots.json': 'bots' };
 const MAP_FILE_KIND = { 'meta.json': 'map_meta', 'spawns.json': 'spawns' };
 const SLUG = /^[a-z][a-z0-9]*(_[a-z0-9]+)*$/;
 

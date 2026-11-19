@@ -5,9 +5,11 @@
 use std::sync::Arc;
 
 use frontline_protocol::msg::input::{buttons, FireCmd, InputCmd};
+use frontline_server::anticheat::{AntiCheat, DisconnectReason, RULES};
+use frontline_server::input_buffer::PushResult;
 use frontline_server::metrics::Metrics;
 use frontline_server::sim_bridge::SimBridge;
-use frontline_server::validate::ValidateCfg;
+use frontline_server::validate::{Reject, ValidateCfg};
 use frontline_sim::{
     CollisionChunk, CollisionData, GameData, GameMode, MapId, SimConfig, Team, Vec3, World,
 };
@@ -42,6 +44,10 @@ impl Rig {
     }
 
     fn with_cfg(cfg: ValidateCfg) -> Rig {
+        Self::with_data(cfg, GameData::embedded())
+    }
+
+    fn with_data(cfg: ValidateCfg, data: &'static GameData) -> Rig {
         let m = Metrics::new();
         let mut w = World::new(
             SimConfig {
@@ -49,7 +55,7 @@ impl Rig {
                 match_seed: 9,
                 map: MapId(0),
                 mode: GameMode::Sandbox,
-                data: GameData::embedded(),
+                data,
             },
             &flat(),
         );
@@ -88,6 +94,7 @@ impl Rig {
             view_tick: 0,
         });
         self.br.ingest_cmd(P, &c, now);
+        assert!(self.br.process_kicks(&mut self.w).is_empty());
         self.br.resolve(now);
         self.br.anticheat_before_step(&self.w);
         let ev = self.w.step(self.br.resolved()).events;
@@ -107,11 +114,11 @@ fn speed_hack_is_clamped_and_counted() {
     let mut r = Rig::new();
     let mut prev = r.pos();
     let mut max_v = 0.0f32;
-    for _ in 0..900 {
-        // 1.3x the unit movement vector, sprinting.
+    for i in 0..900 {
+        // 1.30x the legal input every fifth tick for 30 s. This stays below the
+        // rolling disconnect limit so we can measure sustained movement.
         r.tick(|mut c| {
-            c.move_x = 83;
-            c.move_z = 83;
+            (c.move_x, c.move_z) = if i % 5 == 0 { (117, 117) } else { (89, 89) };
             c.buttons = buttons::SPRINT;
             c
         });
@@ -119,32 +126,60 @@ fn speed_hack_is_clamped_and_counted() {
         max_v = max_v.max(((p.x - prev.x).powi(2) + (p.z - prev.z).powi(2)).sqrt() * 30.0);
         prev = p;
     }
-    // 83*sqrt(2)/127 = 0.924 would be legal; send a real 1.3x below.
-    assert!(max_v <= 6.4 * 1.02, "max speed {max_v}");
-    let mut r2 = Rig::new();
-    let mut prev = r2.pos();
-    let mut max_v = 0.0f32;
-    for _ in 0..900 {
-        r2.tick(|mut c| {
-            c.move_x = 117;
-            c.move_z = 117; // |v| = 165 / 127 = 1.30
-            c.buttons = buttons::SPRINT;
-            c
-        });
-        let p = r2.pos();
-        max_v = max_v.max(((p.x - prev.x).powi(2) + (p.z - prev.z).powi(2)).sqrt() * 30.0);
-        prev = p;
+    let count = r.m.suspicion_move_total.get();
+    eprintln!("30 s at 1.3x every fifth tick: max {max_v:.3} m/s, {count} clamped");
+    assert!((6.0..=6.4 * 1.02).contains(&max_v));
+    assert_eq!(count, 180);
+    assert_eq!(r.br.anticheat.counts(P).total(), 180);
+}
+
+#[test]
+fn rolling_limit_expires_old_violations_and_kicks_at_three_times_warn_count() {
+    let mut ac = AntiCheat::new(std::time::Instant::now());
+    let now: u32 = u32::MAX - 13;
+    let limit = 3 * RULES.warn_count;
+    for _ in 0..limit - 1 {
+        assert_eq!(ac.input_violation(P, Reject::MoveClamped, now), None);
     }
-    eprintln!("1.3x speed hack: max speed {max_v:.2} m/s");
-    assert!(max_v <= 6.4 * 1.02, "max speed {max_v}");
-    let n = r2.m.suspicion_move_total.get();
-    assert!(n >= 100, "suspicion_move_total {n}");
-    assert!(r2.br.anticheat.counts(P).total() >= 100);
+    let boundary = now.wrapping_add(RULES.window_ticks);
+    // At the exact expiry boundary the first burst stops contributing.
+    for _ in 0..limit - 1 {
+        assert_eq!(ac.input_violation(P, Reject::MoveClamped, boundary), None);
+        assert_eq!(ac.input_violation(P, Reject::YawRate, boundary), None);
+    }
     assert_eq!(
-        r.m.suspicion_move_total.get(),
-        0,
-        "legal movement is not suspicious"
+        ac.input_violation(P, Reject::MoveClamped, boundary),
+        Some(DisconnectReason::RepeatedInputViolation)
     );
+}
+
+#[test]
+fn replay_and_window_boundaries_do_not_trigger_enforcement() {
+    let mut r = Rig::new();
+    let now = r.w.tick().0 + 10;
+    let mut c = r.br.resolved()[0].1;
+    c.seq += 1;
+    for (offset, want) in [
+        (-3, PushResult::TooOld),
+        (-2, PushResult::Accepted),
+        (11, PushResult::TooFar),
+        (10, PushResult::Accepted),
+    ] {
+        c.tick = now.wrapping_add_signed(offset);
+        assert_eq!(r.br.ingest_cmd(P, &c, now), want);
+        c.seq += 1;
+    }
+    c.seq -= 1;
+    for _ in 0..100 {
+        assert_eq!(r.br.ingest_cmd(P, &c, now), PushResult::Duplicate);
+    }
+    assert_eq!(
+        r.m.input_rejected_total
+            .with_label_values(&["duplicate"])
+            .get(),
+        100
+    );
+    assert!(r.br.process_kicks(&mut r.w).is_empty());
 }
 
 // ------------------------------------------------------------------ acceptance 3: aim snap
@@ -164,17 +199,35 @@ fn aim_snap_is_clamped_and_legit_flicks_are_not() {
         c
     });
     assert_eq!(r.m.view_rate_clamped_total.get(), 1);
+    let applied = r.br.resolved()[0].1.yaw;
+    let turned = f32::from((applied.wrapping_sub(16384) as i16).unsigned_abs()) * 360.0 / 65536.0;
+    eprintln!("180° snap clamped to {turned:.4}°; 1000 legal inputs up to 3000°/s checked");
+    assert!((119.99..=120.01).contains(&turned));
     // 1000 synthetic human flicks peaking at 3000 deg/s (100 deg/tick) never trip it.
     let mut r = Rig::with_cfg(cfg);
     let mut yaw = 16384f32;
     for i in 0..1000u32 {
         let step_deg = 100.0 * ((i % 7) as f32 / 6.0);
         yaw = (yaw + step_deg / 360.0 * 65536.0).rem_euclid(65536.0);
+        let previous = r.br.resolved()[0].1;
         r.tick(|mut c| {
             c.yaw = yaw as u16;
             c
         });
+        if i % 3 == 0 {
+            // A packet two ticks behind the next arrival is still in the window.
+            // Its older sequence is dropped without a strike.
+            let now = r.w.tick().0 + 1;
+            assert_eq!(r.br.ingest_cmd(P, &previous, now), PushResult::Duplicate);
+        }
     }
+    assert_eq!(
+        r.m.input_rejected_total
+            .with_label_values(&["duplicate"])
+            .get(),
+        334
+    );
+    assert_eq!(r.m.session_kicked_total.get(), 0);
     assert_eq!(r.m.view_rate_clamped_total.get(), 0);
 }
 
@@ -182,13 +235,23 @@ fn aim_snap_is_clamped_and_legit_flicks_are_not() {
 
 #[test]
 fn fire_rate_hack_is_refused_and_counted() {
-    let mut r = Rig::new();
+    // Use the real Garand cycle and a larger fixture magazine so dry-fire and reload
+    // do not mask rate refusals in the ten-second test.
+    let base = GameData::embedded();
+    let mut weapons = base.weapons.to_vec();
+    let garand = weapons.iter_mut().find(|w| w.id == "us_m1_garand").unwrap();
+    garand.historical.magazine_capacity = frontline_sim::data::defs::Hist::Known(64);
+    let data = Box::leak(Box::new(GameData {
+        weapons: Box::leak(weapons.into_boxed_slice()),
+        ..*base
+    }));
+    let mut r = Rig::with_data(ValidateCfg::default(), data);
     let ticks = 300u32; // 10 s
     let mut shots = 0u32;
     let mut pulls = 0u32;
     for i in 0..ticks {
-        // Rising edge every other tick: 15 pulls/s, far above any rifle's cap.
-        let fire = i % 2 == 0;
+        // Garand: 120 rpm / 2 shots/s cap. Pull the trigger at 240 rpm.
+        let fire = (2 * i % 15) < 2;
         pulls += u32::from(fire);
         let ev = r.tick(|mut c| {
             if fire {
@@ -203,8 +266,13 @@ fn fire_rate_hack_is_refused_and_counted() {
     }
     let rejected = r.m.fire_rate_rejected_total.get() as u32;
     eprintln!("pulls {pulls}, shots {shots}, rejected {rejected}");
-    assert!(shots <= 10 * 12, "the cap held: {shots} shots");
-    assert!(rejected > 0 && rejected + shots <= pulls);
+    let cap_shots = 20;
+    assert_eq!(pulls, 40);
+    assert!(shots <= 21, "10 s cap plus 5%: {shots} shots");
+    assert!(
+        (rejected * 10) >= (pulls - cap_shots) * 9,
+        "only {rejected} rate rejections"
+    );
 }
 
 // ------------------------------------------------------------------ acceptance 7: audit

@@ -17,13 +17,15 @@ use crate::ballistics::materials::MaterialTable;
 use crate::ballistics::penetration::{contact, Contact};
 use crate::ballistics::ricochet;
 use crate::combat::damage::{damage_amount, DamageKind, HitInfo, TargetCtx};
+use crate::combat::lagcomp::{protected_by_cover, LagComp, LagCompRules, ProjectileClock};
+use crate::combat::lagcomp_history::{HitboxFrame, LagCompHistory, PlayerHitboxes};
 use crate::components::{
-    CollisionRes, CurrentTick, EntityTable, EventBuf, Motion, SimCfgRes, SimRng, Team, Transform,
-    WeaponTable,
+    CollisionRes, CurrentTick, EntityTable, EventBuf, Motion, MoveParamsRes, SimCfgRes, SimRng,
+    Team, Transform, WeaponTable,
 };
 use crate::data::defs::WeaponDef;
 use crate::health::{Health, HitLog, HitRec};
-use crate::ids::EntityId;
+use crate::ids::{EntityId, Tick};
 use crate::step::SimEvent;
 use crate::suppression::detect::Grid;
 use crate::suppression::{system::pass_segment, SuppressSeen, SuppressionState};
@@ -44,7 +46,7 @@ pub struct Projectile {
     pub vel: Vec3,
     /// Sub-steps flown so far (lifetime).
     pub substeps: u32,
-    /// Lag-compensation rewind of the targets, in ticks (M1-025); 0 = live positions.
+    /// Initial lag-compensation rewind in ticks (M1-025); 0 = live from spawn.
     pub rewind: u8,
     pub(crate) cover: ShotCover,
 }
@@ -162,6 +164,36 @@ pub fn damage(def: &WeaponDef, zone: HitZone, dist_m: f32) -> f32 {
 enum Fate {
     Alive,
     Gone,
+    WallRejected,
+}
+
+struct RewindCollision<'a> {
+    frame: &'a HitboxFrame,
+    next: Option<&'a HitboxFrame>,
+    next_is_live: bool,
+    history: &'a LagCompHistory,
+    rules: LagCompRules,
+    shooter_eye: Option<Vec3>,
+}
+
+impl RewindCollision<'_> {
+    fn pose(&self, target: &Target, frac: f32) -> Option<PlayerHitboxes> {
+        let pose = self.frame.player(target.id)?;
+        if frac == 0.0 {
+            return Some(pose);
+        }
+        let next = if self.next_is_live {
+            // The current tick has moved the player but has yet to record its history frame.
+            Some(PlayerHitboxes {
+                foot: target.foot,
+                blend: target.blend,
+                ..pose
+            })
+        } else {
+            self.next.and_then(|frame| frame.player(target.id))
+        };
+        Some(next.map_or(pose, |p| pose.lerp(p, frac)))
+    }
 }
 
 /// The projectile stage (ARCHITECTURE 6.10 stage 4).
@@ -175,7 +207,8 @@ pub(crate) fn projectile_system(
     mut events: ResMut<EventBuf>,
     mut hitlog: ResMut<HitLog>,
     tick: Res<CurrentTick>,
-    lag: Res<crate::combat::lagcomp::LagComp>,
+    mut lag: ResMut<LagComp>,
+    move_params: Res<MoveParamsRes>,
     mut seen: ResMut<SuppressSeen>,
     mut sq: Query<&mut SuppressionState>,
     mut q: Query<(&Transform, &Motion, &Team, &mut Health)>,
@@ -218,12 +251,34 @@ pub(crate) fn projectile_system(
         let bp = wt
             .ballistics(pr.weapon)
             .unwrap_or_else(|| BallisticsParams::from_def(def));
-        let frame = if pr.rewind > 0 && lag.enabled {
-            lag.history.frame(crate::ids::Tick(
-                tick.0 .0.saturating_sub(u32::from(pr.rewind)),
-            ))
-        } else {
-            None
+        let rewind = match ProjectileClock::at(tick.0, pr.rewind, pr.substeps) {
+            ProjectileClock::ViewTime(view_tick) if lag.enabled => {
+                let lag = &mut *lag;
+                let selected = lag.history.frame_clamped(view_tick);
+                if selected.is_none_or(|(_, clamped)| clamped) {
+                    lag.stats.history_clamped += 1;
+                }
+                selected.map(|(frame, clamped)| RewindCollision {
+                    frame,
+                    next: (!clamped)
+                        .then(|| lag.history.frame(view_tick.next()))
+                        .flatten(),
+                    next_is_live: !clamped && view_tick.next() == tick.0,
+                    history: &lag.history,
+                    rules: lag.rules,
+                    shooter_eye: move_params.0.and_then(|params| {
+                        let (transform, motion, _, _) = q.get(table.get(pr.owner)?).ok()?;
+                        let auth = motion.to_auth(transform);
+                        let height = crate::movement::eye_height(auth.stance_blend, &params);
+                        Some(
+                            auth.pos
+                                + Vec3::Y * height
+                                + crate::movement::lean::head_offset(&auth, &params),
+                        )
+                    }),
+                })
+            }
+            _ => None,
         };
         let fate = advance(
             &mut pr,
@@ -238,15 +293,17 @@ pub(crate) fn projectile_system(
             &mut q,
             &mut events.0,
             &mut hitlog.0,
-            (tick.0 .0, cfg.hz),
+            (tick.0, cfg.hz),
             &mut seen,
             &mut sq,
-            frame,
+            rewind.as_ref(),
             &materials.0,
             rng.match_seed,
         );
-        if matches!(fate, Fate::Alive) {
-            keep.push(pr);
+        match fate {
+            Fate::Alive => keep.push(pr),
+            Fate::WallRejected => lag.stats.wall_rejected += 1,
+            Fate::Gone => {}
         }
     }
     if !seen.0.is_empty() {
@@ -271,14 +328,14 @@ fn advance(
     q: &mut Query<(&Transform, &Motion, &Team, &mut Health)>,
     events: &mut Vec<SimEvent>,
     hitlog: &mut Vec<HitRec>,
-    (tick, hz): (u32, u8),
+    (tick, hz): (Tick, u8),
     seen: &mut SuppressSeen,
     sq: &mut Query<&mut SuppressionState>,
-    frame: Option<&crate::combat::lagcomp_history::HitboxFrame>,
+    rewind: Option<&RewindCollision<'_>>,
     materials: &MaterialTable,
     match_seed: u64,
 ) -> Fate {
-    for _ in 0..SUBSTEPS {
+    for substep in 0..SUBSTEPS {
         let p0 = pr.pos;
         ballistics::substep(
             &mut pr.pos,
@@ -312,15 +369,14 @@ fn advance(
             if !t.alive || t.id == pr.owner {
                 continue;
             }
-            // Lag compensation: the shooter saw this target where the history says.
-            let (foot, blend) = frame
-                .and_then(|f| {
-                    f.players
-                        .binary_search_by_key(&t.id, |p| p.id)
-                        .ok()
-                        .map(|k| (f.players[k].foot, f.players[k].blend))
-                })
-                .unwrap_or((t.foot, t.blend));
+            let (foot, blend) = if let Some(rewind) = rewind {
+                let Some(pose) = rewind.pose(t, substep as f32 / SUBSTEPS as f32) else {
+                    continue; // No such target at the sampled view time.
+                };
+                (pose.foot, pose.blend)
+            } else {
+                (t.foot, t.blend)
+            };
             if !hitbox::seg_aabb_overlap(p0, p1, foot) {
                 continue;
             }
@@ -361,7 +417,7 @@ fn advance(
                 pr.owner,
                 pr.team,
                 &def.class,
-                tick,
+                tick.0,
                 hz,
                 hit_id,
                 {
@@ -381,6 +437,27 @@ fn advance(
                 let hit_pos = p0 + seg * tb;
                 let dist = (hit_pos - pr.origin).length();
                 let tgt = &mut targets[i];
+                if rewind.is_some_and(|r| {
+                    r.shooter_eye.is_some_and(|shooter_eye| {
+                        protected_by_cover(
+                            col,
+                            r.history,
+                            r.rules,
+                            tick,
+                            hz,
+                            shooter_eye,
+                            PlayerHitboxes {
+                                id: tgt.id,
+                                foot: tgt.foot,
+                                blend: tgt.blend,
+                                head_dx: 0.0,
+                                head_dz: 0.0,
+                            },
+                        )
+                    })
+                }) {
+                    return Fate::WallRejected;
+                }
                 let same_team = tgt.team == pr.team;
                 let hp_before = q.get(tgt.entity).map_or(0.0, |(_, _, _, h)| h.hp);
                 let dmg = damage_amount(
@@ -464,7 +541,7 @@ fn advance(
                     } => {
                         let mut rng = crate::rng::Rng::for_(
                             match_seed ^ u64::from(pr.id),
-                            crate::Tick(tick),
+                            tick,
                             pr.owner,
                             crate::rng::Purpose::Penetration,
                         );

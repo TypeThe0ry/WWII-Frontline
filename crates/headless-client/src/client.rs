@@ -35,6 +35,8 @@ pub struct Ctx {
     pub empty_collision: frontline_sim::CollisionData,
     pub waypoints: Vec<[f32; 2]>,
     pub drive_vehicle: bool,
+    #[cfg(feature = "anticheat-test")]
+    pub anticheat_mix: bool,
     /// Print every rollback to stderr (`HEADLESS_TRACE=1`).
     pub trace: bool,
 }
@@ -300,6 +302,14 @@ pub async fn run_client(ctx: Arc<Ctx>, id: u32) -> (ClientReport, Series) {
                         c
                     } else {
                         synth.next(seq, t, pose)
+                    };
+                    #[cfg(feature = "anticheat-test")]
+                    let cmd = {
+                        let mut cmd = cmd;
+                        if ctx.anticheat_mix {
+                            crate::anticheat::inject(id, welcome.team, &mut cmd);
+                        }
+                        cmd
                     };
                     // Do not interpret throttle as an infantry movement command while seated.
                     let foot_cmd = if driver.as_ref().is_some_and(Driver::seated) {

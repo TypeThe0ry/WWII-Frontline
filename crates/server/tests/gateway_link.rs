@@ -1,5 +1,8 @@
 //! Gateway link (M1-029): ticket handshake, registration retry, heartbeat cadence, result.
-//! The "gateway" here is a small axum app; the real one is covered by its own tests.
+//! In-process fixtures plus executable-level PI-076 checks.
+
+#[path = "gateway_link/process.rs"]
+mod process;
 
 mod common;
 
@@ -150,8 +153,11 @@ async fn no_gate_means_no_ticket_is_needed() {
 struct Fake {
     register_calls: AtomicU32,
     fail_register: AtomicU32,
-    beats: Mutex<Vec<Instant>>,
-    results: Mutex<Vec<serde_json::Value>>,
+    first_register_gate: Option<tokio::sync::Semaphore>,
+    fail_result: std::sync::atomic::AtomicBool,
+    fail_beat: std::sync::atomic::AtomicBool,
+    beats: Mutex<Vec<(Instant, serde_json::Value)>>,
+    results: Mutex<Vec<(String, serde_json::Value)>>,
 }
 
 const TOKEN: &str = "internal-token";
@@ -170,16 +176,21 @@ async fn spawn_fake(f: Arc<Fake>) -> String {
             return Err(StatusCode::UNAUTHORIZED);
         }
         // Use the real gateway's numeric u64 contract, not a string fixture.
-        if v["data_hash"].as_u64() != Some(u64::MAX) {
+        if v["data_hash"].as_u64().is_none() {
             return Err(StatusCode::UNPROCESSABLE_ENTITY);
         }
-        f.register_calls.fetch_add(1, Ordering::SeqCst);
+        let call = f.register_calls.fetch_add(1, Ordering::SeqCst) + 1;
+        if call == 1 {
+            if let Some(gate) = &f.first_register_gate {
+                gate.acquire().await.unwrap().forget();
+            }
+        }
         if f.fail_register.load(Ordering::SeqCst) > 0 {
             f.fail_register.fetch_sub(1, Ordering::SeqCst);
             return Err(StatusCode::INTERNAL_SERVER_ERROR);
         }
         Ok(Json(serde_json::json!({
-            "match_id": "0102030405060708090a0b0c0d0e0f10",
+            "match_id": format!("{call:032x}"),
             "ticket_public_key": base64::engine::general_purpose::URL_SAFE_NO_PAD
                 .encode(sk().verifying_key().as_bytes()),
             "ticket_key_fingerprint": "abcd"
@@ -189,21 +200,33 @@ async fn spawn_fake(f: Arc<Fake>) -> String {
         State(f): State<Arc<Fake>>,
         h: HeaderMap,
         Path(_id): Path<String>,
-        Json(_): Json<serde_json::Value>,
+        Json(v): Json<serde_json::Value>,
     ) -> StatusCode {
         if !authed(&h) {
             return StatusCode::UNAUTHORIZED;
         }
-        f.beats.lock().unwrap().push(Instant::now());
-        StatusCode::OK
+        f.beats.lock().unwrap().push((Instant::now(), v));
+        if f.fail_beat.load(Ordering::SeqCst) {
+            StatusCode::SERVICE_UNAVAILABLE
+        } else {
+            StatusCode::OK
+        }
     }
     async fn result(
         State(f): State<Arc<Fake>>,
-        Path(_id): Path<String>,
+        h: HeaderMap,
+        Path(id): Path<String>,
         Json(v): Json<serde_json::Value>,
     ) -> StatusCode {
-        f.results.lock().unwrap().push(v);
-        StatusCode::OK
+        if !authed(&h) {
+            return StatusCode::UNAUTHORIZED;
+        }
+        f.results.lock().unwrap().push((id, v));
+        if f.fail_result.load(Ordering::SeqCst) {
+            StatusCode::SERVICE_UNAVAILABLE
+        } else {
+            StatusCode::OK
+        }
     }
     let app = Router::new()
         .route("/internal/matches/register", post(register))
@@ -294,7 +317,7 @@ async fn heartbeat_task_beats_once_a_second_and_survives_failures() {
     );
     let worst = beats
         .windows(2)
-        .map(|w| w[1].duration_since(w[0]).as_millis() as i64 - 1000)
+        .map(|w| w[1].0.duration_since(w[0].0).as_millis() as i64 - 1000)
         .map(i64::abs)
         .max()
         .unwrap();
@@ -351,7 +374,7 @@ async fn result_is_posted_and_spooled_when_undeliverable() {
         .submit_result("0102030405060708090a0b0c0d0e0f10", &r)
         .await
         .unwrap();
-    let got = f.results.lock().unwrap()[0].clone();
+    let got = f.results.lock().unwrap()[0].1.clone();
     assert_eq!(
         (got["players"].as_u64(), got["objectives"].as_u64()),
         (Some(12), Some(5))
@@ -359,10 +382,13 @@ async fn result_is_posted_and_spooled_when_undeliverable() {
 
     let dead = GatewayClient::new("http://127.0.0.1:1", TOKEN).unwrap();
     assert!(dead.submit_result("abc", &r).await.is_err());
-    let dir = std::env::temp_dir().join(format!("fl-spool-{}", std::process::id()));
-    let p = spool(&dir, "../ab-cd", &r).unwrap();
-    assert_eq!(p.file_name().unwrap(), "ab-cd.json");
+    let dir = tempfile::tempdir().unwrap();
+    assert!(spool(dir.path(), "../ab-cd", &r).is_err());
+    let p = spool(dir.path(), "0102030405060708090a0b0c0d0e0f10", &r).unwrap();
+    assert_eq!(
+        p.file_name().unwrap(),
+        "0102030405060708090a0b0c0d0e0f10.json"
+    );
     let back: MatchResult = serde_json::from_slice(&std::fs::read(&p).unwrap()).unwrap();
     assert_eq!(back, r);
-    let _ = std::fs::remove_dir_all(dir);
 }

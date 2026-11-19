@@ -1,6 +1,6 @@
 //! M0-018 acceptance 1, 2, 3 and 6 plus the golden-trajectory regression: the input buffer
 //! against a reference model, the missing-input policy driving a real `World`, one counter per
-//! rejection reason, the 30-violation kick, and a 10^5-case fuzz run. (The unit tests next to the
+//! rejection reason, the graded input disconnect, and a 10^5-case fuzz run. (The unit tests next to the
 //! code cover the pieces; this file drives the public API the way the sim thread does.)
 
 mod common;
@@ -9,14 +9,16 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use common::sim_harness::{gen_cmd, terrain};
+use frontline_protocol::msg::c0::{decode_c0_server, Disconnect, ServerMsgC0};
 use frontline_protocol::msg::input::{buttons, decode_input_bundle, InputBundle, InputCmd};
+use frontline_server::anticheat::DisconnectReason;
 use frontline_server::input_buffer::{InputBuffer, PushResult, CAPACITY, MAX_FUTURE, MAX_PAST};
 use frontline_server::metrics::Metrics;
 use frontline_server::net::conn::Sessions;
 use frontline_server::net::transport::ClientHandle;
 use frontline_server::sim_bridge::{NetLink, SimBridge};
 use frontline_server::validate::{
-    Reject, ValidateCfg, KICK_STREAK, MAX_MOVE_LEN, MAX_WEAPON_SLOT, RESERVED_BUTTONS,
+    Reject, ValidateCfg, MAX_MOVE_LEN, MAX_WEAPON_SLOT, RESERVED_BUTTONS,
 };
 use frontline_server::world_loader::LoadedMap;
 use frontline_sim::{
@@ -449,8 +451,8 @@ fn each_rejection_reason_has_its_own_counter() {
     only(&m, "no_session", 1);
 }
 
-#[test]
-fn thirty_violations_in_a_row_kick_and_one_clean_command_resets_the_count() {
+#[tokio::test]
+async fn invalid_input_streak_counts_server_ticks_and_sends_disconnect() {
     let m = Metrics::new();
     let sessions = Sessions::with_reuse_delay(m.clone(), 4, 128, Duration::ZERO);
     let handle = ClientHandle::new(m.clone());
@@ -461,45 +463,52 @@ fn thirty_violations_in_a_row_kick_and_one_clean_command_resets_the_count() {
         m.clone(),
         Some(NetLink {
             inbound: rx,
-            sessions: sessions.clone(),
+            sessions,
         }),
         None,
         ValidateCfg::default(),
     );
     br.join(&mut world, p, team).unwrap();
 
-    let bad = |tick: u32, seq: u16| {
-        let mut c = cmd(tick, seq);
-        c.buttons = 1 << 15;
-        c
-    };
-    for i in 0..KICK_STREAK - 1 {
-        br.ingest_cmd(p, &bad(5 + (i % 5), i as u16), 5);
+    // Two blocks of eight invalid-only ticks, separated by a mixed tick whose clean
+    // command arrives first. On the ninth tick of the second block it finally kicks.
+    for tick in 1..=18 {
+        let mut bad = cmd(tick, (tick * 10) as u16);
+        bad.weapon_slot = 7;
+        if tick == 9 {
+            assert!(br
+                .ingest_cmd(p, &cmd(tick, (tick * 10) as u16), tick)
+                .is_accepted());
+            bad.seq += 1;
+            bad.tick += 2;
+        }
+        for _ in 0..3 {
+            assert_eq!(
+                br.ingest_cmd(p, &bad, tick),
+                PushResult::Invalid(Reject::WeaponSlot)
+            );
+        }
+        let kicked = br.process_kicks(&mut world);
+        if tick < 18 {
+            assert!(kicked.is_empty(), "kicked at tick {tick}");
+        } else {
+            assert_eq!(kicked, vec![p]);
+        }
+        world.step(br.resolve(tick));
     }
-    assert!(br.process_kicks(&mut world).is_empty(), "29 are tolerated");
-    br.ingest_cmd(p, &cmd(6, 1000), 5); // clean: resets
-    for i in 0..KICK_STREAK - 1 {
-        br.ingest_cmd(p, &bad(7 + (i % 4), 2000 + i as u16), 5);
-    }
-    assert!(
-        br.process_kicks(&mut world).is_empty(),
-        "reset by the clean one"
+    let (ch, bytes) = handle.next_outbound().await.unwrap();
+    assert_eq!(ch, frontline_protocol::Channel::C0);
+    assert_eq!(
+        decode_c0_server(&bytes).unwrap(),
+        ServerMsgC0::Disconnect(Disconnect {
+            reason: DisconnectReason::InvalidInputStreak as u8,
+        })
     );
-    assert!(!handle.is_closed());
-    br.ingest_cmd(p, &bad(8, 3000), 5); // the 30th in a row
-    assert_eq!(br.process_kicks(&mut world), vec![p]);
-    assert!(handle.is_closed(), "connection closed");
-    assert!(world.player_state(p).is_none(), "player removed");
+    assert!(handle.next_outbound().await.is_none());
+    assert!(world.player_state(p).is_none());
     assert!(br.session(p).is_none());
     assert_eq!(m.session_kicked_total.get(), 1);
-    assert_eq!(
-        rejected(&m, "reserved_bits"),
-        2 * (KICK_STREAK as u64 - 1) + 1
-    );
-    // Later commands of the kicked connection find no session.
-    br.ingest_cmd(p, &cmd(7, 1), 6);
-    assert_eq!(rejected(&m, "no_session"), 1);
-    // The ClientGone that follows the close is harmless.
+    assert_eq!(rejected(&m, "weapon_slot"), 54);
     assert!(!br.leave(&mut world, p));
 }
 
