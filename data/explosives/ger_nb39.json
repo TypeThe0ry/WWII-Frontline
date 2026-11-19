@@ -4,8 +4,20 @@
   "faction": "ger",
   "class": "smoke_grenade",
   "historical": {
-    "mass_kg": 0.5,
-    "_source": "待 M1-070 按 REF §6 复核"
+    "mass_kg": 0.8505,
+    "_source": [
+      {
+        "field": "mass_kg",
+        "value": 0.8505,
+        "unit": "kg",
+        "source_id": "ENORD",
+        "title": "Catalog of Enemy Ordnance Materiel",
+        "locator": "p. 322, Smoke Hand Grenade 39, Total weight",
+        "url": "https://stephentaylorhistorian.com/wp-content/uploads/2020/02/catalogofenemyordnancemateriel.pdf",
+        "accessed": "2026-11-19",
+        "note": "发烟型整件 1 lb 14 oz，换算后取四位小数。"
+      }
+    ]
   },
   "gameplay": {
     "fuse_s": 2,

@@ -349,7 +349,19 @@ fn tactical_soak(mut map: LoadedMap, ticks: u32, mixed: bool) -> EventTally {
         if tick == 30 {
             for team in [Team::Us, Team::Ger] {
                 assert_eq!(lp.bot_host().unwrap().count_team(team), bots_per_team);
-                assert_eq!(lp.world().squads().team_count(team) as usize, bots_per_team);
+                assert_eq!(
+                    lp.world().squads().team_count(team) as usize,
+                    bots_per_team + usize::from(humans_per_team),
+                );
+                if mixed {
+                    let human = lp
+                        .world()
+                        .squads()
+                        .entry(team as u8)
+                        .expect("human roster row");
+                    assert_eq!(human.team, team);
+                    assert!(human.online);
+                }
             }
             let world = lp.world();
             for id in lp.bot_host().unwrap().players() {

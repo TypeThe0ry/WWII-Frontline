@@ -285,8 +285,13 @@ mod tests {
         let g = &v.gameplay;
         assert_eq!(g.hull_health_hp, 1600.0);
         assert_eq!(g.seats.len(), 3);
-        // game top speed = 38 km/h x 0.75 = 28.5 km/h
-        assert!((g.max_speed_mps.unwrap() * 3.6 - 28.5).abs() < 0.01);
+        // TM 9-2800 p. 109: maximum allowable speed is 24 mph.
+        let historical_mps = 24.0 * 0.44704;
+        assert_eq!(
+            v.historical.max_speed_mps,
+            defs::Hist::Known(historical_mps)
+        );
+        assert!((g.max_speed_mps.unwrap() - historical_mps * 0.75).abs() < 1e-6);
         assert_eq!(g.armor_zones.len(), 9);
         let plates: Vec<(f64, f64)> = g
             .armor_zones

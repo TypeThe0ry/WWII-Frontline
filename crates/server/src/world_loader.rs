@@ -112,7 +112,7 @@ pub struct LoadedMap {
     pub size_m: f32,
     pub(crate) dir: PathBuf,
     pub objectives: Vec<frontline_sim::rules::ObjectiveSpec>,
-    no_build_zones: frontline_sim::NoBuildZones,
+    pub(crate) no_build_zones: frontline_sim::NoBuildZones,
     pub(crate) garrison_sites: [Option<Vec3>; 2],
 }
 

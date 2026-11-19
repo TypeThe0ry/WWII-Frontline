@@ -13,6 +13,7 @@ use frontline_protocol::msg::c0::{
     PlacementReason, PlacementRequest, PlacementResult, PlacementSlot, ServerMsgC0, SquadOp,
     SquadOpKind,
 };
+use frontline_protocol::msg::c4::{decode_c4, ServerEventC4};
 use frontline_protocol::Channel;
 use frontline_server::metrics::Metrics;
 use frontline_server::net::conn::{InboundQueue, Sessions};
@@ -93,6 +94,22 @@ async fn reply(client: &mut Client) -> ServerMsgC0 {
     }
 }
 
+async fn expect_roster_before_deploy(client: &mut Client, player: u8) {
+    let end = Instant::now() + Duration::from_secs(3);
+    loop {
+        match client
+            .recv_within(end.saturating_duration_since(Instant::now()))
+            .await
+        {
+            Got::Frame(Channel::C4, bytes) if matches!(decode_c4(&bytes), Ok(ServerEventC4::PlayerRoster(row)) if row.player == player) => {
+                return
+            }
+            Got::Frame(..) if Instant::now() < end => (),
+            _ => panic!("no C4 roster before deployment"),
+        }
+    }
+}
+
 async fn placement(client: &mut Client, id: u16, action: PlacementAction) -> PlacementResult {
     send(
         client,
@@ -148,7 +165,8 @@ async fn tactical_role_slots_and_single_use_preview_over_websocket() {
     )
     .await;
 
-    let (mut us, _) = Client::handshake(&server.ws_target.url).await;
+    let (mut us, welcome) = Client::handshake(&server.ws_target.url).await;
+    expect_roster_before_deploy(&mut us, welcome.player_id).await;
     let (mut ger, _) = Client::handshake(&server.ws_target.url).await;
     let (mut us2, _) = Client::handshake(&server.ws_target.url).await;
     let (mut ger2, _) = Client::handshake(&server.ws_target.url).await;

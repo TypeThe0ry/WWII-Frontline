@@ -4,8 +4,20 @@
   "faction": "us",
   "class": "smoke_grenade",
   "historical": {
-    "mass_kg": 0.54,
-    "_source": "待 M1-070 按 REF §6 复核"
+    "mass_kg": 0.482,
+    "_source": [
+      {
+        "field": "mass_kg",
+        "value": 0.482,
+        "unit": "kg",
+        "source_id": "FM30",
+        "title": "U.S. War Department FM 23-30 (1944)",
+        "locator": "p. 15, Hand Grenades, M18 and M16, Wt. (oz.)",
+        "url": "https://www.ibiblio.org/hyperwar/USA/ref/FM/PDFs/FM23-30.pdf#page=11",
+        "accessed": "2026-11-19",
+        "note": "采用 M1 时代的彩烟 M18/M16 合列标称整件 17 oz，非战后 M18 的 19 oz。"
+      }
+    ]
   },
   "gameplay": {
     "fuse_s": 2,
