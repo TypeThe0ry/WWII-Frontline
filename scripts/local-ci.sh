@@ -16,10 +16,10 @@ need() { for t in "$@"; do command -v "$t" >/dev/null 2>&1 || { echo "missing to
 run() { echo "+ $*"; "$@"; }
 
 g_lint() {
-  need cargo pnpm node || return 2
+  need cargo cargo-deny pnpm node || return 2
+  run cargo deny --locked check || return 1
   run cargo fmt --all --check && run cargo clippy --workspace --all-targets -- -D warnings || return 1
   run pnpm -C client exec eslint . && run pnpm -C client exec tsc --noEmit || return 1
-  if command -v cargo-deny >/dev/null 2>&1; then run cargo deny check || return 1; else echo "WARN: cargo-deny not installed, licence check not run"; fi
   run node tools/ci/check-deps.mjs && run node tools/ci/check-sim-purity.mjs && run node tools/ci/check-layout.mjs \
     && run node --test "tools/ci/test/*.test.mjs"
 }

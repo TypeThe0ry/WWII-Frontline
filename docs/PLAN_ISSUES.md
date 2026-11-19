@@ -1248,3 +1248,9 @@ PrePass 速度会卡死渲染循环，改用自有速度 RTT（地形/薄实例/
 - **权威数据和命令：** 当前 M0 比赛服握手自动生成玩家，未发布 M1 roster/出生点/生命事件所需的 C4，`MarkerPlace` 服务端忽略。后续应先补权威发布、生成确认、TEAM/地图数据、放置和定向座位等命令，再接 R_near 预取、AOI 观察和摄像机。保留 #128 的 `GameLoop.checkPlacement`/`placement_check`（驻点、补给与弹药箱），F 仅提供复用该接口的 DOM/预览状态适配器；权威落点、可见事实与提交来源仍未接入。不能把预测器误作完整世界。真实素材/地图底图及 Opus/AAC 探测样本依赖 M1-064/065；部署闭环、HUD/地图/暂停性能和参考机验收均未测。
 - **补充回归：** 工作站 Chromium 另跑现有 WebAudio/网络对局 Playwright 7 例，全部通过；真服调试入口采集到 90 个步进、90 个输入包、50 个 C2 快照、0 解码错误。并行跑多套浏览器时另有一次签票成功但未进入，具体原因未确认；独立重跑 UI 套件 7/7。空 favicon 声明避免请求未提供的图标，不引入视觉素材。
 - **门禁复测说明：** 基线整合期间一次默认并行 Rust 运行的 `handshake_latency_wt` 收到 peer close 261；最终重测使用 `RUST_TEST_THREADS=4`，该用例通过。TS 使用 `VITEST_MAX_WORKERS=4`，未改测试阈值。
+
+## PI-126F B2-F：本地 lint 必须执行 Rust 依赖检查（2026-11-19）
+
+- **门禁绕过已修复。** 旧版 `lint` 在缺少 `cargo-deny` 时只打印警告。现在先检查工具，再执行 `cargo deny --locked check`。工作站以隔离 `PATH` 验证，缺工具时单独运行 `scripts/local-ci.sh lint` 显示 `skipped=[lint]`，退出码为 3。
+- **实测。** 在 `~/.cargo/bin` 安装 `cargo-deny 0.21.0`，RustSec 数据库更新至 `472a4c9`。使用现有 `deny.toml`，`advisories`、`bans`、`licenses`、`sources` 4/4 通过。0 条错误、20 条警告，其中 18 条来自依赖多版本，2 条来自当前图未用的 `CC0-1.0` 和 `Unicode-DFS-2016`。许可名单保持原样。`scripts/local-ci.sh lint` 退出 0，CI 工具单测 30/30 通过。
+- **待裁决。** H-037 仍需确认许可名单。M0-002 保持 partial，历史 GitHub Actions 红绿对和墙钟未测（H-102）。现行合并按 PI-078 使用本地门禁。
