@@ -18,7 +18,7 @@ import { assertNoStandalone } from './fpak/standalone.ts';
 import { readStats, sizeRatio, statsPath } from './stats.ts';
 import { buildReport, formatReport, parseShoppingList } from './report.ts';
 import { buildManifest, readManifest, writeManifest, type Overrides } from './manifest.ts';
-import { checkBudgets, formatUsages, loadBudgets } from './budget.ts';
+import { checkBudgets, categoryBreakdown, formatCategoryBreakdown, formatUsages, loadBudgets } from './budget.ts';
 import { checkConsistency, checkPlaceholders } from './consistency.ts';
 
 const USAGE = `asset-pipeline <command> [options]
@@ -242,13 +242,20 @@ export async function main(argv: string[], out: (s: string) => void = console.lo
         const base = v.base && existsSync(resolve(root, v.base)) ? readManifest(resolve(root, v.base)) : undefined;
         const external: Record<string, number> = {};
         if (v['core-size-file'] && existsSync(resolve(root, v['core-size-file']))) {
-          const j = JSON.parse(readFileSync(resolve(root, v['core-size-file']), 'utf8')) as { core_bytes?: number; br_bytes?: number; total_br_bytes?: number };
-          const n = j.core_bytes ?? j.br_bytes ?? j.total_br_bytes;
+          const j = JSON.parse(readFileSync(resolve(root, v['core-size-file']), 'utf8')) as {
+            core_bytes?: number;
+            br_bytes?: number;
+            total_br_bytes?: number;
+            brotliBytes?: number;
+          };
+          const n = j.core_bytes ?? j.br_bytes ?? j.total_br_bytes ?? j.brotliBytes;
           if (typeof n === 'number') external.core = n;
         }
         const approved = v.approved === true || process.env.BUDGET_APPROVED === '1';
         const r = checkBudgets(m, loadBudgets(resolve(root, v.budgets ?? join(dir, 'budgets.json'))), base, { external, approved });
         out(formatUsages(r));
+        const cats = categoryBreakdown(m);
+        if (cats.length > 0) out('\n' + formatCategoryBreakdown(cats));
         const problems = [...r.failures, ...checkPlaceholders(m, ledger)];
         const packs = resolve(root, v.packs ?? 'assets/processed');
         if (Object.keys(m.assets).length > 0) problems.push(...(await checkConsistency(m, packs)));

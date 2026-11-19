@@ -1,10 +1,9 @@
 /**
  * Procedural placeholder splat map (M1-050b): 8 layer weights per cell, packed into two RGBA8 textures (layers 0-3 / 4-7), generated
- * from the height field and the map layers. Real KTX2 layers and a baked splat wait on M1-064 / `terrain_layers.json` (PI-113); the
- * shader (terrain-material.*) is written against this interface, so swapping the source changes nothing downstream.
+ * from the height field and the map layers. Real KTX2 layers and a baked splat wait on M1-064 / `terrain_layers.json` (PI-113); both shaders sample the same world-aligned grid.
  * Pure and deterministic (integer hash noise only).
  */
-import { BLOCK, BUILDING, FOREST, ROAD, WATER } from '../world/veg-mask';
+import { BUILDING, FOREST, ROAD, WATER } from '../world/veg-mask';
 import { LAYERS, normalizeSplat, slopeDeg } from './splat-math';
 
 export const LAYER = { grass: 0, dryGrass: 1, dirt: 2, mud: 3, rock: 4, gravel: 5, sand: 6, forestFloor: 7 } as const;
@@ -76,10 +75,12 @@ export function cellWeights(x: number, z: number, h: number, slopeD: number, fla
     out[LAYER.sand] = out[LAYER.sand]! + 0.8;
   }
   if (flags & ROAD) out[LAYER.gravel] = 4;
-  void BLOCK;
 }
 
 export function buildSplat(inp: SplatInput): SplatMaps {
+  if (!Number.isFinite(inp.sizeM) || inp.sizeM <= 0 || !Number.isFinite(inp.resM) || inp.resM <= 0) {
+    throw new RangeError('Splat map size and resolution must be finite and positive');
+  }
   const n = Math.ceil(inp.sizeM / inp.resM);
   const a = new Uint8Array(n * n * 4);
   const b = new Uint8Array(n * n * 4);
@@ -107,17 +108,40 @@ export function buildSplat(inp: SplatInput): SplatMaps {
   return { n, resM: inp.resM, sizeM: inp.sizeM, a, b };
 }
 
-/** Dominant layer of the texel containing (x, z): the CPU twin of `getSurfaceAt` (footsteps, impacts). */
+/** World-space edge of the texture grid, including the last cell when the map size is not divisible by resM. */
+export function splatExtent(m: SplatMaps): number {
+  return m.n * m.resM;
+}
+
+/** Mip level that gives the procedural macro colour about a 64 m footprint. */
+export function macroSplatMip(m: SplatMaps): number {
+  return Math.min(Math.floor(Math.log2(m.n)), Math.max(0, Math.log2(64 / m.resM)));
+}
+
+/** Dominant bilinear weight at (x,z), matching the near shader's texel centres and clamp-to-edge. */
 export function surfaceAt(m: SplatMaps, x: number, z: number): number {
-  const i = Math.min(m.n - 1, Math.max(0, Math.floor(x / m.resM)));
-  const j = Math.min(m.n - 1, Math.max(0, Math.floor(z / m.resM)));
-  const o = (j * m.n + i) * 4;
+  const u = Math.min(m.n - 1, Math.max(0, x / m.resM - 0.5));
+  const v = Math.min(m.n - 1, Math.max(0, z / m.resM - 0.5));
+  const i = Math.floor(u);
+  const j = Math.floor(v);
+  const ix = Math.min(m.n - 1, i + 1);
+  const jz = Math.min(m.n - 1, j + 1);
+  const fx = u - i;
+  const fz = v - j;
+  const a = (j * m.n + i) * 4;
+  const b = (j * m.n + ix) * 4;
+  const c = (jz * m.n + i) * 4;
+  const d = (jz * m.n + ix) * 4;
   let best = 0;
-  let bw = -1;
+  let bestWeight = -1;
   for (let k = 0; k < LAYERS; k++) {
-    const v = k < 4 ? m.a[o + k]! : m.b[o + k - 4]!;
-    if (v > bw) {
-      bw = v;
+    const pixels = k < 4 ? m.a : m.b;
+    const channel = k % 4;
+    const top = pixels[a + channel]! * (1 - fx) + pixels[b + channel]! * fx;
+    const bottom = pixels[c + channel]! * (1 - fx) + pixels[d + channel]! * fx;
+    const weight = top * (1 - fz) + bottom * fz;
+    if (weight > bestWeight) {
+      bestWeight = weight;
       best = k;
     }
   }

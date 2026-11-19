@@ -1,10 +1,17 @@
+import '@babylonjs/core/Meshes/thinInstanceMesh';
+import { Matrix } from '@babylonjs/core/Maths/math.vector';
+import { MeshBuilder } from '@babylonjs/core/Meshes/meshBuilder';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, it } from 'vitest';
 import { EventBus, type GameEvents } from '../../game/event-bus';
 import { GameState } from '../../game/state';
 import { ActorManager } from '../actors/actor-manager';
+import { freshWorldMatrix } from '../actors/world';
 import { HAVE_WASM, makeScene, realData, type TestScene } from '../actors/test-support';
 import { FP_LAYER } from './fp-pass';
 import { WALL_MARGIN_M } from './fp-math';
+import { createFpWallProbe } from './wall-probe';
 
 const d = describe.skipIf(!HAVE_WASM);
 let ts: TestScene | undefined;
@@ -85,5 +92,97 @@ d('FpWeaponPass (M1-046b)', () => {
     aim = false;
     for (let i = 0; i < 100; i++) m.update(1, 16);
     expect(seen).toEqual(['entering', 'ads', 'leaving', 'hip']);
+  });
+
+  it('shows fire.local kick and muzzle flash in the same engine frame with no sim recoil', async () => {
+    const { bus, m, state, us } = await setup();
+    const weapon = m.rig!.weapon!;
+    const before = weapon.root.position.z;
+    let fireFrame = -1;
+    let weaponRendered = false;
+    const scene = ts!.scene;
+    const rendered = scene.onBeforeCameraRenderObservable.add((camera) => {
+      if (camera !== m.fpPass!.camera) return;
+      weaponRendered = true;
+      expect(ts!.engine.frameId).toBe(fireFrame);
+      expect(weapon.root.position.z).toBeLessThan(before - 0.01);
+      expect(m.fx.muzzleFlashFrames.at(-1)).toBe(fireFrame);
+    });
+    ts!.frame(() => {
+      fireFrame = ts!.engine.frameId;
+      bus.emit('fire.local', { weapon: us.index, muzzlePos: { x: 100, y: 6.6, z: 200 }, dir: { x: 0, y: 0, z: 1 } });
+      m.update(1, 0);
+    });
+    expect(weaponRendered).toBe(true);
+    expect(state.local.recoilPitch).toBe(0);
+    scene.onBeforeCameraRenderObservable.remove(rendered);
+    ts!.frame(() => m.update(1, 1000));
+    expect(weapon.root.position.z).toBeCloseTo(before, 8);
+  });
+
+  it.each([30, 60, 144])('reload pose follows tactical and empty progress from game data at %i FPS', async (fps) => {
+    const { m, us } = await setup();
+    const path = fileURLToPath(new URL(`../../../../data/weapons/${us.id}.json`, import.meta.url));
+    const item = JSON.parse(readFileSync(path, 'utf8')) as {
+      gameplay: { reload: { tactical_ms: number; empty_ms: number } };
+    };
+    const rig = m.rig!;
+    const baseline = rig.weapon!.root.position.y;
+    let progress: number | undefined;
+    rig.localReloadProgress = () => progress;
+    const frameMs = 1000 / fps;
+    for (const duration of Object.values(item.gameplay.reload)) {
+      let frame = 0;
+      let lowered = false;
+      do {
+        frame++;
+        progress = frame * frameMs < duration ? (frame * frameMs) / duration : undefined;
+        m.update(1, frameMs);
+        lowered ||= rig.weapon!.root.position.y < baseline - 0.1;
+      } while (progress !== undefined);
+      expect(lowered).toBe(true);
+      expect(frame * frameMs - duration).toBeLessThanOrEqual(frameMs);
+      expect(rig.weapon!.root.position.y).toBeCloseTo(baseline, 8);
+    }
+  });
+
+  it('keeps all weapon mesh bounds short of a real head-on wall', async () => {
+    const { m } = await setup();
+    const { camera, scene } = ts!;
+    const wall = MeshBuilder.CreateBox('wall', { width: 4, height: 4, depth: 0.2 }, scene);
+    wall.position.copyFrom(camera.position);
+    wall.position.z += 0.2;
+    wall.computeWorldMatrix(true);
+    wall.metadata = { blocks: true };
+    m.rig!.wallProbe = createFpWallProbe(scene);
+    m.update(1, 16);
+    expect(m.rig!.wallDist).toBeCloseTo(0.1, 4);
+    for (const mesh of m.rig!.weapon!.meshes) {
+      freshWorldMatrix(mesh);
+      expect(mesh.getBoundingInfo().boundingBox.maximumWorld.z).toBeLessThan(camera.position.z + 0.1);
+    }
+  });
+});
+
+describe('createFpWallProbe', () => {
+  it('hits streamed thin-instance boxes and ignores gaps and unrelated meshes', () => {
+    ts = makeScene();
+    const { scene } = ts;
+    const probe = createFpWallProbe(scene, (mesh) => mesh.name.startsWith('hedge_'));
+    const wall = MeshBuilder.CreateBox('wall', { width: 10, height: 2, depth: 1 }, scene);
+    wall.position.z = 4;
+    wall.computeWorldMatrix(true);
+    wall.metadata = { blocks: true };
+    const hedge = MeshBuilder.CreateBox('hedge_chunk', { size: 1 }, scene);
+    hedge.thinInstanceSetBuffer('matrix', Float32Array.from([...Matrix.Translation(-2, 0, 2).m, ...Matrix.Translation(2, 0, 2).m]), 16, true);
+    hedge.thinInstanceRefreshBoundingInfo(true);
+    hedge.isPickable = false;
+    MeshBuilder.CreateBox('unrelated', { size: 0.4 }, scene).position.set(0, 0, 1);
+    expect(probe(2, 0, 0, 0, 0, 1, 2)).toBeCloseTo(1.5);
+    expect(probe(0, 0, 0, 0, 0, 1, 2)).toBeNull();
+    expect(probe(0, 0, 0, 0, 0, 1, 5)).toBeCloseTo(3.5);
+    expect(hedge.isPickable).toBe(false);
+    hedge.dispose();
+    expect(probe(2, 0, 0, 0, 0, 1, 5)).toBeCloseTo(3.5);
   });
 });

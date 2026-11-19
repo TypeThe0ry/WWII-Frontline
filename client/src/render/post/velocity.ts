@@ -17,6 +17,7 @@ import { ShaderMaterial } from '@babylonjs/core/Materials/shaderMaterial';
 import type { AbstractMesh } from '@babylonjs/core/Meshes/abstractMesh';
 import { Camera } from '@babylonjs/core/Cameras/camera';
 import type { Scene } from '@babylonjs/core/scene';
+import type { VariantRegistry } from '../materials/variants';
 
 const vertexGlsl = (instanced: boolean): string => `
 precision highp float;
@@ -103,6 +104,7 @@ fn main(input: FragmentInputs) -> FragmentOutputs {
 
 export interface VelocityOptions {
   wgsl: boolean;
+  variants?: VariantRegistry;
   /** Terrain mesh and its velocity material (set up by the terrain). */
   terrain?: { mesh: AbstractMesh; material: ShaderMaterial };
   /** Meshes not drawn into the velocity target (e.g. the first-person weapon layer, depth passes). */
@@ -127,6 +129,9 @@ export class VelocityPass {
     private readonly o: VelocityOptions,
   ) {
     const eng = scene.getEngine();
+    o.variants?.registerCustom('velocity:plain');
+    o.variants?.registerCustom('velocity:instanced');
+    if (o.terrain) o.variants?.registerCustom('velocity:terrain');
     const mk = (instanced: boolean): ShaderMaterial => {
       const m = new ShaderMaterial(
         `PH_V-GEN-001__velocity${instanced ? '_inst' : ''}`,

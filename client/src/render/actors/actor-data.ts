@@ -42,6 +42,7 @@ export interface WeaponActorDef {
   tracer: boolean;
   muzzleVelocityMps: number;
   adsMs: number;
+  reloadMs?: { tactical: number; empty: number };
   dims: WeaponModelDims;
   view: WeaponViewDef;
 }
@@ -90,7 +91,7 @@ export function buildActorData(src: DataSource, models: WeaponModelsFile): Actor
   };
   const weapons: WeaponActorDef[] = [];
   for (const [id, m] of Object.entries(models.weapons)) {
-    const w = json<{ faction: string; gameplay: { ads_ms: number; ballistics: { muzzle_velocity_mps: number } }; fx?: { muzzle_flash_ms?: number; tracer?: boolean } }>(src.weaponDef(id));
+    const w = json<{ faction: string; gameplay: { ads_ms: number; reload?: { tactical_ms: number; empty_ms: number }; ballistics: { muzzle_velocity_mps: number } }; fx?: { muzzle_flash_ms?: number; tracer?: boolean } }>(src.weaponDef(id));
     if (w.faction !== 'us' && w.faction !== 'ger') throw new Error(`actor data: weapon ${id} has unknown faction ${w.faction}`);
     weapons.push({
       index: src.weaponIndex(id),
@@ -101,6 +102,10 @@ export function buildActorData(src: DataSource, models: WeaponModelsFile): Actor
       tracer: w.fx?.tracer ?? false,
       muzzleVelocityMps: num(w.gameplay.ballistics.muzzle_velocity_mps, `${id} muzzle velocity`),
       adsMs: num(w.gameplay.ads_ms, `${id} ads_ms`),
+      reloadMs: w.gameplay.reload && {
+        tactical: num(w.gameplay.reload.tactical_ms, `${id} reload.tactical_ms`),
+        empty: num(w.gameplay.reload.empty_ms, `${id} reload.empty_ms`),
+      },
       dims: {
         length: num(m.length_m, `${id}.length_m`),
         barrelLength: num(m.barrel_length_m, `${id}.barrel_length_m`),

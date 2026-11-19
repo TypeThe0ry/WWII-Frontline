@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
   AssetLoader, CacheLayer, CancelledError, FetchRangeSource, FpakReader, MemoryLru, UploadScheduler, WorkerPool, BytesSource,
-  crc32, defaultPoolSize, detectBackends, isPlaceholder, PH_RE, silence, type CacheBackend, type Manifest, type ProgressEvent,
+  crc32, decodeAudioEntry, defaultPoolSize, detectBackends, isPlaceholder, parseProbeJson, PH_RE, silence,
+  type CacheBackend, type Manifest, type ProgressEvent,
 } from './index';
+import { OpfsLruTracker } from './opfs-worker';
 
 // ---- a minimal .fpak writer (SPEC.md layout) so the tests need no Node-only code from the asset pipeline --------------------
 function buildPak(entries: { id: string; kind: number; payload: Uint8Array }[]): { bytes: Uint8Array; refs: Map<string, { offset: number; bytes: number }> } {
@@ -331,5 +333,125 @@ describe('memory LRU', () => {
     m.put('big', payload(500, 9));
     expect(m.get('big')).toBeUndefined();
     expect(m.bytes).toBeLessThanOrEqual(100);
+  });
+});
+
+describe('download concurrency cap (ARCHITECTURE 9.3: <= 6)', () => {
+  it('limits concurrent network reads to 6 even under 20 simultaneous requests', async () => {
+    const defs = Array.from({ length: 20 }, (_, i) => ({ id: `prop_c_${i}@lod0`, kind: 0, payload: payload(64, i) }));
+    const { bytes, refs } = buildPak(defs);
+    const assets: Manifest['assets'] = {};
+    for (let i = 0; i < 20; i++) {
+      const id = `prop_c_${i}@lod0`;
+      assets[`prop_c_${i}`] = {
+        kind: 'model', tier: ['medium'], placeholder: true,
+        lods: [{ lod: 0, suffix: '', pak: PAK_PATH, entry: id, ...refs.get(id)!, sha256: `sha_${i}` }],
+      };
+    }
+    let inflight = 0;
+    let peak = 0;
+    const fetcher = async (_url: string, init?: RequestInit): Promise<Response> => {
+      inflight++;
+      peak = Math.max(peak, inflight);
+      await new Promise((r) => setTimeout(r, 8));
+      inflight--;
+      const range = new Headers(init?.headers).get('Range')!;
+      const m = /bytes=(-)?(\d+)(?:-(\d+))?/.exec(range)!;
+      const [s, e] = m[1] ? [bytes.length - Number(m[2]), bytes.length - 1] : [Number(m[2]), Number(m[3])];
+      return new Response(bytes.slice(s, e + 1) as unknown as BodyInit, { status: 206, headers: { 'Content-Range': `bytes ${s}-${e}/${bytes.length}` } });
+    };
+    const l = new AssetLoader({ fetcher, sleep: noSleep, manifest: { schema: 1, game_version: 't', assets }, log: () => undefined });
+    await l.init({ tier: 'medium' });
+    const out = await Promise.all(Array.from({ length: 20 }, (_, i) => l.loadBytes(`prop_c_${i}@lod0`)));
+    expect(out).toHaveLength(20);
+    expect(peak).toBeLessThanOrEqual(6);
+    expect(peak).toBeGreaterThan(1);
+  });
+});
+
+describe('OPFS LRU tracker & sync fallback', () => {
+  it('evicts oldest keys when maxBytes is exceeded and round-trips JSON index', () => {
+    const t = new OpfsLruTracker(100);
+    expect(t.planPut('a', 40)).toEqual({ store: true, evict: [] });
+    expect(t.planPut('b', 40)).toEqual({ store: true, evict: [] });
+    t.touch('a');
+    expect(t.planPut('c', 40)).toEqual({ store: true, evict: ['b'] });
+    expect(t.totalBytes).toBe(80);
+    expect(t.planPut('huge', 101)).toEqual({ store: false, evict: [] });
+    const t2 = new OpfsLruTracker(100);
+    t2.load(t.serialize());
+    expect(t2.totalBytes).toBe(80);
+    expect(t2.has('a')).toBe(true);
+    expect(t2.has('b')).toBe(false);
+    expect(t2.has('c')).toBe(true);
+  });
+
+  it('falls back to async OPFS when sync OPFS worker init fails', async () => {
+    const fakeDir = {} as FileSystemDirectoryHandle;
+    const failingWorker = () => {
+      const w = {
+        onmessage: null as ((e: MessageEvent) => void) | null,
+        onerror: null as ((e: ErrorEvent) => void) | null,
+        postMessage(req: { id: number }) {
+          queueMicrotask(() => w.onmessage?.({ data: { id: req.id, ok: false, error: 'no sync handle' } } as MessageEvent));
+        },
+        terminate() {},
+      };
+      return w as unknown as Worker;
+    };
+    const backends = await detectBackends('t', {
+      storage: { getDirectory: async () => fakeDir, estimate: async () => ({ quota: 2 * 1024 * 1024 * 1024, usage: 0 }) },
+      opfsSync: failingWorker,
+    });
+    expect(backends).toHaveLength(1);
+    expect(backends[0]!.name).toBe('opfs');
+    expect(backends[0]!.sync).toBeUndefined();
+  });
+});
+
+describe('audio entry header & probe.json decoding', () => {
+  it('decodes .fpak audio layout v1 header and strips it in loadAudioEntry', async () => {
+    const body = Uint8Array.of(0x1a, 0x45, 0xdf, 0xa3, 1, 2, 3, 4);
+    const entry = new Uint8Array(32 + body.length);
+    const dv = new DataView(entry.buffer);
+    dv.setUint8(0, 1); // layout_version
+    dv.setUint8(1, 0); // webm-opus
+    dv.setUint8(2, 3); // preload + loop
+    dv.setUint8(3, 2); // stereo
+    dv.setUint32(4, 1500, true);
+    dv.setUint32(8, 48000, true);
+    dv.setUint32(12, 100, true);
+    dv.setUint32(16, 1400, true);
+    dv.setUint32(20, body.length, true);
+    entry.set(body, 32);
+
+    const dec = decodeAudioEntry(entry);
+    expect(dec).toMatchObject({ container: 'webm-opus', preload: true, loop: true, channels: 2, durationMs: 1500, sampleRate: 48000, loopStartMs: 100, loopEndMs: 1400 });
+    expect(Array.from(dec.payload)).toEqual(Array.from(body));
+
+    const { bytes, refs } = buildPak([{ id: 'snd_test@opus', kind: 2, payload: entry }]);
+    const manifest: Manifest = {
+      schema: 1, game_version: 't',
+      assets: { snd_test: { kind: 'audio', tier: ['medium'], placeholder: false, req_id: 'A-WPN-001', audio: [{ codec: 'opus', pak: PAK_PATH, entry: 'snd_test@opus', ...refs.get('snd_test@opus')!, sha256: 's1' }] } },
+    };
+    const l = new AssetLoader({
+      manifest,
+      fetcher: async () => new Response(bytes as unknown as BodyInit, { status: 200 }),
+      sleep: noSleep,
+      log: () => undefined,
+    });
+    await l.init({ tier: 'medium' });
+    const loaded = await l.loadAudioEntry('snd_test@opus');
+    expect('silent' in loaded).toBe(false);
+    if (!('silent' in loaded)) expect(Array.from(loaded.payload)).toEqual(Array.from(body));
+
+    const parsed = parseProbeJson({
+      schema: 'frontline.audio-probe/1', timeout_ms: 500,
+      opus: { mime: 'audio/webm; codecs=opus', base64: btoa('OPUS'), bytes: 4 },
+      aac: { mime: 'audio/mp4; codecs=mp4a.40.2', base64: btoa('AAC!'), bytes: 4 },
+    });
+    expect(parsed.timeoutMs).toBe(500);
+    expect(parsed.opus.byteLength).toBe(4);
+    expect(parsed.aac.byteLength).toBe(4);
   });
 });

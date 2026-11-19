@@ -1314,3 +1314,46 @@ PrePass 速度会卡死渲染循环，改用自有速度 RTT（地形/薄实例/
   - **认证方式**：`agy` 走 Antigravity/Google OAuth（本机落盘 `~/.gemini/antigravity-cli/antigravity-oauth-token`，权限 `0600`），无需手配第三方 API 中转；`codex` 走 `codex login` 或 `config.toml` 自定义 provider。
   - **沙箱与批处理**：`agy` 提供 `--sandbox`（终端限制）、`--mode`（`accept-edits`/`auto`/`plan`）及批处理无交互开关（`-p`/`--print`、`--dangerously-skip-permissions`、`--output-format text|json|stream-json`、`--print-timeout`），并内置 subagent、`run_workflow`、swarm、MCP、plugin 与 ACP 协议（`agy acp`、`--remote-agent`/`--remote-control`）；`codex` 提供 `codex exec`、`codex review`、`codex sandbox`、`codex apply` 与 `sandbox_mode`/`approval_policy`（本工作站批处理为 `danger-full-access` + `approval: never`）。
 - **开放问题**：`reports/m1-placeholders.md` 与 `reports/m1-review-pack.md` 中仍残留早期“台账 OK 4 字体 / 仅无损同机”描述；本次仅修改 `reports/m1-acceptance.md`、`tasks/STATUS.md`、`docs/PLAN_ISSUES.md`，建议下次整理检查点 1 审阅包时一并同步。
+
+## PI-127 M1-066：本地开发栈实现与端口/容器取舍（2026-11-19）
+
+- **主路径选型（原生 `./dev.sh`）**：按“本机一条命令起 gateway + 比赛服 + 客户端 dev server”要求，以仓库根目录 `./dev.sh`（`up/down/status/logs/reset/check`）作为首选开发栈，直接拉起 `frontline-gateway`、`frontline-server` 与 `vite` dev server，避免开发期每次改动都重打 Rust/Node 容器镜像，并规避 Docker Desktop 在 macOS/Windows 下 UDP/QUIC 映射不稳定问题；运行时状态、PID、日志与临时本地密钥落盘到 `.dev-stack/`（已加入 `.gitignore`），不提交任何真实密钥。
+- **端口与地图与任务书草案对齐说明**：任务书 `M1-066` 草案中的 `8443/4433` 与 `--map carentan --mode frontline` 为早期示意；代码实装以 `crates/gateway`（明文 HTTP `8080`，`crates/server/src/gateway_link/client.rs` 拒绝 `https://` `GATEWAY_URL`，见 PI-075⑤）、`crates/server`（WS `7000`、WT `7001/udp`、`/metrics` `9100`，`KNOWN_MAPS` 当前仅 `m0`，默认 `--mode sandbox`）及 `client/vite.config.ts`（`5173`，代理 `/v1` 与 `/game-ws`）为准，可通过环境变量覆盖。
+- **容器模板保留**：`deploy/dev/{docker-compose.yml,Dockerfile.gateway,Dockerfile.server,.env.example,README.md}` 按 M1-066 清单提供多阶段非 root 模板，供 `M1-067`/`M2-024`/`M2-048` 后续复用。
+- **实测与 partial 范围**：`shellcheck dev.sh tools/dev/check-dev-stack.sh` 退出 0；`./dev.sh check`（工作站，`GATEWAY_PORT=18080` 等避开本机占用端口）完成 2 轮启动 + `reset` 幂等复起（首轮 4 s、次轮 3 s），覆盖 `/healthz`、`frontline-server` 自动注册、`/v1/guest` + `/v1/servers/{id}/ticket` 签票、`/metrics`、Vite `/` 与 `/v1/servers` 代理、`dev-cert.sha256`（13 天 ECDSA P-256）生成。**未测项（记为 partial）**：Playwright Chromium 经 WT 入局与阻断 UDP 后回退 WS 的浏览器实测、静态资源 206 Range 验证、`docker compose` 构建与镜像体积（server ≤ 150 MB / gateway ≤ 100 MB）实测。
+
+## PI-128 C3 渲染与世界接线验收边界（2026-11-19）
+
+- **M1-042b/043b/044b（PI-094、PI-116–118）**。每个后端分别计数。合法 PBR 变体 32/20（High/Low），自写 CSM 普通/实例化深度与 TAA 普通/实例化/地形速度共 5 个，`local-ci.sh ts` 门禁为 37/60 和 25/40。世界预览登记实际挂载的通道，PBR 演示与其预热共用注册表。Babylon 内置 shader 和其他系统的 shader 未纳入这个口径。保留 `taa_vel` 默认关闭。完整 PBR 世界材质替换、参考机开销及视觉验收未测。
+- **M1-049b（PI-101）**。下载、解码及限额上传分开处理。保留 6 并发和指数退避，按可用线程启用区块解码 worker。FPAK 数据源通过 `AssetLoader` 使用 Range、缓存和取消机制。预览以 GeoJSON 树篱作为运行时流式数据源，摄像机近环以外释放 GPU 网格，地形保留连续的全图 CDLOD 回退。FCHK/FCOL 解码、槽位、预取进度及碰撞就绪有独立验证。生产地图包与地形 GPU 数组的接线、出生 UI 及本地碰撞预测门控仍为 partial。浏览器 Range 与移动测试使用夹具，生产地图 100 Mbps 预取和 30 s 故障长跑未测。
+- **M1-050b（PI-102/113）**。占位 splat 在 Low 走四层近场细节路径，双后端使用权重 mip 做宏观色，CPU 表面查询按线性权重采样并接入地形撞击尘。压缩预算按 block 与 mip 核算。真实 albedo/normal/ORM 层、KTX2 `LayerArray`、`SlotSplat` 及接缝 ΔL 待 M1-064 与实际数据。
+- **M1-051b（PI-103/110）**。树篱段按中心归属 64 m 区块，缺口跳过，近环外卸载并解绑阴影投射体。植被按摄像机和物种绘制距离创建分组，退出距离额外保留 64 m，越界释放实例资源。Low 保留 35% 草密度和 20 m 距离，M0 保留原路径。树篱数据量仍等待人工描绘，独立碰撞、远景树篱简模、道具、impostor ΔE 与 5 min GPU 内存验收仍待完成。
+- **M1-046b（PI-098）**。占位 FP pass 独立深度，探测建筑和已驻留树篱，直接采样已有预测武器快照的装填状态与 `/data` 时长。ADS、开火后坐和换弹姿态有逻辑测试。武器素材、手部/换弹动画及参考机场景验收待 M1-064 或 H-021。
+- **M1-047b（PI-099/111）**。占位粒子与贴花走固定容量批次，建筑与地形挂接命中接收面。地形材质查询决定尘土类型，静态表面贴花有法线校验与距离淡出。特效材质和完整材质参数待 M1-064 或数据回填，联网实战效果、真实素材和 GPU 预算未验收。
+- **M1-048b（PI-100/112）**。占位车辆渲染器接受一帧完整的采样姿态，按实体 ID 增删模型，在应用新姿态后从炮口 socket 发出特效。`?vehicle=demo` 走同一渲染器，并独立挂载炮口粒子。线上车辆实体/射击 feed、损伤外观及截图基线仍为 partial。保留 M1-041d 文件的所有权边界。
+- **PI-109 性能**。GPU0 工作期间轮询读数包含 34%、41% 和 42%，本轮未开始 GPU 性能采集。SwiftShader 浏览器用例为功能验证，RTX 3060、Iris Xe、帧时间及 GPU 内存均未测。M1-067 预发布账号与部署流程保持阻塞。
+
+## PI-127C6 B3-C6：素材管线 M1-001…M1-006 推进、端到端浏览器实测与余项（2026-11-19）
+
+- **状态**：open / partial（推进 M1-001…M1-006，均诚实保持 `partial`，未改 `sim`/`protocol`/M1-041d 并行文件）。
+- **关键工程决定与改动**：
+  1. **本地门禁修复与加固（`scripts/local-ci.sh` `g_assets`）**：此前干净 worktree 在 Node 22.22.1 上直接执行 `node tools/asset-pipeline/bin/asset-pipeline.mjs` 会因缺少 `dist/` 报 `ERR_UNKNOWN_FILE_EXTENSION`，且无 `client/dist/size-report.json` 时整个 `manifest-budget` 被跳过。现改为先执行 `pnpm -C tools/asset-pipeline build`，增加 `ingest --metadata-only assets/manifests/incoming-index.json` 校验 227 条免费素材元数据，并始终执行 `manifest-budget`（若 `client/dist` 存在则自动调用 `tools/ci/core-size.mjs` 产出 `size-report.json` 传入，否则 `core` 记 `skipped` 而其余门禁照常执行）。
+  2. **M1-002 JPEG 贴图解码（`tools/asset-pipeline/src/textures.ts`）**：`LICENSES.md` 中已登记的 Poly Haven CC0 glTF 材质几乎全为 `.jpg`（`image/jpeg`），此前管线仅接受 PNG 并拒绝 JPEG。现保留 PNG 进程内 `pngjs` 快路径，对 `image/jpeg` 调用构建机 `ffmpeg` 解码为 RGBA 再打包 ORM/KTX2，无新增 npm 依赖。
+  3. **M1-004/006 客户端 `.fpak` 音频条目解包与探测（`client/src/render/assets/entry-audio.ts`）**：补齐浏览器侧 32 B 音频条目头解析（`decodeAudioEntry`、`AssetLoader.loadAudioEntry`）与 `probe.json` Base64 解析（`parseProbeJson`），使 `tools/asset-pipeline audio-pack` 产物可直接被浏览器 `probeCodec` + `decodeAudioData` 消费。
+  4. **M1-005 `core` 体积对接与按类别汇总（`tools/asset-pipeline/src/{budget,cli}.ts`）**：`manifest-budget --core-size-file` 现兼容 `tools/ci/core-size.mjs` 输出的 `brotliBytes` 字段；新增 `categoryBreakdown` / `formatCategoryBreakdown` 按逻辑 ID 前缀与 `_fp`/`_tp` 拆分统计体积，供 M1-064 重算预算。
+  5. **M1-006 下载并发上限、OPFS 同步句柄 Worker 与背压防长任务（`client/src/render/assets/{opfs-worker,cache,index}.ts`）**：
+     - 新增专用 OPFS Worker（`opfs-worker.ts` + `opfsSyncBackend`），使用 `FileSystemSyncAccessHandle` 与 1.5 GiB 默认 LRU 驱逐（`OpfsLruTracker`），`detectBackends` 在不支持同步句柄或无权限/配额不足时自动回退至异步 OPFS → Cache API → `memory`。
+     - 新增下载并发上限（默认 6，ARCHITECTURE §9.3）与解码管线背压闸门（`#withDecodeSlot`，上限 `max(poolSize*2, maxDownloads)`）：实测未加背压前，117.65 MB 热启动从 OPFS 在 ~145 ms 内全量涌入主线程触发 1 次 57–62 ms 主线程长任务（V8 Major GC）；加入背压后冷/热启动长任务均降至 **0 次**。
+  6. **并行测试隔离（`client/playwright.config.ts`）**：支持 `FRONTLINE_PLAYWRIGHT_PORT`（默认 5199），避免并行 worktree 抢占同一端口。
+- **工作站实测数字（EPYC 7402 / 无头 Chromium 153，非 RTX 3060 / Iris Xe 参考机，PI-109）**：
+  - `scripts/local-ci.sh assets` 全组通过（墙钟 **49.0 s** < 3 min；`asset-pipeline` 单测 18 文件 / 173 项 + e2e 4 文件 / 10 项全绿；`ledger-check` 241 行：OK 231 / PENDING 3 / FLAGGED 1 / REJECTED 0 / INTERNAL 6；`ingest --metadata-only` 227 条通过；`core-size.mjs` 测 `client/dist`〔未含 sim-wasm〕182 文件 raw 3,160,849 B / brotli **834,029 B**，占 8 MiB 预算 9.9 %；含 sim-wasm 生产 core 见 #132 为 1,150,132 B）。
+  - `client/src/render/assets/` 单测 3 文件 / 35 项通过；完整 Playwright 端到端 suite `client/e2e/asset-loader.spec.ts` 4/4 通过（26.9 s，报告落盘 `reports/m1-asset-loader.json`）：
+    1. **全链路端到端**（`ingest → normalize → process〔含 JPEG albedo + PNG normal RRRG + ORM + _fp/_tp + collision〕→ pack → audio-pack〔含 iXML 剔除 + probe.json〕→ manifest → manifest-budget → assert-no-standalone → assert-opaque` → Chromium 真 Worker `MeshoptDecoder` + 自托管 `BasisU` 转码 BC7/7 mips + `OPFS FileSystemSyncAccessHandle` + `probe.json` 实测选中 `opus` + `loadAudioEntry` + `OfflineAudioContext.decodeAudioData` 1.0 s 波形有效 + HTTP 206 Range 与 HTTP 200 降级）全部通过。
+    2. **≥ 100 MB 基准**（8 个 ≤16 MiB `.fpak`，总载荷 **117,650,400 B** ≈ 112.2 MiB，64 个 meshopt 网格 + 8 个 512² UASTC KTX2 贴图，4 Worker 池）：
+       - 无节流回环：冷启动 **1,600.8 ms**（96 请求 / 117,653,872 B，长任务 **0**）→ 刷新后热启动 **1,158.3 ms**（**-27.6 %**，网络请求 **0**，OPFS 命中率 1.0，长任务 **0**；热启动受 60 Hz × 2 MiB/帧上传调度器节拍限制，65 帧 ≈ 1.08 s）。
+       - 100 Mbps / 20 ms RTT CDN 模拟（CDP，对齐 ARCH §9.3）：冷启动 **9,941.3 ms**（96 请求，长任务 **0**）→ 刷新后热启动 **1,249.0 ms**（**-87.4 %** ≥ 50 %，网络请求 **0**，OPFS 命中率 1.0，长任务 **0**）。
+    3. **无持久缓存降级**：禁用 `navigator.storage` 与 `caches` 后 `cacheMode === 'memory'`，网格/贴图/音频全部加载成功。
+    4. **200 小条目上传预算**：48 帧，主线程上传回调 P50 **0.0 ms** / P95 **0.1 ms**（≤ 1.5 ms）/ max 0.3 ms，单帧最大 **143,568 B**（≤ 2 MiB）。
+- **保持 `partial` 的原因与开放问题**：
+  - M1-001…005：历史 GitHub Actions 墙钟未实测（H-102，现以 PI-078 本地门禁替代）；PI-032/033/034/035/036 待 Fable 裁决；真实 CC0 原档未入库打包（M1-064 / R11，M1-002 样例 B 体积比 31.5 % 仍 > 25 %）；M1-003 蒙皮网格布局属 M1-045；M1-004 缺真实 M1 音频（M1-065）且 `ffmpeg` 许可证待核实；M1-005 仓库 `manifest.json` 仍为空（待 M1-064/M1-035b 产包）。
+  - M1-006：浏览器探针的上传阶段仅测 `UploadScheduler` 帧调度，不含真实 WebGPU/WebGL2 驱动建缓冲/纹理的 GPU 上传耗时；未在 RTX 3060 / Iris Xe 参考机（H-021）与 Firefox/Safari（H-103）复测；法线 RRRG 的 BC5 转码路径留 M1-042。

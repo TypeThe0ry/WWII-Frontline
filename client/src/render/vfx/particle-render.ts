@@ -64,6 +64,11 @@ export class ParticleRenderer {
   /** Advance the pool by `dtSec`, rewrite the instance buffer and orient the billboards towards `camera`. */
   update(camera: Camera, dtSec: number): void {
     this.pool.update(dtSec);
+    this.upload(camera);
+  }
+
+  /** Upload after the event queue is drained so new particles render at age zero. */
+  upload(camera: Camera): void {
     const n = this.pool.writeInstances(this.buf);
     this.drawn = n;
     this.mesh.thinInstanceCount = n;

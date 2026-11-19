@@ -16,9 +16,11 @@ describe('emitters', () => {
   });
   it('never drops the local player under pressure', () => {
     const p = new ParticlePool('low');
-    for (let i = 0; i < PARTICLE_CAP.low * 4; i++) emitEffect(p, 'impact_dust', 0, 0, 0, false, 30, i);
+    for (let i = 0; i < PARTICLE_CAP.low * 4; i++) emitEffect(p, 'impact_dust', 0, 0, 0, false, 130, i);
     for (let i = 0; i < 50; i++) emitEffect(p, 'muzzle', 0, 0, 0, true, 0, i);
     expect(p.droppedSelf).toBe(0);
-    expect(p.active).toBeLessThanOrEqual(PARTICLE_CAP.low);
+    expect(p.active).toBe(PARTICLE_CAP.low);
+    expect(p.dropped).toBeGreaterThan(0);
+    expect(p.evicted).toBe(50);
   });
 });

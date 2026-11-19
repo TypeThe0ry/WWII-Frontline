@@ -6,6 +6,7 @@
  * `textureLoad` and filtered by hand.
  */
 import { SHADOW_RECEIVER_WGSL } from '../lighting/csm-shader';
+import { DETAIL_FADE_M, MACRO_FADE_M, TRIPLANAR_FADE_M, TRIPLANAR_RANGE_DEG, TRIPLANAR_START_DEG } from './splat-math';
 
 export const TERRAIN_VERTEX_WGSL = /* wgsl */ `
 attribute position: vec3f;
@@ -112,7 +113,7 @@ fn main(input: VertexInputs) -> FragmentInputs {
   let hr = heightAt(p + vec2f(e, 0.0));
   let hd = heightAt(p - vec2f(0.0, e));
   let hu = heightAt(p + vec2f(0.0, e));
-  vertexOutputs.vNormal = normalize(vec3f(hl - hr, 2.0 * e, hd - hu));
+  vertexOutputs.vNormal = normalize(vec3f((hl - hr) * uniforms.uYScale, 2.0 * e, (hd - hu) * uniforms.uYScale));
 
   let world = vec3f(p.x, h * uniforms.uYScale, p.y);
   vertexOutputs.vWorld = world;
@@ -148,7 +149,11 @@ fn lodColor(l: i32) -> vec3f {
 }
 
 fn hash21(p: vec2f) -> f32 {
-  return fract(sin(dot(p, vec2f(127.1, 311.7))) * 43758.5453);
+  // Match GLSL even for negative cells in the far ring (bitcast preserves the signed bits).
+  let q = bitcast<vec2u>(vec2i(p));
+  var h = (q.x * 0x9e3779b1u) ^ (q.y * 0x85ebca6bu);
+  h = (h ^ (h >> 15u)) * 0x2c1b3c6du;
+  return f32((h ^ (h >> 12u)) >> 8u) * (1.0 / 16777216.0);
 }
 
 fn vnoise(p: vec2f) -> f32 {
@@ -159,8 +164,8 @@ fn vnoise(p: vec2f) -> f32 {
 }
 
 // Two-scale detail so layers do not read as flat colour (placeholder for the real KTX2 layers, PI-113).
-fn detail2(p: vec2f) -> f32 {
-  return 0.55 * vnoise(p / 0.7) + 0.45 * vnoise(p / 3.1);
+fn detail2(p: vec2f, period: f32) -> f32 {
+  return 0.55 * vnoise(p / period) + 0.45 * vnoise(p / (period * 4.4));
 }
 
 fn layerColor(i: i32) -> vec3f {
@@ -174,6 +179,55 @@ fn layerColor(i: i32) -> vec3f {
   return vec3f(0.17, 0.20, 0.10);
 }
 
+fn shadeSplat(world: vec3f, n: vec3f, a: vec4f, b: vec4f, dist: f32) -> vec3f {
+  var weights = array<f32, 8>(a.x, a.y, a.z, a.w, b.x, b.y, b.z, b.w);
+  // Low keeps the four largest weights (equal weights prefer lower indices).
+  let low = uniforms.uSplat.z < 5.0;
+  let detail = 1.0 - smoothstep(${DETAIL_FADE_M[0]}.0, ${DETAIL_FADE_M[1]}.0, dist);
+  var steep = 0.0;
+  if (dist < ${TRIPLANAR_FADE_M[1]}.0) {
+    let slopeDeg = degrees(acos(clamp(n.y, -1.0, 1.0)));
+    steep = smoothstep(${TRIPLANAR_START_DEG}.0, ${TRIPLANAR_START_DEG + TRIPLANAR_RANGE_DEG}.0, slopeDeg)
+      * (1.0 - smoothstep(${TRIPLANAR_FADE_M[0]}.0, ${TRIPLANAR_FADE_M[1]}.0, dist));
+  }
+  var axes = n * n;
+  axes *= axes;
+  axes /= axes.x + axes.y + axes.z;
+
+  var color = vec3f(0.0);
+  var sum = 0.0;
+  for (var pick = 0; pick < 8; pick++) {
+    var layer = pick;
+    if (low) {
+      if (pick >= 4) { break; }
+      layer = 0;
+      for (var k = 1; k < 8; k++) {
+        if (weights[k] > weights[layer]) { layer = k; }
+      }
+    }
+    let weight = weights[layer];
+    if (weight <= 0.0) { continue; }
+    weights[layer] = 0.0;
+    var layerBase = layerColor(layer);
+    if (detail > 0.0) {
+      let period = 0.70 + 0.13 * f32(layer);
+      let planar = detail2(world.xz, period);
+      var d = planar;
+      if (steep > 0.0) {
+        let tri = axes.y * planar + axes.x * detail2(world.zy + 17.0, period) + axes.z * detail2(world.xy + 41.0, period);
+        d = mix(planar, tri, steep);
+      }
+      layerBase *= 1.0 + detail * (d - 0.5) * select(0.30, 0.45, layer == 4);
+    }
+    color += weight * layerBase;
+    sum += weight;
+  }
+  // Bilinear interpolation of RGBA8 weights can drift from a unit sum. All-zero data falls back to grass.
+  if (sum > 0.0) { color /= sum; }
+  else { color = layerColor(0); }
+  return color * (0.92 + 0.16 * vnoise(world.xz / 80.0));
+}
+
 fn gridLine(p: vec2f, spacing: f32, width: f32) -> f32 {
   let q = p / spacing;
   let fw = fwidth(q);
@@ -185,9 +239,6 @@ fn gridLine(p: vec2f, spacing: f32, width: f32) -> f32 {
 fn main(input: FragmentInputs) -> FragmentOutputs {
   // Derivative-based terms first (uniform control flow).
   let world = fragmentInputs.vWorld;
-  let sUv = clamp(world.xz / uniforms.uSplat.x, vec2f(0.0), vec2f(1.0));
-  let sa = textureSample(splatA, splatASampler, sUv);
-  let sb = textureSample(splatB, splatBSampler, sUv);
   let l16 = gridLine(world.xz, 16.0, 1.0);
   let l64 = gridLine(world.xz, 64.0, 1.5);
   let n = normalize(fragmentInputs.vNormal);
@@ -198,21 +249,10 @@ fn main(input: FragmentInputs) -> FragmentOutputs {
   let hn = clamp((world.y - uniforms.uHeightRange.x) / max(uniforms.uHeightRange.y - uniforms.uHeightRange.x, 1e-3), 0.0, 1.0);
   var base = vec3f(0.0);
   if (uniforms.uSplat.y > 0.5) {
-    // 8 procedural layers weighted by the splat; steep faces use a triplanar detail so rock does not stretch along the slope
-    let wts = array<f32, 8>(sa.x, sa.y, sa.z, sa.w, sb.x, sb.y, sb.z, sb.w);
-    let an = pow(abs(n), vec3f(4.0));
-    let tri = an / max(an.x + an.y + an.z, 1e-4);
-    let steep = 1.0 - smoothstep(0.643, 0.766, n.y);
-    let dPlanar = detail2(world.xz);
-    let dTri = tri.y * detail2(world.xz) + tri.x * detail2(world.zy + 17.0) + tri.z * detail2(world.xy + 41.0);
-    let d = mix(dPlanar, dTri, steep);
-    for (var i = 0; i < 8; i = i + 1) {
-      var amp = 0.30;
-      if (i == 4) { amp = 0.45; }
-      if (i == 5) { amp = 0.38; }
-      base = base + wts[i] * layerColor(i) * (1.0 - 0.5 * amp + amp * d);
-    }
-    base = base * (0.92 + 0.16 * vnoise(world.xz / 80.0));
+    let dist = length(world - uniforms.uCam);
+    let mip = smoothstep(${MACRO_FADE_M[0]}.0, ${MACRO_FADE_M[1]}.0, dist) * uniforms.uSplat.w;
+    let uv = world.xz / uniforms.uSplat.x; // sampler clamps to the grid edge
+    base = shadeSplat(world, n, textureSampleLevel(splatA, splatASampler, uv, mip), textureSampleLevel(splatB, splatBSampler, uv, mip), dist);
   } else {
     let grass = vec3f(0.27, 0.40, 0.17);
     let dirt = vec3f(0.45, 0.36, 0.24);

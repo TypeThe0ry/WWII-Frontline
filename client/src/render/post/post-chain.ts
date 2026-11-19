@@ -17,7 +17,7 @@ import type { Camera } from '@babylonjs/core/Cameras/camera';
 import type { Scene } from '@babylonjs/core/scene';
 import { ExposureController } from './post-math';
 import { PostBudgetGuard } from './post-guard';
-import { VelocityPass } from './velocity';
+import { VelocityPass, type VelocityOptions } from './velocity';
 import type { Terrain } from '../terrain/terrain';
 
 export type PostTier = 'high' | 'medium' | 'low';
@@ -35,7 +35,7 @@ export interface PostOptions {
   /** Frame-interval limit (ms) of the TAA -> FXAA budget guard; `0` disables the guard. */
   guardMs?: number;
   /** Own velocity pass for TAA reprojection (PI-118 follow-up): `terrain` adds the terrain velocity material. */
-  velocity?: { wgsl: boolean; terrain?: Terrain; flipY?: boolean };
+  velocity?: Pick<VelocityOptions, 'wgsl' | 'flipY' | 'variants'> & { terrain?: Terrain };
 }
 
 export interface PostHandle {
@@ -105,7 +105,7 @@ export function attachPost(scene: Scene, camera: Camera, o: PostOptions): PostHa
   if (taa && o.velocity) {
     const flipY = o.velocity.flipY ?? false;
     const t = o.velocity.terrain;
-    vel = new VelocityPass(scene, { wgsl: o.velocity.wgsl, flipY, terrain: t ? { mesh: t.mesh, material: t.createVelocityMaterial(o.velocity.wgsl, flipY) } : undefined, exclude: (m) => m.layerMask === 0x10000000 });
+    vel = new VelocityPass(scene, { wgsl: o.velocity.wgsl, variants: o.velocity.variants, flipY, terrain: t ? { mesh: t.mesh, material: t.createVelocityMaterial(o.velocity.wgsl, flipY) } : undefined, exclude: (m) => m.layerMask === 0x10000000 });
     // switch Babylon's TAA shader to history reprojection and feed it OUR velocity texture (its PrePass source is not usable here).
     // Babylon keeps the projection-matrix jitter in this mode because no material plugin manager exists.
     const thin = (taa as unknown as { _taaThinPostProcess: { _reprojectHistory: boolean; _updateEffect(): void } })._taaThinPostProcess;
