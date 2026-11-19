@@ -243,36 +243,22 @@ impl World {
         out
     }
 
-    /// Writes this tick's player hitbox frame (M1-025), ascending entity id.
+    /// Writes the current player and vehicle hitbox frame (M1-025).
     fn record_lagcomp(&mut self) {
-        use crate::combat::lagcomp_history::PlayerHitboxes;
-        let tick = self.tick();
-        let ids: Vec<(EntityId, bevy_ecs::entity::Entity)> =
-            self.ecs.resource::<EntityTable>().sorted().collect();
-        let mut frame: Vec<PlayerHitboxes> = Vec::with_capacity(ids.len());
-        for (id, e) in ids {
-            let er = self.ecs.entity(e);
-            let (Some(t), Some(m), Some(h)) = (
-                er.get::<crate::components::Transform>(),
-                er.get::<crate::components::Motion>(),
-                er.get::<crate::health::Health>(),
-            ) else {
-                continue;
-            };
-            if h.hp > 0.0 {
-                frame.push(PlayerHitboxes {
-                    id,
-                    foot: t.pos,
-                    blend: m.stance_blend,
-                    head_dx: 0.0,
-                    head_dz: 0.0,
-                });
-            }
-        }
-        self.ecs
-            .resource_mut::<crate::combat::lagcomp::LagComp>()
+        crate::combat::lagcomp::LagComp::record_world(&mut self.ecs);
+    }
+
+    /// Cumulative lag compensation outcomes from the projectile stage.
+    pub fn lagcomp_stats(&self) -> crate::combat::lagcomp::LagCompStats {
+        self.ecs.resource::<crate::combat::lagcomp::LagComp>().stats
+    }
+
+    #[cfg(feature = "test-util")]
+    pub fn lagcomp_history(&self) -> &crate::combat::lagcomp_history::LagCompHistory {
+        &self
+            .ecs
+            .resource::<crate::combat::lagcomp::LagComp>()
             .history
-            .record(tick, &frame);
     }
 
     /// Switches lag compensation on or off (off is the control for hit-rate comparisons).

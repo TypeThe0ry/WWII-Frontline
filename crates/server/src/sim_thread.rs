@@ -656,6 +656,7 @@ impl<C: Clock> SimLoop<C> {
         self.seat_input
             .apply(&mut self.world, self.bridge.resolved());
         lap(0, &mut self.phase_ms);
+        let lagcomp_before = self.world.lagcomp_stats();
         let out = self.world.step(self.bridge.resolved());
         lap(1, &mut self.phase_ms);
         self.step_events = out.events;
@@ -671,7 +672,13 @@ impl<C: Clock> SimLoop<C> {
             .anticheat
             .report_if_due(std::time::Instant::now());
         CURRENT_TICK.store(self.world.tick().0, Ordering::Relaxed);
-        self.record_lag_comp();
+        let lagcomp_after = self.world.lagcomp_stats();
+        self.metrics
+            .lagcomp_history_clamped_total
+            .inc_by(lagcomp_after.history_clamped - lagcomp_before.history_clamped);
+        self.metrics
+            .lagcomp_wall_reject_total
+            .inc_by(lagcomp_after.wall_rejected - lagcomp_before.wall_rejected);
         lap(2, &mut self.phase_ms);
         self.bots_think();
         lap(3, &mut self.phase_ms);
@@ -879,9 +886,6 @@ impl<C: Clock> SimLoop<C> {
             }
         }
     }
-
-    /// Step 4. TODO(M0-020): lag-compensation history.
-    fn record_lag_comp(&mut self) {}
 
     /// Step 5 (M0-026): every bot thinks (sharded inside the brains) and its command for the
     /// next tick enters the same validation path as a human's. Also tallies this tick's events.

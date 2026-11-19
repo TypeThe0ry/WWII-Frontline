@@ -423,6 +423,20 @@ fn send_c0(handle: &ClientHandle, m: &ServerMsgC0) -> bool {
     }
 }
 
+pub(crate) fn disconnect_for_input(
+    handle: &ClientHandle,
+    reason: crate::anticheat::DisconnectReason,
+) {
+    use frontline_protocol::msg::c0::Disconnect;
+    send_c0(
+        handle,
+        &ServerMsgC0::Disconnect(Disconnect {
+            reason: reason as u8,
+        }),
+    );
+    handle.close_graceful();
+}
+
 fn send_reject(handle: &ClientHandle, reason: RejectReason) {
     send_c0(handle, &ServerMsgC0::Reject(Reject { reason }));
     handle.close_graceful();

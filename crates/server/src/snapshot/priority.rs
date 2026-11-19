@@ -60,6 +60,8 @@ pub struct AoiParams {
     pub cos_enter: f32,
     pub cos_leave: f32,
     pub turn_union_ticks: u32,
+    pub los_period_ticks: u32,
+    pub los_min_dist_m: f32,
     pub vehicle_importance: f32,
 }
 
@@ -74,6 +76,8 @@ impl Default for AoiParams {
             cos_enter: COS_100,
             cos_leave: COS_110,
             turn_union_ticks: 3,
+            los_period_ticks: 8,
+            los_min_dist_m: 20.0,
             vehicle_importance: 1.5,
         }
     }
@@ -92,6 +96,8 @@ impl AoiParams {
             cos_enter: enter.to_radians().cos(),
             cos_leave: leave.to_radians().cos(),
             turn_union_ticks: libm_round(r.turn_union_ms as f32 / 1000.0 * tick_hz),
+            los_period_ticks: (r.los_check_s * f64::from(tick_hz)).ceil().max(1.0) as u32,
+            los_min_dist_m: r.los_min_dist_m as f32,
             vehicle_importance: r.vehicle_importance_mult as f32,
         }
     }
@@ -254,6 +260,7 @@ pub struct Slot {
     pub remove_left: u8,
     /// Evaluation counter of the last pass that saw the entity as a candidate.
     pub touched: u32,
+    pub(super) los: super::occlusion::LosSample,
 }
 
 /// Accumulators of one client, indexed by wire entity id (player id, 0..=127).
@@ -307,6 +314,8 @@ mod tests {
         cos_enter: COS_100,
         cos_leave: COS_110,
         turn_union_ticks: 3,
+        los_period_ticks: 8,
+        los_min_dist_m: 20.0,
         vehicle_importance: 1.5,
     };
 

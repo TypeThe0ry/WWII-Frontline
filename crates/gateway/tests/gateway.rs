@@ -4,7 +4,7 @@ use axum::body::Body;
 use axum::http::{header, Method, Request, StatusCode};
 use axum::Router;
 use ed25519_dalek::SigningKey;
-use frontline_gateway::app::{router, AppState, Shared};
+use frontline_gateway::app::{router, AppState};
 use frontline_gateway::auth::ticket::{self, JtiCache};
 use frontline_gateway::clock::Clock;
 use frontline_gateway::config::Config;
@@ -19,20 +19,20 @@ const INTERNAL: &str = "internal-test-token";
 
 struct Rig {
     app: Router,
-    st: Shared,
     clock: Clock,
 }
 
-fn rig() -> Rig {
+async fn rig() -> Rig {
+    rig_with(Config::test(), [5; 32]).await
+}
+
+async fn rig_with(cfg: Config, key: [u8; 32]) -> Rig {
     let clock = Clock::manual(T0);
-    let st = AppState::new(
-        Config::test(),
-        clock.clone(),
-        SigningKey::from_bytes(&[5u8; 32]),
-    );
+    let st = AppState::new(cfg, clock.clone(), SigningKey::from_bytes(&key))
+        .await
+        .unwrap();
     Rig {
-        app: router(st.clone()),
-        st,
+        app: router(st),
         clock,
     }
 }
@@ -77,7 +77,7 @@ async fn register(r: &Rig, version: u16, cap: u8) -> String {
         "10.9.9.9",
         Some(INTERNAL),
         json!({"name":"S","map":"carentan","mode":"conquest","region":"eu","tags":["m1"],
-               "version":"0.1","protocol_version":version,"data_hash":1,"cap":cap,
+               "version":"0.1","protocol_version":version,"data_hash":u64::MAX,"cap":cap,
                "addr":"play.example","ws_port":8443,"wt_port":4433}),
     )
     .await;
@@ -115,7 +115,7 @@ async fn ticket_req(r: &Rig, id: &str, ip: &str, tok: Option<&str>, nick: &str) 
 
 #[tokio::test]
 async fn guest_token_is_24h_and_expired_tokens_are_401() {
-    let r = rig();
+    let r = rig().await;
     let id = register(&r, PROTOCOL_VERSION, 16).await;
     let (s, g) = guest(&r, "1.1.1.1").await;
     assert_eq!(s, StatusCode::OK);
@@ -144,7 +144,7 @@ async fn guest_token_is_24h_and_expired_tokens_are_401() {
 
 #[tokio::test]
 async fn a_valid_token_renews_the_same_guest() {
-    let r = rig();
+    let r = rig().await;
     let (_, g) = guest(&r, "2.2.2.2").await;
     r.clock.advance_ms(3_600_000);
     let (_, _, g2) = call(
@@ -164,7 +164,7 @@ async fn a_valid_token_renews_the_same_guest() {
 
 #[tokio::test]
 async fn ticket_verifies_with_the_public_key_and_is_single_use() {
-    let r = rig();
+    let r = rig().await;
     let id = register(&r, PROTOCOL_VERSION, 16).await;
     let (_, g) = guest(&r, "3.3.3.3").await;
     let (s, _, t) = call(
@@ -195,7 +195,7 @@ async fn ticket_verifies_with_the_public_key_and_is_single_use() {
 
 #[tokio::test]
 async fn ticket_refusals() {
-    let r = rig();
+    let r = rig().await;
     let id = register(&r, PROTOCOL_VERSION, 1).await;
     let (_, g) = guest(&r, "4.4.4.4").await;
     let tok = g["token"].as_str().unwrap();
@@ -226,7 +226,7 @@ async fn ticket_refusals() {
 
 #[tokio::test]
 async fn ip_limit_is_10_per_minute_across_login_and_ticket() {
-    let r = rig();
+    let r = rig().await;
     for i in 0..10 {
         let (s, _) = guest(&r, "5.5.5.5").await;
         assert_eq!(s, StatusCode::OK, "request {i}");
@@ -257,7 +257,7 @@ async fn ip_limit_is_10_per_minute_across_login_and_ticket() {
 
 #[tokio::test]
 async fn account_limit_is_6_tickets_per_minute() {
-    let r = rig();
+    let r = rig().await;
     let id = register(&r, PROTOCOL_VERSION, 100).await;
     let (_, g) = guest(&r, "6.0.0.0").await;
     let tok = g["token"].as_str().unwrap();
@@ -282,7 +282,7 @@ async fn account_limit_is_6_tickets_per_minute() {
 
 #[tokio::test]
 async fn list_hides_servers_without_a_heartbeat_and_flags_old_versions() {
-    let r = rig();
+    let r = rig().await;
     let a = register(&r, PROTOCOL_VERSION, 16).await;
     let b = register(&r, PROTOCOL_VERSION, 16).await;
     let c = register(&r, PROTOCOL_VERSION - 1, 16).await;
@@ -313,7 +313,7 @@ async fn list_hides_servers_without_a_heartbeat_and_flags_old_versions() {
 
 #[tokio::test]
 async fn internal_api_requires_the_token_and_known_ids() {
-    let r = rig();
+    let r = rig().await;
     let id = register(&r, PROTOCOL_VERSION, 16).await;
     let hb = json!({"humans":1,"bots":0,"phase":"live","time_left_s":1});
     let uri = format!("/internal/matches/{id}/heartbeat");
@@ -349,7 +349,6 @@ async fn internal_api_requires_the_token_and_known_ids() {
         post(res, Some(INTERNAL), json!({"winner":"us"})).await,
         StatusCode::NO_CONTENT
     );
-    assert_eq!(r.st.registry.results().len(), 1);
     let (_, _, v) = call(
         &r.app,
         Method::GET,
@@ -371,7 +370,7 @@ async fn internal_api_requires_the_token_and_known_ids() {
 
 #[tokio::test]
 async fn register_returns_the_ticket_key_fingerprint() {
-    let r = rig();
+    let r = rig().await;
     let (_, _, v) = call(
         &r.app,
         Method::POST,
@@ -390,7 +389,7 @@ async fn register_returns_the_ticket_key_fingerprint() {
 
 #[tokio::test]
 async fn responses_are_no_store_and_cors_is_origin_checked() {
-    let r = rig();
+    let r = rig().await;
     let send = |origin: &'static str| {
         let app = r.app.clone();
         async move {
@@ -431,6 +430,245 @@ fn route_table_snapshot() {
             "POST /internal/matches/{id}/heartbeat",
             "POST /internal/matches/{id}/result",
             "GET /healthz",
+            "GET /metrics",
         ]
     );
+}
+
+#[tokio::test]
+async fn sqlite_reopen_preserves_guest_match_ticket_cursor_and_first_result() {
+    use sqlx::{Connection, SqliteConnection};
+
+    let dir = tempfile::tempdir().unwrap();
+    let cfg = Config {
+        database_url: format!("sqlite://{}", dir.path().join("gateway.db").display()),
+        ..Config::test()
+    };
+    let r = rig_with(cfg.clone(), [5; 32]).await;
+    let live = register(&r, PROTOCOL_VERSION, 16).await;
+    let ended = register(&r, PROTOCOL_VERSION, 16).await;
+    assert_eq!(beat(&r, &live, 4).await, StatusCode::NO_CONTENT);
+    let (_, profile) = guest(&r, "1.2.3.4").await;
+    let token = profile["token"].as_str().unwrap();
+    let uri = format!("/v1/servers/{live}/ticket");
+    let match_id = from_hex(&live).unwrap();
+    let issue = |app: Router| {
+        let uri = uri.clone();
+        async move {
+            let (status, _, response) = call(
+                &app,
+                Method::POST,
+                &uri,
+                "1.2.3.4",
+                Some(token),
+                json!({"nick":"①ﬁＡ"}),
+            )
+            .await;
+            assert_eq!(status, StatusCode::OK);
+            ticket::verify(
+                &SigningKey::from_bytes(&[5; 32]).verifying_key(),
+                response["ticket"].as_str().unwrap(),
+                T0 / 1000,
+                &match_id,
+                &mut JtiCache::default(),
+            )
+            .unwrap()
+        }
+    };
+    let first = issue(r.app.clone()).await;
+    assert_eq!(first.player_id, 0);
+    assert_eq!(first.nick, "1fiA");
+    let res = format!("/internal/matches/{ended}/result");
+    assert_eq!(
+        call(
+            &r.app,
+            Method::POST,
+            &res,
+            "1.2.3.4",
+            Some(INTERNAL),
+            json!({"winner":1})
+        )
+        .await
+        .0,
+        StatusCode::NO_CONTENT
+    );
+    drop(r);
+
+    let r = rig_with(cfg.clone(), [5; 32]).await;
+    let (_, _, renewed) = call(
+        &r.app,
+        Method::POST,
+        "/v1/guest",
+        "1.2.3.4",
+        None,
+        json!({"token":token}),
+    )
+    .await;
+    assert_eq!(renewed["guest_id"], profile["guest_id"]);
+    assert_eq!(renewed["nick_suggestion"], "1fiA");
+    let (_, _, listed) = call(
+        &r.app,
+        Method::GET,
+        "/v1/servers",
+        "1.2.3.4",
+        None,
+        Value::Null,
+    )
+    .await;
+    assert_eq!(listed.as_array().unwrap().len(), 1);
+    assert_eq!(listed[0]["match_id"], live);
+    assert_eq!(listed[0]["humans"], 4);
+    assert_eq!(issue(r.app.clone()).await.player_id, 1);
+    assert_eq!(beat(&r, &ended, 4).await, StatusCode::NOT_FOUND);
+    assert_eq!(
+        call(
+            &r.app,
+            Method::POST,
+            &res,
+            "1.2.3.4",
+            Some(INTERNAL),
+            json!({"winner":2})
+        )
+        .await
+        .0,
+        StatusCode::NO_CONTENT
+    );
+
+    let mut conn = SqliteConnection::connect(&cfg.database_url).await.unwrap();
+    let payloads: Vec<String> = sqlx::query_scalar("SELECT payload FROM results")
+        .fetch_all(&mut conn)
+        .await
+        .unwrap();
+    assert_eq!(payloads, [r#"{"winner":1}"#]);
+    let hash: String = sqlx::query_scalar("SELECT registration FROM matches WHERE id = ?")
+        .bind(&live)
+        .fetch_one(&mut conn)
+        .await
+        .unwrap();
+    assert_eq!(
+        serde_json::from_str::<Value>(&hash).unwrap()["data_hash"],
+        u64::MAX
+    );
+
+    let rotated = rig_with(cfg, [7; 32]).await;
+    assert_eq!(beat(&rotated, &live, 4).await, StatusCode::NOT_FOUND);
+    assert_eq!(
+        ticket_req(&rotated, &live, "1.2.3.4", Some(token), "Guest").await,
+        StatusCode::GONE
+    );
+}
+
+#[tokio::test]
+async fn prometheus_counts_bounded_routes_auth_failures_and_storage_errors() {
+    use sqlx::{Connection, SqliteConnection};
+
+    let dir = tempfile::tempdir().unwrap();
+    let cfg = Config {
+        database_url: format!("sqlite://{}", dir.path().join("gateway.db").display()),
+        ..Config::test()
+    };
+    let r = rig_with(cfg.clone(), [5; 32]).await;
+    let id = register(&r, PROTOCOL_VERSION, 16).await;
+    assert_eq!(
+        ticket_req(&r, &id, "1.2.3.4", Some("bad-fixture-token"), "Guest").await,
+        StatusCode::UNAUTHORIZED
+    );
+    assert_eq!(
+        call(
+            &r.app,
+            Method::POST,
+            "/v1/guest",
+            "1.2.3.4",
+            None,
+            json!({"token":"bad-fixture-token"})
+        )
+        .await
+        .0,
+        StatusCode::OK
+    );
+    let mut conn = SqliteConnection::connect(&cfg.database_url).await.unwrap();
+    sqlx::query("DROP TABLE guests")
+        .execute(&mut conn)
+        .await
+        .unwrap();
+    let (status, _, response) = call(
+        &r.app,
+        Method::POST,
+        "/v1/guest",
+        "1.2.3.4",
+        None,
+        json!({}),
+    )
+    .await;
+    assert_eq!(status, StatusCode::INTERNAL_SERVER_ERROR);
+    assert_eq!(response, json!({"error":"storage_unavailable"}));
+    let resp = r
+        .app
+        .oneshot(Request::get("/metrics").body(Body::empty()).unwrap())
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), StatusCode::OK);
+    assert!(resp.headers()[header::CONTENT_TYPE]
+        .to_str()
+        .unwrap()
+        .starts_with("text/plain"));
+    let body = resp.into_body().collect().await.unwrap().to_bytes();
+    let text = std::str::from_utf8(&body).unwrap();
+    for expected in [
+        "gateway_http_requests_total{route=\"/v1/servers/{match_id}/ticket\",status_class=\"4xx\"} 1",
+        "gateway_http_requests_total{route=\"/v1/guest\",status_class=\"5xx\"} 1",
+        "gateway_http_request_duration_seconds_count{route=\"/v1/guest\"} 2",
+        "gateway_auth_attempts_total{operation=\"ticket\",result=\"invalid\"} 1",
+        "gateway_auth_attempts_total{operation=\"guest_renewal\",result=\"invalid\"} 1",
+    ] {
+        assert!(text.lines().any(|line| line == expected), "missing {expected} in {text}");
+    }
+    assert!(!text.contains(&id));
+    assert!(!text.contains("bad-fixture-token"));
+}
+
+#[tokio::test]
+async fn request_logs_do_not_contain_credentials() {
+    use std::io::{self, Write};
+    use std::sync::{Arc, Mutex};
+
+    #[derive(Clone)]
+    struct Sink(Arc<Mutex<Vec<u8>>>);
+    impl Write for Sink {
+        fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
+            self.0.lock().unwrap().write(bytes)
+        }
+        fn flush(&mut self) -> io::Result<()> {
+            Ok(())
+        }
+    }
+    let sink = Sink(Arc::default());
+    let writer = sink.clone();
+    let subscriber = tracing_subscriber::fmt()
+        .without_time()
+        .with_ansi(false)
+        .with_max_level(tracing::Level::DEBUG)
+        .with_writer(move || writer.clone())
+        .finish();
+    tracing::subscriber::set_global_default(subscriber).unwrap();
+    let r = rig().await;
+    let id = register(&r, PROTOCOL_VERSION, 16).await;
+    let (_, profile) = guest(&r, "1.2.3.4").await;
+    let token = profile["token"].as_str().unwrap();
+    let (status, _, response) = call(
+        &r.app,
+        Method::POST,
+        &format!("/v1/servers/{id}/ticket"),
+        "1.2.3.4",
+        Some(token),
+        json!({"nick":"Guest"}),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    let log = sink.0.lock().unwrap();
+    let log = std::str::from_utf8(&log).unwrap();
+    assert!(log.contains("gateway request"));
+    for secret in [token, response["ticket"].as_str().unwrap(), INTERNAL] {
+        assert!(!log.contains(secret), "credential leaked in request logs");
+    }
 }

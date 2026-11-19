@@ -93,6 +93,9 @@ fn run(cfg: Config) -> Result<(), String> {
         Some(std::sync::Arc::new(m))
     };
 
+    let objectives = map_data.as_ref().map_or(0, |map| {
+        map.objectives.len().min(usize::from(u16::MAX)) as u16
+    });
     let game_data = frontline_sim::GameData::embedded();
     let inbound = frontline_server::net::conn::InboundQueue::new();
     let sessions = frontline_server::net::conn::Sessions::new(metrics.clone());
@@ -220,7 +223,6 @@ fn run(cfg: Config) -> Result<(), String> {
             &ws,
             wt.as_ref(),
             &metrics,
-            &sessions,
             hb_stop_rx,
         ))?),
         None => None,
@@ -235,8 +237,9 @@ fn run(cfg: Config) -> Result<(), String> {
             None => wait_for_signal().await,
         }
     });
+    let _ = hb_stop_tx.send(true);
     tracing::info!(event = "shutdown", reason, "stopping");
-    let humans_at_end = sessions.connections();
+    let (humans_at_end, bots_at_end) = gateway_population(&metrics);
     stop.stop();
     rt.block_on(ws.shutdown());
     if let Some(wt) = wt {
@@ -249,9 +252,9 @@ fn run(cfg: Config) -> Result<(), String> {
     let report = handle.join();
     if let Some((client, id)) = &link {
         let result = frontline_server::gateway_link::result::MatchResult {
-            players: humans_at_end.min(usize::from(u16::MAX)) as u16,
-            bots: cfg.bots,
-            objectives: 0,
+            players: u16::from(humans_at_end),
+            bots: u16::from(bots_at_end),
+            objectives,
             duration_s: report.as_ref().map_or(0, |r| (r.ticks / 30) as u32),
             ticks: report.as_ref().map_or(0, |r| r.ticks),
             rows: Vec::new(),
@@ -267,7 +270,6 @@ fn run(cfg: Config) -> Result<(), String> {
             }
         }
     }
-    let _ = hb_stop_tx.send(true);
     let _ = sd_tx.send(true);
     let _ = rt.block_on(server);
     rt.shutdown_timeout(Duration::from_millis(50));
@@ -322,7 +324,6 @@ async fn start_gateway_link(
     ws: &frontline_server::net::ws::WsListener,
     wt: Option<&frontline_server::net::wt::WtListener>,
     metrics: &std::sync::Arc<metrics::Metrics>,
-    sessions: &std::sync::Arc<frontline_server::net::conn::Sessions>,
     hb_stop: tokio::sync::watch::Receiver<bool>,
 ) -> Result<
     (
@@ -331,7 +332,7 @@ async fn start_gateway_link(
     ),
     String,
 > {
-    use frontline_server::gateway_link::{client, heartbeat, ticket_verify};
+    use frontline_server::gateway_link::{client, heartbeat, result, ticket_verify};
     let url = cfg.gateway_url.as_deref().unwrap_or_default();
     let token = cfg.internal_api_token.as_deref().unwrap_or_default();
     let gw = client::GatewayClient::new(url, token)?;
@@ -378,13 +379,22 @@ async fn start_gateway_link(
         key_fp = %resp.ticket_key_fingerprint,
         "registered with the gateway"
     );
-    let bots = cfg.bots.min(255) as u8;
-    let sess = sessions.clone();
-    let source: heartbeat::Source = std::sync::Arc::new(move || client::Heartbeat {
-        humans: sess.connections().min(255) as u8,
-        bots,
-        phase: "playing".into(),
-        time_left_s: 0,
+    let spool_dir = cfg.spool_dir.clone();
+    let replay_client = gw.clone();
+    tokio::spawn(async move { result::replay_spool(&spool_dir, &replay_client).await });
+    let population = metrics.clone();
+    let countdown = cfg.duration.map(Duration::from_secs_f64);
+    let started = std::time::Instant::now();
+    let source: heartbeat::Source = std::sync::Arc::new(move || {
+        let (humans, bots) = gateway_population(&population);
+        client::Heartbeat {
+            humans,
+            bots,
+            phase: "playing".into(),
+            time_left_s: countdown.map_or(0, |d| {
+                d.saturating_sub(started.elapsed()).as_secs_f64().ceil() as u32
+            }),
+        }
     });
     tokio::spawn(heartbeat::run(
         gw.clone(),
@@ -395,4 +405,12 @@ async fn start_gateway_link(
         heartbeat::INTERVAL,
     ));
     Ok((gw, resp.match_id))
+}
+
+/// Use active participants rather than transport connections, which include pending Hello.
+fn gateway_population(metrics: &metrics::Metrics) -> (u8, u8) {
+    let humans = metrics.players.with_label_values(&["us"]).get()
+        + metrics.players.with_label_values(&["ger"]).get();
+    let bots = metrics.bots.get();
+    (humans.clamp(0, 255) as u8, bots.clamp(0, 255) as u8)
 }

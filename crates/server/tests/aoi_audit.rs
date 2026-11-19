@@ -15,7 +15,7 @@ use frontline_server::snapshot::LinkInfo;
 use frontline_sim::{GameData, Team, Vec3};
 
 /// Independent re-statement of the R3 bound (leave limits): within 105.6 m, or within 440 m
-/// and inside 110 deg of any orientation held during the last `hist` ticks.
+/// and inside 110 deg of the current or three-tick-old orientation.
 fn allowed(dist: f32, cos_best: f32) -> bool {
     dist <= 105.6 || (dist <= 440.0 && cos_best >= 110f32.to_radians().cos() - 1e-4)
 }
@@ -25,9 +25,8 @@ fn no_enemy_is_sent_outside_the_r3_rules() {
     let Some(map) = terrain() else { return };
     let mut s = Synth::new(new_world(Some(&map)));
     spawn_squads(&mut s, &map, 20, 20, LinkInfo::DATAGRAM);
-    let mut hist: BTreeMap<u8, VecDeque<(f32, f32)>> = BTreeMap::new();
+    let mut hist: BTreeMap<u8, VecDeque<(u32, f32, f32)>> = BTreeMap::new();
     let mut checked = 0u64;
-    let mut seen_enemy = 0u64;
     let mut beyond_close = 0u64;
     for _ in 0..900 {
         s.step(common::sim_harness::gen_cmd);
@@ -37,8 +36,8 @@ fn no_enemy_is_sent_outside_the_r3_rules() {
                 continue;
             };
             let h = hist.entry(c.player).or_default();
-            h.push_back((me.yaw, me.pitch));
-            while h.len() > 8 {
+            h.push_back((t, me.yaw, me.pitch));
+            while h.len() > 4 {
                 h.pop_front();
             }
             let Some(l) = c.log.last().filter(|l| l.tick == t) else {
@@ -61,14 +60,14 @@ fn no_enemy_is_sent_outside_the_r3_rules() {
                 if team == c.team {
                     continue;
                 }
-                seen_enemy += 1;
                 let d = o.pos - me.pos;
                 let eye = me.pos + Vec3::new(0.0, 1.6, 0.0);
                 let to = o.pos + Vec3::new(0.0, 1.0, 0.0) - eye;
                 let dist = d.length();
                 let best = h
                     .iter()
-                    .map(|&(y, p)| {
+                    .filter(|&&(tick, _, _)| tick == t || t.wrapping_sub(tick) == 3)
+                    .map(|&(_, y, p)| {
                         let cp = p.cos();
                         Vec3::new(y.sin() * cp, p.sin(), y.cos() * cp).dot(to) / to.length()
                     })
@@ -88,7 +87,7 @@ fn no_enemy_is_sent_outside_the_r3_rules() {
         ns[ns.len() / 2] / 1000,
         ns[ns.len() * 99 / 100] / 1000
     );
-    assert!(seen_enemy > 0, "scene never showed an enemy");
+    assert!(beyond_close > 0, "scene never exercised the cone limit");
     assert_eq!(s.sched.stats.enemy_leaks, 0, "scheduler audit counter");
 }
 
@@ -141,9 +140,14 @@ fn team_channel_is_small_periodic_and_round_trips() {
         }
     }
     let gaps: Vec<u32> = sent_ticks.windows(2).map(|w| w[1] - w[0]).collect();
+    assert_eq!(sent_ticks, [30, 60, 90]);
     assert!(gaps.iter().all(|&g| g == 30), "{gaps:?}");
     let bytes = last.unwrap();
     assert!(bytes.len() <= 200, "{} B", bytes.len());
+    eprintln!(
+        "TeamState: {} B for 49 members, ticks {sent_ticks:?}",
+        bytes.len()
+    );
     let ts = decode_team_state(&bytes).unwrap();
     assert_eq!(ts.members.len(), 49);
     let m = ts.members[3];

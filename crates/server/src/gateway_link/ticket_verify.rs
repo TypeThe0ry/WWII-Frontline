@@ -3,7 +3,7 @@
 //! Several public keys are accepted (current + previous) so keys can be rotated; the ticket
 //! carries no key id, so every key is tried (PI-076).
 
-use std::collections::{HashMap, VecDeque};
+use std::collections::{HashSet, VecDeque};
 
 use base64::Engine;
 use ed25519_dalek::{Signature, Verifier, VerifyingKey};
@@ -50,7 +50,7 @@ impl TicketReject {
 /// Used `jti`s, kept for [`JTI_TTL_S`] and at most [`JTI_CAPACITY`] entries (oldest evicted).
 pub struct JtiCache {
     order: VecDeque<(u64, [u8; 16])>,
-    seen: HashMap<[u8; 16], u64>,
+    seen: HashSet<[u8; 16]>,
     cap: usize,
 }
 
@@ -64,7 +64,7 @@ impl JtiCache {
     pub fn with_capacity(cap: usize) -> Self {
         JtiCache {
             order: VecDeque::new(),
-            seen: HashMap::new(),
+            seen: HashSet::new(),
             cap: cap.max(1),
         }
     }
@@ -80,13 +80,13 @@ impl JtiCache {
     /// `true` when `jti` was new (and is now remembered).
     pub fn take(&mut self, jti: [u8; 16], now_s: u64) -> bool {
         while let Some(&(t, id)) = self.order.front() {
-            if t + JTI_TTL_S > now_s {
+            if now_s.saturating_sub(t) < JTI_TTL_S {
                 break;
             }
             self.order.pop_front();
             self.seen.remove(&id);
         }
-        if self.seen.contains_key(&jti) {
+        if self.seen.contains(&jti) {
             return false;
         }
         while self.seen.len() >= self.cap {
@@ -98,7 +98,7 @@ impl JtiCache {
             }
         }
         self.order.push_back((now_s, jti));
-        self.seen.insert(jti, now_s);
+        self.seen.insert(jti);
         true
     }
 }
@@ -318,6 +318,50 @@ mod tests {
             assert!(big.take(id, 5));
         }
         assert_eq!(big.len(), JTI_CAPACITY);
+    }
+
+    #[test]
+    fn jti_cache_expires_at_120s_exactly() {
+        let mut cache = JtiCache::default();
+        assert!(cache.take([1; 16], 100));
+        assert!(!cache.take([1; 16], 219));
+        assert!(cache.take([1; 16], 220));
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    #[ignore = "run in isolation to measure process RSS growth per full cache"]
+    fn jti_cache_memory_budget() {
+        fn rss_bytes() -> usize {
+            std::fs::read_to_string("/proc/self/status")
+                .unwrap()
+                .lines()
+                .find_map(|line| line.strip_prefix("VmRSS:"))
+                .unwrap()
+                .split_whitespace()
+                .next()
+                .unwrap()
+                .parse::<usize>()
+                .unwrap()
+                * 1024
+        }
+        // Use many simultaneous caches to amortize RSS accounting and page granularity.
+        const CACHES: usize = 64;
+        let before = rss_bytes();
+        let mut caches = Vec::with_capacity(CACHES);
+        for _ in 0..CACHES {
+            let mut cache = JtiCache::default();
+            for i in 0..JTI_CAPACITY {
+                assert!(cache.take((i as u128).to_le_bytes(), 1));
+            }
+            caches.push(cache);
+        }
+        let per_cache = rss_bytes().saturating_sub(before) / CACHES;
+        assert_eq!(std::hint::black_box(&caches)[0].len(), JTI_CAPACITY);
+        eprintln!(
+            "full JTI cache: {per_cache} B RSS growth per cache (average across {CACHES} caches)"
+        );
+        assert!((1..1_000_000).contains(&per_cache));
     }
 
     #[test]

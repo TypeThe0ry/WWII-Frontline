@@ -47,9 +47,15 @@ async fn main() {
         }
     };
     let bind = cfg.bind.clone();
-    let app = router(AppState::new(cfg, Clock::real(), key))
-        .into_make_service_with_connect_info::<SocketAddr>();
+    let state = match AppState::new(cfg, Clock::real(), key).await {
+        Ok(state) => state,
+        Err(_) => {
+            eprintln!("gateway: could not open or migrate the SQLite database (DATABASE_URL)");
+            std::process::exit(2);
+        }
+    };
+    let app = router(state).into_make_service_with_connect_info::<SocketAddr>();
     let listener = tokio::net::TcpListener::bind(&bind).await.expect("bind");
-    tracing::info!(addr = %bind, "gateway listening");
+    tracing::info!(addr = %listener.local_addr().expect("local address"), "gateway listening");
     axum::serve(listener, app).await.expect("serve");
 }

@@ -24,6 +24,12 @@ struct SentRec {
     hash: u8,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ClientReport {
+    pub ack: u32,
+    pub hash_mismatch: bool,
+}
+
 /// State of the position-correction protocol.
 #[derive(Debug, Clone, Copy)]
 pub struct Corr {
@@ -72,6 +78,7 @@ pub struct ClientBook {
     pub prio: PriorityState,
     pub events: EventWindow,
     hist: VecDeque<SentRec>,
+    hash_mismatches: VecDeque<u32>,
     pub corr: Corr,
     pub last_sent_tick: Option<u32>,
     /// Newest acknowledged absolute tick.
@@ -98,6 +105,7 @@ impl ClientBook {
             prio: PriorityState::default(),
             events: EventWindow::default(),
             hist: VecDeque::new(),
+            hash_mismatches: VecDeque::new(),
             view_hist: VecDeque::new(),
             corr: Corr {
                 pending: true, // the client's start position is a guess (PI-023)
@@ -137,8 +145,18 @@ impl ClientBook {
     }
 
     /// Processes the ack/hash a client reported in its latest input bundle. Idempotent: only a
-    /// newer ack than the previous one has an effect. Returns the absolute acked tick when new.
-    pub fn on_client_report(&mut self, ack_low: u16, pred_hash: u8) -> Option<u32> {
+    /// newer ack than the previous one has an effect. `now` is the current server tick.
+    pub fn on_client_report(
+        &mut self,
+        ack_low: u16,
+        pred_hash: u8,
+        now: u32,
+    ) -> Option<ClientReport> {
+        crate::anticheat::expire(
+            &mut self.hash_mismatches,
+            now,
+            crate::anticheat::RULES.window_ticks,
+        );
         let a = self.extend_ack(ack_low)?;
         let rec = self.hist.iter().find(|r| r.tick == a).copied()?;
         if self
@@ -151,6 +169,9 @@ impl ClientBook {
         self.baselines.on_ack(a);
         self.events.on_ack(a);
         let matches = rec.hash == pred_hash;
+        if !matches {
+            self.hash_mismatches.push_back(now);
+        }
         if self.corr.pending {
             let carried = self
                 .corr
@@ -165,7 +186,15 @@ impl ClientBook {
             self.corr.first_sent = None;
             self.corr.started_total += 1;
         }
-        Some(a)
+        Some(ClientReport {
+            ack: a,
+            hash_mismatch: !matches,
+        })
+    }
+
+    /// Number of mismatches in the rolling window as of the latest processed report.
+    pub fn recent_hash_mismatches(&self) -> usize {
+        self.hash_mismatches.len()
     }
 }
 
@@ -197,10 +226,10 @@ mod tests {
         assert_eq!(b.corr.first_sent, Some(10));
         b.record_sent(12, 78);
         // client hash does not match the packet it acked: stays pending
-        assert_eq!(b.on_client_report(10, 1), Some(10));
+        assert_eq!(b.on_client_report(10, 1, 11).unwrap().ack, 10);
         assert!(b.corr.pending);
         // a later ack with the matching hash clears it
-        assert_eq!(b.on_client_report(12, 78), Some(12));
+        assert_eq!(b.on_client_report(12, 78, 13).unwrap().ack, 12);
         assert!(!b.corr.pending);
     }
 
@@ -208,15 +237,37 @@ mod tests {
     fn mismatch_after_sync_starts_a_new_correction_once() {
         let mut b = ClientBook::new(0);
         b.record_sent(10, 5);
-        b.on_client_report(10, 5);
+        b.on_client_report(10, 5, 11);
         assert!(!b.corr.pending);
         b.record_sent(12, 9);
-        b.on_client_report(12, 1); // wrong
+        b.on_client_report(12, 1, 13); // wrong
         assert!(b.corr.pending);
         assert_eq!(b.corr.started_total, 2);
         // same ack again: no effect
-        assert_eq!(b.on_client_report(12, 1), None);
+        assert_eq!(b.on_client_report(12, 1, 14), None);
         assert_eq!(b.corr.started_total, 2);
+    }
+
+    #[test]
+    fn prediction_window_counts_distinct_real_acks_even_during_correction() {
+        let mut b = ClientBook::new(0);
+        b.record_sent(10, 5);
+        assert!(b.on_client_report(10, 9, 11).unwrap().hash_mismatch);
+        assert!(b.corr.pending);
+        assert_eq!(b.on_client_report(10, 9, 12), None);
+        assert_eq!(b.on_client_report(9, 9, 12), None);
+        b.record_sent(12, 6);
+        assert!(b.on_client_report(12, 9, 13).unwrap().hash_mismatch);
+        b.record_sent(14, 7);
+        assert!(!b.on_client_report(14, 7, 15).unwrap().hash_mismatch);
+        assert!(!b.corr.pending);
+        assert_eq!(b.recent_hash_mismatches(), 2);
+        assert_eq!(b.on_client_report(10, 9, 310), None);
+        assert_eq!(b.recent_hash_mismatches(), 2);
+        assert_eq!(b.on_client_report(10, 9, 311), None);
+        assert_eq!(b.recent_hash_mismatches(), 1);
+        assert_eq!(b.on_client_report(14, 7, 313), None);
+        assert_eq!(b.recent_hash_mismatches(), 0);
     }
 
     #[test]
