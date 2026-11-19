@@ -71,21 +71,30 @@ def test_validate_spawn_on_steep_slope(copy):
     assert any("slope" in e for e in validate(copy))
 
 
-def test_dem_path_clear_error_without_gdal():
-    try:
+def test_dem_path_clear_error_without_gdal(monkeypatch):
+    import builtins
+    real_import = builtins.__import__
+
+    def fake_import(name, *args, **kwargs):
+        if name == "osgeo" or name.startswith("osgeo."):
+            raise ImportError("simulated missing osgeo")
+        return real_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", fake_import)
+    with pytest.raises(GdalMissing, match="GDAL"):
         require_gdal()
-    except GdalMissing as e:
-        assert "GDAL" in str(e)
-    else:
-        pytest.skip("GDAL present")
 
 
-def test_dem_path_cli_error_without_gdal(tmp_path):
-    try:
-        require_gdal()
-        pytest.skip("GDAL present")
-    except GdalMissing:
-        pass
+def test_dem_path_cli_error_without_gdal(tmp_path, monkeypatch):
+    import builtins
+    real_import = builtins.__import__
+
+    def fake_import(name, *args, **kwargs):
+        if name == "osgeo" or name.startswith("osgeo."):
+            raise ImportError("simulated missing osgeo")
+        return real_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", fake_import)
     assert main(["m0", "--out", str(tmp_path / "x"), "--dem", "nope.tif", "--window", "0,0"]) == 1
 
 

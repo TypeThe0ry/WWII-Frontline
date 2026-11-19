@@ -29,6 +29,13 @@
       "detail": 0,
       "pass": true
     },
+    "garrison_hq_dist>=200m": {
+      "detail": {
+        "GER": 212.6,
+        "US": 217.2
+      },
+      "pass": true
+    },
     "hq_infantry_connected": {
       "detail": 1292.0,
       "pass": true

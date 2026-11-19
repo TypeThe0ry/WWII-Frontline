@@ -142,3 +142,31 @@ def test_far_fill_extends_nearest_valid_sample_outward():
     out = fill_far_outside_coverage(far, far <= -9998)
     assert not (out <= -9998).any()
     assert out[4, 4] == 4 and out[0, 0] == out[3, 3] == 0 and out[8, 8] == 8
+
+
+def test_water_mask_from_features_and_datum_offset():
+    feats = [
+        {"type": "Feature", "properties": {"kind": "pond"},
+         "geometry": {"type": "Polygon", "coordinates": [[[10, 10], [20, 10], [20, 20], [10, 20], [10, 10]]]}},
+        {"type": "Feature", "properties": {"kind": "canal", "width_m": 4.0},
+         "geometry": {"type": "LineString", "coordinates": [[30, 5], [30, 25]]}},
+        {"type": "Feature", "properties": {"kind": "flood_marsh"},
+         "geometry": {"type": "Polygon", "coordinates": [[[0, 0], [5, 0], [5, 5], [0, 5], [0, 0]]]}},
+    ]
+    wm = dp.water_mask_from_features(feats, (40, 40), res=1.0)
+    assert wm[15, 15] and wm[15, 30] and not wm[2, 2]  # flood_marsh excluded from open-water datum
+    h = np.full((40, 40), 5.0)
+    h[15, 15] = 1.25
+    assert dp.datum_offset(h, wm) == 1.25
+
+
+def test_real_carentan_water_elevation_check():
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[3]
+    rep = qa.water_elevation_check(root / "data/maps/carentan")
+    assert rep["gdal_required"] is False
+    assert rep["heightmap_1m"]["bytes"] == 8_396_802
+    assert rep["heightmap_far_8m"]["bytes"] == 2_101_250
+    assert rep["sub_minus_1m_analysis"]["cells_inside_m1_slice"] == 0
+    assert rep["water_mask_full"]["cells"] > 1000
+    assert abs(rep["datum_offset_comparison"]["delta_to_water_p1_m"]) < 0.25

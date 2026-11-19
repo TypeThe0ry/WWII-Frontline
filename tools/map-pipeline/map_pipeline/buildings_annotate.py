@@ -90,27 +90,57 @@ def annotate(buildings: list, zones: list):
             "enterable_cap": cap}
 
 
-def door_for(ring, road_lines):
-    """Door centre on the footprint edge midpoint closest to a road (or the longest edge)."""
+def _point_in_ring(x: float, y: float, ring) -> bool:
+    c = False
+    for (x0, y0), (x1, y1) in zip(ring, ring[1:]):
+        if (y0 > y) != (y1 > y) and x < (x1 - x0) * (y - y0) / (y1 - y0) + x0:
+            c = not c
+    return c
+
+
+def door_for(ring, road_lines, grid=None):
+    """Door centre on the footprint edge midpoint closest to a road (or longest edge),
+    strongly preferring edges whose exterior side (1.5–2.5 m outside) is standable on ``grid``
+    so terraced/rowhouse doors never open into an adjoining building wall."""
     best = None
     pts = ring[:-1]
     for a, b in zip(pts, pts[1:] + pts[:1]):
         mid = ((a[0] + b[0]) / 2, (a[1] + b[1]) / 2)
-        ln = math.hypot(b[0] - a[0], b[1] - a[1])
+        dx, dy = b[0] - a[0], b[1] - a[1]
+        ln = math.hypot(dx, dy)
         if ln < DOOR_WIDTH_M + 0.6:
             continue
+        nx, ny = dy / ln, -dx / ln  # right-hand normal (outward for CCW)
+        if _point_in_ring(mid[0] + nx * 0.4, mid[1] + ny * 0.4, ring):
+            nx, ny = -nx, -ny
+        ext_clear = True
+        if grid is not None:
+            ext_clear = (
+                grid.standable(mid[0] + nx * 1.5, mid[1] + ny * 1.5)
+                and grid.standable(mid[0] + nx * 2.5, mid[1] + ny * 2.5)
+            )
         d = min((math.hypot(mid[0] - p[0], mid[1] - p[1]) for r in road_lines for p in r), default=0.0)
-        key = (d, -ln)
+        key = (0 if ext_clear else 1, d, -ln)
         if best is None or key < best[0]:
-            best = (key, mid)
-    return None if best is None else {"center": [clean.r(best[1][0]), clean.r(best[1][1])], "width_m": DOOR_WIDTH_M}
+            best = (key, mid, (nx, ny), ext_clear)
+    if best is None:
+        return None
+    _, mid, (nx, ny), ext_clear = best
+    return {
+        "center": [clean.r(mid[0]), clean.r(mid[1])],
+        "width_m": DOOR_WIDTH_M,
+        "outward": [round(nx, 4), round(ny, 4)],
+        "exterior_clear": ext_clear,
+    }
 
 
 def landmark_boxes(buildings, anchors):
-    """anchors: [(id, name, kind, design_pos, fidelity, asset_ref, levels_h_m, search_m)].
+    """anchors: [(id, name, kind, design_pos, fidelity, asset_ref, levels_h_m, search_m, fallback_dims)].
     Picks the footprint nearest each anchor (OSM position wins over design)."""
     out = []
-    for lid, name, kind, pos, fid, ref, height, rad in anchors:
+    for item in anchors:
+        lid, name, kind, pos, fid, ref, height, rad = item[:8]
+        fb_dims = item[8] if len(item) > 8 else None
         best = None
         for f in buildings:
             ring = f["geometry"]["coordinates"][0]
@@ -119,8 +149,12 @@ def landmark_boxes(buildings, anchors):
             if d <= rad and (best is None or d < best[0]):
                 best = (d, f, (cx, cy), ring)
         if best is None:
-            out.append({"id": lid, "name": name, "kind": kind, "design": pos, "found_in_osm": False,
-                        "fidelity": fid, "asset_ref": ref})
+            row = {"id": lid, "name": name, "kind": kind, "design": pos, "found_in_osm": False,
+                   "fidelity": fid, "asset_ref": ref}
+            if fb_dims is not None:
+                row["placeholder_dims_m"] = fb_dims
+                row["dims_source"] = "design_placeholder"
+            out.append(row)
             continue
         d, f, (cx, cy), ring = best
         x0, y0, x1, y1 = bbox(ring)

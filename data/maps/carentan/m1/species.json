@@ -1,0 +1,37 @@
+{
+  "hedge_shrub_spacing_m": 4.0,
+  "hedge_tree_spacing_m": 9.0,
+  "limits": {
+    "grass": 4096,
+    "shrubs": 256,
+    "trees": 192
+  },
+  "schema": "frontline.map.veg_species/1",
+  "species": {
+    "conifer": {
+      "asset_ref": "PH_V-NAT-TREE-CONIFER",
+      "id": 4
+    },
+    "oak": {
+      "asset_ref": "PH_V-NAT-TREE-OAK",
+      "id": 1
+    },
+    "orchard_apple": {
+      "asset_ref": "PH_V-NAT-TREE-APPLE",
+      "id": 3
+    },
+    "poplar": {
+      "asset_ref": "PH_V-NAT-TREE-POPLAR",
+      "id": 2
+    },
+    "shrub_bramble": {
+      "asset_ref": "PH_V-NAT-SHRUB-BRAMBLE",
+      "id": 11
+    },
+    "shrub_hawthorn": {
+      "asset_ref": "PH_V-NAT-SHRUB-HAWTHORN",
+      "id": 10
+    }
+  },
+  "tree_spacing_m": 6.0
+}

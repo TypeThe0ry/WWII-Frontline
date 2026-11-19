@@ -1,23 +1,35 @@
 {
-  "bake_seconds": 14.2,
+  "bake_seconds": 16.8,
   "bytes": {
     "max": 20558,
     "p50": 14879,
     "p99": 19215,
-    "total": 5662715
+    "total": 5662710
   },
   "chunks": 380,
   "chunks_over_limit": [],
   "codec": "zlib-9 (brotli unavailable, PI-084)",
   "data_quality": "draft",
   "format_version": 1,
+  "fpak": {
+    "assert_no_standalone": true,
+    "chunks_packed": 380,
+    "consistency_ok": true,
+    "entries_packed": 760,
+    "manifest_sha256": "c6a8c7b2e92c465ad93d43f18b2ac10b7a46f2e8dd4889c37ef5a177d24965d4",
+    "max_pack_bytes": 289328,
+    "min_pack_bytes": 39276,
+    "packs": 30,
+    "packs_sha256": "569a6bfc2bf4c44fde5bad31a4a5ee33357f59599eafefdb856051419eb8b017",
+    "total_fpak_bytes": 5714050
+  },
   "max_bytes_limit": 81920,
   "schema": 1,
   "section_totals": {
     "collision": 2621234,
     "hedge_segments": 5597,
     "height": 1923286,
-    "props": 110643,
+    "props": 110638,
     "splat": 958245,
     "veg": 8750
   },

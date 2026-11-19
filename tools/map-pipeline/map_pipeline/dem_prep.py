@@ -79,3 +79,45 @@ def datum_offset(heights: np.ndarray, water: np.ndarray | None = None, fallback_
     if water is not None and water.any():
         return float(np.min(heights[water]))
     return float(np.percentile(heights, fallback_percentile))
+
+
+def water_mask_from_features(water_features: list[dict], shape: tuple[int, int], res: float = 1.0) -> np.ndarray:
+    """Rasterise ``water.geojson`` features onto a boolean mask matching ``heights.shape`` (GDAL-free).
+    Row 0 = south (y = 0), col 0 = west (x = 0). Uses open-water polygons (excluding flood_marsh) and
+    river/canal centrelines buffered by half-width."""
+    from . import apply_edits
+
+    mask = np.zeros(shape, dtype=bool)
+    nrows, ncols = shape
+    for f in water_features:
+        p, g = f.get("properties", {}), f.get("geometry", {})
+        kind = p.get("kind")
+        gtype = g.get("type")
+        if gtype == "Polygon" and kind != "flood_marsh":
+            ring = [tuple(q) for q in g["coordinates"][0][:-1]]
+            if len(ring) < 3:
+                continue
+            xs, ys = [q[0] for q in ring], [q[1] for q in ring]
+            c0, c1 = max(0, int(np.floor(min(xs) / res))), min(ncols - 1, int(np.ceil(max(xs) / res)))
+            r0, r1 = max(0, int(np.floor(min(ys) / res))), min(nrows - 1, int(np.ceil(max(ys) / res)))
+            if c1 < c0 or r1 < r0:
+                continue
+            X, Y = np.meshgrid(np.arange(c0, c1 + 1) * res, np.arange(r0, r1 + 1) * res)
+            mask[r0 : r1 + 1, c0 : c1 + 1] |= apply_edits._inside(X, Y, ring)
+        elif gtype == "LineString" and kind in ("river", "canal"):
+            pts = g["coordinates"]
+            half = float(p.get("width_m", 10.0)) / 2.0
+            for a, b in zip(pts, pts[1:]):
+                c0 = max(0, int(np.floor((min(a[0], b[0]) - half) / res)))
+                c1 = min(ncols - 1, int(np.ceil((max(a[0], b[0]) + half) / res)))
+                r0 = max(0, int(np.floor((min(a[1], b[1]) - half) / res)))
+                r1 = min(nrows - 1, int(np.ceil((max(a[1], b[1]) + half) / res)))
+                if c1 < c0 or r1 < r0:
+                    continue
+                X, Y = np.meshgrid(np.arange(c0, c1 + 1) * res, np.arange(r0, r1 + 1) * res)
+                dx, dy = b[0] - a[0], b[1] - a[1]
+                L = dx * dx + dy * dy
+                t = np.clip(((X - a[0]) * dx + (Y - a[1]) * dy) / L, 0.0, 1.0) if L else np.zeros_like(X)
+                d = np.hypot(X - a[0] - t * dx, Y - a[1] - t * dy)
+                mask[r0 : r1 + 1, c0 : c1 + 1] |= d <= half
+    return mask

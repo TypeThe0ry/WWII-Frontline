@@ -84,6 +84,21 @@ def test_edits_report_partial_without_human_inputs():
     r = json.loads((root / "reports/m1-1944-edits.json").read_text())
     assert r["status"] == "partial" and "traced hedgerows" in r["missing_inputs"]
     assert r["hedgerow_sources"]["traced"] == 0  # no OSM-draft hedges posing as traced
+    assert r["out_of_range_vertices"] == 0
     assert all(d["reason"] for d in json.loads((root / "data/maps/carentan/removed_modern.json").read_text()))
     d = json.loads((root / "reports/m1-heightmap-diff.json").read_text())
     assert d["cells_changed"] == 0 and d["polygons"] == []
+
+
+def test_full_2049_grid_20_polygons_under_30s():
+    import time
+    h = np.zeros((2049, 2049), dtype=np.float64)
+    edits = [feat(f"p{i}", "raise", circle(200 + (i % 5) * 380, 200 + (i // 5) * 420, 45, n=16),
+                  order=i, delta_m=1.2, transition_m=12.0) for i in range(20)]
+    t0 = time.perf_counter()
+    o1, rep = ae.apply_terrain_edits(h, edits)
+    dt = time.perf_counter() - t0
+    assert dt <= 30.0, f"2049x2049 x 20 polygons took {dt:.2f}s (> 30s)"
+    assert rep["cells_changed"] > 100_000 and rep["max_abs_dh_m"] == pytest.approx(1.2, abs=0.01)
+    o2, _ = ae.apply_terrain_edits(h, edits)
+    assert o1.tobytes() == o2.tobytes()

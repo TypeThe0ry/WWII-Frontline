@@ -1,0 +1,51 @@
+{
+  "datum_offset_comparison": {
+    "current_method": "p0.1 of the 1 m DEM (no water mask yet)",
+    "current_offset_m": 0.616,
+    "delta_to_water_min_m": 0.179,
+    "delta_to_water_p1_m": -0.089,
+    "water_mask_min_ign69_m": 0.437
+  },
+  "gdal_required": false,
+  "heightmap_1m": {
+    "bytes": 8396802,
+    "max_m": 29.18,
+    "min_m": -2.492
+  },
+  "heightmap_far_8m": {
+    "bytes": 2101250,
+    "max_m": 29.893,
+    "min_m": -6.936
+  },
+  "schema": 1,
+  "slice_m1": {
+    "cells_below_minus_1m": 0,
+    "max_m": 17.163,
+    "min_m": 0.227,
+    "water_cells": 17720,
+    "water_min_m": 1.352,
+    "water_p50_m": 1.654
+  },
+  "sub_minus_1m_analysis": {
+    "bbox_local_m": [
+      2023,
+      1980,
+      2048,
+      2008
+    ],
+    "cells_in_1m_grid": 405,
+    "cells_inside_m1_slice": 0,
+    "cells_inside_water_mask": 0,
+    "far_ring_min_m": -6.936,
+    "finding": "The -6.9 m minimum occurs only in heightmap_far_8m (outside the 2048 m playable box); inside heightmap_1m, sub--1 m cells lie only at the NE corner outside the M1 slice."
+  },
+  "water_mask_full": {
+    "cells": 361447,
+    "game_min_m": -0.179,
+    "game_p1_m": 0.089,
+    "game_p50_m": 1.33,
+    "game_p5_m": 0.681,
+    "ign69_min_m": 0.437,
+    "ign69_p1_m": 0.705
+  }
+}
