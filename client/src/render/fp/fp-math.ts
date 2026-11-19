@@ -34,6 +34,16 @@ export const screenFraction = (hM: number, distM: number, fovDeg: number): numbe
 /** Reload visual length in rendered frames; within one frame of `reload_ms`. */
 export const reloadFrames = (reloadMs: number, fps: number): number => Math.round((reloadMs * fps) / 1000);
 
+/** WeaponState::to_bytes publishes the reload kind at byte 6 and the little-endian timer at byte 8. */
+export function predictedReloadProgress(state: Uint8Array, durations: { tactical: number; empty: number }, tickHz: number): number | undefined {
+  if (state.length < 12) return undefined;
+  const kind = state[6];
+  if (kind !== 3 && kind !== 4) return undefined;
+  const timer = new DataView(state.buffer, state.byteOffset, state.byteLength).getInt32(8, true);
+  const length = Math.round((kind === 3 ? durations.tactical : durations.empty) * tickHz);
+  return length > 0 ? Math.min(1, Math.max(0, 1 - timer / length)) : undefined;
+}
+
 /** Critically damped spring for the visual recoil kick (position along the weapon axis, metres). */
 export class RecoilSpring {
   pos = 0;
@@ -46,10 +56,10 @@ export class RecoilSpring {
 
   update(dtS: number): number {
     const w = this.omega;
-    // Semi-implicit critically damped spring toward 0.
-    const acc = -2 * w * this.vel - w * w * this.pos;
-    this.vel += acc * dtS;
-    this.pos += this.vel * dtS;
+    const slope = this.vel + w * this.pos;
+    const decay = Math.exp(-w * dtS);
+    this.pos = (this.pos + slope * dtS) * decay;
+    this.vel = (this.vel - w * slope * dtS) * decay;
     return this.pos;
   }
 }

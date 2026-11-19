@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { terrainLayerBytes, BPP, dominantLayer, LAYER_BUDGET_BYTES, layerArrayBytes, normalizeSplat, slopeDeg, tileUv, triplanarWeight } from './splat-math';
+import { terrainLayerBytes, terrainLayerSizes, dominantLayer, LAYER_BUDGET_BYTES, layerArrayBytes, normalizeSplat, slopeDeg, tileUv, triplanarWeight } from './splat-math';
 
 describe('splat', () => {
   it('normalises to sum 1 and falls back to layer 0 for all-zero', () => {
@@ -41,18 +41,24 @@ describe('triplanar', () => {
   });
 });
 
-describe('layer VRAM (acceptance 4)', () => {
-  const MiB = 1024 * 1024;
-  it('one map per layer fits 24 MB in every format; three maps (albedo+normal+ORM) only in ASTC 6x6 / ETC2', () => {
-    for (const f of Object.keys(BPP) as (keyof typeof BPP)[]) expect(layerArrayBytes(8, 1024, 1, f)).toBeLessThanOrEqual(LAYER_BUDGET_BYTES);
-    expect(layerArrayBytes(8, 1024, 3, 'astc6x6') / MiB).toBeCloseTo(14.2, 0);
-    expect(layerArrayBytes(8, 1024, 3, 'etc2') / MiB).toBeCloseTo(16, 0);
-    expect(layerArrayBytes(8, 1024, 3, 'bc7') / MiB).toBeCloseTo(32, 0);
-    expect(layerArrayBytes(8, 1024, 3, 'bc7')).toBeGreaterThan(LAYER_BUDGET_BYTES);
+describe('layer VRAM (PI-102)', () => {
+  it('charges at least one GPU block per mip and rounds up partial edge blocks', () => {
+    expect(layerArrayBytes(1, 4, 1, 'bc7')).toBe(3 * 16); // 4x4, 2x2, 1x1
+    expect(layerArrayBytes(1, 8, 1, 'astc6x6')).toBe((4 + 1 + 1 + 1) * 16);
+    expect(layerArrayBytes(1, 4, 1, 'etc2')).toBe(3 * 8);
+    expect(layerArrayBytes(1, 4, 1, 'etc2rgba8')).toBe(3 * 16);
   });
 
-  it('PI-102 decision: every format fits 24 MB (BC7 uses 512^2 normal/ORM = 16 MiB)', () => {
-    for (const f of Object.keys(BPP) as (keyof typeof BPP)[]) expect(terrainLayerBytes(f)).toBeLessThanOrEqual(LAYER_BUDGET_BYTES);
-    expect(terrainLayerBytes('bc7') / MiB).toBeCloseTo(16, 0);
+  it.each(['bc7', 'astc4x4', 'etc2rgba8'] as const)('drops just the normal and ORM base mips for %s', (format) => {
+    expect(terrainLayerSizes(format)).toEqual({ albedo: 1024, normal: 512, orm: 512 });
+    expect(layerArrayBytes(8, 1024, 3, format)).toBeGreaterThan(LAYER_BUDGET_BYTES);
+    expect(terrainLayerBytes(format)).toBe(16_777_856);
+    expect(terrainLayerBytes(format)).toBeLessThanOrEqual(LAYER_BUDGET_BYTES);
+  });
+
+  it.each(['astc6x6', 'etc2'] as const)('keeps all three 1024² maps for %s', (format) => {
+    expect(terrainLayerSizes(format)).toEqual({ albedo: 1024, normal: 1024, orm: 1024 });
+    expect(terrainLayerBytes(format)).toBe(layerArrayBytes(8, 1024, 3, format));
+    expect(terrainLayerBytes(format)).toBeLessThanOrEqual(LAYER_BUDGET_BYTES);
   });
 });
