@@ -11,6 +11,7 @@
 
 mod data;
 mod messages;
+mod placement;
 mod predictor;
 mod snapshot;
 

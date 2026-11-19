@@ -223,6 +223,33 @@ pub enum AmmoPlaceError {
     Stacked,
 }
 
+impl AmmoCfg {
+    /// Read-only rules shared by the server placement action and its preview.
+    pub fn check_place(
+        &self,
+        now: u32,
+        used: u8,
+        last: Option<u32>,
+        pos: Vec3,
+        crates: impl Iterator<Item = Vec3>,
+    ) -> Result<u8, AmmoPlaceError> {
+        if used >= self.max_uses {
+            return Err(AmmoPlaceError::LimitPerLife);
+        }
+        if last.is_some_and(|t| now.saturating_sub(t) < self.cooldown_ticks) {
+            return Err(AmmoPlaceError::Cooldown);
+        }
+        let stacked = crates
+            .filter(|&p| dist_xz(p, pos) <= STACK_RADIUS_M)
+            .take(MAX_STACK)
+            .count();
+        if stacked == MAX_STACK {
+            return Err(AmmoPlaceError::Stacked);
+        }
+        Ok(self.max_uses - used)
+    }
+}
+
 /// Upkeep (expiry, empty crates) and the hold-to-resupply interaction.
 #[allow(clippy::type_complexity, clippy::too_many_arguments)]
 pub fn ammo(
