@@ -1155,3 +1155,7 @@ TAA 历史夹取默认开启（拖影 trail |ΔL| 4.67 → 3.11，FXAA 基线 2.
 ## PI-118 续二：TAA 速度通道与强制重投影（2026-11-19）
 PrePass 速度会卡死渲染循环，改用自有速度 RTT（地形/薄实例/网格各一个 GLSL+WGSL 速度材质），`?taa_vel=1` 时强制重投影并绑 `velocitySampler`。合成场景：方块拖尾 ΔL 3.11 → 0.92（FXAA 2.0），其余区域 0.83 → 0.29，镜头平移时 TAA 保持开启；WebGPU 与 WebGL2 一致，flipY 两种取值无法区分。默认仍关。**未做**：角色按静止、无 YCoCg 裁剪/运动遮罩、真实场景与帧时间未测。详见 `reports/m1-post.md`。
 
+
+## PI-123 M1-041d：载具驾驶的服务器指令通路与客户端状态缺口（2026-11-19）
+- 发现（读代码）：`World::seat_enter/seat_switch/seat_exit_begin` 已存在，但服务器没有任何调用方——线上没有座位请求消息（只有输入位 `VEHICLE_SEAT`，服务器校验放行但未映射到 `seat_enter`），自身状态（`SelfState`）也不告诉客户端「我坐在哪辆车的哪个座位」。因此 `VehiclePredictor`、`RemoteVehicleStore` 已就绪，但客户端无从知道何时进入/退出驾驶预测。
+- 决定（拆 M1-041d，顺序）：① 服务器：`VEHICLE_SEAT` 边沿 → 就近可上座位的 `seat_enter`，按住 0.8 s → `seat_exit_begin`；座位上的驾驶员 `InputCmd` → `set_vehicle_ctrl`（核对 `step_vehicles` 是否已读座位驾驶员指令）；② 协议/自身状态：在 `SelfState` 增加 `vehicle_slot`（线上 id 128–255 或 0=徒步）与座位号，保持比特预算；③ 客户端 `net-game`：随 `vehicle_slot` 切换 `VehiclePredictor.enter/leave`，驾驶时把输入送入载具预测、快照到达时用 `RemoteVehicleStore` 权威运动学对账；④ headless 驾驶 + netem 验收。041b/041c 状态不变（partial）。该链条属于 P3（坦克/Carentan），不阻塞 P1/P2 可玩；先做不依赖它的 *b 余项。
