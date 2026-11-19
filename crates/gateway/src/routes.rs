@@ -330,12 +330,20 @@ async fn issue_ticket(
     };
     let (m, player_id) = match st
         .db
-        .reserve_slot(&id, now_ms, st.cfg.heartbeat_timeout_ms, &claims.sub, &nick)
+        .reserve_slot(
+            &id,
+            now_ms,
+            st.cfg.heartbeat_timeout_ms,
+            &claims.sub,
+            &nick,
+            &st.metrics,
+        )
         .await
     {
         Ok(x) => x,
         Err(SlotError::Unknown) => return err(StatusCode::NOT_FOUND, "no_such_match"),
         Err(SlotError::Stale) => return err(StatusCode::GONE, "match_unavailable"),
+        Err(SlotError::Incompatible) => return err(StatusCode::CONFLICT, "protocol_mismatch"),
         Err(SlotError::Full) => return err(StatusCode::CONFLICT, "match_full"),
         Err(SlotError::Database(error)) => return db_error(&error),
     };

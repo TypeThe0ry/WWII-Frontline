@@ -13,12 +13,12 @@ export interface MarkerActions {
 }
 
 /**
- * C0 defines MarkerPlace, but crates/server/src/c0.rs drops it without applying or relaying it.
- * Don't send an ignored command or populate a local marker book as if the server had accepted it.
+ * This UI does not yet negotiate or consume the C3 marker extension.
+ * Do not populate a local marker book as if an authoritative server had accepted it.
  */
 export const markerActions: MarkerActions = {
   supported: false,
-  reason: 'This server does not support marker placement.',
+  reason: 'This client does not yet support networked marker placement.',
   place() {
     return { ok: false, reason: 'unsupported' };
   },

@@ -645,6 +645,8 @@ if 仍有 acc >= 2 的实体未发: 记录 aoi_starved++ 指标, 调节器可降
 
 **团队通道（1 Hz，unreliable 或搭载在快照）**：向同阵营每人发送 49 名队友的 `(x:11b, z:11b, role:4b, state:3b, facing:3b)` = 32 bit；己方小队成员（≤ 6 人）使用高精度 `(x:16b, z:16b, y:8b, ...)` 每 0.5 s 发送并走普通快照路径。敌军**绝不**经团队通道下发精确状态；被友军标记/侦察暴露的敌人只以"标记事件"形式下发**地图图标**（1 Hz，位置量化到 5 m，带有效期，R3，§15）。
 
+C3 v4 实现（PI-127D1）：每 30 tick 发送，原有 `tick:16 + members:6 + 32b/member` 载荷保持不变，队友条目按 C4 roster 的 `player_id` 升序排列。声明 `Hello.caps` bit 2 的连接可在成员段零填充到整字节后收到 `count:u8 + (kind:8 x:12 z:12 ttl_s:8) × count` 尾部；无标记时不附尾部。`x/z` 为相对地图原点的 5 m 格号，`ttl_s` 为服务器在包 tick 上计算的剩余秒数（向上取整），不携带实体/作者 id。当前 C0 `MarkerPlace` 只支持受服务器权限和时限约束的手工小队命令、Attention、Need Medic/Ammo，不等同于 Spotter/侦察敌情。WT datagram 与 WS 不可靠队列均用此载荷；浏览器 HUD 尚未接入扩展。
+
 ### 6.6 可靠/不可靠通道划分与 WebSocket 兜底
 
 #### 6.6.1 通道表

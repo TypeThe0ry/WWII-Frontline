@@ -3,7 +3,19 @@
 //! so teammates beyond the 400 m snapshot range still appear on the map. Entry `i` belongs
 //! to the `i`-th teammate in ascending `player_id` (the C4 roster order).
 
-use frontline_protocol::msg::team::{encode_team_state, TeamMember, TeamState, TEAM_X_BITS};
+mod markers;
+
+#[cfg(test)]
+mod tests;
+
+pub use markers::MarkerReject;
+use markers::{Markers, RosterMember};
+
+use frontline_protocol::msg::c0::MarkerPlace;
+use frontline_protocol::msg::team::{
+    encode_team_state, encode_team_state_with_markers, TeamMember, TeamState, TeamStateWithMarkers,
+    TEAM_X_BITS,
+};
 use frontline_sim::{GameData, PlayerId, Team, Vec3, World};
 
 /// State codes of [`TeamMember::state`].
@@ -86,6 +98,8 @@ pub fn build(
 #[derive(Debug, Clone)]
 pub struct TeamChannel {
     period_ticks: u32,
+    marker_hz: u32,
+    markers: Markers,
     pub map: MapFrame,
     pub sent: u64,
 }
@@ -94,6 +108,8 @@ impl TeamChannel {
     pub fn new(period_s: f32, tick_hz: f32, map: MapFrame) -> Self {
         TeamChannel {
             period_ticks: (period_s * tick_hz).round().max(1.0) as u32,
+            marker_hz: u32::from((tick_hz.round() as u16).max(1)),
+            markers: Markers::default(),
             map,
             sent: 0,
         }
@@ -103,7 +119,31 @@ impl TeamChannel {
         tick.is_multiple_of(self.period_ticks)
     }
 
-    /// Payloads for `clients` (player, team) when due; one encode per team.
+    /// Place a manual marker from a transport-authenticated player at the current sim tick.
+    /// Team, squad, and permissions come from the authoritative roster, not from C0.
+    pub fn place_marker(
+        &mut self,
+        world: &World,
+        player: PlayerId,
+        request: MarkerPlace,
+        tick: u32,
+    ) -> Result<(), MarkerReject> {
+        self.markers.place(
+            world.squads(),
+            player,
+            request,
+            tick,
+            self.marker_hz,
+            self.map,
+        )
+    }
+
+    /// Drop all marks and rate-limit state owned by a disconnected slot before reuse.
+    pub fn forget(&mut self, player: PlayerId) {
+        self.markers.forget(player);
+    }
+
+    /// Legacy member-only payloads for `(player, team)` when due.
     pub fn tick(
         &mut self,
         world: &World,
@@ -111,19 +151,66 @@ impl TeamChannel {
         clients: &[(PlayerId, Team)],
         tick: u32,
     ) -> Vec<(PlayerId, Vec<u8>)> {
+        self.payloads(
+            world,
+            data,
+            clients.iter().map(|&(p, team)| (p, team, false)),
+            tick,
+        )
+    }
+
+    /// Payloads for `(player, expected_team, accepts_markers)` when due. A session/roster
+    /// team mismatch fails closed. Set `accepts_markers` only for a C3-capable transport and
+    /// when the client advertised [`frontline_protocol::msg::c0::CAP_TEAM_MARKERS`].
+    pub fn tick_with_markers(
+        &mut self,
+        world: &World,
+        data: &GameData,
+        clients: &[(PlayerId, Team, bool)],
+        tick: u32,
+    ) -> Vec<(PlayerId, Vec<u8>)> {
+        self.payloads(world, data, clients.iter().copied(), tick)
+    }
+
+    fn payloads(
+        &mut self,
+        world: &World,
+        data: &GameData,
+        clients: impl ExactSizeIterator<Item = (PlayerId, Team, bool)>,
+        tick: u32,
+    ) -> Vec<(PlayerId, Vec<u8>)> {
         if !self.due(tick) {
             return Vec::new();
         }
-        let mut per_team: [Option<Vec<u8>>; 2] = [None, None];
+        let roster = world.squads();
+        self.markers.prune(roster, tick, self.marker_hz);
+        let mut per_team = [None, None];
         let mut out = Vec::with_capacity(clients.len());
-        for &(p, team) in clients {
-            let slot = &mut per_team[team as usize];
-            if slot.is_none() {
-                let (ts, _) = build(world, data, team, tick, self.map);
-                *slot = encode_team_state(&ts).ok();
-            }
-            if let Some(b) = slot {
-                out.push((p, b.clone()));
+        for (p, team, accepts_markers) in clients {
+            let Some(viewer) = RosterMember::get(roster, p).filter(|v| v.team == team) else {
+                continue;
+            };
+            let (state, legacy_bytes) = per_team[team as usize].get_or_insert_with(|| {
+                let (state, _) = build(world, data, team, tick, self.map);
+                let bytes = encode_team_state(&state).ok();
+                (state, bytes)
+            });
+            let markers = if accepts_markers {
+                self.markers.visible_to(viewer, tick, self.marker_hz)
+            } else {
+                Vec::new()
+            };
+            let bytes = if markers.is_empty() {
+                legacy_bytes.clone()
+            } else {
+                encode_team_state_with_markers(&TeamStateWithMarkers {
+                    team: state.clone(),
+                    markers,
+                })
+                .ok()
+            };
+            if let Some(bytes) = bytes {
+                out.push((p, bytes));
                 self.sent += 1;
             }
         }

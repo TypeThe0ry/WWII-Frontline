@@ -8,6 +8,7 @@
 # Env: LOADTEST_SERVER_CPUS / LOADTEST_CLIENT_CPUS (default 0,1 / 2,3) pick the pinned CPUs on big shared machines.
 # Options: --transport wt|ws  --duration S  --count N  --bots N  --seed N  --warmup S
 #          --sample-interval S (default 10)  --out FILE  --debug (use the debug build)  --no-build
+#          --map NAME  --mode NAME  --data-dir PATH  --deploy-hq (C0 on tactical maps)
 #          --drive-vehicle (client 0 drives; uses a local M0 test vehicle at its join point)
 #          --no-pin (by default, with `taskset` and >= 4 CPUs, the server is pinned to CPUs 0-1 and the
 #          headless client to CPUs 2-3 so the two do not steal each other's cycles)
@@ -19,7 +20,8 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-TRANSPORT=wt DURATION=60 COUNT=10 BOTS=10 SEED=1 WARMUP=5 INTERVAL=10 OUT="" PROFILE=release BUILD=1 PIN=1 DRIVE=0
+TRANSPORT=wt DURATION=60 COUNT=10 BOTS=10 SEED=1 WARMUP=5 INTERVAL=10 OUT="" PROFILE=release BUILD=1 PIN=1 DRIVE=0 DEPLOY=0
+MAP="${FRONTLINE_MAP:-m0}" MODE="${FRONTLINE_MODE:-sandbox}" DATA="${FRONTLINE_DATA_DIR:-$PWD/data}"
 while [ $# -gt 0 ]; do
   case "$1" in
     --transport) TRANSPORT="$2"; shift 2 ;;
@@ -34,6 +36,10 @@ while [ $# -gt 0 ]; do
     --no-build) BUILD=0; shift ;;
     --no-pin) PIN=0; shift ;;
     --drive-vehicle) DRIVE=1; shift ;;
+    --map) MAP="$2"; shift 2 ;;
+    --mode) MODE="$2"; shift 2 ;;
+    --data-dir) DATA="$2"; shift 2 ;;
+    --deploy-hq) DEPLOY=1; shift ;;
     -h|--help) sed -n '2,16p' "$0"; exit 0 ;;
     *) echo "unknown option: $1" >&2; exit 2 ;;
   esac
@@ -73,11 +79,20 @@ trap 'exit 143' TERM
 
 # Use the offline join of decoded C2 records and same-tick server observer samples for E1-4.
 export FL_AOI_TRACE=1
-SERVER_EXTRA=() CLIENT_EXTRA=() DRIVER=()
+SERVER_EXTRA=(--map "$MAP" --mode "$MODE" --data-dir "$DATA")
+CLIENT_EXTRA=(--map "$MAP" --data-dir "$DATA")
+DRIVER=() CHECKS=()
+if [ "$DEPLOY" = 1 ]; then
+  CLIENT_EXTRA+=(--deploy-hq)
+  CHECKS+=(--deploy-hq)
+fi
 if [ "$DRIVE" = 1 ]; then
-  SERVER_EXTRA=(--map m0 --mode sandbox --data-dir "$PWD/data" --dev-spawn-vehicle)
+  if [ "$MAP" != m0 ] || [ "$MODE" != sandbox ] || [ "$DEPLOY" = 1 ]; then
+    echo "--drive-vehicle requires the immediate-spawn M0 sandbox" >&2; exit 2
+  fi
+  SERVER_EXTRA+=(--dev-spawn-vehicle)
   # Give client 0 a head start on admission so it spawns next to the fixture.
-  CLIENT_EXTRA=(--map m0 --data-dir "$PWD/data" --ramp-ms 250)
+  CLIENT_EXTRA+=(--ramp-ms 250)
   DRIVER=(--drive-vehicle)
 fi
 ${SRV_PIN[@]+"${SRV_PIN[@]}"} "$SERVER" --ws-port 0 --wt-port 0 --metrics-port 0 --dev-cert --bots "$BOTS" \
@@ -111,11 +126,15 @@ sample() { # $1 = label (elapsed seconds)
   printf '%s\t%s\t%s\n' "$t" "${srv:-}" "${hl:-}" >>"$T/rss.tsv"
 }
 
+read_affinity() { grep -H "^Cpus_allowed_list:" /proc/"$1"/task/*/status 2>/dev/null || true; }
+
 START=$(date +%s)
 ${HL_PIN[@]+"${HL_PIN[@]}"} "$HEADLESS" --url "$URL" --transport "$TRANSPORT" "${EXTRA[@]}" --count "$COUNT" --duration "$DURATION" \
   "${DRIVER[@]}" "${CLIENT_EXTRA[@]}" --seed "$SEED" --warmup "$WARMUP" --report "$T/headless.json" 2>"$T/headless.log" &
 HEADLESS_PID=$!
 (
+  sleep 1 # Wait for Tokio to create its workers before recording thread affinity.
+  { read_affinity "$SERVER_PID"; read_affinity "$HEADLESS_PID"; } >"$T/affinity.txt"
   while kill -0 "$HEADLESS_PID" 2>/dev/null; do
     sample $(( $(date +%s) - START ))
     sleep "$INTERVAL"
@@ -141,6 +160,7 @@ RC=0
 node scripts/summarize-loadtest.mjs --headless "$T/headless.json" --server-report "$T/server.json" \
   --aoi-traces "$T" --metrics-dir "$T" --rss "$T/rss.tsv" --out "$OUT" --transport "$TRANSPORT" --bots "$BOTS" \
   --profile "$PROFILE" --sample-interval "$INTERVAL" --pinned "$([ ${#SRV_PIN[@]} -gt 0 ] && echo 1 || echo 0)" \
-  "${DRIVER[@]}" || RC=$?
+  --map "$MAP" --mode "$MODE" --server-cpus "${SRV_PIN[2]:-}" --client-cpus "${HL_PIN[2]:-}" \
+  "${DRIVER[@]}" "${CHECKS[@]}" || RC=$?
 [ "$HL_STATUS" = 0 ] || exit "$HL_STATUS"
 exit "$RC"

@@ -68,6 +68,12 @@ impl VehicleReport {
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct ClientReport {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub hq_spawn_tick: Option<u32>,
+    #[serde(default)]
+    pub team_packets: u64,
+    #[serde(default)]
+    pub team_markers: u64,
     /// Index of the client in this process.
     pub id: u32,
     /// Server-assigned player id (`None` when the join failed).

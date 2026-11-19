@@ -3,7 +3,7 @@
 
 use clap::Parser;
 
-pub const KNOWN_MAPS: &[&str] = &["m0"];
+pub const KNOWN_MAPS: &[&str] = &["m0", "carentan/m1"];
 pub const KNOWN_MODES: &[&str] = &["sandbox", "frontline", "assault", "skirmish"];
 pub const LOG_LEVELS: &[&str] = &["error", "warn", "info", "debug", "trace"];
 /// Players + bots upper bound (PlayerId 0..=127, ARCHITECTURE §8.1).
@@ -252,6 +252,11 @@ impl Config {
         self.dev_cert || self.cert.is_some()
     }
 
+    /// Numeric map id used by the simulation and `Welcome.map_id`.
+    pub fn map_id(&self) -> u8 {
+        u8::from(self.map == "carentan/m1")
+    }
+
     /// Numeric mode id used in `Welcome.mode`.
     pub fn mode_id(&self) -> u8 {
         KNOWN_MODES
@@ -296,6 +301,14 @@ mod tests {
         let c = parse(&[]).unwrap();
         assert_eq!((c.map.as_str(), c.mode.as_str()), ("m0", "sandbox"));
         assert!(is_uuid(c.match_id()));
+    }
+
+    #[test]
+    fn carentan_m1_is_supported_by_the_match_cli() {
+        let c = parse(&["--map", "Carentan/M1", "--mode", "assault"]).unwrap();
+        assert_eq!(c.map, "carentan/m1");
+        assert_eq!(c.map_id(), 1);
+        assert_eq!(parse(&[]).unwrap().map_id(), 0);
     }
 
     #[test]

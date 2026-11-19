@@ -107,6 +107,8 @@ pub struct Metrics {
     pub reports_total: IntCounter,
     /// Fire commands whose view tick lay more than 8 ticks back (rewind clamped; M1-025).
     pub lagcomp_clamped_total: IntCounter,
+    /// Actual shots with a FireCmd origin hint more than 0.5 m from the authoritative muzzle.
+    pub origin_corrected_total: IntCounter,
     pub lagcomp_history_clamped_total: IntCounter,
     pub lagcomp_wall_reject_total: IntCounter,
     /// Wall time of steps 6+7 (AOI + encode) per tick (ms).
@@ -321,13 +323,17 @@ impl Metrics {
                 "lagcomp_clamped_total",
                 "Fire commands whose lag-compensation rewind was clamped to 8 ticks",
             ),
+            origin_corrected_total: counter(
+                "origin_corrected_total",
+                "Shots whose client origin hint was more than 0.5 m from the authoritative muzzle",
+            ),
             lagcomp_history_clamped_total: counter(
                 "lagcomp_history_clamped_total",
                 "Rewind samples that used an available history frame instead of the requested one",
             ),
             lagcomp_wall_reject_total: counter(
                 "lagcomp_wall_reject_total",
-                "Historical contacts rejected by the current sustained terrain cover check",
+                "Historical contacts rejected by sustained terrain or solid building cover",
             ),
             aoi_encode_ms: hist(
                 "aoi_encode_ms",
@@ -428,6 +434,7 @@ impl Metrics {
             Box::new(m.aoi_starved_total.clone()),
             Box::new(m.aoi_enemy_leak_total.clone()),
             Box::new(m.lagcomp_clamped_total.clone()),
+            Box::new(m.origin_corrected_total.clone()),
             Box::new(m.lagcomp_history_clamped_total.clone()),
             Box::new(m.lagcomp_wall_reject_total.clone()),
             Box::new(m.c0_rate_limited_total.clone()),
@@ -553,6 +560,7 @@ mod tests {
             "net_snapshots_dropped_total",
             "lagcomp_history_clamped_total",
             "lagcomp_wall_reject_total",
+            "origin_corrected_total",
         ] {
             assert!(text.contains(name), "missing {name}");
         }

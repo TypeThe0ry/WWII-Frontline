@@ -151,7 +151,10 @@ mod tests {
     #[test]
     #[ignore = "requires raw Carentan collision from the M1 map bake"]
     fn carentan_wall_is_used_by_authoritative_projectiles() {
-        let data_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data");
+        let data_dir = std::env::var_os("FRONTLINE_DATA_DIR").map_or_else(
+            || Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data"),
+            std::path::PathBuf::from,
+        );
         let map = load_map(&data_dir, "carentan/m1").unwrap();
         let raw: Collection =
             super::super::json(&data_dir.join("maps/carentan/buildings.geojson")).unwrap();

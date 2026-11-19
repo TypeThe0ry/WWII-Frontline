@@ -60,6 +60,9 @@ pub struct Args {
     pub data_dir: Option<PathBuf>,
     #[arg(long, default_value = "m0")]
     pub map: String,
+    /// Request an unassigned rifleman deployment at HQ after Welcome (tactical maps).
+    #[arg(long, conflicts_with_all = ["hash_only", "drive_vehicle"])]
+    pub deploy_hq: bool,
     /// Do not give every client its own 127.x.y.z source address (the server allows only 4
     /// connections per IP, so loopback runs of more than 4 clients need the spread).
     #[arg(long)]
