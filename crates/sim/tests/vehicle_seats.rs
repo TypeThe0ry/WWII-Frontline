@@ -169,10 +169,15 @@ fn leaving_takes_point_eight_seconds_and_hurts_above_20_kph() {
     assert!(w.seat_of(1).is_some());
 }
 
+fn throttle_for_kph(w: &World, vehicle: u16, kph: f32) -> i8 {
+    let max_kph = w.vehicle(vehicle).unwrap().params.max_speed * 3.6;
+    (kph / max_kph * 127.0).round() as i8
+}
+
 fn crush_case(kph: f32) -> (f32, bool, Vec<SimEvent>) {
     let (mut w, v) = flat();
     w.seat_enter(0, v, 0).unwrap();
-    let throttle = (kph / 28.5 * 127.0).round() as i8;
+    let throttle = throttle_for_kph(&w, v, kph);
     // Run up to speed, then stand the German on the line ahead.
     step_drive(&mut w, Some((0, throttle)), 6 * HZ);
     let z = w.vehicle(v).unwrap().pos.z;
@@ -204,7 +209,7 @@ fn wall_world(z_wall: f32) -> impl Fn(f32, f32) -> f32 {
 fn wall_hit(kph: f32) -> (f32, Vec<SimEvent>) {
     let (mut w, v) = fx(&wall_world(160.0));
     w.seat_enter(0, v, 0).unwrap();
-    let throttle = (kph / 28.5 * 127.0).round() as i8;
+    let throttle = throttle_for_kph(&w, v, kph);
     let ev = step_drive(&mut w, Some((0, throttle)), 14 * HZ);
     let hp = w.vehicle(v).unwrap().hull_hp;
     (1600.0 - hp, ev)

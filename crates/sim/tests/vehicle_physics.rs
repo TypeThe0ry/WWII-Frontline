@@ -85,7 +85,6 @@ fn top_speed_matches_data_within_three_percent() {
         .gameplay
         .max_speed_mps
         .unwrap() as f32;
-    assert!((want / KPH - 28.5).abs() < 0.1, "data is 28.5 km/h");
     w.set_vehicle_ctrl(id, ctrl(1.0, 0.0));
     run(&mut w, 8.0);
     let mut sum = 0.0;
@@ -94,6 +93,11 @@ fn top_speed_matches_data_within_three_percent() {
         sum += w.vehicle(id).unwrap().forward_speed();
     }
     let avg = sum / (2 * HZ) as f32;
+    eprintln!(
+        "8-10 s mean: {:.4} km/h (data: {:.4})",
+        avg / KPH,
+        want / KPH
+    );
     assert!(
         (avg - want).abs() / want < 0.03,
         "avg {} km/h vs {}",

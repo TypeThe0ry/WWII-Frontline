@@ -4,8 +4,20 @@
   "faction": "us",
   "class": "frag_grenade",
   "historical": {
-    "mass_kg": 0.595,
-    "_source": "待 M1-070 按 REF §6 复核"
+    "mass_kg": 0.567,
+    "_source": [
+      {
+        "field": "mass_kg",
+        "value": 0.567,
+        "unit": "kg",
+        "source_id": "FM30",
+        "title": "U.S. War Department FM 23-30 (1944)",
+        "locator": "p. 14, Hand Grenades, Fragmentation Mk. II, Wt. (oz.)",
+        "url": "https://www.ibiblio.org/hyperwar/USA/ref/FM/PDFs/FM23-30.pdf#page=11",
+        "accessed": "2026-11-19",
+        "note": "采用 M1 时代的 Mk. II 破片型标称整件 20 oz；非练习型或战后目录的 21 oz。"
+      }
+    ]
   },
   "gameplay": {
     "fuse_s": 4,

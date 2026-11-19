@@ -1,10 +1,10 @@
 # M1 史实参数复核记录（M1-070）
 
-**M1-070b · 2026-11-19：**按 `data/` 逐项核对 14 个文件的 67 个 `historical` 字段。**51 一致、10 不一致、6 未核实。** 本表只记录在线核对结果，不回填 JSON、不修改游戏参数或 `_meta.status`。070a 的自动审计只检查 JSON 是否登记了来源（13 个已登记、54 个未登记或显式未核）；该数字不等于在线核实结果。刷新 070a 的结构清单时，把 `source-audit.mjs --write` 指向临时文件，不覆盖本表。
+**M1-070b · 2026-11-19：**按 `data/` 逐项核对 14 个文件的 67 个 `historical` 字段。**51 一致、10 不一致、6 未核实。** 以下复核表保留回填前的值与判定，不作为当前 JSON 的快照。070a 的自动审计只检查 JSON 是否登记了结构化来源（原为 13 个已登记、54 个缺口）；该数字不等于在线核实结果。刷新 070a 的结构清单时，把 `source-audit.mjs --write` 指向临时文件，不覆盖本表。
 
 「一致」含名义弹种、四舍五入及注明配置的标称值；「不一致」表示文献与当前值在数值或字段定义上有冲突，不代表已修订；「未核实」表示没找到可确认当前值和对应口径的出处，即使有相关资料也不计为一致。来源页码为印刷页，另标 `PDF` 的除外；网页以节号、表名或馆藏号定位。质量、初速和射速按原来源的状态或定义对照，不把装填状态、周期射速、实用射速或游戏射速上限混用。
 
-范围仅是原审计的 67 个 `historical` 字段：Sherman 外廓尺寸三项合计一行；`gameplay` 的装甲全表、装填、携弹配额与对标复测不计入，不据此判 E1-16 通过。差异和回填待办见 [PLAN_ISSUES.md](../PLAN_ISSUES.md) 的 PI-124G。
+范围仅是原审计的 67 个 `historical` 字段：Sherman 外廓尺寸三项合计一行；`gameplay` 的装甲全表、装填、携弹配额与对标复测不计入，不据此判 E1-16 通过。回填见下方变更日志，剩余决策见 [PLAN_ISSUES.md](../PLAN_ISSUES.md) 的 PI-124G。
 
 ## 枪械
 
@@ -87,6 +87,25 @@
 | `vehicles/us_m4a1_75.json` | `initial` | `main_gun` | `75 mm M3` | 一致 | [TM2800A] 第 108 页 Armament | 此目录的 75 mm 型为 M3；不套用 76 mm 车型。 |
 | `vehicles/us_m4a1_75.json` | `initial` | `max_speed_mps` | `10.5556` | 不一致 | [TM2800B] 第 109 页 Performance | 目录最高允许速度 24 mph（约 10.729 m/s、38.624 km/h），不是 JSON 的约 38.000 km/h；不是巡航速度。 |
 | `vehicles/us_m4a1_75.json` | `initial` | `dimensions_m` | `5.84 / 2.62 / 2.74` | 不一致 | [TM2800A] 第 108 页尺寸图 | 长/宽/高：无防沙板为 5.842 / 2.591 / 2.845 m。JSON 长度吻合、宽度近有防沙板构型，但有防沙板时长度也变为 6.223 m；JSON 高度与图示不符。 |
+
+## M1-070b 跟进：10 项处置与数据变更日志（2026-11-19）
+
+以游戏首发的 1944–45 西线、M1 的 1944 年 6 月 Carentan 为手榴弹的年代基准（GD §1 / MILESTONES §2）。只回填下表对应字段；不提高 `_meta.status`，也不把文献规格当成实测。表中的来源键链接到下方原文 URL。
+
+| `data/` 文件 / `historical` 字段 | 旧值 | 合入值 | 处置、推荐值与出处 |
+| --- | --- | --- | --- |
+| `weapons/ger_mp40.json` / `rate_of_fire_rpm_practical` | 500 rpm | 500 rpm（未改） | [TME] §VII.II.4.a(2) 实用标称 180；[MPSS] §II.3.c(2) 短点射实用 80–90。先选择实用射速口径；建议决定前将其视为未核实，不把 500 当实用值。 |
+| `weapons/ger_p38.json` / `rate_of_fire_rpm_practical` | 300 rpm | **40 rpm** | [PWA] PDF 第 1 页 Zahlenangaben §3 明列 32–40；标量沿用 Garand 先例取文献范围上限。`gameplay.fire.cap_rpm` 保持 300。 |
+| `weapons/us_m3_grease.json` / `rate_of_fire_rpm_practical` | 450 rpm | 450 rpm（未改） | [TM2200] §28 和 [FM41L] §4 不能支持 450 为实用值；建议补同口径资料，否则用 `"未核实"`，不拿周期射速给此字段兜底。 |
+| `weapons/us_thompson_m1a1.json` / `rate_of_fire_rpm_practical` | 700 rpm | 700 rpm（未改） | [TM2200] §29、[NCJ] Thompson M1A1 条只支持周期射速口径；建议补同口径资料，否则用 `"未核实"`。 |
+| `explosives/ger_nb39.json` / `mass_kg` | 0.5 kg | **0.8505 kg** | [ENORD] 第 322 页发烟型整件标称 1 lb 14 oz；不采用同目录的爆炸型 Model 39。 |
+| `explosives/us_m18.json` / `mass_kg` | 0.54 kg | **0.482 kg** | 以战时 [FM30] 第 15 页彩烟 M18/M16 合列整件标称 17 oz 作 M1 基准。不将 [TM43] 战后 M18 19 oz 规格套回战时。 |
+| `explosives/us_mk2.json` / `mass_kg` | 0.595 kg | **0.567 kg** | 以战时 [FM30] 第 14 页 Mk. II 破片型整件标称 20 oz 作 M1 基准，不用练习型或 [TM43] 战后 21 oz。 |
+| `vehicles/us_m4a1_75.json` / `mass_kg` | 30300 kg | 30300 kg（未改） | [TM2800B] 第 109 页为 T54E1 履带构型的战斗全重 67,300 lb（约 30527 kg）。建议采用该战斗全重，但需先确认项目建模构型；这个字段直接进入物理质量和惯量。 |
+| `vehicles/us_m4a1_75.json` / `max_speed_mps` | 10.5556 m/s | **10.72896 m/s** | [TM2800B] 第 109 页 Performance 的最高允许速度 24 mph，非巡航速度。按 GD §14.3 的 0.75 倍，`gameplay.max_speed_mps` **7.9167 → 8.04672 m/s**；客户端展示所用的 JSON 镜像同步。 |
+| `vehicles/us_m4a1_75.json` / `dimensions_m`（长 / 宽 / 高） | 5.84 / 2.62 / 2.74 m | 原值（未改） | [TM2800A] 第 108 页无防沙板外廓 5.842 / 2.591 / 2.845 m，装防沙板另加长 15 in、加宽 1⅛ in。建议整组按同一构型回填；先确定防沙板与外廓口径是否应进入碰撞代理和占位模型。 |
+
+5 项回填、5 项留待决定。结构审计为 17 个已登记、50 个缺口、0 个违规；Sherman 的 schema 仅允许字符串 `_source`，其速度虽已附出处，结构审计仍计为缺口。原有 6 项在线未核实不在此次回填范围。独立 WASM smoke 的 `native.json` 回退金样仅更新 `dataHash`；协议、快照和行为金样保持原样。
 
 ## 在线来源
 
