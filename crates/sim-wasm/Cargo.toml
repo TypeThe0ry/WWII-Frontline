@@ -23,6 +23,8 @@ frontline-sim = { path = "../sim", features = ["client-predict"] }
 frontline-protocol = { path = "../protocol" }
 wasm-bindgen = "=0.2.130"
 js-sys = "0.3"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
 console_error_panic_hook = "0.1"
 arrayvec = { version = "0.7", default-features = false }
 

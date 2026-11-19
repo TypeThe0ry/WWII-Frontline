@@ -15,7 +15,7 @@ use wasm_bindgen::prelude::*;
 use crate::js_err;
 
 /// Simulation rate (PI-006: fixed step 1000/30 ms).
-const TICK_HZ: u8 = 30;
+pub(crate) const TICK_HZ: u8 = 30;
 /// Bytes of one full-width `InputCmd` (`packInputCmd`): 144 bits.
 pub const INPUT_CMD_BYTES: usize = 18;
 
@@ -117,7 +117,7 @@ pub(crate) fn parse_cmd(bytes: &[u8]) -> Result<InputCmd, String> {
 /// Prediction session for the local player.
 #[wasm_bindgen]
 pub struct Predictor {
-    sim: PredictSim,
+    pub(crate) sim: PredictSim,
     out: [f32; layout::STATE_LEN],
     vout: [f32; VEHICLE_STATE_LEN],
 }

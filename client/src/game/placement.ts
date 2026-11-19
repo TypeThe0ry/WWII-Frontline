@@ -1,5 +1,5 @@
 /**
- * Placement mode and vehicle-seat input logic (M1-060a). Legality itself is decided by sim (`PlaceError`, mirrored here
+ * Placement mode and vehicle-seat input logic (M1-060a/b). Legality itself is decided by sim (`PlaceError`, mirrored here
  * as a code → i18n key table) — the client only displays what the sim-wasm pre-check or the server returns.
  */
 export type PlacementKind = 'garrison' | 'supply_crate' | 'ammo_crate';
@@ -34,7 +34,7 @@ export interface PlacementResult {
 export type GhostStyle = { color: 'blue' | 'warn' | 'grey'; pattern: 'solid' | 'hatched' | 'dotted'; icon: 'check' | 'warn' | 'minus' };
 export function ghostStyle(r: PlacementResult, reasonCode?: PlaceError): GhostStyle {
   if (r.legal) return { color: 'blue', pattern: 'solid', icon: 'check' };
-  if (reasonCode === 'NoSupplies') return { color: 'grey', pattern: 'dotted', icon: 'minus' };
+  if (reasonCode === 'NoSupplies' || r.reasonKey === PLACE_ERROR_KEY.NoSupplies) return { color: 'grey', pattern: 'dotted', icon: 'minus' };
   return { color: 'warn', pattern: 'hatched', icon: 'warn' };
 }
 export function resultFromError(code: PlaceError | null, supplyCost?: number, remaining?: number): PlacementResult {
@@ -43,7 +43,7 @@ export function resultFromError(code: PlaceError | null, supplyCost?: number, re
 
 export type PlacementEvent =
   | { t: 'enter'; kind: PlacementKind }
-  | { t: 'check'; legal: boolean }
+  | { t: 'check'; result: PlacementResult }
   | { t: 'commit' }
   | { t: 'accepted' }
   | { t: 'rejected'; reasonKey: string }
@@ -53,6 +53,7 @@ export interface PlacementState {
   mode: PlacementMode;
   kind: PlacementKind | null;
   reasonKey?: string;
+  result?: PlacementResult;
 }
 export const PLACEMENT_IDLE: PlacementState = { mode: 'idle', kind: null };
 
@@ -61,10 +62,10 @@ export function placementNext(s: PlacementState, e: PlacementEvent): PlacementSt
     case 'enter':
       return s.mode === 'idle' ? { mode: 'placing', kind: e.kind } : s;
     case 'check':
-      return s.mode === 'placing' || s.mode === 'invalid' ? { mode: e.legal ? 'placing' : 'invalid', kind: s.kind } : s;
+      return s.mode === 'placing' || s.mode === 'invalid' ? { mode: e.result.legal ? 'placing' : 'invalid', kind: s.kind, reasonKey: e.result.reasonKey, result: e.result } : s;
     case 'commit':
       // Only a legal ghost may be committed; an invalid one stays invalid.
-      return s.mode === 'placing' ? { mode: 'committing', kind: s.kind } : s;
+      return s.mode === 'placing' && s.result?.legal ? { mode: 'committing', kind: s.kind } : s;
     case 'accepted':
       return s.mode === 'committing' ? PLACEMENT_IDLE : s;
     case 'rejected':

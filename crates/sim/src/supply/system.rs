@@ -113,7 +113,7 @@ pub fn supply(
         }
         match carry.0 {
             Some(cid) => {
-                if !can_place_supply_crate(&objs.0, *team, tr.pos) {
+                if !can_place_supply_crate(objs.0.iter().map(|o| (o.owner, o.pos)), *team, tr.pos) {
                     events.0.push(SimEvent::SupplyNotice {
                         player: pid,
                         code: NOTICE_NO_PLACE,
