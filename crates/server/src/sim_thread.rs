@@ -215,7 +215,7 @@ impl SimThreadConfig {
 }
 
 pub struct SimLoop<C: Clock> {
-    /// Per-phase wall time (ms) of the last tick, filled only with `FRONTLINE_TICK_TRACE=1`:
+    /// Per-phase wall time (ms) of the last tick (see `tick_trace_enabled`):
     /// inputs, step, post-step, bots, aoi+snapshot, send.
     phase_ms: [f64; 6],
     clock: C,
@@ -402,11 +402,12 @@ fn thread_sched() -> Option<(u64, u64)> {
     Some((it.next()?.parse().ok()?, it.next()?.parse().ok()?))
 }
 
-/// `FRONTLINE_TICK_TRACE=1`: every overrun log line also says how much of the tick the thread spent on a CPU and how long it waited
-/// in the run queue (M1-068b: tells a slow tick from a descheduled one). Read once; off by default.
+/// Tick trace (M1-068b): every overrun log line says how much of the tick the thread spent on a CPU, how long it waited in the run
+/// queue (a slow tick vs a descheduled one) and the wall time of each phase. Always on: it costs six `Instant::now()` and two small
+/// `/proc` reads per tick (about 10 us at 30 Hz). `FRONTLINE_TICK_TRACE=0` switches it off.
 fn tick_trace_enabled() -> bool {
     static ON: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
-    *ON.get_or_init(|| std::env::var_os("FRONTLINE_TICK_TRACE").is_some())
+    *ON.get_or_init(|| std::env::var("FRONTLINE_TICK_TRACE").map_or(true, |v| v != "0"))
 }
 
 impl<C: Clock> SimLoop<C> {
@@ -513,6 +514,30 @@ impl<C: Clock> SimLoop<C> {
             );
         } else {
             self.consecutive = 0;
+            if dur > self.schedule.period() / 3 {
+                // not an overrun, but 3x the typical tick: same diagnostics so that rare compute spikes can be attributed
+                let (cpu_ms, runq_wait_ms) = match (sched0, sched1) {
+                    (Some(a), Some(b)) => (
+                        b.0.saturating_sub(a.0) as f64 / 1e6,
+                        b.1.saturating_sub(a.1) as f64 / 1e6,
+                    ),
+                    _ => (-1.0, -1.0),
+                };
+                tracing::info!(
+                    event = "tick_slow",
+                    tick_ms = dur.as_secs_f64() * 1e3,
+                    cpu_ms,
+                    runq_wait_ms,
+                    tick = self.ticks,
+                    phase_inputs_ms = self.phase_ms[0],
+                    phase_step_ms = self.phase_ms[1],
+                    phase_post_step_ms = self.phase_ms[2],
+                    phase_bots_ms = self.phase_ms[3],
+                    phase_snapshot_ms = self.phase_ms[4],
+                    phase_send_ms = self.phase_ms[5],
+                    "tick slower than a third of its budget"
+                );
+            }
         }
         self.metrics.tick_overrun_consecutive.set(self.consecutive);
         if self.consecutive > self.metrics.tick_overrun_consecutive_max.get() {
