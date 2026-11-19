@@ -164,10 +164,14 @@ async fn spawn_fake(f: Arc<Fake>) -> String {
     async fn register(
         State(f): State<Arc<Fake>>,
         h: HeaderMap,
-        Json(_): Json<serde_json::Value>,
+        Json(v): Json<serde_json::Value>,
     ) -> Result<Json<serde_json::Value>, StatusCode> {
         if !authed(&h) {
             return Err(StatusCode::UNAUTHORIZED);
+        }
+        // Use the real gateway's numeric u64 contract, not a string fixture.
+        if v["data_hash"].as_u64() != Some(u64::MAX) {
+            return Err(StatusCode::UNPROCESSABLE_ENTITY);
         }
         f.register_calls.fetch_add(1, Ordering::SeqCst);
         if f.fail_register.load(Ordering::SeqCst) > 0 {
@@ -221,7 +225,7 @@ fn req() -> RegisterReq {
         tags: vec![],
         version: "x".into(),
         protocol_version: PROTOCOL_VERSION,
-        data_hash: "00".into(),
+        data_hash: u64::MAX,
         cap: 16,
         addr: "127.0.0.1".into(),
         ws_port: 1,

@@ -7,7 +7,7 @@
  * `snapshot.applied`). Nothing here touches render / ui / audio.
  */
 import { InputSampler, PointerLockController } from '../input';
-import { connect, parseNetConfig, type Session } from '../net';
+import { connect, parseNetConfig, type NetConfig, type Session } from '../net';
 import { assertLayoutMatches, type SimWasmModule } from '../net/wasm';
 import { EventBus, type GameEvents } from './event-bus';
 import { FixedStepper } from './fixed-step';
@@ -54,15 +54,22 @@ async function loadChunks(base: string, mapId: string): Promise<{ bx: number; bz
   return Promise.all(jobs);
 }
 
-export async function startNetGame(canvas: HTMLCanvasElement, bus: EventBus<GameEvents>, baseUrl = import.meta.env.BASE_URL, onDispose?: () => void): Promise<NetGameHandle> {
-  const wasm = await loadWasm(baseUrl);
-  const config = parseNetConfig(location.search, location);
+export async function startNetGame(
+  canvas: HTMLCanvasElement,
+  bus: EventBus<GameEvents>,
+  baseUrl = import.meta.env.BASE_URL,
+  onDispose?: () => void,
+  join?: { config: NetConfig; ticket: Uint8Array },
+): Promise<NetGameHandle> {
+  const [wasm, chunks] = await Promise.all([loadWasm(baseUrl), loadChunks(baseUrl, 'm0')]);
+  const config = join?.config ?? parseNetConfig(location.search, location);
   const gameState = new GameState(bus);
-  const [session, chunks] = await Promise.all([connect({
+  const session = await connect({
     config, wasm, bus,
+    ...(join ? { hello: { ticket: join.ticket } } : {}),
     onC4Event: (event) => gameState.apply(event),
     onDeployResult: (result) => gameState.applyDeployResult(result),
-  }), loadChunks(baseUrl, 'm0')]);
+  });
   const w = session.welcome;
   const sampler = new InputSampler();
   try {

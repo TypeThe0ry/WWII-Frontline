@@ -13,7 +13,7 @@ export interface Capabilities {
 
 /** Minimal structural view of `navigator`, so tests can mock it. */
 export interface NavLike {
-  gpu?: { requestAdapter(): Promise<{ info?: { description?: string; device?: string; vendor?: string } } | null> };
+  gpu?: { requestAdapter(): Promise<{ info?: { description?: string; device?: string; vendor?: string } } | null | undefined> };
   deviceMemory?: number;
   hardwareConcurrency?: number;
   storage?: { estimate(): Promise<{ quota?: number }> };

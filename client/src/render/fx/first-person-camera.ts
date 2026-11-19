@@ -49,7 +49,7 @@ export class FirstPersonRig {
   weapon: WeaponNode | null = null;
   private def: WeaponActorDef | null = null;
   private bobPhase = 0;
-  private readonly hipFov: number;
+  private hipFov: number;
 
   constructor(
     readonly camera: TargetCamera,
@@ -61,6 +61,12 @@ export class FirstPersonRig {
     camera.detachControl();
     camera.fov = this.hipFov;
     camera.rotationQuaternion = null;
+  }
+
+  /** The host settings store clamps the hip FOV in degrees; ADS still applies its data multiplier. */
+  setHipFovDegrees(deg: number): void {
+    this.hipFov = deg * DEG;
+    if (!this.def) this.camera.fov = this.hipFov;
   }
 
   setWeapon(w: WeaponNode | null): void {
