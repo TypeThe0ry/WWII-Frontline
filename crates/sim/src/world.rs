@@ -1675,105 +1675,50 @@ impl World {
         }
         let team = *er.get::<Team>().ok_or(PlaceError::NotAlive)?;
         let placer = er.get::<Transform>().ok_or(PlaceError::NotAlive)?.pos;
-        let d = |a: Vec3, b: Vec3| ((a.x - b.x).powi(2) + (a.z - b.z).powi(2)).sqrt();
-        let rules = self.ecs.resource::<crate::spawn::SpawnRules>();
-        for hq in rules.hq.iter().flatten() {
-            if d(*hq, pos) < MIN_HQ_M {
-                return Err(PlaceError::TooCloseHq);
-            }
-        }
-        let gs = self.ecs.resource::<Garrisons>();
-        let mut own = 0usize;
-        for g in gs.list.values() {
-            if g.state == GarrisonState::Destroyed {
-                continue;
-            }
-            if g.team == team {
-                own += 1;
-                if d(g.pos, pos) < MIN_OWN_M {
-                    return Err(PlaceError::TooCloseOwnGarrison);
-                }
-            } else if d(g.pos, pos) < MIN_ENEMY_M {
-                return Err(PlaceError::TooCloseEnemyGarrison);
-            }
-        }
-        let objs = &self.ecs.resource::<crate::rules::Objectives>().0;
-        let mut nearest: Option<(f32, &crate::rules::Objective)> = None;
-        for o in objs {
-            let dd = d(o.pos, pos);
-            if dd < o.radius_m + OBJECTIVE_EXTRA_M {
-                return Err(PlaceError::TooCloseObjective);
-            }
-            if nearest.is_none_or(|(nd, _)| dd < nd) {
-                nearest = Some((dd, o));
-            }
-        }
-        let col = &self.ecs.resource::<CollisionRes>().0;
-        if col
-            .slope_deg_at(pos.x, pos.z)
-            .is_none_or(|s| s > MAX_SLOPE_DEG)
-        {
-            return Err(PlaceError::Slope);
-        }
-        let water = self
-            .cfg
-            .data
-            .materials
+        let hq: Vec<_> = self
+            .ecs
+            .resource::<crate::spawn::SpawnRules>()
+            .hq
             .iter()
-            .position(|m| m.id == "water")
-            .map(|i| i as u8);
-        if water.is_some() && col.material_at(pos.x, pos.z) == water {
-            return Err(PlaceError::Water);
-        }
-        let eye = pos + Vec3::Y * 1.6;
-        for &(_, oe) in self.ecs.resource::<PlayerIndex>().map.values() {
-            let oer = self.ecs.entity(oe);
-            let (Some(ot), Some(oteam), Some(ol)) = (
-                oer.get::<Transform>(),
-                oer.get::<Team>(),
-                oer.get::<LifeState>(),
-            ) else {
-                continue;
-            };
-            if *oteam != team
-                && !ol.is_dead()
-                && d(ot.pos, pos) <= ENEMY_NEAR_M
-                && col.los(eye, ot.pos + Vec3::Y * 1.6)
-            {
-                return Err(PlaceError::EnemyNear);
-            }
-        }
-        if own >= TEAM_CAP {
-            return Err(PlaceError::TeamCap);
-        }
-        let sector = nearest.map(|(_, o)| o.id);
-        let in_sector = gs
+            .flatten()
+            .copied()
+            .collect();
+        let garrisons: Vec<_> = self
+            .ecs
+            .resource::<Garrisons>()
             .list
             .values()
-            .filter(|g| g.team == team && g.state != GarrisonState::Destroyed)
-            .filter(|g| {
-                let ns = objs
-                    .iter()
-                    .min_by(|a, b| d(a.pos, g.pos).total_cmp(&d(b.pos, g.pos)))
-                    .map(|o| o.id);
-                ns == sector
+            .filter(|g| g.state != GarrisonState::Destroyed)
+            .map(|g| (g.team, g.pos))
+            .collect();
+        let objectives: Vec<_> = self
+            .ecs
+            .resource::<crate::rules::Objectives>()
+            .0
+            .iter()
+            .map(crate::ObjectiveSpec::from)
+            .collect();
+        let enemies: Vec<_> = self
+            .ecs
+            .resource::<PlayerIndex>()
+            .map
+            .values()
+            .filter_map(|&(_, e)| {
+                let entity = self.ecs.entity(e);
+                let (other_team, life) = (entity.get::<Team>()?, entity.get::<LifeState>()?);
+                (*other_team != team && !life.is_dead()).then_some(entity.get::<Transform>()?.pos)
             })
-            .count();
-        if in_sector >= SECTOR_CAP {
-            return Err(PlaceError::SectorCap);
+            .collect();
+        GarrisonPlacement {
+            team,
+            hq: &hq,
+            garrisons: &garrisons,
+            objectives: &objectives,
+            collision: &self.ecs.resource::<CollisionRes>().0,
+            water_material: water_material(self.cfg.data),
+            enemies: &enemies,
         }
-        let enemy_sector = nearest
-            .and_then(|(_, o)| o.owner)
-            .is_some_and(|ow| ow != team);
-        let cost = if enemy_sector {
-            COST_ENEMY
-        } else {
-            COST_FRIENDLY
-        };
-        if sup.available(placer, SUPPLY_RANGE_M) < cost {
-            return Err(PlaceError::NoSupplies);
-        }
-        Ok(GarrisonCost { supplies: cost })
+        .check(pos, || sup.available(placer, SUPPLY_RANGE_M))
     }
 
     /// Places a Garrison (starts as a building at 20 % health) and pays for it from the crates
@@ -2075,24 +2020,13 @@ impl World {
         }
         let cfg = self.ecs.resource::<AmmoCfg>().clone();
         let mut sw = self.ecs.resource_mut::<crate::supply::SupplyWorld>();
-        if sw.ammo_count.get(&who).copied().unwrap_or(0) >= cfg.max_uses {
-            return Err(AmmoPlaceError::LimitPerLife);
-        }
-        if sw
-            .ammo_last
-            .get(&who)
-            .is_some_and(|&t| now.saturating_sub(t) < cfg.cooldown_ticks)
-        {
-            return Err(AmmoPlaceError::Cooldown);
-        }
-        let stacked = sw
-            .ammo
-            .values()
-            .filter(|c| crate::supply::dist_xz(c.pos, pos) <= STACK_RADIUS_M)
-            .count();
-        if stacked >= MAX_STACK {
-            return Err(AmmoPlaceError::Stacked);
-        }
+        cfg.check_place(
+            now,
+            sw.ammo_count.get(&who).copied().unwrap_or(0),
+            sw.ammo_last.get(&who).copied(),
+            pos,
+            sw.ammo.values().map(|c| c.pos),
+        )?;
         let id = sw.next_id;
         sw.next_id += 1;
         sw.ammo.insert(

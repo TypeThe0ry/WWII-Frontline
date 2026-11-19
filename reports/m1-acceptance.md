@@ -14,7 +14,7 @@
 | E1-8 | 材质变体 | ≤ 60 | 运行时场景实际使用的材质 18 种（≤60，**代理量**：材质数，不是 CI `variant-count` 的着色器变体数；含 M0 灰盒占位）；`variant-count` 的 M1 数字仍未产出 | `reports/m1-perf.md`（材质节） | 部分（代理 PASS；变体数未测） | M1-069b |
 | E1-9 | 包体积 | core ≤ 8 MB；首图 Medium ≤ 150 MB | core brotli 682,349 B（≤ 8,388,608 B）；首图未测 | `tools/ci/core-size.mjs` | partial | M1-064 阻塞（素材） |
 | E1-10 | 部署流程 | 键鼠可达；点击到可操作 ≤ 15 s；预取完成率 ≥ 95% | 未测（TSX 组件与 Playwright 未做） | M1-056b/057b/061b | 未测 | — |
-| E1-11 | Garrison + 补给闭环 | 闭环可玩 | `e2e_garrison_supply_loop` 通过（取箱→放 Garrison 扣 50→队友 8 s ±1 tick 重生）；真实客户端未测 | M1-019/020 | partial | — |
+| E1-11 | Garrison + 补给闭环 | 闭环可玩 | `e2e_garrison_supply_loop` 通过（取箱→放 Garrison 扣 50→队友 8 s ±1 tick 重生）。M1-060b 的 13 个真实 WASM 客户端逻辑用例通过，覆盖 8 种 Garrison 拒绝原因及补给箱/弹药箱预判。实局客户端、放置耗时和补弹闭环未测 | M1-019/020、`client/src/game/placement-check.test.ts` | partial | PI-107 续 |
 | E1-12 | 坦克 | 3 座位；≥12 组 AP 与手算一致；120 ms RTT 直线校正 ≤1 次/10 s | 13 组 `armor_cases.json` 全一致；校正频率未测 | M1-023、M1-022 | partial | PI-070 |
 | E1-13 | 倒地/救起/压制 | 状态机全转移单测；压制被客户端音画消费 | 016/017 单测通过（转移 ≥10 条）；客户端消费未接 | M1-016、M1-017 | partial | PI-053 |
 | E1-14 | 素材管线 | `.fpak` 往返一致；无独立 .glb/.ktx2/.ogg/.opus；缺失报告；无 PENDING 进主分支 | 台账 8 行：OK 4、PENDING 3、FLAGGED 1、REJECTED 0；仓库内 2 个 `.ktx2` 为测试夹具；PENDING 对应处理产物未入主分支 | `node tools/asset-pipeline/bin/asset-pipeline.mjs ledger-check --root .` | partial | PI-108 |

@@ -1175,3 +1175,9 @@ PrePass 速度会卡死渲染循环，改用自有速度 RTT（地形/薄实例/
 - **WASM/TS**：`SnapshotDecoder.selfState()` 保留索引 0–12，追加 `vehicle_slot`、`seat` 到索引 13、14，长度 15；更新了布局、C0/C2 字节金样和 WASM 解码金样。
 - **已测**：协议往返覆盖全部 128 槽 × 3 座 × 有无位置修正，预算测试精确断言 56/101 bit；服务器快照测试验证双车场景的实际车辆槽和离座清零；WASM Node 烟测 8 组。`cargo fmt --all --check`、workspace Clippy（`-D warnings`）、workspace tests（717 通过、11 按配置忽略）、`wasm-pack` web 构建、默认 `pnpm -C client test`（598 通过）、`tsc --noEmit` 均通过。Gateway 兼容性 fixture 改用协议常量；地形一致性测试保留全部采样、精度和默认超时，仅移除逐点成功时的断言构造。
 - **未做**：第 3 部分客户端预测/对账接线。**未测**：浏览器实际进出座、端到端 headless 驾驶、netem 验收。M1-041d 仍为 partial。
+
+## PI-107 续 M1-060b 放置预判的数据与验收缺口（2026-11-19）
+
+- **状态**：partial。`placement_check` 使用预测器当前已加载的碰撞数据。Vitest 驱动真实 WASM 与 `GameLoop.checkPlacement`，13 项通过，其中 8 个 Garrison 拒绝用例包括据点排除圈（`TooCloseObjective`）。任意地图禁建多边形缺少独立 sim 规则与原因。此项验收仍待定义与实现。
+- **实局前置**：上层需传入落点与当前放置事实，包括可见范围内的敌人和驻点、目标点归属、放置者附近的有效补给与箱子状态。缺少落点或对应事实时状态机会禁止提交。当前 C0 缺少放置请求与拒绝回执，服务端继续持有最终判定。接入时须遵守既有敌人可见性约束。
+- **未测**：实局选槽、瞄点射线与输入接线、放置与补弹闭环、虚影和 HUD、Playwright、灰度截图、人机交互与每帧 0.3 ms 预算。没有参考机或工作站帧时间数据。

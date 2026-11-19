@@ -11,6 +11,8 @@ import { LAYOUT_STATE_AMMO_IN_MAG, LAYOUT_STATE_AMMO_RESERVE, LAYOUT_STATE_RECOI
 import type { EventBus, GameEvents, Vec3 } from './event-bus';
 import { EventDecoder } from './events';
 import { EntityStore, INTERP_DELAY_TICKS, MAX_ENTITIES, RenderTimeline } from './interpolation';
+import type { PlacementState } from './placement';
+import { refreshPlacement, type PlacementFacts, type PlacementPoint, type PlacementWasm } from './placement-check';
 import { LocalPredictor, type PredictorOptions } from './predictor';
 import { Reconciler } from './reconcile';
 import { SnapshotApplier } from './snapshot-apply';
@@ -189,6 +191,12 @@ export class GameLoop {
     for (const c of chunks) this.predictor.loadCollision(c.bx, c.bz, c.data);
     // Settle onto the terrain (the spawn guess is airborne); not simulated through the ring.
     this.predictor.capture(this.ring.base);
+  }
+
+  /** Preview at the aimed ground point (Garrison) or predicted feet (crate actions). */
+  checkPlacement(state: PlacementState, aimedPoint: PlacementPoint | null, facts: PlacementFacts | null): PlacementState {
+    const point = state.kind === 'garrison' ? aimedPoint : [this.predictor.x, this.predictor.y, this.predictor.z] as const;
+    return refreshPlacement(this.wasm as SimWasmModule & Partial<PlacementWasm>, this.predictor.wasm, state, point, facts);
   }
 
   get corrections(): number {
