@@ -26,6 +26,7 @@ pub mod rng;
 pub mod roles;
 pub mod rules;
 pub mod schedule;
+pub mod score;
 pub mod serverrules;
 pub mod spawn;
 pub mod squad;

@@ -157,6 +157,7 @@ pub enum SimEvent {
         killer: Option<PlayerId>,
         weapon: u8,
         headshot: bool,
+        dist_m: f32,
     },
     /// Who gets what for a down or a KIA (GAMEDESIGN 7.5); `team_kill` = the killer was a
     /// teammate (no kill awarded).
@@ -205,6 +206,11 @@ pub enum SimEvent {
         player: PlayerId,
         pos: Vec3,
     },
+    ScoreAction {
+        player: PlayerId,
+        action: crate::score::Action,
+    },
+    ScoreDelta(crate::score::ScoreDelta),
 }
 
 /// Objective / resource / phase changes (M0-013+; empty for now).
