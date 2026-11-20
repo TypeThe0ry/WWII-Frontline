@@ -722,7 +722,7 @@ async fn internal_report_dedup_global_interval_and_per_match_cap() {
     let across_matches = report_body(&other, &other_reporter, &other_target);
     let mut targets = Vec::new();
     for i in 1..=11 {
-        targets.push(r.player(&m, &format!("203.0.113.{i}:8080")).await);
+        targets.push(r.player(&m, &format!("198.51.100.{i}:8080")).await);
     }
     let first = report_body(&m, &reporter, &targets[0]);
     let created = r

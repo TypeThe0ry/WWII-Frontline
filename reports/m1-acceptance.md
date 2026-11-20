@@ -98,3 +98,7 @@ E1-9 和 E1-14 的 Medium 构建门禁通过。运行时素材摆放、混音、
 ### B6-gwstats（2026-11-20，M2-022）
 
 沿用 M1 的 server→gateway 结算回投，PI-109 工作站（非参考机）验证了真实本机进程直接回投（61 tick），以及网关离线时落盘、重启后重放（91 tick）。两条结果均可按对局 ID 查询。使用 M0 空世界夹具，真人自然结算与参考机未测。详见 [M2 网关报告](m2-gateway-stats.md) 和 PI-B6-gwstats-1。
+
+### B6-gwadmin（2026-11-20，M2-023）
+
+网关回归覆盖原有游客登录、签票、注册、心跳和结果接口。管理 API、举报与验收边界见 `reports/m2-gateway-admin.md` 和 PI-B6-gwadmin-1。
