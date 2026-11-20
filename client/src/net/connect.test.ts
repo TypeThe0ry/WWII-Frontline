@@ -298,9 +298,9 @@ describe.skipIf(!HAVE_WASM)('connect / fallback / handshake (fake WebSocket + We
       expect(s.fallbackReason).toBeUndefined();
       expect(s.transport.maxDatagramSize).toBe(1199);
       expect(events).toEqual(['connected:wt']);
-      // Hello carries caps bit1 (webtransport)
+      // Hello carries WebTransport and, when supported by WASM, resource capability.
       const hello = wt.conn.receivedC0[0] as Uint8Array;
-      expect([...hello]).toEqual([...wasm.encodeHello(server.protocolVersion, server.dataHash, new Uint8Array(0), 0, 2)]);
+      expect([...hello]).toEqual([...wasm.encodeHello(server.protocolVersion, server.dataHash, new Uint8Array(0), 0, wasm.decodeWorldState ? 0b1010 : 0b0010)]);
       s.close();
       const plain = await connect(opts());
       expect(FakeWebTransport.instances[1]?.options).toBeUndefined();

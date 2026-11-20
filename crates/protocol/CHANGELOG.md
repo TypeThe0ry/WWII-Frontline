@@ -34,6 +34,19 @@ bits are a stable category-local reason ID assigned by sim. Decoders preserve
 unknown reason IDs. There was no shipped producer; no version bump is needed.
 Deploy the updated data hash alongside the server, WASM and client.
 
+### M2-009 resources extension
+
+Clients opt in with `Hello.caps` bit 3. The server sends both messages only to capable clients
+on the affected team. Clients without this capability receive their existing packet types.
+
+| Channel and type | Message | Fields (bits) |
+|---|---|---|
+| C2 0x20 | `WorldStateC2` (1 Hz) | tick 32, team 8 (0 US, 1 GER), existing 16-byte `WorldState` |
+| C4 0x10 | `ResourceDelta` | team 8, kind 8 (0 manpower, 1 munitions, 2 fuel), signed change 32, reason 8 (0 income, 1 spend, 2 refund, 3 upkeep, 4 spoils) |
+
+The C2 packet is independent of entity snapshots and their acknowledgement/baseline state.
+It contains the recipient's absolute pool. C4 provides change notifications, independently of C2 ordering.
+
 ## 5 — M2-018 subset of M2-007 (server rules)
 
 | Channel and type | Message | Fields (bits) |

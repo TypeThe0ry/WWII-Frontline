@@ -450,6 +450,9 @@ pub async fn run_connection<T: ClientTransport>(
     if hello.caps & frontline_protocol::msg::c0::CAP_TEAM_MARKERS != 0 {
         handle.enable_team_markers();
     }
+    if hello.caps & frontline_protocol::msg::c0::CAP_RESOURCES != 0 {
+        handle.enable_resources();
+    }
     let (player, team) = match ctx.sessions.alloc_player_team_with_identity(
         &handle,
         ticket_identity,

@@ -66,6 +66,14 @@ impl VehicleReport {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ResourceMinute {
+    pub tick: u32,
+    pub timer: u16,
+    /// Manpower / Munitions / Fuel.
+    pub balances: [u16; 3],
+}
+
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct ClientReport {
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -74,6 +82,18 @@ pub struct ClientReport {
     pub team_packets: u64,
     #[serde(default)]
     pub team_markers: u64,
+    #[serde(default)]
+    pub world_state_packets: u64,
+    /// Latest authoritative balances in Manpower / Munitions / Fuel order.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub team_resources: Option<[u16; 3]>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub resource_minutes: Vec<ResourceMinute>,
+    #[serde(default)]
+    pub resource_deltas: u64,
+    /// Sum of observed C4 deltas, independent of the absolute C2 projection.
+    #[serde(default)]
+    pub resource_delta_sum: [i64; 3],
     /// Index of the client in this process.
     pub id: u32,
     /// Server-assigned player id (`None` when the join failed).

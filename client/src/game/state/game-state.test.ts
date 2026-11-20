@@ -123,3 +123,27 @@ describe('GameState.apply', () => {
     for (const h of held) expect(after.has(h)).toBe(true);
   });
 });
+
+describe('team resources', () => {
+  it('keeps the latest team pool authoritative across C4 deltas and team moves', () => {
+    const { gs, bus } = make();
+    const seen: number[] = [];
+    bus.on('resource.delta', ({ value }) => seen.push(value));
+    gs.seedTeam(0);
+    const income = { tick: 1800, team: 0, timer: 60, manpower: 242, munitions: 98, fuel: 50, frontLinePos: 0, objectives: [] };
+    gs.applyWorldState(income);
+    gs.apply({ type: 'resourceDelta', team: 0, kind: 0, value: 42, reason: 0 });
+    gs.apply({ type: 'resourceDelta', team: 1, kind: 0, value: 42, reason: 0 });
+    gs.applyWorldState({ ...income, tick: 1770, manpower: 200 });
+    gs.applyWorldState({ ...income, tick: 1830, team: 1, manpower: 400 });
+    expect(seen).toEqual([42]);
+    expect(gs.worldState).toEqual(income);
+
+    gs.apply({ type: 'teamBalanceNotice', code: TeamBalanceCode.Moved, args: [1, 1830] });
+    gs.applyWorldState({ ...income, tick: 1800, team: 1 });
+    gs.applyWorldState({ ...income, tick: 1860, team: 0 });
+    expect(gs.worldState).toBeUndefined();
+    gs.applyWorldState({ ...income, tick: 1860, team: 1, manpower: 400 });
+    expect(gs.worldState?.manpower).toBe(400);
+  });
+});

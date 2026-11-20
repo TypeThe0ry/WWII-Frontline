@@ -25,6 +25,20 @@ import { WtTransport, type WebTransportCtor } from './wt-transport';
 export const WT_TIMEOUT_MS = 3000;
 export const TOTAL_BUDGET_MS = 5000;
 const EARLY_C4_MAX_BYTES = 64 * 1024;
+// Match frontline_protocol::msg::{c0::CAP_RESOURCES, team::WORLD_STATE_C2_TAG}.
+const CAP_RESOURCES = 1 << 3;
+const WORLD_STATE_C2_TAG = 0x20;
+
+export interface WorldState {
+  readonly tick: number;
+  readonly team: number;
+  readonly timer: number;
+  readonly manpower: number;
+  readonly munitions: number;
+  readonly fuel: number;
+  readonly frontLinePos: number;
+  readonly objectives: readonly { readonly owner: number; readonly capture: number }[];
+}
 
 export interface NetStats {
   bytesIn: number;
@@ -72,6 +86,7 @@ export interface Session {
   readonly fallbackReason: string | undefined;
   /** C2 packets, raw (decode in `game`). */
   onSnapshot(cb: (bytes: Uint8Array) => void): () => void;
+  onWorldState(cb: (state: WorldState) => void): () => void;
   onC3(cb: (bytes: Uint8Array) => void): () => void;
   onC4(cb: (bytes: Uint8Array) => void): () => void;
   onC0(cb: (bytes: Uint8Array) => void): () => void;
@@ -108,6 +123,7 @@ class SessionImpl implements Session {
     now: () => number,
     onDeployResult: ConnectOptions['onDeployResult'],
     offC4: () => void,
+    private readonly wasm: SimWasmModule,
   ) {
     // C0 after the handshake.
     this.unsubs.push(
@@ -145,7 +161,21 @@ class SessionImpl implements Session {
   }
 
   onSnapshot(cb: (bytes: Uint8Array) => void): () => void {
-    return this.transport.onC2(cb);
+    return this.transport.onC2((bytes) => {
+      if (bytes[0] !== WORLD_STATE_C2_TAG) cb(bytes);
+    });
+  }
+  onWorldState(cb: (state: WorldState) => void): () => void {
+    return this.transport.onC2((bytes) => {
+      if (bytes[0] !== WORLD_STATE_C2_TAG || !this.wasm.decodeWorldState) return;
+      let state: WorldState;
+      try {
+        state = JSON.parse(this.wasm.decodeWorldState(bytes)) as WorldState;
+      } catch {
+        return;
+      }
+      cb(state);
+    });
   }
   onC3(cb: (bytes: Uint8Array) => void): () => void {
     return this.transport.onC3(cb);
@@ -262,7 +292,9 @@ export async function connect(opts: ConnectOptions): Promise<Session> {
       earlyC4Bytes += bytes.length + 2; // Count framing so even empty frames have a cost.
       if (earlyC4Bytes <= EARLY_C4_MAX_BYTES) earlyC4.push(bytes);
     }) : () => undefined;
-    const caps = (hasGpu ? 1 : 0) | (t.kind === 'wt' ? 2 : 0) | (opts.teamMarkers ? CAP_TEAM_MARKERS : 0);
+    const caps = (hasGpu ? 1 : 0) | (t.kind === 'wt' ? 2 : 0)
+      | (opts.teamMarkers ? CAP_TEAM_MARKERS : 0)
+      | (typeof opts.wasm.decodeWorldState === 'function' ? CAP_RESOURCES : 0);
     try {
       await withTimeout(t.connect(), connectTimeoutMs, () => new NetError('transport_failed', `${t.kind} connection not ready after ${connectTimeoutMs} ms`));
     } catch (e) {
@@ -282,7 +314,7 @@ export async function connect(opts: ConnectOptions): Promise<Session> {
     }
     const clock = new ClockSync({ now, sendPing: (ct) => t.sendC0(codec.encodePing(ct)), tickMs: hs.welcome.tickHz > 0 ? 1000 / hs.welcome.tickHz : TICK_MS });
     clock.seed(hs.welcome.serverTick, hs.rttMs, hs.recvAt);
-    const s = new SessionImpl(t, clock, hs.welcome, hs.rttMs, now() - t0, fallbackReason, codec, opts.bus, now, opts.onDeployResult, offC4);
+    const s = new SessionImpl(t, clock, hs.welcome, hs.rttMs, now() - t0, fallbackReason, codec, opts.bus, now, opts.onDeployResult, offC4, opts.wasm);
     const buffered = earlyC4;
     earlyC4 = undefined;
     for (const bytes of buffered) dispatchC4(bytes);

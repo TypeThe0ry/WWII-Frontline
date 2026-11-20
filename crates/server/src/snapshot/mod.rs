@@ -20,6 +20,7 @@ pub mod priority;
 pub mod scheduler;
 pub mod self_state;
 pub mod team_channel;
+pub(crate) mod world_state;
 
 pub use scheduler::{
     ClientIn, LinkInfo, Outgoing, SchedStats, SnapshotScheduler, DEGRADE_HOLD_TICKS, PACKET_BUDGET,

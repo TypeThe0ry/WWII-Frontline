@@ -120,3 +120,42 @@ fn world_state_size() {
     };
     assert_eq!(encode_world_state(&w).unwrap().len(), 16);
 }
+
+#[test]
+fn resources_extension_wire_and_validation() {
+    let state = WorldState {
+        timer: 123,
+        objectives: [ObjectiveState {
+            owner: 2,
+            capture: 100,
+        }; 5],
+        manpower: 242,
+        munitions: 98,
+        fuel: 50,
+        front_line_pos: 0,
+    };
+    let packet = WorldStateC2 {
+        tick: 1800,
+        team: 1,
+        state,
+    };
+    let mut bytes = encode_world_state_c2(&packet).unwrap();
+    assert_eq!(&bytes[..6], &[0x20, 0, 0, 7, 8, 1]);
+    assert_eq!(&bytes[6..], encode_world_state(&state).unwrap());
+    assert_eq!(decode_world_state_c2(&bytes), Ok(packet));
+    assert_eq!(decode_world_state_c2(&bytes[..21]), Err(CodecError::Eof));
+    bytes[5] = 2;
+    assert_eq!(decode_world_state_c2(&bytes), Err(CodecError::InvalidValue));
+
+    let event = ServerEventC4::ResourceDelta(ResourceDelta {
+        team: 1,
+        kind: 2,
+        value: -6,
+        reason: 3,
+    });
+    let mut bytes = encode_c4(&event).unwrap();
+    assert_eq!(bytes, [0x10, 1, 2, 0xff, 0xff, 0xff, 0xfa, 3]);
+    assert_eq!(decode_c4(&bytes), Ok(event));
+    bytes[7] = 5;
+    assert_eq!(decode_c4(&bytes), Err(CodecError::InvalidValue));
+}

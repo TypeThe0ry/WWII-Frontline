@@ -369,6 +369,46 @@ impl Codec for StructureState {
     }
 }
 
+/// Signed change actually applied to a team pool (no discarded overflow).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ResourceDelta {
+    /// US = 0, GER = 1.
+    pub team: u8,
+    /// Manpower = 0, Munitions = 1, Fuel = 2.
+    pub kind: u8,
+    pub value: i32,
+    /// Income = 0, Spend = 1, Refund = 2, Upkeep = 3, Spoils = 4.
+    pub reason: u8,
+}
+
+impl Codec for ResourceDelta {
+    fn encode(&self, w: &mut BitWriter) -> Result<(), CodecError> {
+        if self.team > 1 || self.kind > 2 || self.reason > 4 {
+            return Err(CodecError::InvalidValue);
+        }
+        w8(w, self.team)?;
+        w8(w, self.kind)?;
+        w.write_bits(u64::from(self.value as u32), 32)?;
+        w8(w, self.reason)
+    }
+
+    fn decode(r: &mut BitReader<'_>) -> Result<Self, CodecError> {
+        let team = r8(r)?;
+        let kind = r8(r)?;
+        let value = r.read_bits(32)? as u32 as i32;
+        let reason = r8(r)?;
+        if team > 1 || kind > 2 || reason > 4 {
+            return Err(CodecError::InvalidValue);
+        }
+        Ok(Self {
+            team,
+            kind,
+            value,
+            reason,
+        })
+    }
+}
+
 /// Server -> client reliable events.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ServerEventC4 {
@@ -388,6 +428,7 @@ pub enum ServerEventC4 {
     MapVoteState(MapVoteState),
     MapVoteResult(MapVoteResult),
     StructureState(StructureState),
+    ResourceDelta(ResourceDelta),
 }
 
 impl ServerEventC4 {
@@ -409,6 +450,7 @@ impl ServerEventC4 {
             Self::MapVoteState(_) => c4_type::MAP_VOTE_STATE,
             Self::MapVoteResult(_) => c4_type::MAP_VOTE_RESULT,
             Self::StructureState(_) => c4_type::STRUCTURE_STATE,
+            Self::ResourceDelta(_) => c4_type::RESOURCE_DELTA,
         }
     }
 }
@@ -433,6 +475,7 @@ impl Codec for ServerEventC4 {
             Self::MapVoteState(m) => m.encode(w),
             Self::MapVoteResult(m) => m.encode(w),
             Self::StructureState(m) => m.encode(w),
+            Self::ResourceDelta(m) => m.encode(w),
         }
     }
     fn decode(r: &mut BitReader<'_>) -> Result<Self, CodecError> {
@@ -453,6 +496,7 @@ impl Codec for ServerEventC4 {
             c4_type::MAP_VOTE_STATE => Self::MapVoteState(MapVoteState::decode(r)?),
             c4_type::MAP_VOTE_RESULT => Self::MapVoteResult(MapVoteResult::decode(r)?),
             c4_type::STRUCTURE_STATE => Self::StructureState(StructureState::decode(r)?),
+            c4_type::RESOURCE_DELTA => Self::ResourceDelta(ResourceDelta::decode(r)?),
             _ => return Err(CodecError::InvalidTag),
         })
     }
