@@ -1426,3 +1426,9 @@ PrePass 速度会卡死渲染循环，改用自有速度 RTT（地形/薄实例/
 - **Carentan WT 1800 s**。与 D1 相同绑核及负载参数，含已合入 #150 室内碰撞。20/20 加入、部署和收到 C3。P50/P99/max 4.189/8.644/126.668 ms，超时 29 次（D1 94）。最长连续 2 仍超门槛 1。29 次超时均由 runq 等待主导，次轮应隔离 sim 核及同版本复测。719,320/719,320 个快照配对，133,596 条敌方记录中 0 越界。
 - **M1-028**。昵称相同时签票从四次 SQLite 操作减为一次，保留改名路径的原子性及 WAL 设置。原版夹具重复七对的 P95 中位数 60.787→51.639 ms，采集指标夹具 62.734→53.495 ms，分别只有 3/7 轮达到 50 ms。下一步区分剩余服务端排队和客户端端到端调度成本。
 - 正式素材 M1-064 与账号 M1-067 仍阻塞。参考机、Carentan netem、满编载具及真人未测。复现和对比见 [B5-E1 报告](../reports/m1-server-tail-b5-e1.md)。
+
+## PI-B6-variantci-1 B6-variantci：E1-8 变体统计与 local-ci 门禁核对及报告同步（2026-11-20）
+
+- **现状核查**：B3-C3（#142）已在 `client/src/render/materials/variants.ts` 中新增 `CUSTOM_VARIANTS`（自写 CSM：`csm:plain`、`csm:instanced`；TAA 速度通道：`velocity:plain`、`velocity:instanced`、`velocity:terrain`），在 `custom-csm.ts` 与 `velocity.ts` 接入 `VariantRegistry.registerCustom`，并将 `pnpm -C client run variant-count` 接入 `scripts/local-ci.sh ts` 分组（每后端 High 37/60、Low 25/40）。但 `reports/m1-pbr.md` 与 `reports/m1-acceptance.md` E1-8 行未同步更新，仍标注这两项缺口未做。
+- **本轮补充**：在 `client/src/render/materials/variants.test.ts` 新增源码一致性断言，校验 `custom-csm.ts` 与 `velocity.ts` 实际调用的 `registerCustom(...)` 键集合与 `CUSTOM_VARIANTS` 完全一致（防止新增自定义着色器时漏登）；同步追加更新 `reports/m1-pbr.md`、`reports/m1-acceptance.md` E1-8 行与 `tasks/STATUS.md` M1-042 行。
+- **仍为 partial**：M1 世界场景运行时仍使用 18 种占位材质（待 M1-064 真实素材与全场景 PBR 替换），工作站预热数据按 PI-109 不替代 RTX 3060 / Iris Xe 参考机（H-021）。

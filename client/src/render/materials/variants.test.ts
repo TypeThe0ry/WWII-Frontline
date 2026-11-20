@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { PH_NAME_RE, phName } from '../actors/names';
 import {
@@ -59,6 +61,18 @@ describe('PBR variants', () => {
     expect(a).toBe(b);
     expect(f.getMaterial(d('shadow', { detail: true }))).toBe(f.getMaterial(d('shadow')));
     expect(made).toBe(2);
+  });
+
+  it('custom CSM and TAA velocity passes register every CUSTOM_VARIANTS key', () => {
+    const extract = (relPath: string): string[] => {
+      const src = readFileSync(fileURLToPath(new URL(relPath, import.meta.url)), 'utf8');
+      return [...src.matchAll(/registerCustom\(['"]([^'"]+)['"]\)/g)].map((m) => m[1]!);
+    };
+    const csmKeys = extract('../lighting/custom-csm.ts').sort();
+    const velKeys = extract('../post/velocity.ts').sort();
+    expect(csmKeys).toEqual(['csm:instanced', 'csm:plain']);
+    expect(velKeys).toEqual(['velocity:instanced', 'velocity:plain', 'velocity:terrain']);
+    expect([...new Set([...csmKeys, ...velKeys])].sort()).toEqual([...CUSTOM_VARIANTS].sort());
   });
 
   it('placeholder names follow PH_{requirement}', () => {
