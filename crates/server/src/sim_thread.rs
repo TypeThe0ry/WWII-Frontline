@@ -1031,7 +1031,7 @@ impl<C: Clock> SimLoop<C> {
                     return ActionResult::Unsupported;
                 };
                 let text = format!("[Admin] {text}");
-                if text.len() > frontline_protocol::msg::c0::MAX_CHAT_LEN {
+                if text.chars().count() > frontline_protocol::msg::c0::MAX_CHAT_LEN {
                     return ActionResult::Unsupported;
                 }
                 let message = ServerMsgC0::Chat(Chat {

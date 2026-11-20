@@ -64,6 +64,11 @@ describe.skipIf(!HAVE_WASM)('GameLoop vehicle seats', () => {
       expect(game.applier.vehicles.count).toBe(0);
       snap(13, 0, 0, [[128, 80]]);
       expect(game.applier.vehicles.ids()).toEqual([128]);
+      markers.upsert({ ...marker, id: 6, owner: 2 }, 15, 2, 0);
+      markers.applyLegacy({ tick: 15, markers: [marker] }, 0);
+      game.resetTeamProjection(14);
+      expect([...markers.lifecycle.keys()]).toEqual([6]);
+      expect(markers.legacyProjection).toHaveLength(1);
     } finally {
       game.dispose();
     }

@@ -65,10 +65,25 @@ export class NetworkMarkers {
     }
   }
 
-  reset(teamTick?: number): void {
+  discardThroughTeamChange(tick: number): void {
+    // A new-team C2/C3 frame can arrive before the reliable C4 move notice.
+    for (const [id, stamp] of this.order) {
+      if (((stamp.tick - tick) | 0) <= 0) {
+        this.active.delete(id);
+        this.order.delete(id);
+      }
+    }
+    const tick16 = tick & 0xffff;
+    if (this.legacyTick === undefined || !newer16(this.legacyTick, tick16)) {
+      this.legacy = [];
+      this.legacyTick = tick16;
+    }
+  }
+
+  reset(): void {
     this.active.clear();
     this.order.clear();
-    this.legacyTick = teamTick === undefined ? undefined : teamTick & 0xffff;
+    this.legacyTick = undefined;
     this.legacy = [];
   }
 }

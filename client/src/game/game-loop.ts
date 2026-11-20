@@ -253,7 +253,7 @@ export class GameLoop {
   /** A C4 move invalidates old AOI samples, markers and the local vehicle seat. */
   resetTeamProjection(tick: number): void {
     this.teamProjectionFloor = tick;
-    this.events.markers.reset(tick);
+    this.events.markers.discardThroughTeamChange(tick);
     this.hasAuthoritativePosition = false;
     this.predictor.frozen = this.reconciler.frozen = true;
     this.vehicle?.leave();
