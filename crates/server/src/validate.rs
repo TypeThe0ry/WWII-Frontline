@@ -505,17 +505,26 @@ mod tests {
     }
 
     #[test]
-    fn rate_limit_with_default_cfg_is_unreachable_for_one_tick() {
-        // 8000 deg/s * 1/30 s = 266 deg > 180 deg, the largest change a wrapped 16-bit yaw (or a
-        // 16-bit pitch spanning 180 deg) can express between two ticks: nothing can trip the
-        // default limit at 1-tick spacing (PLAN_ISSUES PI-022).
+    fn default_turn_cap_applies_per_axis_and_scales_with_elapsed_ticks() {
         let mut s = st();
-        validate_input(&mut s, &cmd(1, 1)).unwrap();
+        let mut start = cmd(1, 1);
+        start.pitch = i16::MIN;
+        validate_input(&mut s, &start).unwrap();
         let mut c = cmd(2, 2);
         c.yaw = 0x8000; // 180 deg
-        c.pitch = i16::MAX;
+        c.pitch = i16::MAX; // 180 deg
+        let v = validate_input(&mut s, &c).unwrap();
+        assert_eq!(
+            v.clamps.reasons().collect::<Vec<_>>(),
+            vec![Reject::YawRate, Reject::PitchRate]
+        );
+
+        let mut s = st();
+        validate_input(&mut s, &start).unwrap();
+        c.tick += 1; // Same angles over two ticks: 2700 deg/s on each axis.
         let v = validate_input(&mut s, &c).unwrap();
         assert!(!v.clamps.any());
+        assert_eq!(v.cmd, c);
     }
 
     #[test]
@@ -636,7 +645,10 @@ mod tests {
         let codes =
             |dx: f32| FireCmd::encode_origin_hint((muzzle + Vec3::X * dx).to_array()).unwrap();
         assert!(!fire_origin_hint_corrected(codes(0.5), muzzle));
-        assert!(fire_origin_hint_corrected(codes(0.75), muzzle));
+        assert!(fire_origin_hint_corrected(
+            codes(0.5),
+            muzzle - Vec3::X * 0.01
+        )); // ~0.51 m from the original grid point
         assert!(!fire_origin_hint_corrected([0; 3], muzzle));
         assert!(!fire_origin_hint_corrected([0x4000, 128, 640], muzzle));
         for x in [-1.0, 4096.0, f32::NAN] {
