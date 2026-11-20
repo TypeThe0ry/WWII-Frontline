@@ -210,6 +210,12 @@ static AOI_OUTPUT: OnceLock<Output> = OnceLock::new();
 enum OutputLine {
     Json(Vec<u8>),
     Aoi(u8, u32, crate::snapshot::priority::Observer),
+    AoiT3 {
+        player: u8,
+        tick: u32,
+        scale: f32,
+        retained: [u64; 2],
+    },
     Stop,
 }
 
@@ -235,6 +241,21 @@ impl Output {
             self.dropped.aoi.fetch_add(1, Ordering::Relaxed);
         }
     }
+
+    pub(crate) fn aoi_t3(&self, player: u8, tick: u32, scale: f32, retained: [u64; 2]) {
+        if self
+            .tx
+            .try_send(OutputLine::AoiT3 {
+                player,
+                tick,
+                scale,
+                retained,
+            })
+            .is_err()
+        {
+            self.dropped.aoi.fetch_add(1, Ordering::Relaxed);
+        }
+    }
 }
 
 pub(crate) fn aoi_output() -> Option<Output> {
@@ -243,6 +264,10 @@ pub(crate) fn aoi_output() -> Option<Output> {
     } else {
         None
     }
+}
+
+pub(crate) fn regulator_output() -> Option<Output> {
+    std::env::var_os("FL_AOI_REGULATOR_TRACE").and_then(|_| AOI_OUTPUT.get().cloned())
 }
 
 impl Write for Output {
@@ -278,6 +303,9 @@ fn write_output(
                         stderr, "[aoi-pose] {p} {tick} {} {} {} {} {} {} {} {}",
                         o.team, o.pos.x, o.pos.y, o.pos.z, o.yaw, o.pitch, o.prev_yaw, o.prev_pitch,
                     ),
+                    Ok(OutputLine::AoiT3 { player, tick, scale, retained: [lo, hi] }) => {
+                        writeln!(stderr, "[aoi-t3] {player} {tick} {scale} {lo:016x} {hi:016x}")
+                    }
                     Ok(OutputLine::Stop) | Err(_) => break,
                 };
                 write_errors += u64::from(result.is_err());

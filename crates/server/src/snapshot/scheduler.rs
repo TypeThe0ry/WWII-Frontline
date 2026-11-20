@@ -207,6 +207,7 @@ pub struct SnapshotScheduler {
     veh_slot: BTreeMap<EntityId, u8>,
     params: AoiParams,
     trace_aoi: Option<crate::logging::Output>,
+    trace_regulator: Option<crate::logging::Output>,
 }
 
 fn snap_stance(s: frontline_sim::Stance) -> u8 {
@@ -239,6 +240,7 @@ impl SnapshotScheduler {
             veh_slot: BTreeMap::new(),
             params: AoiParams::from_rules(&frontline_sim::GameData::embedded().rules.aoi, TICK_HZ),
             trace_aoi: crate::logging::aoi_output(),
+            trace_regulator: crate::logging::regulator_output(),
         }
     }
 
@@ -846,6 +848,24 @@ impl SnapshotScheduler {
             slot.state = SlotState::InRange;
             slot.remove_left = 0;
             slot.acc = c.acc;
+        }
+        if let Some(trace) = &self.trace_regulator {
+            let mut retained = [0u64; 2];
+            for c in &self.cands {
+                let i = c.id as usize;
+                let f = &self.frames[i];
+                if i < 128 && f.team as u8 == o.team {
+                    let dist = f.pos.distance(o.pos);
+                    if dist > 192.0 && dist <= 400.0 {
+                        retained[i / 64] |= 1 << (i % 64);
+                    }
+                }
+            }
+            let scale = book
+                .regulator
+                .as_ref()
+                .map_or(1.0, BandwidthRegulator::scale);
+            trace.aoi_t3(p, now, scale, retained);
         }
         for slot in &mut book.prio.slots {
             if slot.state == SlotState::InRange && slot.touched != ec {
