@@ -347,6 +347,16 @@ FRONTLINE_UI_LIVE=1 pnpm -C client exec playwright test -c playwright.ui.config.
 
 Use `FRONTLINE_CHROME` (lobby/match suite) or `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` (settings/audio suite) to select an installed Chromium executable instead of the Playwright bundle. The local M0 match spawns on join, so the live join test is **not** evidence for the M1 deploy/respawn loop or M1 performance budgets.
 
+### Live browser Garrison loop (E1-11)
+
+```sh
+CARGO_BUILD_JOBS=8 cargo build --locked -p frontline-gateway -p frontline-server
+CARGO_BUILD_JOBS=8 wasm-pack build crates/sim-wasm --target web --profile wasm-release
+pnpm -C client exec playwright test -c playwright.garrison.config.ts
+```
+
+The Linux fixture starts its own gateway, match server and Vite on ephemeral ports; it needs no running dev stack. It runs WS and pinned dev-cert WT separately (WT is skipped only if the Chromium API is absent on loopback). It uses two interactive browser pages, three undeployed balancing/roster sessions and generated collision data, without rendering or pointer lock. See `reports/m1-garrison-e2e.md` for coverage and timing definitions. Use `FRONTLINE_CHROME` to select a local Chromium executable.
+
 ## Local dev stack (M1-066)
 
 `./dev.sh` starts the full local development stack (`frontline-gateway` + `frontline-server` + Vite client dev server) in one command, generates ephemeral local tokens into `.dev-stack/` (git-ignored), and maintains a 13-day WebTransport dev certificate in `dev-cert/`:

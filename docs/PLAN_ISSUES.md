@@ -1442,3 +1442,9 @@ PrePass 速度会卡死渲染循环，改用自有速度 RTT（地形/薄实例/
 
 - 2026-11-20。真实 CC0 WaterBottle 通过 25% 验收（19.35%）。缓存中 Kenney 桥的调色板模型为 43.91%，Poly Haven 木箱 2K JPEG 为 50.81%。25% 使用任务卡的「≥1 个带纹理模型」口径。
 - 额外 Kenney `kenney-prototype-kit.zip` 中 `figurine-cube-detailed.glb` 触发 meshoptimizer 索引编码断言。该模型的体积未测，后续追踪其图元模式和索引输入。完整测量见 `reports/m1-002-lod.md`。
+
+## PI-B6-browsergarrison-1 B6-browsergarrison：E1-11 两浏览器真服闭环（2026-11-20）
+
+- 两页分别控制同队 Officer / Support。真实 gateway 签票和服务器自动分队、兵种人数限制仍生效；额外三条不部署会话经独立回环源地址上的 WS 代理满足 roster，不放宽生产连接上限。
+- 程序化战术碰撞夹具用来稳定复跑搬运距离和坠落死亡；浏览器执行真实 WASM、C0/C1/C2/C4 和 `LivePlacement`，不测正式地图或最终 DOM。补 sim 初始 `Building` 事件，经现有同队 C4 可见；DEBUG 记录成功提交前后的落地箱库存，不改变协议。
+- WS 与固定开发证书的 WT 均通过。权威状态为库存 100→50、驻点 `Building → Active`、驻点 8 m 内重生、备弹 120→90→120。耗时见 [E1-11 专项报告](../reports/m1-garrison-e2e.md)，为 PI-109 非参考机样本。正式地图、完整 UI、真人演示、受信任证书和参考机仍未测，E1-11 保持 partial。
