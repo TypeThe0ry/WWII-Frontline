@@ -11,6 +11,7 @@ pub mod input_buffer;
 pub mod logging;
 pub mod metrics;
 pub mod net;
+mod report;
 mod seat_input;
 pub mod session;
 pub mod shutdown;

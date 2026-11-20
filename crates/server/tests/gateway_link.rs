@@ -12,7 +12,7 @@ use std::time::{Duration, Instant};
 
 use axum::extract::{Path, State};
 use axum::http::{HeaderMap, StatusCode};
-use axum::routing::post;
+use axum::routing::{get, post, put};
 use axum::{Json, Router};
 use base64::Engine;
 use common::*;
@@ -165,6 +165,7 @@ async fn ws_ticket_identity_lives_and_dies_with_the_server_slot() {
     assert!(matches!(h.commands.try_recv(), Ok(Command::Join { player, .. }) if player == slot));
     let identity = Admitted {
         gateway_player: signed.player_id,
+        jti: signed.jti,
         nick: signed.nick.clone(),
         is_admin: true,
     };
@@ -206,6 +207,7 @@ async fn ws_ticket_identity_lives_and_dies_with_the_server_slot() {
         h.ctx.sessions.ticket_identity_of(slot),
         Some(Admitted {
             gateway_player: next.player_id,
+            jti: next.jti,
             nick: next.nick,
             is_admin: false,
         })
@@ -252,6 +254,12 @@ struct Fake {
     fail_beat: std::sync::atomic::AtomicBool,
     beats: Mutex<Vec<(Instant, serde_json::Value)>>,
     results: Mutex<Vec<(String, serde_json::Value)>>,
+    reports: Mutex<Vec<serde_json::Value>>,
+    report_replays: Mutex<Vec<(i64, serde_json::Value)>>,
+    chat: Mutex<Vec<serde_json::Value>>,
+    actions: Mutex<Vec<serde_json::Value>>,
+    action_acks: Mutex<Vec<(i64, serde_json::Value)>>,
+    fail_ack_once: AtomicU32,
 }
 
 const TOKEN: &str = "internal-token";
@@ -261,6 +269,8 @@ fn authed(h: &HeaderMap) -> bool {
 }
 
 async fn spawn_fake(f: Arc<Fake>) -> String {
+    use serde_json::{json, Value};
+
     async fn register(
         State(f): State<Arc<Fake>>,
         h: HeaderMap,
@@ -322,10 +332,90 @@ async fn spawn_fake(f: Arc<Fake>) -> String {
             StatusCode::OK
         }
     }
+    async fn report(
+        State(f): State<Arc<Fake>>,
+        h: HeaderMap,
+        Json(v): Json<Value>,
+    ) -> (StatusCode, Json<Value>) {
+        if !authed(&h) {
+            return (StatusCode::UNAUTHORIZED, Json(Value::Null));
+        }
+        let reply = match v["note"].as_str() {
+            Some("duplicate") => (StatusCode::OK, Json(json!({"id":21}))),
+            Some("rate limited") => (StatusCode::TOO_MANY_REQUESTS, Json(json!({"id":22}))),
+            _ => (StatusCode::CREATED, Json(json!({"id":20}))),
+        };
+        f.reports.lock().unwrap().push(v);
+        reply
+    }
+    async fn attach_replay(
+        State(f): State<Arc<Fake>>,
+        Path((_match_id, id)): Path<(String, i64)>,
+        h: HeaderMap,
+        Json(v): Json<Value>,
+    ) -> StatusCode {
+        if !authed(&h) {
+            return StatusCode::UNAUTHORIZED;
+        }
+        f.report_replays.lock().unwrap().push((id, v));
+        StatusCode::NO_CONTENT
+    }
+    async fn chat(
+        State(f): State<Arc<Fake>>,
+        Path(_match_id): Path<String>,
+        h: HeaderMap,
+        Json(v): Json<Value>,
+    ) -> StatusCode {
+        if !authed(&h) {
+            return StatusCode::UNAUTHORIZED;
+        }
+        f.chat.lock().unwrap().push(v);
+        StatusCode::NO_CONTENT
+    }
+    async fn actions(
+        State(f): State<Arc<Fake>>,
+        Path(_match_id): Path<String>,
+        h: HeaderMap,
+    ) -> Result<Json<Vec<Value>>, StatusCode> {
+        if !authed(&h) {
+            return Err(StatusCode::UNAUTHORIZED);
+        }
+        Ok(Json(f.actions.lock().unwrap().clone()))
+    }
+    async fn ack(
+        State(f): State<Arc<Fake>>,
+        Path((_match_id, id)): Path<(String, i64)>,
+        h: HeaderMap,
+        Json(v): Json<Value>,
+    ) -> StatusCode {
+        if !authed(&h) {
+            return StatusCode::UNAUTHORIZED;
+        }
+        f.action_acks.lock().unwrap().push((id, v));
+        if f.fail_ack_once
+            .compare_exchange(id as u32, 0, Ordering::SeqCst, Ordering::SeqCst)
+            .is_ok()
+        {
+            return StatusCode::SERVICE_UNAVAILABLE;
+        }
+        f.actions
+            .lock()
+            .unwrap()
+            .retain(|action| action["id"] != id);
+        StatusCode::NO_CONTENT
+    }
     let app = Router::new()
         .route("/internal/matches/register", post(register))
         .route("/internal/matches/{id}/heartbeat", post(beat))
         .route("/internal/matches/{id}/result", post(result))
+        .route("/internal/report", post(report))
+        .route(
+            "/internal/matches/{id}/reports/{report_id}/replay",
+            put(attach_replay),
+        )
+        .route("/internal/matches/{id}/chat", put(chat))
+        .route("/internal/matches/{id}/actions", get(actions))
+        .route("/internal/matches/{id}/actions/{action_id}/ack", post(ack))
         .with_state(f);
     let l = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
     let addr = l.local_addr().unwrap();

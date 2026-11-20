@@ -226,6 +226,7 @@ fn run(cfg: Config) -> Result<(), String> {
             &ws,
             wt.as_ref(),
             &metrics,
+            handle.commands_tx.clone(),
             hb_stop_rx,
         ))?),
         None => None,
@@ -253,7 +254,23 @@ fn run(cfg: Config) -> Result<(), String> {
     }
     drop(inbound);
     let report = handle.join();
-    if let Some((client, id)) = &link {
+    if let Some((client, id, report_worker)) = link {
+        rt.block_on(async {
+            let mut worker = report_worker;
+            if tokio::time::timeout(
+                frontline_server::gateway_link::client::REQUEST_TIMEOUT,
+                &mut worker,
+            )
+            .await
+            .is_err()
+            {
+                worker.abort();
+                tracing::warn!(
+                    event = "report_shutdown_deadline",
+                    "dropping pending report submissions"
+                );
+            }
+        });
         let result = frontline_server::gateway_link::result::MatchResult {
             players: u16::from(humans_at_end),
             bots: u16::from(bots_at_end),
@@ -262,8 +279,8 @@ fn run(cfg: Config) -> Result<(), String> {
             ticks: report.as_ref().map_or(0, |r| r.ticks),
             rows: Vec::new(),
         };
-        if let Err(e) = rt.block_on(client.submit_result(id, &result)) {
-            match frontline_server::gateway_link::result::spool(&cfg.spool_dir, id, &result) {
+        if let Err(e) = rt.block_on(client.submit_result(&id, &result)) {
+            match frontline_server::gateway_link::result::spool(&cfg.spool_dir, &id, &result) {
                 Ok(p) => {
                     tracing::warn!(event = "result_spooled", error = %e, path = %p.display(), "result not delivered; kept for a retry")
                 }
@@ -327,15 +344,19 @@ async fn start_gateway_link(
     ws: &frontline_server::net::ws::WsListener,
     wt: Option<&frontline_server::net::wt::WtListener>,
     metrics: &std::sync::Arc<metrics::Metrics>,
+    commands: crossbeam_channel::Sender<sim_thread::Command>,
     hb_stop: tokio::sync::watch::Receiver<bool>,
 ) -> Result<
     (
         frontline_server::gateway_link::client::GatewayClient,
         String,
+        tokio::task::JoinHandle<()>,
     ),
     String,
 > {
-    use frontline_server::gateway_link::{client, heartbeat, result, ticket_verify};
+    use frontline_server::gateway_link::{
+        admin, client, heartbeat, reports, result, ticket_verify,
+    };
     let url = cfg.gateway_url.as_deref().unwrap_or_default();
     let token = cfg.internal_api_token.as_deref().unwrap_or_default();
     let gw = client::GatewayClient::new(url, token)?;
@@ -374,11 +395,38 @@ async fn start_gateway_link(
         }
     }
     let id = parse_hex16(&resp.match_id).ok_or("gateway sent a malformed match id")?;
+    let match_id = frontline_server::gateway_link::lower_hex(&id);
+    let (reports_tx, reports_rx) = tokio::sync::mpsc::channel(reports::QUEUE_CAPACITY);
+    let (chat_updates, chat_rx) = tokio::sync::watch::channel(std::sync::Arc::default());
+    commands
+        .try_send(sim_thread::Command::EnableReports {
+            reports: reports_tx,
+            chat_updates,
+        })
+        .map_err(|_| "cannot enable reports on the sim thread")?;
+    let report_worker = tokio::spawn(reports::run(
+        gw.clone(),
+        match_id.clone(),
+        cfg.spool_dir.clone(),
+        reports_rx,
+    ));
+    tokio::spawn(reports::run_live_chat(
+        gw.clone(),
+        match_id.clone(),
+        chat_rx,
+        hb_stop.clone(),
+    ));
     gate.arm(ticket_verify::TicketVerifier::new(vec![key]), id);
+    tokio::spawn(admin::run(
+        gw.clone(),
+        match_id.clone(),
+        commands,
+        hb_stop.clone(),
+    ));
     metrics.gateway_registered.set(1);
     tracing::info!(
         event = "gateway_registered",
-        gateway_match_id = %resp.match_id,
+        gateway_match_id = %match_id,
         key_fp = %resp.ticket_key_fingerprint,
         "registered with the gateway"
     );
@@ -401,13 +449,13 @@ async fn start_gateway_link(
     });
     tokio::spawn(heartbeat::run(
         gw.clone(),
-        resp.match_id.clone(),
+        match_id.clone(),
         source,
         metrics.clone(),
         hb_stop,
         heartbeat::INTERVAL,
     ));
-    Ok((gw, resp.match_id))
+    Ok((gw, match_id, report_worker))
 }
 
 /// Use active participants rather than transport connections, which include pending Hello.

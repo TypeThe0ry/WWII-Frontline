@@ -269,12 +269,34 @@ impl Sessions {
     /// Verified gateway metadata for this live server slot, if it joined with a ticket.
     /// `gateway_player` is not the server slot, and `is_admin` grants no permissions here.
     pub fn ticket_identity_of(&self, id: PlayerId) -> Option<Admitted> {
-        self.lock()
-            .players
-            .get(id as usize)?
-            .as_ref()?
-            .ticket_identity
-            .clone()
+        let g = self.lock();
+        let live = g.players.get(id as usize)?.as_ref()?;
+        if !live.handle.is_open() {
+            return None;
+        }
+        live.ticket_identity.clone()
+    }
+
+    /// Numeric gateway IDs wrap. Without a JTI, resolve only a unique live match.
+    pub(crate) fn admin_target(
+        &self,
+        jti: Option<[u8; 16]>,
+        gateway_player: Option<u8>,
+    ) -> Option<(PlayerId, ClientHandle)> {
+        if jti.is_none() && gateway_player.is_none() {
+            return None;
+        }
+        let g = self.lock();
+        let mut matches = g.players.iter().enumerate().filter_map(|(slot, live)| {
+            let live = live.as_ref()?;
+            let ticket = live.ticket_identity.as_ref()?;
+            (jti.is_none_or(|jti| jti == ticket.jti)
+                && gateway_player.is_none_or(|id| id == ticket.gateway_player)
+                && live.handle.is_open())
+            .then(|| (slot as PlayerId, live.handle.clone()))
+        });
+        let found = matches.next()?;
+        matches.next().is_none().then_some(found)
     }
 
     pub fn connections(&self) -> usize {
@@ -423,6 +445,9 @@ pub async fn run_connection<T: ClientTransport>(
                 break;
             }
             Recv::Frame(ch, payload) => {
+                if !handle.is_open() {
+                    break;
+                }
                 if !rate.allow(Instant::now()) {
                     reject_label_count(&ctx, "rate_limit");
                     handle.close_now();
@@ -470,13 +495,12 @@ pub(crate) fn disconnect_for_input(
     handle: &ClientHandle,
     reason: crate::anticheat::DisconnectReason,
 ) {
+    disconnect(handle, reason as u8);
+}
+
+pub(crate) fn disconnect(handle: &ClientHandle, reason: u8) {
     use frontline_protocol::msg::c0::Disconnect;
-    send_c0(
-        handle,
-        &ServerMsgC0::Disconnect(Disconnect {
-            reason: reason as u8,
-        }),
-    );
+    send_c0(handle, &ServerMsgC0::Disconnect(Disconnect { reason }));
     handle.close_graceful();
 }
 

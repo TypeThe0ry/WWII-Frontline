@@ -1,12 +1,14 @@
 //! The 30 Hz simulation thread (ARCHITECTURE §6.1, §6.10). Runs on a dedicated OS thread,
 //! never on a tokio worker. Input/command channels are bounded `crossbeam` channels.
 
+use std::collections::VecDeque;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use std::thread::JoinHandle;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use crossbeam_channel::{bounded, Receiver, Sender, TrySendError};
+use frontline_protocol::msg::c0::{Chat, ChatChannel, ClientMsgC0, ServerMsgC0};
 use frontline_protocol::msg::input::InputCmd;
 use frontline_sim::squad::{SquadKind, SquadOp};
 use frontline_sim::{
@@ -14,6 +16,8 @@ use frontline_sim::{
 };
 
 use crate::bot_host::BotHost;
+use crate::gateway_link::admin::{Action, ActionResult};
+use crate::gateway_link::reports::{ChatLine, ReportJob};
 use crate::seat_input::SeatInput;
 use crate::sim_bridge::{NetLink, SimBridge};
 use crate::snapshot::team_channel::{MapFrame, TeamChannel};
@@ -113,6 +117,25 @@ pub enum Command {
     },
     /// Keep every team at `n` players by spawning / removing bots (M1-039c); `0` turns it off.
     SetBotFill(u8),
+    /// Installed before the ticket gate is armed for a registered match.
+    EnableReports {
+        reports: tokio::sync::mpsc::Sender<ReportJob>,
+        chat_updates: tokio::sync::watch::Sender<Arc<Vec<ChatLine>>>,
+    },
+    Admin {
+        action: Action,
+        reply: Arc<AdminReply>,
+    },
+}
+
+// Command remains Clone for existing in-process callers. Only one clone can acknowledge.
+#[derive(Debug)]
+pub struct AdminReply(std::sync::Mutex<Option<tokio::sync::oneshot::Sender<ActionResult>>>);
+
+impl AdminReply {
+    pub(crate) fn new(tx: tokio::sync::oneshot::Sender<ActionResult>) -> Arc<Self> {
+        Arc::new(Self(std::sync::Mutex::new(Some(tx))))
+    }
 }
 
 /// Network-side sender for inputs. Drops the new input when the channel is full and counts it.
@@ -236,6 +259,8 @@ pub struct SimLoop<C: Clock> {
     bridge: SimBridge,
     seat_input: SeatInput,
     c0: crate::c0::C0Handler,
+    reports: Option<crate::report::Recorder>,
+    admin_disconnects: VecDeque<(Instant, crate::net::transport::ClientHandle)>,
     team_channel: TeamChannel,
     team_outgoing: Vec<(PlayerId, Vec<u8>)>,
     c4: crate::c4::Broadcast,
@@ -382,6 +407,8 @@ pub fn build_loop_with_bots<C: Clock>(
         bridge,
         seat_input: SeatInput::default(),
         c0: crate::c0::C0Handler::default(),
+        reports: None,
+        admin_disconnects: VecDeque::new(),
         team_channel: TeamChannel::new(
             GameData::embedded().rules.aoi.team_channel_period_s as f32,
             1.0 / TICK_PERIOD.as_secs_f32(),
@@ -698,6 +725,18 @@ impl<C: Clock> SimLoop<C> {
     // ---- ARCHITECTURE §6.1 steps 1-7 ----
 
     fn tick_body(&mut self) {
+        if !self.admin_disconnects.is_empty() {
+            let now = self.clock.now();
+            while self
+                .admin_disconnects
+                .front()
+                .is_some_and(|(deadline, _)| *deadline <= now)
+            {
+                if let Some((_, handle)) = self.admin_disconnects.pop_front() {
+                    handle.close_now();
+                }
+            }
+        }
         let trace = tick_trace_enabled();
         let mut t = trace.then(std::time::Instant::now);
         let mut lap = |slot: usize, phase: &mut [f64; 6]| {
@@ -714,6 +753,10 @@ impl<C: Clock> SimLoop<C> {
         let kicked = self.bridge.process_kicks(&mut self.world);
         if !kicked.is_empty() {
             for player in kicked {
+                self.c0.forget(player);
+                if let Some(recorder) = &mut self.reports {
+                    recorder.leave(player);
+                }
                 self.seat_input.forget(player);
                 self.c4.leave(player);
                 if let Some(host) = self.bot_host.as_mut() {
@@ -731,6 +774,9 @@ impl<C: Clock> SimLoop<C> {
         let out = self.world.step(self.bridge.resolved());
         lap(1, &mut self.phase_ms);
         self.step_events = out.events;
+        if let Some(recorder) = &mut self.reports {
+            recorder.record(self.clock.now(), self.bridge.resolved(), &self.step_events);
+        }
         self.c4.tick(
             &self.world,
             &self.bridge,
@@ -761,6 +807,14 @@ impl<C: Clock> SimLoop<C> {
         while let Ok(c) = self.commands_rx.try_recv() {
             match c {
                 Command::Join { player, team } => {
+                    if let (Some(recorder), Some(identity)) = (
+                        &mut self.reports,
+                        self.bridge
+                            .net()
+                            .and_then(|net| net.sessions.ticket_identity_of(player)),
+                    ) {
+                        recorder.join(player, identity);
+                    }
                     if !self.dev_spawn_vehicle {
                         if let Some(map) = self.bridge.map().filter(|m| m.uses_tactical_deploy()) {
                             // Tactical maps use C0 SquadOp/DeployRequest for role and first body.
@@ -819,7 +873,7 @@ impl<C: Clock> SimLoop<C> {
                 },
                 Command::C0 {
                     player,
-                    msg: frontline_protocol::msg::c0::ClientMsgC0::MarkerPlace(marker),
+                    msg: ClientMsgC0::MarkerPlace(marker),
                 } => {
                     let _ = self.team_channel.place_marker(
                         &self.world,
@@ -828,29 +882,141 @@ impl<C: Clock> SimLoop<C> {
                         self.world.tick().0,
                     );
                 }
+                Command::C0 {
+                    player,
+                    msg: ClientMsgC0::Report(report),
+                } if self.reports.is_some() => {
+                    self.submit_report(player, report);
+                }
                 Command::C0 { player, msg } => {
                     let mut out = Vec::new();
                     self.c0
                         .handle(&mut self.world, &self.metrics, player, msg, &mut out);
+                    if let Some(recorder) = &mut self.reports {
+                        recorder.chat(self.clock.now(), &out);
+                    }
                     self.send_c0(out);
                 }
                 Command::SetBotFill(n) => self.set_bot_fill(n),
-                Command::RemovePlayer(p) | Command::ClientGone(p) => {
-                    if let Some(host) = self.bot_host.as_mut() {
-                        if let Some(s) = self.bridge.session(p) {
-                            host.human_left(p, s.team, self.world.tick().0);
-                        }
-                        host.forget(p);
+                Command::RemovePlayer(p) | Command::ClientGone(p) => self.leave_player(p),
+                Command::EnableReports {
+                    reports,
+                    chat_updates,
+                } => {
+                    if self.reports.is_none() {
+                        self.reports = Some(crate::report::Recorder::new(
+                            reports,
+                            chat_updates,
+                            self.clock.now(),
+                        ));
                     }
-                    self.c0.forget(p);
-                    self.team_channel.forget(p);
-                    self.bridge.anticheat.forget(p);
-                    self.seat_input.forget(p);
-                    self.c4.leave(p);
-                    self.bridge.leave(&mut self.world, p);
-                    self.update_player_gauges();
+                }
+                Command::Admin { action, reply } => {
+                    if let Some(tx) = reply.0.lock().expect("admin reply poisoned").take() {
+                        let _ = tx.send(self.admin_action(action));
+                    }
                 }
             }
+        }
+    }
+
+    fn leave_player(&mut self, p: PlayerId) {
+        if let Some(host) = self.bot_host.as_mut() {
+            if let Some(s) = self.bridge.session(p) {
+                host.human_left(p, s.team, self.world.tick().0);
+            }
+            host.forget(p);
+        }
+        if let Some(recorder) = &mut self.reports {
+            recorder.leave(p);
+        }
+        self.c0.forget(p);
+        self.team_channel.forget(p);
+        self.seat_input.forget(p);
+        self.c4.leave(p);
+        self.bridge.leave(&mut self.world, p);
+        self.update_player_gauges();
+    }
+
+    fn submit_report(&mut self, player: PlayerId, report: frontline_protocol::msg::c0::Report) {
+        let Some(net) = self.bridge.net() else { return };
+        if self.bridge.session(player).is_none() || self.bridge.session(report.target).is_none() {
+            return;
+        }
+        let (Some(from), Some(target)) = (
+            net.sessions.ticket_identity_of(player),
+            net.sessions.ticket_identity_of(report.target),
+        ) else {
+            return;
+        };
+        if self.reports.as_mut().is_some_and(|recorder| {
+            recorder.submit(self.clock.now(), player, from.jti, target.jti, report)
+        }) {
+            self.metrics.reports_total.inc();
+        }
+    }
+
+    fn admin_action(&mut self, action: Action) -> ActionResult {
+        match action.action.as_str() {
+            "kick" | "mute" => {
+                let jti = match action
+                    .jti
+                    .as_deref()
+                    .map(crate::gateway_link::parse_lower_hex)
+                {
+                    Some(Some(jti)) => Some(jti),
+                    Some(None) => return ActionResult::TargetMissing,
+                    None => None,
+                };
+                let Some((player, handle)) = self
+                    .bridge
+                    .net()
+                    .and_then(|net| net.sessions.admin_target(jti, action.player_id))
+                    .filter(|(slot, _)| self.bridge.session(*slot).is_some())
+                else {
+                    return ActionResult::TargetMissing;
+                };
+                if action.action == "kick" {
+                    crate::net::conn::disconnect(
+                        &handle,
+                        frontline_protocol::msg::c0::disconnect_reason::KICKED,
+                    );
+                    // Allow the transport to flush KICKED, even if the peer is no longer reading.
+                    self.admin_disconnects
+                        .push_back((self.clock.now() + Duration::from_secs(1), handle));
+                    self.leave_player(player);
+                } else {
+                    self.c0.mute(player);
+                }
+                ActionResult::Applied
+            }
+            "broadcast" => {
+                let Some(text) = action
+                    .text
+                    .as_deref()
+                    .and_then(|raw| crate::text::sanitize_chat(raw).ok())
+                else {
+                    return ActionResult::Unsupported;
+                };
+                let text = format!("[Admin] {text}");
+                if text.len() > frontline_protocol::msg::c0::MAX_CHAT_LEN {
+                    return ActionResult::Unsupported;
+                }
+                let message = ServerMsgC0::Chat(Chat {
+                    channel: ChatChannel::All,
+                    text,
+                    sender: u8::MAX,
+                });
+                self.send_c0(
+                    self.bridge
+                        .sessions()
+                        .map(|(&slot, _)| (slot, message.clone()))
+                        .collect(),
+                );
+                ActionResult::Applied
+            }
+            // The current team switch is roster-only and the map is loaded once at startup.
+            _ => ActionResult::Unsupported,
         }
     }
 

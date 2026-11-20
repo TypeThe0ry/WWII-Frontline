@@ -210,7 +210,7 @@ impl ClientHandle {
         s.reliable_bytes = 0;
         s.latest_bytes = 0;
         drop(s);
-        let _ = self.0.closed_tx.send(true);
+        self.0.closed_tx.send_replace(true);
         self.0.notify.notify_one();
     }
 
@@ -230,6 +230,10 @@ impl ClientHandle {
 
     pub fn is_closed(&self) -> bool {
         self.lock().close == CloseState::Hard
+    }
+
+    pub(crate) fn is_open(&self) -> bool {
+        self.lock().close == CloseState::Open
     }
 
     /// Resolves once the connection was hard-closed.
