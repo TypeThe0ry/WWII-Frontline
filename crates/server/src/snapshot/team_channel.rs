@@ -156,6 +156,7 @@ impl TeamChannel {
             data,
             clients.iter().map(|&(p, team)| (p, team, false)),
             tick,
+            |_| Vec::new(),
         )
     }
 
@@ -169,7 +170,24 @@ impl TeamChannel {
         clients: &[(PlayerId, Team, bool)],
         tick: u32,
     ) -> Vec<(PlayerId, Vec<u8>)> {
-        self.payloads(world, data, clients.iter().copied(), tick)
+        self.markers.prune(world.squads(), tick, self.marker_hz);
+        let markers = self.markers.clone();
+        let hz = self.marker_hz;
+        self.payloads(world, data, clients.iter().copied(), tick, |p| {
+            RosterMember::get(world.squads(), p)
+                .map_or_else(Vec::new, |v| markers.visible_to(v, tick, hz))
+        })
+    }
+
+    pub(crate) fn tick_with_projected_markers(
+        &mut self,
+        world: &World,
+        data: &GameData,
+        clients: &[(PlayerId, Team, bool)],
+        tick: u32,
+        project: impl Fn(PlayerId) -> Vec<frontline_protocol::msg::team::TeamMarker>,
+    ) -> Vec<(PlayerId, Vec<u8>)> {
+        self.payloads(world, data, clients.iter().copied(), tick, project)
     }
 
     fn payloads(
@@ -178,25 +196,25 @@ impl TeamChannel {
         data: &GameData,
         clients: impl ExactSizeIterator<Item = (PlayerId, Team, bool)>,
         tick: u32,
+        project: impl Fn(PlayerId) -> Vec<frontline_protocol::msg::team::TeamMarker>,
     ) -> Vec<(PlayerId, Vec<u8>)> {
         if !self.due(tick) {
             return Vec::new();
         }
         let roster = world.squads();
-        self.markers.prune(roster, tick, self.marker_hz);
         let mut per_team = [None, None];
         let mut out = Vec::with_capacity(clients.len());
         for (p, team, accepts_markers) in clients {
-            let Some(viewer) = RosterMember::get(roster, p).filter(|v| v.team == team) else {
+            if !RosterMember::get(roster, p).is_some_and(|v| v.team == team) {
                 continue;
-            };
+            }
             let (state, legacy_bytes) = per_team[team as usize].get_or_insert_with(|| {
                 let (state, _) = build(world, data, team, tick, self.map);
                 let bytes = encode_team_state(&state).ok();
                 (state, bytes)
             });
             let markers = if accepts_markers {
-                self.markers.visible_to(viewer, tick, self.marker_hz)
+                project(p)
             } else {
                 Vec::new()
             };

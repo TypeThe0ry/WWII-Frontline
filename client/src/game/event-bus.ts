@@ -10,6 +10,8 @@
  * M0-022 and later add entries to `GameEvents`; they must not change this implementation.
  */
 
+import type { ChatMessage } from '../net/comms';
+
 /** Event catalogue. Keys are `<producer>.<event>`; extend by declaration merging or by editing here. */
 export interface Vec3 {
   x: number;
@@ -51,6 +53,8 @@ export interface GameEvents {
   'roster.changed': { player: number; joined: boolean };
   'spawnpoint.changed': { id: number; team: number; state: number };
   'match.phase': { phase: number; endsAt: number };
+  'comms.chat': ChatMessage;
+  'comms.notice': { key: string };
   'notice': { code: number; args: readonly [number, number, number] };
   'death': { victim: number; respawnAfter: number; canBeRevived: boolean };
 }

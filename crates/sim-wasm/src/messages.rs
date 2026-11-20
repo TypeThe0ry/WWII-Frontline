@@ -9,8 +9,9 @@ use frontline_protocol::msg::input::{
     MAX_BUNDLE_FIRE,
 };
 use frontline_protocol::msg::{
-    decode_c0_server, encode_c0_client, ClientMsgC0, Disconnect, ForgivePunish, Hello, MapVoteCast,
-    Ping, ServerMsgC0, TeamSwitchRequest, VoteCast, VoteKind, VoteStart,
+    decode_c0_server, decode_team_state_with_markers, encode_c0_client, Chat, ChatChannel,
+    ClientMsgC0, Disconnect, ForgivePunish, Hello, MapVoteCast, Ping, PingKind, PingPlace,
+    ServerMsgC0, TeamSwitchRequest, VoteCast, VoteKind, VoteStart,
 };
 use wasm_bindgen::prelude::*;
 
@@ -319,6 +320,51 @@ pub fn encode_map_vote_cast(vote_id: f64, choice: f64) -> Result<Vec<u8>, JsErro
     .map_err(js_err)
 }
 
+/// C0 Chat. The server sets the sender when it broadcasts the message.
+#[wasm_bindgen(js_name = encodeChat)]
+pub fn encode_chat(channel: u32, text: String) -> Result<Vec<u8>, JsError> {
+    let channel = u8::try_from(channel)
+        .ok()
+        .and_then(ChatChannel::from_u8)
+        .ok_or_else(|| JsError::new("invalid chat channel"))?;
+    encode_c0_client(&ClientMsgC0::Chat(Chat {
+        channel,
+        text,
+        sender: 0,
+    }))
+    .map_err(js_err)
+}
+
+/// C0 PingPlace; the target is an advisory hint only.
+#[wasm_bindgen(js_name = encodePingPlace)]
+pub fn encode_ping_place(kind: u8, x: u16, z: u16, target: u16) -> Result<Vec<u8>, JsError> {
+    let kind = PingKind::from_u8(kind).ok_or_else(|| JsError::new("invalid ping kind"))?;
+    encode_c0_client(&ClientMsgC0::PingPlace(PingPlace {
+        kind,
+        pos: [x, z],
+        target,
+    }))
+    .map_err(js_err)
+}
+
+/// C3 team state (legacy prefix with optional markers) as `[tick, kind, x, z, ttl, ...]`.
+/// Member state is validated by the protocol codec and omitted from this view.
+#[wasm_bindgen(js_name = decodeTeamMarkers)]
+pub fn decode_team_markers(bytes: &[u8]) -> Result<Vec<u16>, JsError> {
+    let state = decode_team_state_with_markers(bytes).map_err(js_err)?;
+    let mut out = Vec::with_capacity(1 + state.markers.len() * 4);
+    out.push(state.team.tick);
+    for marker in state.markers {
+        out.extend([
+            u16::from(marker.kind as u8),
+            marker.x,
+            marker.z,
+            u16::from(marker.ttl_s),
+        ]);
+    }
+    Ok(out)
+}
+
 /// Thin §8.3 wrapper: `[kind, ...payload]` validated as a client C0 message.
 #[wasm_bindgen(js_name = encodeC0)]
 pub fn encode_c0(kind: u32, payload: &[u8]) -> Result<Vec<u8>, JsError> {
@@ -329,9 +375,9 @@ pub fn encode_c0(kind: u32, payload: &[u8]) -> Result<Vec<u8>, JsError> {
     Ok(v)
 }
 
-/// A decoded server C0 message. Fields not used by `kind` are zero.
+/// A decoded server C0 message. Fields unused by `kind` retain their defaults.
 #[wasm_bindgen]
-#[derive(Debug, Clone, Copy, Default)]
+#[derive(Debug, Clone, Default)]
 pub struct ServerC0 {
     /// Server C0 message type.
     pub kind: u8,
@@ -363,6 +409,25 @@ pub struct ServerC0 {
     pub client_time: u32,
     #[wasm_bindgen(js_name = serverTimeMs)]
     pub server_time_ms: u32,
+    notice_key: String,
+    #[wasm_bindgen(js_name = chatChannel)]
+    pub chat_channel: u8,
+    #[wasm_bindgen(js_name = chatSender)]
+    pub chat_sender: u8,
+    chat_text: String,
+}
+
+#[wasm_bindgen]
+impl ServerC0 {
+    #[wasm_bindgen(getter, js_name = noticeKey)]
+    pub fn notice_key(&self) -> String {
+        self.notice_key.clone()
+    }
+
+    #[wasm_bindgen(getter, js_name = chatText)]
+    pub fn chat_text(&self) -> String {
+        self.chat_text.clone()
+    }
 }
 
 pub(crate) fn decode_server_core(bytes: &[u8]) -> Result<ServerC0, String> {
@@ -395,8 +460,14 @@ pub(crate) fn decode_server_core(bytes: &[u8]) -> Result<ServerC0, String> {
             o.reason = d.reason;
             o.spawn_tick = d.spawn_tick;
         }
+        ServerMsgC0::Notice(n) => o.notice_key = n.key,
+        ServerMsgC0::Chat(chat) => {
+            o.chat_channel = chat.channel as u8;
+            o.chat_sender = chat.sender;
+            o.chat_text = chat.text;
+        }
         // Placement's signed positions are handled by its dedicated TS C0 adapter.
-        ServerMsgC0::Chat(_) | ServerMsgC0::PlacementResult(_) => {}
+        ServerMsgC0::PlacementResult(_) => {}
     }
     Ok(o)
 }

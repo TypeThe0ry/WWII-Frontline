@@ -229,6 +229,14 @@ fn sample_messages() -> Vec<Vec<u8>> {
         }))
         .unwrap(),
     );
+    v.push(
+        encode_c0_server(&ServerMsgC0::Chat(Chat {
+            channel: ChatChannel::Team,
+            text: "é界😀".into(),
+            sender: 42,
+        }))
+        .unwrap(),
+    );
     v
 }
 
@@ -311,6 +319,7 @@ fn golden_bytes() {
         "welcome",
         "reject",
         "pong",
+        "chat",
     ];
     let msgs = sample_messages();
     assert_eq!(names.len(), msgs.len());

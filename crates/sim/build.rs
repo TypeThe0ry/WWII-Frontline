@@ -38,6 +38,7 @@ fn parse_typed(rel: &str, text: &str) -> Result<(), String> {
         "rules" if rel == "rules/supplies.json" => typed!(defs::SuppliesRulesDef),
         "rules" if rel == "rules/squads.json" => typed!(defs::SquadsRulesDef),
         "rules" if rel == "rules/aoi.json" => typed!(defs::AoiRulesDef),
+        "comms.json" => typed!(defs::CommsDef),
         _ => Ok(()), // maps/, other rules/, ...: hashed only until their schemas land
     }
 }
@@ -94,6 +95,7 @@ fn main() {
         ("rules/supplies.json", "supplies.json", "SUPPLIES_JSON"),
         ("rules/squads.json", "squads.json", "SQUADS_JSON"),
         ("rules/aoi.json", "aoi.json", "AOI_JSON"),
+        ("comms.json", "comms.json", "COMMS_JSON"),
     ] {
         let canon = files
             .iter()

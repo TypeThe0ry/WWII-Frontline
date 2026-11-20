@@ -117,6 +117,8 @@ pub enum Command {
         player: PlayerId,
         msg: frontline_protocol::msg::c0::ClientMsgC0,
     },
+    /// Trusted squad mute notification, reserved for the M2-040 integration.
+    ReportSquadMute { by: PlayerId, target: PlayerId },
     /// Keep every team at `n` players by spawning / removing bots (M1-039c); `0` turns it off.
     SetBotFill(u8),
     /// Installed before the ticket gate is armed for a registered match.
@@ -264,6 +266,7 @@ pub struct SimLoop<C: Clock> {
     reports: Option<crate::report::Recorder>,
     admin_disconnects: VecDeque<(Instant, crate::net::transport::ClientHandle)>,
     team_channel: TeamChannel,
+    comms: crate::c0::comms::Markers,
     team_outgoing: Vec<(PlayerId, Vec<u8>)>,
     c4: crate::c4::Broadcast,
     consecutive: i64,
@@ -400,6 +403,12 @@ pub fn build_loop_with_bots<C: Clock>(
         } else {
             Vec::new()
         };
+    let comms_hz = world.config().tick_hz;
+    let comms_map = MapFrame {
+        origin_x: 0.0,
+        origin_z: 0.0,
+        extent_m: cfg.map_data.as_ref().map_or(256.0, |m| m.size_m),
+    };
     let lp = SimLoop {
         schedule: TickSchedule::new(now + TICK_PERIOD, TICK_PERIOD),
         started: now,
@@ -418,12 +427,9 @@ pub fn build_loop_with_bots<C: Clock>(
         team_channel: TeamChannel::new(
             GameData::embedded().rules.aoi.team_channel_period_s as f32,
             1.0 / TICK_PERIOD.as_secs_f32(),
-            MapFrame {
-                origin_x: 0.0,
-                origin_z: 0.0,
-                extent_m: cfg.map_data.as_ref().map_or(256.0, |m| m.size_m),
-            },
+            comms_map,
         ),
+        comms: crate::c0::comms::Markers::new(comms_hz, comms_map),
         team_outgoing: Vec::new(),
         c4: crate::c4::Broadcast::default(),
         consecutive: 0,
@@ -886,22 +892,26 @@ impl<C: Clock> SimLoop<C> {
                 Command::C0 {
                     player,
                     msg: ClientMsgC0::MarkerPlace(marker),
-                } => {
-                    let placed = self.team_channel.place_marker(
-                        &self.world,
-                        player,
-                        marker,
-                        self.world.tick().0,
-                    );
-                    if placed.is_ok() {
-                        self.world.record_rule_activity(
-                            player,
-                            frontline_sim::serverrules::Activity::Map,
-                        );
-                    }
-                }
+                } => match self.comms.place_manual(&self.world, player, marker) {
+                    Ok(()) => self
+                        .world
+                        .record_rule_activity(player, frontline_sim::serverrules::Activity::Map),
+                    Err(key) => self.send_c0(vec![(player, crate::c0::comms::notice(key))]),
+                },
+                Command::C0 {
+                    player,
+                    msg: ClientMsgC0::PingPlace(ping),
+                } => match self.comms.place_ping(&self.world, player, ping) {
+                    Ok(()) => self
+                        .world
+                        .record_rule_activity(player, frontline_sim::serverrules::Activity::Map),
+                    Err(key) => self.send_c0(vec![(player, crate::c0::comms::notice(key))]),
+                },
                 Command::C0 { player, msg } if crate::c0::server_rules::is_request(&msg) => {
                     self.handle_server_rule(player, msg);
+                }
+                Command::ReportSquadMute { by, target } => {
+                    self.comms.report_squad_mute(&self.world, by, target);
                 }
                 Command::C0 {
                     player,
@@ -952,7 +962,7 @@ impl<C: Clock> SimLoop<C> {
             recorder.leave(p);
         }
         self.c0.forget(p);
-        self.team_channel.forget(p);
+        self.comms.forget(p, &mut self.snap, self.world.tick());
         self.seat_input.forget(p);
         self.snap.forget(p);
         self.c4.leave(p);
@@ -1205,6 +1215,8 @@ impl<C: Clock> SimLoop<C> {
             }
         }
         let now = self.world.tick().0;
+        self.comms
+            .tick(&self.world, &self.clients_in, &mut self.snap);
         self.snap.tick(
             &self.world,
             &self.step_events,
@@ -1222,11 +1234,12 @@ impl<C: Clock> SimLoop<C> {
                         Some((c.player, c.team, h.accepts_team_markers()))
                     })
                     .collect();
-                self.team_outgoing = self.team_channel.tick_with_markers(
+                self.team_outgoing = self.team_channel.tick_with_projected_markers(
                     &self.world,
                     GameData::embedded(),
                     &clients,
                     now,
+                    |player| self.comms.legacy(player, frontline_sim::Tick(now)),
                 );
             }
         }

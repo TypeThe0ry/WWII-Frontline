@@ -292,31 +292,32 @@ proptest! {
 
 // ---- error cases -------------------------------------------------------------------------
 
-fn chat(text: String) -> ClientMsgC0 {
-    ClientMsgC0::Chat(Chat {
-        channel: ChatChannel::All,
-        text,
-        sender: 0,
-    })
-}
-
 #[test]
-fn chat_limit_200_ok_201_rejected() {
-    assert!(encode_c0_client(&chat("a".repeat(200))).is_ok());
-    assert_eq!(
-        encode_c0_client(&chat("a".repeat(201))),
-        Err(CodecError::TooLong)
-    );
-}
+fn chat_counts_scalars_in_both_directions() {
+    for scalar in ['a', 'é', '界', '😀'] {
+        let mut chat = Chat {
+            channel: ChatChannel::All,
+            text: scalar.to_string().repeat(MAX_CHAT_LEN),
+            sender: 7,
+        };
+        let client = ClientMsgC0::Chat(chat.clone());
+        let server = ServerMsgC0::Chat(chat.clone());
+        let bytes = encode_c0_client(&client).unwrap();
+        assert_eq!(bytes, encode_c0_server(&server).unwrap());
+        assert_eq!(bytes.len(), 5 + MAX_CHAT_LEN * scalar.len_utf8());
+        assert_eq!(decode_c0_client(&bytes), Ok(client));
+        assert_eq!(decode_c0_server(&bytes), Ok(server));
 
-#[test]
-fn chat_limit_counts_bytes_not_chars() {
-    // 67 x 3-byte chars = 201 bytes
-    assert_eq!(
-        encode_c0_client(&chat("好".repeat(67))),
-        Err(CodecError::TooLong)
-    );
-    assert!(encode_c0_client(&chat("好".repeat(66))).is_ok());
+        chat.text.push(scalar);
+        assert_eq!(
+            encode_c0_client(&ClientMsgC0::Chat(chat.clone())),
+            Err(CodecError::TooLong)
+        );
+        assert_eq!(
+            encode_c0_server(&ServerMsgC0::Chat(chat)),
+            Err(CodecError::TooLong)
+        );
+    }
 }
 
 #[test]
@@ -358,25 +359,39 @@ fn report_and_name_key_limits() {
     assert_eq!(encode_c0_client(&sq(33)), Err(CodecError::TooLong));
 }
 
+fn raw_chat(text: &[u8], declared_len: usize) -> Vec<u8> {
+    let mut w = BitWriter::new();
+    w.write_bits(0x13, 8).unwrap();
+    w.write_bits(0, 8).unwrap();
+    w.write_bits(declared_len as u64, 10).unwrap();
+    for &byte in text {
+        w.write_bits(byte.into(), 8).unwrap();
+    }
+    w.write_bits(0, 8).unwrap(); // sender
+    w.finish()
+}
+
 #[test]
 fn wire_length_over_limit_rejected_on_decode() {
-    // hand craft: CHAT, channel 0, len 201
-    let mut b = vec![0x13, 0, 201];
-    b.extend(std::iter::repeat_n(b'a', 201));
-    b.push(0);
-    assert_eq!(decode_c0_client(&b), Err(CodecError::TooLong));
+    for text in [vec![b'a'; MAX_CHAT_LEN + 1], vec![b'a'; MAX_CHAT_BYTES + 1]] {
+        let bytes = raw_chat(&text, text.len());
+        assert_eq!(decode_c0_client(&bytes), Err(CodecError::TooLong));
+        assert_eq!(decode_c0_server(&bytes), Err(CodecError::TooLong));
+    }
 }
 
 #[test]
 fn invalid_utf8_rejected() {
-    let b = [0x13, 0, 2, 0xFF, 0xFE, 0];
-    assert_eq!(decode_c0_client(&b), Err(CodecError::InvalidValue));
+    let bytes = raw_chat(&[0xff, 0xfe], 2);
+    assert_eq!(decode_c0_client(&bytes), Err(CodecError::InvalidValue));
+    assert_eq!(decode_c0_server(&bytes), Err(CodecError::InvalidValue));
 }
 
 #[test]
 fn length_prefix_beyond_input_rejected() {
-    let b = [0x13, 0, 50, b'a', b'b'];
-    assert!(decode_c0_client(&b).is_err());
+    let bytes = raw_chat(b"ab", 50);
+    assert!(decode_c0_client(&bytes).is_err());
+    assert!(decode_c0_server(&bytes).is_err());
 }
 
 #[test]

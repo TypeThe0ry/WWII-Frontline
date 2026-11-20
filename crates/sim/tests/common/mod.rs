@@ -314,6 +314,7 @@ pub fn data_with(f: impl Fn(&mut WeaponDef)) -> &'static GameData {
         loadouts: e.loadouts,
         vehicles: e.vehicles,
         rules: e.rules,
+        comms: e.comms,
         hash: e.hash,
     }))
 }
@@ -336,6 +337,7 @@ pub fn with_respawn_rules(
         loadouts: e.loadouts,
         vehicles: e.vehicles,
         rules: Box::leak(Box::new(rules)),
+        comms: e.comms,
         hash: e.hash,
     }))
 }

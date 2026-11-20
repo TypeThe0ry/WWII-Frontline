@@ -288,6 +288,28 @@ impl SnapshotScheduler {
         id
     }
 
+    pub(crate) fn queue_comms(&mut self, mut viewers: u128, event: Event, now: u32) {
+        let entry = EventEntry {
+            id: self.event_id(),
+            event,
+        };
+        while viewers != 0 {
+            let player = viewers.trailing_zeros() as PlayerId;
+            viewers &= viewers - 1;
+            self.clients
+                .entry(player)
+                .or_insert_with(|| ClientBook::new(now))
+                .events
+                .push_comms(entry);
+        }
+    }
+
+    pub(crate) fn clear_comms(&mut self, player: PlayerId) {
+        if let Some(book) = self.clients.get_mut(&player) {
+            book.events.clear_comms();
+        }
+    }
+
     fn observer(world: &World, p: PlayerId, team: Team) -> Option<Observer> {
         let s = world.player_state(p)?;
         Some(Observer {

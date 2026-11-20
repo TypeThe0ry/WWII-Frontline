@@ -99,7 +99,7 @@ impl Codec for TeamState {
 /// Hard limits for the optional C3 tactical marker extension.
 pub const MAX_TEAM_MARKERS: usize = 64;
 pub const MARKER_CELL_M: u16 = 5;
-const MARKER_COORD_BITS: u8 = 12;
+pub(crate) const MARKER_COORD_BITS: u8 = 12;
 pub const MAX_MARKER_CELL: u16 = (1 << MARKER_COORD_BITS) - 1;
 const MARKER_BYTES: usize = 5;
 pub const MAX_TEAM_STATE_WITH_MARKERS_BYTES: usize =
@@ -116,6 +116,18 @@ pub enum TeamMarkerKind {
     OrderAttack = 5,
     OrderDefend = 6,
     OrderMove = 7,
+    OrderHold = 8,
+    OrderBuild = 9,
+    MarkInfantry = 10,
+    MarkVehicle = 11,
+    MarkArtillery = 12,
+    MarkAtGun = 13,
+    MarkGarrison = 14,
+    CommandAttack = 15,
+    CommandDefend = 16,
+    FireRequest = 17,
+    GarrisonRequest = 18,
+    SupplyRequest = 19,
 }
 
 impl TeamMarkerKind {
@@ -127,6 +139,18 @@ impl TeamMarkerKind {
             5 => Self::OrderAttack,
             6 => Self::OrderDefend,
             7 => Self::OrderMove,
+            8 => Self::OrderHold,
+            9 => Self::OrderBuild,
+            10 => Self::MarkInfantry,
+            11 => Self::MarkVehicle,
+            12 => Self::MarkArtillery,
+            13 => Self::MarkAtGun,
+            14 => Self::MarkGarrison,
+            15 => Self::CommandAttack,
+            16 => Self::CommandDefend,
+            17 => Self::FireRequest,
+            18 => Self::GarrisonRequest,
+            19 => Self::SupplyRequest,
             _ => return None,
         })
     }

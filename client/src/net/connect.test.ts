@@ -3,6 +3,7 @@ import { EventBus, type GameEvents } from '../game/event-bus';
 import { TeamBalanceCode, TeamMoveFlags, VoteKind } from '../game/state/c4';
 import { GameState } from '../game/state/game-state';
 import { NetCodec } from './codec';
+import { ChatChannel, PingKind } from './comms';
 import { connect, type ConnectOptions } from './connect';
 import { parseNetConfig, type NetConfig } from './config';
 import { disconnectBytes, FakeWebSocket, FakeWebTransport, type FakeServerOpts } from './fakes';
@@ -44,6 +45,48 @@ describe.skipIf(!HAVE_WASM)('connect / fallback / handshake (fake WebSocket + We
     WebTransportCtor: wtCtor,
     WebSocketCtor: FakeWebSocket,
     ...over,
+  });
+
+  it('emits reliable comms notice keys', async () => {
+    const seen = vi.fn();
+    bus.on('comms.notice', seen);
+    const session = await connect(opts({ config: cfg('transport=ws'), teamMarkers: true }));
+    try {
+      const conn = FakeWebSocket.instances[0]!.conn;
+      session.sendPingPlace(PingKind.NeedMedic, [2, 3]);
+      await vi.waitFor(() => expect(conn.receivedC0).toContainEqual(Uint8Array.of(0x1e, 2, 0, 2, 0, 3, 0, 0)));
+      const key = new TextEncoder().encode('comms.ping.cooldown');
+      conn.c0(Uint8Array.of(0x1f, key.length, ...key));
+      await vi.waitFor(() => expect(seen).toHaveBeenCalledWith({ key: 'comms.ping.cooldown' }));
+    } finally {
+      session.close();
+    }
+  });
+
+  it.each(['ws', 'wt'] as const)('sends chat and delivers the server sender over %s', async (kind) => {
+    const busChat = vi.fn();
+    const sessionChat = vi.fn();
+    bus.on('comms.chat', busChat);
+    const session = await connect(opts({ config: cfg(`transport=${kind}`) }));
+    const off = session.onChat(sessionChat);
+    try {
+      const conn = (kind === 'wt' ? FakeWebTransport.instances[0] : FakeWebSocket.instances[0])!.conn;
+      const bytes = (value: string) => Uint8Array.from(value.match(/../g)!, (byte) => parseInt(byte, 16));
+      session.sendChat(ChatChannel.Team, 'é界😀');
+      await vi.waitFor(() => expect(conn.receivedC0).toContainEqual(bytes('13010270ea79e5633c27e6200000')));
+      expect(busChat).not.toHaveBeenCalled();
+      conn.c0(bytes('13010270ea79e5633c27e6200a80'));
+      const expected = { channel: ChatChannel.Team, text: 'é界😀', sender: 42 };
+      await vi.waitFor(() => expect(busChat).toHaveBeenCalledWith(expected));
+      expect(sessionChat).toHaveBeenCalledWith(expected);
+      off();
+      conn.c0(bytes('13010270ea79e5633c27e6200a80'));
+      await vi.waitFor(() => expect(busChat).toHaveBeenCalledTimes(2));
+      expect(sessionChat).toHaveBeenCalledTimes(1);
+    } finally {
+      off();
+      session.close();
+    }
   });
 
   describe('reliable game state', () => {

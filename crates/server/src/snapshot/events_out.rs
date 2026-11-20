@@ -133,6 +133,25 @@ impl EventWindow {
         });
     }
 
+    pub(crate) fn push_comms(&mut self, entry: EventEntry) {
+        let marker_id = |event| match event {
+            Event::MarkerUpsert { id, .. } | Event::MarkerExpired { id } => Some(id),
+            _ => None,
+        };
+        self.pending
+            .retain(|p| marker_id(p.entry.event) != marker_id(entry.event));
+        self.push(entry);
+    }
+
+    pub(crate) fn clear_comms(&mut self) {
+        self.pending.retain(|p| {
+            !matches!(
+                p.entry.event,
+                Event::MarkerUpsert { .. } | Event::MarkerExpired { .. }
+            )
+        });
+    }
+
     pub fn len(&self) -> usize {
         self.pending.len()
     }
@@ -165,7 +184,11 @@ impl EventWindow {
         let before = self.pending.len();
         // an event stays until acknowledged; once it has used its 3 packets it expires
         // (acknowledgement of the last one can still arrive and is simply ignored)
-        self.pending.retain(|p| p.sends < MAX_SENDS);
+        self.pending.retain(|p| {
+            let enemy =
+                matches!(p.entry.event, Event::MarkerUpsert { kind, .. } if kind.is_enemy());
+            p.sends < if enemy { 1 } else { MAX_SENDS }
+        });
         self.expired_total += (before - self.pending.len()) as u64;
     }
 }

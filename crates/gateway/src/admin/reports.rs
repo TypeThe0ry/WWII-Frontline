@@ -19,7 +19,10 @@ pub(super) struct ChatMessage {
 
 impl ChatMessage {
     pub(super) fn valid(&self) -> bool {
-        self.player_id < 128 && super::valid_text(&self.text, 500)
+        self.player_id < 128
+            && self.text.chars().count() <= frontline_protocol::msg::c0::MAX_CHAT_LEN
+            && !self.text.trim().is_empty()
+            && !self.text.chars().any(char::is_control)
     }
 }
 
@@ -177,6 +180,55 @@ pub(super) async fn confirm_replay(
     .bind(req.replay_ref)
     .bind(id)
     .bind(&match_id)
+    .bind(&match_id)
+    .bind(st.ticket_key.verifying_key().as_bytes().as_slice())
+    .execute(&mut *conn)
+    .await
+    {
+        Ok(result) if result.rows_affected() > 0 => StatusCode::NO_CONTENT.into_response(),
+        Ok(_) => err(StatusCode::NOT_FOUND, "no_such_report"),
+        Err(error) => db_error(&error),
+    }
+}
+
+#[derive(Deserialize)]
+struct ChatContext {
+    messages: Vec<ChatMessage>,
+}
+
+pub(super) async fn confirm_chat_context(
+    State(st): State<Shared>,
+    Path((match_id, id)): Path<(String, i64)>,
+    headers: HeaderMap,
+    body: Bytes,
+) -> Response {
+    if !internal_ok(&st, &headers) {
+        return err(StatusCode::UNAUTHORIZED, "unauthorized");
+    }
+    let Ok(req) = super::decode::<ChatContext>(&body) else {
+        return err(StatusCode::UNPROCESSABLE_ENTITY, "bad_body");
+    };
+    if !super::hex_id(&match_id)
+        || id < 1
+        || req.messages.is_empty()
+        || req.messages.len() > 40
+        || !req.messages.iter().all(ChatMessage::valid)
+    {
+        return err(StatusCode::UNPROCESSABLE_ENTITY, "bad_chat");
+    }
+    let now = super::ts(st.clock.now_ms());
+    let mut conn = match st.db.connection().await {
+        Ok(conn) => conn,
+        Err(error) => return db_error(&error),
+    };
+    match sqlx::query(
+        "UPDATE reports SET chat_excerpt = ? WHERE id = ? AND match_id = ? AND created_at > ?
+         AND EXISTS (SELECT 1 FROM matches WHERE id = ? AND ticket_key = ?)",
+    )
+    .bind(SqlJson(req.messages))
+    .bind(id)
+    .bind(&match_id)
+    .bind(now.saturating_sub(14 * super::DAY_MS))
     .bind(&match_id)
     .bind(st.ticket_key.verifying_key().as_bytes().as_slice())
     .execute(&mut *conn)

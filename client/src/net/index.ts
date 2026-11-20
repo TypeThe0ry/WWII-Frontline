@@ -11,3 +11,6 @@ export { TeamBalanceCode, TeamMoveFlags, VoteKind } from '../game/state/c4';
 export type { C4Event } from '../game/state/c4';
 export type { ServerMsg, WelcomeMsg } from './codec';
 export type { Transport, TransportKind } from './transport';
+
+export { ChatChannel, PingKind } from './comms';
+export type { ChatMessage } from './comms';

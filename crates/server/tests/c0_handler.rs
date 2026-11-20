@@ -275,7 +275,10 @@ fn chat_routes_by_channel_and_filters() {
     h.handle(&mut w, &m, 10, chat(ChatChannel::All, "gg"), &mut out);
     assert_eq!(out.len(), 12);
     out.clear();
-    // Rejections: no squad, duplicate, bidi, control.
+    h.handle(&mut w, &m, 10, chat(ChatChannel::All, "gg"), &mut out);
+    assert_eq!(out.len(), 12);
+    out.clear();
+    // Reject the third matching line and send notices to the originators only.
     h.handle(&mut w, &m, 12, chat(ChatChannel::Squad, "hi"), &mut out);
     h.handle(&mut w, &m, 10, chat(ChatChannel::All, "gg"), &mut out);
     h.handle(
@@ -286,7 +289,24 @@ fn chat_routes_by_channel_and_filters() {
         &mut out,
     );
     h.handle(&mut w, &m, 10, chat(ChatChannel::All, "a\nb"), &mut out);
-    assert!(out.is_empty());
+    let notices: Vec<_> = out
+        .iter()
+        .map(|(id, message)| {
+            let ServerMsgC0::Notice(notice) = message else {
+                panic!("unexpected broadcast {message:?}")
+            };
+            (*id, notice.key.as_str())
+        })
+        .collect();
+    assert_eq!(
+        notices,
+        [
+            (12, "comms.chat.no_squad"),
+            (10, "comms.chat.duplicate"),
+            (10, "comms.chat.bidi"),
+            (10, "comms.chat.control"),
+        ]
+    );
     let rej = |l: &str| m.chat_rejected_total.with_label_values(&[l]).get();
     assert_eq!(
         (

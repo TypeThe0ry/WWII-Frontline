@@ -4,7 +4,7 @@
 export const UNIT_SUFFIXES = [
   '_m', '_mm', '_ms', '_s', '_mps', '_mps2', '_rpm', '_rpm_practical', '_kg', '_deg', '_deg_s', '_hp',
   '_per_m', '_per_s', '_nm', '_n_per_m', '_ns_per_m', '_mult', '_ticks',
-  '_pct_per_100m', '_pct', '_rounds', '_points', '_supplies', '_players', '_slots', '_uses', '_crates', '_squads',
+  '_pct_per_100m', '_pct', '_rounds', '_points', '_supplies', '_players', '_slots', '_uses', '_crates', '_squads', '_markers',
 ];
 
 export const BAD_UNIT_SUFFIXES = [

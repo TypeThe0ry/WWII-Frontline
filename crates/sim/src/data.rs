@@ -16,8 +16,8 @@ mod embedded {
 }
 
 pub use defs::{
-    AmmoDef, BotsRulesDef, DataStatus, ExplosiveDef, Faction, GadgetDef, LoadoutDef, MaterialDef,
-    MeleeDef, RespawnRulesDef, RoleDef, RulesDef, VehicleDef, WeaponDef,
+    AmmoDef, BotsRulesDef, CommsDef, DataStatus, ExplosiveDef, Faction, GadgetDef, LoadoutDef,
+    MaterialDef, MeleeDef, RespawnRulesDef, RoleDef, RulesDef, VehicleDef, WeaponDef,
 };
 /// SHA-256 (first 8 bytes, little-endian) of the canonicalised `/data` tree. Sent as
 /// `Hello.data_hash`; client and server must agree (ARCHITECTURE 8.2).
@@ -41,6 +41,8 @@ pub struct GameData {
     pub vehicles: &'static [VehicleDef],
     /// Rule families from `data/rules/` (M0-013).
     pub rules: &'static RulesDef,
+    /// Marker / ping rules from `data/comms.json` (M2-019).
+    pub comms: &'static CommsDef,
     pub hash: u64,
 }
 
@@ -80,6 +82,10 @@ impl GameData {
                 aoi: serde_json::from_str(embedded::AOI_JSON)
                     .expect("embedded data parsed at build time"),
             })),
+            comms: Box::leak(Box::new(
+                serde_json::from_str(embedded::COMMS_JSON)
+                    .expect("embedded data parsed at build time"),
+            )),
             hash: DATA_HASH,
         })
     }
@@ -171,6 +177,21 @@ mod tests {
         assert!(files.iter().all(|(p, _)| !p.starts_with("schemas/")));
         assert_eq!(hash_files(&files).unwrap(), DATA_HASH);
         assert_eq!(GameData::embedded().hash, DATA_HASH);
+    }
+
+    #[test]
+    fn comms_is_embedded_and_part_of_the_canonical_hash() {
+        let mut files = collect_data_files(&data_root()).unwrap();
+        let (_, text) = files
+            .iter_mut()
+            .find(|(path, _)| path == "comms.json")
+            .unwrap();
+        let cfg: CommsDef = serde_json::from_str(text).unwrap();
+        assert_eq!(GameData::embedded().comms, &cfg);
+        let mut changed: serde_json::Value = serde_json::from_str(text).unwrap();
+        changed["ping"]["cooldown_s"] = serde_json::json!(cfg.ping.cooldown_s + 1);
+        *text = changed.to_string();
+        assert_ne!(hash_files(&files).unwrap(), DATA_HASH);
     }
 
     #[test]

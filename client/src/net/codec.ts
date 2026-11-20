@@ -11,6 +11,8 @@
 import type { C4Event, VoteKind } from '../game/state/c4';
 import { LAYOUT_C0_DEPLOY_RESULT, LAYOUT_C0_DISCONNECT, LAYOUT_C0_PONG, LAYOUT_C0_REJECT, LAYOUT_C0_WELCOME, type SimWasmModule } from './wasm';
 
+import { C0_CHAT, C0_NOTICE, type ChatChannel, type ChatMessage, type LegacyTeamMarker, type PingKind, type TeamMarkersFrame } from './comms';
+
 export const Channel = { C0: 0, C1: 1, C2: 2, C3: 3, C4: 4, C5: 5 } as const;
 export type Channel = (typeof Channel)[keyof typeof Channel];
 
@@ -153,7 +155,14 @@ export interface DeployResultMsg {
   spawnTick: number;
   reason: number;
 }
-export type ServerMsg = WelcomeMsg | RejectMsg | PongMsg | DisconnectMsg | DeployResultMsg;
+export interface NoticeMsg {
+  kind: 'notice';
+  key: string;
+}
+export interface ChatMsg extends ChatMessage {
+  kind: 'chat';
+}
+export type ServerMsg = WelcomeMsg | RejectMsg | PongMsg | DisconnectMsg | DeployResultMsg | NoticeMsg | ChatMsg;
 
 export interface HelloParams {
   protocolVersion: number;
@@ -181,6 +190,31 @@ export class NetCodec {
 
   encodePing(clientTime: number): Uint8Array {
     return this.wasm.encodePing(clientTime);
+  }
+
+  encodeChat(channel: ChatChannel, text: string): Uint8Array {
+    if (!Number.isInteger(channel) || channel < 0 || channel > 3) {
+      throw new FrameError('invalid chat channel');
+    }
+    return this.wasm.encodeChat(channel, text);
+  }
+
+  /** X/Z are the same map-normalized u16 codes as C0 MarkerPlace. Target is an advisory hint. */
+  encodePingPlace(kind: PingKind, pos: readonly [number, number], target = 0): Uint8Array {
+    if (!Number.isInteger(kind) || kind < 0 || kind > 7 ||
+        [...pos, target].some((v) => !Number.isInteger(v) || v < 0 || v > 0xffff)) {
+      throw new FrameError('invalid PingPlace fields');
+    }
+    return this.wasm.encodePingPlace(kind, pos[0], pos[1], target);
+  }
+
+  decodeTeamMarkers(bytes: Uint8Array): TeamMarkersFrame {
+    const data = this.wasm.decodeTeamMarkers(bytes);
+    const markers: LegacyTeamMarker[] = [];
+    for (let i = 1; i < data.length; i += 4) {
+      markers.push({ kind: data[i]!, pos: [data[i + 1]!, data[i + 2]!], ttl: data[i + 3]! });
+    }
+    return { tick: data[0]!, markers };
   }
 
   encodeDisconnect(reason: number): Uint8Array {
@@ -245,6 +279,10 @@ export class NetCodec {
           return { kind: 'disconnect', reason: m.reason, reasonName: DISCONNECT_REASONS[m.reason] ?? `code_${m.reason}` };
         case LAYOUT_C0_DEPLOY_RESULT:
           return { kind: 'deployResult', ok: m.ok, spawnTick: m.spawnTick, reason: m.reason };
+        case C0_CHAT:
+          return { kind: 'chat', channel: m.chatChannel, text: m.chatText, sender: m.chatSender };
+        case C0_NOTICE:
+          return { kind: 'notice', key: m.noticeKey };
         default:
           throw new FrameError(`unexpected server C0 message kind ${m.kind}`);
       }

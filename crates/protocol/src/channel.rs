@@ -57,6 +57,8 @@ pub mod c0_type {
     pub const TEAM_SWITCH_REQUEST: u8 = 0x1b;
     pub const FORGIVE_PUNISH: u8 = 0x1c;
     pub const MAP_VOTE_CAST: u8 = 0x1d;
+    pub const PING_PLACE: u8 = 0x1e;
+    pub const NOTICE: u8 = 0x1f;
 }
 
 /// C4 (reliable server events) `msg_type` values.

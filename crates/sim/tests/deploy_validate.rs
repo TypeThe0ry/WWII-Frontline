@@ -462,6 +462,7 @@ fn deploy_negative_matrix() {
             loadouts: Box::leak(lo.into_boxed_slice()),
             vehicles: e.vehicles,
             rules: e.rules,
+            comms: e.comms,
             hash: e.hash,
         })) as &'static GameData
     };

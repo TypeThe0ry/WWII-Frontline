@@ -1020,3 +1020,78 @@ pub struct AoiRulesDef {
     #[serde(rename = "_meta")]
     pub meta: Meta,
 }
+
+/// `data/comms.json` (M2-019, GAMEDESIGN §16.3–4 and §17.1).
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct CommsDef {
+    pub roles: CommsRolesDef,
+    pub ping: PingRulesDef,
+    pub squad_order: MarkerLimitDef,
+    pub team_mark: TeamMarkDef,
+    pub command_order_max_markers: u8,
+    pub fire_request: FireRequestDef,
+    pub garrison_request: MarkerLimitDef,
+    pub supply_request: MarkerLimitDef,
+    pub enemy_cell_m: u8,
+    pub enemy_refresh_s: u16,
+    pub squad_mute: SquadMuteDef,
+    #[serde(rename = "_meta")]
+    pub meta: Meta,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct CommsRolesDef {
+    pub commander: String,
+    pub officer: String,
+    pub spotter: String,
+    pub medic: String,
+    pub support: String,
+    pub engineer: String,
+    pub anti_tank: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct PingRulesDef {
+    pub attention_ttl_s: u16,
+    pub enemy_ttl_s: u16,
+    pub thanks_ttl_s: u16,
+    pub need_ttl_s: u16,
+    pub cooldown_s: u16,
+    pub max_active_markers: u8,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct MarkerLimitDef {
+    pub ttl_s: u16,
+    pub max_active_markers: u8,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct TeamMarkDef {
+    pub infantry_ttl_s: u16,
+    pub vehicle_ttl_s: u16,
+    pub emplacement_ttl_s: u16,
+    pub spotter_max_markers: u8,
+    pub officer_max_markers: u8,
+    pub commander_max_markers: u8,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct FireRequestDef {
+    pub ttl_s: u16,
+    pub officer_max_markers: u8,
+    pub commander_max_markers: u8,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct SquadMuteDef {
+    pub count: u8,
+    pub duration_s: u16,
+}

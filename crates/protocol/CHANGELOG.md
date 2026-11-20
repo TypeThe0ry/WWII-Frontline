@@ -3,6 +3,22 @@
 `PROTOCOL_VERSION` must match exactly at handshake. Fields are only appended at the end of a
 message; any other change bumps the version.
 
+## 11 — M2-019 comms wire prerequisites
+
+Version 11 includes the M2-018 messages from version 5 with their existing tags and layouts.
+
+* C0 `0x13` `Chat` (both directions) uses `channel:8 | byte_count:10 | UTF-8 text | sender:8`.
+  Chat accepts up to 200 Unicode scalar values and 800 UTF-8 bytes.
+* C0 `0x1e` `PingPlace` (C→S) adds `kind:8 | x:16 | z:16 | advisory_target:16`.
+  Position uses the existing `MarkerPlace` map-normalized x/z encoding.
+* C0 `0x1f` `Notice` (S→C) carries `len:8 | UTF-8 i18n key` (1–64 bytes).
+* C2 event types 10 and 11 upsert and remove markers by ID. Upserts carry map-relative
+  5 m cells, remaining whole seconds (1–254), and an owner. TTL 255 means until revoked
+  for command attack/defend. Only Thanks has a target field, which
+  can contain a server-verified friendly ID. Enemy marker payloads have no target field.
+* Manual marker tags 8–19 extend the existing set. The optional periodic C3 projection
+  reuses the existing `TeamStateWithMarkers` layout.
+
 ## 5 — M2-018 subset of M2-007 (server rules)
 
 | Channel and type | Message | Fields (bits) |

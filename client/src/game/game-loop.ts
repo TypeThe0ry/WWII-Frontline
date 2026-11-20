@@ -362,7 +362,7 @@ export class GameLoop {
     }
     this.applier.applyEntities(nowMs);
     if (newer && s.hasSelf) this.applyVehicle(s);
-    this.events.decode(this.applier.decoder.events());
+    this.events.decode(this.applier.decoder.events(), s.tick, nowMs);
     const ev = this.appliedEv;
     ev.tick = s.tick;
     ev.entityCount = this.store.count;
@@ -502,6 +502,7 @@ export class GameLoop {
     if (nowMs - this.lastExpireMs >= 250) {
       this.lastExpireMs = nowMs;
       this.applier.expire(nowMs);
+      this.events.markers.expire(nowMs);
     }
     if (nowMs - this.kbpsWindowStart >= 1000) {
       const dt = (nowMs - this.kbpsWindowStart) / 1000;
@@ -512,6 +513,7 @@ export class GameLoop {
   }
 
   dispose(): void {
+    this.events.reset();
     this.vehicleWasm?.free();
     this.predictor.free();
   }
