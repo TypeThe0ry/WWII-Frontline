@@ -200,7 +200,7 @@
       "id": "V-FNT-004",
       "milestone": "M0",
       "status": "missing",
-      "detail": "ledger PENDING/OK, not processed",
+      "detail": "ledger OK, not processed",
       "assets": [
         "AST-V-FNT-004-01",
         "AST-V-FNT-004-02",

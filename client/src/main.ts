@@ -295,6 +295,11 @@ async function boot(): Promise<void> {
   const params = new URLSearchParams(location.search);
   const app = document.getElementById('app');
   if (!app) throw new Error('#app missing');
+  if (import.meta.env.DEV && location.pathname === '/ui-gallery') {
+    const { mountGallery } = await import('./ui/gallery');
+    mountGallery(app, params);
+    return;
+  }
   // Existing scene, smoke and direct-server URLs are developer entry points, not lobby routes.
   if (params.get('ui') !== '1' && [...params.keys()].some((key) => key !== 'uiperf')) {
     await bootWorld(app, params);

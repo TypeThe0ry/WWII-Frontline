@@ -1,0 +1,114 @@
+{
+  "mode": "full",
+  "catalog_sha256": {
+    "en.json": "1b6d9dbbed251782b68da2e29f61e4627b1a52998e7645a0d31ca4526ee54b49",
+    "zh-Hans.json": "1f6039954cffbd55549c526391b37a3cb44c02f326aa0739f7e73d0d07379437"
+  },
+  "inputs": [
+    {
+      "file": "BarlowSemiCondensed-Medium.ttf",
+      "asset_id": "AST-V-FNT-UI-01",
+      "sha256": "4998b693a190b76f2b11315844345a8546c1e2e6a320905507a9eed04edf8b48",
+      "license": "AST-V-FNT-UI-01.txt",
+      "license_sha256": "186d750eb496a4c17a76385f82be6aea2ac1cf2de074a811d63786cf374ea73f"
+    },
+    {
+      "file": "BarlowSemiCondensed-SemiBold.ttf",
+      "asset_id": "AST-V-FNT-UI-02",
+      "sha256": "bd299f4bc5b44d30be8d42e9bad3a5df7d66af1cd55d0ed72a8b8916360a1424",
+      "license": "AST-V-FNT-UI-01.txt",
+      "license_sha256": "186d750eb496a4c17a76385f82be6aea2ac1cf2de074a811d63786cf374ea73f"
+    },
+    {
+      "file": "IBMPlexSans[wdth,wght].ttf",
+      "asset_id": "AST-V-FNT-004-01",
+      "sha256": "3b031aa4216174205bd8471f88a49b91f093169e9e87bd5262242bc5967fe2e3",
+      "license": "AST-V-FNT-004-01.txt",
+      "license_sha256": "7e6b2818edbd8f6a01ae80641cc8f16a51080d08fb4e532be3a0b6f74adb07da"
+    },
+    {
+      "file": "IBMPlexMono-Medium.ttf",
+      "asset_id": "AST-V-FNT-004-02",
+      "sha256": "a9b4c49bb299e05b5f6c481e7fb5e78943d2793249a0c8874ab574a2d1ea6755",
+      "license": "AST-V-FNT-004-02.txt",
+      "license_sha256": "7e6b2818edbd8f6a01ae80641cc8f16a51080d08fb4e532be3a0b6f74adb07da"
+    },
+    {
+      "file": "NotoSansSC[wght].ttf",
+      "asset_id": "AST-V-FNT-004-04",
+      "sha256": "a3041811a78c361b1de50f953c805e0244951c21c5bd412f7232ef0d899af0da",
+      "license": "AST-V-FNT-004-03.txt",
+      "license_sha256": "1c05c68c34f9708415aada51f17e1b0092d2cea709bf4a94cd38114f9e73d7d9"
+    }
+  ],
+  "files": [
+    {
+      "file": "barlow-semi-condensed-500-latin.woff2",
+      "shard": "latin",
+      "bytes": 12904,
+      "br_bytes": 12908,
+      "chars": 200,
+      "asset_id": "AST-V-FNT-UI-01"
+    },
+    {
+      "file": "barlow-semi-condensed-600-latin.woff2",
+      "shard": "latin",
+      "bytes": 12908,
+      "br_bytes": 12910,
+      "chars": 200,
+      "asset_id": "AST-V-FNT-UI-02"
+    },
+    {
+      "file": "frontline-ui-sans-400-600-latin.woff2",
+      "shard": "latin",
+      "bytes": 21540,
+      "br_bytes": 21496,
+      "chars": 202,
+      "asset_id": "AST-V-FNT-004-01"
+    },
+    {
+      "file": "frontline-ui-mono-500-latin.woff2",
+      "shard": "latin",
+      "bytes": 7796,
+      "br_bytes": 7800,
+      "chars": 202,
+      "asset_id": "AST-V-FNT-004-02"
+    },
+    {
+      "file": "noto-sans-sc-400-700-cjk0.woff2",
+      "shard": "cjk0",
+      "bytes": 23668,
+      "br_bytes": 23672,
+      "chars": 89,
+      "asset_id": "AST-V-FNT-004-04"
+    },
+    {
+      "file": "noto-sans-sc-400-700-cjk1.woff2",
+      "shard": "cjk1",
+      "bytes": 58772,
+      "br_bytes": 58776,
+      "chars": 235,
+      "asset_id": "AST-V-FNT-004-04"
+    },
+    {
+      "file": "noto-sans-sc-400-700-cjk2.woff2",
+      "shard": "cjk2",
+      "bytes": 889636,
+      "br_bytes": 889641,
+      "chars": 3451,
+      "asset_id": "AST-V-FNT-004-04"
+    },
+    {
+      "file": "noto-sans-sc-400-700-cjk3.woff2",
+      "shard": "cjk3",
+      "bytes": 870168,
+      "br_bytes": 870173,
+      "chars": 3006,
+      "asset_id": "AST-V-FNT-004-04"
+    }
+  ],
+  "first_screen_br_bytes": {
+    "en": 55114,
+    "zh-Hans": 78786
+  }
+}

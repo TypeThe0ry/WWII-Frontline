@@ -1,0 +1,27 @@
+{
+  "task": "M1-053b",
+  "date": "2026-11-20",
+  "platform": "PI-109 non-reference workstation; headless Chromium 153.0.8010.12, --disable-gpu, 1920x1080, Vite dev",
+  "spec": "client/e2e/ui-gallery-perf.spec.ts",
+  "signals": {
+    "workload": "100 independent signal subscribers in a mounted hidden gallery subtree; writes through synchronous DOM commit, no layout or paint",
+    "changesPerFrame": 100,
+    "warmupFrames": 30,
+    "measuredFrames": 120,
+    "meanMs": 0.45583333348234495,
+    "p95Ms": 0.6000000238418579,
+    "meanBudgetMs": 0.8
+  },
+  "domAndPaint": {
+    "method": "Descendant elements, including hidden descendants. Empty HUD includes its host. CDP renderer-main-thread Paint events over 60 settled rAFs; positive control opens a native dialog for four more frames.",
+    "idleFramesPerScene": 60,
+    "idlePaintBudget": 0,
+    "scenes": [
+      {"scene": "gallery-controls", "elements": 62, "budget": 1500, "idlePaints": 0, "controlPaints": 4},
+      {"scene": "gallery-readouts-middle-of-1000-rows", "elements": 65, "budget": 1500, "idlePaints": 0, "controlPaints": 6},
+      {"scene": "mounted-hud-eight-squad-members", "elements": 74, "budget": 350, "idlePaints": 0, "controlPaints": 4},
+      {"scene": "spectating-empty-hud-host", "elements": 1, "budget": 20, "idlePaints": 0, "controlPaints": 4}
+    ]
+  },
+  "notMeasured": ["live-match whole-app CPU/frame", "reference hardware", "approved visual regressions"]
+}

@@ -353,6 +353,17 @@ FRONTLINE_UI_LIVE=1 pnpm -C client exec playwright test -c playwright.ui.config.
 
 Use `FRONTLINE_CHROME` (lobby/match suite) or `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` (settings/audio suite) to select an installed Chromium executable instead of the Playwright bundle. The local M0 match spawns on join, so the live join test is **not** evidence for the M1 deploy/respawn loop or M1 performance budgets.
 
+### Unstyled component gallery (M1-053b)
+
+Run `pnpm -C client dev` and open `/ui-gallery`. The dev-only route needs no
+gateway, match server, or renderer. Use `?lang=zh-Hans` for the Chinese catalog
+and `?uiperf=1` for the UI budget fixture. Run the keyboard and budget checks with
+`pnpm -C client exec playwright test -c playwright.ui.config.ts ui-gallery`.
+The browser's native controls are intentional; no visual goldens are approved.
+For the real-font request test, point `FRONTLINE_UI_FONT_BUNDLE` at the full
+output of `tools/font-subset/subset.py` (see `tools/asset-pipeline/docs/font-subsetting.md`).
+`?fonts=1` enables the optional stylesheet loader; other gallery runs use system fonts.
+
 ### Live browser Garrison loop (E1-11)
 
 ```sh
