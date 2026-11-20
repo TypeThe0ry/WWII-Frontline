@@ -358,6 +358,9 @@ pub fn build_loop_with_bots<C: Clock>(
         m.apply_to(&mut world);
         if m.uses_tactical_deploy() {
             m.apply_tactical(&mut world);
+            if cfg.mode != GameMode::Sandbox {
+                world.begin_warmup();
+            }
         }
         if cfg.dev_spawn_vehicle {
             // Bots alternate US/GER before the first human joins; US wins ties.
@@ -1130,27 +1133,27 @@ impl<C: Clock> SimLoop<C> {
         }
     }
 
-    fn update_player_gauges(&self) {
+    fn update_player_gauges(&mut self) {
         // `server_players` counts connected humans; bots have their own gauge (`server_bots`).
         let bots = |t: Team| self.bot_host.as_ref().map_or(0, |b| b.count_team(t));
-        self.metrics.players.with_label_values(&["us"]).set(
-            self.bridge
-                .count_team(Team::Us)
-                .saturating_sub(bots(Team::Us)) as i64,
-        );
-        self.metrics.players.with_label_values(&["ger"]).set(
-            self.bridge
-                .count_team(Team::Ger)
-                .saturating_sub(bots(Team::Ger)) as i64,
-        );
-        self.metrics
-            .bots_active
-            .with_label_values(&["us"])
-            .set(bots(Team::Us) as i64);
-        self.metrics
-            .bots_active
-            .with_label_values(&["ger"])
-            .set(bots(Team::Ger) as i64);
+        let mut humans = 0;
+        for (team, label) in [(Team::Us, "us"), (Team::Ger, "ger")] {
+            let bots = bots(team);
+            let count = self.bridge.count_team(team).saturating_sub(bots);
+            humans += count;
+            self.metrics
+                .players
+                .with_label_values(&[label])
+                .set(count as i64);
+            self.metrics
+                .bots_active
+                .with_label_values(&[label])
+                .set(bots as i64);
+        }
+        if self.world.match_state().phase == frontline_sim::MatchPhaseKind::Warmup {
+            self.world
+                .set_human_players(humans.min(usize::from(u8::MAX)) as u8);
+        }
     }
 
     /// Step 1: drain the network->sim channels (bounded by their capacity) into the per-player

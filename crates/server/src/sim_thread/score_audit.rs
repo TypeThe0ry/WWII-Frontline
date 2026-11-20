@@ -1,5 +1,6 @@
 use std::collections::BTreeMap;
 
+use frontline_sim::rules::ObjectiveSpec;
 use frontline_sim::{CollisionChunk, LifeState, MatchPhaseKind, Vec3};
 
 use super::*;
@@ -34,16 +35,24 @@ fn arena() -> Arc<LoadedMap> {
         patrol_points: vec![[32.0, 32.0]],
         size_m: 64.0,
         dir: Default::default(),
-        objectives: Vec::new(),
+        objectives: [Team::Us, Team::Ger]
+            .into_iter()
+            .enumerate()
+            .map(|(i, team)| ObjectiveSpec {
+                id: i as u16,
+                pos: Vec3::new(8.0 + i as f32 * 48.0, 5.02, 56.0),
+                radius_m: 2.0,
+                owner: Some(team),
+            })
+            .collect(),
         no_build_zones: Default::default(),
         garrison_sites: [None; 2],
     })
 }
 
 #[test]
-#[ignore = "20 simulated minutes; run explicitly as a scoring audit"]
-fn score_audit_5v5_plus_bots_36000_ticks() {
-    let mut cfg = SimThreadConfig::bare(17, MapId(0), GameMode::Sandbox);
+fn tactical_warmup_counts_connections_not_bots() {
+    let mut cfg = SimThreadConfig::bare(17, MapId(0), GameMode::Assault);
     cfg.map_data = Some(arena());
     let (mut lp, _, commands) = build_loop_with_bots(
         FakeClock::new(),
@@ -52,8 +61,57 @@ fn score_audit_5v5_plus_bots_36000_ticks() {
         Metrics::new(),
         StopFlag::new(),
     );
-    lp.world.configure_match(0.0, 1200.0);
-    lp.world.begin_warmup();
+    lp.tick();
+    assert_eq!(lp.world.match_state().phase, MatchPhaseKind::Warmup);
+    assert_eq!(lp.world.match_state().ends_at, 1800);
+    commands
+        .send(Command::Join {
+            player: 0,
+            team: Team::Us,
+        })
+        .unwrap();
+    lp.tick();
+    assert_eq!(lp.world.match_state().humans, 1);
+    assert_eq!(lp.world.match_state().phase, MatchPhaseKind::Warmup);
+    commands.send(Command::ClientGone(0)).unwrap();
+    commands
+        .send(Command::Join {
+            player: 1,
+            team: Team::Ger,
+        })
+        .unwrap();
+    lp.tick();
+    assert_eq!(lp.world.match_state().humans, 1);
+    assert_eq!(lp.world.match_state().phase, MatchPhaseKind::Warmup);
+    commands
+        .send(Command::Join {
+            player: 2,
+            team: Team::Us,
+        })
+        .unwrap();
+    lp.tick();
+    assert_eq!(lp.world.match_state().phase, MatchPhaseKind::Live);
+    lp.tick();
+    assert_eq!(lp.world.score_summary().duration_ticks, 1);
+
+    cfg.mode = GameMode::Sandbox;
+    let (mut sandbox, _, _) = build_loop(FakeClock::new(), &cfg, Metrics::new(), StopFlag::new());
+    sandbox.tick();
+    assert_eq!(sandbox.world.match_state().phase, MatchPhaseKind::Idle);
+}
+
+#[test]
+#[ignore = "20 simulated minutes; run explicitly as a scoring audit"]
+fn score_audit_5v5_plus_bots_36000_ticks() {
+    let mut cfg = SimThreadConfig::bare(17, MapId(0), GameMode::Assault);
+    cfg.map_data = Some(arena());
+    let (mut lp, _, commands) = build_loop_with_bots(
+        FakeClock::new(),
+        &cfg,
+        BOTS,
+        Metrics::new(),
+        StopFlag::new(),
+    );
     for player in 0..2 * SCRIPTED_PER_TEAM {
         let team = if player < SCRIPTED_PER_TEAM {
             Team::Us
