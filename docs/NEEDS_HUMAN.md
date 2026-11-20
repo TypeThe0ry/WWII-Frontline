@@ -912,6 +912,7 @@
 - **参考**：总纲 A8；ARCHITECTURE §19.2；RISKS R-05、R-42。
 - 状态：[ ] 待办
 - 决定/备注：____
+- **进展（2026-11-20，B6-gwstats）**：已预留 Discord/Google 的启动与回调路由，默认关闭。开启 `OAUTH_ENABLED=1` 仍返回 `501`。应用注册、正式回调 URL、client ID/secret 与启用范围待确认。真实 Authorization Code + PKCE、游客升级和第三方凭据审计未测。
 
 ### H-064 最终对外名称决定（及初步商标检索）
 

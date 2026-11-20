@@ -8,6 +8,7 @@
 
 - **B6-uilogic（M1-053b）**：无样式开发画廊、组件键盘与焦点管理、OFL 子集管线及 DOM / 重绘门禁已验证。M1-053 仍为 `partial`；视觉待 Fable，参考机与实局全应用耗时未测。
 
+- **B6-gwstats（2026-11-20，M2-022）**：游客可查询单场已结算对局并跨重启保存个人设置。结算直投与 spool 重放已在 PI-109 工作站验证。真实 OAuth 与游客升级未测，M2-022 为 `partial`（H-063、PI-B6-gwstats-1）。
 - **B6-linemerge-plan（2026-11-20，done，仅分析）**：两线核对完成：MS v4／P v10（v8 为历史），试算 131 个冲突路径；完整清单、分步策略和验证见 `docs/LINE_RECONCILE.md` / PI-B6-linemerge-plan-1。未合并产品线，不更改 M0/M1 验收状态。
 - **M1 里程碑（B6-acceptdemo，2026-11-20）**：E1-1～17 为 **3 PASS（E1-9/14/15）、11 partial、3 未测（E1-1/6/7）、0 FAIL**。已回填 B6 两轮 Carentan WT 无 netem 的带宽、同 tick AOI 和其他实测。M1-072 仍为 `partial`，M1 未关闭。预发布 HTTPS、真人实图、参考机、对标录像与 Fable 检查点 1 待完成。见 `reports/m1-acceptance.md`、`reports/m1-demo-run.md`、PI-B6-acceptdemo-1。
 - **B6-suppress-e2e（2026-11-20，E1-13）**：普通 WS 与 netem 5% 各 1/1，实测丢包率 5.06%。真实战术服及 Chromium 软件渲染完成 C2 压制音画消费和 C4 倒地、救起、阵亡、复生整链。工作站非参考机（PI-109）。见 `reports/m1-suppress-e2e.md`。
@@ -194,7 +195,7 @@
 | M2-019 | sim：标记、Ping 与聊天频道规则 | todo | | | |
 | M2-020 | server：带宽调节器 | todo | | | |
 | M2-021 | server：100 玩家 CPU 优化 | todo | | | |
-| M2-022 | gateway：战绩、设置与可选 OAuth | todo | | | |
+| M2-022 | gateway：战绩、设置与可选 OAuth | partial | SQLite 0002、已结算对局查询、游客设置读写、默认关闭的 OAuth 占位。PI-109 工作站通过结算直投和落盘重放。见 `reports/m2-gateway-stats.md` | 真实 OAuth、PKCE 和游客升级未测（H-063） | PI-B6-gwstats-1 |
 | M2-023 | gateway：管理 API 与举报 | todo | | | |
 | M2-024 | 语音：LiveKit 自托管与 token | todo | | | |
 | M2-025 | 语音：服务器订阅集管理 | todo | | | |
