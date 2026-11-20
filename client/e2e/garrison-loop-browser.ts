@@ -27,15 +27,15 @@ async function join(nick: string, transport: TransportKind, hash: string) {
   const { sampler, session, gameState, game, wasm } = net;
   const actions = createDeployActions(session.transport, wasm);
   const decoder = new wasm.SnapshotDecoder();
-  const peers = new Map<number, { x: number; z: number; health: number; tick: number }>();
+  const peers = new Map<number, { x: number; z: number; health: number; stance: number; tick: number }>();
   let lastTick = -1;
   const offSnap = session.onSnapshot((bytes) => {
     const tick = decoder.decode(bytes);
     if (tick <= lastTick) return;
     lastTick = tick;
-    const ids = decoder.ids(), pos = decoder.pos(), health = decoder.health();
+    const ids = decoder.ids(), pos = decoder.pos(), health = decoder.health(), stance = decoder.stance();
     for (let i = 0; i < ids.length; i++) {
-      peers.set(ids[i]!, { x: pos[i * 3]!, z: pos[i * 3 + 2]!, health: health[i]!, tick });
+      peers.set(ids[i]!, { x: pos[i * 3]!, z: pos[i * 3 + 2]!, health: health[i]!, stance: stance[i]!, tick });
     }
   });
   const spawnEvents: { id: number; state: number; at: number }[] = [];

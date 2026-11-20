@@ -1,4 +1,4 @@
-import { spawn } from 'node:child_process';
+import { execFileSync, spawn } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { Agent } from 'node:http';
 import { tmpdir } from 'node:os';
@@ -13,6 +13,12 @@ const CLIENT = fileURLToPath(new URL('..', import.meta.url));
 const GATEWAY = process.env.FRONTLINE_GATEWAY_BIN ?? join(REPO_ROOT, 'target/debug/frontline-gateway');
 const DEPOT = { x: 64, z: 24 };
 const SITE = { x: 64, z: 237 };
+const MATCH_ID = '00000000-0000-4000-8000-000000000011';
+
+function demoPass(step: number, evidence: string) {
+  const dir = process.env.FRONTLINE_M1_DEMO_DIR;
+  if (dir) writeFileSync(join(dir, `step-${step}`), evidence);
+}
 
 function fixtureMap(dir: string, publicDir: string) {
   const map = join(dir, 'maps/carentan/m1');
@@ -45,12 +51,13 @@ function launch(bin: string, args: string[], dir: string, env: Record<string, st
   let stdout = '';
   let stderr = '';
   let exited = false;
+  let exitCode: number | null = null;
   console.log(`[garrison-loop] started ${bin} pid=${child.pid}`);
   child.stdout?.on('data', (d) => { stdout += d.toString(); });
   child.stderr?.on('data', (d) => { stderr += d.toString(); });
   const closed = new Promise<void>((resolve) => {
     const done = () => { exited = true; resolve(); };
-    child.once('exit', done);
+    child.once('exit', (code) => { exitCode = code; done(); });
     child.once('error', (err) => { stderr += err.message; done(); });
   });
   return {
@@ -68,6 +75,7 @@ function launch(bin: string, args: string[], dir: string, env: Record<string, st
     async stop() {
       if (!exited && child.pid) child.kill('SIGTERM');
       await closed;
+      return exitCode;
     },
   };
 }
@@ -112,6 +120,7 @@ for (const transport of ['ws', 'wt'] as const) {
     let gateway: ReturnType<typeof launch> | undefined;
     let server: ReturnType<typeof launch> | undefined;
     let vite: ViteDevServer | undefined;
+    const demo = transport === 'ws' && Boolean(process.env.FRONTLINE_M1_DEMO_DIR);
     // Match the native load tester's loopback source spread without changing the real per-IP cap.
     const reserveAgent = new Agent({ localAddress: '127.0.0.2' });
     try {
@@ -121,14 +130,15 @@ for (const transport of ['ws', 'wt'] as const) {
         writeFileSync(join(publicDir, 'wasm', file), readFileSync(join(dirname(WASM_JS), file)));
       }
       const token = 'garrison-loop-local-only';
+      const db = join(dir, 'gateway.sqlite3');
       gateway = launch(GATEWAY, [], dir, { GATEWAY_BIND: '127.0.0.1:0', INTERNAL_API_TOKEN: token,
-        TOKEN_SECRET: 'garrison-loop-disposable-guest-secret', DATABASE_URL: 'sqlite::memory:', RUST_LOG: 'info', NO_COLOR: '1' });
+        TOKEN_SECRET: 'garrison-loop-disposable-guest-secret', DATABASE_URL: demo ? `sqlite://${db}` : 'sqlite::memory:', RUST_LOG: 'info', NO_COLOR: '1' });
       const addr = await gateway.ready(() => /addr=(127\.0\.0\.1:\d+)/.exec(gateway!.output())?.[1]);
       server = launch(SERVER_BIN, ['--data-dir', dir, '--map', 'carentan/m1', '--mode', 'assault',
         '--ws-port', '0', '--wt-port', '0', '--metrics-port', '0', '--log-level', 'debug',
-        '--gateway-url', `http://${addr}`, '--match-id', '00000000-0000-4000-8000-000000000011', ...(transport === 'wt' ? ['--dev-cert'] : [])], dir,
+        '--gateway-url', `http://${addr}`, '--match-id', MATCH_ID, ...(transport === 'wt' ? ['--dev-cert'] : [])], dir,
       { INTERNAL_API_TOKEN: token });
-      await server.ready(() => event(server!, 'gateway_registered'));
+      const registration = await server.ready(() => event(server!, 'gateway_registered'));
       const wsPort = event(server, 'ws_listening')?.port;
       if (typeof wsPort !== 'number') throw new Error('missing WS port');
       const hash = transport === 'wt' ? event(server, 'wt_listening')?.cert_sha256_hex : '';
@@ -142,7 +152,21 @@ for (const transport of ['ws', 'wt'] as const) {
       await vite.listen();
       const http = vite.httpServer?.address();
       if (!http || typeof http === 'string') throw new Error('Vite has no address');
-      const entry = `http://127.0.0.1:${http.port}/e2e/garrison-loop.html`;
+      const origin = `http://127.0.0.1:${http.port}`;
+      if (demo) {
+        // Real browser capability detection, public menu and registered server list, with no mocked routes.
+        const lobby = await context.newPage();
+        await lobby.goto(origin);
+        await expect(lobby.getByText('Compatibility mode (WebGL2)')).toBeVisible();
+        await lobby.getByRole('button', { name: 'Click to continue' }).click();
+        const browserButton = lobby.getByRole('button', { name: 'Server browser' });
+        await expect(browserButton).toBeVisible();
+        demoPass(1, `Chromium ${browser.version()} 实际探测软件 WebGL2，启动页进入主菜单。`);
+        await browserButton.click();
+        await expect(lobby.getByRole('row', { name: /Frontline/ }).getByRole('button', { name: 'Join' })).toBeEnabled();
+        await lobby.close();
+      }
+      const entry = `${origin}/e2e/garrison-loop.html`;
       const errors: string[] = [];
       for (const page of [support, officer]) page.on('pageerror', (e) => errors.push(e.message));
       await Promise.all([support.goto(entry), officer.goto(entry)]);
@@ -180,6 +204,20 @@ for (const transport of ['ws', 'wt'] as const) {
         expect(result, JSON.stringify(result)).toMatchObject({ ok: true });
       }
       await Promise.all([officer, support].map((p) => expect.poll(async () => (await status(p)).health).toBeGreaterThan(0)));
+      if (demo) {
+        demoPass(2, '服务器列表显示已注册对局。2 个 Chromium 游客取得真实签票并通过 WS 入场，US 小队 Officer/Support 的 HQ 部署获 C0 确认和存活快照。');
+        const leadStance = () => support.evaluate((id) => window.garrisonFixture.peers(id)?.stance, lead.id);
+        await officer.evaluate(() => window.garrisonFixture.hold('KeyC'));
+        await expect.poll(leadStance).toBe(1); // C2 Stance::Crouch as seen by a teammate
+        await officer.evaluate(() => window.garrisonFixture.release('KeyC'));
+        await expect.poll(leadStance).toBe(0);
+
+        const garandAmmo = (await status(support)).ammo;
+        expect(garandAmmo).toBeGreaterThan(0);
+        await support.evaluate(() => window.garrisonFixture.hold('Mouse0'));
+        await expect.poll(async () => (await status(support)).ammo).toBeLessThan(garandAmmo);
+        await support.evaluate(() => window.garrisonFixture.release('Mouse0'));
+      }
 
       // The Depot starts empty and generates the first crate at tick 1350. Approach the site with
       // the officer concurrently; start the Support's hold only after stock can exist.
@@ -231,6 +269,7 @@ for (const transport of ['ws', 'wt'] as const) {
       };
       await expect.poll(spawnDistance).toBeLessThanOrEqual(8.1);
 
+      const garrisonDistance = await spawnDistance();
       const atSpawn = (await peer())!;
       await walk(support, atSpawn, false);
       expect(await support.evaluate(() => window.garrisonFixture.place('ammo_crate'))).toMatchObject({ cost: 0, confirmToAckMs: expect.any(Number) });
@@ -239,6 +278,7 @@ for (const transport of ['ws', 'wt'] as const) {
       expect(full.reserve).toBeGreaterThan(0);
       await officer.evaluate(() => window.garrisonFixture.hold('Mouse0'));
       await expect.poll(async () => (await status(officer)).ammo, { timeout: 9_000 }).toBe(0);
+      if (demo) demoPass(3, `步行到达放置点，队友快照确认蹲下与站起，Garand 与 Thompson 均消耗权威弹药（Thompson ${full.ammo} 发），Garrison 扣除 50 补给并激活，重生距驻点 ${garrisonDistance.toFixed(2)} m。`);
       await officer.evaluate(() => {
         window.garrisonFixture.release('Mouse0');
         window.garrisonFixture.hold('KeyR');
@@ -253,9 +293,33 @@ for (const transport of ['ws', 'wt'] as const) {
       expect(errors).toEqual([]);
 
       const result = { transport, ...timing, buildingToActiveMs: stateTimes[1]!.at - stateTimes[0]!.at,
-        respawnDistanceM: await spawnDistance(), reserve: [full.reserve, depleted, (await status(officer)).reserve] };
+        respawnDistanceM: garrisonDistance, reserve: [full.reserve, depleted, (await status(officer)).reserve] };
       console.log(`[garrison-loop] ${JSON.stringify(result)}`);
       await testInfo.attach('garrison timings', { body: JSON.stringify(result, null, 2), contentType: 'application/json' });
+      if (demo) {
+        demoPass(4, `Support 在 HQ 取箱并搬运，放置补给箱和弹药箱。Officer 备弹 ${result.reserve.join(' → ')}。`);
+        const port = event(server, 'metrics_listening')?.port;
+        expect(typeof port).toBe('number');
+        const metrics = await fetch(`http://127.0.0.1:${port}/metrics`, { signal: AbortSignal.timeout(5000) });
+        expect(metrics.ok).toBe(true);
+        const tickCount = Number(/^server_tick_ms_count (\d+)$/m.exec(await metrics.text())?.[1]);
+        expect(tickCount).toBeGreaterThan(0);
+
+        // A controlled finish checks the real gateway result handoff, terminal flag and persistence.
+        expect(await server.stop()).toBe(0);
+        const summary = event(server, 'summary');
+        expect(Number(summary?.ticks)).toBeGreaterThan(0);
+        const gatewayMatchId = registration.gateway_match_id;
+        if (typeof gatewayMatchId !== 'string') throw new Error('missing gateway match ID');
+        const persisted = execFileSync('python3', ['-c', `
+import json, sqlite3, sys
+with sqlite3.connect(sys.argv[1]) as db:
+    ended, payload = db.execute('SELECT ended, payload FROM matches JOIN results ON matches.id = results.match_id WHERE matches.id = ?', (sys.argv[2],)).fetchone()
+    print(json.dumps([ended, json.loads(payload)]))
+`, db, gatewayMatchId], { encoding: 'utf8', timeout: 5000 });
+        expect(JSON.parse(persisted)).toMatchObject([1, { objectives: 1, ticks: summary?.ticks, rows: [] }]);
+        demoPass(8, `HTTP /metrics 返回 ${tickCount} 个 tick 样本。主动停服触发结果上报，gateway SQLite 确认 ended=1、${summary?.ticks} ticks、1 个据点。`);
+      }
     } finally {
       if (server) await testInfo.attach('match diagnostics', { body: server.output().slice(-8000) + server.error(), contentType: 'text/plain' });
       await context.close();
