@@ -20,6 +20,7 @@ export type C4Event =
   | { type: 'score'; player: number; kind: number; category: ScoreCategory; reason: number; value: number }
   | { type: 'objective'; objective: number; owner: number; reason: number }
   | { type: 'spawnpoint'; id: number; kind: number; team: number; pos: readonly [number, number]; state: number }
+  // Positions use the same quantized integer representation as spawnpoints.
   | { type: 'structure'; id: number; kind: number; pos: readonly [number, number]; state: number }
   | { type: 'roster'; player: number; nick: string; team: number; squad: number; role: number; flags: number; seq: number; left?: boolean }
   | { type: 'notice'; code: number; args: readonly [number, number, number] }

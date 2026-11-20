@@ -535,11 +535,7 @@ pub(crate) fn decode_c4_core(bytes: &[u8]) -> Result<String, String> {
         ),
         E::StructureState(s) => format!(
             r#"{{"type":"structure","id":{},"kind":{},"pos":[{},{}],"state":{}}}"#,
-            s.id,
-            s.kind,
-            frontline_protocol::quant::dequant_pos_xz(s.pos[0]),
-            frontline_protocol::quant::dequant_pos_xz(s.pos[1]),
-            s.state
+            s.id, s.kind, s.pos[0], s.pos[1], s.state
         ),
         E::PlayerRoster(r) => format!(
             r#"{{"type":"roster","player":{},"nick":{},"team":{},"squad":{},"role":{},"flags":{},"left":{}}}"#,

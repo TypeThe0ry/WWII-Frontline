@@ -1,7 +1,7 @@
 # B6-outpost · M2-011
 
 - 实现 Officer 小队 Outpost、Engineer 维修站和 Anti-Tank 炮位。联通设施建造、出生、补给、弹道/穿深、C0/C4、WASM 和客户端逻辑。放置临时键为 `9`、`0`、`]`。正式视觉、建筑菜单和炮口表现待 Fable 设计。任务卡无新增素材需求。
-- 与同时合入的 M2-018 协议语义合并后，设施 C4 使用 `0x10`，握手协议为 v12，数据哈希 `0xad4f99353853fab8`。
+- 与同时合入的 M2-018 协议语义合并后，设施 C4 使用 `0x10`，握手协议为 v12，数据哈希 `0x72a5f8fd92300bbb`。
 - 任务状态 `partial`。参考机、真人浏览器整局和真实地图阶段 4 满载未测（H-021）。正式 Sector、导航连通性、车辆补给源、共享建筑总额和完整角色装具待 M2-006/008/010。设施文件在 Node 验证器中计作 hash-only，另有 sim 类型解析与单测。
 
 ## 命令与数字
@@ -14,3 +14,5 @@
 - `CARGO_BUILD_JOBS=8 scripts/local-ci.sh lint rust determinism wasm ts data`。
 
 卡片逐项证据与偏差见 [M2-011 验收](../../reports/m2-outpost.md) 和 PI-B6-outpost-1。
+- Rust 全工作区与 `test-util` 组在 M2-019 合入前通过。合流后协议、部署放置、通信与换队专项 Rust 测试共 41 个通过，1 个既有手工测试默认忽略。`lint` 和 `data` 组通过，数据校验 86 文件、21 hash-only、0 错误。
+- `FRONTLINE_DETERMINISM_STRICT=1 CARGO_BUILD_JOBS=8 scripts/local-ci.sh wasm determinism ts` 全绿。三个种子各 18,000 tick，native/WASM 哈希逐 tick 相同。Vitest 99 文件、775 测试通过。WASM 门禁 1,194,606 B，Brotli 345,369 B。wasm-pack 的 `custom` 配置使用 `-Oz`，原限值不变。

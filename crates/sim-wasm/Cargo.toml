@@ -35,5 +35,6 @@ serde_json = "1"
 # Optimised by tools/ci/check-wasm-size.mjs with a pinned wasm-opt (binaryen) instead.
 wasm-opt = false
 
-[package.metadata.wasm-pack.profile.wasm-release]
-wasm-opt = false
+[package.metadata.wasm-pack.profile.custom]
+# Apply size optimizations before the existing local-ci -O3 size check.
+wasm-opt = ["-Oz"]

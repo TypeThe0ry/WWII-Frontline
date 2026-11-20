@@ -114,7 +114,7 @@ const ok = (name) => {
 {
   const bytes = Uint8Array.of(0x10, 0x12, 0x34, 1, 0x10, 0x20, 0x30, 0x40, 2);
   assert.deepEqual(JSON.parse(wasm.decodeC4(bytes)), {
-    type: 'structure', id: 0x1234, kind: 1, pos: [0x1020 / 32, 0x3040 / 32], state: 2,
+    type: 'structure', id: 0x1234, kind: 1, pos: [0x1020, 0x3040], state: 2,
   });
   ok('M2-011 C4: native facility bytes');
 }
