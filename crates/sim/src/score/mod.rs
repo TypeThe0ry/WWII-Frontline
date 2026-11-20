@@ -19,7 +19,6 @@ pub mod xp;
 
 pub use rules::{Category, ScoreKind, ScoreRules};
 use stats::*;
-pub use world::Afk;
 use ScoreKind as K;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -236,6 +235,11 @@ impl ScoreEngine {
 
     fn ledger(&mut self, p: PlayerId) -> Option<&mut Ledger> {
         self.players.get_mut(p as usize)?.as_mut()
+    }
+
+    pub(crate) fn active_total(&self, player: PlayerId) -> Option<i64> {
+        let stats = &self.players.get(usize::from(player))?.as_ref()?.stats;
+        Some(stats.categories.iter().sum())
     }
     fn actor(&self, player: PlayerId) -> Option<Actor> {
         self.players.get(player as usize)?.as_ref()?.actor

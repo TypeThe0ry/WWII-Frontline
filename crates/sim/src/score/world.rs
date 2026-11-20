@@ -9,9 +9,6 @@ use crate::view::ObjectiveView;
 
 use super::*;
 
-#[derive(bevy_ecs::prelude::Component, Default)]
-pub struct Afk(pub bool);
-
 impl ScoreEngine {
     pub(crate) fn world_tick(
         &mut self,
@@ -20,6 +17,7 @@ impl ScoreEngine {
         squads: &SquadManager,
         before: &[ObjectiveView],
         out: &mut StepOutput,
+        is_afk: impl Fn(PlayerId) -> bool,
     ) {
         self.advance(tick);
         let index = &ecs.resource::<PlayerIndex>().map;
@@ -41,7 +39,7 @@ impl ScoreEngine {
                     team,
                     squad: roster.and_then(|r| r.squad),
                     alive: e.get::<LifeState>().is_some_and(LifeState::is_alive),
-                    afk: e.get::<Afk>().is_some_and(|a| a.0),
+                    afk: is_afk(player),
                 },
             );
         }
@@ -54,7 +52,7 @@ impl ScoreEngine {
                         team: r.team,
                         squad: r.squad,
                         alive: false,
-                        afk: false,
+                        afk: is_afk(p),
                     },
                 );
             }

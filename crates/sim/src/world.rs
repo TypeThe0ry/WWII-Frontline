@@ -260,12 +260,14 @@ impl World {
             ),
         };
         if scoring {
+            let rules = self.server_rules.as_ref();
             self.score.world_tick(
                 self.tick().0,
                 &self.ecs,
                 &self.squads,
                 &self.objective_views,
                 &mut out,
+                |p| rules.is_some_and(|r| r.is_afk(p)),
             );
         }
         self.refresh_views();
@@ -464,8 +466,12 @@ impl World {
     }
 
     pub fn remove_player(&mut self, id: PlayerId) {
-        self.vacate_rule_seat(id);
         self.score.disconnect(id);
+        self.despawn_player_body(id);
+    }
+
+    fn despawn_player_body(&mut self, id: PlayerId) {
+        self.vacate_rule_seat(id);
         let Some((eid, e)) = self.ecs.resource_mut::<PlayerIndex>().map.remove(&id) else {
             return;
         };
@@ -827,7 +833,7 @@ impl World {
         let now = self.tick();
         let d = self.squads.switch_team(p, now)?;
         self.push_roster(d);
-        self.remove_player(p);
+        self.despawn_player_body(p);
         Ok(())
     }
 
