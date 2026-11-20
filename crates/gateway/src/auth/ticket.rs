@@ -26,10 +26,18 @@ fn message(claims: &[u8]) -> Vec<u8> {
 }
 
 /// Issues a ticket valid for [`TICKET_TTL_S`] seconds from `now_s`.
-pub fn issue(key: &SigningKey, mut claims: TicketClaims, now_s: u64) -> String {
+pub fn issue(key: &SigningKey, claims: TicketClaims, now_s: u64) -> String {
+    issue_with_signer(claims, now_s, |message| key.sign(message))
+}
+
+pub(crate) fn issue_with_signer(
+    mut claims: TicketClaims,
+    now_s: u64,
+    sign: impl FnOnce(&[u8]) -> Signature,
+) -> String {
     claims.exp = now_s + TICKET_TTL_S;
     let bytes = claims.encode();
-    let sig = key.sign(&message(&bytes));
+    let sig = sign(&message(&bytes));
     let e = b64();
     format!("{}.{}", e.encode(&bytes), e.encode(sig.to_bytes()))
 }
