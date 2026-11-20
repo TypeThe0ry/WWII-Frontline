@@ -105,6 +105,8 @@ export interface SimWasmModule {
   decodeC0(bytes: Uint8Array): WasmServerC0;
   /** One C4 payload as JSON in the shape of `C4Event` (roster entries have no `seq`; `NetCodec.decodeC4` numbers them). */
   decodeC4(bytes: Uint8Array): string;
+  /** Optional on older v5 WASM packages. */
+  decodeWorldState?(bytes: Uint8Array): string;
   Predictor: new (matchSeed: bigint, mapId: number, myPlayerId: number) => WasmPredictor;
   SnapshotDecoder: new () => WasmSnapshotDecoder;
 }

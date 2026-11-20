@@ -9,6 +9,16 @@ use crate::weapon::HitZone;
 #[derive(Debug, Clone, PartialEq)]
 #[non_exhaustive]
 pub enum SimEvent {
+    ResourceDelta {
+        team: Team,
+        kind: crate::rules::resources::ResourceKind,
+        value: i32,
+        reason: crate::rules::resources::ResourceReason,
+    },
+    ResourceNodeDestroyed {
+        id: crate::rules::resource_node::ResourceNodeId,
+        reason: crate::rules::resource_node::NodeDestroyReason,
+    },
     /// A hull hit an obstacle; `damage` is the hull damage dealt (M1-022).
     VehicleCollision {
         vehicle: EntityId,
@@ -249,6 +259,21 @@ pub struct StepOutput {
     pub events: Vec<SimEvent>,
     pub rule_changes: Vec<RuleChange>,
     pub server_actions: Vec<crate::serverrules::ServerAction>,
+    /// Resources after settlement, present only on a minute boundary.
+    pub resource_history: Option<crate::rules::resources::ResourceHistory>,
+    /// Discarded units since the preceding step, in Manpower / Munitions / Fuel order.
+    pub resource_overflow: [u64; 3],
+}
+
+impl StepOutput {
+    /// On minute boundaries, returns both team pools in stable team order.
+    pub fn resource_history(
+        &self,
+    ) -> impl Iterator<Item = (Team, crate::rules::resources::Resources)> {
+        self.resource_history
+            .into_iter()
+            .flat_map(|pools| [Team::Us, Team::Ger].into_iter().zip(pools))
+    }
 }
 
 /// Wall-time samples in nanoseconds. Movement player timings are nested in `movement`.
@@ -257,6 +282,7 @@ pub struct StepOutput {
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub struct StepTimings {
     pub movement: u64,
+    pub resources: u64,
     pub movement_players: u64,
     pub movement_slowest_player: u64,
     pub movement_slowest_entity: Option<EntityId>,

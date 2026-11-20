@@ -10,6 +10,9 @@ use std::io::Read;
 use std::path::{Path, PathBuf};
 
 use frontline_sim::collision::{BuildingCollision, MAX_BUILDING_COLLISION_BYTES};
+use frontline_sim::data::defs::ResourceNodeKind;
+use frontline_sim::rules::resource_node::ResourceSite;
+use frontline_sim::rules::resources::ResourceKind;
 use frontline_sim::{CollisionChunk, CollisionData, Team, Vec3, World};
 use serde::Deserialize;
 
@@ -116,6 +119,7 @@ pub struct LoadedMap {
     pub size_m: f32,
     pub(crate) dir: PathBuf,
     pub objectives: Vec<frontline_sim::rules::ObjectiveSpec>,
+    pub(crate) resource_sites: Vec<ResourceSite>,
     pub(crate) no_build_zones: frontline_sim::NoBuildZones,
     pub(crate) garrison_sites: [Option<Vec3>; 2],
 }
@@ -144,6 +148,14 @@ struct ZoneLine {
 struct ZonePoint {
     pos: [f32; 2],
     radius_m: f32,
+    #[serde(default)]
+    resource_sites: Vec<ZoneResourceSite>,
+}
+#[derive(Deserialize)]
+struct ZoneResourceSite {
+    id: u16,
+    kind: ResourceNodeKind,
+    pos: [f32; 2],
 }
 #[derive(Deserialize)]
 struct HqEntry {
@@ -338,24 +350,60 @@ pub fn load_map(data_dir: &Path, map: &str) -> Result<LoadedMap, MapError> {
     let patrol_points = spawns_file.patrol_points.iter().map(|p| p.pos).collect();
     let ground = |[x, z]: [f32; 2]| collision.height_at(x, z).map(|y| Vec3::new(x, y, z));
     let zones = dir.join("zones.json");
-    let objectives = if zones.is_file() {
-        json::<ZonesFile>(&zones)?
+    let mut objectives = Vec::new();
+    let mut resource_sites = Vec::new();
+    if zones.is_file() {
+        let mut seen_sites = std::collections::BTreeSet::new();
+        let bad_zones = |error| MapError::BadJson {
+            path: zones.clone(),
+            error,
+        };
+        for (i, point) in json::<ZonesFile>(&zones)?
             .lines
             .into_iter()
             .flat_map(|line| line.points)
             .enumerate()
-            .filter_map(|(i, p)| {
-                Some(frontline_sim::rules::ObjectiveSpec {
-                    id: u16::try_from(i + 1).ok()?,
-                    pos: ground(p.pos)?,
-                    radius_m: p.radius_m,
-                    owner: None,
-                })
-            })
-            .collect()
-    } else {
-        Vec::new()
-    };
+        {
+            let Some((id, pos)) = u16::try_from(i + 1).ok().zip(ground(point.pos)) else {
+                if !point.resource_sites.is_empty() {
+                    return Err(bad_zones(
+                        "resource sites reference an objective outside the loaded map".into(),
+                    ));
+                }
+                continue;
+            };
+            objectives.push(frontline_sim::rules::ObjectiveSpec {
+                id,
+                pos,
+                radius_m: point.radius_m,
+                owner: None,
+            });
+            for site in point.resource_sites {
+                if !seen_sites.insert(site.id) {
+                    return Err(bad_zones(format!("duplicate resource site {}", site.id)));
+                }
+                let pos = ground(site.pos)
+                    .filter(|pos| pos.is_finite())
+                    .ok_or_else(|| {
+                        bad_zones(format!(
+                            "resource site {} is outside loaded collision",
+                            site.id
+                        ))
+                    })?;
+                let kind = match site.kind {
+                    ResourceNodeKind::Manpower => ResourceKind::Manpower,
+                    ResourceNodeKind::Munitions => ResourceKind::Munitions,
+                    ResourceNodeKind::Fuel => ResourceKind::Fuel,
+                };
+                resource_sites.push(ResourceSite {
+                    id: site.id,
+                    sector: id,
+                    kind,
+                    pos,
+                });
+            }
+        }
+    }
     let garrison_sites = ["US", "GER"].map(|t| {
         spawns_file
             .garrison_candidates
@@ -390,6 +438,7 @@ pub fn load_map(data_dir: &Path, map: &str) -> Result<LoadedMap, MapError> {
         size_m,
         dir,
         objectives,
+        resource_sites,
         no_build_zones,
         garrison_sites,
     })
@@ -416,6 +465,9 @@ impl LoadedMap {
             for p in &self.objectives {
                 world.add_supply_point(p.id, p.pos);
             }
+        }
+        for site in &self.resource_sites {
+            world.install_resource_site(*site);
         }
         // The compact M0 test map cannot accommodate the full M1 HQ protection zones.
         let hq = self.spawns.hq.map(|h| Vec3::new(h.x, h.y, h.z));
@@ -512,6 +564,49 @@ mod tests {
         std::fs::remove_dir_all(&dir).ok();
         assert!(e.contains("no collision chunks"), "{e}");
         assert!(e.contains("map_pipeline"), "{e}");
+    }
+
+    #[test]
+    fn zone_resource_sites_load_and_install() {
+        let root = tempfile::tempdir().unwrap();
+        let map_dir = root.path().join("maps/resources");
+        std::fs::create_dir_all(map_dir.join("chunks")).unwrap();
+        let mut chunk = vec![0; 16 + 65 * 65 * 2 + 64 * 64];
+        chunk[..8].copy_from_slice(b"FCOL\x01\x00\x41\x00");
+        std::fs::write(map_dir.join("chunks/c_0_0.bin"), chunk).unwrap();
+        std::fs::write(
+            map_dir.join("spawns.json"),
+            r#"{"hq":{"us":{"pos":[8,12]},"ger":{"pos":[48,12]}}}"#,
+        )
+        .unwrap();
+        let zones = map_dir.join("zones.json");
+        std::fs::write(&zones, r#"{"lines":[{"points":[{"pos":[24,12],"radius_m":4,"resource_sites":[{"id":9,"kind":"fuel","pos":[20,16]}]}]}]}"#).unwrap();
+        let map = load_map(root.path(), "resources").unwrap();
+        let mut world = World::new(
+            frontline_sim::SimConfig {
+                tick_hz: 30,
+                match_seed: 0,
+                map: frontline_sim::MapId(0),
+                mode: frontline_sim::GameMode::Frontline,
+                data: frontline_sim::GameData::embedded(),
+            },
+            &map.collision,
+        );
+        map.apply_tactical(&mut world);
+        assert_eq!(
+            world.resource_sites().copied().collect::<Vec<_>>(),
+            [ResourceSite {
+                id: 9,
+                sector: 1,
+                kind: ResourceKind::Fuel,
+                pos: Vec3::new(20.0, 0.0, 16.0),
+            }]
+        );
+
+        std::fs::write(&zones, r#"{"lines":[{"points":[{"pos":[24,12],"radius_m":4,"resource_sites":[{"id":9,"kind":"fuel","pos":[20,16]},{"id":9,"kind":"manpower","pos":[20,18]}]}]}]}"#).unwrap();
+        assert!(
+            matches!(load_map(root.path(), "resources"), Err(MapError::BadJson { error, .. }) if error.contains("duplicate resource site 9"))
+        );
     }
 
     #[test]

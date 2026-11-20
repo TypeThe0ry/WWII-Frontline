@@ -101,6 +101,7 @@ export async function startNetGame(
       // Malformed C3 datagrams leave the previous projection intact until its TTL elapses.
     }
   });
+  const offWorldState = session.onWorldState((state) => gameState.applyWorldState(state));
 
   // A hidden tab gets no animation frames: keep stepping from a timer so inputs and the connection stay alive
   // (browsers throttle background timers, so this is best effort; see ARCHITECTURE section 20 #6).
@@ -151,6 +152,7 @@ export async function startNetGame(
       offSnap();
       offTeamChange();
       offTeamMarkers();
+      offWorldState();
       offPlacement();
       lock.detach();
       document.removeEventListener('visibilitychange', onVisibility);

@@ -4,6 +4,8 @@
 pub mod capture;
 pub mod match_state;
 pub mod objectives;
+pub mod resource_node;
+pub mod resources;
 
 pub use capture::{capture_rate, eff, eff_with, CaptureParams};
 pub use match_state::{

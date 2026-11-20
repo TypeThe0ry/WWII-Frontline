@@ -792,6 +792,8 @@ impl<C: Clock> SimLoop<C> {
             .world
             .step_with_rule_inputs(self.bridge.resolved(), self.bridge.real_inputs());
         lap(1, &mut self.phase_ms);
+        self.metrics
+            .observe_resource_overflow(out.resource_overflow);
         self.step_events = out.events;
         if let Some(recorder) = &mut self.reports {
             recorder.record(self.clock.now(), self.bridge.resolved(), &self.step_events);
@@ -1283,6 +1285,41 @@ impl<C: Clock> SimLoop<C> {
                     bytes::Bytes::from(o.bytes),
                     crate::net::transport::Rel::Unreliable,
                 );
+            }
+        }
+        let tick = self.world.tick().0;
+        if crate::snapshot::world_state::due(&self.world, tick) {
+            use frontline_protocol::msg::team::encode_world_state_c2;
+            let payloads =
+                crate::snapshot::world_state::project(&self.world, tick).map(|projection| {
+                    encode_world_state_c2(&projection)
+                        .ok()
+                        .map(bytes::Bytes::from)
+                });
+            for (player, session) in self.bridge.sessions() {
+                let Some(handle) = net
+                    .sessions
+                    .handle_of(*player)
+                    .filter(|h| h.accepts_resources())
+                else {
+                    continue;
+                };
+                // Roster authority changes before routing any new projection.
+                let Some(entry) = self
+                    .world
+                    .squads()
+                    .entry(*player)
+                    .filter(|e| e.team == session.team)
+                else {
+                    continue;
+                };
+                if let Some(payload) = &payloads[entry.team as usize] {
+                    handle.send(
+                        frontline_protocol::Channel::C2,
+                        payload.clone(),
+                        crate::net::transport::Rel::Unreliable,
+                    );
+                }
             }
         }
         for (player, payload) in self.team_outgoing.drain(..) {

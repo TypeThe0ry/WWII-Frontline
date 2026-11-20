@@ -6,12 +6,16 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use arrayvec::ArrayVec;
+use frontline_protocol::channel::c4_type;
 use frontline_protocol::codec::CodecError;
 use frontline_protocol::msg::c0::{
     decode_c0_server, encode_c0_client, ClientMsgC0, DeployRequest, Disconnect, Hello, Ping,
     ServerMsgC0, Welcome,
 };
+use frontline_protocol::msg::c4::{decode_c4, ServerEventC4};
 use frontline_protocol::msg::input::{encode_input_bundle, InputBundle, InputCmd};
+use frontline_protocol::msg::team::{decode_world_state_c2, WORLD_STATE_C2_TAG};
+use frontline_protocol::msg::vote::TeamBalanceCode;
 use frontline_protocol::snapshot::events::Event;
 use frontline_protocol::snapshot::SnapshotDecoder;
 use frontline_protocol::{Channel, PROTOCOL_VERSION};
@@ -19,7 +23,7 @@ use frontline_protocol::{Channel, PROTOCOL_VERSION};
 use crate::clock::Clock;
 use crate::map::MapData;
 use crate::predictor::{new_sim, Predictor};
-use crate::report::ClientReport;
+use crate::report::{ClientReport, ResourceMinute};
 use crate::stats::{Dist, Meter};
 use crate::synth_input::{hash_cmd, Pose, SynthInput};
 use crate::transport::{self, Incoming, Link, Target};
@@ -76,6 +80,7 @@ async fn handshake(ctx: &Ctx, link: &mut Link) -> Result<(Welcome, Instant, Dura
         ticket: Vec::new(),
         client_build: 1,
         caps: frontline_protocol::msg::c0::CAP_TEAM_MARKERS
+            | frontline_protocol::msg::c0::CAP_RESOURCES
             | if ctx.target.kind == transport::Kind::Wt {
                 0b10
             } else {
@@ -241,6 +246,9 @@ pub async fn run_client(ctx: Arc<Ctx>, id: u32) -> (ClientReport, Series) {
         ))
     });
     let mut dec = SnapshotDecoder::new();
+    let mut resource_team = welcome.team;
+    let minute_ticks = u32::from(welcome.tick_hz) * 60;
+    let mut world_state_floor = None;
     // team 0 = US, 1 = GER; the snapshot's `flags` bit 7 is the faction (PI-024). Tolerances: see audit.rs.
     let mut audit = crate::audit::AoiAudit::new(welcome.team & 1, 4.0, 5.0);
     // the client's predicted position is only trustworthy for the audit while it agrees with the server: skip 2 s after a death, a
@@ -300,6 +308,45 @@ pub async fn run_client(ctx: Arc<Ctx>, id: u32) -> (ClientReport, Series) {
                                 rep.team_packets += 1;
                                 rep.team_markers += team.markers.len() as u64;
                             }
+                            Err(_) => rep.decode_errors += 1,
+                        }
+                    }
+                    // Keep unrelated C4 frames (including the initial roster) out of the generic
+                    // decode-error report. Only these two tags affect the resource projection.
+                    Some(Incoming::Frame(Channel::C4, p)) if matches!(p.first(), Some(&c4_type::RESOURCE_DELTA | &c4_type::TEAM_BALANCE_NOTICE)) => match decode_c4(&p) {
+                        Ok(ServerEventC4::ResourceDelta(d)) => {
+                            if d.team == resource_team {
+                                rep.resource_deltas += 1;
+                                rep.resource_delta_sum[usize::from(d.kind)] += i64::from(d.value);
+                            } else {
+                                rep.decode_errors += 1;
+                            }
+                        }
+                        Ok(ServerEventC4::TeamBalanceNotice(n)) if n.code == TeamBalanceCode::Moved => {
+                            let team = n.args[0] as u8;
+                            if team <= 1 && team != resource_team {
+                                resource_team = team;
+                                world_state_floor = Some(n.args[1] as u32);
+                                rep.team_resources = None;
+                            }
+                        }
+                        Ok(_) => {}
+                        Err(_) => rep.decode_errors += 1,
+                    },
+                    Some(Incoming::Frame(Channel::C2, p)) if p.first() == Some(&WORLD_STATE_C2_TAG) => {
+                        down.add(sec, p.len());
+                        match decode_world_state_c2(&p) {
+                            Ok(s) if s.team == resource_team
+                                && world_state_floor.is_none_or(|last| (s.tick.wrapping_sub(last) as i32) > 0) => {
+                                world_state_floor = Some(s.tick);
+                                rep.world_state_packets += 1;
+                                let balances = [s.state.manpower, s.state.munitions, s.state.fuel];
+                                rep.team_resources = Some(balances);
+                                if minute_ticks != 0 && s.tick.is_multiple_of(minute_ticks) {
+                                    rep.resource_minutes.push(ResourceMinute { tick: s.tick, timer: s.state.timer, balances });
+                                }
+                            }
+                            Ok(_) => {}
                             Err(_) => rep.decode_errors += 1,
                         }
                     }

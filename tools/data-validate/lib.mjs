@@ -11,7 +11,7 @@ import { checkRefs } from './rules/refs.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 export const REPO_ROOT = resolve(here, '..', '..');
-export const KINDS = ['weapon', 'explosive', 'melee', 'ammo', 'material', 'gadget', 'role', 'loadout', 'vehicle', 'map_meta', 'spawns', 'rules', 'rule_capture', 'rule_match', 'rule_spawn', 'rule_supplies', 'rule_squads', 'rule_aoi', 'rule_anticheat', 'rule_lagcomp', 'rule_server', 'bots', 'audio_params', 'comms', 'scoring'];
+export const KINDS = ['weapon', 'explosive', 'melee', 'ammo', 'material', 'gadget', 'role', 'loadout', 'vehicle', 'economy', 'resource_node', 'map_meta', 'spawns', 'rules', 'rule_capture', 'rule_match', 'rule_spawn', 'rule_supplies', 'rule_squads', 'rule_aoi', 'rule_anticheat', 'rule_lagcomp', 'rule_server', 'bots', 'audio_params', 'comms', 'scoring'];
 const DIR_KIND = { weapons: 'weapon', explosives: 'explosive', melee: 'melee', ammo: 'ammo', materials: 'material', gadgets: 'gadget', roles: 'role', loadouts: 'loadout', vehicles: 'vehicle' };
 const RULE_FILE_KIND = { 'rules/capture.json': 'rule_capture', 'rules/match_m1.json': 'rule_match', 'rules/spawn.json': 'rule_spawn', 'rules/supplies.json': 'rule_supplies', 'rules/squads.json': 'rule_squads', 'rules/aoi.json': 'rule_aoi', 'rules/anticheat.json': 'rule_anticheat', 'rules/lagcomp.json': 'rule_lagcomp', 'rules/bots.json': 'bots' };
 const MAP_FILE_KIND = { 'meta.json': 'map_meta', 'spawns.json': 'spawns' };
@@ -58,7 +58,7 @@ export function checkFile(kind, doc, validators) {
   const validate = validators[kind];
   if (!validate(doc)) errs.push(...validate.errors.map(ajvToError));
   if (doc && typeof doc === 'object' && !Array.isArray(doc)) {
-    errs.push(...checkUnits(doc));
+    errs.push(...checkUnits(doc, kind));
     errs.push(...checkTunable(doc, kind));
     errs.push(...checkRanges(doc, kind));
     errs.push(...checkHistorical(doc, kind));
@@ -87,13 +87,18 @@ export function discover(root) {
     if (parts[0] === 'schemas') continue;
     let kind = null;
     if (parts.length === 2 && DIR_KIND[parts[0]]) kind = DIR_KIND[parts[0]];
+    else if (parts.length === 2 && rel.startsWith('structures/resource_node_')) kind = 'resource_node';
     else if (parts.length === 2 && parts[0] === 'rules') kind = RULE_FILE_KIND[rel] ?? 'rules';
+    else if (rel === 'economy.json') kind = 'economy';
     else if (rel === 'server_rules.json') kind = 'rule_server';
     else if (rel === 'comms.json') kind = 'comms';
     else if (rel === 'audio/params.json') kind = 'audio_params';
     else if (rel === 'scoring.json') kind = 'scoring';
     else if (parts.length === 3 && parts[0] === 'maps' && MAP_FILE_KIND[parts[2]]) kind = MAP_FILE_KIND[parts[2]];
-    if (kind) files.push({ kind, file: rel, abs, stemId: kind === 'map_meta' || kind === 'spawns' || kind === 'rules' || kind === 'bots' || kind === 'audio_params' || kind === 'comms' || kind.startsWith('rule_') ? null : basename(rel, '.json') });
+    if (kind) {
+      const stemId = DIR_KIND[parts[0]] || kind === 'resource_node' ? basename(rel, '.json') : null;
+      files.push({ kind, file: rel, abs, stemId });
+    }
     else unchecked.push(rel);
   }
   return { files, unchecked };

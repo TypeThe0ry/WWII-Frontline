@@ -4,9 +4,9 @@ use std::collections::BTreeMap;
 
 use bytes::Bytes;
 use frontline_protocol::msg::c4::{
-    encode_c4, roster_flags, Death, Kill, MatchPhase, ObjectiveChange, Phase, PlayerRoster, Revive,
-    ScoreDelta, ServerEventC4, SpawnKind, SpawnPointState, StructureState, KILLER_ENV,
-    KILL_DIST_BITS,
+    encode_c4, roster_flags, Death, Kill, MatchPhase, ObjectiveChange, Phase, PlayerRoster,
+    ResourceDelta, Revive, ScoreDelta, ServerEventC4, SpawnKind, SpawnPointState, StructureState,
+    KILLER_ENV, KILL_DIST_BITS,
 };
 use frontline_protocol::{quant::quant_pos_xz, Channel};
 use frontline_sim::medical::CreditKind;
@@ -187,6 +187,24 @@ impl Broadcast {
                         }),
                     );
                 }
+                SimEvent::ResourceDelta {
+                    team,
+                    kind,
+                    value,
+                    reason,
+                } => send_to(
+                    self.clients
+                        .values()
+                        .filter(|c| c.team == team && c.handle.accepts_resources()),
+                    || {
+                        ServerEventC4::ResourceDelta(ResourceDelta {
+                            team: team as u8,
+                            kind: kind as u8,
+                            value,
+                            reason: reason as u8,
+                        })
+                    },
+                ),
                 SimEvent::Revive {
                     medic,
                     target_player,

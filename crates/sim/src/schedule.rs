@@ -764,8 +764,12 @@ pub fn build_schedule() -> Schedule {
             crate::suppression::suppression_assists,
             medical,
             vitals,
-            crate::rules::objectives,
-            crate::rules::match_state,
+            (
+                crate::rules::objectives,
+                crate::rules::resources::resources_tick,
+                crate::rules::match_state,
+            )
+                .chain(),
             (
                 crate::spawn::garrison::garrisons,
                 crate::spawn::outpost::tick_outposts,
@@ -804,8 +808,12 @@ pub fn build_schedule() -> Schedule {
             crate::suppression::suppression_assists,
             medical,
             vitals,
-            crate::rules::objectives,
-            crate::rules::match_state,
+            (
+                crate::rules::objectives,
+                crate::rules::resources::resources_tick,
+                crate::rules::match_state,
+            )
+                .chain(),
             (
                 crate::spawn::garrison::garrisons,
                 crate::spawn::outpost::tick_outposts,

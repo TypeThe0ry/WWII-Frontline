@@ -327,6 +327,55 @@ pub fn decode_world_state(b: &[u8]) -> Result<WorldState, CodecError> {
     decode_whole(b)
 }
 
+/// First byte of a standalone C2 world-state packet. High nibble 2 distinguishes it
+/// from snapshot packets (high nibble 1). All low bits are reserved and zero.
+pub const WORLD_STATE_C2_TAG: u8 = 0x20;
+
+/// A newer authoritative projection supersedes any older projection on C2.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct WorldStateC2 {
+    pub tick: u32,
+    /// Recipient's team (US = 0, GER = 1). `state` contains only that team's pool.
+    pub team: u8,
+    pub state: WorldState,
+}
+
+impl Codec for WorldStateC2 {
+    fn encode(&self, w: &mut BitWriter) -> Result<(), CodecError> {
+        if self.team > 1 {
+            return Err(CodecError::InvalidValue);
+        }
+        w.write_bits(u64::from(WORLD_STATE_C2_TAG), 8)?;
+        w.write_bits(u64::from(self.tick), 32)?;
+        w.write_bits(u64::from(self.team), 8)?;
+        self.state.encode(w)
+    }
+
+    fn decode(r: &mut BitReader<'_>) -> Result<Self, CodecError> {
+        if r.read_bits(8)? != u64::from(WORLD_STATE_C2_TAG) {
+            return Err(CodecError::InvalidTag);
+        }
+        let tick = r.read_bits(32)? as u32;
+        let team = r.read_bits(8)? as u8;
+        if team > 1 {
+            return Err(CodecError::InvalidValue);
+        }
+        Ok(Self {
+            tick,
+            team,
+            state: WorldState::decode(r)?,
+        })
+    }
+}
+
+pub fn encode_world_state_c2(m: &WorldStateC2) -> Result<Vec<u8>, CodecError> {
+    encode_whole(m)
+}
+
+pub fn decode_world_state_c2(b: &[u8]) -> Result<WorldStateC2, CodecError> {
+    decode_whole(b)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

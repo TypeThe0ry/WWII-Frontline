@@ -10,7 +10,6 @@ use std::time::Duration;
 
 use bytes::Bytes;
 use frontline_protocol::framing::{decode_ws_frame, encode_ws_frame, FRAME_HEADER_LEN};
-use frontline_protocol::Channel;
 use futures_util::stream::{SplitSink, SplitStream};
 use futures_util::{SinkExt, StreamExt};
 use tokio::io::{AsyncRead, AsyncWrite, ReadBuf};
@@ -165,7 +164,7 @@ async fn writer<S: AsyncRead + AsyncWrite + Unpin>(
                     break;
                 }
                 handle.write_done(n);
-                if ch == Channel::C2 {
+                if super::transport::is_snapshot(ch, &bytes) {
                     // Base the next deadline on a completed flush, not the original attempt:
                     // after a stall we must not send a burst of queued snapshots.
                     snapshot_not_before = Instant::now() + SNAPSHOT_INTERVAL;
@@ -282,6 +281,7 @@ async fn accept_loop(listener: TcpListener, ctx: Arc<NetCtx>, mut stop: watch::R
 
 #[cfg(test)]
 mod tests {
+    use frontline_protocol::Channel;
     use std::future::{poll_fn, Future};
 
     use tokio::io::duplex;

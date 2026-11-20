@@ -46,6 +46,7 @@ fn arena() -> Arc<LoadedMap> {
             })
             .collect(),
         no_build_zones: Default::default(),
+        resource_sites: Vec::new(),
         garrison_sites: [None; 2],
     })
 }

@@ -47,6 +47,7 @@ export interface GameEvents {
   'kill.feed': { killer: number; victim: number; weapon: number; headshot: boolean; dist: number };
   'deploy.state': { phase: string; spawnTick?: number; reason?: string };
   'team.changed': { team: number; flags: number; tick: number };
+  'resource.delta': { team: number; kind: number; value: number; reason: number };
   'objective.changed': { objective: number; owner: number; reason: number };
   'revive': { medic: number; target: number };
   'player.alive': { player: number };

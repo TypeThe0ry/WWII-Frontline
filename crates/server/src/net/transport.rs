@@ -104,6 +104,7 @@ pub struct Outbox {
     capacity: AtomicU64,
     rtt_micros: AtomicU64,
     team_markers: std::sync::atomic::AtomicBool,
+    resources: std::sync::atomic::AtomicBool,
 }
 
 /// Cloneable handle to a connection's outbound side.
@@ -135,11 +136,20 @@ impl ClientHandle {
             capacity: AtomicU64::new(0),
             rtt_micros: AtomicU64::new(0),
             team_markers: std::sync::atomic::AtomicBool::new(false),
+            resources: std::sync::atomic::AtomicBool::new(false),
         }))
     }
 
     pub(crate) fn enable_team_markers(&self) {
         self.0.team_markers.store(true, Ordering::Relaxed);
+    }
+
+    pub(crate) fn enable_resources(&self) {
+        self.0.resources.store(true, Ordering::Relaxed);
+    }
+
+    pub(crate) fn accepts_resources(&self) -> bool {
+        self.0.resources.load(Ordering::Relaxed)
     }
 
     pub(crate) fn accepts_team_markers(&self) -> bool {
@@ -215,10 +225,10 @@ impl ClientHandle {
                 let mut c2_dropped = 0u64;
                 let ws = self.0.websocket.load(Ordering::Relaxed);
                 if ws
-                    && ch == Channel::C2
+                    && is_snapshot(ch, &bytes)
                     && (ws_overloaded(&s) || ws_buffered(&s) + len > WRITE_BACKLOG_LIMIT)
                 {
-                    // Reliable traffic and C3 team/world updates have independent semantics.
+                    // Reliable traffic, team state and world state have independent cadence.
                     c2_dropped = prune_c2(&mut s, false);
                     dropped += c2_dropped;
                 } else if !ws && s.inflight + s.latest_bytes > WRITE_BACKLOG_LIMIT {
@@ -230,14 +240,20 @@ impl ClientHandle {
                 if s.latest.len() >= UNRELIABLE_QUEUE_CAP {
                     // For WS, prefer replacing the oldest packet of the same stream.
                     let i = if ws {
-                        s.latest.iter().position(|(old, _)| *old == ch).unwrap_or(0)
+                        s.latest
+                            .iter()
+                            .position(|(old_ch, old)| {
+                                *old_ch == ch
+                                    && is_snapshot(*old_ch, old) == is_snapshot(ch, &bytes)
+                            })
+                            .unwrap_or(0)
                     } else {
                         0
                     };
                     if let Some((old_ch, old)) = s.latest.remove(i) {
                         s.latest_bytes -= old.len() + FRAME_HEADER_LEN;
                         dropped += 1;
-                        c2_dropped += u64::from(ws && old_ch == Channel::C2);
+                        c2_dropped += u64::from(ws && is_snapshot(old_ch, &old));
                     }
                 }
                 s.latest_bytes += len;
@@ -365,7 +381,9 @@ impl ClientHandle {
                     }
                     let hold = snapshot_not_before.filter(|t| *t > Instant::now());
                     let next = if hold.is_some() {
-                        s.latest.iter().position(|(ch, _)| *ch != Channel::C2)
+                        s.latest
+                            .iter()
+                            .position(|(ch, bytes)| !is_snapshot(*ch, bytes))
                     } else {
                         Some(0)
                     };
@@ -421,16 +439,23 @@ fn ws_buffered(s: &OutState) -> usize {
     s.inflight + s.reliable_bytes + s.latest_bytes
 }
 
+/// World state shares C2 framing but has its own 1 Hz cadence.
+pub(super) fn is_snapshot(ch: Channel, bytes: &[u8]) -> bool {
+    ch == Channel::C2 && bytes.first() != Some(&frontline_protocol::msg::team::WORLD_STATE_C2_TAG)
+}
+
 fn prune_c2(s: &mut OutState, keep_latest: bool) -> u64 {
     let mut skip = if keep_latest {
-        s.latest.iter().rposition(|(ch, _)| *ch == Channel::C2)
+        s.latest
+            .iter()
+            .rposition(|(ch, bytes)| is_snapshot(*ch, bytes))
     } else {
         None
     };
     let mut dropped = 0;
     let mut bytes = 0;
     s.latest.retain(|(ch, old)| {
-        let remove = *ch == Channel::C2 && skip != Some(0);
+        let remove = is_snapshot(*ch, old) && skip != Some(0);
         skip = skip.and_then(|i| i.checked_sub(1));
         if remove {
             dropped += 1;

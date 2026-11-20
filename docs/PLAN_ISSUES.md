@@ -1629,3 +1629,14 @@ PrePass 速度会卡死渲染循环，改用自有速度 RTT（地形/薄实例/
 - M2-006 / M2-008 / M2-010 仍待合入，使用最小角色与 M1 装具、最近据点作为临时 Sector、地面补给箱。真实 Sector 易手联动、导航连通性、车辆补给与所有设施共用全队总额待集成。维修逐 tick 使用一次整 Supplies 购买 5 HP 额度并保留剩余额度，避免每 tick 向上取整耗尽库存。
 - 任务记 `partial`。PI-109 规则微基准低于 0.1 ms/tick，阶段 4 合成 400 弹体低于 2.5 ms/tick。参考机及真实地图阶段 4 满载未测（H-021）。正式设施视觉与炮口表现待 Fable。逐项证据见 [M2-011 验收](../reports/m2-outpost.md)。
 - 与 M2-019 合流后 WASM 超限 1,842 B。设施 C4 适配沿用整数坐标，修正 wasm-pack 自定义构建档的元数据键并启用 `-Oz`。现有 `-O3` 门禁实测 1,194,606 B，保持原有门槛。
+
+### PI-B6-resources-1 · M2-009 战略资源与资源节点（2026-11-20）
+
+- 收入按服务器整分钟 tick 结算。先应用本 tick 的据点易手与节点销毁，再应用收入上限，最后扣除 Fuel upkeep。低燃料标志直接读取结算后的池，Fuel 为 0 即生效。普通退款和战利品复用同一上限与溢出计数。
+- 里程碑基线缺少 M2-008 的五线选择和扇区多边形。资源规则目前按现有 Strongpoint ID 读取 Sector 所有权。测试使用开局 2/中立/2 的五点夹具。`zones.json` 可在据点候选下配置可选的 `resource_sites`，实际 Carentan 点位留给 M2-008 联验。M2-010 负责 Engineer 授权、建造和命中几何。完成态通过 `spawn_node` 接入，拆除将 125 Supplies 归还成同队地面箱。M2-015 负责车辆注册和使用低燃料标志。
+- v11 通过 `Hello.caps` bit 3 协商 C2 1 Hz 绝对资源池和 C4 `ResourceDelta`。两者只下发给所属队伍。C4 reason 使用 0–4。客户端依据团队和 tick 接受 C2 投影，将 C4 用于通知。经济与节点定义纳入 `DATA_HASH`，部署时需同步客户端 WASM 与比赛服。
+- 参考机预算与 M2-008 五线地图联验未测。证据和细项见 `reports/m2-resources.md`，人工参考机进展见 H-021。
+
+### PI-B6-landall-resources-1 · resources 合入 M2-011 基线后的复验（2026-11-20）
+
+- 保留基线 M2-011 的 `emplacement` 与 M2-009 的资源规则；没有更改资源功能或协议行为。按 Binaryen `version_132` 复建后 WASM 为 1,191,370 B、Brotli 344,816 B，均通过现有上限。`lint rust determinism ts data wasm` 全绿，determinism 使用严格比较；资源参考机、M2-008 五线地图和真人联测仍未测（PI-109，H-021/H-060）。

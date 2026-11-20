@@ -216,3 +216,7 @@ harness = false
 name = "outpost_repair_atgun"
 harness = false
 required-features = ["test-util"]
+
+[[bench]]
+name = "resources_tick"
+harness = false

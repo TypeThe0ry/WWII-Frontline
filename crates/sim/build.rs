@@ -22,6 +22,7 @@ fn parse_typed(rel: &str, text: &str) -> Result<(), String> {
         };
     }
     match rel.split('/').next().unwrap_or("") {
+        "economy.json" if rel == "economy.json" => typed!(defs::EconomyDef),
         "weapons" if rel.matches('/').count() == 1 => typed!(defs::WeaponDef),
         "explosives" if rel.matches('/').count() == 1 => typed!(defs::ExplosiveDef),
         "melee" if rel.matches('/').count() == 1 => typed!(defs::MeleeDef),
@@ -31,6 +32,11 @@ fn parse_typed(rel: &str, text: &str) -> Result<(), String> {
         "roles" if rel.matches('/').count() == 1 => typed!(defs::RoleDef),
         "loadouts" if rel.matches('/').count() == 1 => typed!(defs::LoadoutDef),
         "vehicles" if rel.matches('/').count() == 1 => typed!(defs::VehicleDef),
+        "structures"
+            if rel.starts_with("structures/resource_node_") && rel.matches('/').count() == 1 =>
+        {
+            typed!(defs::ResourceNodeDef)
+        }
         "rules" if rel == "rules/respawn.json" => typed!(defs::RespawnRulesDef),
         "rules" if rel == "rules/bots.json" => typed!(defs::BotsRulesDef),
         "rules" if rel == "rules/capture.json" => typed!(defs::CaptureRulesDef),
@@ -42,6 +48,15 @@ fn parse_typed(rel: &str, text: &str) -> Result<(), String> {
         "structures" if rel == "structures/outpost.json" => typed!(defs::OutpostDef),
         _ => Ok(()), // maps/, other rules/, ...: hashed only until their schemas land
     }
+}
+
+fn canonical_required(files: &[(String, String)], rel: &str) -> String {
+    let (_, text) = files
+        .iter()
+        .find(|(r, _)| r == rel)
+        .unwrap_or_else(|| panic!("data/{rel} is required"));
+    let value = serde_json::from_str(text).expect("validated above");
+    hash::canonical_json(&value)
 }
 
 fn main() {
@@ -88,6 +103,16 @@ fn main() {
             "pub const {konst}: &str = include_str!(concat!(env!(\"OUT_DIR\"), \"/{file}\"));\n"
         ));
     }
+    let nodes = ["manpower", "munitions", "fuel"]
+        .map(|kind| canonical_required(&files, &format!("structures/resource_node_{kind}.json")));
+    fs::write(
+        out.join("resource_nodes.json"),
+        format!("[{}]", nodes.join(",")),
+    )
+    .expect("write embedded json");
+    embedded.push_str(
+        "pub const RESOURCE_NODES_JSON: &str = include_str!(concat!(env!(\"OUT_DIR\"), \"/resource_nodes.json\"));\n",
+    );
     for (rel, name, konst) in [
         (
             "structures/repair_station.json",
@@ -105,6 +130,7 @@ fn main() {
             "GER_AT_JSON",
         ),
         ("structures/outpost.json", "outpost.json", "OUTPOST_JSON"),
+        ("economy.json", "economy.json", "ECONOMY_JSON"),
         ("rules/respawn.json", "respawn.json", "RESPAWN_JSON"),
         ("rules/bots.json", "bots.json", "BOTS_JSON"),
         ("rules/capture.json", "capture.json", "CAPTURE_JSON"),
@@ -114,15 +140,7 @@ fn main() {
         ("rules/aoi.json", "aoi.json", "AOI_JSON"),
         ("comms.json", "comms.json", "COMMS_JSON"),
     ] {
-        let canon = files
-            .iter()
-            .find(|(r, _)| r == rel)
-            .map(|(_, text)| {
-                let v: serde_json::Value = serde_json::from_str(text).expect("validated above");
-                hash::canonical_json(&v)
-            })
-            .unwrap_or_else(|| panic!("data/{rel} is required"));
-        fs::write(out.join(name), canon).expect("write embedded json");
+        fs::write(out.join(name), canonical_required(&files, rel)).expect("write embedded json");
         embedded.push_str(&format!(
             "pub const {konst}: &str = include_str!(concat!(env!(\"OUT_DIR\"), \"/{name}\"));\n"
         ));

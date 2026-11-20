@@ -525,6 +525,10 @@ pub(crate) fn decode_c4_core(bytes: &[u8]) -> Result<String, String> {
             s.reason(),
             s.value
         ),
+        E::ResourceDelta(r) => format!(
+            r#"{{"type":"resourceDelta","team":{},"kind":{},"value":{},"reason":{}}}"#,
+            r.team, r.kind, r.value, r.reason
+        ),
         E::ObjectiveChange(o) => format!(
             r#"{{"type":"objective","objective":{},"owner":{},"reason":{}}}"#,
             o.objective, o.owner, o.reason
@@ -702,4 +706,26 @@ mod tests {
             assert_eq!((d.ok, d.spawn_tick, d.reason), (ok, spawn_tick, reason));
         }
     }
+}
+
+/// Decode the team-scoped, 1 Hz world-state packet carried alongside ordinary C2 snapshots.
+#[wasm_bindgen(js_name = decodeWorldState)]
+pub fn decode_world_state(bytes: &[u8]) -> Result<String, JsError> {
+    use std::fmt::Write;
+
+    let packet = frontline_protocol::msg::team::decode_world_state_c2(bytes)
+        .map_err(|e| js_err(format!("bad C2 world state: {e}")))?;
+    let s = packet.state;
+    let mut json = format!(
+        r#"{{"tick":{},"team":{},"timer":{},"manpower":{},"munitions":{},"fuel":{},"frontLinePos":{},"objectives":["#,
+        packet.tick, packet.team, s.timer, s.manpower, s.munitions, s.fuel, s.front_line_pos
+    );
+    for (i, o) in s.objectives.iter().enumerate() {
+        if i > 0 {
+            json.push(',');
+        }
+        write!(json, r#"{{"owner":{},"capture":{}}}"#, o.owner, o.capture).unwrap();
+    }
+    json.push_str("]}");
+    Ok(json)
 }

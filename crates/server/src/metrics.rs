@@ -122,6 +122,7 @@ pub struct Metrics {
     pub snapshot_delta_records_total: IntCounter,
     /// Ticks spent in the reduced snapshot rate (3 consecutive tick overruns).
     pub snapshot_degraded_ticks_total: IntCounter,
+    pub resource_overflow_total: IntCounterVec,
     /// Per-client downstream rate over a sliding 1 s window (kbps), sampled once per second per
     /// client; `kind` = `payload` (snapshot bytes) or `wire` (payload + 58 B per packet).
     pub net_bytes_out_per_client_kbps: prometheus::HistogramVec,
@@ -130,7 +131,20 @@ pub struct Metrics {
     started: Instant,
 }
 
+// Indexed by frontline_sim::rules::resources::ResourceKind.
+const RESOURCE_KIND_LABELS: [&str; 3] = ["manpower", "munitions", "fuel"];
+
 impl Metrics {
+    pub(crate) fn observe_resource_overflow(&self, overflow: [u64; 3]) {
+        for (kind, units) in RESOURCE_KIND_LABELS.into_iter().zip(overflow) {
+            if units != 0 {
+                self.resource_overflow_total
+                    .with_label_values(&[kind])
+                    .inc_by(units);
+            }
+        }
+    }
+
     pub fn new() -> Arc<Metrics> {
         let registry = Registry::new();
         let hist = |name: &str, help: &str, buckets: &[f64]| {
@@ -374,6 +388,14 @@ impl Metrics {
                 "snapshot_delta_records_total",
                 "Entity records sent as deltas",
             ),
+            resource_overflow_total: IntCounterVec::new(
+                Opts::new(
+                    "resource_overflow_total",
+                    "Strategic resource units discarded at the pool cap",
+                ),
+                &["kind"],
+            )
+            .expect("resource overflow labels"),
             snapshot_degraded_ticks_total: counter(
                 "snapshot_degraded_ticks_total",
                 "Ticks in which the snapshot rate was reduced to 15 Hz",
@@ -481,9 +503,13 @@ impl Metrics {
             Box::new(m.snapshot_keyframe_records_total.clone()),
             Box::new(m.snapshot_delta_records_total.clone()),
             Box::new(m.snapshot_degraded_ticks_total.clone()),
+            Box::new(m.resource_overflow_total.clone()),
             Box::new(m.net_bytes_out_per_client_kbps.clone()),
         ] {
             r.register(c).unwrap();
+        }
+        for kind in RESOURCE_KIND_LABELS {
+            m.resource_overflow_total.with_label_values(&[kind]);
         }
         for kind in ["ws", "wt"] {
             m.net_transport_connections.with_label_values(&[kind]);

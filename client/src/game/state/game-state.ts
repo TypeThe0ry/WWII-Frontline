@@ -1,10 +1,11 @@
 /**
- * Client game state fed by C4 reliable events (M1-040). `apply` is the only writer; consumers
- * read the typed accessors and subscribe to the bus, or watch the per-domain `version` signals.
+ * Client game state fed by C4 reliable events and C2 world state. Consumers read the typed
+ * accessors and subscribe to the bus, or watch the `version` signal.
  * `game` imports nothing from render / ui / audio (ARCHITECTURE 4.3.9).
  */
 import { signal, type ReadonlySignal } from '@preact/signals';
 import type { DeployResultMsg } from '../../net/codec';
+import type { WorldState } from '../../net/connect';
 import type { EventBus, GameEvents } from '../event-bus';
 import { DIST_Q_M, ROSTER_ALIVE, TeamBalanceCode, type C4Event } from './c4';
 import { DeployFsm, type DeployEvent } from './deploy-fsm';
@@ -45,6 +46,21 @@ export class GameState {
   readonly scoresByCategory = new Map<number, [number, number, number, number]>();
   matchPhase = { phase: 0, endsAt: 0 };
   private teamValue: number | undefined;
+  private worldStateValue: WorldState | undefined;
+  private worldStateFloor: number | undefined;
+
+  /** Absolute resource pools from C2. C4 deltas are notifications on an independent stream. */
+  get worldState(): WorldState | undefined {
+    return this.worldStateValue;
+  }
+
+  applyWorldState(state: WorldState): void {
+    if (state.team !== this.teamValue) return;
+    if (this.worldStateFloor !== undefined && ((state.tick - this.worldStateFloor) | 0) <= 0) return;
+    this.worldStateFloor = state.tick;
+    this.worldStateValue = state;
+    this.versionSig.value++;
+  }
 
   get team(): number | undefined {
     return this.teamValue;
@@ -101,6 +117,10 @@ export class GameState {
         this.scoresByCategory.set(ev.player, categories);
         break;
       }
+      case 'resourceDelta':
+        if (ev.team !== this.teamValue) return;
+        this.bus.emit('resource.delta', { team: ev.team, kind: ev.kind, value: ev.value, reason: ev.reason });
+        break;
       case 'objective':
         this.objectives.set(ev.objective, { owner: ev.owner, reason: ev.reason });
         this.bus.emit('objective.changed', { objective: ev.objective, owner: ev.owner, reason: ev.reason });
@@ -147,6 +167,8 @@ export class GameState {
         this.teamValue = team;
         this.spawnPoints.clear();
         this.structures.clear();
+        this.worldStateValue = undefined;
+        this.worldStateFloor = tick >>> 0;
         // Match-wide roster, objectives, scores and kill feed survive a team change.
         this.deploy.apply({ type: 'reset' });
         this.bus.emit('team.changed', { team, flags, tick: tick >>> 0 });

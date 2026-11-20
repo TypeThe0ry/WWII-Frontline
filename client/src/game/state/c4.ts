@@ -18,6 +18,7 @@ export type C4Event =
   | { type: 'death'; victim: number; respawnAfter: number; canBeRevived: boolean }
   | { type: 'revive'; medic: number; target: number }
   | { type: 'score'; player: number; kind: number; category: ScoreCategory; reason: number; value: number }
+  | { type: 'resourceDelta'; team: number; kind: number; value: number; reason: number }
   | { type: 'objective'; objective: number; owner: number; reason: number }
   | { type: 'spawnpoint'; id: number; kind: number; team: number; pos: readonly [number, number]; state: number }
   // Positions use the same quantized integer representation as spawnpoints.

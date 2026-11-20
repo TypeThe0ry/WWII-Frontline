@@ -19,6 +19,8 @@ const TICKET_LEN_BITS: u8 = 9;
 /// Client understands the optional C3 tactical marker extension. Without this opt-in, the
 /// server must send the original member-only C3 payload, even when markers are active.
 pub const CAP_TEAM_MARKERS: u8 = 1 << 2;
+/// Client understands C2 world-state packets and C4 resource deltas.
+pub const CAP_RESOURCES: u8 = 1 << 3;
 
 pub(super) fn w8(w: &mut BitWriter, v: u8) -> Result<(), CodecError> {
     w.write_bits(v as u64, 8)
@@ -35,7 +37,7 @@ pub struct Hello {
     /// Opaque join ticket, at most [`MAX_TICKET_LEN`] bytes.
     pub ticket: Vec<u8>,
     pub client_build: u32,
-    /// bit0 webgpu, bit1 webtransport, bit2 [`CAP_TEAM_MARKERS`].
+    /// bit0 webgpu, bit1 webtransport, bit2 [`CAP_TEAM_MARKERS`], bit3 [`CAP_RESOURCES`].
     pub caps: u8,
 }
 

@@ -986,6 +986,67 @@ pub struct AmmoCrateDef {
     pub price_points: std::collections::BTreeMap<String, u32>,
 }
 
+/// Strategic resource income and storage for one resource (GAMEDESIGN §11.2).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ResourceEconomyDef {
+    pub initial: i32,
+    pub base: i32,
+    pub sector_rate: i32,
+    pub node_rate: i32,
+    pub cap: i32,
+}
+
+/// Fuel consumed per minute by each active vehicle of the corresponding class.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct FuelUpkeepDef {
+    pub light: i32,
+    pub medium: i32,
+    pub heavy: i32,
+}
+
+/// Strategic resource tuning from `data/economy.json` (M2-009).
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct EconomyDef {
+    pub manpower: ResourceEconomyDef,
+    pub munitions: ResourceEconomyDef,
+    pub fuel: ResourceEconomyDef,
+    pub upkeep: FuelUpkeepDef,
+    pub spoils_manpower: i32,
+    #[serde(rename = "_meta")]
+    pub meta: Meta,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum ResourceNodeKind {
+    Manpower,
+    Munitions,
+    Fuel,
+}
+
+/// Resource node tuning from `data/structures/resource_node_*.json` (M2-009).
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ResourceNodeDef {
+    pub id: String,
+    pub kind: ResourceNodeKind,
+    pub build_cost_supplies: u32,
+    pub refund_percent: u32,
+    pub overrun_radius_m: f64,
+    pub overrun_s: f64,
+    pub max_hp: f64,
+    pub bullet_mult: f64,
+    pub explosive_mult: f64,
+    pub hostile_build_radius_m: f64,
+    pub max_per_team_per_kind: u32,
+    pub max_per_team: u32,
+    #[serde(rename = "_meta")]
+    pub meta: Meta,
+}
+
 /// All rule families under `data/rules/`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct RulesDef {

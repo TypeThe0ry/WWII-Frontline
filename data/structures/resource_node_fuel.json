@@ -1,0 +1,30 @@
+{
+  "id": "resource_node_fuel",
+  "kind": "fuel",
+  "build_cost_supplies": 250,
+  "refund_percent": 50,
+  "overrun_radius_m": 15,
+  "overrun_s": 30,
+  "max_hp": 1500,
+  "bullet_mult": 0.02,
+  "explosive_mult": 1.0,
+  "hostile_build_radius_m": 40,
+  "max_per_team_per_kind": 3,
+  "max_per_team": 9,
+  "_meta": {
+    "status": "initial",
+    "tunable": [
+      "build_cost_supplies",
+      "refund_percent",
+      "overrun_radius_m",
+      "overrun_s",
+      "max_hp",
+      "bullet_mult",
+      "explosive_mult",
+      "hostile_build_radius_m",
+      "max_per_team_per_kind",
+      "max_per_team"
+    ],
+    "calibration_ref": "GAMEDESIGN §11.3"
+  }
+}
