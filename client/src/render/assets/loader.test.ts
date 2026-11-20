@@ -454,4 +454,35 @@ describe('audio entry header & probe.json decoding', () => {
     expect(parsed.opus.byteLength).toBe(4);
     expect(parsed.aac.byteLength).toBe(4);
   });
+
+  it('resolves chunk and collision entries from terrain_carentan-style manifests', async () => {
+    const chunkPayload = payload(32, 7);
+    const colPayload = payload(24, 11);
+    const { bytes, refs } = buildPak([
+      { id: 'terrain_carentan_b_10_22@chunk', kind: 3, payload: chunkPayload },
+      { id: 'terrain_carentan_b_10_22@collision', kind: 3, payload: colPayload },
+    ]);
+    const manifest: Manifest = {
+      schema: 1,
+      game_version: '0.1.0',
+      assets: {
+        terrain_carentan_b_10_22: {
+          kind: 'data',
+          tier: ['medium'],
+          placeholder: true,
+          chunk: { pak: PAK_PATH, entry: 'terrain_carentan_b_10_22@chunk', ...refs.get('terrain_carentan_b_10_22@chunk')!, sha256: 'c1' },
+          collision: { pak: PAK_PATH, entry: 'terrain_carentan_b_10_22@collision', ...refs.get('terrain_carentan_b_10_22@collision')!, sha256: 'c2' },
+        },
+      },
+    };
+    const l = new AssetLoader({
+      manifest,
+      fetcher: async () => new Response(bytes as unknown as BodyInit, { status: 200 }),
+      sleep: noSleep,
+      log: () => undefined,
+    });
+    await l.init({ tier: 'medium' });
+    expect(Array.from(await l.loadBytes('terrain_carentan_b_10_22@chunk'))).toEqual(Array.from(chunkPayload));
+    expect(Array.from(await l.loadBytes('terrain_carentan_b_10_22@collision'))).toEqual(Array.from(colPayload));
+  });
 });

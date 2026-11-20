@@ -1466,3 +1466,9 @@ PrePass 速度会卡死渲染循环，改用自有速度 RTT（地形/薄实例/
 
 - **决定**：定义此前未定稿的 `FireCmd.origin_hint` 世界坐标语义，三轴各 14 bit、0.25 m/码、基点 `(0, -128, 0)` m，可覆盖 Carentan 的 2,048 m 坐标域和负高度；全零为无提示，越界省略。布局、协议版本及 `Shot`/`Impact` 格不变；废止未由生产客户端发出的临时 1/64 m 诊断格，旧手工夹具需用新编码。
 - **边界**：浏览器只发送原始输入步骤预测出的有效步兵主武器枪口，最多冗余两个提示，回放不重写。服务器按同 `seq` 的实际发射去重，只记录 > 0.5 m 偏差；不用提示改弹道，不因此拒射或踢出。现有浏览器生产入口只装载 M0 碰撞，Carentan 缺同图预测时不发提示；本批覆盖 Carentan 坐标的合成地形、真实 WT 收包和 M0 正常对照，未做 Carentan 实服浏览器联测。
+
+## PI-B6-deploytiming-1 B6-deploytiming：E1-10 点击到可操作耗时与 `R_near` OPFS 预取实测及 `ManifestIndex` 接线修复（2026-11-20）
+
+- **接线缺口修复**：`map_pipeline pack-chunks` 产出的 `assets/manifests/terrain_carentan.json` 使用 `chunk` 字段承载 FCHK 视觉块条目，但 `client/src/render/assets/manifest.ts` 的 `ManifestAsset` / `ManifestIndex` 原未索引 `chunk`（仅索引 `lods`/`collision`/`textures`/`audio`/`meta`），导致 `AssetLoader` 无法直接解析生产 Carentan 地形清单。已在 `manifest.ts` 补齐 `chunk?: EntryRef` 并在 `loader.test.ts` 增加回归单测。
+- **测量方法与边界**：新增 `scripts/measure-deploy.mjs`，在本机拉起真实 `frontline-gateway`、`frontline-server`（`--map carentan/m1 --mode assault`，380 块解压 FCOL）与支持 HTTP 206 Range 的静态/代理服，托管生产 `client/dist` 与 30 个 Carentan M1 地形 `.fpak`（5,714,050 B）。用 Playwright 无头 Chromium `153.0.8010.12`（SwiftShader WebGL2 软件渲染）施加 CDP 节流（20 Mbps / 50 ms RTT 与 5 Mbps / 100 ms RTT）并在冷/热 OPFS（2 MiB 内存 LRU 强制跨页走持久化 `FileSystemSyncAccessHandle`）各测 5 次（共 20 次）。代理在回环按轮次轮换 `127.0.1.x` 源地址以遵循生产网关每 IP `10 req/min` 限速而不放宽代码限制。因 US HQ `(476, 1600)` 位于 1/3 切片边界（`R_NEAR=4` 仅 42/81 块已烘焙），`R_near` 预取以切片内完整 81/81 覆盖的 US 驻点候选 `(650, 1470)` 实测。
+- **结果与未测项**：四组 20 次点击到可操作均 ≤ 15 s（20 Mbps 冷/热 P50 6,249.2 / 1,419.4 ms；5 Mbps 冷/热 P50 12,850.8 / 1,832.6 ms，max 12,997.6 ms），`R_near` 预取 20/20 轮 81/81（100%），热缓存 `.fpak` 请求 0/0 B（预取降耗 83.5%–90.9%）。详见 [E1-10 专项报告](../reports/m1-deploy-timing.md) 与 `reports/m1-deploy-timing.json`。结果属 PI-109 工作站非参考机，且不含 M1-064 真实美术/音频整包与 M1-067 预发布公网环境，主页面部署 UI 亦未直连 `ChunkStreamer`，故 E1-10 保持 `partial`。
