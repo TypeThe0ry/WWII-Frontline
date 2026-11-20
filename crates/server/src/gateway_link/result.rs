@@ -1,20 +1,22 @@
-//! End-of-match report (M1 basics; scoreboard rows and persistence are M2).
+//! Gateway end-of-match payload and retry spool.
 
 use std::{
     io,
     path::{Path, PathBuf},
 };
 
+use frontline_sim::score::stats::MatchSummary;
 use serde::{Deserialize, Serialize};
 
 use super::client::GatewayClient;
+use crate::sim_thread::Report;
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
 pub struct PlayerResult {
     pub player: u8,
-    pub kills: u16,
-    pub deaths: u16,
-    pub score: i32,
+    pub kills: u32,
+    pub deaths: u32,
+    pub score: i64,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
@@ -27,6 +29,33 @@ pub struct MatchResult {
     pub duration_s: u32,
     pub ticks: u64,
     pub rows: Vec<PlayerResult>,
+    /// Absent in spools written before M2-017.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub score_summary: Option<MatchSummary>,
+}
+
+impl MatchResult {
+    pub fn from_report(players: u16, bots: u16, objectives: u16, report: &Report) -> Self {
+        let summary = &report.score_summary;
+        Self {
+            players,
+            bots,
+            objectives,
+            duration_s: (report.ticks / 30) as u32,
+            ticks: report.ticks,
+            rows: summary
+                .players
+                .iter()
+                .map(|row| PlayerResult {
+                    player: row.player,
+                    kills: row.kills,
+                    deaths: row.deaths,
+                    score: row.total_score,
+                })
+                .collect(),
+            score_summary: Some(summary.clone()),
+        }
+    }
 }
 
 fn valid_id(id: &str) -> bool {

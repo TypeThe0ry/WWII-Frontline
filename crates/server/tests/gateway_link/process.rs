@@ -95,7 +95,9 @@ fn server(dir: &Path, gateway: &str, duration: &str, name: &str) -> Process {
         .env("INTERNAL_API_TOKEN", TOKEN)
         .env("TICKET_PUBLIC_KEY_FILE", pin)
         .args(["--empty-world", "--ws-port", "0", "--metrics-port", "0"])
-        .args(["--spool-dir", "spool", "--duration", duration]);
+        .args(["--spool-dir", "spool", "--duration", duration])
+        .arg("--report")
+        .arg(format!("{name}-report.json"));
     Process::spawn(cmd, dir, name)
 }
 
@@ -214,30 +216,57 @@ async fn process_result_is_spooled_and_retried_by_next_process() {
     assert_eq!(payload["players"], 1);
     assert_eq!(payload["objectives"], 0);
     assert!(payload["ticks"].as_u64().unwrap() >= 30);
+    let report: Value =
+        serde_json::from_reader(File::open(dir.path().join("first-report.json")).unwrap()).unwrap();
+    assert_eq!(report["ticks"], payload["ticks"]);
+    assert_eq!(report["score_summary"], payload["score_summary"]);
+    let rows: Vec<_> = report["score_summary"]["players"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|p| {
+            serde_json::json!({
+                "player": p["player"], "kills": p["kills"], "deaths": p["deaths"],
+                "score": p["total_score"],
+            })
+        })
+        .collect();
+    assert_eq!(payload["rows"], Value::Array(rows));
     assert_eq!(
         f.results.lock().unwrap().as_slice(),
         &[(id.clone(), payload.clone())]
     );
 
-    // An invalid leftover is not deleted and cannot prevent a valid file from replaying.
+    // The new server replays both a previous-format result and the freshly spooled one.
+    let legacy_id = "11111111111111111111111111111111";
+    let legacy = serde_json::json!({
+        "players": 1, "bots": 0, "objectives": 0, "duration_s": 10, "ticks": 300,
+        "rows": [{"player": 7, "kills": 2, "deaths": 3, "score": -30}],
+    });
+    let legacy_path = spool_file.with_file_name(format!("{legacy_id}.json"));
+    fs::write(&legacy_path, serde_json::to_vec(&legacy).unwrap()).unwrap();
+    // An invalid leftover is not deleted and cannot prevent valid files from replaying.
     let broken = spool_file.with_file_name("ffffffffffffffffffffffffffffffff.json");
     fs::write(&broken, "invalid JSON").unwrap();
     f.fail_result.store(false, Ordering::SeqCst);
     let mut second = server(dir.path(), &url, "0.5", "second");
-    let replay = second.event("result_replayed").await;
-    assert_eq!(replay["gateway_match_id"], id);
-    assert!(!spool_file.exists());
+    second.event("result_replayed").await;
     assert!(
         second.exit(START_TIMEOUT).await.success(),
         "{}",
         second.logs()
     );
+    assert!(!spool_file.exists());
+    assert!(!legacy_path.exists());
     assert!(broken.exists());
     assert_eq!(second.events("result_replay_failed").len(), 1);
     let posts = f.results.lock().unwrap();
-    assert_eq!(posts.len(), 3);
-    assert_eq!(posts[0], posts[1]);
-    assert_ne!(posts[1].0, posts[2].0);
+    assert_eq!(posts.len(), 4);
+    assert_eq!(
+        posts.iter().filter(|p| p.0 == id && p.1 == payload).count(),
+        2
+    );
+    assert!(posts.contains(&(legacy_id.to_owned(), legacy)));
     eprintln!(
         "result: players={}, objectives={}, ticks={}, identical prior-ID payload replayed",
         payload["players"], payload["objectives"], payload["ticks"]

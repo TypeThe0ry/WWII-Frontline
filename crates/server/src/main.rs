@@ -271,21 +271,21 @@ fn run(cfg: Config) -> Result<(), String> {
                 );
             }
         });
-        let result = frontline_server::gateway_link::result::MatchResult {
-            players: u16::from(humans_at_end),
-            bots: u16::from(bots_at_end),
-            objectives,
-            duration_s: report.as_ref().map_or(0, |r| (r.ticks / 30) as u32),
-            ticks: report.as_ref().map_or(0, |r| r.ticks),
-            rows: Vec::new(),
-        };
-        if let Err(e) = rt.block_on(client.submit_result(&id, &result)) {
-            match frontline_server::gateway_link::result::spool(&cfg.spool_dir, &id, &result) {
-                Ok(p) => {
-                    tracing::warn!(event = "result_spooled", error = %e, path = %p.display(), "result not delivered; kept for a retry")
-                }
-                Err(io) => {
-                    tracing::error!(event = "result_lost", error = %e, io = %io, "result not delivered and could not be spooled")
+        if let Some(report) = &report {
+            let result = frontline_server::gateway_link::result::MatchResult::from_report(
+                u16::from(humans_at_end),
+                u16::from(bots_at_end),
+                objectives,
+                report,
+            );
+            if let Err(e) = rt.block_on(client.submit_result(&id, &result)) {
+                match frontline_server::gateway_link::result::spool(&cfg.spool_dir, &id, &result) {
+                    Ok(p) => {
+                        tracing::warn!(event = "result_spooled", error = %e, path = %p.display(), "result not delivered; kept for a retry")
+                    }
+                    Err(io) => {
+                        tracing::error!(event = "result_lost", error = %e, io = %io, "result not delivered and could not be spooled")
+                    }
                 }
             }
         }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { EventBus, type GameEvents } from '../event-bus';
-import { TeamBalanceCode, TeamMoveFlags } from './c4';
+import { ScoreCategory, TeamBalanceCode, TeamMoveFlags } from './c4';
 import { GameState } from './game-state';
 
 function make() {
@@ -25,8 +25,8 @@ describe('GameState.apply', () => {
     const { gs, seen } = make();
     gs.apply({ type: 'death', victim: 2, respawnAfter: 5, canBeRevived: true });
     gs.apply({ type: 'revive', medic: 1, target: 2 });
-    gs.apply({ type: 'score', player: 1, kind: 0, value: 10 });
-    gs.apply({ type: 'score', player: 1, kind: 0, value: -3 });
+    gs.apply({ type: 'score', player: 1, kind: 0, category: ScoreCategory.Combat, reason: 0, value: 10 });
+    gs.apply({ type: 'score', player: 1, kind: 0xc0, category: ScoreCategory.Support, reason: 0, value: -3 });
     gs.apply({ type: 'objective', objective: 4, owner: 1, reason: 0 });
     gs.apply({ type: 'spawnpoint', id: 9, kind: 0, team: 1, pos: [10, 20], state: 1 });
     gs.apply({ type: 'roster', player: 1, nick: 'a', team: 0, squad: 1, role: 0, flags: 0, seq: 1 });
@@ -34,10 +34,26 @@ describe('GameState.apply', () => {
     gs.apply({ type: 'phase', phase: 2, endsAt: 900 });
     expect(seen).toEqual(['death', 'revive', 'objective.changed', 'spawnpoint.changed', 'roster.changed', 'notice', 'match.phase']);
     expect(gs.scores.get(1)).toBe(7);
+    expect(gs.scoresByCategory.get(1)).toEqual([10, 0, 0, -3]);
     expect(gs.objectives.get(4)).toEqual({ owner: 1, reason: 0 });
     expect(gs.spawnPoints.get(9)?.pos).toEqual([10, 20]);
     expect(gs.roster.get(1)?.name).toBe('a');
     expect(gs.matchPhase).toEqual({ phase: 2, endsAt: 900 });
+  });
+
+  it('does not carry score totals into a reused roster slot', () => {
+    const { gs } = make();
+    const score = { type: 'score', player: 1, kind: 0x41, category: ScoreCategory.Offense, reason: 1, value: 50 } as const;
+    gs.apply(score);
+    gs.apply({ type: 'roster', player: 1, nick: 'p', team: 0, squad: 0, role: 0, flags: 0, seq: 2 });
+    const left = { type: 'roster', player: 1, nick: '', team: 0, squad: 0, role: 0, flags: 0, left: true } as const;
+    gs.apply({ ...left, seq: 1 });
+    expect(gs.scores.get(1)).toBe(50);
+    gs.apply({ ...left, seq: 3 });
+    expect(gs.scores.has(1)).toBe(false);
+    expect(gs.scoresByCategory.has(1)).toBe(false);
+    gs.apply(score);
+    expect(gs.scoresByCategory.get(1)).toEqual([0, 50, 0, 0]);
   });
 
   it('stale roster delta does not emit; leaving removes', () => {

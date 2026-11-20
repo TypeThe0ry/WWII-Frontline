@@ -5,7 +5,7 @@ use std::collections::BTreeMap;
 use bytes::Bytes;
 use frontline_protocol::msg::c4::{
     encode_c4, roster_flags, Death, Kill, MatchPhase, ObjectiveChange, Phase, PlayerRoster, Revive,
-    ServerEventC4, SpawnKind, SpawnPointState, KILLER_ENV, KILL_DIST_BITS,
+    ScoreDelta, ServerEventC4, SpawnKind, SpawnPointState, KILLER_ENV, KILL_DIST_BITS,
 };
 use frontline_protocol::{quant::quant_pos_xz, Channel};
 use frontline_sim::medical::CreditKind;
@@ -198,6 +198,19 @@ impl Broadcast {
                                 }),
                             );
                         }
+                    }
+                }
+                SimEvent::ScoreDelta(ref score) => {
+                    // Score reasons can reveal team activity (e.g. revives and spawns).
+                    if let Some(team) = team_of(score.player) {
+                        self.send(
+                            Some(team),
+                            ServerEventC4::ScoreDelta(ScoreDelta {
+                                player: score.player,
+                                kind: score.kind as u8,
+                                value: score.value,
+                            }),
+                        );
                     }
                 }
                 _ => {}
@@ -542,6 +555,13 @@ mod tests {
                 pos: Vec3::new(1.0, 0.0, 2.0),
                 state: GarrisonState::Active,
             },
+            SimEvent::ScoreDelta(frontline_sim::score::ScoreDelta {
+                player: 0,
+                kind: frontline_sim::score::ScoreKind::Revive,
+                category: frontline_sim::score::Category::Support,
+                value: 20,
+                role_at_time: 2,
+            }),
         ];
         let rules = [256, 255].map(|objective| RuleChange::ObjectiveOwner {
             objective,
@@ -574,6 +594,11 @@ mod tests {
                     team: 0,
                     pos: [32, 64],
                     state: 1,
+                }),
+                ServerEventC4::ScoreDelta(ScoreDelta {
+                    player: 0,
+                    kind: 0xc0,
+                    value: 20,
                 }),
                 all.clone(),
             ]

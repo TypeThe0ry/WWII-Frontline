@@ -9,12 +9,15 @@ export const TeamBalanceCode = {
 export type TeamBalanceCode = (typeof TeamBalanceCode)[keyof typeof TeamBalanceCode];
 export const TeamMoveFlags = { Forced: 1, VolunteerBonus: 2 } as const;
 
-/** Decoded C4 reliable events, field-for-field with `crates/protocol/src/msg/c4.rs`. */
+export const ScoreCategory = { Combat: 0, Offense: 1, Defense: 2, Support: 3 } as const;
+export type ScoreCategory = (typeof ScoreCategory)[keyof typeof ScoreCategory];
+
+/** Decoded C4 reliable events, including category and reason unpacked from the score kind. */
 export type C4Event =
   | { type: 'kill'; victim: number; killer: number; weapon: number; headshot: boolean; distQ: number }
   | { type: 'death'; victim: number; respawnAfter: number; canBeRevived: boolean }
   | { type: 'revive'; medic: number; target: number }
-  | { type: 'score'; player: number; kind: number; value: number }
+  | { type: 'score'; player: number; kind: number; category: ScoreCategory; reason: number; value: number }
   | { type: 'objective'; objective: number; owner: number; reason: number }
   | { type: 'spawnpoint'; id: number; kind: number; team: number; pos: readonly [number, number]; state: number }
   | { type: 'roster'; player: number; nick: string; team: number; squad: number; role: number; flags: number; seq: number; left?: boolean }
