@@ -572,7 +572,7 @@ fn r3_enemy_gunfire_outside_the_view_is_not_reported() {
 }
 
 #[test]
-fn degradation_guard_halves_to_15hz_for_3_seconds_then_recovers() {
+fn degradation_guard_halves_to_15hz_for_2_seconds_then_recovers() {
     let mut players = Vec::new();
     for i in 0..6u8 {
         players.push((i, Team::Us, [300.0 + i as f32 * 5.0, 0.0, 300.0]));
@@ -595,13 +595,16 @@ fn degradation_guard_halves_to_15hz_for_3_seconds_then_recovers() {
     s.sched
         .degrade(frontline_server::snapshot::DEGRADE_HOLD_TICKS);
     assert!(s.sched.is_degraded());
-    let reduced = count(&mut s, 90);
+    let reduced = count(&mut s, frontline_server::snapshot::DEGRADE_HOLD_TICKS);
     let after = count(&mut s, 90);
     eprintln!("packets/s per client: normal {normal:.1}, degraded {reduced:.1}, after {after:.1}");
     assert!((19.5..=20.5).contains(&normal));
     assert!((14.5..=15.5).contains(&reduced));
     assert!((19.5..=20.5).contains(&after));
-    assert_eq!(s.sched.stats.degraded_ticks, 90);
+    assert_eq!(
+        s.sched.stats.degraded_ticks,
+        frontline_server::snapshot::DEGRADE_HOLD_TICKS as u64
+    );
 }
 
 #[test]

@@ -137,3 +137,6 @@ Carentan 本机 1,225 s WS 复验 10/10 HQ 部署、0 断线和 0 解码错；36
 ### B6-resources（2026-11-20，M2-009）
 
 战略资源、节点规则和客户端投影的 PI-109 工作站结果见 [M2 资源验收](m2-resources.md) 与 PI-B6-resources-1。参考机及 Carentan 五线地图联验未测，M2-009 记 `partial`。
+### B6-cpu100（2026-11-20，M2-021）
+
+server 已将 6 个现有大阶段计入 `server_tick_stage_ms{stage}`，并把连续 3 次超限后的快照降频保持时间从 90 tick 改为 60 tick（30 Hz 下 2 s）。工作站单测与 server clippy 通过。此为逻辑接线，不是 M2 性能验收：工作站为 PI-109 非参考机，100 人负载、P50/P99、RSS、11 个架构阶段预算及参考机数字均未测；M2-021 保持 `partial`，见 `reports/m2-perf100-b6.md` / PI-B6-cpu100-1。

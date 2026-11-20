@@ -33,8 +33,8 @@ use crate::net::transport_stats::LinkSample;
 pub const TICK_HZ: f32 = 30.0;
 /// Default packet budget (bytes of snapshot payload).
 pub const PACKET_BUDGET: usize = 1150;
-/// Ticks the degradation guard keeps the reduced rate after the last trigger (3 s).
-pub const DEGRADE_HOLD_TICKS: u32 = 90;
+/// Ticks the degradation guard keeps the reduced rate after the last trigger (2 s at 30 Hz).
+pub const DEGRADE_HOLD_TICKS: u32 = 60;
 /// Full-health damage used to scale `HitConfirm.damage_q` / `DamageDir.dmg_q`.
 pub const DAMAGE_Q_FULL_HP: f32 = 100.0;
 /// Cap on stored samples in [`SchedStats`].

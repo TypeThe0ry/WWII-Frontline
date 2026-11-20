@@ -206,7 +206,7 @@
 | M2-018 | sim：自动平衡、TK、投票与挂机 | partial | Codex | 2026-11-20 | PI-B6-balance-1；差 4 持续 90 s、邀请后 60 s、TK 第 5 次处罚断线；30 WS×2、合成 AFK 0/20 误判；[验收与实测](../reports/m2-server-rules.md)，参考机/真人回放未测。 |
 | M2-019 | sim：标记、Ping 与聊天频道规则 | partial | B6-pingchat | 2026-11-20 | 700/700，10 WS 客户端。57 tick 拒 / 60 tick 过，5 m / 30 tick，静音 4 人 / 18,000 tick。缓存最慢场景 P95 9.09 µs（PI-109），参考机未测。`reports/m2-019-pingchat.md` |
 | M2-020 | server：带宽调节器 | partial | Codex | 2026-11-20 | PI-109：弱网撤除后 WT/WS 9.056/8.041 s 采到满档；40% 模拟 T3 P99 500 ms、0 饥饿/min；100 客户端 2.389 µs/tick；密集合成 P99 88.304 kbps。实服精确可见/事件混合与参考机未测，见 `reports/m2-bandwidth-regulator.md`。Carentan 补测：实链路保留友军 T3 P99 503.1 ms；20 连接各 30 min 的 WT/WS 夹具下行估算均值 21.428/26.042 kbps，样本 P99 均 ≤54 kbps；共享机两轮均有 tick 超时。 |
-| M2-021 | server：100 玩家 CPU 优化 | todo | | | |
+| M2-021 | server：100 玩家 CPU 优化 | partial | B6-cpu100 | 2026-11-20 | 接入 6 个现有 tick 墙钟阶段的 `server_tick_stage_ms{stage}`，独立超限 guard：连续 3 次触发快照 15 Hz，60 tick（2 s）恢复；workspace Rust 与 determinism 门禁通过。PI-109 EPYC 7402 工作站，峰值 3.35 GHz，非参考机。100 人 30 min A/B、RSS、参考机阶段预算、11 阶段拆分、rayon 编码池及热点优化未测/未完成；M2-008 未完成。见 `reports/m2-perf100-b6.md`、PI-B6-cpu100-1。 |
 | M2-022 | gateway：战绩、设置与可选 OAuth | partial | SQLite 0002、已结算对局查询、游客设置读写、默认关闭的 OAuth 占位。PI-109 工作站通过结算直投和落盘重放。见 `reports/m2-gateway-stats.md` | 真实 OAuth、PKCE 和游客升级未测（H-063） | PI-B6-gwstats-1 |
 | M2-023 | gateway：管理 API 与举报 | partial | B6-gwadmin | 2026-11-20 | 工作站 PI-109。实服无头踢出 189.5 ms、回放 270 B。1,000 条举报列表 P95 0.751 ms，鉴权拒绝 P95 差 0.971 µs。在线换图/强制换队、完整聊天证据窗及生产验收仍开放。见 `reports/m2-gateway-admin.md` / PI-B6-gwadmin-1 |
 | M2-024 | 语音：LiveKit 自托管与 token | todo | | | |

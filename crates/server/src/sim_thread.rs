@@ -30,6 +30,7 @@ use crate::clock::{Clock, SystemClock, TickSchedule};
 use crate::logging::CURRENT_TICK;
 use crate::metrics::Metrics;
 use crate::shutdown::StopFlag;
+use crate::tick::overrun::OverrunGuard;
 
 mod server_rules;
 
@@ -250,7 +251,7 @@ impl SimThreadConfig {
 }
 
 pub struct SimLoop<C: Clock> {
-    /// Per-phase wall time (ms) of the last tick (see `tick_trace_enabled`):
+    /// Per-phase wall time (ms) of the last tick:
     /// inputs, step, post-step, bots, aoi+snapshot, send.
     phase_ms: [f64; 6],
     step_trace_ticks: Vec<u64>,
@@ -272,6 +273,7 @@ pub struct SimLoop<C: Clock> {
     team_outgoing: Vec<(PlayerId, Vec<u8>)>,
     c4: crate::c4::Broadcast,
     consecutive: i64,
+    overrun_guard: OverrunGuard,
     ticks: u64,
     tick_ns: Samples,
     err_ns: Samples,
@@ -438,6 +440,7 @@ pub fn build_loop_with_bots<C: Clock>(
         team_outgoing: Vec::new(),
         c4: crate::c4::Broadcast::default(),
         consecutive: 0,
+        overrun_guard: OverrunGuard::default(),
         phase_ms: [0.0; 6],
         step_trace_ticks,
         ticks: 0,
@@ -624,6 +627,7 @@ impl<C: Clock> SimLoop<C> {
 
         let t1 = self.clock.now();
         let dur = t1.saturating_duration_since(t0);
+        self.consecutive = self.overrun_guard.record(dur, self.schedule.period(), t1) as i64;
         self.metrics.tick_ms.observe(dur.as_secs_f64() * 1e3);
         self.tick_ns
             .push(dur.as_nanos().min(u32::MAX as u128) as u32);
@@ -634,10 +638,9 @@ impl<C: Clock> SimLoop<C> {
 
         if dur > self.schedule.period() {
             self.metrics.tick_overrun_total.inc();
-            self.consecutive += 1;
             if self.consecutive >= 3 {
                 // Degradation guard (ARCHITECTURE §6.10): all clients drop to 15 Hz snapshots
-                // for 3 s after the last overrun of the run.
+                // for 2 s after the last overrun of the run.
                 if self.consecutive == 3 {
                     tracing::warn!(
                         event = "tick_overrun_degrade",
@@ -670,7 +673,6 @@ impl<C: Clock> SimLoop<C> {
                 "tick exceeded its budget"
             );
         } else {
-            self.consecutive = 0;
             if dur > self.schedule.period() / 3 {
                 // not an overrun, but 3x the typical tick: same diagnostics so that rare compute spikes can be attributed
                 let (cpu_ms, runq_wait_ms) = match (sched0, sched1) {
@@ -754,8 +756,7 @@ impl<C: Clock> SimLoop<C> {
                 }
             }
         }
-        let trace = tick_trace_enabled();
-        let mut t = trace.then(std::time::Instant::now);
+        let mut t = Some(std::time::Instant::now());
         let mut lap = |slot: usize, phase: &mut [f64; 6]| {
             if let Some(prev) = t {
                 let n = std::time::Instant::now();
@@ -823,6 +824,22 @@ impl<C: Clock> SimLoop<C> {
         lap(4, &mut self.phase_ms);
         self.send();
         lap(5, &mut self.phase_ms);
+        for (stage, elapsed) in [
+            "inputs",
+            "sim_step",
+            "post_step",
+            "bots",
+            "aoi_snapshot",
+            "send",
+        ]
+        .into_iter()
+        .zip(self.phase_ms)
+        {
+            self.metrics
+                .tick_stage_ms
+                .with_label_values(&[stage])
+                .observe(elapsed);
+        }
     }
 
     fn handle_commands(&mut self) {

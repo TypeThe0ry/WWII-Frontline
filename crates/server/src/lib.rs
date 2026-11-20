@@ -19,6 +19,7 @@ pub mod sim_bridge;
 pub mod sim_thread;
 pub mod snapshot;
 pub mod text;
+pub mod tick;
 pub mod validate;
 pub mod world_loader;
 
