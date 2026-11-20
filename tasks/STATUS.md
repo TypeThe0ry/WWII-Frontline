@@ -198,7 +198,7 @@
 | M2-017 | sim：计分与经验 | todo | | | |
 | M2-018 | sim：自动平衡、TK、投票与挂机 | todo | | | |
 | M2-019 | sim：标记、Ping 与聊天频道规则 | todo | | | |
-| M2-020 | server：带宽调节器 | partial | Codex | 2026-11-20 | PI-109：弱网撤除后 WT/WS 9.056/8.041 s 采到满档；40% 模拟 T3 P99 500 ms、0 饥饿/min；100 客户端 2.389 µs/tick；密集合成 P99 88.304 kbps。实服精确可见/事件混合与参考机未测，见 `reports/m2-bandwidth-regulator.md`。 |
+| M2-020 | server：带宽调节器 | partial | Codex | 2026-11-20 | PI-109：弱网撤除后 WT/WS 9.056/8.041 s 采到满档；40% 模拟 T3 P99 500 ms、0 饥饿/min；100 客户端 2.389 µs/tick；密集合成 P99 88.304 kbps。实服精确可见/事件混合与参考机未测，见 `reports/m2-bandwidth-regulator.md`。Carentan 补测：实链路保留友军 T3 P99 503.1 ms；20 连接各 30 min 的 WT/WS 夹具下行估算均值 21.428/26.042 kbps，样本 P99 均 ≤54 kbps；共享机两轮均有 tick 超时。 |
 | M2-021 | server：100 玩家 CPU 优化 | todo | | | |
 | M2-022 | gateway：战绩、设置与可选 OAuth | partial | SQLite 0002、已结算对局查询、游客设置读写、默认关闭的 OAuth 占位。PI-109 工作站通过结算直投和落盘重放。见 `reports/m2-gateway-stats.md` | 真实 OAuth、PKCE 和游客升级未测（H-063） | PI-B6-gwstats-1 |
 | M2-023 | gateway：管理 API 与举报 | partial | B6-gwadmin | 2026-11-20 | 工作站 PI-109。实服无头踢出 189.5 ms、回放 270 B。1,000 条举报列表 P95 0.751 ms，鉴权拒绝 P95 差 0.971 µs。在线换图/强制换队、完整聊天证据窗及生产验收仍开放。见 `reports/m2-gateway-admin.md` / PI-B6-gwadmin-1 |

@@ -1,0 +1,17 @@
+profile	role	pid	tid	thread	allowed_cpu_list
+typical-wt	server	201745	201745	frontline-serve	36,39,42
+typical-wt	server	201745	201752	log-output	36,39,42
+typical-wt	server	201745	201753	net	36,39,42
+typical-wt	server	201745	201754	net	36,39,42
+typical-wt	server	201745	201811	sim	32
+typical-wt	headless	201886	201886	headless-client	43,45
+typical-wt	headless	201886	201888	tokio-rt-worker	43,45
+typical-wt	headless	201886	201889	tokio-rt-worker	43,45
+dense-ws	server	201747	201747	frontline-serve	24,29,41
+dense-ws	server	201747	201749	log-output	24,29,41
+dense-ws	server	201747	201750	net	24,29,41
+dense-ws	server	201747	201751	net	24,29,41
+dense-ws	server	201747	201812	sim	34
+dense-ws	headless	201883	201883	headless-client	6,10
+dense-ws	headless	201883	201884	tokio-rt-worker	6,10
+dense-ws	headless	201883	201885	tokio-rt-worker	6,10
