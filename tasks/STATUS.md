@@ -195,7 +195,7 @@
 | M2-008 | sim：Frontline 模式规则 | todo | | | |
 | M2-009 | sim：战略资源与资源节点 | todo | | | |
 | M2-010 | sim：Engineer 建造系统 | todo | | | |
-| M2-011 | sim：Outpost、维修站与反坦克炮 | partial | 放置 180 tick，冷却 3,600 tick，18 次出生，Overrun 450 tick。维修首秒 19.99878 HP，200 Supplies 修 1,000 HP。12 组 AP 向量，7 发击毁 Sherman。规则 1.8885–2.2316 µs/tick，合成 400 弹体扫描 1.5697–1.8878 ms/tick（PI-109）。见 `reports/m2-outpost.md`。 | PI-B6-outpost-1、H-021 | 4f6c2f6, 9d6db98, 3e0a8ba |
+| M2-011 | sim：Outpost、维修站与反坦克炮 | partial | 放置 180 tick，冷却 3,600 tick，18 次出生，Overrun 450 tick。维修首秒 19.99878 HP，200 Supplies 修 1,000 HP。12 组 AP 向量，7 发击毁 Sherman。规则 1.8885–2.2316 µs/tick，合成 400 弹体扫描 1.5697–1.8878 ms/tick（PI-109）。见 `reports/m2-outpost.md`。 | PI-B6-outpost-1、H-021 | 33b1ad8, ceac5ff, ab7b12f |
 | M2-012 | sim：M2 兵种特有能力 | todo | | | |
 | M2-013 | sim：M2 武器类（自动步枪、机枪、霰弹） | todo | | | |
 | M2-014 | sim：火箭、地雷与炸药 | todo | | | |
