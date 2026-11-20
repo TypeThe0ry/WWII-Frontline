@@ -199,9 +199,7 @@
 | M2-020 | server：带宽调节器 | todo | | | |
 | M2-021 | server：100 玩家 CPU 优化 | todo | | | |
 | M2-022 | gateway：战绩、设置与可选 OAuth | partial | SQLite 0002、已结算对局查询、游客设置读写、默认关闭的 OAuth 占位。PI-109 工作站通过结算直投和落盘重放。见 `reports/m2-gateway-stats.md` | 真实 OAuth、PKCE 和游客升级未测（H-063） | PI-B6-gwstats-1 |
-| M2-023 | gateway：管理 API 与举报 | todo | | | |
-| M2-022 | gateway：战绩、设置与可选 OAuth | todo | | | |
-| M2-023 | gateway：管理 API 与举报 | partial | B6-gwadmin | 2026-11-20 | 工作站 PI-109。1,000 条举报列表 P95 0.716 ms，鉴权拒绝 P95 差 1.32 µs。在线换图/强制换队、完整聊天证据窗及生产验收仍开放。见 `reports/m2-gateway-admin.md` / PI-B6-gwadmin-1 |
+| M2-023 | gateway：管理 API 与举报 | partial | B6-gwadmin | 2026-11-20 | 工作站 PI-109。实服无头踢出 189.5 ms、回放 270 B。1,000 条举报列表 P95 0.751 ms，鉴权拒绝 P95 差 0.971 µs。在线换图/强制换队、完整聊天证据窗及生产验收仍开放。见 `reports/m2-gateway-admin.md` / PI-B6-gwadmin-1 |
 | M2-024 | 语音：LiveKit 自托管与 token | todo | | | |
 | M2-025 | 语音：服务器订阅集管理 | todo | | | |
 | M2-026 | 语音：客户端接入与空间化 | todo | | | |

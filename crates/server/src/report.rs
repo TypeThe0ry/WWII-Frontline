@@ -288,6 +288,64 @@ impl Recorder {
     }
 }
 
+fn push_bounded<T>(queue: &mut VecDeque<T>, entry: T, capacity: usize) {
+    if queue.len() == capacity {
+        queue.pop_front();
+    }
+    queue.push_back(entry);
+}
+
+fn push_sample(queue: &mut VecDeque<Sample>, entry: Sample, at: u32, capacity: usize) {
+    while queue.front().is_some_and(|s| !s.recent(at, HISTORY_MS)) {
+        queue.pop_front();
+    }
+    // Avoid VecDeque doubling past the explicit sample bound.
+    if queue.len() == queue.capacity() && queue.len() < capacity {
+        queue.reserve_exact((queue.capacity().max(1)).min(capacity - queue.len()));
+    }
+    push_bounded(queue, entry, capacity);
+}
+
+/// FLE1: magic, reporter and target local slots, report time (u32 LE), then four groups
+/// (reporter inputs, target inputs, reporter events, target events). Each group starts with
+/// a u16 LE count followed by the newest matching 12-byte samples, in chronological order.
+fn excerpt(
+    at: u32,
+    from: PlayerId,
+    target_slot: PlayerId,
+    reporter: &PlayerEvidence,
+    target: &PlayerEvidence,
+) -> Option<Vec<u8>> {
+    const HEADER: usize = 10;
+    const GROUPS: usize = 4;
+    let mut budget = (MAX_EVIDENCE_BYTES - HEADER - GROUPS * 2) / SAMPLE_LEN;
+    let mut out = Vec::new();
+    out.extend_from_slice(b"FLE1");
+    out.extend_from_slice(&[from, target_slot]);
+    out.extend_from_slice(&at.to_le_bytes());
+    let mut records = 0;
+    for ring in [
+        &reporter.inputs,
+        &target.inputs,
+        &reporter.events,
+        &target.events,
+    ] {
+        let count = ring
+            .iter()
+            .rev()
+            .take(budget)
+            .take_while(|s| s.recent(at, EXCERPT_MS))
+            .count();
+        out.extend_from_slice(&(count as u16).to_le_bytes());
+        for s in ring.iter().skip(ring.len() - count) {
+            out.extend_from_slice(&s.0);
+        }
+        records += count;
+        budget -= count;
+    }
+    (records != 0).then_some(out)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -392,62 +450,4 @@ mod tests {
             report(0)
         ));
     }
-}
-
-fn push_bounded<T>(queue: &mut VecDeque<T>, entry: T, capacity: usize) {
-    if queue.len() == capacity {
-        queue.pop_front();
-    }
-    queue.push_back(entry);
-}
-
-fn push_sample(queue: &mut VecDeque<Sample>, entry: Sample, at: u32, capacity: usize) {
-    while queue.front().is_some_and(|s| !s.recent(at, HISTORY_MS)) {
-        queue.pop_front();
-    }
-    // Avoid VecDeque doubling past the explicit sample bound.
-    if queue.len() == queue.capacity() && queue.len() < capacity {
-        queue.reserve_exact((queue.capacity().max(1)).min(capacity - queue.len()));
-    }
-    push_bounded(queue, entry, capacity);
-}
-
-/// FLE1: magic, reporter and target local slots, report time (u32 LE), then four groups
-/// (reporter inputs, target inputs, reporter events, target events). Each group starts with
-/// a u16 LE count followed by the newest matching 12-byte samples, in chronological order.
-fn excerpt(
-    at: u32,
-    from: PlayerId,
-    target_slot: PlayerId,
-    reporter: &PlayerEvidence,
-    target: &PlayerEvidence,
-) -> Option<Vec<u8>> {
-    const HEADER: usize = 10;
-    const GROUPS: usize = 4;
-    let mut budget = (MAX_EVIDENCE_BYTES - HEADER - GROUPS * 2) / SAMPLE_LEN;
-    let mut out = Vec::new();
-    out.extend_from_slice(b"FLE1");
-    out.extend_from_slice(&[from, target_slot]);
-    out.extend_from_slice(&at.to_le_bytes());
-    let mut records = 0;
-    for ring in [
-        &reporter.inputs,
-        &target.inputs,
-        &reporter.events,
-        &target.events,
-    ] {
-        let count = ring
-            .iter()
-            .rev()
-            .take(budget)
-            .take_while(|s| s.recent(at, EXCERPT_MS))
-            .count();
-        out.extend_from_slice(&(count as u16).to_le_bytes());
-        for s in ring.iter().skip(ring.len() - count) {
-            out.extend_from_slice(&s.0);
-        }
-        records += count;
-        budget -= count;
-    }
-    (records != 0).then_some(out)
 }
