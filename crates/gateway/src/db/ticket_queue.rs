@@ -164,6 +164,49 @@ async fn run(
     }
 }
 
+async fn reserve_batch(
+    conn: &mut SqliteConnection,
+    key: &[u8; 32],
+    inputs: &[(&str, i64, &str, &str)],
+) -> Result<Vec<Option<Slot>>, sqlx::Error> {
+    let mut txn = conn.begin().await?;
+    // Materialize request eligibility before moving any cursor. Each returned index is
+    // a request ordinal; the old cursor follows from the new cursor and the group size.
+    let rows: Vec<(Json<Registration>, u8, Json<Vec<usize>>)> = sqlx::query_as(
+        "WITH eligible AS MATERIALIZED (
+            SELECT request.key AS ordinal, m.id AS id
+            FROM json_each(?1) AS request
+            JOIN matches AS m ON m.id = json_extract(request.value, '$[0]')
+            JOIN guests AS g ON g.id = json_extract(request.value, '$[2]')
+            WHERE m.ended = 0 AND m.ticket_key = ?2
+                AND m.last_heartbeat_ms >= json_extract(request.value, '$[1]')
+                AND json_extract(m.registration, '$.protocol_version') = ?3
+                AND m.humans + m.bots < m.cap AND g.nick = json_extract(request.value, '$[3]')
+        ), counts AS MATERIALIZED (
+            SELECT id, count(*) AS n FROM eligible GROUP BY id
+        )
+        UPDATE matches SET next_player = (next_player + counts.n) % 128
+        FROM counts WHERE matches.id = counts.id
+        RETURNING registration, next_player, (SELECT json_group_array(ordinal ORDER BY ordinal)
+            FROM eligible WHERE eligible.id = matches.id)",
+    )
+    .bind(Json(inputs))
+    .bind(key.as_slice())
+    .bind(PROTOCOL_VERSION)
+    .fetch_all(&mut *txn)
+    .await?;
+
+    let mut slots = vec![None; inputs.len()];
+    for (Json(registration), end, Json(ordinals)) in rows {
+        let start = (usize::from(end) + CURSOR_SIZE - ordinals.len()) % CURSOR_SIZE;
+        for (offset, ordinal) in ordinals.into_iter().enumerate() {
+            slots[ordinal] = Some((registration.clone(), ((start + offset) % CURSOR_SIZE) as u8));
+        }
+    }
+    txn.commit().await?;
+    Ok(slots)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -292,47 +335,4 @@ mod tests {
             .unwrap();
         assert_eq!(cursors, [1, 0, 127, 127, 127, 127]);
     }
-}
-
-async fn reserve_batch(
-    conn: &mut SqliteConnection,
-    key: &[u8; 32],
-    inputs: &[(&str, i64, &str, &str)],
-) -> Result<Vec<Option<Slot>>, sqlx::Error> {
-    let mut txn = conn.begin().await?;
-    // Materialize request eligibility before moving any cursor. Each returned index is
-    // a request ordinal; the old cursor follows from the new cursor and the group size.
-    let rows: Vec<(Json<Registration>, u8, Json<Vec<usize>>)> = sqlx::query_as(
-        "WITH eligible AS MATERIALIZED (
-            SELECT request.key AS ordinal, m.id AS id
-            FROM json_each(?1) AS request
-            JOIN matches AS m ON m.id = json_extract(request.value, '$[0]')
-            JOIN guests AS g ON g.id = json_extract(request.value, '$[2]')
-            WHERE m.ended = 0 AND m.ticket_key = ?2
-                AND m.last_heartbeat_ms >= json_extract(request.value, '$[1]')
-                AND json_extract(m.registration, '$.protocol_version') = ?3
-                AND m.humans + m.bots < m.cap AND g.nick = json_extract(request.value, '$[3]')
-        ), counts AS MATERIALIZED (
-            SELECT id, count(*) AS n FROM eligible GROUP BY id
-        )
-        UPDATE matches SET next_player = (next_player + counts.n) % 128
-        FROM counts WHERE matches.id = counts.id
-        RETURNING registration, next_player, (SELECT json_group_array(ordinal ORDER BY ordinal)
-            FROM eligible WHERE eligible.id = matches.id)",
-    )
-    .bind(Json(inputs))
-    .bind(key.as_slice())
-    .bind(PROTOCOL_VERSION)
-    .fetch_all(&mut *txn)
-    .await?;
-
-    let mut slots = vec![None; inputs.len()];
-    for (Json(registration), end, Json(ordinals)) in rows {
-        let start = (usize::from(end) + CURSOR_SIZE - ordinals.len()) % CURSOR_SIZE;
-        for (offset, ordinal) in ordinals.into_iter().enumerate() {
-            slots[ordinal] = Some((registration.clone(), ((start + offset) % CURSOR_SIZE) as u8));
-        }
-    }
-    txn.commit().await?;
-    Ok(slots)
 }
