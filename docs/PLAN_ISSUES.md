@@ -1478,3 +1478,12 @@ PrePass 速度会卡死渲染循环，改用自有速度 RTT（地形/薄实例/
 - 2026-11-20。沿用 M1-035 空间分包，将五项 M1 已登记为 real 的需求各选一个 `OK` CC0 模型入包。模型与所有外部依赖按 `incoming-index.json` 的 SHA-256 校验，树枝 UV 变换烘入 UV0。二进制本地生成，提交内容寻址清单、构建级缺失报告和上游来源路径。
 - 加入 15 个程序几何和 22 个 Opus/AAC 合成提示音。仍缺的真素材与实录沿用 H-047/H-058 待裁决。`INTERNAL` 需求以程序几何作公开回退。
 - `local-ci.sh assets` 对实际 FPAK 字节实施 150,000,000 B 上限，对生产 core Brotli 字节实施 8,000,000 B 上限，并保留 manifest-budget 门禁。整包读回重写检查包含头、对齐、索引和 footer。工作站结果与验收范围见 `reports/m1-fpak-medium.md`（PI-109）。
+
+## PI-B6-ffwebkit-1 B6-ffwebkit：M0-028 Firefox / WebKit 浏览器互通矩阵补测（2026-11-20）
+
+- **环境与依赖处置**：按 H-103 与任务要求，在本机工作站（PI-109，非参考机）通过 `PLAYWRIGHT_BROWSERS_PATH=/data/scratch/pw-ffwebkit pnpm -C client exec playwright install firefox webkit` 下载 Playwright Firefox `155.0`（`firefox-1543`）与 WebKit `26.6`（`webkit-2359`）到数据盘 `/data/scratch`，并软链系统缓存中的 Chromium `153.0.8010.12`。WebKit `minibrowser-wpe` 启动缺少 `libmanette-0.2.so.0` 与 `libhidapi-hidraw.so.0`，遂从 Ubuntu 源下载 `.deb` 解压到 `/data/scratch` 临时目录并拷入 `webkit-2359/minibrowser-wpe/lib/`（不改动宿主机系统包），测试收尾后已全部删除临时浏览器与依赖目录。
+- **实测结果（`playwright.interop.config.ts`，10/10 用例通过，59.8 s）**：
+  - `chromium 153.0.8010.12`：WT 通过（200 快照/10 s，RTT 中位 1.1 ms，`serverCertificateHashesWorked: true`）；WS 通过（151 快照/10 s，RTT 中位 0.7 ms）；删除 WebTransport 回退 WS 7 ms；WT 端口关闭回退 WS 25 ms。
+  - `firefox 155.0`：WT 通过（201 快照/10 s，RTT 中位 1.5 ms，`serverCertificateHashesWorked: true`，Playwright Firefox 155 支持开发证书指纹固定）；WS 通过（150 快照/10 s，RTT 中位 1.4 ms）；删除 WebTransport 回退 WS 8 ms。
+  - `webkit 26.6`：WT 失败（`WebTransport is not available in this browser`，0 快照，`supported: false`）；WS 通过（150 快照/10 s，RTT 中位 0.5 ms）；删除 WebTransport 回退 WS 5 ms。
+- **一致性和遗留**：`reports/m0/browser-matrix.{json,md}` 与 `tasks/STATUS.md` 的 M0-028 行已通过 `node --experimental-strip-types scripts/check-interop-table.mjs` 校验一致。Playwright Linux WebKit 构建不支持 WebTransport，且不代表 Safari 正式版；Safari 实机手测与受信任证书下的 WT 仍留待 H-103 / H-017。

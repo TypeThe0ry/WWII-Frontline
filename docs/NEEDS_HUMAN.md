@@ -1389,7 +1389,7 @@ M0-024 的植被全部是程序化灰盒（圆柱 + 椭球树、交叉叶片草�
 
 | ID | 事项 | 类型 | 时点 | 添加日期 | 状态 |
 |---|---|---|---|---|---|
-| H-103 | **在有 Firefox / WebKit（Playwright 构建）的机器或 CI 上复跑浏览器互通矩阵**：本机只有预装 Chromium，Firefox 与 WebKit 两行在 `reports/m0/browser-matrix.json` 里是"未验证（浏览器未安装）"。做法：`INSTALL_BROWSERS=1 scripts/run-interop.sh`（或在 GitHub Actions 手动触发 `interop` 作业，需 H-102 先让 CI 能跑），把生成的 `reports/m0/browser-matrix.md` 贴进 `tasks/STATUS.md` 的 M0-028 行并跑 `node --experimental-strip-types scripts/check-interop-table.mjs`；Safari 正式版另需真机手测，步骤见 DEVELOPING.md "Browser interop matrix"。若某浏览器不支持 `serverCertificateHashes`，该格需要受信任证书（H-017）才能测 WT，应记"无法测试（缺受信任证书）"而不是失败。 | 验证 | M0 退出前（E0-7）/ M4-042 | 2026-11-17 | 待办 |
+| H-103 | **在有 Firefox / WebKit（Playwright 构建）的机器或 CI 上复跑浏览器互通矩阵**：本机只有预装 Chromium，Firefox 与 WebKit 两行在 `reports/m0/browser-matrix.json` 里是"未验证（浏览器未安装）"。做法：`INSTALL_BROWSERS=1 scripts/run-interop.sh`（或在 GitHub Actions 手动触发 `interop` 作业，需 H-102 先让 CI 能跑），把生成的 `reports/m0/browser-matrix.md` 贴进 `tasks/STATUS.md` 的 M0-028 行并跑 `node --experimental-strip-types scripts/check-interop-table.mjs`；Safari 正式版另需真机手测，步骤见 DEVELOPING.md "Browser interop matrix"。若某浏览器不支持 `serverCertificateHashes`，该格需要受信任证书（H-017）才能测 WT，应记"无法测试（缺受信任证书）"而不是失败。<br>**进展（B6-ffwebkit，2026-11-20）**：工作站（PI-109 非参考机）已在 `/data/scratch` 临时安装 Playwright Firefox 155.0 与 WebKit 26.6 完成互通矩阵复跑并更新 `reports/m0/browser-matrix.{json,md}`：Firefox 155.0 WT（`serverCertificateHashes` 可用，201 快照/10 s）/WS（150 快照/10 s）/回退（8 ms）全部通过；WebKit 26.6 Linux 构建无 `WebTransport` API（0 快照），WS（150 快照/10 s）/回退（5 ms）通过。**剩余**：Safari 正式版实机手测（以及受信任证书下的 Safari/WebKit WT，见 H-017）仍需人工完成。 | 验证 | M0 退出前（E0-7）/ M4-042 | 2026-11-17 | 待办 |
 
 ### M0-025 灰盒角色 / 枪 / 特效：缺失的真素材（需求 ID，供 M1-001 采购与替换）
 
