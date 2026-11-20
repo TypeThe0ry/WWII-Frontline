@@ -120,6 +120,40 @@ fn pick_ids(rng: &mut Rng, n: usize) -> Vec<u8> {
 }
 
 #[test]
+fn reduced_budget_yields_to_header_self_and_event_bits() {
+    let mut enc = SnapshotEncoder::new();
+    let mut b = enc.begin(1, 1234, DEFAULT_BUDGET);
+    b.set_ack(42, 3).unwrap();
+    let own = SelfState {
+        health: 255,
+        ..SelfState::default()
+    };
+    assert!(b.add_self(&own).unwrap());
+    let events: Vec<_> = (0..48)
+        .map(|id| EventEntry {
+            id,
+            event: Event::Shot {
+                shooter: 4,
+                weapon: 1,
+                muzzle: [0; 3],
+                dir_yaw: 0,
+                dir_pitch: 0,
+            },
+        })
+        .collect();
+    assert_eq!(b.add_events(&events).unwrap(), events.len());
+    b.cap_remaining(460);
+    assert!(!b.add_entity(&rand_state(&mut Rng(50), 1), true).unwrap());
+    let bytes = b.finish();
+    assert!((461..=DEFAULT_BUDGET).contains(&bytes.len()));
+    let p = SnapshotDecoder::new().decode(&bytes).unwrap();
+    assert_eq!((p.tick, p.ack_input_seq, p.input_slack), (1234, 42, 3));
+    assert_eq!(p.self_state, Some(own));
+    assert_eq!(p.events, events);
+    assert!(p.entities.is_empty());
+}
+
+#[test]
 fn keyframe_path_roundtrip() {
     let mut rng = Rng(0xA11C_E000_0000_0001);
     for it in 0..ITER {

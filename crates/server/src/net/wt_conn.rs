@@ -146,6 +146,7 @@ pub(crate) async fn writer(
     metrics: Arc<Metrics>,
 ) {
     handle.set_max_datagram_size(conn.max_datagram_size());
+    let mut last_sample = None;
     tracing::debug!(
         event = "wt_session",
         max_datagram_size = conn.max_datagram_size().map(|n| n as u64).unwrap_or(0),
@@ -161,6 +162,11 @@ pub(crate) async fn writer(
             }
         };
         let Some((ch, bytes)) = item else { break };
+        let now = std::time::Instant::now();
+        if last_sample.is_none_or(|t| now - t >= Duration::from_millis(100)) {
+            handle.update_wt_sample(super::transport_stats::webtransport_sample(&conn));
+            last_sample = Some(now);
+        }
         let sent = match ch {
             Channel::C0 => write_frame(&mut c0_tx, &bytes, &handle).await,
             Channel::C4 => write_frame(&mut c4_tx, &bytes, &handle).await,

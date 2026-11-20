@@ -1177,7 +1177,8 @@ impl<C: Clock> SimLoop<C> {
                     pred_hash: s.input.state.last_pred_hash,
                     ack_input_seq: s.input.last_applied_seq(),
                     input_slack: s.input.input_slack(),
-                    link: LinkInfo::from_max_datagram(h.max_datagram_size()),
+                    link: LinkInfo::from_max_datagram(h.max_datagram_size())
+                        .with_sample(h.link_sample()),
                 });
             }
         }
@@ -1215,6 +1216,26 @@ impl<C: Clock> SimLoop<C> {
             self.outgoing.clear();
             return;
         };
+        for (player, notice) in self.snap.drain_budget_notices() {
+            use crate::net::regulator::BudgetNotice;
+            use frontline_protocol::msg::c4::{encode_c4, notice_code, Notice, ServerEventC4};
+            let (code, percent) = match notice {
+                BudgetNotice::Degraded(percent) => (notice_code::NET_DEGRADED, i32::from(percent)),
+                BudgetNotice::Recovered => (notice_code::NET_RECOVERED, 0),
+            };
+            if let Some(h) = net.sessions.handle_of(player) {
+                if let Ok(payload) = encode_c4(&ServerEventC4::Notice(Notice {
+                    code,
+                    args: [percent, 0, 0],
+                })) {
+                    h.send(
+                        frontline_protocol::Channel::C4,
+                        bytes::Bytes::from(payload),
+                        crate::net::transport::Rel::Reliable,
+                    );
+                }
+            }
+        }
         for o in self.outgoing.drain(..) {
             if let Some(h) = net.sessions.handle_of(o.player) {
                 h.send(

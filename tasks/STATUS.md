@@ -6,6 +6,8 @@
 
 ## 摘要
 
+- **B6-bwreg（2026-11-20，M2-020）**：接入 WT/WS 带宽档位、远场数量裁剪和 C4 通知。PI-109 工作站：无损合成快照 700 包逐字节一致；40% 档 T3 P99 500 ms、饥饿 0/min；100 客户端调节器 2.389 µs/tick。按典型可见混合、实服事件率与参考机余项保留 `partial`。见 `reports/m2-bandwidth-regulator.md` 和 PI-B6-bwreg-1。
+
 - **B6-carentan-netem（2026-11-20，PI-B6-carentan-netem-1）**：Carentan WT，私有 netns 单向 25±10 ms、实测 2.009% 丢包，20 headless + 12 bot，四辆 HQ 测试载具。20 个客户端部署后重叠 1808.767 s，tick P50/P99 3.809/8.027 ms、7 次超时、最长连续 1。下行/上行 P99 25.336/21.376 kbps。AOI 709,320/709,320 同 tick 配对，397,531 条敌方玩家记录、0 越界。PI-109 非参考机。E1-2/3/4 与 M1-068 保持 `partial`，见 `reports/m1-carentan-netem-b6.md`。
 - **B6-perf-gpu12（2026-11-20，M1-069 / E1-6/E1-7）**：RTX 3080 GPU1 绑定工作站（PI-109）完成 High/WebGPU、Low/WebGL2 的 Carentan 三机位各 3×60 s。High P95 16.70–16.80 ms、>50 ms 卡顿 0–2 帧/轮、draw call 83–211、三角形 347532–444075；Low 59.88–60.02 rAF FPS、P95 16.70–16.80 ms、>50 ms 卡顿 0–1 帧/轮、draw call 71–181、三角形 125572–143173。参考机仍未测，不改变 E1-6/E1-7 判定或关闭 M1。见 `reports/m1-perf.md`、PI-B6-perf-gpu12-1。
 - **B6-uilogic（M1-053b）**：无样式开发画廊、组件键盘与焦点管理、OFL 子集管线及 DOM / 重绘门禁已验证。M1-053 仍为 `partial`；视觉待 Fable，参考机与实局全应用耗时未测。
@@ -196,7 +198,7 @@
 | M2-017 | sim：计分与经验 | todo | | | |
 | M2-018 | sim：自动平衡、TK、投票与挂机 | todo | | | |
 | M2-019 | sim：标记、Ping 与聊天频道规则 | todo | | | |
-| M2-020 | server：带宽调节器 | todo | | | |
+| M2-020 | server：带宽调节器 | partial | Codex | 2026-11-20 | PI-109：弱网撤除后 WT/WS 9.056/8.041 s 采到满档；40% 模拟 T3 P99 500 ms、0 饥饿/min；100 客户端 2.389 µs/tick；密集合成 P99 88.304 kbps。实服精确可见/事件混合与参考机未测，见 `reports/m2-bandwidth-regulator.md`。Carentan 补测：实链路保留友军 T3 P99 503.1 ms；20 连接各 30 min 的 WT/WS 夹具下行估算均值 21.428/26.042 kbps，样本 P99 均 ≤54 kbps；共享机两轮均有 tick 超时。 |
 | M2-021 | server：100 玩家 CPU 优化 | todo | | | |
 | M2-022 | gateway：战绩、设置与可选 OAuth | partial | SQLite 0002、已结算对局查询、游客设置读写、默认关闭的 OAuth 占位。PI-109 工作站通过结算直投和落盘重放。见 `reports/m2-gateway-stats.md` | 真实 OAuth、PKCE 和游客升级未测（H-063） | PI-B6-gwstats-1 |
 | M2-023 | gateway：管理 API 与举报 | partial | B6-gwadmin | 2026-11-20 | 工作站 PI-109。实服无头踢出 189.5 ms、回放 270 B。1,000 条举报列表 P95 0.751 ms，鉴权拒绝 P95 差 0.971 µs。在线换图/强制换队、完整聊天证据窗及生产验收仍开放。见 `reports/m2-gateway-admin.md` / PI-B6-gwadmin-1 |

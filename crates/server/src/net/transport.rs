@@ -14,8 +14,10 @@ use bytes::Bytes;
 use frontline_protocol::framing::FRAME_HEADER_LEN;
 use frontline_protocol::Channel;
 use tokio::sync::{watch, Notify};
+use tokio::time::Instant;
 
 use super::limits::{MAX_BUFFERED_BYTES, UNRELIABLE_QUEUE_CAP, WRITE_BACKLOG_LIMIT};
+use super::transport_stats::LinkSample;
 use crate::metrics::Metrics;
 
 /// Delivery class of an outbound message.
@@ -82,6 +84,7 @@ struct OutState {
     latest_bytes: usize,
     /// Bytes handed to the socket writer and not yet flushed.
     inflight: usize,
+    ws_write_blocked: bool,
     close: CloseState,
     paused: bool,
 }
@@ -97,6 +100,9 @@ pub struct Outbox {
     snapshots_dropped: AtomicU64,
     /// Current datagram size limit of the connection (0 = no datagram path, e.g. WebSocket).
     max_datagram: AtomicUsize,
+    websocket: std::sync::atomic::AtomicBool,
+    capacity: AtomicU64,
+    rtt_micros: AtomicU64,
     team_markers: std::sync::atomic::AtomicBool,
 }
 
@@ -114,6 +120,7 @@ impl ClientHandle {
                 latest: VecDeque::new(),
                 latest_bytes: 0,
                 inflight: 0,
+                ws_write_blocked: false,
                 close: CloseState::Open,
                 paused: false,
             }),
@@ -124,6 +131,9 @@ impl ClientHandle {
             bytes_out: AtomicU64::new(0),
             snapshots_dropped: AtomicU64::new(0),
             max_datagram: AtomicUsize::new(0),
+            websocket: std::sync::atomic::AtomicBool::new(false),
+            capacity: AtomicU64::new(0),
+            rtt_micros: AtomicU64::new(0),
             team_markers: std::sync::atomic::AtomicBool::new(false),
         }))
     }
@@ -138,6 +148,43 @@ impl ClientHandle {
 
     fn lock(&self) -> MutexGuard<'_, OutState> {
         self.0.state.lock().unwrap_or_else(|e| e.into_inner())
+    }
+
+    pub(crate) fn mark_websocket(&self) {
+        self.0.websocket.store(true, Ordering::Relaxed);
+    }
+
+    pub(crate) fn set_ws_backlog(&self, blocked: bool) {
+        let mut s = self.lock();
+        s.ws_write_blocked = blocked;
+        if blocked {
+            let dropped = prune_c2(&mut s, true);
+            self.count_drops(dropped, dropped);
+        }
+    }
+
+    pub(crate) fn update_wt_sample(&self, sample: LinkSample) {
+        self.0.capacity.store(
+            sample.capacity_bytes_per_sec.unwrap_or(0),
+            Ordering::Relaxed,
+        );
+        self.0
+            .rtt_micros
+            .store(sample.rtt_micros, Ordering::Relaxed);
+    }
+
+    pub(crate) fn link_sample(&self) -> LinkSample {
+        if self.0.websocket.load(Ordering::Relaxed) {
+            return LinkSample {
+                capacity_bytes_per_sec: ws_overloaded(&self.lock()).then_some(0),
+                rtt_micros: 0,
+            };
+        }
+        let capacity = self.0.capacity.load(Ordering::Relaxed);
+        LinkSample {
+            capacity_bytes_per_sec: (capacity != 0).then_some(capacity),
+            rtt_micros: self.0.rtt_micros.load(Ordering::Relaxed),
+        }
     }
 
     /// Queues a message. Never blocks. Returns `false` when it was refused (connection closing,
@@ -165,30 +212,54 @@ impl ClientHandle {
             }
             Rel::Unreliable => {
                 let mut dropped = 0u64;
-                if s.inflight + s.latest_bytes > WRITE_BACKLOG_LIMIT {
+                let mut c2_dropped = 0u64;
+                let ws = self.0.websocket.load(Ordering::Relaxed);
+                if ws
+                    && ch == Channel::C2
+                    && (ws_overloaded(&s) || ws_buffered(&s) + len > WRITE_BACKLOG_LIMIT)
+                {
+                    // Reliable traffic and C3 team/world updates have independent semantics.
+                    c2_dropped = prune_c2(&mut s, false);
+                    dropped += c2_dropped;
+                } else if !ws && s.inflight + s.latest_bytes > WRITE_BACKLOG_LIMIT {
                     // Socket is backed up: keep only the newest packet.
                     dropped += s.latest.len() as u64;
                     s.latest.clear();
                     s.latest_bytes = 0;
-                } else if s.latest.len() >= UNRELIABLE_QUEUE_CAP {
-                    if let Some((_, old)) = s.latest.pop_front() {
+                }
+                if s.latest.len() >= UNRELIABLE_QUEUE_CAP {
+                    // For WS, prefer replacing the oldest packet of the same stream.
+                    let i = if ws {
+                        s.latest.iter().position(|(old, _)| *old == ch).unwrap_or(0)
+                    } else {
+                        0
+                    };
+                    if let Some((old_ch, old)) = s.latest.remove(i) {
                         s.latest_bytes -= old.len() + FRAME_HEADER_LEN;
                         dropped += 1;
+                        c2_dropped += u64::from(ws && old_ch == Channel::C2);
                     }
                 }
                 s.latest_bytes += len;
                 s.latest.push_back((ch, bytes));
-                if dropped > 0 {
-                    self.0
-                        .snapshots_dropped
-                        .fetch_add(dropped, Ordering::Relaxed);
-                    self.0.metrics.net_snapshots_dropped_total.inc_by(dropped);
-                }
+                self.count_drops(dropped, c2_dropped);
             }
         }
         drop(s);
         self.0.notify.notify_one();
         true
+    }
+
+    fn count_drops(&self, dropped: u64, ws_c2: u64) {
+        if dropped != 0 {
+            self.0
+                .snapshots_dropped
+                .fetch_add(dropped, Ordering::Relaxed);
+            self.0.metrics.net_snapshots_dropped_total.inc_by(dropped);
+        }
+        if ws_c2 != 0 {
+            self.0.metrics.ws_snapshot_dropped_total.inc_by(ws_c2);
+        }
     }
 
     /// Flush the reliable queue, then close the connection.
@@ -264,7 +335,22 @@ impl ClientHandle {
     /// Next message to write: reliable first, then the oldest queued unreliable packet.
     /// `None` = the writer should close the connection now.
     pub async fn next_outbound(&self) -> Option<(Channel, Bytes)> {
+        self.next_outbound_inner(None).await
+    }
+
+    pub(crate) async fn next_ws_outbound(
+        &self,
+        snapshot_not_before: Instant,
+    ) -> Option<(Channel, Bytes)> {
+        self.next_outbound_inner(Some(snapshot_not_before)).await
+    }
+
+    async fn next_outbound_inner(
+        &self,
+        snapshot_not_before: Option<Instant>,
+    ) -> Option<(Channel, Bytes)> {
         loop {
+            let mut wait_snapshot = None;
             {
                 let mut s = self.lock();
                 if s.close == CloseState::Hard {
@@ -277,18 +363,34 @@ impl ClientHandle {
                         s.inflight = n;
                         return Some(x);
                     }
-                    if let Some(x) = s.latest.pop_front() {
+                    let hold = snapshot_not_before.filter(|t| *t > Instant::now());
+                    let next = if hold.is_some() {
+                        s.latest.iter().position(|(ch, _)| *ch != Channel::C2)
+                    } else {
+                        Some(0)
+                    };
+                    if let Some(x) = next.and_then(|i| s.latest.remove(i)) {
                         let n = x.1.len() + FRAME_HEADER_LEN;
                         s.latest_bytes -= n;
                         s.inflight = n;
                         return Some(x);
                     }
-                    if s.close == CloseState::Graceful {
+                    if s.latest.is_empty() && s.close == CloseState::Graceful {
                         return None;
+                    }
+                    if !s.latest.is_empty() {
+                        wait_snapshot = hold;
                     }
                 }
             }
-            self.0.notify.notified().await;
+            if let Some(deadline) = wait_snapshot {
+                tokio::select! {
+                    _ = self.0.notify.notified() => {},
+                    _ = tokio::time::sleep_until(deadline) => {},
+                }
+            } else {
+                self.0.notify.notified().await;
+            }
         }
     }
 
@@ -309,6 +411,35 @@ impl ClientHandle {
         self.0.bytes_in.fetch_add(n as u64, Ordering::Relaxed);
         self.0.metrics.net_bytes_in_total.inc_by(n as u64);
     }
+}
+
+fn ws_overloaded(s: &OutState) -> bool {
+    s.ws_write_blocked || ws_buffered(s) > WRITE_BACKLOG_LIMIT
+}
+
+fn ws_buffered(s: &OutState) -> usize {
+    s.inflight + s.reliable_bytes + s.latest_bytes
+}
+
+fn prune_c2(s: &mut OutState, keep_latest: bool) -> u64 {
+    let mut skip = if keep_latest {
+        s.latest.iter().rposition(|(ch, _)| *ch == Channel::C2)
+    } else {
+        None
+    };
+    let mut dropped = 0;
+    let mut bytes = 0;
+    s.latest.retain(|(ch, old)| {
+        let remove = *ch == Channel::C2 && skip != Some(0);
+        skip = skip.and_then(|i| i.checked_sub(1));
+        if remove {
+            dropped += 1;
+            bytes += old.len() + FRAME_HEADER_LEN;
+        }
+        !remove
+    });
+    s.latest_bytes -= bytes;
+    dropped
 }
 
 #[cfg(test)]

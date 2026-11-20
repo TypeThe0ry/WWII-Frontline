@@ -372,6 +372,7 @@
 - **进展（B6-suppress-e2e，2026-11-20）**：E1-13 使用工作站无头 Chromium SwiftShader 验证 HUD 和 WebAudio 参数（PI-109，非参考机）。参考机帧时间、显存及音画实机未测。
 - **进展（B6-perf-gpu12，2026-11-20）**：工作站绑定 RTX 3080 GPU1 已完成 Carentan High/WebGPU/1080p 和 Low/WebGL2/720p 三机位各 3×60 s（PI-109）。仍需 RTX 3060、Iris Xe 参考机按同口径复测；不能用工作站数据替代。见 `reports/m1-perf.md`。
 - **进展（B6-carentan-netem，2026-11-20）**：E1-2/3/4 补测在共享 EPYC 7402 工作站完成（PI-109，非参考机）。参考设备与宿主独占 CPU 工况未测。见 `reports/m1-carentan-netem-b6.md`。
+- **进展（B6-bwreg，2026-11-20）**：M2-020 的 100 连接调节器微基准和网络夹具为 PI-109 工作站测量；参考机与独占 CPU 网络测试台未测。复验命令和场景差异见 `reports/m2-bandwidth-regulator.md`。
 
 ### H-022 受限网络测试台（UDP/HTTP3 被阻断场景）
 
@@ -381,6 +382,7 @@
 - **默认假设**：无默认；M0 `transport-matrix` 的受限网络项由你提供结果；执行者先在云容器里用防火墙规则模拟。
 - **阻塞**：M0 `transport-matrix`（RISKS §8.3 #7）。
 - **参考**：ARCHITECTURE T6、§5.5、§6.6；RISKS R-07。
+- **进展（B6-bwreg，2026-11-20）**：私有网络命名空间中已跑 WT/WS 的弱网及恢复；现实企业/校园代理和物理断 UDP 后的浏览器行为未测。无受信任证书依赖的本机 WT 使用临时证书固定指纹。
 - 状态：[ ] 待办
 - 决定/备注：____
 

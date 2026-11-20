@@ -74,6 +74,9 @@ impl BandwidthMeter {
 
 #[derive(Debug)]
 pub struct ClientBook {
+    pub regulator: Option<crate::net::regulator::BandwidthRegulator>,
+    /// A bandwidth-evicted slot needs a keyframe before it can use deltas again.
+    pub force_full: [bool; super::scheduler::MAX_SLOTS],
     pub baselines: ClientBaselines,
     pub prio: PriorityState,
     pub events: EventWindow,
@@ -101,6 +104,8 @@ pub struct ClientBook {
 impl ClientBook {
     pub fn new(now: u32) -> Self {
         ClientBook {
+            regulator: None,
+            force_full: [false; super::scheduler::MAX_SLOTS],
             baselines: ClientBaselines::new(),
             prio: PriorityState::default(),
             events: EventWindow::default(),

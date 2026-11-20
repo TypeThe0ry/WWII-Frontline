@@ -1,0 +1,7 @@
+{
+  "ack_low": 0.90,
+  "min_scale": 0.40,
+  "step_down": 0.10,
+  "step_up": 0.10,
+  "ewma_alpha": 0.10
+}

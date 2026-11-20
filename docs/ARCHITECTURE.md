@@ -672,6 +672,10 @@ C3 v4 实现（PI-127D1）：每 30 tick 发送，原有 `tick:16 + members:6 + 
 
 服务器每客户端维护 EWMA 发送字节、客户端 ack 率、估算 RTT。若 ack 率 < 90% 或估算可用带宽（基于 QUIC 拥塞窗口 / WS 缓冲）不足，则：①`PACKET_BUDGET` 线性缩放（最低 40%）；②远场（T3）频率降至下限 2 Hz 以下不允许（保持 2 Hz）→ 优先裁剪 T2/T3 的**数量**；③通知 HUD。
 
+M2-020：服务端构建时读取 `crates/server/config/server_net.json`（不参与 `DATA_HASH`）。以 30 Hz EWMA 追踪交给传输层的 C2 字节，每 10 个出包周期调节；C1 只携带最新已解码快照的确认，不推断它之前的包都已收到。等待 RTT 加抖动余量后统计最近 30 个可判定快照。容量不足（WT 窗口/RTT 小于当前速率的 1.2 倍，或 WS 待写超过 8 KiB / TCP 实际阻塞）或 ack 率低于 90% 时降档，至少连续 2 s 的健康采样（ack ≥ 95%，容量不短缺）后逐档恢复。软预算在编码固定字段后应用，不突破传输硬上限；团队/世界 C3 不受 C2 缩放。WS 用应用队列与底层写阻塞反映压力，不能读取浏览器或代理的缓冲字节。C4 沿用 `Notice`：`0x0200` 降档载荷 `[scale%,0,0]`（scale < 70%），`0x0201` 恢复（scale ≥ 95%）；相邻通知至少间隔 10 s。协议布局不变。
+
+诊断：服务端 `FL_AOI_REGULATOR_TRACE=1` 可在有界异步 stderr 日志中按出包 tick 输出 `[aoi-t3] player tick scale lo hi`。两段 64 位十六进制掩码记录过滤和容量裁剪后仍入选的 192–400 m 友军步兵槽位（包括这一 tick 不到更新时机的槽位）；与 headless 的 `FL_AOI_TRACE=1` 一起用于区分真正离开候选和调度／送达间隔。此诊断默认关闭。
+
 ### 6.7 延迟补偿
 
 #### 6.7.1 历史缓冲
@@ -2020,6 +2024,8 @@ pub struct LlmCommander { client: LlmClient, model: String, interval_s: u32 /*60
 | `net_bytes_out_per_client`（P50/P99） | histogram | P99 > 400 kbps |
 | `net_packet_loss_ratio`、`net_rtt_ms`（按客户端分布） | histogram | P95 RTT > 150 ms |
 | `aoi_starved_total`、`snapshot_budget_utilization` | counter/gauge | — |
+| `net_budget_scale`、`net_regulated_clients` | histogram / gauge | 调节档位分布及当前降档连接数 |
+| `net_far_shed_total`、`ws_snapshot_dropped_total` | counter | AOI 评估时省略的远场候选、WS 被替换的未写 C2 快照 |
 | `lagcomp_clamped_total`、`lagcomp_wall_reject_total` | counter | 突增 |
 | `suspicion_score`（分布）、`reports_total` | histogram/counter | 复核队列长度 |
 | `deploy_requests_total{result}` | counter | 拒绝率异常 |
