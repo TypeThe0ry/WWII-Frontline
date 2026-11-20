@@ -1,0 +1,2557 @@
+{
+  "task": "B6-gwticket",
+  "date": "2026-11-20",
+  "scope": "PI-109 non-reference shared workstation",
+  "environment": {
+    "cpu": "2 x AMD EPYC 7402, 96 logical CPUs",
+    "os_kernel": "7.0.0-14-generic",
+    "rust": "1.97.0",
+    "python": "3.14.4",
+    "transport": "loopback HTTP/1.1, cleartext",
+    "storage": "fresh disk SQLite, WAL/NORMAL, /data/scratch",
+    "build": "cargo build --release --locked -p frontline-gateway",
+    "protocol_version": 4,
+    "affinity": "none"
+  },
+  "baseline": {
+    "commit": "27d5a1d",
+    "instrumentation_commit": "234e05378414348641064d738b80db98c5e87f21",
+    "previous_report": "reports/loadtest-1119/gateway-ticket-b5-e1.json",
+    "original_harness_200": {
+      "p50_ms_median": 28.43,
+      "p95_ms_median": 49.357,
+      "p95_ms_le_50_runs": 4,
+      "p99_ms": null,
+      "runs": [
+        {
+          "requests": 200,
+          "unique_tickets": 200,
+          "p50_ms": 28.43,
+          "p95_ms": 49.357,
+          "max_ms": 51.615
+        },
+        {
+          "requests": 200,
+          "unique_tickets": 200,
+          "p50_ms": 25.433,
+          "p95_ms": 44.836,
+          "max_ms": 47.083
+        },
+        {
+          "requests": 200,
+          "unique_tickets": 200,
+          "p50_ms": 27.246,
+          "p95_ms": 47.08,
+          "max_ms": 48.904
+        },
+        {
+          "requests": 200,
+          "unique_tickets": 200,
+          "p50_ms": 29.27,
+          "p95_ms": 50.865,
+          "max_ms": 53.266
+        },
+        {
+          "requests": 200,
+          "unique_tickets": 200,
+          "p50_ms": 33.996,
+          "p95_ms": 59.774,
+          "max_ms": 62.229
+        },
+        {
+          "requests": 200,
+          "unique_tickets": 200,
+          "p50_ms": 22.91,
+          "p95_ms": 39.6,
+          "max_ms": 41.62
+        },
+        {
+          "requests": 200,
+          "unique_tickets": 200,
+          "p50_ms": 36.028,
+          "p95_ms": 66.943,
+          "max_ms": 70.238
+        }
+      ]
+    }
+  },
+  "methodology": {
+    "paired_rounds_each": 7,
+    "tokio_worker_threads": 8,
+    "quantile": "nearest rank relative to common start; setup and socket connect excluded; client/server scheduling and HTTP framing included",
+    "paired_order": "alternate baseline first and optimized first",
+    "stage_statistics": "median of per-round Prometheus sum/count means, not percentiles or end-to-end attribution",
+    "ticket_nick_fixture": "unchanged nickname",
+    "request_parse": "JSON/validation/match ID only; isolated HTTP framing not measured",
+    "log": "debug event disabled under default gateway log level; enabled sink I/O not measured"
+  },
+  "paired": {
+    "100": {
+      "baseline": {
+        "summary": {
+          "rounds": 7,
+          "total_requests": 700,
+          "total_unique_tickets": 700,
+          "p50_ms_median": 14.499,
+          "p50_ms_max": 17.962,
+          "p95_ms_median": 25.823,
+          "p95_ms_le_50_runs": 7,
+          "p99_ms_median": 26.788,
+          "p99_ms_max": 36.124,
+          "max_ms": 36.528,
+          "stage_mean_ms_median": {
+            "auth": 0.008139259999999999,
+            "eddsa_sign": 0.05059452,
+            "log": 0.00010690000000000015,
+            "pool_wait": 11.865762439999997,
+            "request_parse": 0.0023291900000000005,
+            "serialization": 0.006614109999999998,
+            "transaction": 0.08892879
+          }
+        },
+        "runs": [
+          {
+            "run": 1,
+            "gateway_pid": 1014110,
+            "matches": 1,
+            "requests": 100,
+            "successful_requests": 100,
+            "failed_requests": 0,
+            "unique_tickets": 100,
+            "duplicate_tickets": 0,
+            "p50_ms": 14.499,
+            "p95_ms": 25.823,
+            "p99_ms": 26.788,
+            "max_ms": 27.143,
+            "ticket_storage_metrics": {
+              "pool_wait": {
+                "count": 100,
+                "mean_ms": 11.865762439999997
+              },
+              "transaction": {
+                "count": 100,
+                "mean_ms": 0.06745856
+              }
+            },
+            "ticket_stage_metrics": {
+              "auth": {
+                "count": 100,
+                "mean_ms": 0.009716170000000003
+              },
+              "request_parse": {
+                "count": 100,
+                "mean_ms": 0.0023291900000000005
+              },
+              "eddsa_sign": {
+                "count": 100,
+                "mean_ms": 0.05391614999999999
+              },
+              "serialization": {
+                "count": 100,
+                "mean_ms": 0.006381770000000003
+              },
+              "log": {
+                "count": 100,
+                "mean_ms": 0.00011910000000000021
+              }
+            }
+          },
+          {
+            "run": 2,
+            "gateway_pid": 1014157,
+            "matches": 1,
+            "requests": 100,
+            "successful_requests": 100,
+            "failed_requests": 0,
+            "unique_tickets": 100,
+            "duplicate_tickets": 0,
+            "p50_ms": 13.855,
+            "p95_ms": 23.64,
+            "p99_ms": 24.518,
+            "max_ms": 24.733,
+            "ticket_storage_metrics": {
+              "pool_wait": {
+                "count": 100,
+                "mean_ms": 11.547512839999998
+              },
+              "transaction": {
+                "count": 100,
+                "mean_ms": 0.058006800000000025
+              }
+            },
+            "ticket_stage_metrics": {
+              "auth": {
+                "count": 100,
+                "mean_ms": 0.008139259999999999
+              },
+              "request_parse": {
+                "count": 100,
+                "mean_ms": 0.00275017
+              },
+              "eddsa_sign": {
+                "count": 100,
+                "mean_ms": 0.04936276000000003
+              },
+              "serialization": {
+                "count": 100,
+                "mean_ms": 0.00592057
+              },
+              "log": {
+                "count": 100,
+                "mean_ms": 0.00010440000000000014
+              }
+            }
+          },
+          {
+            "run": 3,
+            "gateway_pid": 1014232,
+            "matches": 1,
+            "requests": 100,
+            "successful_requests": 100,
+            "failed_requests": 0,
+            "unique_tickets": 100,
+            "duplicate_tickets": 0,
+            "p50_ms": 16.053,
+            "p95_ms": 29.636,
+            "p99_ms": 31.027,
+            "max_ms": 31.443,
+            "ticket_storage_metrics": {
+              "pool_wait": {
+                "count": 100,
+                "mean_ms": 14.109470850000003
+              },
+              "transaction": {
+                "count": 100,
+                "mean_ms": 0.11412551000000003
+              }
+            },
+            "ticket_stage_metrics": {
+              "auth": {
+                "count": 100,
+                "mean_ms": 0.008291239999999998
+              },
+              "request_parse": {
+                "count": 100,
+                "mean_ms": 0.0026177900000000005
+              },
+              "eddsa_sign": {
+                "count": 100,
+                "mean_ms": 0.05059452
+              },
+              "serialization": {
+                "count": 100,
+                "mean_ms": 0.006614109999999998
+              },
+              "log": {
+                "count": 100,
+                "mean_ms": 0.00014670000000000012
+              }
+            }
+          },
+          {
+            "run": 4,
+            "gateway_pid": 1014523,
+            "matches": 1,
+            "requests": 100,
+            "successful_requests": 100,
+            "failed_requests": 0,
+            "unique_tickets": 100,
+            "duplicate_tickets": 0,
+            "p50_ms": 16.178,
+            "p95_ms": 29.123,
+            "p99_ms": 30.256,
+            "max_ms": 30.557,
+            "ticket_storage_metrics": {
+              "pool_wait": {
+                "count": 100,
+                "mean_ms": 14.53217672
+              },
+              "transaction": {
+                "count": 100,
+                "mean_ms": 0.10068695
+              }
+            },
+            "ticket_stage_metrics": {
+              "auth": {
+                "count": 100,
+                "mean_ms": 0.008170830000000002
+              },
+              "request_parse": {
+                "count": 100,
+                "mean_ms": 0.0024627699999999987
+              },
+              "eddsa_sign": {
+                "count": 100,
+                "mean_ms": 0.052163239999999986
+              },
+              "serialization": {
+                "count": 100,
+                "mean_ms": 0.007106120000000001
+              },
+              "log": {
+                "count": 100,
+                "mean_ms": 0.00010690000000000015
+              }
+            }
+          },
+          {
+            "run": 5,
+            "gateway_pid": 1014630,
+            "matches": 1,
+            "requests": 100,
+            "successful_requests": 100,
+            "failed_requests": 0,
+            "unique_tickets": 100,
+            "duplicate_tickets": 0,
+            "p50_ms": 13.703,
+            "p95_ms": 22.272,
+            "p99_ms": 22.957,
+            "max_ms": 23.105,
+            "ticket_storage_metrics": {
+              "pool_wait": {
+                "count": 100,
+                "mean_ms": 11.40819696
+              },
+              "transaction": {
+                "count": 100,
+                "mean_ms": 0.08892879
+              }
+            },
+            "ticket_stage_metrics": {
+              "auth": {
+                "count": 100,
+                "mean_ms": 0.007316460000000003
+              },
+              "request_parse": {
+                "count": 100,
+                "mean_ms": 0.0022069000000000004
+              },
+              "eddsa_sign": {
+                "count": 100,
+                "mean_ms": 0.03394602000000001
+              },
+              "serialization": {
+                "count": 100,
+                "mean_ms": 0.006946339999999999
+              },
+              "log": {
+                "count": 100,
+                "mean_ms": 0.0000724000000000001
+              }
+            }
+          },
+          {
+            "run": 6,
+            "gateway_pid": 1014937,
+            "matches": 1,
+            "requests": 100,
+            "successful_requests": 100,
+            "failed_requests": 0,
+            "unique_tickets": 100,
+            "duplicate_tickets": 0,
+            "p50_ms": 9.587,
+            "p95_ms": 17.599,
+            "p99_ms": 18.213,
+            "max_ms": 18.376,
+            "ticket_storage_metrics": {
+              "pool_wait": {
+                "count": 100,
+                "mean_ms": 7.861717870000001
+              },
+              "transaction": {
+                "count": 100,
+                "mean_ms": 0.06541198000000001
+              }
+            },
+            "ticket_stage_metrics": {
+              "auth": {
+                "count": 100,
+                "mean_ms": 0.004444080000000001
+              },
+              "request_parse": {
+                "count": 100,
+                "mean_ms": 0.0014700000000000006
+              },
+              "eddsa_sign": {
+                "count": 100,
+                "mean_ms": 0.02499061
+              },
+              "serialization": {
+                "count": 100,
+                "mean_ms": 0.006059259999999999
+              },
+              "log": {
+                "count": 100,
+                "mean_ms": 0.00008320000000000003
+              }
+            }
+          },
+          {
+            "run": 7,
+            "gateway_pid": 1015022,
+            "matches": 1,
+            "requests": 100,
+            "successful_requests": 100,
+            "failed_requests": 0,
+            "unique_tickets": 100,
+            "duplicate_tickets": 0,
+            "p50_ms": 17.962,
+            "p95_ms": 34.635,
+            "p99_ms": 36.124,
+            "max_ms": 36.528,
+            "ticket_storage_metrics": {
+              "pool_wait": {
+                "count": 100,
+                "mean_ms": 15.618938679999998
+              },
+              "transaction": {
+                "count": 100,
+                "mean_ms": 0.13588607999999996
+              }
+            },
+            "ticket_stage_metrics": {
+              "auth": {
+                "count": 100,
+                "mean_ms": 0.006781459999999998
+              },
+              "request_parse": {
+                "count": 100,
+                "mean_ms": 0.002322690000000001
+              },
+              "eddsa_sign": {
+                "count": 100,
+                "mean_ms": 0.05990773999999999
+              },
+              "serialization": {
+                "count": 100,
+                "mean_ms": 0.00782924
+              },
+              "log": {
+                "count": 100,
+                "mean_ms": 0.00018159999999999997
+              }
+            }
+          }
+        ]
+      },
+      "optimized": {
+        "summary": {
+          "rounds": 7,
+          "total_requests": 700,
+          "total_unique_tickets": 700,
+          "p50_ms_median": 4.748,
+          "p50_ms_max": 6.706,
+          "p95_ms_median": 6.197,
+          "p95_ms_le_50_runs": 7,
+          "p99_ms_median": 6.219,
+          "p99_ms_max": 8.036,
+          "max_ms": 8.043,
+          "stage_mean_ms_median": {
+            "auth": 0.00701725,
+            "eddsa_sign": 0.047761690000000016,
+            "log": 0.0001329000000000001,
+            "pool_wait": 0.8554365099999997,
+            "request_parse": 0.00211508,
+            "serialization": 0.010373459999999998,
+            "transaction": 1.060600510000001
+          }
+        },
+        "runs": [
+          {
+            "run": 1,
+            "gateway_pid": 1014128,
+            "matches": 1,
+            "requests": 100,
+            "successful_requests": 100,
+            "failed_requests": 0,
+            "unique_tickets": 100,
+            "duplicate_tickets": 0,
+            "p50_ms": 4.661,
+            "p95_ms": 6.074,
+            "p99_ms": 6.145,
+            "max_ms": 6.15,
+            "ticket_storage_metrics": {
+              "pool_wait": {
+                "count": 100,
+                "mean_ms": 1.0098970899999997
+              },
+              "transaction": {
+                "count": 100,
+                "mean_ms": 1.0413162900000001
+              }
+            },
+            "ticket_stage_metrics": {
+              "auth": {
+                "count": 100,
+                "mean_ms": 0.009064140000000002
+              },
+              "request_parse": {
+                "count": 100,
+                "mean_ms": 0.00257899
+              },
+              "eddsa_sign": {
+                "count": 100,
+                "mean_ms": 0.05184460999999999
+              },
+              "serialization": {
+                "count": 100,
+                "mean_ms": 0.01153671
+              },
+              "log": {
+                "count": 100,
+                "mean_ms": 0.00024660000000000014
+              }
+            }
+          },
+          {
+            "run": 2,
+            "gateway_pid": 1014142,
+            "matches": 1,
+            "requests": 100,
+            "successful_requests": 100,
+            "failed_requests": 0,
+            "unique_tickets": 100,
+            "duplicate_tickets": 0,
+            "p50_ms": 6.706,
+            "p95_ms": 8.008,
+            "p99_ms": 8.036,
+            "max_ms": 8.043,
+            "ticket_storage_metrics": {
+              "pool_wait": {
+                "count": 100,
+                "mean_ms": 1.8572241200000008
+              },
+              "transaction": {
+                "count": 100,
+                "mean_ms": 1.129754849999999
+              }
+            },
+            "ticket_stage_metrics": {
+              "auth": {
+                "count": 100,
+                "mean_ms": 0.01910377
+              },
+              "request_parse": {
+                "count": 100,
+                "mean_ms": 0.0025748900000000003
+              },
+              "eddsa_sign": {
+                "count": 100,
+                "mean_ms": 0.05352796
+              },
+              "serialization": {
+                "count": 100,
+                "mean_ms": 0.01348602
+              },
+              "log": {
+                "count": 100,
+                "mean_ms": 0.00013829999999999995
+              }
+            }
+          },
+          {
+            "run": 3,
+            "gateway_pid": 1014342,
+            "matches": 1,
+            "requests": 100,
+            "successful_requests": 100,
+            "failed_requests": 0,
+            "unique_tickets": 100,
+            "duplicate_tickets": 0,
+            "p50_ms": 4.748,
+            "p95_ms": 5.628,
+            "p99_ms": 5.65,
+            "max_ms": 5.656,
+            "ticket_storage_metrics": {
+              "pool_wait": {
+                "count": 100,
+                "mean_ms": 0.48664885999999996
+              },
+              "transaction": {
+                "count": 100,
+                "mean_ms": 0.9619497900000002
+              }
+            },
+            "ticket_stage_metrics": {
+              "auth": {
+                "count": 100,
+                "mean_ms": 0.00610862
+              },
+              "request_parse": {
+                "count": 100,
+                "mean_ms": 0.0018257000000000002
+              },
+              "eddsa_sign": {
+                "count": 100,
+                "mean_ms": 0.035702160000000004
+              },
+              "serialization": {
+                "count": 100,
+                "mean_ms": 0.010373459999999998
+              },
+              "log": {
+                "count": 100,
+                "mean_ms": 0.00007970000000000001
+              }
+            }
+          },
+          {
+            "run": 4,
+            "gateway_pid": 1014439,
+            "matches": 1,
+            "requests": 100,
+            "successful_requests": 100,
+            "failed_requests": 0,
+            "unique_tickets": 100,
+            "duplicate_tickets": 0,
+            "p50_ms": 4.583,
+            "p95_ms": 5.561,
+            "p99_ms": 5.584,
+            "max_ms": 5.59,
+            "ticket_storage_metrics": {
+              "pool_wait": {
+                "count": 100,
+                "mean_ms": 0.44071160999999986
+              },
+              "transaction": {
+                "count": 100,
+                "mean_ms": 0.849347689999998
+              }
+            },
+            "ticket_stage_metrics": {
+              "auth": {
+                "count": 100,
+                "mean_ms": 0.006862440000000003
+              },
+              "request_parse": {
+                "count": 100,
+                "mean_ms": 0.0019297599999999991
+              },
+              "eddsa_sign": {
+                "count": 100,
+                "mean_ms": 0.04775609999999999
+              },
+              "serialization": {
+                "count": 100,
+                "mean_ms": 0.01006992
+              },
+              "log": {
+                "count": 100,
+                "mean_ms": 0.00010170000000000003
+              }
+            }
+          },
+          {
+            "run": 5,
+            "gateway_pid": 1014757,
+            "matches": 1,
+            "requests": 100,
+            "successful_requests": 100,
+            "failed_requests": 0,
+            "unique_tickets": 100,
+            "duplicate_tickets": 0,
+            "p50_ms": 4.847,
+            "p95_ms": 6.197,
+            "p99_ms": 6.219,
+            "max_ms": 6.226,
+            "ticket_storage_metrics": {
+              "pool_wait": {
+                "count": 100,
+                "mean_ms": 1.3176337699999996
+              },
+              "transaction": {
+                "count": 100,
+                "mean_ms": 1.060600510000001
+              }
+            },
+            "ticket_stage_metrics": {
+              "auth": {
+                "count": 100,
+                "mean_ms": 0.00701725
+              },
+              "request_parse": {
+                "count": 100,
+                "mean_ms": 0.0024758900000000006
+              },
+              "eddsa_sign": {
+                "count": 100,
+                "mean_ms": 0.05344699
+              },
+              "serialization": {
+                "count": 100,
+                "mean_ms": 0.010043400000000004
+              },
+              "log": {
+                "count": 100,
+                "mean_ms": 0.0001329000000000001
+              }
+            }
+          },
+          {
+            "run": 6,
+            "gateway_pid": 1014862,
+            "matches": 1,
+            "requests": 100,
+            "successful_requests": 100,
+            "failed_requests": 0,
+            "unique_tickets": 100,
+            "duplicate_tickets": 0,
+            "p50_ms": 5.474,
+            "p95_ms": 6.947,
+            "p99_ms": 6.987,
+            "max_ms": 7.02,
+            "ticket_storage_metrics": {
+              "pool_wait": {
+                "count": 100,
+                "mean_ms": 0.8554365099999997
+              },
+              "transaction": {
+                "count": 100,
+                "mean_ms": 1.2875516800000006
+              }
+            },
+            "ticket_stage_metrics": {
+              "auth": {
+                "count": 100,
+                "mean_ms": 0.005994469999999999
+              },
+              "request_parse": {
+                "count": 100,
+                "mean_ms": 0.0018583600000000003
+              },
+              "eddsa_sign": {
+                "count": 100,
+                "mean_ms": 0.03331190999999999
+              },
+              "serialization": {
+                "count": 100,
+                "mean_ms": 0.006047260000000002
+              },
+              "log": {
+                "count": 100,
+                "mean_ms": 0.00007229999999999998
+              }
+            }
+          },
+          {
+            "run": 7,
+            "gateway_pid": 1015151,
+            "matches": 1,
+            "requests": 100,
+            "successful_requests": 100,
+            "failed_requests": 0,
+            "unique_tickets": 100,
+            "duplicate_tickets": 0,
+            "p50_ms": 4.453,
+            "p95_ms": 6.262,
+            "p99_ms": 6.285,
+            "max_ms": 6.291,
+            "ticket_storage_metrics": {
+              "pool_wait": {
+                "count": 100,
+                "mean_ms": 0.7076012400000001
+              },
+              "transaction": {
+                "count": 100,
+                "mean_ms": 1.237069269999999
+              }
+            },
+            "ticket_stage_metrics": {
+              "auth": {
+                "count": 100,
+                "mean_ms": 0.008685459999999997
+              },
+              "request_parse": {
+                "count": 100,
+                "mean_ms": 0.00211508
+              },
+              "eddsa_sign": {
+                "count": 100,
+                "mean_ms": 0.047761690000000016
+              },
+              "serialization": {
+                "count": 100,
+                "mean_ms": 0.016099179999999994
+              },
+              "log": {
+                "count": 100,
+                "mean_ms": 0.00019909999999999996
+              }
+            }
+          }
+        ]
+      }
+    },
+    "200": {
+      "baseline": {
+        "summary": {
+          "rounds": 7,
+          "total_requests": 1400,
+          "total_unique_tickets": 1400,
+          "p50_ms_median": 32.022,
+          "p50_ms_max": 33.78,
+          "p95_ms_median": 53.083,
+          "p95_ms_le_50_runs": 1,
+          "p99_ms_median": 54.895,
+          "p99_ms_max": 62.588,
+          "max_ms": 63.346,
+          "stage_mean_ms_median": {
+            "auth": 0.007204945000000001,
+            "eddsa_sign": 0.04689183000000001,
+            "log": 0.00012305000000000014,
+            "pool_wait": 26.548950184999995,
+            "request_parse": 0.0020059350000000012,
+            "serialization": 0.006891815,
+            "transaction": 0.093937535
+          }
+        },
+        "runs": [
+          {
+            "run": 1,
+            "gateway_pid": 1015248,
+            "matches": 1,
+            "requests": 200,
+            "successful_requests": 200,
+            "failed_requests": 0,
+            "unique_tickets": 200,
+            "duplicate_tickets": 0,
+            "p50_ms": 32.95,
+            "p95_ms": 53.083,
+            "p99_ms": 54.895,
+            "max_ms": 55.359,
+            "ticket_storage_metrics": {
+              "pool_wait": {
+                "count": 200,
+                "mean_ms": 26.548950184999995
+              },
+              "transaction": {
+                "count": 200,
+                "mean_ms": 0.08679834000000004
+              }
+            },
+            "ticket_stage_metrics": {
+              "auth": {
+                "count": 200,
+                "mean_ms": 0.009251650000000002
+              },
+              "request_parse": {
+                "count": 200,
+                "mean_ms": 0.00218054
+              },
+              "eddsa_sign": {
+                "count": 200,
+                "mean_ms": 0.042554190000000006
+              },
+              "serialization": {
+                "count": 200,
+                "mean_ms": 0.0073913699999999995
+              },
+              "log": {
+                "count": 200,
+                "mean_ms": 0.00012130000000000003
+              }
+            }
+          },
+          {
+            "run": 2,
+            "gateway_pid": 1017374,
+            "matches": 1,
+            "requests": 200,
+            "successful_requests": 200,
+            "failed_requests": 0,
+            "unique_tickets": 200,
+            "duplicate_tickets": 0,
+            "p50_ms": 27.88,
+            "p95_ms": 50.55,
+            "p99_ms": 52.637,
+            "max_ms": 53.232,
+            "ticket_storage_metrics": {
+              "pool_wait": {
+                "count": 200,
+                "mean_ms": 23.566256699999997
+              },
+              "transaction": {
+                "count": 200,
+                "mean_ms": 0.07070396000000005
+              }
+            },
+            "ticket_stage_metrics": {
+              "auth": {
+                "count": 200,
+                "mean_ms": 0.007119839999999997
+              },
+              "request_parse": {
+                "count": 200,
+                "mean_ms": 0.0020014949999999985
+              },
+              "eddsa_sign": {
+                "count": 200,
+                "mean_ms": 0.05287529999999998
+              },
+              "serialization": {
+                "count": 200,
+                "mean_ms": 0.006891815
+              },
+              "log": {
+                "count": 200,
+                "mean_ms": 0.0001263500000000001
+              }
+            }
+          },
+          {
+            "run": 3,
+            "gateway_pid": 1018072,
+            "matches": 1,
+            "requests": 200,
+            "successful_requests": 200,
+            "failed_requests": 0,
+            "unique_tickets": 200,
+            "duplicate_tickets": 0,
+            "p50_ms": 33.062,
+            "p95_ms": 59.471,
+            "p99_ms": 62.366,
+            "max_ms": 63.039,
+            "ticket_storage_metrics": {
+              "pool_wait": {
+                "count": 200,
+                "mean_ms": 28.174405914999994
+              },
+              "transaction": {
+                "count": 200,
+                "mean_ms": 0.094124645
+              }
+            },
+            "ticket_stage_metrics": {
+              "auth": {
+                "count": 200,
+                "mean_ms": 0.007825135000000004
+              },
+              "request_parse": {
+                "count": 200,
+                "mean_ms": 0.0020059350000000012
+              },
+              "eddsa_sign": {
+                "count": 200,
+                "mean_ms": 0.054519020000000015
+              },
+              "serialization": {
+                "count": 200,
+                "mean_ms": 0.007430005000000003
+              },
+              "log": {
+                "count": 200,
+                "mean_ms": 0.00012305000000000014
+              }
+            }
+          },
+          {
+            "run": 4,
+            "gateway_pid": 1019733,
+            "matches": 1,
+            "requests": 200,
+            "successful_requests": 200,
+            "failed_requests": 0,
+            "unique_tickets": 200,
+            "duplicate_tickets": 0,
+            "p50_ms": 33.78,
+            "p95_ms": 56.479,
+            "p99_ms": 58.331,
+            "max_ms": 58.664,
+            "ticket_storage_metrics": {
+              "pool_wait": {
+                "count": 200,
+                "mean_ms": 29.280803020000015
+              },
+              "transaction": {
+                "count": 200,
+                "mean_ms": 0.093937535
+              }
+            },
+            "ticket_stage_metrics": {
+              "auth": {
+                "count": 200,
+                "mean_ms": 0.006921734999999998
+              },
+              "request_parse": {
+                "count": 200,
+                "mean_ms": 0.0018883800000000007
+              },
+              "eddsa_sign": {
+                "count": 200,
+                "mean_ms": 0.04540839500000002
+              },
+              "serialization": {
+                "count": 200,
+                "mean_ms": 0.006911515000000003
+              },
+              "log": {
+                "count": 200,
+                "mean_ms": 0.00011860000000000009
+              }
+            }
+          },
+          {
+            "run": 5,
+            "gateway_pid": 1020322,
+            "matches": 1,
+            "requests": 200,
+            "successful_requests": 200,
+            "failed_requests": 0,
+            "unique_tickets": 200,
+            "duplicate_tickets": 0,
+            "p50_ms": 27.651,
+            "p95_ms": 45.737,
+            "p99_ms": 47.266,
+            "max_ms": 47.631,
+            "ticket_storage_metrics": {
+              "pool_wait": {
+                "count": 200,
+                "mean_ms": 21.507809535000007
+              },
+              "transaction": {
+                "count": 200,
+                "mean_ms": 0.06266033999999997
+              }
+            },
+            "ticket_stage_metrics": {
+              "auth": {
+                "count": 200,
+                "mean_ms": 0.007204945000000001
+              },
+              "request_parse": {
+                "count": 200,
+                "mean_ms": 0.002259034999999999
+              },
+              "eddsa_sign": {
+                "count": 200,
+                "mean_ms": 0.04689183000000001
+              },
+              "serialization": {
+                "count": 200,
+                "mean_ms": 0.005385180000000001
+              },
+              "log": {
+                "count": 200,
+                "mean_ms": 0.00010435000000000007
+              }
+            }
+          },
+          {
+            "run": 6,
+            "gateway_pid": 1022374,
+            "matches": 1,
+            "requests": 200,
+            "successful_requests": 200,
+            "failed_requests": 0,
+            "unique_tickets": 200,
+            "duplicate_tickets": 0,
+            "p50_ms": 32.022,
+            "p95_ms": 59.756,
+            "p99_ms": 62.588,
+            "max_ms": 63.346,
+            "ticket_storage_metrics": {
+              "pool_wait": {
+                "count": 200,
+                "mean_ms": 28.843430410000003
+              },
+              "transaction": {
+                "count": 200,
+                "mean_ms": 0.1013913100000001
+              }
+            },
+            "ticket_stage_metrics": {
+              "auth": {
+                "count": 200,
+                "mean_ms": 0.0072695450000000005
+              },
+              "request_parse": {
+                "count": 200,
+                "mean_ms": 0.002424239999999999
+              },
+              "eddsa_sign": {
+                "count": 200,
+                "mean_ms": 0.05702824000000002
+              },
+              "serialization": {
+                "count": 200,
+                "mean_ms": 0.006786959999999997
+              },
+              "log": {
+                "count": 200,
+                "mean_ms": 0.00014309500000000012
+              }
+            }
+          },
+          {
+            "run": 7,
+            "gateway_pid": 1022944,
+            "matches": 1,
+            "requests": 200,
+            "successful_requests": 200,
+            "failed_requests": 0,
+            "unique_tickets": 200,
+            "duplicate_tickets": 0,
+            "p50_ms": 25.709,
+            "p95_ms": 52.298,
+            "p99_ms": 54.65,
+            "max_ms": 55.327,
+            "ticket_storage_metrics": {
+              "pool_wait": {
+                "count": 200,
+                "mean_ms": 23.499976685
+              },
+              "transaction": {
+                "count": 200,
+                "mean_ms": 0.10007880000000004
+              }
+            },
+            "ticket_stage_metrics": {
+              "auth": {
+                "count": 200,
+                "mean_ms": 0.005694945000000001
+              },
+              "request_parse": {
+                "count": 200,
+                "mean_ms": 0.0016231450000000003
+              },
+              "eddsa_sign": {
+                "count": 200,
+                "mean_ms": 0.044455235
+              },
+              "serialization": {
+                "count": 200,
+                "mean_ms": 0.005752330000000002
+              },
+              "log": {
+                "count": 200,
+                "mean_ms": 0.0001807999999999999
+              }
+            }
+          }
+        ]
+      },
+      "optimized": {
+        "summary": {
+          "rounds": 7,
+          "total_requests": 1400,
+          "total_unique_tickets": 1400,
+          "p50_ms_median": 12.414,
+          "p50_ms_max": 15.004,
+          "p95_ms_median": 15.646,
+          "p95_ms_le_50_runs": 7,
+          "p99_ms_median": 15.71,
+          "p99_ms_max": 17.671,
+          "max_ms": 17.703,
+          "stage_mean_ms_median": {
+            "auth": 0.009596174999999998,
+            "eddsa_sign": 0.052564524999999994,
+            "log": 0.00012035000000000007,
+            "pool_wait": 1.4293626700000002,
+            "request_parse": 0.0023020400000000004,
+            "serialization": 0.011623860000000003,
+            "transaction": 1.190436100000001
+          }
+        },
+        "runs": [
+          {
+            "run": 1,
+            "gateway_pid": 1015820,
+            "matches": 1,
+            "requests": 200,
+            "successful_requests": 200,
+            "failed_requests": 0,
+            "unique_tickets": 200,
+            "duplicate_tickets": 0,
+            "p50_ms": 15.004,
+            "p95_ms": 16.624,
+            "p99_ms": 16.666,
+            "max_ms": 16.677,
+            "ticket_storage_metrics": {
+              "pool_wait": {
+                "count": 200,
+                "mean_ms": 1.4293626700000002
+              },
+              "transaction": {
+                "count": 200,
+                "mean_ms": 1.4607145899999991
+              }
+            },
+            "ticket_stage_metrics": {
+              "auth": {
+                "count": 200,
+                "mean_ms": 0.010510660000000005
+              },
+              "request_parse": {
+                "count": 200,
+                "mean_ms": 0.0023020400000000004
+              },
+              "eddsa_sign": {
+                "count": 200,
+                "mean_ms": 0.052564524999999994
+              },
+              "serialization": {
+                "count": 200,
+                "mean_ms": 0.015824545000000002
+              },
+              "log": {
+                "count": 200,
+                "mean_ms": 0.00011905000000000003
+              }
+            }
+          },
+          {
+            "run": 2,
+            "gateway_pid": 1016590,
+            "matches": 1,
+            "requests": 200,
+            "successful_requests": 200,
+            "failed_requests": 0,
+            "unique_tickets": 200,
+            "duplicate_tickets": 0,
+            "p50_ms": 14.012,
+            "p95_ms": 17.482,
+            "p99_ms": 17.671,
+            "max_ms": 17.703,
+            "ticket_storage_metrics": {
+              "pool_wait": {
+                "count": 200,
+                "mean_ms": 5.062891364999997
+              },
+              "transaction": {
+                "count": 200,
+                "mean_ms": 2.10218311000001
+              }
+            },
+            "ticket_stage_metrics": {
+              "auth": {
+                "count": 200,
+                "mean_ms": 0.007702365000000002
+              },
+              "request_parse": {
+                "count": 200,
+                "mean_ms": 0.0022607800000000013
+              },
+              "eddsa_sign": {
+                "count": 200,
+                "mean_ms": 0.042543424999999996
+              },
+              "serialization": {
+                "count": 200,
+                "mean_ms": 0.01155642
+              },
+              "log": {
+                "count": 200,
+                "mean_ms": 0.00016054499999999992
+              }
+            }
+          },
+          {
+            "run": 3,
+            "gateway_pid": 1018615,
+            "matches": 1,
+            "requests": 200,
+            "successful_requests": 200,
+            "failed_requests": 0,
+            "unique_tickets": 200,
+            "duplicate_tickets": 0,
+            "p50_ms": 11.703,
+            "p95_ms": 17.272,
+            "p99_ms": 17.46,
+            "max_ms": 17.48,
+            "ticket_storage_metrics": {
+              "pool_wait": {
+                "count": 200,
+                "mean_ms": 3.868793854999999
+              },
+              "transaction": {
+                "count": 200,
+                "mean_ms": 1.948256320000002
+              }
+            },
+            "ticket_stage_metrics": {
+              "auth": {
+                "count": 200,
+                "mean_ms": 0.00817646
+              },
+              "request_parse": {
+                "count": 200,
+                "mean_ms": 0.002353090000000001
+              },
+              "eddsa_sign": {
+                "count": 200,
+                "mean_ms": 0.05291128500000003
+              },
+              "serialization": {
+                "count": 200,
+                "mean_ms": 0.018666094999999994
+              },
+              "log": {
+                "count": 200,
+                "mean_ms": 0.00012035000000000007
+              }
+            }
+          },
+          {
+            "run": 4,
+            "gateway_pid": 1019160,
+            "matches": 1,
+            "requests": 200,
+            "successful_requests": 200,
+            "failed_requests": 0,
+            "unique_tickets": 200,
+            "duplicate_tickets": 0,
+            "p50_ms": 14.081,
+            "p95_ms": 15.646,
+            "p99_ms": 15.71,
+            "max_ms": 15.771,
+            "ticket_storage_metrics": {
+              "pool_wait": {
+                "count": 200,
+                "mean_ms": 0.47210115500000044
+              },
+              "transaction": {
+                "count": 200,
+                "mean_ms": 1.0105279799999998
+              }
+            },
+            "ticket_stage_metrics": {
+              "auth": {
+                "count": 200,
+                "mean_ms": 0.008629225000000003
+              },
+              "request_parse": {
+                "count": 200,
+                "mean_ms": 0.0016616900000000004
+              },
+              "eddsa_sign": {
+                "count": 200,
+                "mean_ms": 0.03452797500000001
+              },
+              "serialization": {
+                "count": 200,
+                "mean_ms": 0.010370789999999994
+              },
+              "log": {
+                "count": 200,
+                "mean_ms": 0.00008195
+              }
+            }
+          },
+          {
+            "run": 5,
+            "gateway_pid": 1020971,
+            "matches": 1,
+            "requests": 200,
+            "successful_requests": 200,
+            "failed_requests": 0,
+            "unique_tickets": 200,
+            "duplicate_tickets": 0,
+            "p50_ms": 11.934,
+            "p95_ms": 14.023,
+            "p99_ms": 14.085,
+            "max_ms": 14.1,
+            "ticket_storage_metrics": {
+              "pool_wait": {
+                "count": 200,
+                "mean_ms": 1.7268027200000002
+              },
+              "transaction": {
+                "count": 200,
+                "mean_ms": 1.190436100000001
+              }
+            },
+            "ticket_stage_metrics": {
+              "auth": {
+                "count": 200,
+                "mean_ms": 0.009596174999999998
+              },
+              "request_parse": {
+                "count": 200,
+                "mean_ms": 0.00142635
+              },
+              "eddsa_sign": {
+                "count": 200,
+                "mean_ms": 0.03794982500000002
+              },
+              "serialization": {
+                "count": 200,
+                "mean_ms": 0.00932379
+              },
+              "log": {
+                "count": 200,
+                "mean_ms": 0.00009390000000000002
+              }
+            }
+          },
+          {
+            "run": 6,
+            "gateway_pid": 1021845,
+            "matches": 1,
+            "requests": 200,
+            "successful_requests": 200,
+            "failed_requests": 0,
+            "unique_tickets": 200,
+            "duplicate_tickets": 0,
+            "p50_ms": 8.513,
+            "p95_ms": 10.277,
+            "p99_ms": 10.319,
+            "max_ms": 10.33,
+            "ticket_storage_metrics": {
+              "pool_wait": {
+                "count": 200,
+                "mean_ms": 1.25644372
+              },
+              "transaction": {
+                "count": 200,
+                "mean_ms": 0.9725143900000002
+              }
+            },
+            "ticket_stage_metrics": {
+              "auth": {
+                "count": 200,
+                "mean_ms": 0.011793335
+              },
+              "request_parse": {
+                "count": 200,
+                "mean_ms": 0.0026150849999999983
+              },
+              "eddsa_sign": {
+                "count": 200,
+                "mean_ms": 0.05813700000000001
+              },
+              "serialization": {
+                "count": 200,
+                "mean_ms": 0.011623860000000003
+              },
+              "log": {
+                "count": 200,
+                "mean_ms": 0.00015010000000000007
+              }
+            }
+          },
+          {
+            "run": 7,
+            "gateway_pid": 1023568,
+            "matches": 1,
+            "requests": 200,
+            "successful_requests": 200,
+            "failed_requests": 0,
+            "unique_tickets": 200,
+            "duplicate_tickets": 0,
+            "p50_ms": 12.414,
+            "p95_ms": 14.201,
+            "p99_ms": 14.246,
+            "max_ms": 14.258,
+            "ticket_storage_metrics": {
+              "pool_wait": {
+                "count": 200,
+                "mean_ms": 0.8544384799999999
+              },
+              "transaction": {
+                "count": 200,
+                "mean_ms": 1.1479502000000026
+              }
+            },
+            "ticket_stage_metrics": {
+              "auth": {
+                "count": 200,
+                "mean_ms": 0.012167764999999997
+              },
+              "request_parse": {
+                "count": 200,
+                "mean_ms": 0.002723230000000001
+              },
+              "eddsa_sign": {
+                "count": 200,
+                "mean_ms": 0.057068090000000016
+              },
+              "serialization": {
+                "count": 200,
+                "mean_ms": 0.012209559999999998
+              },
+              "log": {
+                "count": 200,
+                "mean_ms": 0.00019885000000000012
+              }
+            }
+          }
+        ]
+      }
+    },
+    "500": {
+      "baseline": {
+        "summary": {
+          "rounds": 7,
+          "total_requests": 3500,
+          "total_unique_tickets": 3500,
+          "p50_ms_median": 66.813,
+          "p50_ms_max": 84.654,
+          "p95_ms_median": 114.189,
+          "p95_ms_le_50_runs": 0,
+          "p99_ms_median": 117.565,
+          "p99_ms_max": 149.63,
+          "max_ms": 151.127,
+          "stage_mean_ms_median": {
+            "auth": 0.008641099999999999,
+            "eddsa_sign": 0.04007533200000001,
+            "log": 0.00010355999999999992,
+            "pool_wait": 55.576259516,
+            "request_parse": 0.0019055339999999993,
+            "serialization": 0.005178724,
+            "transaction": 0.06760484199999998
+          }
+        },
+        "runs": [
+          {
+            "run": 1,
+            "gateway_pid": 1024086,
+            "matches": 3,
+            "requests": 500,
+            "successful_requests": 500,
+            "failed_requests": 0,
+            "unique_tickets": 500,
+            "duplicate_tickets": 0,
+            "p50_ms": 57.602,
+            "p95_ms": 97.35,
+            "p99_ms": 101.129,
+            "max_ms": 102.155,
+            "ticket_storage_metrics": {
+              "pool_wait": {
+                "count": 500,
+                "mean_ms": 47.08557560200002
+              },
+              "transaction": {
+                "count": 500,
+                "mean_ms": 0.06034147000000004
+              }
+            },
+            "ticket_stage_metrics": {
+              "auth": {
+                "count": 500,
+                "mean_ms": 0.026559692000000003
+              },
+              "request_parse": {
+                "count": 500,
+                "mean_ms": 0.0019055339999999993
+              },
+              "eddsa_sign": {
+                "count": 500,
+                "mean_ms": 0.034030003999999975
+              },
+              "serialization": {
+                "count": 500,
+                "mean_ms": 0.0048911760000000006
+              },
+              "log": {
+                "count": 500,
+                "mean_ms": 0.00010355999999999992
+              }
+            }
+          },
+          {
+            "run": 2,
+            "gateway_pid": 1025969,
+            "matches": 3,
+            "requests": 500,
+            "successful_requests": 500,
+            "failed_requests": 0,
+            "unique_tickets": 500,
+            "duplicate_tickets": 0,
+            "p50_ms": 71.007,
+            "p95_ms": 114.189,
+            "p99_ms": 117.565,
+            "max_ms": 118.39,
+            "ticket_storage_metrics": {
+              "pool_wait": {
+                "count": 500,
+                "mean_ms": 56.787544900000015
+              },
+              "transaction": {
+                "count": 500,
+                "mean_ms": 0.06760484199999998
+              }
+            },
+            "ticket_stage_metrics": {
+              "auth": {
+                "count": 500,
+                "mean_ms": 0.010609042000000006
+              },
+              "request_parse": {
+                "count": 500,
+                "mean_ms": 0.0023940300000000014
+              },
+              "eddsa_sign": {
+                "count": 500,
+                "mean_ms": 0.04225852200000001
+              },
+              "serialization": {
+                "count": 500,
+                "mean_ms": 0.005524888000000006
+              },
+              "log": {
+                "count": 500,
+                "mean_ms": 0.00011633800000000019
+              }
+            }
+          },
+          {
+            "run": 3,
+            "gateway_pid": 1026267,
+            "matches": 3,
+            "requests": 500,
+            "successful_requests": 500,
+            "failed_requests": 0,
+            "unique_tickets": 500,
+            "duplicate_tickets": 0,
+            "p50_ms": 64.628,
+            "p95_ms": 121.002,
+            "p99_ms": 125.901,
+            "max_ms": 127.211,
+            "ticket_storage_metrics": {
+              "pool_wait": {
+                "count": 500,
+                "mean_ms": 55.576259516
+              },
+              "transaction": {
+                "count": 500,
+                "mean_ms": 0.09871983800000002
+              }
+            },
+            "ticket_stage_metrics": {
+              "auth": {
+                "count": 500,
+                "mean_ms": 0.005646514000000003
+              },
+              "request_parse": {
+                "count": 500,
+                "mean_ms": 0.0017589920000000002
+              },
+              "eddsa_sign": {
+                "count": 500,
+                "mean_ms": 0.034681327999999984
+              },
+              "serialization": {
+                "count": 500,
+                "mean_ms": 0.004800255999999996
+              },
+              "log": {
+                "count": 500,
+                "mean_ms": 0.00007474000000000002
+              }
+            }
+          },
+          {
+            "run": 4,
+            "gateway_pid": 1027870,
+            "matches": 3,
+            "requests": 500,
+            "successful_requests": 500,
+            "failed_requests": 0,
+            "unique_tickets": 500,
+            "duplicate_tickets": 0,
+            "p50_ms": 84.654,
+            "p95_ms": 144.403,
+            "p99_ms": 149.63,
+            "max_ms": 151.127,
+            "ticket_storage_metrics": {
+              "pool_wait": {
+                "count": 500,
+                "mean_ms": 73.00921372
+              },
+              "transaction": {
+                "count": 500,
+                "mean_ms": 0.09828506199999996
+              }
+            },
+            "ticket_stage_metrics": {
+              "auth": {
+                "count": 500,
+                "mean_ms": 0.008591858000000006
+              },
+              "request_parse": {
+                "count": 500,
+                "mean_ms": 0.0020129719999999974
+              },
+              "eddsa_sign": {
+                "count": 500,
+                "mean_ms": 0.05211818799999998
+              },
+              "serialization": {
+                "count": 500,
+                "mean_ms": 0.006515764000000003
+              },
+              "log": {
+                "count": 500,
+                "mean_ms": 0.00013865999999999992
+              }
+            }
+          },
+          {
+            "run": 5,
+            "gateway_pid": 1028156,
+            "matches": 3,
+            "requests": 500,
+            "successful_requests": 500,
+            "failed_requests": 0,
+            "unique_tickets": 500,
+            "duplicate_tickets": 0,
+            "p50_ms": 74.863,
+            "p95_ms": 136.72,
+            "p99_ms": 141.179,
+            "max_ms": 142.405,
+            "ticket_storage_metrics": {
+              "pool_wait": {
+                "count": 500,
+                "mean_ms": 65.61927745200002
+              },
+              "transaction": {
+                "count": 500,
+                "mean_ms": 0.07904621199999994
+              }
+            },
+            "ticket_stage_metrics": {
+              "auth": {
+                "count": 500,
+                "mean_ms": 0.011710173999999999
+              },
+              "request_parse": {
+                "count": 500,
+                "mean_ms": 0.0020185620000000024
+              },
+              "eddsa_sign": {
+                "count": 500,
+                "mean_ms": 0.049826169999999996
+              },
+              "serialization": {
+                "count": 500,
+                "mean_ms": 0.007005818000000008
+              },
+              "log": {
+                "count": 500,
+                "mean_ms": 0.00009750000000000034
+              }
+            }
+          },
+          {
+            "run": 6,
+            "gateway_pid": 1030343,
+            "matches": 3,
+            "requests": 500,
+            "successful_requests": 500,
+            "failed_requests": 0,
+            "unique_tickets": 500,
+            "duplicate_tickets": 0,
+            "p50_ms": 66.813,
+            "p95_ms": 104.904,
+            "p99_ms": 108.633,
+            "max_ms": 109.496,
+            "ticket_storage_metrics": {
+              "pool_wait": {
+                "count": 500,
+                "mean_ms": 53.97838570800002
+              },
+              "transaction": {
+                "count": 500,
+                "mean_ms": 0.05671178399999998
+              }
+            },
+            "ticket_stage_metrics": {
+              "auth": {
+                "count": 500,
+                "mean_ms": 0.008641099999999999
+              },
+              "request_parse": {
+                "count": 500,
+                "mean_ms": 0.001901691999999999
+              },
+              "eddsa_sign": {
+                "count": 500,
+                "mean_ms": 0.03892106399999998
+              },
+              "serialization": {
+                "count": 500,
+                "mean_ms": 0.005178724
+              },
+              "log": {
+                "count": 500,
+                "mean_ms": 0.0000867200000000005
+              }
+            }
+          },
+          {
+            "run": 7,
+            "gateway_pid": 1031821,
+            "matches": 3,
+            "requests": 500,
+            "successful_requests": 500,
+            "failed_requests": 0,
+            "unique_tickets": 500,
+            "duplicate_tickets": 0,
+            "p50_ms": 60.106,
+            "p95_ms": 99.544,
+            "p99_ms": 105.031,
+            "max_ms": 106.409,
+            "ticket_storage_metrics": {
+              "pool_wait": {
+                "count": 500,
+                "mean_ms": 48.82146679000003
+              },
+              "transaction": {
+                "count": 500,
+                "mean_ms": 0.058036836
+              }
+            },
+            "ticket_stage_metrics": {
+              "auth": {
+                "count": 500,
+                "mean_ms": 0.006814801999999999
+              },
+              "request_parse": {
+                "count": 500,
+                "mean_ms": 0.0018772339999999993
+              },
+              "eddsa_sign": {
+                "count": 500,
+                "mean_ms": 0.04007533200000001
+              },
+              "serialization": {
+                "count": 500,
+                "mean_ms": 0.005168214000000003
+              },
+              "log": {
+                "count": 500,
+                "mean_ms": 0.00010610000000000017
+              }
+            }
+          }
+        ]
+      },
+      "optimized": {
+        "summary": {
+          "rounds": 7,
+          "total_requests": 3500,
+          "total_unique_tickets": 3500,
+          "p50_ms_median": 25.333,
+          "p50_ms_max": 37.524,
+          "p95_ms_median": 29.522,
+          "p95_ms_le_50_runs": 7,
+          "p99_ms_median": 29.74,
+          "p99_ms_max": 41.436,
+          "max_ms": 41.479,
+          "stage_mean_ms_median": {
+            "auth": 0.009753781999999996,
+            "eddsa_sign": 0.04847612199999998,
+            "log": 0.0001270200000000002,
+            "pool_wait": 3.616803862000001,
+            "request_parse": 0.0019563479999999997,
+            "serialization": 0.011043380000000004,
+            "transaction": 1.4701202740000043
+          }
+        },
+        "runs": [
+          {
+            "run": 1,
+            "gateway_pid": 1024797,
+            "matches": 3,
+            "requests": 500,
+            "successful_requests": 500,
+            "failed_requests": 0,
+            "unique_tickets": 500,
+            "duplicate_tickets": 0,
+            "p50_ms": 25.333,
+            "p95_ms": 29.522,
+            "p99_ms": 29.631,
+            "max_ms": 29.724,
+            "ticket_storage_metrics": {
+              "pool_wait": {
+                "count": 500,
+                "mean_ms": 3.504108090000002
+              },
+              "transaction": {
+                "count": 500,
+                "mean_ms": 1.4701202740000043
+              }
+            },
+            "ticket_stage_metrics": {
+              "auth": {
+                "count": 500,
+                "mean_ms": 0.008410122000000003
+              },
+              "request_parse": {
+                "count": 500,
+                "mean_ms": 0.0017925180000000003
+              },
+              "eddsa_sign": {
+                "count": 500,
+                "mean_ms": 0.04762194999999996
+              },
+              "serialization": {
+                "count": 500,
+                "mean_ms": 0.011458390000000008
+              },
+              "log": {
+                "count": 500,
+                "mean_ms": 0.000132358
+              }
+            }
+          },
+          {
+            "run": 2,
+            "gateway_pid": 1025635,
+            "matches": 3,
+            "requests": 500,
+            "successful_requests": 500,
+            "failed_requests": 0,
+            "unique_tickets": 500,
+            "duplicate_tickets": 0,
+            "p50_ms": 27.566,
+            "p95_ms": 31.27,
+            "p99_ms": 31.391,
+            "max_ms": 31.421,
+            "ticket_storage_metrics": {
+              "pool_wait": {
+                "count": 500,
+                "mean_ms": 3.616803862000001
+              },
+              "transaction": {
+                "count": 500,
+                "mean_ms": 1.3554980180000051
+              }
+            },
+            "ticket_stage_metrics": {
+              "auth": {
+                "count": 500,
+                "mean_ms": 0.009753781999999996
+              },
+              "request_parse": {
+                "count": 500,
+                "mean_ms": 0.0019563479999999997
+              },
+              "eddsa_sign": {
+                "count": 500,
+                "mean_ms": 0.04668264200000006
+              },
+              "serialization": {
+                "count": 500,
+                "mean_ms": 0.010393716000000004
+              },
+              "log": {
+                "count": 500,
+                "mean_ms": 0.00011238
+              }
+            }
+          },
+          {
+            "run": 3,
+            "gateway_pid": 1026940,
+            "matches": 3,
+            "requests": 500,
+            "successful_requests": 500,
+            "failed_requests": 0,
+            "unique_tickets": 500,
+            "duplicate_tickets": 0,
+            "p50_ms": 37.524,
+            "p95_ms": 41.261,
+            "p99_ms": 41.436,
+            "max_ms": 41.479,
+            "ticket_storage_metrics": {
+              "pool_wait": {
+                "count": 500,
+                "mean_ms": 0.4821275380000003
+              },
+              "transaction": {
+                "count": 500,
+                "mean_ms": 0.9452964180000006
+              }
+            },
+            "ticket_stage_metrics": {
+              "auth": {
+                "count": 500,
+                "mean_ms": 0.010873853999999994
+              },
+              "request_parse": {
+                "count": 500,
+                "mean_ms": 0.0019072839999999995
+              },
+              "eddsa_sign": {
+                "count": 500,
+                "mean_ms": 0.04847612199999998
+              },
+              "serialization": {
+                "count": 500,
+                "mean_ms": 0.012937030000000006
+              },
+              "log": {
+                "count": 500,
+                "mean_ms": 0.0001203000000000002
+              }
+            }
+          },
+          {
+            "run": 4,
+            "gateway_pid": 1027404,
+            "matches": 3,
+            "requests": 500,
+            "successful_requests": 500,
+            "failed_requests": 0,
+            "unique_tickets": 500,
+            "duplicate_tickets": 0,
+            "p50_ms": 24.221,
+            "p95_ms": 29.162,
+            "p99_ms": 29.74,
+            "max_ms": 29.767,
+            "ticket_storage_metrics": {
+              "pool_wait": {
+                "count": 500,
+                "mean_ms": 6.998263590000004
+              },
+              "transaction": {
+                "count": 500,
+                "mean_ms": 1.5947096699999959
+              }
+            },
+            "ticket_stage_metrics": {
+              "auth": {
+                "count": 500,
+                "mean_ms": 0.019568144000000006
+              },
+              "request_parse": {
+                "count": 500,
+                "mean_ms": 0.0022059179999999986
+              },
+              "eddsa_sign": {
+                "count": 500,
+                "mean_ms": 0.056194488000000015
+              },
+              "serialization": {
+                "count": 500,
+                "mean_ms": 0.011043380000000004
+              },
+              "log": {
+                "count": 500,
+                "mean_ms": 0.00013574000000000016
+              }
+            }
+          },
+          {
+            "run": 5,
+            "gateway_pid": 1028794,
+            "matches": 3,
+            "requests": 500,
+            "successful_requests": 500,
+            "failed_requests": 0,
+            "unique_tickets": 500,
+            "duplicate_tickets": 0,
+            "p50_ms": 25.217,
+            "p95_ms": 34.796,
+            "p99_ms": 35.253,
+            "max_ms": 35.347,
+            "ticket_storage_metrics": {
+              "pool_wait": {
+                "count": 500,
+                "mean_ms": 11.58391081200001
+              },
+              "transaction": {
+                "count": 500,
+                "mean_ms": 1.8752539319999992
+              }
+            },
+            "ticket_stage_metrics": {
+              "auth": {
+                "count": 500,
+                "mean_ms": 0.008920014000000002
+              },
+              "request_parse": {
+                "count": 500,
+                "mean_ms": 0.0021960839999999988
+              },
+              "eddsa_sign": {
+                "count": 500,
+                "mean_ms": 0.058262331999999986
+              },
+              "serialization": {
+                "count": 500,
+                "mean_ms": 0.012130222000000012
+              },
+              "log": {
+                "count": 500,
+                "mean_ms": 0.00012891800000000008
+              }
+            }
+          },
+          {
+            "run": 6,
+            "gateway_pid": 1029622,
+            "matches": 3,
+            "requests": 500,
+            "successful_requests": 500,
+            "failed_requests": 0,
+            "unique_tickets": 500,
+            "duplicate_tickets": 0,
+            "p50_ms": 24.064,
+            "p95_ms": 28.682,
+            "p99_ms": 29.001,
+            "max_ms": 29.08,
+            "ticket_storage_metrics": {
+              "pool_wait": {
+                "count": 500,
+                "mean_ms": 5.912202046
+              },
+              "transaction": {
+                "count": 500,
+                "mean_ms": 1.5961237699999986
+              }
+            },
+            "ticket_stage_metrics": {
+              "auth": {
+                "count": 500,
+                "mean_ms": 0.01024582
+              },
+              "request_parse": {
+                "count": 500,
+                "mean_ms": 0.001994114
+              },
+              "eddsa_sign": {
+                "count": 500,
+                "mean_ms": 0.051490223999999966
+              },
+              "serialization": {
+                "count": 500,
+                "mean_ms": 0.010743186000000012
+              },
+              "log": {
+                "count": 500,
+                "mean_ms": 0.0001270200000000002
+              }
+            }
+          },
+          {
+            "run": 7,
+            "gateway_pid": 1033256,
+            "matches": 3,
+            "requests": 500,
+            "successful_requests": 500,
+            "failed_requests": 0,
+            "unique_tickets": 500,
+            "duplicate_tickets": 0,
+            "p50_ms": 26.788,
+            "p95_ms": 28.791,
+            "p99_ms": 28.901,
+            "max_ms": 28.929,
+            "ticket_storage_metrics": {
+              "pool_wait": {
+                "count": 500,
+                "mean_ms": 1.4390949959999977
+              },
+              "transaction": {
+                "count": 500,
+                "mean_ms": 0.9872543539999987
+              }
+            },
+            "ticket_stage_metrics": {
+              "auth": {
+                "count": 500,
+                "mean_ms": 0.00921856
+              },
+              "request_parse": {
+                "count": 500,
+                "mean_ms": 0.001461340000000001
+              },
+              "eddsa_sign": {
+                "count": 500,
+                "mean_ms": 0.037120804
+              },
+              "serialization": {
+                "count": 500,
+                "mean_ms": 0.010031138
+              },
+              "log": {
+                "count": 500,
+                "mean_ms": 0.00008160000000000007
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "candidates_500": {
+    "mutex": {
+      "rounds": 7,
+      "total_requests": 3500,
+      "total_unique_tickets": 3500,
+      "p50_ms_median": 58.232,
+      "p50_ms_max": 76.937,
+      "p95_ms_median": 104.319,
+      "p95_ms_le_50_runs": 0,
+      "p99_ms_median": 107.681,
+      "p99_ms_max": 146.504,
+      "max_ms": 147.871,
+      "stage_mean_ms_median": {
+        "auth": 0.008087456000000003,
+        "eddsa_sign": 0.04809946399999995,
+        "log": 0.00011061599999999981,
+        "pool_wait": 49.254706206,
+        "request_parse": 0.0020337740000000016,
+        "serialization": 0.005906538000000006,
+        "transaction": 0.07594109799999998
+      }
+    },
+    "pool_4": {
+      "rounds": 7,
+      "total_requests": 3500,
+      "total_unique_tickets": 3500,
+      "p50_ms_median": 51.253,
+      "p50_ms_max": 56.858,
+      "p95_ms_median": 87.155,
+      "p95_ms_le_50_runs": 0,
+      "p99_ms_median": 91.092,
+      "p99_ms_max": 106.659,
+      "max_ms": 108.058,
+      "stage_mean_ms_median": {
+        "auth": 0.008119094000000002,
+        "eddsa_sign": 0.03787304000000002,
+        "log": 0.0001007980000000002,
+        "pool_wait": 39.192950363999984,
+        "request_parse": 0.002093958000000004,
+        "serialization": 0.006307822000000005,
+        "transaction": 0.5633876500000002
+      }
+    }
+  },
+  "default_runtime_optimized": {
+    "100": {
+      "summary": {
+        "rounds": 3,
+        "total_requests": 300,
+        "total_unique_tickets": 300,
+        "p50_ms_median": 5.533,
+        "p50_ms_max": 5.553,
+        "p95_ms_median": 6.741,
+        "p95_ms_le_50_runs": 3,
+        "p99_ms_median": 6.812,
+        "p99_ms_max": 7.128,
+        "max_ms": 7.159,
+        "stage_mean_ms_median": {
+          "auth": 0.005782670000000002,
+          "eddsa_sign": 0.03654158999999999,
+          "log": 0.0000844,
+          "pool_wait": 1.10793017,
+          "request_parse": 0.0017746900000000004,
+          "serialization": 0.00970402,
+          "transaction": 1.2763325199999995
+        }
+      },
+      "runs": [
+        {
+          "run": 1,
+          "gateway_pid": 1034013,
+          "matches": 1,
+          "requests": 100,
+          "successful_requests": 100,
+          "failed_requests": 0,
+          "unique_tickets": 100,
+          "duplicate_tickets": 0,
+          "p50_ms": 4.455,
+          "p95_ms": 5.587,
+          "p99_ms": 5.649,
+          "max_ms": 5.655,
+          "ticket_storage_metrics": {
+            "pool_wait": {
+              "count": 100,
+              "mean_ms": 0.7537909599999997
+            },
+            "transaction": {
+              "count": 100,
+              "mean_ms": 1.0797892800000017
+            }
+          },
+          "ticket_stage_metrics": {
+            "auth": {
+              "count": 100,
+              "mean_ms": 0.006671990000000001
+            },
+            "request_parse": {
+              "count": 100,
+              "mean_ms": 0.0018062800000000008
+            },
+            "eddsa_sign": {
+              "count": 100,
+              "mean_ms": 0.034969059999999996
+            },
+            "serialization": {
+              "count": 100,
+              "mean_ms": 0.006462279999999998
+            },
+            "log": {
+              "count": 100,
+              "mean_ms": 0.0000844
+            }
+          }
+        },
+        {
+          "run": 2,
+          "gateway_pid": 1034173,
+          "matches": 1,
+          "requests": 100,
+          "successful_requests": 100,
+          "failed_requests": 0,
+          "unique_tickets": 100,
+          "duplicate_tickets": 0,
+          "p50_ms": 5.553,
+          "p95_ms": 7.103,
+          "p99_ms": 7.128,
+          "max_ms": 7.159,
+          "ticket_storage_metrics": {
+            "pool_wait": {
+              "count": 100,
+              "mean_ms": 1.4661881300000001
+            },
+            "transaction": {
+              "count": 100,
+              "mean_ms": 1.2763325199999995
+            }
+          },
+          "ticket_stage_metrics": {
+            "auth": {
+              "count": 100,
+              "mean_ms": 0.005782670000000002
+            },
+            "request_parse": {
+              "count": 100,
+              "mean_ms": 0.0017746900000000004
+            },
+            "eddsa_sign": {
+              "count": 100,
+              "mean_ms": 0.041307220000000006
+            },
+            "serialization": {
+              "count": 100,
+              "mean_ms": 0.01109324
+            },
+            "log": {
+              "count": 100,
+              "mean_ms": 0.00009630000000000001
+            }
+          }
+        },
+        {
+          "run": 3,
+          "gateway_pid": 1034338,
+          "matches": 1,
+          "requests": 100,
+          "successful_requests": 100,
+          "failed_requests": 0,
+          "unique_tickets": 100,
+          "duplicate_tickets": 0,
+          "p50_ms": 5.533,
+          "p95_ms": 6.741,
+          "p99_ms": 6.812,
+          "max_ms": 6.83,
+          "ticket_storage_metrics": {
+            "pool_wait": {
+              "count": 100,
+              "mean_ms": 1.10793017
+            },
+            "transaction": {
+              "count": 100,
+              "mean_ms": 1.3489649800000012
+            }
+          },
+          "ticket_stage_metrics": {
+            "auth": {
+              "count": 100,
+              "mean_ms": 0.005537039999999999
+            },
+            "request_parse": {
+              "count": 100,
+              "mean_ms": 0.0016497800000000006
+            },
+            "eddsa_sign": {
+              "count": 100,
+              "mean_ms": 0.03654158999999999
+            },
+            "serialization": {
+              "count": 100,
+              "mean_ms": 0.00970402
+            },
+            "log": {
+              "count": 100,
+              "mean_ms": 0.00007770000000000009
+            }
+          }
+        }
+      ]
+    },
+    "500": {
+      "summary": {
+        "rounds": 3,
+        "total_requests": 1500,
+        "total_unique_tickets": 1500,
+        "p50_ms_median": 28.78,
+        "p50_ms_max": 32.398,
+        "p95_ms_median": 33.43,
+        "p95_ms_le_50_runs": 3,
+        "p99_ms_median": 33.802,
+        "p99_ms_max": 36.008,
+        "max_ms": 36.036,
+        "stage_mean_ms_median": {
+          "auth": 0.015571923999999994,
+          "eddsa_sign": 0.055303617999999916,
+          "log": 0.00013479600000000004,
+          "pool_wait": 3.0326380040000003,
+          "request_parse": 0.002299407999999998,
+          "serialization": 0.01285283000000001,
+          "transaction": 1.704258117999999
+        }
+      },
+      "runs": [
+        {
+          "run": 1,
+          "gateway_pid": 1034527,
+          "matches": 3,
+          "requests": 500,
+          "successful_requests": 500,
+          "failed_requests": 0,
+          "unique_tickets": 500,
+          "duplicate_tickets": 0,
+          "p50_ms": 25.093,
+          "p95_ms": 33.43,
+          "p99_ms": 33.802,
+          "max_ms": 33.921,
+          "ticket_storage_metrics": {
+            "pool_wait": {
+              "count": 500,
+              "mean_ms": 6.783341059999994
+            },
+            "transaction": {
+              "count": 500,
+              "mean_ms": 1.8814314680000028
+            }
+          },
+          "ticket_stage_metrics": {
+            "auth": {
+              "count": 500,
+              "mean_ms": 0.015209923999999984
+            },
+            "request_parse": {
+              "count": 500,
+              "mean_ms": 0.0015582260000000002
+            },
+            "eddsa_sign": {
+              "count": 500,
+              "mean_ms": 0.042846946000000004
+            },
+            "serialization": {
+              "count": 500,
+              "mean_ms": 0.009657022000000015
+            },
+            "log": {
+              "count": 500,
+              "mean_ms": 0.00010589800000000012
+            }
+          }
+        },
+        {
+          "run": 2,
+          "gateway_pid": 1035360,
+          "matches": 3,
+          "requests": 500,
+          "successful_requests": 500,
+          "failed_requests": 0,
+          "unique_tickets": 500,
+          "duplicate_tickets": 0,
+          "p50_ms": 32.398,
+          "p95_ms": 35.893,
+          "p99_ms": 36.008,
+          "max_ms": 36.036,
+          "ticket_storage_metrics": {
+            "pool_wait": {
+              "count": 500,
+              "mean_ms": 3.0326380040000003
+            },
+            "transaction": {
+              "count": 500,
+              "mean_ms": 1.704258117999999
+            }
+          },
+          "ticket_stage_metrics": {
+            "auth": {
+              "count": 500,
+              "mean_ms": 0.016382116000000002
+            },
+            "request_parse": {
+              "count": 500,
+              "mean_ms": 0.002299407999999998
+            },
+            "eddsa_sign": {
+              "count": 500,
+              "mean_ms": 0.055303617999999916
+            },
+            "serialization": {
+              "count": 500,
+              "mean_ms": 0.01285283000000001
+            },
+            "log": {
+              "count": 500,
+              "mean_ms": 0.00013479600000000004
+            }
+          }
+        },
+        {
+          "run": 3,
+          "gateway_pid": 1036078,
+          "matches": 3,
+          "requests": 500,
+          "successful_requests": 500,
+          "failed_requests": 0,
+          "unique_tickets": 500,
+          "duplicate_tickets": 0,
+          "p50_ms": 28.78,
+          "p95_ms": 31.63,
+          "p99_ms": 31.737,
+          "max_ms": 31.764,
+          "ticket_storage_metrics": {
+            "pool_wait": {
+              "count": 500,
+              "mean_ms": 1.9635257260000012
+            },
+            "transaction": {
+              "count": 500,
+              "mean_ms": 1.2118484659999977
+            }
+          },
+          "ticket_stage_metrics": {
+            "auth": {
+              "count": 500,
+              "mean_ms": 0.015571923999999994
+            },
+            "request_parse": {
+              "count": 500,
+              "mean_ms": 0.002546897999999999
+            },
+            "eddsa_sign": {
+              "count": 500,
+              "mean_ms": 0.05866494999999996
+            },
+            "serialization": {
+              "count": 500,
+              "mean_ms": 0.014410600000000006
+            },
+            "log": {
+              "count": 500,
+              "mean_ms": 0.00014368000000000006
+            }
+          }
+        }
+      ]
+    }
+  },
+  "not_measured": [
+    "reference machine",
+    "deployed service with trusted HTTPS",
+    "persistent load or competing mixed rename/backfill latency",
+    "isolated HTTP framing",
+    "enabled debug log sink"
+  ]
+}
