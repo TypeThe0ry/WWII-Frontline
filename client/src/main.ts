@@ -81,6 +81,10 @@ async function bootWorld(
     fly: params.get('fly') === '1' || terrainScene,
     empty: params.get('empty') === '1' || terrainScene || sceneParam === 'pbr' || sceneParam === 'taa',
   });
+  if (sceneParam === 'world' && params.get('quality') === 'low') {
+    // Fixed Low scale for M1's world path (ARCHITECTURE §13.1). Babylon takes the inverse scale.
+    ctx.engine.setHardwareScalingLevel(ctx.engine.getHardwareScalingLevel() / 0.75);
+  }
   if (sceneParam === 'taa') {
     const { attachTaaScene } = await import('./render/post/taa-scene');
     window.__taa = attachTaaScene(ctx, params.get('taa_mode') === 'pan' ? 'pan' : 'box');
