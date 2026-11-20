@@ -19,6 +19,15 @@ Version 11 includes the M2-018 messages from version 5 with their existing tags 
 * Manual marker tags 8–19 extend the existing set. The optional periodic C3 projection
   reuses the existing `TeamStateWithMarkers` layout.
 
+### M2-017 scoring (no additional version bump)
+
+C4 `ScoreDelta` (`0x04`) remains `player:u8, kind:u8, value:i16`. The previously
+unused `kind` byte now carries `(category << 6) | reason`: Combat `0x00..=0x3f`,
+Offense `0x40..=0x7f`, Defense `0x80..=0xbf`, Support `0xc0..=0xff`. The low six
+bits are a stable category-local reason ID assigned by sim. Decoders preserve
+unknown reason IDs. There was no shipped producer; no version bump is needed.
+Deploy the updated data hash alongside the server, WASM and client.
+
 ## 5 — M2-018 subset of M2-007 (server rules)
 
 | Channel and type | Message | Fields (bits) |
@@ -38,14 +47,6 @@ Version 11 includes the M2-018 messages from version 5 with their existing tags 
 Vote IDs keep the simulation's 32-bit width so an old vote ID cannot alias after 256 votes.
 `Disconnect.reason = 5` is an automatic server-rule removal. Existing message tags and
 layouts are unchanged other than the new version value in `Hello`.
-
-## 5 — M2-017 (scoring, no additional version bump)
-
-C4 `ScoreDelta` (`0x04`) remains `player:u8, kind:u8, value:i16`. The previously
-unused `kind` byte now carries `(category << 6) | reason`: Combat `0x00..=0x3f`,
-Offense `0x40..=0x7f`, Defense `0x80..=0xbf`, Support `0xc0..=0xff`. The low six
-bits are a stable category-local reason ID assigned by sim. Decoders preserve
-unknown reason IDs. There was no shipped producer; no version bump is needed.
 
 ## 4 — M1-041d (own vehicle seat)
 
