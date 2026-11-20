@@ -74,3 +74,4 @@ LOADTEST_SERVER_CPUS=24,29,41 LOADTEST_CLIENT_CPUS=6,10 \
 - 同一 Release 加速审计复跑：36,000 计分 tick、12 人、145 条增量、1,267 净分逐人逐类一致。
 - 按上文 Carentan WS 命令改为 `--duration 65 --sample-interval 5`，v11 冒烟退出 0：10/10 HQ 部署，0 断线/解码错；1,999 个服务端 tick，1,994 计分 tick，12 条记录合计 −30 分。主动停服，未到自然赛果。未逐条捕获网络增量，参考机未测。
 - v11 数据校验 81 文件、0 错误；严格 native/WASM 对照 3×18,000 tick 哈希一致、最大位置差 0 m；另测 3,000 tick 逐位一致。WASM 大小门槛 1,196,087 B（`wasm-opt -O3`）/ 344,288 B（Brotli），客户端 99 文件 / 774 项通过。
+- 最终本地门槛：`CARGO_BUILD_JOBS=8 CARGO_PROFILE_TEST_OPT_LEVEL=1 FRONTLINE_DETERMINISM_STRICT=1 scripts/local-ci.sh lint data determinism wasm ts rust` 退出 0，六组均通过，WASM 在 TS 前重建；未运行 GitHub Actions。

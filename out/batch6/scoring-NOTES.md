@@ -10,3 +10,4 @@
 - 变基到 `d4887f4` 后继承协议 v5，`DATA_HASH=0x29aaf80610f4e251`。接入 M2-018 权威 AFK，换队保留账本，平衡读取实分；v4 长跑与 v5 门槛分别记录。
 - v5 `scripts/local-ci.sh` 六组通过（lint/rust/data/determinism/wasm；重建 v5 WASM 后单独复跑 ts：766 项，见报告）。v5 Carentan WS 65 s 冒烟 10/10 部署、0 断线/解码错误，1,993 计分 tick/12 条记录，主动停服无自然赛果。严格确定性 3×18,000 tick 哈希及位置相同；未跑 GitHub Actions。
 - 变基到 `8e02a37` 后继承协议 v11，`DATA_HASH=0xa8690ecbff1623e7`。Release 加速审计仍为 36,000 计分 tick、145 增量、1,267 净分；v11 Carentan WS 65 s 冒烟 10/10 部署、0 断线/解码错误，1,994 计分 tick/12 条记录/−30 净分，未到自然赛果。详细命令及历史长跑见报告。
+- 最终门槛：`CARGO_BUILD_JOBS=8 CARGO_PROFILE_TEST_OPT_LEVEL=1 FRONTLINE_DETERMINISM_STRICT=1 scripts/local-ci.sh lint data determinism wasm ts rust` 六组全绿，无失败或跳过。数据 81 文件 / 0 错误，客户端 774 项，严格确定性 3×18,000 tick 与另测 3,000 tick 均一致。M2-017 仍为 `partial`；人工验收边界见 H-017/H-021/H-060。
