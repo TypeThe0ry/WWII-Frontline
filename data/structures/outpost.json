@@ -1,0 +1,23 @@
+{
+  "id": "outpost",
+  "status": "initial",
+  "hp": 300,
+  "bullet_mult": 0.2,
+  "explosion_mult": 1,
+  "place_ms": 6000,
+  "placement_slope_deg": 30,
+  "placement_reach_m": 3,
+  "required_squadmates": 2,
+  "squadmate_radius_m": 15,
+  "blocked_radius_m": 25,
+  "friendly_spawn_spacing_m": 100,
+  "enemy_strongpoint_buffer_m": 60,
+  "sector_loss_radius_m": 120,
+  "capacity": 18,
+  "respawn_ms": 12000,
+  "cooldown_ms": 120000,
+  "lifetime_ms": 600000,
+  "overrun_radius_m": 15,
+  "overrun_ms": 15000,
+  "protection_ms": 3000
+}

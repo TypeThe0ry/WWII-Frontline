@@ -552,3 +552,27 @@ fn boundary_values() {
     });
     assert_eq!(decode_c4(&encode_c4(&s).unwrap()).unwrap(), s);
 }
+
+#[test]
+fn m2_facilities_wire() {
+    let request = ClientMsgC0::PlacementRequest(PlacementRequest {
+        id: 1,
+        action: PlacementAction::Facility {
+            op: FacilityOp::Reorient,
+            structure: 0x1234,
+            arg: 0x4321,
+        },
+    });
+    let bytes = [0x17, 0, 1, 7, 2, 0x12, 0x34, 0x43, 0x21];
+    assert_eq!(encode_c0_client(&request).unwrap(), bytes);
+    assert_eq!(decode_c0_client(&bytes), Ok(request));
+    let structure = ServerEventC4::StructureState(StructureState {
+        id: 0x1234,
+        kind: 1,
+        pos: [0x1020, 0x3040],
+        state: 2,
+    });
+    let bytes = [0x10, 0x12, 0x34, 1, 0x10, 0x20, 0x30, 0x40, 2];
+    assert_eq!(encode_c4(&structure).unwrap(), bytes);
+    assert_eq!(decode_c4(&bytes), Ok(structure));
+}

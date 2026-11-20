@@ -197,7 +197,7 @@ impl RewindCollision<'_> {
 }
 
 /// The projectile stage (ARCHITECTURE 6.10 stage 4).
-#[allow(clippy::too_many_arguments)]
+#[allow(clippy::too_many_arguments, clippy::type_complexity)]
 pub(crate) fn projectile_system(
     cfg: Res<SimCfgRes>,
     wt: Res<WeaponTable>,
@@ -214,7 +214,13 @@ pub(crate) fn projectile_system(
     mut q: Query<(&Transform, &Motion, &Team, &mut Health)>,
     mut profiler: Option<ResMut<crate::step::StepProfiler>>,
     materials: Res<ProjectileMaterials>,
-    rng: Res<SimRng>,
+    (rng, facilities, mut outposts, guns, mut structure_hits): (
+        Res<SimRng>,
+        Res<crate::build::BuildSystem>,
+        ResMut<crate::spawn::outpost::Outposts>,
+        Res<crate::emplacement::at_gun::AtGuns>,
+        ResMut<crate::build::damage::FacilityHits>,
+    ),
 ) {
     let _sample = crate::step::StepProfiler::measure(&mut profiler, |t| &mut t.projectiles);
     if projs.list.is_empty() {
@@ -299,6 +305,13 @@ pub(crate) fn projectile_system(
             rewind.as_ref(),
             &materials.0,
             rng.match_seed,
+            (
+                &facilities,
+                &mut outposts,
+                &guns,
+                &mut structure_hits,
+                cfg.data.outpost(),
+            ),
         );
         match fate {
             Fate::Alive => keep.push(pr),
@@ -314,7 +327,7 @@ pub(crate) fn projectile_system(
     projs.list = keep;
 }
 
-#[allow(clippy::too_many_arguments)]
+#[allow(clippy::too_many_arguments, clippy::type_complexity)]
 fn advance(
     pr: &mut Projectile,
     def: &WeaponDef,
@@ -334,6 +347,13 @@ fn advance(
     rewind: Option<&RewindCollision<'_>>,
     materials: &MaterialTable,
     match_seed: u64,
+    (facilities, outposts, guns, structure_hits, outpost_def): (
+        &crate::build::BuildSystem,
+        &mut crate::spawn::outpost::Outposts,
+        &crate::emplacement::at_gun::AtGuns,
+        &mut crate::build::damage::FacilityHits,
+        &crate::data::defs::OutpostDef,
+    ),
 ) -> Fate {
     for substep in 0..SUBSTEPS {
         let p0 = pr.pos;
@@ -400,7 +420,11 @@ fn advance(
         } else {
             ground
         };
-        let stop_t = obstruction.map(|g| g.t / len);
+        let facility = crate::build::damage::nearest_hit(facilities, outposts, guns, p0, seg, len)
+            .filter(|(t, _)| obstruction.is_none_or(|g| *t < g.t / len));
+        let stop_t = facility
+            .map(|(t, _)| t)
+            .or_else(|| obstruction.map(|g| g.t / len));
         // Near misses along the part of the segment flown (M1-017).
         {
             let (end, hit_id) = match (body, stop_t) {
@@ -431,6 +455,23 @@ fn advance(
                 sq,
                 events,
             );
+        }
+        if let Some((t, target)) = facility.filter(|(t, _)| body.is_none_or(|b| *t <= b.0)) {
+            use crate::build::damage::BulletTarget;
+            let distance = (p0 + t * seg - pr.origin).length();
+            let amount = damage(def, HitZone::Torso, distance);
+            match target {
+                BulletTarget::Outpost(id) => {
+                    events.extend(outposts.damage(id, amount, false, tick.0, outpost_def, hz))
+                }
+                BulletTarget::Structure(id) => {
+                    structure_hits
+                        .0
+                        .push((id, crate::build::StructureDamage::Bullet, amount))
+                }
+                BulletTarget::Shield => {}
+            }
+            return Fate::Gone;
         }
         match (body, obstruction, stop_t) {
             (Some((tb, zone, i)), _, gt) if gt.is_none_or(|g| tb < g) => {

@@ -361,7 +361,7 @@ fn wreck_step(
 }
 
 /// The shell stage: wreck timers, then every shell flies one tick.
-#[allow(clippy::too_many_arguments)]
+#[allow(clippy::too_many_arguments, clippy::type_complexity)]
 pub(crate) fn shell_flight(
     cfg: Res<SimCfgRes>,
     col: Res<CollisionRes>,
@@ -372,7 +372,11 @@ pub(crate) fn shell_flight(
     mut shells: ResMut<Shells>,
     mut vehicles: ResMut<Vehicles>,
     mut at_guns: Option<ResMut<AtGuns>>,
-    mut outposts: Option<ResMut<Outposts>>,
+    (mut outposts, build, mut facility_hits): (
+        Option<ResMut<Outposts>>,
+        Option<Res<crate::build::BuildSystem>>,
+        Option<ResMut<crate::build::damage::FacilityHits>>,
+    ),
     mut smokes: ResMut<Smokes>,
     mut events: ResMut<EventBuf>,
     mut log: ResMut<HitLog>,
@@ -473,6 +477,30 @@ pub(crate) fn shell_flight(
                 t_terr.map(|t| s.pos + dir * t)
             };
             if let Some(at) = impact {
+                if let (Some(build), Some(hits)) = (build.as_deref(), facility_hits.as_deref_mut())
+                {
+                    use crate::build::{damage::blast_targets, StructureDamage};
+                    let damage_kind = match s.warhead {
+                        Warhead::He => Some(StructureDamage::He),
+                        Warhead::Heat => Some(StructureDamage::Heat),
+                        _ => None,
+                    };
+                    if let Some(kind) = damage_kind {
+                        hits.0.extend(
+                            blast_targets(
+                                build
+                                    .structures()
+                                    .filter(|p| p.team != s.team)
+                                    .map(|p| (p.id, p.pos)),
+                                &col.0,
+                                at,
+                                s.blast_dmax,
+                                s.blast_radius,
+                            )
+                            .map(|(id, amount)| (id, kind, amount)),
+                        );
+                    }
+                }
                 burst(
                     &s,
                     at,

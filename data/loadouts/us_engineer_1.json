@@ -1,0 +1,21 @@
+{
+  "id": "us_engineer_1",
+  "role": "engineer",
+  "faction": "us",
+  "primary": "us_m1_carbine",
+  "secondary": "us_m1911a1",
+  "gadget_1": {
+    "id": "us_mk2",
+    "count": 1
+  },
+  "ammo_mags": 6,
+  "secondary_mags": 1,
+  "_meta": {
+    "status": "initial",
+    "tunable": [
+      "ammo_mags",
+      "secondary_mags"
+    ]
+  },
+  "unlock_level": 1
+}

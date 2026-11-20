@@ -39,6 +39,7 @@ fn parse_typed(rel: &str, text: &str) -> Result<(), String> {
         "rules" if rel == "rules/squads.json" => typed!(defs::SquadsRulesDef),
         "rules" if rel == "rules/aoi.json" => typed!(defs::AoiRulesDef),
         "comms.json" => typed!(defs::CommsDef),
+        "structures" if rel == "structures/outpost.json" => typed!(defs::OutpostDef),
         _ => Ok(()), // maps/, other rules/, ...: hashed only until their schemas land
     }
 }
@@ -88,6 +89,22 @@ fn main() {
         ));
     }
     for (rel, name, konst) in [
+        (
+            "structures/repair_station.json",
+            "repair_station.json",
+            "REPAIR_STATION_JSON",
+        ),
+        (
+            "emplacements/us_at_57mm_m1.json",
+            "us_at_57mm_m1.json",
+            "US_AT_JSON",
+        ),
+        (
+            "emplacements/ger_at_75mm_pak40.json",
+            "ger_at_75mm_pak40.json",
+            "GER_AT_JSON",
+        ),
+        ("structures/outpost.json", "outpost.json", "OUTPOST_JSON"),
         ("rules/respawn.json", "respawn.json", "RESPAWN_JSON"),
         ("rules/bots.json", "bots.json", "BOTS_JSON"),
         ("rules/capture.json", "capture.json", "CAPTURE_JSON"),

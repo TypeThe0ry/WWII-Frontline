@@ -28,3 +28,14 @@ export function decodePlacementResult(b: Uint8Array): { id: number; reason: numb
     target: b[5] === 1 ? [v.getInt32(6) / 100, v.getInt32(10) / 100, v.getInt32(14) / 100] : null,
   };
 }
+
+/** Facility actions share the rate-limited placement C0 lane. */
+export const FACILITY_OP = { join: 0, cancel: 1, reorient: 2, resupply: 3, selectAmmo: 4 } as const;
+export function facilityAction(id: number, op: keyof typeof FACILITY_OP, structure: number, arg = 0): Uint8Array {
+  const b = Uint8Array.of(REQUEST, 0, 0, 7, FACILITY_OP[op], 0, 0, 0, 0);
+  const v = new DataView(b.buffer);
+  v.setUint16(1, id);
+  v.setUint16(5, structure);
+  v.setUint16(7, arg);
+  return b;
+}

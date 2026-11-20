@@ -3,11 +3,13 @@
 use std::collections::BTreeMap;
 
 use frontline_protocol::msg::c0::{
-    PlacementAction, PlacementReason as Reason, PlacementRequest, PlacementResult,
+    FacilityOp, PlacementAction, PlacementReason as Reason, PlacementRequest, PlacementResult,
     PlacementSlot as Slot,
 };
 use frontline_protocol::quant::{dequant_yaw, pitch_i16_to_rad};
+use frontline_sim::build::{BuildError, StructureKind};
 use frontline_sim::spawn::garrison::PlaceError;
+use frontline_sim::spawn::outpost::OutpostError;
 use frontline_sim::supply::ammo::{AmmoCfg, AmmoPlaceError};
 use frontline_sim::supply::{check_supply_crate_place, SupplyPlaceError};
 use frontline_sim::{PlayerId, Team, Vec3, World};
@@ -42,13 +44,35 @@ impl PlacementSlots {
             target_cm: None,
         };
         match req.action {
+            PlacementAction::Facility { op, structure, arg } => {
+                use frontline_sim::emplacement::at_gun::Ammo;
+                let accepted = match op {
+                    FacilityOp::Join => world.join_facility_build(player, structure).is_ok(),
+                    FacilityOp::Cancel => world.cancel_facility_build(player, structure),
+                    FacilityOp::Reorient => {
+                        world.reorient_at_gun(player, structure, dequant_yaw(arg, 16))
+                    }
+                    FacilityOp::Resupply => world.resupply_at_gun(player, structure) != 0,
+                    FacilityOp::SelectAmmo => {
+                        world.seat_of(player).is_some_and(|(id, _)| id == structure)
+                            && match arg {
+                                0 => world.select_at_ammo(player, Ammo::Ap),
+                                1 => world.select_at_ammo(player, Ammo::He),
+                                _ => false,
+                            }
+                    }
+                };
+                if accepted {
+                    result.reason = Reason::Ok;
+                }
+            }
             PlacementAction::Preview { slot, yaw, pitch } => {
                 self.forget(player);
                 let checked = (|| {
                     let team = eligible(world, player, slot)?;
                     let target = aim(world, player, slot, yaw, pitch)?;
                     result.target_cm = Some(target.to_array().map(|m| (m * 100.0).round() as i32));
-                    result.supply_cost = preview(world, player, team, slot, target)?;
+                    result.supply_cost = preview(world, player, team, slot, target, yaw)?;
                     self.0.insert(
                         player,
                         Preview {
@@ -81,9 +105,21 @@ impl PlacementSlots {
                     }
                     // Recheck public facts before mutating. Hidden-state failures carry no coordinates
                     // or specific enemy reason, and never affect the preview replies.
-                    preview(world, player, team, p.slot, target)?;
+                    preview(world, player, team, p.slot, target, p.yaw)?;
                     match p.slot {
                         Slot::Garrison => place_garrison(world, player, team, target),
+                        Slot::Outpost => {
+                            world.place_outpost(player, target).map_err(outpost_reason)
+                        }
+                        Slot::RepairStation | Slot::AtGun => world
+                            .place_facility(
+                                player,
+                                facility_kind(p.slot),
+                                target,
+                                dequant_yaw(p.yaw, 16),
+                            )
+                            .map(|_| ())
+                            .map_err(build_reason),
                         Slot::Supply => world
                             .drop_supply_crate(player)
                             .map(|_| ())
@@ -168,7 +204,7 @@ fn aim(world: &World, player: PlayerId, slot: Slot, yaw: u16, pitch: i16) -> Res
         .filter(|p| p.grounded)
         .ok_or(Reason::NoTarget)?;
     match slot {
-        Slot::Garrison => world
+        Slot::Garrison | Slot::Outpost | Slot::RepairStation | Slot::AtGun => world
             .placement_aim(player, dequant_yaw(yaw, 16), pitch_i16_to_rad(pitch))
             .ok_or(Reason::NoTarget),
         _ => Ok(actor.pos),
@@ -181,8 +217,16 @@ fn preview(
     team: Team,
     slot: Slot,
     pos: Vec3,
+    yaw: u16,
 ) -> Result<u8, Reason> {
     match slot {
+        Slot::Outpost => world
+            .preview_outpost(player, pos)
+            .map(|_| 0)
+            .map_err(outpost_reason),
+        Slot::RepairStation | Slot::AtGun => world
+            .preview_facility(player, facility_kind(slot), pos, dequant_yaw(yaw, 16))
+            .map_err(build_reason),
         Slot::Garrison => world
             .preview_garrison_place(player, pos)
             .map(|cost| cost.supplies as u8)
@@ -263,5 +307,43 @@ fn ammo_reason(err: AmmoPlaceError) -> Reason {
         AmmoPlaceError::Cooldown => Reason::Cooldown,
         AmmoPlaceError::Stacked => Reason::Stacked,
         AmmoPlaceError::InNoBuildZone => Reason::NoBuildZone,
+    }
+}
+
+fn outpost_reason(err: OutpostError) -> Reason {
+    match err {
+        OutpostError::NeedSquadmates => Reason::NeedSquad,
+        OutpostError::TooCloseFriendly => Reason::TooCloseOwnGarrison,
+        OutpostError::TooCloseEnemySP => Reason::TooCloseObjective,
+        OutpostError::Slope => Reason::Slope,
+        OutpostError::Cooldown => Reason::Cooldown,
+        OutpostError::WrongRole => Reason::WrongRole,
+        OutpostError::NotAlive => Reason::NotAlive,
+        OutpostError::Unreachable | OutpostError::InVehicle => Reason::NoTarget,
+        OutpostError::IdExhausted => Reason::TeamCap,
+        OutpostError::AlreadyPlacing | OutpostError::EnemyNearby => Reason::Rejected,
+    }
+}
+
+fn facility_kind(slot: Slot) -> StructureKind {
+    match slot {
+        Slot::RepairStation => StructureKind::RepairStation,
+        Slot::AtGun => StructureKind::AtGun,
+        _ => unreachable!("facility slot"),
+    }
+}
+
+fn build_reason(error: BuildError) -> Reason {
+    match error {
+        BuildError::WrongRole => Reason::WrongRole,
+        BuildError::InvalidPose | BuildError::OutOfReach => Reason::NoTarget,
+        BuildError::TooCloseToStrongpoint => Reason::TooCloseObjective,
+        BuildError::TeamCapReached | BuildError::TypeCapReached => Reason::TeamCap,
+        BuildError::SectorCapReached => Reason::SectorCap,
+        BuildError::NoSupplies => Reason::NoSupplies,
+        BuildError::SlopeTooSteep => Reason::Slope,
+        BuildError::InWater => Reason::Water,
+        BuildError::InNoBuildZone | BuildError::BlocksNavCritical => Reason::NoBuildZone,
+        _ => Reason::Rejected,
     }
 }

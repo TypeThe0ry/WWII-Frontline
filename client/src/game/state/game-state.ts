@@ -37,6 +37,7 @@ export class GameState {
   readonly killFeed = new KillFeed();
   readonly deploy = new DeployFsm();
   readonly objectives = new Map<number, ObjectiveState>();
+  readonly structures = new Map<number, Extract<C4Event, { type: 'structure' }>>();
   readonly spawnPoints = new Map<number, SpawnPointInfo>();
   /** Deltas observed since joining, not a replay of earlier scoring. */
   readonly scores = new Map<number, number>();
@@ -106,8 +107,13 @@ export class GameState {
         break;
       case 'spawnpoint':
         if (this.teamValue !== undefined && ev.team !== this.teamValue) return;
-        this.spawnPoints.set(ev.id, { id: ev.id, kind: ev.kind, team: ev.team, pos: ev.pos, state: ev.state });
+        if (ev.kind === 1 && ev.state === 2) this.spawnPoints.delete(ev.id);
+        else this.spawnPoints.set(ev.id, { id: ev.id, kind: ev.kind, team: ev.team, pos: ev.pos, state: ev.state });
         this.bus.emit('spawnpoint.changed', { id: ev.id, team: ev.team, state: ev.state });
+        break;
+      case 'structure':
+        if (ev.state === 2) this.structures.delete(ev.id);
+        else this.structures.set(ev.id, ev);
         break;
       case 'roster': {
         const changed = this.roster.apply({

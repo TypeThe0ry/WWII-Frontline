@@ -29,7 +29,8 @@ fn want(id: &str, s: &SquadSnapshot) -> f32 {
         },
         "support" => 1.5 - 0.5 * in_squad("support") as f32,
         "crewman" => 5.0,
-        _ => 1.0, // rifleman baseline
+        "rifleman" => 1.0,
+        _ => 0.0, // specialist behavior is outside the M1 bot policy
     }
 }
 

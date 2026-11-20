@@ -232,7 +232,7 @@ pub(crate) fn explode(
 /// Throwables stage (between weapons and projectiles): cooking, throws, flight, fuses, blasts and
 /// smoke. Players are processed in ascending `EntityId`, then grenades in ascending id.
 #[allow(clippy::too_many_arguments, clippy::type_complexity)]
-pub fn throwables(
+pub(crate) fn throwables(
     tick: Res<CurrentTick>,
     cfg: Res<SimCfgRes>,
     tt: Res<ThrowableTable>,
@@ -252,8 +252,44 @@ pub fn throwables(
     )>,
     mut victims: Query<(&Transform, &Team, &LifeState, &mut Health)>,
     mut profiler: Option<ResMut<crate::step::StepProfiler>>,
+    (build, mut outposts, mut facility_hits): (
+        Res<crate::build::BuildSystem>,
+        ResMut<crate::spawn::outpost::Outposts>,
+        ResMut<crate::build::damage::FacilityHits>,
+    ),
 ) {
     let _sample = crate::step::StepProfiler::measure(&mut profiler, |t| &mut t.throwables);
+    let mut damage_facilities = |center, p: ThrowableParams, team, events: &mut Vec<SimEvent>| {
+        use crate::build::{damage::blast_targets, StructureDamage};
+        facility_hits.0.extend(
+            blast_targets(
+                build
+                    .structures()
+                    .filter(|s| s.team != team)
+                    .map(|s| (s.id, s.pos)),
+                &col.0,
+                center,
+                p.dmax,
+                p.radius_m,
+            )
+            .map(|(id, amount)| (id, StructureDamage::Explosion, amount)),
+        );
+        let hits: Vec<_> = blast_targets(
+            outposts
+                .list
+                .values()
+                .filter(|s| s.team != team)
+                .map(|s| (s.id, s.pos)),
+            &col.0,
+            center,
+            p.dmax,
+            p.radius_m,
+        )
+        .collect();
+        for (id, amount) in hits {
+            events.extend(outposts.damage(id, amount, true, tick.0 .0, cfg.data.outpost(), cfg.hz));
+        }
+    };
     // 1. Cooking and throwing.
     let mut spawns: Vec<Thrown> = Vec::new();
     let mut hand_blasts: Vec<(Vec3, ThrowableParams, EntityId, Team)> = Vec::new();
@@ -330,6 +366,7 @@ pub fn throwables(
         }
     }
     for (center, p, owner, team) in hand_blasts {
+        damage_facilities(center, p, team, &mut events.0);
         explode(
             center,
             p.dmax,
@@ -358,19 +395,22 @@ pub fn throwables(
             continue;
         }
         match (gr.kind, p.smoke) {
-            (Kind::Frag, _) => explode(
-                gr.flight.pos,
-                p.dmax,
-                p.radius_m,
-                0,
-                gr.owner,
-                gr.team,
-                &col.0,
-                &table,
-                &mut victims,
-                &mut events.0,
-                &mut log.0,
-            ),
+            (Kind::Frag, _) => {
+                damage_facilities(gr.flight.pos, p, gr.team, &mut events.0);
+                explode(
+                    gr.flight.pos,
+                    p.dmax,
+                    p.radius_m,
+                    0,
+                    gr.owner,
+                    gr.team,
+                    &col.0,
+                    &table,
+                    &mut victims,
+                    &mut events.0,
+                    &mut log.0,
+                );
+            }
             (Kind::Smoke, Some(sp)) => {
                 smokes.clouds.push(SmokeCloud {
                     pos: gr.flight.pos,

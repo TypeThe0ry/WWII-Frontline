@@ -27,6 +27,9 @@ impl World {
     /// Put down the carried Supply Crate at the living Support player's authoritative feet.
     /// This is the direct action equivalent of a completed hold-USE drop.
     pub fn drop_supply_crate(&mut self, who: PlayerId) -> Result<u32, SupplyPlaceError> {
+        if let Some(crate_id) = self.deposit_station_crate(who) {
+            return Ok(crate_id);
+        }
         let &(_, e) = self
             .ecs
             .resource::<PlayerIndex>()

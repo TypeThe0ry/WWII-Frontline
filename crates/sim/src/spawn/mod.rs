@@ -15,6 +15,7 @@ use crate::components::Team;
 use crate::ids::PlayerId;
 
 pub mod garrison;
+pub mod outpost;
 pub mod place;
 pub mod system;
 pub mod timing;
@@ -57,6 +58,7 @@ pub struct SpawnProtection {
 pub enum SpawnKind {
     Hq,
     Garrison,
+    Outpost,
 }
 
 /// HQ spawn state of the match.

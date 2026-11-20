@@ -242,7 +242,9 @@ fn profiling_measures_steps_without_changing_simulation() {
             ],
             [10; 6],
         );
+        assert_eq!(timing.outpost_rules, 0);
+        assert_eq!(timing.facility_rules, 10);
         assert_eq!(timing.schedule_other, 80);
-        assert_eq!(timing.other, 140);
+        assert_eq!(timing.other, 150);
     }
 }
