@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
@@ -23,9 +24,10 @@ async function prepare(allowed: string, tris: { lon: number; lat: number }, size
   const dir = join(r.root, 'assets/incoming/V-TEST-001/PolyHaven-FREE');
   await import('node:fs').then((fs) => fs.mkdirSync(dir, { recursive: true }));
   await writeGltf(doc, join(dir, 'sphere.gltf'));
+  const start = performance.now();
   ingest({ incoming: r.incoming, ledger: r.ledger, work: r.work });
   await normalize({ work: r.work, ledger: r.ledger, assetId: ID, logicalId: 'prop_test_sphere' });
-  return r;
+  return Object.assign(r, { start });
 }
 
 describe('process e2e: ingest -> normalize -> process -> stats', () => {
@@ -55,6 +57,31 @@ describe('process e2e: ingest -> normalize -> process -> stats', () => {
     const lod3 = await readGlb(join(dir, 'lod3.glb'));
     expect(lod3.getRoot().listTextures().length).toBe(3);
     expect(secs).toBeLessThan(30);
+  });
+
+  it('sample B: four 1024px inputs fit the LOD0 size and build budgets', async () => {
+    const r = await prepare('CONVERT,LOD,TEXCOMP', { lon: 160, lat: 157 }, 1024);
+    const options = {
+      work: r.work, ledger: r.ledger, assetId: ID, logicalId: 'prop_test_sphere',
+      cls: { class: 'vehicle', texture_profile: 'bg', collision: { mode: 'trimesh' } },
+    } as const;
+    const { stats: s } = await processMesh(options);
+    const seconds = (performance.now() - r.start) / 1000;
+    const dir = join(r.work, ID);
+    console.log(`B: ${s.source_bytes} B source, LOD0 ${s.lods[0]!.bytes} B, bbox ${s.chains[0]!.bbox_error}, ${seconds.toFixed(2)} s`);
+    expect(await main(['check-size-ratio', '--root', r.root, '--asset', ID, '--max', '0.25'], console.log)).toBe(ExitCode.Ok);
+    expect(seconds).toBeLessThanOrEqual(30);
+    expect(s.lods.map((l) => l.tris)).toEqual([49920, 24960, 12480, 4992]);
+    expect(s.chains[0]!.bbox_error).toBeLessThan(0.001);
+    expect(s.collision!.tris).toBeLessThanOrEqual(400);
+    expect(s.textures.find((t) => t.slot === 'normal')).toMatchObject({
+      format: 'UASTC', channels: 2, width: 1024, height: 1024, levels: 11,
+    });
+    const files = [...s.lods.map((l) => l.file), s.collision!.file, 'stats.json'];
+    const hashes = () => files.map((file) => createHash('sha256').update(readFileSync(join(dir, file))).digest('hex'));
+    const first = hashes();
+    await processMesh(options);
+    expect(hashes()).toEqual(first);
   });
 
   it('LOD not in allowed_processing is refused (acceptance 7), nothing is written', async () => {

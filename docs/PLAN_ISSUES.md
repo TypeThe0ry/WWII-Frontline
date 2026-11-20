@@ -1432,3 +1432,13 @@ PrePass 速度会卡死渲染循环，改用自有速度 RTT（地形/薄实例/
 - **现状核查**：B3-C3（#142）已在 `client/src/render/materials/variants.ts` 中新增 `CUSTOM_VARIANTS`（自写 CSM：`csm:plain`、`csm:instanced`；TAA 速度通道：`velocity:plain`、`velocity:instanced`、`velocity:terrain`），在 `custom-csm.ts` 与 `velocity.ts` 接入 `VariantRegistry.registerCustom`，并将 `pnpm -C client run variant-count` 接入 `scripts/local-ci.sh ts` 分组（每后端 High 37/60、Low 25/40）。但 `reports/m1-pbr.md` 与 `reports/m1-acceptance.md` E1-8 行未同步更新，仍标注这两项缺口未做。
 - **本轮补充**：在 `client/src/render/materials/variants.test.ts` 新增源码一致性断言，校验 `custom-csm.ts` 与 `velocity.ts` 实际调用的 `registerCustom(...)` 键集合与 `CUSTOM_VARIANTS` 完全一致（防止新增自定义着色器时漏登）；同步追加更新 `reports/m1-pbr.md`、`reports/m1-acceptance.md` E1-8 行与 `tasks/STATUS.md` M1-042 行。
 - **仍为 partial**：M1 世界场景运行时仍使用 18 种占位材质（待 M1-064 真实素材与全场景 PBR 替换），工作站预热数据按 PI-109 不替代 RTX 3060 / Iris Xe 参考机（H-021）。
+
+### PI-B6-assetlod-1 M1-002 背景法线 RDO 与样例 B 体积门槛
+
+- 2026-11-20。保留 PI-033 的分母、完整分辨率与 mip，背景法线改为 UASTC level 1 + RDO λ=2。固定 B 在同一输入上从 31.48% 降至 24.35%，工作站全流程 19.54 s。λ=1.5 在该法线上多占 175,943 B，会超过 25%。λ=2 解码法线 P95 角误差 3.219°，英雄和 UI profile 沿用原质量。
+- 网格按大小重排会使三角索引在现有 `.fpak` 往返时循环移位，已撤回。保持原 LOD 比例、锁边、包围盒精度与逐字节回归。历史 B 原档哈希缺失，固定生成参数、同输入基线与复跑见 `reports/m1-002-lod.md`。
+
+### PI-B6-assetlod-2 真实模型补测与索引编码兼容性
+
+- 2026-11-20。真实 CC0 WaterBottle 通过 25% 验收（19.35%）。缓存中 Kenney 桥的调色板模型为 43.91%，Poly Haven 木箱 2K JPEG 为 50.81%。25% 使用任务卡的「≥1 个带纹理模型」口径。
+- 额外 Kenney `kenney-prototype-kit.zip` 中 `figurine-cube-detailed.glb` 触发 meshoptimizer 索引编码断言。该模型的体积未测，后续追踪其图元模式和索引输入。完整测量见 `reports/m1-002-lod.md`。
