@@ -25,6 +25,8 @@
 
 WASM 9 组冒烟通过；另外 3,000 tick 的角色和武器状态与 native 逐字节一致。大小门禁为优化后 1,187,576 B / 1,200,000 B、Brotli 341,977 B / 400,000 B。
 
+合并 M2-020 基线 `e785de3` 后，重新运行 `FRONTLINE_DETERMINISM_STRICT=1 CARGO_BUILD_JOBS=8 scripts/local-ci.sh lint ts data determinism wasm`，5 组通过。`CARGO_BUILD_JOBS=8 CARGO_PROFILE_TEST_OPT_LEVEL=1 scripts/local-ci.sh rust` 在独立 `CARGO_TARGET_DIR` 下通过（含 workspace、doc-tests 和 sim `test-util`）。默认测试 profile 的 `cargo test --locked -p frontline-server -p frontline-protocol -p frontline-gateway` 通过，复测协议、两项 30 WS 用例和带宽通知。规则移队仍清除旧快照 baseline，带宽通知仍能通过 WS 和 WT 送达。
+
 ## 协议与待验收项
 
 - 协议 v5，`DATA_HASH=0x7ff50022cf048e0b`；服务器、WASM 与浏览器同步。v4 客户端不能连接 v5 服务端；网关与服务器需同步升级签票格式 v2。只交付 M2-007 的服务器规则消息子集，不关闭 M2-007。
