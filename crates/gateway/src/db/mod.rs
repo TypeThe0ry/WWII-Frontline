@@ -1,28 +1,33 @@
 //! SQLite is the authoritative store for guest profiles, match registrations and results.
 
 use std::str::FromStr;
+use std::sync::Arc;
 use std::time::Duration;
 
 use frontline_protocol::dto::ServerInfo;
 use frontline_protocol::PROTOCOL_VERSION;
 use serde::{Deserialize, Serialize};
-use sqlx::sqlite::{SqliteConnectOptions, SqliteJournalMode, SqlitePoolOptions, SqliteSynchronous};
+use sqlx::sqlite::{SqliteConnectOptions, SqliteJournalMode, SqliteSynchronous};
 use sqlx::types::Json;
-use sqlx::{ConnectOptions, Connection, FromRow, SqliteConnection, SqlitePool};
+use sqlx::{ConnectOptions, Connection, FromRow, SqliteConnection};
+use tokio::sync::{Mutex, MutexGuard};
 
 use crate::metrics::Metrics;
 use crate::registry::{from_hex, to_hex, MatchId};
 
 static MIGRATOR: sqlx::migrate::Migrator = sqlx::migrate!("./src/db/migrations");
 
+mod ticket_queue;
+
 pub struct Database {
-    pool: SqlitePool,
+    connection: Arc<Mutex<SqliteConnection>>,
     ticket_key: [u8; 32],
+    tickets: ticket_queue::Queue,
 }
 
 /// Registration fields that do not change with heartbeats. JSON preserves `data_hash` as a
 /// full unsigned 64-bit value (SQLite INTEGER is signed).
-#[derive(Deserialize, Serialize)]
+#[derive(Clone, Deserialize, Serialize)]
 pub struct Registration {
     pub name: String,
     pub map: String,
@@ -79,22 +84,26 @@ impl Database {
             // across power loss, but recent commits may be lost before a checkpoint.
             .synchronous(SqliteSynchronous::Normal)
             .busy_timeout(Duration::from_secs(5));
-        // One connection keeps in-memory fixtures and on-disk writes under the same semantics.
-        // SQLx runs SQLite on its own blocking worker and queues concurrent async callers.
-        let pool = SqlitePoolOptions::new()
-            .max_connections(1)
-            .test_before_acquire(false)
-            .idle_timeout(None)
-            .max_lifetime(None)
-            .connect_with(options)
-            .await?;
-        MIGRATOR.run(&pool).await?;
-        Ok(Self { pool, ticket_key })
+        // Keep one SQLite worker and statement cache for both memory and disk. A one-slot
+        // SQLx pool adds a spawned return task and a worker ping on every handoff.
+        let mut connection = options.connect().await?;
+        MIGRATOR.run(&mut connection).await?;
+        let connection = Arc::new(Mutex::new(connection));
+        Ok(Self {
+            tickets: ticket_queue::Queue::start(connection.clone(), ticket_key),
+            connection,
+            ticket_key,
+        })
+    }
+
+    async fn connection(&self) -> Result<MutexGuard<'_, SqliteConnection>, sqlx::Error> {
+        lock(&self.connection).await
     }
 
     pub async fn guest(&self, id: &str, suggested_nick: &str) -> Result<String, sqlx::Error> {
         // Backfill a valid guest session minted before the database migration, too.
-        let mut txn = self.pool.begin().await?;
+        let mut conn = self.connection().await?;
+        let mut txn = conn.begin().await?;
         sqlx::query("INSERT INTO guests (id, nick) VALUES (?, ?) ON CONFLICT (id) DO NOTHING")
             .bind(id)
             .bind(suggested_nick)
@@ -123,7 +132,7 @@ impl Database {
         .bind(self.ticket_key.as_slice())
         .bind(registration.cap)
         .bind(timestamp(now_ms))
-        .execute(&self.pool)
+        .execute(&mut *self.connection().await?)
         .await?;
         Ok(())
     }
@@ -148,7 +157,7 @@ impl Database {
         .bind(timestamp(now_ms))
         .bind(to_hex(id))
         .bind(self.ticket_key.as_slice())
-        .execute(&self.pool)
+        .execute(&mut *self.connection().await?)
         .await?;
         Ok(changed.rows_affected() != 0)
     }
@@ -160,36 +169,36 @@ impl Database {
         timeout_ms: u64,
         protocol: u16,
     ) -> Result<Vec<ServerInfo>, sqlx::Error> {
-        sqlx::query_as::<_, ServerRow>(
+        let rows = sqlx::query_as::<_, ServerRow>(
             "SELECT id, registration, phase, time_left_s, humans, bots FROM matches
              WHERE ended = 0 AND ticket_key = ? AND last_heartbeat_ms >= ? ORDER BY id",
         )
         .bind(self.ticket_key.as_slice())
         .bind(timestamp(now_ms.saturating_sub(timeout_ms)))
-        .fetch_all(&self.pool)
-        .await?
-        .into_iter()
-        .map(|row| {
-            let match_id =
-                from_hex(&row.id).ok_or(sqlx::Error::Protocol("invalid match id".into()))?;
-            let reg = row.registration.0;
-            Ok(ServerInfo {
-                match_id,
-                name: reg.name,
-                map: reg.map,
-                mode: reg.mode,
-                phase: row.phase,
-                time_left_s: row.time_left_s,
-                humans: row.humans,
-                bots: row.bots,
-                cap: reg.cap,
-                region: reg.region,
-                tags: reg.tags,
-                version: reg.version,
-                compatible: reg.protocol_version == protocol,
+        .fetch_all(&mut *self.connection().await?)
+        .await?;
+        rows.into_iter()
+            .map(|row| {
+                let match_id =
+                    from_hex(&row.id).ok_or(sqlx::Error::Protocol("invalid match id".into()))?;
+                let reg = row.registration.0;
+                Ok(ServerInfo {
+                    match_id,
+                    name: reg.name,
+                    map: reg.map,
+                    mode: reg.mode,
+                    phase: row.phase,
+                    time_left_s: row.time_left_s,
+                    humans: row.humans,
+                    bots: row.bots,
+                    cap: reg.cap,
+                    region: reg.region,
+                    tags: reg.tags,
+                    version: reg.version,
+                    compatible: reg.protocol_version == protocol,
+                })
             })
-        })
-        .collect()
+            .collect()
     }
 
     pub async fn reserve_slot(
@@ -203,82 +212,9 @@ impl Database {
     ) -> Result<(Registration, u8), SlotError> {
         let id = to_hex(id);
         let cutoff = timestamp(now_ms.saturating_sub(timeout_ms));
-        let mut conn = {
-            let _wait = metrics.ticket_pool_wait.start_timer();
-            self.pool.acquire().await?
-        };
-        let _transaction = metrics.ticket_transaction.start_timer();
-        // When the guest already has this nickname, check it in the cursor UPDATE itself.
-        // One autocommit statement then replaces BEGIN, UPDATE, UPSERT, and COMMIT.
-        if let Some(slot) = self
-            .advance_slot(&mut conn, &id, cutoff, Some((guest_id, nick)))
-            .await?
-        {
-            return Ok(slot);
-        }
-
-        // Nick changes and guest backfills still commit atomically with the cursor. A miss
-        // above may also be a refused match, so recheck eligibility in this transaction.
-        let mut txn = conn.begin().await?;
-        let Some(slot) = self.advance_slot(&mut txn, &id, cutoff, None).await? else {
-            let status: Option<(bool, bool)> = sqlx::query_as(
-                "SELECT ended = 0 AND ticket_key = ? AND last_heartbeat_ms >= ?,
-                        json_extract(registration, '$.protocol_version') = ?
-                 FROM matches WHERE id = ?",
-            )
-            .bind(self.ticket_key.as_slice())
-            .bind(cutoff)
-            .bind(PROTOCOL_VERSION)
-            .bind(&id)
-            .fetch_optional(&mut *txn)
-            .await?;
-            return Err(match status {
-                None => SlotError::Unknown,
-                Some((false, _)) => SlotError::Stale,
-                Some((true, false)) => SlotError::Incompatible,
-                Some((true, true)) => SlotError::Full,
-            });
-        };
-        sqlx::query(
-            "INSERT INTO guests (id, nick) VALUES (?, ?)
-             ON CONFLICT (id) DO UPDATE SET nick = excluded.nick WHERE guests.nick <> excluded.nick",
-        )
-        .bind(guest_id)
-        .bind(nick)
-        .execute(&mut *txn)
-        .await?;
-        txn.commit().await?;
-        Ok(slot)
-    }
-
-    async fn advance_slot(
-        &self,
-        conn: &mut SqliteConnection,
-        id: &str,
-        cutoff: i64,
-        unchanged_guest: Option<(&str, &str)>,
-    ) -> Result<Option<(Registration, u8)>, sqlx::Error> {
-        let (guest_id, nick) = unchanged_guest.unzip();
-        let mut rows: Vec<(Json<Registration>, u8)> = sqlx::query_as(
-            "UPDATE matches SET next_player = (next_player + 1) % 128
-             WHERE id = ?1 AND ended = 0 AND ticket_key = ?2 AND last_heartbeat_ms >= ?3
-                 AND json_extract(registration, '$.protocol_version') = ?4 AND humans + bots < cap
-                 AND (?5 IS NULL OR EXISTS (SELECT 1 FROM guests WHERE id = ?5 AND nick = ?6))
-             RETURNING registration, (next_player + 127) % 128",
-        )
-        .bind(id)
-        .bind(self.ticket_key.as_slice())
-        .bind(cutoff)
-        .bind(PROTOCOL_VERSION)
-        .bind(guest_id)
-        .bind(nick)
-        // At most one row. Drain through statement completion to catch commit errors
-        // after RETURNING produces its row in the autocommit case.
-        .fetch_all(conn)
-        .await?;
-        Ok(rows
-            .pop()
-            .map(|(Json(registration), player_id)| (registration, player_id)))
+        self.tickets
+            .reserve(id, cutoff, guest_id, nick, metrics)
+            .await
     }
 
     /// A result is terminal. Retrying a delivery is safe and preserves the first payload.
@@ -288,7 +224,8 @@ impl Database {
         payload: serde_json::Value,
     ) -> Result<bool, sqlx::Error> {
         let id = to_hex(id);
-        let mut txn = self.pool.begin().await?;
+        let mut conn = self.connection().await?;
+        let mut txn = conn.begin().await?;
         let updated = sqlx::query("UPDATE matches SET ended = 1 WHERE id = ?")
             .bind(&id)
             .execute(&mut *txn)
@@ -304,4 +241,94 @@ impl Database {
         txn.commit().await?;
         Ok(true)
     }
+}
+
+const WAIT_LIMIT: Duration = Duration::from_secs(30);
+
+async fn lock(
+    conn: &Mutex<SqliteConnection>,
+) -> Result<MutexGuard<'_, SqliteConnection>, sqlx::Error> {
+    // Retain the previous pool's default wait limit. SQLx queues a dropped transaction's
+    // rollback on the same worker before the next command from this connection.
+    tokio::time::timeout(WAIT_LIMIT, conn.lock())
+        .await
+        .map_err(|_| sqlx::Error::PoolTimedOut)
+}
+
+async fn reserve_one(
+    conn: &mut SqliteConnection,
+    ticket_key: &[u8; 32],
+    id: &str,
+    cutoff: i64,
+    guest_id: &str,
+    nick: &str,
+) -> Result<(Registration, u8), SlotError> {
+    // When the guest already has this nickname, check it in the cursor UPDATE itself.
+    // One autocommit statement then replaces BEGIN, UPDATE, UPSERT, and COMMIT.
+    if let Some(slot) = advance_slot(conn, ticket_key, id, cutoff, Some((guest_id, nick))).await? {
+        return Ok(slot);
+    }
+
+    // Nick changes and guest backfills still commit atomically with the cursor. A miss
+    // above may also be a refused match, so recheck eligibility in this transaction.
+    let mut txn = conn.begin().await?;
+    let Some(slot) = advance_slot(&mut txn, ticket_key, id, cutoff, None).await? else {
+        let status: Option<(bool, bool)> = sqlx::query_as(
+            "SELECT ended = 0 AND ticket_key = ? AND last_heartbeat_ms >= ?,
+                        json_extract(registration, '$.protocol_version') = ?
+                 FROM matches WHERE id = ?",
+        )
+        .bind(ticket_key.as_slice())
+        .bind(cutoff)
+        .bind(PROTOCOL_VERSION)
+        .bind(id)
+        .fetch_optional(&mut *txn)
+        .await?;
+        return Err(match status {
+            None => SlotError::Unknown,
+            Some((false, _)) => SlotError::Stale,
+            Some((true, false)) => SlotError::Incompatible,
+            Some((true, true)) => SlotError::Full,
+        });
+    };
+    sqlx::query(
+            "INSERT INTO guests (id, nick) VALUES (?, ?)
+             ON CONFLICT (id) DO UPDATE SET nick = excluded.nick WHERE guests.nick <> excluded.nick",
+        )
+        .bind(guest_id)
+        .bind(nick)
+        .execute(&mut *txn)
+        .await?;
+    txn.commit().await?;
+    Ok(slot)
+}
+
+async fn advance_slot(
+    conn: &mut SqliteConnection,
+    ticket_key: &[u8; 32],
+    id: &str,
+    cutoff: i64,
+    unchanged_guest: Option<(&str, &str)>,
+) -> Result<Option<(Registration, u8)>, sqlx::Error> {
+    let (guest_id, nick) = unchanged_guest.unzip();
+    let mut rows: Vec<(Json<Registration>, u8)> = sqlx::query_as(
+        "UPDATE matches SET next_player = (next_player + 1) % 128
+             WHERE id = ?1 AND ended = 0 AND ticket_key = ?2 AND last_heartbeat_ms >= ?3
+                 AND json_extract(registration, '$.protocol_version') = ?4 AND humans + bots < cap
+                 AND (?5 IS NULL OR EXISTS (SELECT 1 FROM guests WHERE id = ?5 AND nick = ?6))
+             RETURNING registration, (next_player + 127) % 128",
+    )
+    .bind(id)
+    .bind(ticket_key.as_slice())
+    .bind(cutoff)
+    .bind(PROTOCOL_VERSION)
+    .bind(guest_id)
+    .bind(nick)
+    // At most one row. Drain through statement completion to catch commit errors
+    // after RETURNING produces its row in the autocommit case.
+    .fetch_all(conn)
+    .await?;
+    Ok(rows
+        .pop()
+        .map(|(Json(registration), player_id)| (registration, player_id)))
 }

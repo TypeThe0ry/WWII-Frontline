@@ -22,6 +22,7 @@ use axum::response::{IntoResponse, Response};
 use axum::routing::{get, post};
 use axum::{Extension, Json, Router};
 use base64::Engine;
+use ed25519_dalek::Signer;
 use frontline_protocol::dto::TicketClaims;
 use rand::RngCore;
 use serde::{Deserialize, Serialize};
@@ -45,6 +46,8 @@ pub const ROUTE_TABLE: &[&str] = &[
     "GET /metrics",
 ];
 
+const TICKET_PATH: &str = "/v1/servers/{match_id}/ticket";
+
 #[derive(Clone)]
 pub struct ClientIp(pub String);
 
@@ -52,7 +55,7 @@ pub fn router(state: Shared) -> Router {
     Router::new()
         .route("/v1/guest", post(guest))
         .route("/v1/servers", get(servers))
-        .route("/v1/servers/{match_id}/ticket", post(issue_ticket))
+        .route(TICKET_PATH, post(issue_ticket))
         .route("/internal/matches/register", post(register))
         .route("/internal/matches/{id}/heartbeat", post(heartbeat))
         .route("/internal/matches/{id}/result", post(result))
@@ -117,12 +120,15 @@ async fn edge(State(st): State<Shared>, mut req: Request, next: Next) -> Respons
     let status = resp.status().as_u16();
     if route != "/metrics" {
         st.metrics.request(route, status, elapsed.as_secs_f64());
+        let log_timer =
+            (route == TICKET_PATH && status == 200).then(|| st.metrics.ticket_log.start_timer());
         tracing::debug!(
             route,
             status,
             elapsed_us = elapsed.as_micros(),
             "gateway request"
         );
+        drop(log_timer);
     }
     resp
 }
@@ -304,6 +310,7 @@ async fn issue_ticket(
     headers: HeaderMap,
     body: Bytes,
 ) -> Response {
+    let auth_timer = st.metrics.ticket_auth.start_timer();
     let now_ms = st.clock.now_ms();
     if let Err(r) = st.ip_limiter.check(&ip.0, now_ms) {
         return too_many(r);
@@ -319,6 +326,8 @@ async fn issue_ticket(
     if let Err(r) = st.account_limiter.check(&claims.sub, now_ms) {
         return too_many(r);
     }
+    auth_timer.observe_duration();
+    let parse_timer = st.metrics.ticket_parse.start_timer();
     let Ok(req) = serde_json::from_slice::<TicketReq>(&body) else {
         return err(StatusCode::UNPROCESSABLE_ENTITY, "bad_body");
     };
@@ -328,6 +337,7 @@ async fn issue_ticket(
     let Some(id) = from_hex(&match_id) else {
         return err(StatusCode::NOT_FOUND, "no_such_match");
     };
+    parse_timer.observe_duration();
     let (m, player_id) = match st
         .db
         .reserve_slot(
@@ -347,26 +357,38 @@ async fn issue_ticket(
         Err(SlotError::Full) => return err(StatusCode::CONFLICT, "match_full"),
         Err(SlotError::Database(error)) => return db_error(&error),
     };
-    let t = ticket::issue(
-        &st.ticket_key,
-        TicketClaims {
-            player_id,
-            match_id: id,
-            nick,
-            exp: 0,
-            jti: random_16(),
-            is_admin: false,
-        },
-        now_ms / 1000,
-    );
-    Json(TicketResp {
+    let claims = TicketClaims {
+        player_id,
+        match_id: id,
+        nick,
+        exp: 0,
+        jti: random_16(),
+        is_admin: false,
+    };
+    let mut sign_elapsed = std::time::Duration::ZERO;
+    let serialization_started = Instant::now();
+    let t = ticket::issue_with_signer(claims, now_ms / 1000, |message| {
+        let started = Instant::now();
+        let sig = st.ticket_key.sign(message);
+        sign_elapsed = started.elapsed();
+        sig
+    });
+    let resp = Json(TicketResp {
         ticket: t,
         addr: m.addr,
         wt_port: m.wt_port,
         ws_port: m.ws_port,
         expires_in_s: frontline_protocol::dto::TICKET_TTL_S,
     })
-    .into_response()
+    .into_response();
+    st.metrics.ticket_serialization.observe(
+        serialization_started
+            .elapsed()
+            .saturating_sub(sign_elapsed)
+            .as_secs_f64(),
+    );
+    st.metrics.ticket_sign.observe(sign_elapsed.as_secs_f64());
+    resp
 }
 
 // ------------------------------------------------------------------ internal

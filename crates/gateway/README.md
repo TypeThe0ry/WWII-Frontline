@@ -21,6 +21,11 @@ stores its result. Duplicate result deliveries keep the first payload.
 - `gateway_auth_attempts_total` reports guest login, guest renewal and ticket authentication
   outcomes. An invalid renewal counts as an authentication failure even when the gateway
   successfully creates a fresh guest.
+- `gateway_ticket_storage_duration_seconds` covers queue/connection wait (`pool_wait`,
+  retained for dashboard compatibility) and the transaction phase (`transaction`). For a
+  batched reservation, the latter measures latency to commit, not CPU time per ticket.
+- `gateway_ticket_stage_duration_seconds` covers ticket `auth`, `request_parse` (JSON and
+  validation, not HTTP framing), `eddsa_sign`, `serialization`, and successful request `log`.
 
 Local checks:
 
@@ -29,4 +34,6 @@ cargo test -p frontline-gateway --locked
 cargo bench -p frontline-gateway --bench ticket_issue --locked
 cargo build --release -p frontline-gateway --locked
 python3 scripts/gateway-ticket-load.py target/release/frontline-gateway --protocol-version 4
+python3 scripts/gateway-ticket-load.py target/release/frontline-gateway --protocol-version 4 \
+  --concurrency 500 --runs 7 --report-only --metrics
 ```

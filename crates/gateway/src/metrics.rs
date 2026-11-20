@@ -9,6 +9,11 @@ pub struct Metrics {
     auth: IntCounterVec,
     pub(crate) ticket_pool_wait: Histogram,
     pub(crate) ticket_transaction: Histogram,
+    pub(crate) ticket_auth: Histogram,
+    pub(crate) ticket_parse: Histogram,
+    pub(crate) ticket_sign: Histogram,
+    pub(crate) ticket_serialization: Histogram,
+    pub(crate) ticket_log: Histogram,
 }
 
 impl Default for Metrics {
@@ -55,11 +60,29 @@ impl Default for Metrics {
         .expect("valid ticket storage histogram");
         let ticket_pool_wait = ticket_storage.with_label_values(&["pool_wait"]);
         let ticket_transaction = ticket_storage.with_label_values(&["transaction"]);
+        let ticket_stage = HistogramVec::new(
+            HistogramOpts::new(
+                "gateway_ticket_stage_duration_seconds",
+                "Ticket handler stages and request log emission (excluding HTTP framing)",
+            )
+            .buckets(vec![
+                0.000001, 0.000005, 0.00001, 0.000025, 0.00005, 0.0001, 0.00025, 0.001, 0.005,
+                0.025, 0.1,
+            ]),
+            &["stage"],
+        )
+        .expect("valid ticket stage histogram");
+        let ticket_auth = ticket_stage.with_label_values(&["auth"]);
+        let ticket_parse = ticket_stage.with_label_values(&["request_parse"]);
+        let ticket_sign = ticket_stage.with_label_values(&["eddsa_sign"]);
+        let ticket_serialization = ticket_stage.with_label_values(&["serialization"]);
+        let ticket_log = ticket_stage.with_label_values(&["log"]);
         for collector in [
             Box::new(requests.clone()) as Box<dyn prometheus::core::Collector>,
             Box::new(durations.clone()),
             Box::new(auth.clone()),
             Box::new(ticket_storage),
+            Box::new(ticket_stage),
         ] {
             registry.register(collector).expect("unique metric");
         }
@@ -70,6 +93,11 @@ impl Default for Metrics {
             auth,
             ticket_pool_wait,
             ticket_transaction,
+            ticket_auth,
+            ticket_parse,
+            ticket_sign,
+            ticket_serialization,
+            ticket_log,
         }
     }
 }
