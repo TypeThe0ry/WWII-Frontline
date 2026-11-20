@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://frontline.invalid/schemas/rule_ordnance.schema.json",
+  "title": "M2 launcher, mine and satchel rules (GAMEDESIGN 6.9)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["launchers", "mines", "satchel", "_meta"],
+  "properties": {
+    "launchers": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bazooka", "panzerschreck", "panzerfaust"],
+      "properties": {
+        "bazooka": { "$ref": "#/$defs/launcher" },
+        "panzerschreck": { "$ref": "#/$defs/launcher" },
+        "panzerfaust": { "$ref": "#/$defs/launcher" }
+      }
+    },
+    "mines": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ap", "at", "health_hp", "chain_damage_hp", "chain_radius_m"],
+      "properties": {
+        "ap": { "type": "object", "additionalProperties": false, "required": ["trigger_distance_m", "arming_s", "disarm_s", "blast_damage_hp", "blast_radius_m", "team_slots"], "properties": { "trigger_distance_m": { "$ref": "#/$defs/positive" }, "arming_s": { "$ref": "#/$defs/positive" }, "disarm_s": { "$ref": "#/$defs/positive" }, "blast_damage_hp": { "$ref": "#/$defs/positive" }, "blast_radius_m": { "$ref": "#/$defs/positive" }, "team_slots": { "type": "integer", "minimum": 1 } } },
+        "at": { "type": "object", "additionalProperties": false, "required": ["min_vehicle_mass_kg", "arming_s", "disarm_s", "track_damage_hp", "hull_damage_hp", "team_slots"], "properties": { "min_vehicle_mass_kg": { "$ref": "#/$defs/positive" }, "arming_s": { "$ref": "#/$defs/positive" }, "disarm_s": { "$ref": "#/$defs/positive" }, "track_damage_hp": { "$ref": "#/$defs/positive" }, "hull_damage_hp": { "$ref": "#/$defs/positive" }, "team_slots": { "type": "integer", "minimum": 1 } } },
+        "health_hp": { "$ref": "#/$defs/positive" },
+        "chain_damage_hp": { "$ref": "#/$defs/positive" },
+        "chain_radius_m": { "$ref": "#/$defs/positive" }
+      }
+    },
+    "satchel": {
+      "type": "object", "additionalProperties": false,
+      "required": ["placement_distance_m", "placement_s", "fuse_s", "disarm_s", "disarm_distance_m", "vehicle_damage_hp", "adjacent_module_mult", "structure_damage_hp", "infantry_damage_hp", "infantry_radius_m", "throw_range_m", "thrown_vehicle_mult", "team_slots"],
+      "properties": {
+        "placement_distance_m": { "$ref": "#/$defs/positive" }, "placement_s": { "$ref": "#/$defs/positive" }, "fuse_s": { "$ref": "#/$defs/positive" }, "disarm_s": { "$ref": "#/$defs/positive" }, "disarm_distance_m": { "$ref": "#/$defs/positive" }, "vehicle_damage_hp": { "$ref": "#/$defs/positive" }, "adjacent_module_mult": { "$ref": "#/$defs/unit01" }, "structure_damage_hp": { "$ref": "#/$defs/positive" }, "infantry_damage_hp": { "$ref": "#/$defs/positive" }, "infantry_radius_m": { "$ref": "#/$defs/positive" }, "throw_range_m": { "$ref": "#/$defs/positive" }, "thrown_vehicle_mult": { "$ref": "#/$defs/unit01" }, "team_slots": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "_meta": {
+      "type": "object", "additionalProperties": false, "required": ["status", "tunable"],
+      "properties": { "status": { "enum": ["initial", "reviewed", "measured"] }, "tunable": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } }, "calibration_ref": { "type": ["string", "null"] }, "unverified": { "type": "array", "items": { "type": "string" } }, "deviation_reason": { "type": "object", "additionalProperties": { "type": "string" } } }
+    }
+  },
+  "$defs": {
+    "positive": { "type": "number", "exclusiveMinimum": 0 },
+    "unit01": { "type": "number", "minimum": 0, "maximum": 1 },
+    "launcher": { "type": "object", "additionalProperties": false, "required": ["muzzle_velocity_mps", "effective_range_m", "max_range_m", "heat_pen_mm", "caliber_mm", "reload_s", "loader_reload_s", "thrust_m", "backblast_m", "backblast_half_angle_deg", "backblast_damage_hp", "backblast_duration_s", "structure_damage_hp", "infantry_damage_hp", "blast_radius_m", "single_use"], "properties": { "muzzle_velocity_mps": { "$ref": "#/$defs/positive" }, "effective_range_m": { "$ref": "#/$defs/positive" }, "max_range_m": { "$ref": "#/$defs/positive" }, "heat_pen_mm": { "$ref": "#/$defs/positive" }, "caliber_mm": { "$ref": "#/$defs/positive" }, "reload_s": { "type": "number", "minimum": 0 }, "loader_reload_s": { "type": "number", "minimum": 0 }, "thrust_m": { "type": "number", "minimum": 0 }, "backblast_m": { "$ref": "#/$defs/positive" }, "backblast_half_angle_deg": { "$ref": "#/$defs/positive" }, "backblast_damage_hp": { "$ref": "#/$defs/positive" }, "backblast_duration_s": { "$ref": "#/$defs/positive" }, "structure_damage_hp": { "$ref": "#/$defs/positive" }, "infantry_damage_hp": { "$ref": "#/$defs/positive" }, "blast_radius_m": { "$ref": "#/$defs/positive" }, "single_use": { "type": "boolean" } } }
+  }
+}

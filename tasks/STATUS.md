@@ -199,7 +199,7 @@
 | M2-011 | sim：Outpost、维修站与反坦克炮 | partial | 放置 180 tick，冷却 3,600 tick，18 次出生，Overrun 450 tick。维修首秒 19.99878 HP，200 Supplies 修 1,000 HP。12 组 AP 向量，7 发击毁 Sherman。规则 1.8885–2.2316 µs/tick，合成 400 弹体扫描 1.5697–1.8878 ms/tick（PI-109）。见 `reports/m2-outpost.md`。 | PI-B6-outpost-1、H-021 | 33b1ad8, ceac5ff, ab7b12f |
 | M2-012 | sim：M2 兵种特有能力 | todo | | | |
 | M2-013 | sim：M2 武器类（自动步枪、机枪、霰弹） | todo | | | |
-| M2-014 | sim：火箭、地雷与炸药 | todo | | | |
+| M2-014 | sim：火箭、地雷与炸药 | partial | B6-mines | 2026-11-20 | ordnance typed data、launcher 状态、HEAT、AP/AT minefield、satchel 独立 sim APIs 与单测已入库。`lint rust determinism data` 通过；严格 native/WASM 3 种子各 18,000 tick 哈希一致，最大位置差 0 m；定向 mine/explosive/launcher/heat 测试通过。尚未接入 World tick、服务器输入/事件和实际武器数据/玩法闭环；M2-013/012 与参考机未测。详见 `reports/m2-mines.md`、`out/batch6/mines-NOTES.md` 与 PI-B6-landall-mines-1。 |
 | M2-015 | sim：M2 载具（轻型车、卡车、Panzer IV）与刷新 | todo | | | |
 | M2-016 | sim：载具模块损伤与维修 | todo | | | |
 | M2-017 | sim：计分与经验 | partial | 47 项（含 8 项禁用）、60/90/120 s 防刷、XP 阈值、摘要字段及 C4/网关接线；接入 M2-018 的 AFK、换队保留账本；v11 5v5 + 2 bot 加速审计 36,000 tick / 145 增量 / 1,267 净分，Carentan WS 65 s 10/10 部署、0 断线和解码错；v4 Carentan WS 1,225 s 自然结算 1,560 净分；100 人 × 50 事件/tick P50/P99/max 5.660/8.510/290.177 µs | 非参考机；M2 规则/结构/载具等生产者、跨局 XP、真人调参和预发布未测；PI-B6-scoring-1/2/3/4 | `reports/m2-scoring-b6.md` |

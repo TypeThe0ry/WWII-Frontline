@@ -2,13 +2,13 @@
   "task": "M0-029",
   "generated_by": "tools/determinism/compare.mjs",
   "versions": {
-    "data_hash": "0xee015007391d2e14",
-    "protocol_version": 1,
+    "data_hash": "0x7d9da152e462b6ee",
+    "protocol_version": 12,
     "rustc": "rustc 1.97.0 (2d8144b78 2026-07-07)",
     "rapier3d": "0.36.1",
     "rapier_features": "dim3,f32,std,enhanced-determinism",
-    "wasm_sha256": "cbfe0c93a95760dafc4106e54acf2b4bbd4cdafb65c361508f1974ca9f2725b6",
-    "node": "v22.23.4"
+    "wasm_sha256": "176cd830b28b6e8dfaba7e6bd814c471a74d0ec58ba7747a703c7ef3d332f161",
+    "node": "v22.22.1"
   },
   "mode": "strict",
   "seeds": [
@@ -31,8 +31,8 @@
         "equal": true,
         "first_diff_tick": null
       },
-      "native_final_hash": "0xb17038241d9e4c55",
-      "wasm_final_hash": "0xb17038241d9e4c55",
+      "native_final_hash": "0x5bea1351d8223cd6",
+      "wasm_final_hash": "0x5bea1351d8223cd6",
       "native_vs_wasm": {
         "hash_equal_ticks": 18000,
         "hash_first_diff_tick": null,
@@ -63,10 +63,10 @@
           2.0812047,
           100
         ],
-        "blocked_ticks": 1748,
-        "grounded_ticks": 17336,
+        "blocked_ticks": 1542,
+        "grounded_ticks": 16733,
         "chunks_visited": 6,
-        "shots": 144,
+        "shots": 123,
         "max_speed_mps": 6.4
       }
     },
@@ -89,8 +89,8 @@
         "equal": true,
         "first_diff_tick": null
       },
-      "native_final_hash": "0x7057a7233bafe74a",
-      "wasm_final_hash": "0x7057a7233bafe74a",
+      "native_final_hash": "0xc0332ffd67349a2c",
+      "wasm_final_hash": "0xc0332ffd67349a2c",
       "native_vs_wasm": {
         "hash_equal_ticks": 18000,
         "hash_first_diff_tick": null,
@@ -121,10 +121,10 @@
           1.8951972,
           118
         ],
-        "blocked_ticks": 301,
-        "grounded_ticks": 16317,
+        "blocked_ticks": 267,
+        "grounded_ticks": 16607,
         "chunks_visited": 6,
-        "shots": 145,
+        "shots": 94,
         "max_speed_mps": 6.966
       }
     },
@@ -147,8 +147,8 @@
         "equal": true,
         "first_diff_tick": null
       },
-      "native_final_hash": "0x8b3efa3740d562ae",
-      "wasm_final_hash": "0x8b3efa3740d562ae",
+      "native_final_hash": "0xaed4e49346261ddb",
+      "wasm_final_hash": "0xaed4e49346261ddb",
       "native_vs_wasm": {
         "hash_equal_ticks": 18000,
         "hash_first_diff_tick": null,
@@ -179,10 +179,10 @@
           10.24997,
           170
         ],
-        "blocked_ticks": 2919,
-        "grounded_ticks": 17197,
-        "chunks_visited": 9,
-        "shots": 161,
+        "blocked_ticks": 2949,
+        "grounded_ticks": 17222,
+        "chunks_visited": 8,
+        "shots": 119,
         "max_speed_mps": 6.895
       }
     }

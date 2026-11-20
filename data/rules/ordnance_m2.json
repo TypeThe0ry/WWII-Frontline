@@ -1,0 +1,114 @@
+{
+  "launchers": {
+    "bazooka": {
+      "muzzle_velocity_mps": 82,
+      "effective_range_m": 150,
+      "max_range_m": 200,
+      "heat_pen_mm": 90,
+      "caliber_mm": 60,
+      "reload_s": 4.5,
+      "loader_reload_s": 2.5,
+      "thrust_m": 20,
+      "backblast_m": 12,
+      "backblast_half_angle_deg": 15,
+      "backblast_damage_hp": 60,
+      "backblast_duration_s": 0.3,
+      "structure_damage_hp": 600,
+      "infantry_damage_hp": 150,
+      "blast_radius_m": 4,
+      "single_use": false
+    },
+    "panzerschreck": {
+      "muzzle_velocity_mps": 110,
+      "effective_range_m": 150,
+      "max_range_m": 200,
+      "heat_pen_mm": 200,
+      "caliber_mm": 88,
+      "reload_s": 5,
+      "loader_reload_s": 2.5,
+      "thrust_m": 20,
+      "backblast_m": 20,
+      "backblast_half_angle_deg": 15,
+      "backblast_damage_hp": 120,
+      "backblast_duration_s": 0.03333333333333333,
+      "structure_damage_hp": 900,
+      "infantry_damage_hp": 180,
+      "blast_radius_m": 5,
+      "single_use": false
+    },
+    "panzerfaust": {
+      "muzzle_velocity_mps": 45,
+      "effective_range_m": 60,
+      "max_range_m": 80,
+      "heat_pen_mm": 200,
+      "caliber_mm": 149,
+      "reload_s": 0,
+      "loader_reload_s": 0,
+      "thrust_m": 0,
+      "backblast_m": 5,
+      "backblast_half_angle_deg": 15,
+      "backblast_damage_hp": 30,
+      "backblast_duration_s": 0.03333333333333333,
+      "structure_damage_hp": 900,
+      "infantry_damage_hp": 150,
+      "blast_radius_m": 5,
+      "single_use": true
+    }
+  },
+  "mines": {
+    "ap": {
+      "trigger_distance_m": 0.9,
+      "arming_s": 3,
+      "disarm_s": 1.5,
+      "blast_damage_hp": 180,
+      "blast_radius_m": 6,
+      "team_slots": 20
+    },
+    "at": {
+      "min_vehicle_mass_kg": 1000,
+      "arming_s": 5,
+      "disarm_s": 3,
+      "track_damage_hp": 200,
+      "hull_damage_hp": 300,
+      "team_slots": 16
+    },
+    "health_hp": 1,
+    "chain_damage_hp": 30,
+    "chain_radius_m": 2
+  },
+  "satchel": {
+    "placement_distance_m": 2.5,
+    "placement_s": 1.5,
+    "fuse_s": 6,
+    "disarm_s": 3,
+    "disarm_distance_m": 40,
+    "vehicle_damage_hp": 700,
+    "adjacent_module_mult": 0.5,
+    "structure_damage_hp": 2500,
+    "infantry_damage_hp": 300,
+    "infantry_radius_m": 10,
+    "throw_range_m": 12,
+    "thrown_vehicle_mult": 0.4,
+    "team_slots": 8
+  },
+  "_meta": {
+    "status": "initial",
+    "tunable": [
+      "launchers.bazooka.muzzle_velocity_mps",
+      "launchers.bazooka.effective_range_m",
+      "launchers.bazooka.heat_pen_mm",
+      "launchers.panzerschreck.muzzle_velocity_mps",
+      "launchers.panzerschreck.heat_pen_mm",
+      "launchers.panzerfaust.muzzle_velocity_mps",
+      "launchers.panzerfaust.heat_pen_mm",
+      "mines.ap.trigger_distance_m",
+      "mines.ap.blast_damage_hp",
+      "mines.at.track_damage_hp",
+      "mines.at.hull_damage_hp",
+      "satchel.vehicle_damage_hp",
+      "satchel.structure_damage_hp",
+      "satchel.infantry_damage_hp"
+    ],
+    "calibration_ref": "GAMEDESIGN §6.9.3–6.9.5, §12.4; M2-014 local initial parameters"
+  }
+}

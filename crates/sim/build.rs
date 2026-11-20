@@ -44,6 +44,7 @@ fn parse_typed(rel: &str, text: &str) -> Result<(), String> {
         "rules" if rel == "rules/supplies.json" => typed!(defs::SuppliesRulesDef),
         "rules" if rel == "rules/squads.json" => typed!(defs::SquadsRulesDef),
         "rules" if rel == "rules/aoi.json" => typed!(defs::AoiRulesDef),
+        "rules" if rel == "rules/ordnance_m2.json" => typed!(defs::OrdnanceRulesDef),
         "comms.json" => typed!(defs::CommsDef),
         "structures" if rel == "structures/outpost.json" => typed!(defs::OutpostDef),
         _ => Ok(()), // maps/, other rules/, ...: hashed only until their schemas land
@@ -138,6 +139,11 @@ fn main() {
         ("rules/supplies.json", "supplies.json", "SUPPLIES_JSON"),
         ("rules/squads.json", "squads.json", "SQUADS_JSON"),
         ("rules/aoi.json", "aoi.json", "AOI_JSON"),
+        (
+            "rules/ordnance_m2.json",
+            "ordnance_m2.json",
+            "ORDNANCE_M2_JSON",
+        ),
         ("comms.json", "comms.json", "COMMS_JSON"),
     ] {
         fs::write(out.join(name), canonical_required(&files, rel)).expect("write embedded json");

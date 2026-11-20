@@ -10,6 +10,9 @@
 //! the target's [`Health`] and reported as [`SimEvent::Hit`] (and logged in [`HitLog`] for the
 //! rules stage, which turns a lethal hit into a kill: `crate::schedule::deaths`).
 
+#[path = "projectile/heat.rs"]
+pub mod heat;
+
 use bevy_ecs::prelude::*;
 use glam::Vec3;
 
