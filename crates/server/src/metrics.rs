@@ -6,8 +6,8 @@ use std::sync::Arc;
 use std::time::Instant;
 
 use prometheus::{
-    Encoder, Gauge, Histogram, HistogramOpts, IntCounter, IntCounterVec, IntGauge, IntGaugeVec,
-    Opts, Registry, TextEncoder,
+    Encoder, Gauge, Histogram, HistogramOpts, HistogramVec, IntCounter, IntCounterVec, IntGauge,
+    IntGaugeVec, Opts, Registry, TextEncoder,
 };
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpListener;
@@ -34,6 +34,7 @@ pub const REJECT_REASONS: &[&str] = &[
 pub struct Metrics {
     pub registry: Registry,
     pub tick_ms: Histogram,
+    pub tick_stage_ms: HistogramVec,
     pub tick_interval_error_ms: Histogram,
     pub tick_overrun_total: IntCounter,
     pub tick_skipped_slots_total: IntCounter,
@@ -159,6 +160,15 @@ impl Metrics {
                 "Wall time of one server tick's work (ms)",
                 TICK_MS_BUCKETS,
             ),
+            tick_stage_ms: HistogramVec::new(
+                HistogramOpts::new(
+                    "server_tick_stage_ms",
+                    "Wall time of measured server tick phases (ms)",
+                )
+                .buckets(TICK_MS_BUCKETS.to_vec()),
+                &["stage"],
+            )
+            .expect("tick stage histogram"),
             tick_interval_error_ms: hist(
                 "server_tick_interval_error_ms",
                 "Actual wake time minus scheduled deadline (ms)",
@@ -417,6 +427,17 @@ impl Metrics {
         };
         let r = &m.registry;
         r.register(Box::new(m.tick_ms.clone())).unwrap();
+        r.register(Box::new(m.tick_stage_ms.clone())).unwrap();
+        for stage in [
+            "inputs",
+            "sim_step",
+            "post_step",
+            "bots",
+            "aoi_snapshot",
+            "send",
+        ] {
+            m.tick_stage_ms.with_label_values(&[stage]);
+        }
         r.register(Box::new(m.tick_interval_error_ms.clone()))
             .unwrap();
         r.register(Box::new(m.tick_overrun_total.clone())).unwrap();
@@ -599,6 +620,7 @@ mod tests {
         let text = m.render();
         for name in [
             "server_tick_ms_bucket",
+            "server_tick_stage_ms_bucket{stage=\"inputs\"",
             "server_tick_interval_error_ms_bucket",
             "server_tick_overrun_total",
             "server_tick_overrun_consecutive",
