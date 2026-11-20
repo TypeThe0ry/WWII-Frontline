@@ -87,3 +87,18 @@ test('Carentan door admits the WASM KCC and camera; jamb and lintel remain occlu
   });
   expect(errors).toEqual([]);
 });
+
+test('Low Carentan renders at 75% of the world canvas size', async ({ page }) => {
+  await serveCarentan(page);
+  // Disable expensive vegetation generation here; the vegetation-scene tests cover Low selection.
+  for (const [tier, size] of [['high', [960, 540]], ['low', [720, 405]]] as const) {
+    await page.goto(`/?scene=world&renderer=webgl2&cam=open_field&veg=0&splat=0&debug=1&quality=${tier}`);
+    await expect.poll(() => page.evaluate(() => window.__perf?.frames() ?? 0)).toBeGreaterThan(0);
+    const rendered = await page.locator('#game-canvas').evaluate((canvas: HTMLCanvasElement) => ({
+      pixels: [canvas.width, canvas.height],
+      css: [canvas.clientWidth, canvas.clientHeight],
+    }));
+    expect(rendered.css).toEqual([960, 540]);
+    expect(rendered.pixels).toEqual(size);
+  }
+});
