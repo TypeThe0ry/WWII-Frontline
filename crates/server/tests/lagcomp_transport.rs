@@ -15,7 +15,9 @@ use std::time::{Duration, Instant};
 use common::sim_harness::start_listeners;
 use common::{Conn, Got, Kind, Target};
 use frontline_protocol::msg::c0::{decode_c0_server, ServerMsgC0, Welcome};
-use frontline_protocol::msg::input::{buttons, encode_input_bundle, InputBundle, InputCmd};
+use frontline_protocol::msg::input::{
+    buttons, encode_input_bundle, FireCmd, InputBundle, InputCmd,
+};
 use frontline_protocol::snapshot::{Event, SnapshotDecoder};
 use frontline_protocol::Channel;
 use frontline_server::metrics::Metrics;
@@ -111,11 +113,15 @@ fn cmd(tick: u32, buttons: u16) -> InputCmd {
 }
 
 async fn send_input(conn: &mut Conn, input: InputCmd, ack: u16) {
+    send_input_with_fire(conn, input, ack, None).await;
+}
+
+async fn send_input_with_fire(conn: &mut Conn, input: InputCmd, ack: u16, fire: Option<FireCmd>) {
     let bundle = InputBundle {
         ack_snapshot_tick: ack,
         pred_hash: 0,
         cmds: [input].into_iter().collect(),
-        fire: Default::default(),
+        fire: fire.into_iter().collect(),
     };
     assert!(
         conn.send(Channel::C1, &encode_input_bundle(&bundle).unwrap())
@@ -224,7 +230,19 @@ async fn trial(map: &Arc<LoadedMap>, seed: u64, delayed: bool, rewind: bool) -> 
     // Shoot through standing torso, ~35 cm below the shooter's eye.
     fire.pitch = (-0.35f32.atan2(delta.x.hypot(delta.z)) * (32768.0 / FRAC_PI_2)).round() as i16;
     fire.view_tick = if rewind { age as u16 } else { 0 };
-    send_input(&mut shooter, fire, seen_tick as u16).await;
+    // A deliberately distant origin on even seeds. It should add exactly one diagnostic,
+    // without moving the projectile or changing the hit/rewind outcome.
+    let offset_origin = seed.is_multiple_of(2);
+    let hint = offset_origin.then(|| FireCmd {
+        seq: fire.seq,
+        view_tick: fire.view_tick,
+        weapon: fire.weapon_slot,
+        dir_yaw: fire.yaw,
+        dir_pitch: (i32::from(fire.pitch) + 32768) as u16,
+        origin_hint: FireCmd::encode_origin_hint([2048.0, -7.0, 1024.0]).unwrap(),
+        spread_seed: 0,
+    });
+    send_input_with_fire(&mut shooter, fire, seen_tick as u16, hint).await;
 
     let mut hits = HashSet::new();
     let mut acked_fire = false;
@@ -263,6 +281,11 @@ async fn trial(map: &Arc<LoadedMap>, seed: u64, delayed: bool, rewind: bool) -> 
         "must fire even in the negative control"
     );
     assert_eq!(report.events.hits, hits.len() as u64);
+    assert_eq!(
+        metrics.origin_corrected_total.get(),
+        u64::from(offset_origin)
+    );
+    assert_eq!(metrics.session_kicked_total.get(), 0);
     assert_eq!(report.tick_skipped_slots_total, 0);
     hits.len()
 }

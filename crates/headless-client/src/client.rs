@@ -37,6 +37,7 @@ pub struct Ctx {
     pub waypoints: Vec<[f32; 2]>,
     pub deploy_hq: bool,
     pub drive_vehicle: bool,
+    pub anticheat_control: bool,
     #[cfg(feature = "anticheat-test")]
     pub anticheat_mix: bool,
     /// Print every rollback to stderr (`HEADLESS_TRACE=1`).
@@ -227,6 +228,9 @@ pub async fn run_client(ctx: Arc<Ctx>, id: u32) -> (ClientReport, Series) {
         first_seq,
     );
     let mut synth = SynthInput::new(ctx.seed, id, &ctx.waypoints);
+    if ctx.anticheat_control {
+        synth.enable_anticheat_control(id);
+    }
     let mut driver_hash = synth.input_hash();
     let mut driver = ctx.drive_vehicle.then(|| {
         Driver::new(new_sim(
@@ -450,6 +454,7 @@ pub async fn run_client(ctx: Arc<Ctx>, id: u32) -> (ClientReport, Series) {
         rep.keyframe_records as f64 / rep.records as f64
     };
     rep.corrections = pred.stats;
+    rep.flick_peaks = synth.flick_peaks;
     rep.aoi_records_checked = audit.records_checked;
     rep.aoi_beyond_close = audit.beyond_close;
     rep.aoi_leaks = audit.leaks;

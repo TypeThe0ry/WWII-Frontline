@@ -47,6 +47,7 @@ pub fn build_ctx(args: &Args) -> Result<Ctx, String> {
         waypoints,
         deploy_hq: args.deploy_hq,
         drive_vehicle: args.drive_vehicle,
+        anticheat_control: args.anticheat_control,
         #[cfg(feature = "anticheat-test")]
         anticheat_mix: args.anticheat_mix,
         trace: std::env::var("HEADLESS_TRACE").is_ok_and(|v| v == "1"),
@@ -72,6 +73,7 @@ pub async fn run(args: &Args, ctx: Ctx) -> Report {
             waypoints: ctx.waypoints.clone(),
             deploy_hq: ctx.deploy_hq,
             drive_vehicle: ctx.drive_vehicle && i == 0,
+            anticheat_control: ctx.anticheat_control,
             #[cfg(feature = "anticheat-test")]
             anticheat_mix: ctx.anticheat_mix,
             trace: ctx.trace,

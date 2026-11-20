@@ -74,6 +74,9 @@ pub struct SynthInput {
     pub active_cmds: u64,
     /// Bursts started.
     pub bursts: u64,
+    anticheat_control: bool,
+    flicks: bool,
+    pub flick_peaks: u64,
 }
 
 const FNV_OFFSET: u64 = 0xCBF2_9CE4_8422_2325;
@@ -126,7 +129,15 @@ impl SynthInput {
             hash: FNV_OFFSET,
             active_cmds: 0,
             bursts: 0,
+            anticheat_control: false,
+            flicks: false,
+            flick_peaks: 0,
         }
+    }
+
+    pub fn enable_anticheat_control(&mut self, client: u32) {
+        self.anticheat_control = true;
+        self.flicks = client.is_multiple_of(2);
     }
 
     /// Hash of every active command so far (move, yaw, pitch, buttons; not seq / tick).
@@ -141,6 +152,20 @@ impl SynthInput {
             let step = 1 + (self.rng.next_u64() as usize % (n - 1));
             self.wp = (self.wp + step) % n;
         }
+    }
+
+    fn flick_view(&self) -> (u16, i16) {
+        // A fast mouse motion and recovery. At the peak the change is 100 degrees in one
+        // command on each axis, in both directions over consecutive four-second cycles.
+        let sample = [0.0f32, 15.0, 50.0, -50.0, -15.0, 0.0];
+        let phase = (self.active_cmds % 120) as usize;
+        let sign = if (self.active_cmds / 120).is_multiple_of(2) {
+            1.0
+        } else {
+            -1.0
+        };
+        let delta = (sample.get(phase).copied().unwrap_or_default() * sign).to_radians();
+        (yaw_code(self.yaw + delta), pitch_code(self.pitch + delta))
     }
 
     /// Next command for `seq` / `tick`.
@@ -162,6 +187,10 @@ impl SynthInput {
             self.stuck_ref = None;
             self.stuck_ticks = 0;
             self.shots_left = 0;
+            // Retain the current view while unplaced so dropping a flick never makes a snap.
+            if self.flicks {
+                (cmd.yaw, cmd.pitch) = self.flick_view();
+            }
             return cmd;
         };
 
@@ -181,11 +210,18 @@ impl SynthInput {
         if d > std::f32::consts::PI {
             d -= std::f32::consts::TAU;
         }
-        self.yaw =
-            (self.yaw + d.clamp(-TURN_PER_TICK, TURN_PER_TICK)).rem_euclid(std::f32::consts::TAU);
-        self.pitch = (self.pitch + (self.rng.f32() - 0.5) * 0.01).clamp(-0.12, 0.12);
-        cmd.yaw = yaw_code(self.yaw);
-        cmd.pitch = pitch_code(self.pitch);
+        if self.flicks && (1..=5).contains(&(self.active_cmds % 120)) {
+            (cmd.yaw, cmd.pitch) = self.flick_view();
+            if self.active_cmds % 120 == 3 {
+                self.flick_peaks += 1;
+            }
+        } else {
+            self.yaw = (self.yaw + d.clamp(-TURN_PER_TICK, TURN_PER_TICK))
+                .rem_euclid(std::f32::consts::TAU);
+            self.pitch = (self.pitch + (self.rng.f32() - 0.5) * 0.01).clamp(-0.12, 0.12);
+            cmd.yaw = yaw_code(self.yaw);
+            cmd.pitch = pitch_code(self.pitch);
+        }
         cmd.move_z = 127;
         // lateral wiggle
         if self.strafe_left > 0 {
@@ -217,7 +253,10 @@ impl SynthInput {
             }
         }
 
-        // --- fire: a burst of 1-3 shots, each FIRE held 3 ticks then released 3 ticks ---------
+        // The control leaves two seconds for rifle cycling (including the Kar98k's 1.5 s bolt).
+        // Keep the load generator's usual compact bursts when not checking false positives.
+        let shot_period = if self.anticheat_control { 60 } else { 6 };
+        let trigger_ticks = if self.anticheat_control { 1 } else { 3 };
         if self.shots_left == 0 {
             if self.until_burst == 0 {
                 self.shots_left = self.rng.range(1, 3);
@@ -229,11 +268,11 @@ impl SynthInput {
             }
         }
         if self.shots_left > 0 {
-            if self.shot_phase < 3 {
+            if self.shot_phase < trigger_ticks {
                 cmd.buttons |= buttons::FIRE;
             }
             self.shot_phase += 1;
-            if self.shot_phase >= 6 {
+            if self.shot_phase >= shot_period {
                 self.shot_phase = 0;
                 self.shots_left -= 1;
             }
@@ -299,6 +338,45 @@ mod tests {
     use super::*;
 
     const WPS: [[f32; 2]; 3] = [[40.0, 40.0], [216.0, 40.0], [128.0, 200.0]];
+
+    #[test]
+    fn anticheat_control_keeps_flick_and_trigger_deltas_legal() {
+        let pose = Pose {
+            xz: Some((100.0, 100.0)),
+            alive: true,
+        };
+        for client in 0..2 {
+            let mut driver = SynthInput::new(3, client, &WPS);
+            driver.enable_anticheat_control(client);
+            let mut prev = driver.next(0, 0, pose);
+            let mut last_fire = None;
+            let mut pulls = 0;
+            let mut peak_yaw = 0.0f32;
+            let mut peak_pitch = 0.0f32;
+            for tick in 1..3600 {
+                let cmd = driver.next(tick as u16, tick, pose);
+                let yaw_step = cmd.yaw.wrapping_sub(prev.yaw) as i16;
+                peak_yaw = peak_yaw.max(f32::from(yaw_step.unsigned_abs()) * 360.0 / 65536.0);
+                let pitch_step = (i32::from(cmd.pitch) - i32::from(prev.pitch)).unsigned_abs();
+                peak_pitch = peak_pitch.max(pitch_step as f32 * 180.0 / 65535.0);
+                if cmd.buttons & buttons::FIRE != 0 {
+                    assert!(last_fire.is_none_or(|last| tick - last >= 60));
+                    last_fire = Some(tick);
+                    pulls += 1;
+                }
+                prev = cmd;
+            }
+            assert!(pulls > 20);
+            if client == 0 {
+                assert_eq!(driver.flick_peaks, 30);
+                assert!((99.99..=100.01).contains(&peak_yaw));
+                assert!((99.99..=100.01).contains(&peak_pitch));
+            } else {
+                assert_eq!(driver.flick_peaks, 0);
+                assert!(peak_yaw <= 6.01 && peak_pitch < 1.0);
+            }
+        }
+    }
 
     #[test]
     fn same_seed_same_hash_different_seed_or_client_differs() {

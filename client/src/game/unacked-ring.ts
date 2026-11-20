@@ -32,10 +32,12 @@ export interface StateRef {
 
 export interface UnackedEntry extends StateRef {
   cmd: Uint8Array;
+  /** Packed FireCmd from the original live prediction, not rewritten during replay. */
+  fire: Uint8Array | undefined;
 }
 
 const newState = (): StateRef => ({ seq: 0, tick: 0, predTick: 0, x: 0, y: 0, z: 0, auth: new Uint8Array(AUTH_BYTES), weapon: new Uint8Array(WEAPON_BYTES), weaponLen: 0 });
-const newEntry = (): UnackedEntry => ({ ...newState(), cmd: new Uint8Array(CMD_BYTES) });
+const newEntry = (): UnackedEntry => ({ ...newState(), cmd: new Uint8Array(CMD_BYTES), fire: undefined });
 
 export function copyState(dst: StateRef, src: StateRef): void {
   dst.seq = src.seq;

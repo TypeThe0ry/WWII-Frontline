@@ -14,21 +14,13 @@
 use frontline_protocol::msg::input::{buttons, FireCmd, InputCmd};
 use frontline_sim::{combat::lagcomp::origin_needs_correction, Vec3};
 
-use crate::snapshot::events_out::EVENT_POS_STEP_M;
-
-/// Provisional FireCmd decoding (PI-001/072 leave the wire semantics open): reuse the
-/// zero-based Shot/Impact position grid (PI-023). Outside its representable range we cannot
-/// measure the discrepancy, so skip the observation rather than compare against a clamped point.
+/// The client hint is telemetry only. Omit points the wire grid cannot represent instead of
+/// comparing a snapped edge coordinate with an out-of-grid authoritative position.
 pub(crate) fn fire_origin_hint_corrected(codes: [u16; 3], muzzle: Vec3) -> bool {
-    const MAX_CODE: u16 = 0x3fff;
-    let max_m = f32::from(MAX_CODE) * EVENT_POS_STEP_M;
-    if codes.iter().any(|&c| c > MAX_CODE)
-        || !muzzle.to_array().iter().all(|m| (0.0..=max_m).contains(m))
-    {
-        return false;
-    }
-    let hint = Vec3::from_array(codes.map(|c| f32::from(c) * EVENT_POS_STEP_M));
-    origin_needs_correction(hint, muzzle)
+    FireCmd::decode_origin_hint(codes).is_some_and(|hint| {
+        FireCmd::encode_origin_hint(muzzle.to_array()).is_some()
+            && origin_needs_correction(Vec3::from_array(hint), muzzle)
+    })
 }
 
 /// Consecutive violating commands after which the connection is closed.
@@ -164,7 +156,7 @@ pub struct Validated {
     pub clamps: Clamps,
 }
 
-/// Tunables of the validator (defaults are the ARCHITECTURE values; tests lower the turn limit).
+/// Tunables of the validator (production turn limit is loaded from the anti-cheat rules).
 #[derive(Debug, Clone, Copy)]
 pub struct ValidateCfg {
     pub max_weapon_slot: u8,
@@ -640,12 +632,18 @@ mod tests {
 
     #[test]
     fn fire_origin_wire_grid_boundary_and_range() {
-        let muzzle = Vec3::new(10.0, 2.0, 10.0);
-        assert!(!fire_origin_hint_corrected([672, 128, 640], muzzle)); // exactly 0.5 m
-        assert!(fire_origin_hint_corrected([673, 128, 640], muzzle));
-        assert!(!fire_origin_hint_corrected([0x4000, 128, 640], muzzle)); // not a wire code
-        for x in [-1.0, 256.0, f32::NAN] {
-            assert!(!fire_origin_hint_corrected([0; 3], Vec3::new(x, 2.0, 10.0)));
+        let muzzle = Vec3::new(2048.0, -7.0, 1024.0);
+        let codes =
+            |dx: f32| FireCmd::encode_origin_hint((muzzle + Vec3::X * dx).to_array()).unwrap();
+        assert!(!fire_origin_hint_corrected(codes(0.5), muzzle));
+        assert!(fire_origin_hint_corrected(codes(0.75), muzzle));
+        assert!(!fire_origin_hint_corrected([0; 3], muzzle));
+        assert!(!fire_origin_hint_corrected([0x4000, 128, 640], muzzle));
+        for x in [-1.0, 4096.0, f32::NAN] {
+            assert!(!fire_origin_hint_corrected(
+                codes(0.75),
+                Vec3::new(x, -7.0, 1024.0)
+            ));
         }
     }
 

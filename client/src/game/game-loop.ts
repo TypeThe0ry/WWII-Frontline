@@ -7,7 +7,7 @@
  * (the real `Session` satisfies it) and never imports render / ui / audio.
  */
 import type { InputSource } from '../input/sampler';
-import { LAYOUT_STATE_AMMO_IN_MAG, LAYOUT_STATE_AMMO_RESERVE, LAYOUT_STATE_RECOIL_PITCH, LAYOUT_STATE_RECOIL_YAW, LAYOUT_STATE_VX, LAYOUT_STATE_VY, LAYOUT_STATE_VZ, type SimWasmModule, type WasmPredictor, type WasmSnapshotDecoder } from '../net/wasm';
+import { LAYOUT_FIRE_CMD_BYTES, LAYOUT_MAX_BUNDLE_FIRE, LAYOUT_STATE_AMMO_IN_MAG, LAYOUT_STATE_AMMO_RESERVE, LAYOUT_STATE_RECOIL_PITCH, LAYOUT_STATE_RECOIL_YAW, LAYOUT_STATE_VX, LAYOUT_STATE_VY, LAYOUT_STATE_VZ, type SimWasmModule, type WasmPredictor, type WasmSnapshotDecoder } from '../net/wasm';
 import type { EventBus, GameEvents, Vec3 } from './event-bus';
 import { EventDecoder } from './events';
 import { EntityStore, INTERP_DELAY_TICKS, MAX_ENTITIES, RenderTimeline } from './interpolation';
@@ -53,6 +53,8 @@ export interface GameLoopOptions extends PredictorOptions {
   now?: () => number;
   /** Where the predictor starts before the server has told us (default: map centre). */
   spawn?: { x: number; y: number; z: number; yaw: number };
+  /** Disable muzzle hints if the predictor lacks the server map's collision data. */
+  fireOriginHints?: boolean;
   /** Wire entity id of the local player inside snapshot records (skipped by the interpolator). */
   selfWireId?: number;
   log?: (msg: string) => void;
@@ -142,12 +144,15 @@ export class GameLoop {
   private readonly log: (m: string) => void;
   private nextSeq = 1;
   private lastSnapshotTick = -1;
+  private hasAuthoritativePosition = false;
   private ackSnapshotTick = 0;
   private hash = 0;
   private prevX = 0;
   private prevY = 0;
   private prevZ = 0;
   private readonly cmdBuf = new Uint8Array(CMD_BYTES * MAX_BUNDLE_CMDS);
+  private readonly fireBuf = new Uint8Array(LAYOUT_FIRE_CMD_BYTES * LAYOUT_MAX_BUNDLE_FIRE);
+  private readonly fireOriginHints: boolean;
   private readonly pose = new Float32Array(5);
   private readonly selfVec: Vec3 = { x: 0, y: 0, z: 0 };
   private readonly muzzle: Vec3 = { x: 0, y: 0, z: 0 };
@@ -168,6 +173,7 @@ export class GameLoop {
     this.bus = opts.bus;
     this.net = opts.net;
     this.input = opts.input;
+    this.fireOriginHints = opts.fireOriginHints ?? true;
     this.now = opts.now ?? (() => performance.now());
     this.log = opts.log ?? ((m) => console.warn(`[game] ${m}`));
     this.predictor = new LocalPredictor(opts.wasm, opts);
@@ -265,6 +271,9 @@ export class GameLoop {
     e.seq = seq;
     e.tick = tick;
     e.cmd.set(cmd);
+    e.fire = this.fireOriginHints && this.hasAuthoritativePosition && this.vehicleSlot === 0 && this.predictor.shotLastStep
+      ? this.predictor.wasm.takeFireCmd()
+      : undefined;
     this.predictor.capture(e);
     this.nextSeq = (seq + 1) & 0xffff;
     this.planner.nextTick = tick + 1;
@@ -294,7 +303,16 @@ export class GameLoop {
     let cnt = 1;
     while (cnt < MAX_BUNDLE_CMDS && n - 1 - cnt >= 0 && this.ring.at(n - 1 - cnt).tick === this.ring.at(n - cnt).tick - 1) cnt++;
     for (let i = 0; i < cnt; i++) this.cmdBuf.set(this.ring.at(n - cnt + i).cmd, i * CMD_BYTES);
-    const bytes = this.wasm.encodeInputBundle(this.cmdBuf.subarray(0, cnt * CMD_BYTES), this.ackSnapshotTick & 0xffff, this.hash);
+    // Keep the newest two hints belonging to this bundle's inputs, in command order.
+    let fireStart = this.fireBuf.length;
+    for (let i = n - 1; i >= n - cnt && fireStart > 0; i--) {
+      const fire = this.ring.at(i).fire;
+      if (!fire) continue;
+      fireStart -= LAYOUT_FIRE_CMD_BYTES;
+      this.fireBuf.set(fire, fireStart);
+    }
+    const fire = fireStart < this.fireBuf.length ? this.fireBuf.subarray(fireStart) : undefined;
+    const bytes = this.wasm.encodeInputBundle(this.cmdBuf.subarray(0, cnt * CMD_BYTES), this.ackSnapshotTick & 0xffff, this.hash, fire);
     this.net.sendInputBundle(bytes);
     const s = this.stats;
     s.bundles++;
@@ -369,6 +387,7 @@ export class GameLoop {
     rc.frozen = !alive;
     const r = rc.onSelf(s.ackInputSeq, s.hasCorr, s.corrX, s.corrY, s.corrZ);
     if (r.kind === 'unknown') return; // ack from the future: keep the previous hash / ack tick
+    if (s.hasCorr && r.kind !== 'none') this.hasAuthoritativePosition = true;
     // pred_hash covers the position right after the acknowledged command: the server's own (an accepted
     // correction, so it stops resending it) or ours (predicted, or corrected = the server's).
     if (r.kind === 'ok') this.hash = this.wasm.predHash(s.corrX, s.corrY, s.corrZ);

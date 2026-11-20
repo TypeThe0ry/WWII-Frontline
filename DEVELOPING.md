@@ -287,6 +287,12 @@ CPUs exist, samples `/metrics` and RSS every 10 s and stops only the PIDs it sta
 and judges the acceptance numbers. Bandwidth is reported on the line-estimate basis (payload + 58 B per packet) with payload-only next to it.
 Timing judgements are for release builds.
 
+For the M1 anti-cheat control, run `headless-client --anticheat-control --transport ws --count 20 --duration 1800 --report <path>`
+against a fresh M0 sandbox server without bots (use `--url <host:port>` for its WS listener). The control spaces rifle triggers by
+at least two seconds and sends a scripted 100°/tick peak on yaw and pitch on even-numbered clients. Check each client's duration,
+`flick_peaks` and disconnects, and compare the server's `/metrics` before and after the run; ordinary client reconciliation is not
+an anti-cheat correction. See `reports/m1-anticheat-b6.md` for the acceptance commands and counters.
+
 ## Local demo / remote preview
 
 Server plus a Vite dev server whose `/game-ws` path proxies to the game server's WebSocket port, so a preview that

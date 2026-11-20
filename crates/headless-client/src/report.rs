@@ -105,6 +105,9 @@ pub struct ClientReport {
     pub reordered_snapshots: u64,
     pub bundles_sent: u64,
     pub cmds_generated: u64,
+    /// Number of scripted 100-degree per-tick flick peaks generated.
+    #[serde(default)]
+    pub flick_peaks: u64,
     pub corrections: Corrections,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub vehicle: Option<VehicleReport>,

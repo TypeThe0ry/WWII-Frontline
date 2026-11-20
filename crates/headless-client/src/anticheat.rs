@@ -23,7 +23,15 @@ pub(crate) fn inject(id: u32, team: u8, cmd: &mut InputCmd) {
                 cmd.buttons |= buttons::RELOAD;
             }
         }
-        2 => cmd.yaw = if step.is_multiple_of(2) { 0 } else { 32768 },
+        // Snap every five ticks: the first tick is clamped and the rest hold the view,
+        // keeping this observation client below the rolling disconnect threshold.
+        2 => {
+            cmd.yaw = if (step / 5).is_multiple_of(2) {
+                0
+            } else {
+                32768
+            }
+        }
         3 => speed(cmd),
         // An encodable weapon selector that the authoritative validator rejects.
         4 => cmd.weapon_slot = 7,

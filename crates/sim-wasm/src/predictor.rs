@@ -2,7 +2,8 @@
 
 use frontline_protocol::bitio::BitReader;
 use frontline_protocol::codec::Codec;
-use frontline_protocol::msg::input::InputCmd;
+use frontline_protocol::msg::input::{FireCmd, InputCmd};
+use frontline_protocol::quant::{quant_pitch, quant_yaw};
 use frontline_sim::hash::HashWriter;
 use frontline_sim::predict::PredictSim;
 use frontline_sim::weapon::{Fsm, WeaponParams, WeaponState, TICK_UNITS};
@@ -122,6 +123,7 @@ pub struct Predictor {
     pub(crate) no_build_zones: NoBuildZones,
     out: [f32; layout::STATE_LEN],
     vout: [f32; VEHICLE_STATE_LEN],
+    fire_cmd: Option<FireCmd>,
 }
 
 /// Driven-vehicle state array: `pos[3] vel[3] quat[4] (xyzw) yaw_rate forward_speed`.
@@ -144,6 +146,7 @@ impl Predictor {
             no_build_zones: NoBuildZones::default(),
             out: [0.0; layout::STATE_LEN],
             vout: [0.0; VEHICLE_STATE_LEN],
+            fire_cmd: None,
         };
         p.refresh();
         Ok(p)
@@ -151,9 +154,32 @@ impl Predictor {
 
     pub fn step_core(&mut self, cmd: &[u8]) -> Result<(), String> {
         let c = parse_cmd(cmd)?;
-        self.sim.step_player(&c);
+        let state = self.sim.step_player(&c);
+        // The infantry predictor only steps the equipped primary weapon, and a blocked
+        // movement step (e.g. missing collision) does not supply a usable muzzle pose.
+        self.fire_cmd = if c.weapon_slot == 0 && !state.blocked {
+            self.predicted_fire_cmd(&c)
+        } else {
+            None
+        };
         self.refresh();
         Ok(())
+    }
+
+    fn predicted_fire_cmd(&self, cmd: &InputCmd) -> Option<FireCmd> {
+        let shot = self.sim.last_weapon_out().shot?;
+        let origin_hint = FireCmd::encode_origin_hint(shot.muzzle.to_array())?;
+        let yaw = shot.dir.x.atan2(shot.dir.z);
+        let pitch = shot.dir.y.clamp(-1.0, 1.0).asin();
+        Some(FireCmd {
+            seq: cmd.seq,
+            view_tick: cmd.view_tick,
+            weapon: cmd.weapon_slot,
+            dir_yaw: quant_yaw(yaw, 16).code,
+            dir_pitch: quant_pitch(pitch, 16).code,
+            origin_hint,
+            spread_seed: shot.spread_seed,
+        })
     }
 
     pub fn reset_core(
@@ -189,6 +215,7 @@ impl Predictor {
         if let Some(w) = w {
             self.sim.reset_weapon(Some(w));
         }
+        self.fire_cmd = None;
         self.refresh();
         Ok(())
     }
@@ -207,6 +234,7 @@ impl Predictor {
             params.mag_capacity,
             reserve,
         )));
+        self.fire_cmd = None;
         self.refresh();
         Ok(())
     }
@@ -436,6 +464,7 @@ impl Predictor {
         match weapon {
             None => {
                 self.sim.reset_weapon(None);
+                self.fire_cmd = None;
                 self.refresh();
                 Ok(())
             }
@@ -459,6 +488,18 @@ impl Predictor {
     pub fn step(&mut self, cmd: &[u8]) -> Result<Float32Array, JsError> {
         self.step_core(cmd).map_err(js_err)?;
         Ok(self.state())
+    }
+
+    /// Consumes the last infantry step's packed `FireCmd`, if it predicted a shot with a
+    /// representable muzzle. Capture it after the live step, never during replay.
+    #[wasm_bindgen(js_name = takeFireCmd)]
+    pub fn take_fire_cmd(&mut self) -> Result<Option<Vec<u8>>, JsError> {
+        self.fire_cmd
+            .take()
+            .as_ref()
+            .map(crate::messages::whole)
+            .transpose()
+            .map_err(js_err)
     }
 
     /// View of the current state array (same layout as `step`).
@@ -577,6 +618,65 @@ mod tests {
         let s = p.state_slice();
         assert_eq!(s[layout::AMMO_IN_MAG], before - 1.0);
         assert!(s[layout::EVENTS] as u32 & layout::EV_SHOT != 0);
+        assert!(p.take_fire_cmd().unwrap().is_none()); // No terrain, even though a shot was predicted.
+    }
+
+    #[test]
+    fn packed_fire_cmd_comes_from_the_exact_predicted_shot() {
+        use crate::messages::{bundle_core, pack_input_cmd_core, FIRE_CMD_BYTES};
+        use frontline_protocol::msg::input::{buttons, decode_input_bundle};
+
+        let mut p = Predictor::new_core(1, 1, 3).unwrap();
+        let equip_and_fire = |p: &mut Predictor, x, bx, slot| {
+            p.sim.collision_mut().insert_chunk(CollisionChunk::new(
+                bx,
+                30,
+                vec![-7.0; 65 * 65],
+                vec![0; 64 * 64],
+            ));
+            let mut state = p.sim.state();
+            state.pos = frontline_sim::Vec3::new(x, -6.0, 1980.0);
+            p.reset_core(&state.to_bytes(), 700, None).unwrap();
+            p.equip_core("us_m1_garand", 40).unwrap();
+            let cmd =
+                pack_input_cmd_core(65535, 701, 0, 127, 16000, -1000, buttons::FIRE, slot, 0, 9)
+                    .unwrap();
+            p.step_core(&cmd).unwrap();
+            assert!(!p.sim.state().blocked);
+            assert!(p.sim.last_weapon_out().shot.is_some());
+            cmd
+        };
+        let cmd = equip_and_fire(&mut p, 2020.0, 31, 0);
+        let shot = p.sim.last_weapon_out().shot.unwrap();
+        assert!(shot.muzzle.y < 0.0);
+        let packed = p.take_fire_cmd().unwrap().unwrap();
+        assert_eq!(packed.len(), FIRE_CMD_BYTES);
+        assert!(p.take_fire_cmd().unwrap().is_none());
+
+        let wire = bundle_core(&cmd, &packed, 0, 0).unwrap();
+        let bundle = decode_input_bundle(&wire).unwrap();
+        let fire = bundle.fire[0];
+        assert_eq!(fire.seq, bundle.cmds[0].seq);
+        assert_eq!(fire.view_tick, 9);
+        assert_eq!(fire.weapon, bundle.cmds[0].weapon_slot);
+        assert_eq!(fire.spread_seed, shot.spread_seed);
+        let origin = FireCmd::decode_origin_hint(fire.origin_hint).unwrap();
+        for (decoded, exact) in origin.into_iter().zip(shot.muzzle.to_array()) {
+            assert!((decoded - exact).abs() <= 0.125);
+        }
+        let yaw = frontline_protocol::quant::dequant_yaw(fire.dir_yaw, 16);
+        let pitch = frontline_protocol::quant::dequant_pitch(fire.dir_pitch, 16);
+        assert!((shot.dir.x - yaw.sin() * pitch.cos()).abs() < 0.0001);
+        assert!((shot.dir.y - pitch.sin()).abs() < 0.0001);
+        assert!((shot.dir.z - yaw.cos() * pitch.cos()).abs() < 0.0001);
+
+        equip_and_fire(&mut p, 2020.0, 31, 0);
+        p.step_core(&cmd_bytes(0, 0)).unwrap();
+        assert!(p.take_fire_cmd().unwrap().is_none()); // No carry-over into a non-shot step.
+        equip_and_fire(&mut p, 2020.0, 31, 1);
+        assert!(p.take_fire_cmd().unwrap().is_none()); // Unpredicted secondary muzzle.
+        equip_and_fire(&mut p, -20.0, -1, 0);
+        assert!(p.take_fire_cmd().unwrap().is_none()); // Out of grid, never clamp.
     }
 
     #[test]
