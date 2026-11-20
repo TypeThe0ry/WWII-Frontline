@@ -1640,8 +1640,12 @@ PrePass 速度会卡死渲染循环，改用自有速度 RTT（地形/薄实例/
 ### PI-B6-landall-resources-1 · resources 合入 M2-011 基线后的复验（2026-11-20）
 
 - 保留基线 M2-011 的 `emplacement` 与 M2-009 的资源规则；没有更改资源功能或协议行为。按 Binaryen `version_132` 复建后 WASM 为 1,191,370 B、Brotli 344,816 B，均通过现有上限。`lint rust determinism ts data wasm` 全绿，determinism 使用严格比较；资源参考机、M2-008 五线地图和真人联测仍未测（PI-109，H-021/H-060）。
-
 ### PI-B6-landall-mines-1 · M2-014 可编译状态与集成边界（2026-11-20）
 
 - 保留并修复 WIP 的独立 ordnance modules：修正 mines bench 的 crate import、为数据驱动默认规则和稳定序列化 hash 添加局部 clippy 说明。没有放宽门禁。
 - `lint`、workspace Rust、sim test-util、`determinism`、`data` 均通过；Binaryen 132 下严格 native/WASM 三种子各 18,000 tick 哈希一致、最大位置误差 0 m；data 92 文件零错误。定向规则 API 测试通过。M2-014 只能标 `partial`：当前 Minefield/Satchels/Launcher/HeatProjectile 是独立 sim APIs，尚未连接 World 权威 tick、输入/事件、M2-013 武器数据或完整玩法；H-021 参考机和 M2-053 史实/参数复核未测。
+
+### PI-B6-cpu100-1：M2-021 实现与测量边界（2026-11-20）
+
+- 接入的 `server_tick_stage_ms{stage}` 只覆盖现有六个整体区间（inputs、sim_step、post_step、bots、aoi_snapshot、send），不是任务卡要求的 11 个预算阶段；AOI 与快照编码仍在 sim 线程同步执行，尚无 3 线程编码池、局部排序实现、tick_100 基准或热点优化。不能将六段总区间误读成对应 11 项预算测量。
+- 超限仍沿用绝对 tick schedule 的跳过过期 slot（不追赶）；连续 3 次超限触发现有快照 15 Hz 降频，hold 改为 60 tick（30 Hz 下 2 s）。对应逻辑单测覆盖 40 ms 注入及恢复。协议、sim 规则及数据哈希未改。
