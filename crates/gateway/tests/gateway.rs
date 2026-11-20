@@ -224,10 +224,13 @@ async fn ticket_verifies_with_the_registered_match_identity_and_is_single_use() 
     );
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 async fn concurrent_tickets_preserve_cursor_and_profiles_across_both_paths() {
+    use std::sync::Arc;
+
     use frontline_gateway::auth::token;
     use sqlx::{Connection, SqliteConnection};
+    use tokio::sync::Barrier;
     use tokio::task::JoinSet;
 
     let dir = tempfile::tempdir().unwrap();
@@ -264,10 +267,13 @@ async fn concurrent_tickets_preserve_cursor_and_profiles_across_both_paths() {
     }
 
     let mut requests = JoinSet::new();
+    let start = Arc::new(Barrier::new(inputs.len() + 1));
     for (ip, token, nick) in inputs {
         let app = r.app.clone();
+        let start = start.clone();
         let route = format!("/v1/servers/{id}/ticket");
         requests.spawn(async move {
+            start.wait().await;
             let (status, _, body) = call(
                 &app,
                 Method::POST,
@@ -278,9 +284,11 @@ async fn concurrent_tickets_preserve_cursor_and_profiles_across_both_paths() {
             )
             .await;
             assert_eq!(status, StatusCode::OK, "{body}");
+            assert_eq!(body["expires_in_s"], 60);
             (body["ticket"].as_str().unwrap().to_owned(), nick)
         });
     }
+    start.wait().await;
 
     let key = SigningKey::from_bytes(&[5; 32]).verifying_key();
     let match_id = from_hex(&id).unwrap();
@@ -290,6 +298,8 @@ async fn concurrent_tickets_preserve_cursor_and_profiles_across_both_paths() {
         let (signed, nick) = result.unwrap();
         let claims = ticket::verify(&key, &signed, T0 / 1000, &match_id, &mut cache).unwrap();
         assert_eq!(claims.nick, nick);
+        assert_eq!(claims.exp, T0 / 1000 + 60);
+        assert!(!claims.is_admin);
         player_ids.push(claims.player_id);
     }
     player_ids.sort_unstable();
@@ -311,6 +321,67 @@ async fn concurrent_tickets_preserve_cursor_and_profiles_across_both_paths() {
         .unwrap();
     expected_profiles.sort_unstable();
     assert_eq!(profiles, expected_profiles);
+}
+
+#[tokio::test]
+async fn next_ticket_reuses_connection_after_failed_rename_without_skipping_cursor() {
+    use sqlx::{Connection, SqliteConnection};
+
+    let dir = tempfile::tempdir().unwrap();
+    let cfg = Config {
+        database_url: format!("sqlite://{}", dir.path().join("gateway.db").display()),
+        ..Config::test()
+    };
+    let r = rig_with(cfg.clone(), [5; 32]).await;
+    let id = register(&r, PROTOCOL_VERSION, 16).await;
+    let (status, profile) = guest(&r, "192.0.2.1").await;
+    assert_eq!(status, StatusCode::OK);
+    let token = profile["token"].as_str().unwrap();
+    let nick = profile["nick_suggestion"].as_str().unwrap();
+
+    let mut conn = SqliteConnection::connect(&cfg.database_url).await.unwrap();
+    sqlx::query(
+        "CREATE TRIGGER reject_rename BEFORE UPDATE ON guests
+         BEGIN SELECT RAISE(ABORT, 'guest write failed'); END",
+    )
+    .execute(&mut conn)
+    .await
+    .unwrap();
+    assert_eq!(
+        ticket_req(&r, &id, "192.0.2.1", Some(token), "Renamed").await,
+        StatusCode::INTERNAL_SERVER_ERROR
+    );
+    let (status, _, response) = call(
+        &r.app,
+        Method::POST,
+        &format!("/v1/servers/{id}/ticket"),
+        "192.0.2.1",
+        Some(token),
+        json!({"nick":nick}),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{response}");
+    let key = SigningKey::from_bytes(&[5; 32]).verifying_key();
+    let claims = ticket::verify(
+        &key,
+        response["ticket"].as_str().unwrap(),
+        T0 / 1000,
+        &from_hex(&id).unwrap(),
+        &mut JtiCache::default(),
+    )
+    .unwrap();
+    assert_eq!(claims.player_id, 0);
+    assert_eq!(claims.nick, nick);
+    let (next_player, saved_nick): (u8, String) = sqlx::query_as(
+        "SELECT matches.next_player, guests.nick FROM matches, guests
+         WHERE matches.id = ? AND guests.id = ?",
+    )
+    .bind(&id)
+    .bind(profile["guest_id"].as_str().unwrap())
+    .fetch_one(&mut conn)
+    .await
+    .unwrap();
+    assert_eq!((next_player, saved_nick.as_str()), (1, nick));
 }
 
 #[tokio::test]
@@ -779,6 +850,11 @@ async fn prometheus_counts_bounded_routes_auth_failures_and_storage_errors() {
         "gateway_http_request_duration_seconds_count{route=\"/v1/guest\"} 2",
         "gateway_ticket_storage_duration_seconds_count{stage=\"pool_wait\"} 3",
         "gateway_ticket_storage_duration_seconds_count{stage=\"transaction\"} 3",
+        "gateway_ticket_stage_duration_seconds_count{stage=\"auth\"} 4",
+        "gateway_ticket_stage_duration_seconds_count{stage=\"request_parse\"} 3",
+        "gateway_ticket_stage_duration_seconds_count{stage=\"eddsa_sign\"} 2",
+        "gateway_ticket_stage_duration_seconds_count{stage=\"serialization\"} 2",
+        "gateway_ticket_stage_duration_seconds_count{stage=\"log\"} 2",
         "gateway_auth_attempts_total{operation=\"ticket\",result=\"invalid\"} 1",
         "gateway_auth_attempts_total{operation=\"guest_renewal\",result=\"invalid\"} 1",
     ] {
