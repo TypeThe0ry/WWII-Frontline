@@ -787,7 +787,7 @@ impl World {
 
     pub fn roster_remove(&mut self, p: PlayerId) {
         if let Some(r) = &mut self.server_rules {
-            r.forget(p);
+            r.forget(p, self.squads.entry(p).and_then(|e| e.last_switch));
         }
         let now = self.tick();
         let d = self.squads.roster_remove(p, now);

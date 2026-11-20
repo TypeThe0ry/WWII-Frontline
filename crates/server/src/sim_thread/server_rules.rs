@@ -79,8 +79,10 @@ impl<C: Clock> SimLoop<C> {
                 } => {
                     tracing::info!(event = "server_rule_kick", player, ?reason);
                     if let Some(net) = self.bridge.net() {
-                        if let Some(until) = cooldown_until {
-                            net.sessions.set_tk_cooldown(player, until);
+                        if let (Some(guest), Some(until)) =
+                            (self.world.rule_guest(player), cooldown_until)
+                        {
+                            net.sessions.set_tk_cooldown(guest, until);
                         }
                         if let Some(handle) = net.sessions.handle_of(player) {
                             crate::net::conn::disconnect(

@@ -18,9 +18,17 @@ pub(super) struct Balance {
 }
 
 impl Balance {
-    pub fn remove_player(&mut self, id: PlayerId) {
-        self.forced.remove(&id);
-        self.recent.remove(&id);
+    pub(super) fn take_player(&mut self, id: PlayerId) -> (bool, Option<Tick>) {
+        (self.forced.remove(&id), self.recent.remove(&id))
+    }
+
+    pub(super) fn restore_player(&mut self, id: PlayerId, forced: bool, recent: Option<Tick>) {
+        if forced {
+            self.forced.insert(id);
+        }
+        if let Some(until) = recent {
+            self.recent.insert(id, until);
+        }
     }
 
     pub fn has_offer(&self, team: Team, now: Tick) -> bool {

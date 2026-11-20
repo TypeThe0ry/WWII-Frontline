@@ -339,6 +339,26 @@ pub struct ServerRules {
     afk: afk::Afk,
 }
 
+/// Match-scoped rule history detached from a slot. The caller owns identity binding and expiry
+/// at round reset; this value must only be restored for the same authenticated player.
+#[derive(Debug, Clone)]
+pub(crate) struct PlayerCarry {
+    forced: bool,
+    recent_until: Option<Tick>,
+    tk: Option<tk::History>,
+    kick_next: Option<Tick>,
+}
+
+impl PlayerCarry {
+    pub(crate) fn hash_into(&self, w: &mut HashWriter) {
+        w.write_bytes(b"rulecarry\x01");
+        w.write_u8(u8::from(self.forced));
+        write_option(w, self.recent_until, |w, t| w.write_u32(t.0));
+        write_option(w, self.tk.as_ref(), |w, history| history.hash_into(w));
+        write_option(w, self.kick_next, |w, t| w.write_u32(t.0));
+    }
+}
+
 impl ServerRules {
     pub fn new(config: RuleConfig) -> Self {
         Self {
@@ -375,10 +395,37 @@ impl ServerRules {
 
     /// Required on disconnect before reusing a player slot, even within one tick.
     pub fn remove_player(&mut self, id: PlayerId) {
-        self.balance.remove_player(id);
-        self.tk.remove_player(id);
-        self.votes.remove_player(id);
+        self.take_player_carry(id);
+    }
+
+    /// Clear all slot state and return only the history eligible for an authenticated reconnect.
+    /// Call before the next rule step (which prunes absent players).
+    pub(crate) fn take_player_carry(&mut self, id: PlayerId) -> Option<PlayerCarry> {
+        let (forced, recent_until) = self.balance.take_player(id);
+        let tk = self.tk.take_player(id);
+        let kick_next = self.votes.take_player(id);
         self.afk.remove_player(id);
+        (forced || recent_until.is_some() || tk.is_some() || kick_next.is_some()).then_some(
+            PlayerCarry {
+                forced,
+                recent_until,
+                tk,
+                kick_next,
+            },
+        )
+    }
+
+    /// Restore history into a clean slot, before the returning player's first rule command.
+    /// Absolute tick deadlines are retained, not restarted.
+    pub(crate) fn restore_player_carry(&mut self, id: PlayerId, carry: PlayerCarry) {
+        self.balance
+            .restore_player(id, carry.forced, carry.recent_until);
+        if let Some(history) = carry.tk {
+            self.tk.restore_player(id, history);
+        }
+        if let Some(until) = carry.kick_next {
+            self.votes.restore_player(id, until);
+        }
     }
 
     pub fn step(&mut self, ctx: &RuleContext<'_>) -> Vec<ServerAction> {
@@ -430,7 +477,8 @@ impl ServerRules {
                     offer.unwrap_or(MoveKind::Voluntary),
                 ));
                 if accept_offer {
-                    self.balance.accepted(ctx, id, self.config.balance.offer_s);
+                    self.balance
+                        .accepted(ctx, id, self.config.balance.recent_move_s);
                 }
             }
             RuleCommand::RespondTk { event_id, decision } => {

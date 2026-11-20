@@ -822,7 +822,10 @@ impl<C: Clock> SimLoop<C> {
                         .net()
                         .and_then(|net| net.sessions.ticket_identity_of(player));
                     let admin = identity.as_ref().is_some_and(|ticket| ticket.is_admin);
-                    if let Err(error) = self.world.admit_human(player, team, admin) {
+                    let guest = identity
+                        .as_ref()
+                        .map(crate::gateway_link::Admitted::match_guest);
+                    if let Err(error) = self.world.admit_human(player, team, admin, guest) {
                         tracing::warn!(?error, player, "roster rejected join");
                         if let Some(handle) = self
                             .bridge

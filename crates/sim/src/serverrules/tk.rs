@@ -9,12 +9,26 @@ struct Prompt {
 }
 
 #[derive(Debug, Clone, Default, Hash)]
-struct History {
+pub(super) struct History {
     incidents: VecDeque<Tick>,
     strikes: VecDeque<Tick>,
     match_strikes: u16,
     high_risk_until: Option<Tick>,
     rifleman_until: Option<Tick>,
+}
+
+impl History {
+    pub(super) fn hash_into(&self, w: &mut HashWriter) {
+        for queue in [&self.incidents, &self.strikes] {
+            w.write_u32(queue.len() as u32);
+            for tick in queue {
+                w.write_u32(tick.0);
+            }
+        }
+        w.write_u16(self.match_strikes);
+        write_option(w, self.high_risk_until, |w, t| w.write_u32(t.0));
+        write_option(w, self.rifleman_until, |w, t| w.write_u32(t.0));
+    }
 }
 
 #[derive(Debug, Clone, Default, Hash)]
@@ -24,10 +38,14 @@ pub(super) struct TeamKills {
 }
 
 impl TeamKills {
-    pub fn remove_player(&mut self, id: PlayerId) {
-        self.players.remove(&id);
+    pub(super) fn take_player(&mut self, id: PlayerId) -> Option<History> {
         self.pending
             .retain(|_, p| p.offender != id && p.victim != id);
+        self.players.remove(&id)
+    }
+
+    pub(super) fn restore_player(&mut self, id: PlayerId, history: History) {
+        self.players.insert(id, history);
     }
 
     pub fn count(&self, cfg: &TkConfig, ctx: &RuleContext<'_>, id: PlayerId) -> usize {
@@ -183,15 +201,7 @@ impl TeamKills {
         w.write_u32(self.players.len() as u32);
         for (&id, history) in &self.players {
             w.write_u8(id);
-            for queue in [&history.incidents, &history.strikes] {
-                w.write_u32(queue.len() as u32);
-                for tick in queue {
-                    w.write_u32(tick.0);
-                }
-            }
-            w.write_u16(history.match_strikes);
-            write_option(w, history.high_risk_until, |w, t| w.write_u32(t.0));
-            write_option(w, history.rifleman_until, |w, t| w.write_u32(t.0));
+            history.hash_into(w);
         }
     }
 }

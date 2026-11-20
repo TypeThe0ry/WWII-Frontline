@@ -6,18 +6,27 @@ use super::*;
 use crate::medical::CreditKind;
 use crate::rules::MatchPhaseKind;
 use crate::serverrules::{
-    Activity, MoveKind, PlayerFacts, RuleCommand, RuleContext, RuleError, ServerAction,
-    ServerRules, TkEvent, TkKind,
+    Activity, MoveKind, PlayerCarry, PlayerFacts, RuleCommand, RuleContext, RuleError,
+    ServerAction, ServerRules, TkEvent, TkKind,
 };
 
 const HUMAN: u8 = 1;
 const ADMIN: u8 = 2;
 const MUTED: u8 = 4;
 
+struct ReconnectState {
+    rules: Option<PlayerCarry>,
+    last_switch: Option<Tick>,
+    xp_bonus: u8,
+    muted: bool,
+}
+
 pub(super) struct Authority {
     rules: ServerRules,
     slots: [u8; 128],
     xp_bonus: [u8; 128],
+    guests: [Option<[u8; 8]>; 128],
+    disconnected: BTreeMap<[u8; 8], ReconnectState>,
     downed_by: BTreeMap<PlayerId, PlayerId>,
     next_incident: u16,
     map_candidates: Option<[u16; 3]>,
@@ -25,17 +34,54 @@ pub(super) struct Authority {
 }
 
 impl Authority {
-    pub(super) fn forget(&mut self, p: PlayerId) {
-        self.rules.remove_player(p);
-        self.slots[usize::from(p)] = 0;
-        self.xp_bonus[usize::from(p)] = 0;
+    pub(super) fn forget(&mut self, p: PlayerId, last_switch: Option<Tick>) {
+        let slot = usize::from(p);
+        if let Some(guest) = self.guests[slot].take() {
+            let state = ReconnectState {
+                rules: self.rules.take_player_carry(p),
+                last_switch,
+                xp_bonus: self.xp_bonus[slot],
+                muted: self.slots[slot] & MUTED != 0,
+            };
+            if state.rules.is_some()
+                || state.last_switch.is_some()
+                || state.xp_bonus != 0
+                || state.muted
+            {
+                self.disconnected.insert(guest, state);
+            }
+        } else {
+            self.rules.remove_player(p);
+        }
+        self.slots[slot] = 0;
+        self.xp_bonus[slot] = 0;
         self.downed_by.retain(|v, k| *v != p && *k != p);
     }
 
     pub(super) fn hash_into(&self, out: &mut HashWriter) {
-        out.write_u8(0xD8);
+        out.write_u8(0xD9);
         out.write_bytes(&self.slots);
         out.write_bytes(&self.xp_bonus);
+        for guest in self.guests {
+            out.write_u8(u8::from(guest.is_some()));
+            if let Some(guest) = guest {
+                out.write_bytes(&guest);
+            }
+        }
+        out.write_u32(self.disconnected.len() as u32);
+        for (guest, state) in &self.disconnected {
+            out.write_bytes(guest);
+            out.write_u8(u8::from(state.rules.is_some()));
+            if let Some(rules) = &state.rules {
+                rules.hash_into(out);
+            }
+            out.write_u8(u8::from(state.last_switch.is_some()));
+            if let Some(tick) = state.last_switch {
+                out.write_u32(tick.0);
+            }
+            out.write_u8(state.xp_bonus);
+            out.write_u8(u8::from(state.muted));
+        }
         out.write_u16(self.next_incident);
         out.write_u8(self.downed_by.len() as u8);
         for (&victim, &killer) in &self.downed_by {
@@ -58,6 +104,8 @@ impl World {
             rules: ServerRules::default(),
             slots: [0; 128],
             xp_bonus: [0; 128],
+            guests: [None; 128],
+            disconnected: BTreeMap::new(),
             downed_by: BTreeMap::new(),
             next_incident: 0,
             map_candidates,
@@ -70,13 +118,30 @@ impl World {
         player: PlayerId,
         team: Team,
         admin: bool,
+        guest: Option<[u8; 8]>,
     ) -> Result<(), crate::team::balance::TeamError> {
         let deltas = self.squads.admit(player, team, self.tick())?;
         if let Some(r) = &mut self.server_rules {
-            r.slots[usize::from(player)] = HUMAN | if admin { ADMIN } else { 0 };
+            let slot = usize::from(player);
+            r.slots[slot] = HUMAN | if admin { ADMIN } else { 0 };
+            r.guests[slot] = guest;
+            if let Some(state) = guest.and_then(|guest| r.disconnected.remove(&guest)) {
+                if let Some(carry) = state.rules {
+                    r.rules.restore_player_carry(player, carry);
+                }
+                self.squads.restore_last_switch(player, state.last_switch);
+                r.xp_bonus[slot] = state.xp_bonus;
+                if state.muted {
+                    r.slots[slot] |= MUTED;
+                }
+            }
         }
         self.push_roster(deltas);
         Ok(())
+    }
+
+    pub fn rule_guest(&self, player: PlayerId) -> Option<[u8; 8]> {
+        self.server_rules.as_ref()?.guests[usize::from(player)]
     }
 
     pub fn is_rule_muted(&self, p: PlayerId) -> bool {
@@ -311,12 +376,13 @@ impl World {
                 } => {
                     r.downed_by.remove(&victim);
                 }
-                SimEvent::Kill { victim, .. } if r.downed_by.contains_key(&victim) => {
-                    // Bleed-out has no KillCredit. A same-incident finish has one and is handled above.
-                    if !events.iter().any(|e| matches!(e, SimEvent::KillCredit { victim: v, kind: CreditKind::Direct | CreditKind::Finish, .. } if *v == victim)) {
-                        let offender = r.downed_by.remove(&victim).expect("incident checked");
-                        actions.extend(r.incident(&ctx, offender, victim, TkKind::DeathAfterDown));
-                    }
+                SimEvent::Kill { victim, .. }
+                    if r.downed_by.contains_key(&victim)
+                        && !events.iter().any(|e| matches!(e, SimEvent::KillCredit { victim: v, kind: CreditKind::Direct | CreditKind::Finish, .. } if *v == victim)) =>
+                {
+                    // Bleed-out has no KillCredit. A finish is handled in the credit arm.
+                    let offender = r.downed_by.remove(&victim).expect("incident checked");
+                    actions.extend(r.incident(&ctx, offender, victim, TkKind::DeathAfterDown));
                 }
                 _ => {}
             }
@@ -353,5 +419,57 @@ impl Authority {
                 kind,
             },
         )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn serverrules_reconnect_retains_identity_state_but_not_slot_state() {
+        let mut world = World::new(
+            SimConfig {
+                tick_hz: 30,
+                match_seed: 5,
+                map: MapId(0),
+                mode: GameMode::Sandbox,
+                data: GameData::embedded(),
+            },
+            &CollisionData::empty(),
+        );
+        let guest = [11; 8];
+        world.enable_server_rules(None);
+        world.admit_human(4, Team::Us, true, Some(guest)).unwrap();
+        world.apply_rule_mute(4);
+        world
+            .apply_rule_move(
+                4,
+                Team::Ger,
+                MoveKind::Volunteer {
+                    xp_bonus_percent: 20,
+                },
+            )
+            .unwrap();
+        let moved_at = world.tick();
+        world.roster_remove(4);
+        assert_eq!(world.rule_guest(4), None);
+        world
+            .admit_human(4, Team::Us, false, Some([12; 8]))
+            .unwrap();
+        assert!(!world.is_rule_muted(4));
+        assert_eq!(world.rule_xp_bonus_percent(4), 0);
+        assert_eq!(world.squads.entry(4).unwrap().last_switch, None);
+        world.admit_human(9, Team::Ger, false, Some(guest)).unwrap();
+        assert!(world.is_rule_muted(9));
+        assert_eq!(world.rule_xp_bonus_percent(9), 20);
+        assert_eq!(world.squads.entry(9).unwrap().last_switch, Some(moved_at));
+        assert!(
+            !world
+                .rule_fact(world.server_rules.as_ref().unwrap(), 9)
+                .unwrap()
+                .is_admin
+        );
+        assert!(world.server_rules.as_ref().unwrap().disconnected.is_empty());
     }
 }

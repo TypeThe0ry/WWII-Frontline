@@ -177,8 +177,17 @@ fn balance_offer_is_single_use_and_break_in_continuity_restarts_timer() {
 }
 
 fn tk(rules: &mut ServerRules, c: &RuleContext<'_>, id: u32) -> Vec<ServerAction> {
+    punish_tk(rules, c, 0, id)
+}
+
+fn punish_tk(
+    rules: &mut ServerRules,
+    c: &RuleContext<'_>,
+    offender: PlayerId,
+    id: TkEventId,
+) -> Vec<ServerAction> {
     let event = TkEvent {
-        offender: 0,
+        offender,
         victim: 1,
         event_id: id,
         kind: TkKind::Killed,
@@ -200,6 +209,157 @@ fn tk(rules: &mut ServerRules, c: &RuleContext<'_>, id: u32) -> Vec<ServerAction
             },
         )
         .unwrap()
+}
+
+#[test]
+fn reconnect_carries_tk_and_kick_cooldown_but_not_slot_state() {
+    let mut r = ServerRules::default();
+    let mut p = ids(3);
+    let c = ctx(&p, 1800);
+    let vote = start(&mut r, &c, 0, VoteRequest::Kick(2));
+    r.command(&c, 0, cast(vote.id, Ballot::Yes)).unwrap();
+    tk(&mut r, &c, 1);
+    tk(&mut r, &ctx(&p, 1801), 2);
+    for (event_id, offender, victim) in [(3, 0, 1), (4, 1, 0)] {
+        r.report_tk(
+            &ctx(&p, 1801),
+            TkEvent {
+                event_id,
+                offender,
+                victim,
+                kind: TkKind::Killed,
+            },
+        );
+    }
+    r.step(&ctx(&p, 1801));
+    assert!(r.is_afk(0));
+
+    // Identity A leaves slot 0. A different identity takes slot 0 while A returns on slot 3.
+    let carry = r.take_player_carry(0).unwrap();
+    assert!(r.take_player_carry(0).is_none());
+    p[0].joined_tick = Tick(1802);
+    p.push(PlayerFacts {
+        joined_tick: Tick(1802),
+        ..player(3, Team::Us)
+    });
+    r.restore_player_carry(3, carry.clone());
+    let mut hash_before = HashWriter::new();
+    carry.hash_into(&mut hash_before);
+    let rebound = r.take_player_carry(3).unwrap();
+    let mut hash_after = HashWriter::new();
+    rebound.hash_into(&mut hash_after);
+    assert_eq!(hash_before.finish(), hash_after.finish());
+    r.restore_player_carry(3, rebound);
+
+    let c = ctx(&p, 1802);
+    assert!(!r.is_afk(0));
+    assert!(!r.is_afk(3));
+    assert_eq!(r.tk_count(&c, 0), 0);
+    assert_eq!(r.tk_count(&c, 3), 3);
+    assert_eq!(r.role_lock(c.now, 0), None);
+    assert_eq!(r.role_lock(c.now, 3), Some(RoleLock::HighRisk));
+    for (victim, event_id) in [(1, 3), (0, 4), (3, 4)] {
+        assert_eq!(
+            r.command(
+                &c,
+                victim,
+                RuleCommand::RespondTk {
+                    event_id,
+                    decision: TkDecision::Punish
+                }
+            ),
+            Err(RuleError::TkPromptNotFound)
+        );
+    }
+    assert!(r
+        .step(&c)
+        .iter()
+        .any(|a| matches!(a, ServerAction::VoteSnapshot(VoteSnapshot { yes: 0, .. }))));
+    assert!(r.command(&c, 3, cast(vote.id, Ballot::Yes)).is_ok());
+    let actions = punish_tk(&mut r, &c, 3, 5);
+    assert!(actions.contains(&ServerAction::LockVehicle {
+        player: 3,
+        until: Tick(4802)
+    }));
+    assert!(r.vehicle_locked(Tick(4801), 3));
+    assert!(!r.vehicle_locked(Tick(4802), 3));
+    assert!(punish_tk(&mut r, &c, 3, 6).is_empty());
+
+    r.step(&ctx(&p, 2250));
+    let kick = RuleCommand::StartVote(VoteRequest::Kick(2));
+    assert_eq!(
+        r.command(&ctx(&p, 2250), 3, kick),
+        Err(RuleError::VoteCooldown)
+    );
+    assert!(r.command(&ctx(&p, 2250), 0, kick).is_ok());
+    r.step(&ctx(&p, 4799));
+    assert_eq!(
+        r.command(&ctx(&p, 4799), 3, kick),
+        Err(RuleError::VoteCooldown)
+    );
+    assert!(r.command(&ctx(&p, 4800), 3, kick).is_ok());
+    assert_eq!(
+        punish_tk(&mut r, &ctx(&p, 8400), 3, 7),
+        vec![ServerAction::Kick {
+            player: 3,
+            reason: KickReason::TeamKill,
+            cooldown_until: Some(Tick(26400)),
+        }]
+    );
+}
+
+#[test]
+fn reconnect_carries_forced_move_limit_after_recent_window() {
+    let mut r = ServerRules::default();
+    let mut p = six();
+    r.step(&ctx(&p, 0));
+    r.step(&ctx(&p, 900));
+    assert_eq!(forced(&r.step(&ctx(&p, 1500))), Some(0));
+    let carry = r.take_player_carry(0).unwrap();
+
+    p[0].joined_tick = Tick(1501);
+    p.push(PlayerFacts {
+        joined_tick: Tick(1502),
+        ..player(6, Team::Us)
+    });
+    r.restore_player_carry(6, carry);
+    for player in &p {
+        r.record_activity(&ctx(&p, 2400), player.id, Activity::Voice);
+    }
+    r.step(&ctx(&p, 2400));
+    // The returning player would rank first but has already been forced. Slot 0 is eligible.
+    assert_eq!(forced(&r.step(&ctx(&p, 3000))), Some(0));
+}
+
+#[test]
+fn reconnect_preserves_but_does_not_restart_recent_move_window() {
+    let mut cfg = RuleConfig::default();
+    cfg.balance.check_period_s = 1;
+    cfg.balance.persist_s = 1;
+    cfg.balance.offer_s = 1;
+    let mut r = ServerRules::new(cfg);
+    let mut p = six();
+    r.step(&ctx(&p, 1800));
+    r.step(&ctx(&p, 1810));
+    let cmd = RuleCommand::SwitchTeam { accept_offer: true };
+    assert!(r.command(&ctx(&p, 1810), 0, cmd).is_ok());
+    let carry = r.take_player_carry(0).unwrap();
+
+    p[0].joined_tick = Tick(1811);
+    p.push(PlayerFacts {
+        joined_tick: Tick(1812),
+        ..player(6, Team::Us)
+    });
+    for (start, candidate) in [(2689, 0), (2690, 6)] {
+        let mut r = r.clone();
+        r.restore_player_carry(6, carry.clone());
+        for player in &p {
+            r.record_activity(&ctx(&p, start), player.id, Activity::Voice);
+        }
+        r.step(&ctx(&p, start));
+        r.step(&ctx(&p, start + 10));
+        assert_eq!(forced(&r.step(&ctx(&p, start + 20))), Some(candidate));
+    }
 }
 
 #[test]

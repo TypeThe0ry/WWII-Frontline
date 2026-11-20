@@ -174,14 +174,18 @@ impl Votes {
         self.map_started
     }
 
-    pub fn remove_player(&mut self, id: PlayerId) {
-        self.kick_next.remove(&id);
+    pub(super) fn take_player(&mut self, id: PlayerId) -> Option<Tick> {
         for vote in self.active.values_mut() {
             vote.ballots.remove(&id);
             if vote.target() == Some(id) {
                 vote.invalidated = true;
             }
         }
+        self.kick_next.remove(&id)
+    }
+
+    pub(super) fn restore_player(&mut self, id: PlayerId, until: Tick) {
+        self.kick_next.insert(id, until);
     }
 
     fn add(

@@ -254,15 +254,8 @@ impl Sessions {
         }
     }
 
-    pub(crate) fn set_tk_cooldown(&self, p: PlayerId, until: Tick) {
-        let mut g = self.lock();
-        if let Some(key) = g.players[usize::from(p)]
-            .as_ref()
-            .and_then(|p| p.ticket_identity.as_ref())
-            .map(Admitted::match_guest)
-        {
-            g.tk_cooldowns.insert(key, until);
-        }
+    pub(crate) fn set_tk_cooldown(&self, guest: [u8; 8], until: Tick) {
+        self.lock().tk_cooldowns.insert(guest, until);
     }
 
     /// Atomically claims a free seat and counts it for team balance. Returns false if occupied.
@@ -690,14 +683,17 @@ fn handle_frame(
 }
 
 async fn cleanup(ctx: &NetCtx, player: PlayerId) {
-    ctx.sessions.release_player(player);
     for _ in 0..200 {
         match ctx.commands.try_send(Command::ClientGone(player)) {
-            Ok(()) => return,
+            Ok(()) | Err(TrySendError::Disconnected(_)) => {
+                // Queue the leave before a reconnect can enqueue another join for this guest.
+                ctx.sessions.release_player(player);
+                return;
+            }
             Err(TrySendError::Full(_)) => tokio::time::sleep(Duration::from_millis(5)).await,
-            Err(TrySendError::Disconnected(_)) => return,
         }
     }
+    ctx.sessions.release_player(player);
     tracing::warn!(
         event = "client_gone_dropped",
         player_id = player as u64,
@@ -802,8 +798,8 @@ mod tests {
             s.alloc_player_team_with_identity(&h, Some(ticket(1, 43, "New")), Tick(2)),
             Err(RejectReason::InvalidTicket)
         );
-        s.set_tk_cooldown(slot, Tick(54_001));
         s.release_player(slot);
+        s.set_tk_cooldown(ticket(1, 42, "Old").match_guest(), Tick(54_001));
         assert_eq!(
             s.alloc_player_team_with_identity(&h, Some(ticket(1, 44, "Other")), Tick(54_000)),
             Err(RejectReason::Banned)

@@ -435,6 +435,12 @@ impl SquadManager {
 
     // ---- facts fed by the server ----
 
+    pub(crate) fn restore_last_switch(&mut self, p: PlayerId, tick: Option<Tick>) {
+        if let Some(entry) = self.roster.get_mut(&p) {
+            entry.last_switch = tick;
+        }
+    }
+
     pub fn set_online(&mut self, p: PlayerId, online: bool) {
         if let Some(e) = self.roster.get_mut(&p) {
             e.online = online;
