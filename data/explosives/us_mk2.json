@@ -30,7 +30,7 @@
     "lethal_radius_m": 3.2
   },
   "_meta": {
-    "status": "initial",
+    "status": "reviewed",
     "tunable": [
       "gameplay.fuse_s",
       "gameplay.throw_speed_mps",

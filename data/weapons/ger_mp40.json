@@ -13,6 +13,61 @@
     "mass_kg": 4.0,
     "_source": [
       {
+        "field": "caliber",
+        "value": "9×19 mm",
+        "unit": "mm",
+        "source_id": "MPVH",
+        "title": "Slovak Institute of Military History (VHÚ), MP 40 Technical Data Sheet",
+        "locator": "p. 47, technical data table (kaliber 9 mm; 9×19 mm chambering)",
+        "url": "https://www.mosr.sk/data/att/107241.pdf#page=47",
+        "accessed": "2026-11-19",
+        "note": "名义口径 9 mm；9×19 mm 为膛室规格。"
+      },
+      {
+        "field": "cartridge",
+        "value": "9×19 mm Parabellum",
+        "unit": "",
+        "source_id": "TME",
+        "title": "U.S. War Department TM-E 30-451 (1945)",
+        "locator": "Ch. VII §II.4.a(3), Ammunition (9-mm Parabellum); MPVH p. 47",
+        "url": "https://www.ibiblio.org/hyperwar/Germany/HB/HB-7.html",
+        "accessed": "2026-11-19",
+        "note": "9×19 mm Parabellum。"
+      },
+      {
+        "field": "magazine_capacity",
+        "value": 32,
+        "unit": "rounds",
+        "source_id": "MPSS",
+        "title": "U.S. Military Intelligence Service, Special Series No. 14 (1943)",
+        "locator": "p. 17, §II.3.c(2), Table of Characteristics (32-round box); MPVH p. 47",
+        "url": "https://www.lonesentry.com/manuals/german-infantry-weapons/mp40-machine-pistol.html",
+        "accessed": "2026-11-19",
+        "note": "每匣 32 发。"
+      },
+      {
+        "field": "magazine_type",
+        "value": "detachable_box",
+        "unit": "",
+        "source_id": "MPSS",
+        "title": "U.S. Military Intelligence Service, Special Series No. 14 (1943)",
+        "locator": "p. 17, §II.3.c(2) (detachable box magazine); MPPARA Specifications",
+        "url": "https://www.lonesentry.com/manuals/german-infantry-weapons/mp40-machine-pistol.html",
+        "accessed": "2026-11-19",
+        "note": "可拆卸盒式弹匣。"
+      },
+      {
+        "field": "muzzle_velocity_mps",
+        "value": 380,
+        "unit": "m/s",
+        "source_id": "MPVH",
+        "title": "Slovak Institute of Military History (VHÚ), MP 40 Technical Data Sheet",
+        "locator": "p. 47, technical data table (380 m/s); MPMSO PDF p. 3",
+        "url": "https://www.mosr.sk/data/att/107241.pdf#page=47",
+        "accessed": "2026-11-19",
+        "note": "两处馆方资料均列标称初速 380 m/s。"
+      },
+      {
         "field": "rate_of_fire_rpm_practical",
         "value": 180,
         "unit": "rpm",
@@ -22,6 +77,17 @@
         "url": "https://www.ibiblio.org/hyperwar/Germany/HB/HB-7.html",
         "accessed": "2026-11-19",
         "note": "手册的实用标称；不采用 1943 年情报的短点射条件值，也不修改游戏射速。"
+      },
+      {
+        "field": "mass_kg",
+        "value": 4.0,
+        "unit": "kg",
+        "source_id": "MPMSO",
+        "title": "Musée du Sous-Officier, Lettre MSO No. 8 (MP 40)",
+        "locator": "PDF p. 3, Caractéristiques techniques (4.03 kg unloaded); TME Ch. VII §II.4.a(2)",
+        "url": "https://lechevron.fr/images/articles/publications/lettre/lettre_MSO_008.pdf#page=3",
+        "accessed": "2026-11-19",
+        "note": "馆方空载标称 4.03 kg，按 0.1 kg 取整为 4.0 kg；美军情报另给不带弹匣约 9 lb（4.08 kg）。"
       }
     ]
   },
@@ -81,7 +147,11 @@
     "tracer": false
   },
   "_meta": {
-    "status": "initial",
+    "status": "reviewed",
+    "unverified": [],
+    "deviation_reason": {
+      "gameplay.fire.cap_rpm": "Full-auto cyclic rate 500 rpm (TM-E 30-451 Ch. VII §II.4.a(2)) vs historical practical 180 rpm: gameplay automatic fire cap uses mechanical cyclic rate (GAMEDESIGN §6.2)."
+    },
     "tunable": [
       "gameplay.damage_torso_hp",
       "gameplay.part_mult.head",

@@ -9,9 +9,76 @@
     "magazine_capacity": 15,
     "magazine_type": "detachable_box",
     "muzzle_velocity_mps": 580,
-    "rate_of_fire_rpm_practical": 40,
+    "rate_of_fire_rpm_practical": "未核实",
     "mass_kg": 2.4,
-    "_source": "待 M1-070 按 REF §6 复核"
+    "_source": [
+      {
+        "field": "caliber",
+        "value": "7.62×33 mm",
+        "unit": "mm",
+        "source_id": "FM7",
+        "title": "U.S. War Department FM 23-7 U.S. Carbine, Caliber .30, M1 (1942)",
+        "locator": "p. 1, §2.a (caliber .30 in); CIPCARB Tab. I (30 Carbine, case 32.77 mm)",
+        "url": "https://patcosta.com/wp-content/uploads/2024/07/FM-23-7-M1-Carbine-May-1942.pdf",
+        "accessed": "2026-11-19",
+        "note": "名义口径 .30 英寸；7.62×33 mm 为膛室规格简写。"
+      },
+      {
+        "field": "cartridge",
+        "value": ".30 Carbine",
+        "unit": "",
+        "source_id": "TM2200",
+        "title": "U.S. War Department TM 9-2200 (1943)",
+        "locator": "pp. 178–179, §101 (Cartridge, Carbine, Cal. .30, M1); CIPCARB Tab. I",
+        "url": "https://www.ibiblio.org/hyperwar/USA/ref/TM/pdfs/TM9-2200.pdf",
+        "accessed": "2026-11-19",
+        "note": ".30 Carbine，战时弹药表列 M1 卡宾枪用弹。"
+      },
+      {
+        "field": "magazine_capacity",
+        "value": 15,
+        "unit": "rounds",
+        "source_id": "FM7",
+        "title": "U.S. War Department FM 23-7 (1942)",
+        "locator": "p. 1, §1 (15-round box magazine); TM2200 p. 13 §7; TM1276 p. 7 §6",
+        "url": "https://patcosta.com/wp-content/uploads/2024/07/FM-23-7-M1-Carbine-May-1942.pdf",
+        "accessed": "2026-11-19",
+        "note": "战时 M1 的 15 发弹匣。"
+      },
+      {
+        "field": "magazine_type",
+        "value": "detachable_box",
+        "unit": "",
+        "source_id": "FM7",
+        "title": "U.S. War Department FM 23-7 (1942)",
+        "locator": "p. 1, §1 (detachable box magazine); TM2200 p. 13 §7",
+        "url": "https://patcosta.com/wp-content/uploads/2024/07/FM-23-7-M1-Carbine-May-1942.pdf",
+        "accessed": "2026-11-19",
+        "note": "可拆卸盒式弹匣。"
+      },
+      {
+        "field": "muzzle_velocity_mps",
+        "value": 580,
+        "unit": "m/s",
+        "source_id": "FM7",
+        "title": "U.S. War Department FM 23-7 (1942)",
+        "locator": "p. 3, §3 (1,900 ft/s ≈ 579.1 m/s); TM2200 pp. 178–179 §101.d",
+        "url": "https://patcosta.com/wp-content/uploads/2024/07/FM-23-7-M1-Carbine-May-1942.pdf",
+        "accessed": "2026-11-19",
+        "note": "1942 年 FM 列 1,900 ft/s（约 579 m/s，取整 580 m/s）。"
+      },
+      {
+        "field": "mass_kg",
+        "value": 2.4,
+        "unit": "kg",
+        "source_id": "FM7",
+        "title": "U.S. War Department FM 23-7 (1942)",
+        "locator": "p. 1, §2.b (5.29 lb without sling, with empty magazine ≈ 2.400 kg)",
+        "url": "https://patcosta.com/wp-content/uploads/2024/07/FM-23-7-M1-Carbine-May-1942.pdf",
+        "accessed": "2026-11-19",
+        "note": "不带背带、带空匣约 5.29 lb（约 2.40 kg）。"
+      }
+    ]
   },
   "gameplay": {
     "damage_torso_hp": 48,
@@ -70,6 +137,9 @@
   },
   "_meta": {
     "status": "initial",
+    "unverified": [
+      "historical.rate_of_fire_rpm_practical"
+    ],
     "tunable": [
       "gameplay.damage_torso_hp",
       "gameplay.part_mult.head",

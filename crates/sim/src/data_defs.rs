@@ -652,7 +652,7 @@ pub struct VehicleHistorical {
     #[serde(default)]
     pub dimensions_m: Option<Dimensions>,
     #[serde(rename = "_source")]
-    pub source: String,
+    pub source: HistSource,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize)]

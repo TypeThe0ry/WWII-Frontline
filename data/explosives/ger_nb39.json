@@ -28,7 +28,7 @@
     "decay_s": 8
   },
   "_meta": {
-    "status": "initial",
+    "status": "reviewed",
     "tunable": [
       "gameplay.fuse_s",
       "gameplay.cloud_radius_m",

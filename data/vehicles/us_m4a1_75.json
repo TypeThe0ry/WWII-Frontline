@@ -13,7 +13,67 @@
       "width": 2.591,
       "height": 2.845
     },
-    "_source": "max_speed_mps: TM 9-2800 (1943), p. 109, Performance, 最高允许速度 24 mph，非巡航速度：https://archive.org/download/TM9-2800/TM9-2800.pdf#page=109；mass_kg: 同页 General Data / Additional Data，T54E1 履带的战斗全重 67,300 lb；dimensions_m: 同册 p. 108，无防沙板图示外廓 230 × 102 × 112 in：https://archive.org/download/TM9-2800/TM9-2800.pdf#page=108。"
+    "_source": [
+      {
+        "field": "mass_kg",
+        "value": 30527,
+        "unit": "kg",
+        "source_id": "TM2800B",
+        "title": "U.S. War Department TM 9-2800 Standard Military Motor Vehicles (1 Sep 1943)",
+        "locator": "p. 109, Medium Tank M4A1, General Data & Additional Data (combat weight 67,300 lb with T54E1 tracks ≈ 30,526.8 kg)",
+        "url": "https://archive.org/download/TM9-2800/TM9-2800.pdf#page=109",
+        "accessed": "2026-11-19",
+        "note": "T54E1 履带构型战斗全重 67,300 lb，换算取整为 30,527 kg（T48/T51 履带另为 66,800 lb ≈ 30,300 kg）。"
+      },
+      {
+        "field": "crew",
+        "value": 5,
+        "unit": "crew",
+        "source_id": "TM2800B",
+        "title": "U.S. War Department TM 9-2800 (1943)",
+        "locator": "p. 109, Medium Tank M4A1, General Data (Crew: 5)",
+        "url": "https://archive.org/download/TM9-2800/TM9-2800.pdf#page=109",
+        "accessed": "2026-11-19",
+        "note": "史实乘员 5 人（车长、炮手、装填手、驾驶员、副驾驶）；游戏座位数 3 为玩法简化。"
+      },
+      {
+        "field": "main_gun",
+        "value": "75 mm M3",
+        "unit": "",
+        "source_id": "TM2800A",
+        "title": "U.S. War Department TM 9-2800 (1943)",
+        "locator": "p. 108, Medium Tank M4A1, Armament (75-mm Gun M3 in Mount M34)",
+        "url": "https://archive.org/download/TM9-2800/TM9-2800.pdf#page=108",
+        "accessed": "2026-11-19",
+        "note": "75 mm Gun M3。"
+      },
+      {
+        "field": "max_speed_mps",
+        "value": 10.72896,
+        "unit": "m/s",
+        "source_id": "TM2800B",
+        "title": "U.S. War Department TM 9-2800 (1943)",
+        "locator": "p. 109, Medium Tank M4A1, Performance (Maximum allowable speed: 24 mph = 10.72896 m/s)",
+        "url": "https://archive.org/download/TM9-2800/TM9-2800.pdf#page=109",
+        "accessed": "2026-11-19",
+        "note": "目录最高允许速度 24 mph（38.624 km/h），非巡航速度；gameplay.max_speed_mps 按 GD §14.3 取 0.75 倍（8.04672 m/s）。"
+      },
+      {
+        "field": "dimensions_m",
+        "value": {
+          "length": 5.842,
+          "width": 2.591,
+          "height": 2.845
+        },
+        "unit": "m",
+        "source_id": "TM2800A",
+        "title": "U.S. War Department TM 9-2800 (1943)",
+        "locator": "p. 108, Medium Tank M4A1 dimensional drawing (without sandshields: 230 × 102 × 112 in)",
+        "url": "https://archive.org/download/TM9-2800/TM9-2800.pdf#page=108",
+        "accessed": "2026-11-19",
+        "note": "无防沙板外廓 230 × 102 × 112 in（5.842 × 2.591 × 2.845 m）。"
+      }
+    ]
   },
   "gameplay": {
     "hull_health_hp": 1600,
@@ -310,7 +370,14 @@
     ]
   },
   "_meta": {
-    "status": "initial",
+    "status": "reviewed",
+    "unverified": [],
+    "deviation_reason": {
+      "gameplay.max_speed_mps": "Game top speed = 0.75 × historical road speed (24 mph = 10.72896 m/s → 8.04672 m/s, GAMEDESIGN §14.3).",
+      "gameplay.seats": "3 gameplay crew seats (driver, gunner, commander) vs historical 5-man crew (loader and bow MG operator omitted per GAMEDESIGN §14.1/§14.3).",
+      "gameplay.armor_zones": "Plate thicknesses match TM 9-2800 p. 109 (hull front 2 in = 51 mm, side/rear 1.5 in = 38 mm, top 3/4 in = 19 mm; turret front 3 in = 76 mm, side/rear 2 in = 51 mm, top 1 in = 25 mm). Slopes use single representative game angles per zone (GAMEDESIGN §14.3.3: hull upper 56° vs cast 37°–55° / welded 56°, lower 45° vs curved 0°–45°, turret front 30°, turret side/rear 25° game nominal vs historical 5°/0°).",
+      "gameplay.weapons": "75 mm M3 shells correspond to M61 APCBC (TM 9-1901 §87/§89: MV 2,030 ft/s = 619 m/s; p100_mm = 82 is game nominal penetration per GAMEDESIGN §0.4/§14.4), M48 HE (TM 9-1901 §94–95: historical MV 1,974 ft/s = 602 m/s supercharge / 1,515 ft/s = 462 m/s normal, unified to 619 m/s in gameplay), and M64 WP Smoke (TM 9-1901 §107: historical MV 1,980 ft/s = 604 m/s, unified to 619 m/s). Stowage (30 AP / 24 HE / 6 WP = 60 vs historical 90; .30 cal M1919A4 1,000 + 400 vs 4,750; .50 cal M2HB 200 vs 300) and reload_s = 3.0 are gameplay balance parameters (GAMEDESIGN §14.3)."
+    },
     "tunable": [
       "gameplay.hull_health_hp",
       "gameplay.max_speed_mps",

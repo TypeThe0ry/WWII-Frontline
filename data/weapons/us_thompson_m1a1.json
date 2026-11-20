@@ -11,7 +11,74 @@
     "muzzle_velocity_mps": 280,
     "rate_of_fire_rpm_practical": "未核实",
     "mass_kg": 4.8,
-    "_source": "待 M1-070 按 REF §6 复核"
+    "_source": [
+      {
+        "field": "caliber",
+        "value": "11.43×23 mm",
+        "unit": "mm",
+        "source_id": "TM2200",
+        "title": "U.S. War Department TM 9-2200 (1943)",
+        "locator": "p. 57, §29 (caliber .45 in); CIP45 Tab. IV (45 Auto / 11.43×23 mm)",
+        "url": "https://www.ibiblio.org/hyperwar/USA/ref/TM/pdfs/TM9-2200.pdf",
+        "accessed": "2026-11-19",
+        "note": "名义口径 .45 英寸；11.43×23 mm 为膛室规格简写。"
+      },
+      {
+        "field": "cartridge",
+        "value": ".45 ACP",
+        "unit": "",
+        "source_id": "TM2200",
+        "title": "U.S. War Department TM 9-2200 (1943)",
+        "locator": "p. 57, §29 & pp. 196–197, §113 (Cartridge, Ball, Cal. .45, M1911); CIP45 Tab. IV",
+        "url": "https://www.ibiblio.org/hyperwar/USA/ref/TM/pdfs/TM9-2200.pdf",
+        "accessed": "2026-11-19",
+        "note": ".45 M1911 普通弹，对应 .45 ACP。"
+      },
+      {
+        "field": "magazine_capacity",
+        "value": 30,
+        "unit": "rounds",
+        "source_id": "TM2200",
+        "title": "U.S. War Department TM 9-2200 (1943)",
+        "locator": "pp. 56–57, Fig. 27 & §29 (20- or 30-round box magazine)",
+        "url": "https://www.ibiblio.org/hyperwar/USA/ref/TM/pdfs/TM9-2200.pdf",
+        "accessed": "2026-11-19",
+        "note": "30 发是战时手册列出的盒式弹匣容量之一（另有 20 发）。"
+      },
+      {
+        "field": "magazine_type",
+        "value": "detachable_box",
+        "unit": "",
+        "source_id": "TM2200",
+        "title": "U.S. War Department TM 9-2200 (1943)",
+        "locator": "pp. 56–57, Fig. 27 & §29 (straight box magazine, 20 or 30 cartridges)",
+        "url": "https://www.ibiblio.org/hyperwar/USA/ref/TM/pdfs/TM9-2200.pdf",
+        "accessed": "2026-11-19",
+        "note": "M1A1 使用 20/30 发可拆卸盒式弹匣。"
+      },
+      {
+        "field": "muzzle_velocity_mps",
+        "value": 280,
+        "unit": "m/s",
+        "source_id": "TM2200",
+        "title": "U.S. War Department TM 9-2200 (1943)",
+        "locator": "p. 57, §29 (10.52-in barrel) & pp. 196–197, §113.d (920 ft/s in 10.5-in barrel ≈ 280.4 m/s)",
+        "url": "https://www.ibiblio.org/hyperwar/USA/ref/TM/pdfs/TM9-2200.pdf",
+        "accessed": "2026-11-19",
+        "note": "战时弹药表以 10.5 英寸枪管列 920 ft/s（约 280 m/s），对应 M1A1 的 10.52 英寸枪管。"
+      },
+      {
+        "field": "mass_kg",
+        "value": 4.8,
+        "unit": "kg",
+        "source_id": "TM2200",
+        "title": "U.S. War Department TM 9-2200 (1943)",
+        "locator": "p. 57, §29 (gun 10 lb + empty 30-round magazine 0.5 lb = 10.5 lb ≈ 4.763 kg)",
+        "url": "https://www.ibiblio.org/hyperwar/USA/ref/TM/pdfs/TM9-2200.pdf",
+        "accessed": "2026-11-19",
+        "note": "战时手册裸枪约 10 lb、30 发空匣 0.5 lb，合计约 4.76 kg，取整 4.8 kg。"
+      }
+    ]
   },
   "gameplay": {
     "damage_torso_hp": 40,
@@ -70,6 +137,9 @@
   },
   "_meta": {
     "status": "initial",
+    "unverified": [
+      "historical.rate_of_fire_rpm_practical"
+    ],
     "tunable": [
       "gameplay.damage_torso_hp",
       "gameplay.part_mult.head",
