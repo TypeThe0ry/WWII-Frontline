@@ -34,6 +34,8 @@ const USAGE = `asset-pipeline <command> [options]
   ledger-check      LICENSES.md 4.4 validation: counts per status, missing archive files
   manifest          .fpak files + stats + ledger -> assets/manifests/manifest.json (+ missing-report.json) (M1-005)
   manifest-budget   per-bundle size budgets (1 % over fails, > 20 % growth needs budget-approved), pack consistency, placeholder rule
+  carentan-medium   build the Carentan Medium FPAKs, manifest and missing report in a new --out directory
+  verify-carentan-medium  validate --manifest against --packs, including whole-file round trips and size
   gen-requirements  build assets/requirements.json from docs/ASSET_SHOPPING_LIST.md
 
 common:  --ledger LICENSES.md   --work work   --root <repo root, default cwd>
@@ -47,6 +49,8 @@ check-size-ratio: --asset AST-... [--max 0.25] [--suffix _fp]
 report:  [--requirements assets/requirements.json] [--manifest draft.json] [--placeholders data/placeholders] [--metadata-only INDEX.json] [--milestone M1] [--out report.json] [--gaps] [--strict]
 manifest: [--packs assets/processed] [--out assets/manifests/manifest.json] [--bundles assets/manifests/bundles.json] [--budgets assets/manifests/budgets.json] [--overrides f.json] [--game-version 0.1.0] [--data-hash h] [--requirements assets/requirements.json]
 manifest-budget: [--manifest assets/manifests/manifest.json] [--budgets ...] [--base base-manifest.json] [--packs assets/processed] [--core-size-file client/dist/size-report.json] [--approved | env BUDGET_APPROVED=1]
+carentan-medium: --out <new directory> [--incoming assets/incoming]
+verify-carentan-medium: [--manifest assets/manifests/manifest.json] [--packs assets/processed]
 gen-requirements: [--shopping-list docs/ASSET_SHOPPING_LIST.md] [--out assets/requirements.json]
 `;
 
@@ -262,6 +266,21 @@ export async function main(argv: string[], out: (s: string) => void = console.lo
         for (const p of problems) out(`FAIL ${p}`);
         if (r.skipped.length > 0) out(`note: skipped ${r.skipped.join(', ')} (no size measurement)`);
         return problems.length === 0 ? ExitCode.Ok : ExitCode.Usage;
+      }
+      case 'carentan-medium': {
+        if (!v.out) throw new GateError(ExitCode.Usage, 'carentan-medium needs --out <new directory>');
+        const { buildCarentanMedium } = await import('./carentan-medium.ts');
+        const dst = resolve(root, v.out);
+        const m = await buildCarentanMedium(root, resolve(root, v.incoming ?? 'assets/incoming'), dst);
+        out(`carentan-medium: ${Object.keys(m.assets).length} asset(s) -> ${dst}`);
+        return ExitCode.Ok;
+      }
+      case 'verify-carentan-medium': {
+        const { verifyCarentanMedium } = await import('./carentan-medium.ts');
+        const m = readManifest(resolve(root, v.manifest ?? 'assets/manifests/manifest.json'));
+        const stats = await verifyCarentanMedium(m, resolve(root, v.packs ?? 'assets/processed'));
+        out(`verify-carentan-medium: ${stats.packs} packs, ${stats.entries} entries, ${stats.bytes} physical B; byte-identical round trips`);
+        return ExitCode.Ok;
       }
       case 'gen-requirements': {
         const src = resolve(root, v['shopping-list'] ?? 'docs/ASSET_SHOPPING_LIST.md');

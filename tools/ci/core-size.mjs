@@ -47,13 +47,14 @@ if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
   const opt = (n, d) => (a.includes(n) ? a[a.indexOf(n) + 1] : d);
   const dist = resolve(opt('--dist', 'client/dist'));
   const m = measure(dist);
-  const problems = verdict(m, Number(opt('--max', MAX_CORE)));
+  const max = Number(opt('--max', MAX_CORE));
+  const problems = verdict(m, max);
   const rep = opt('--report');
   if (rep) {
     mkdirSync(dirname(resolve(rep)), { recursive: true });
-    writeFileSync(rep, JSON.stringify({ ...m, max: MAX_CORE, pass: problems.length === 0 }, null, 2));
+    writeFileSync(rep, JSON.stringify({ ...m, max, pass: problems.length === 0 }, null, 2));
   }
-  console.log(`core: ${m.files} files, raw ${m.rawBytes} B, brotli ${m.brotliBytes} B (max ${MAX_CORE}); data ${m.dataBytes} B`);
+  console.log(`core: ${m.files} files, raw ${m.rawBytes} B, brotli ${m.brotliBytes} B (max ${max}); data ${m.dataBytes} B`);
   for (const p of problems) console.error(p);
   process.exit(problems.length ? 1 : 0);
 }

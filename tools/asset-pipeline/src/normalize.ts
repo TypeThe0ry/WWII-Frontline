@@ -15,6 +15,7 @@
 import { existsSync, readdirSync, statSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join, relative, resolve, sep } from 'node:path';
 import { NodeIO, type Accessor, type Document, type Material, type Node, type Primitive, type Property } from '@gltf-transform/core';
+import { KHRTextureTransform, type Transform } from '@gltf-transform/extensions';
 import { assertAllowed, setDefaultLedger } from './allowed.ts';
 import { ExitCode, GateError } from './errors.ts';
 import { loadLedger, type Ledger } from './ledger.ts';
@@ -48,6 +49,8 @@ export interface NormalizeOptions {
   up?: UpAxis;
   forward?: Axis;
   origin?: OriginMode;
+  /** Bake a shared per-material KHR_texture_transform into UV0 for mesh v1 output. */
+  bakeTextureTransforms?: boolean;
 }
 
 export interface NormalizeResult {
@@ -154,6 +157,44 @@ function orphaned(p: Property): boolean {
   return p.listParents().every((q) => q.propertyType === 'Root');
 }
 
+/** Mesh v1 uses UV0 for all material slots. Bake a shared per-material UV transform before merging. */
+function bakeTextureTransforms(doc: Document): void {
+  const extension = doc.getRoot().listExtensionsUsed().find((e) => e.extensionName === 'KHR_texture_transform');
+  if (!extension) return;
+  for (const material of doc.getRoot().listMaterials()) {
+    const infos = [material.getBaseColorTextureInfo(), material.getNormalTextureInfo(), material.getMetallicRoughnessTextureInfo(),
+      material.getOcclusionTextureInfo(), material.getEmissiveTextureInfo()].filter((info) => info !== null);
+    const settings = infos.map((info) => {
+      const transform = info.getExtension<Transform>('KHR_texture_transform');
+      return { uv: transform?.getTexCoord() ?? info.getTexCoord(), offset: transform?.getOffset() ?? [0, 0],
+        scale: transform?.getScale() ?? [1, 1], rotation: transform?.getRotation() ?? 0 };
+    });
+    const first = settings[0];
+    if (!first) continue;
+    if (settings.some((value) => JSON.stringify(value) !== JSON.stringify(first))) {
+      throw new GateError(ExitCode.Usage, 'KHR_texture_transform: differing UV transforms on one material are unsupported by mesh v1');
+    }
+    const { uv, offset: [dx, dy], scale: [sx, sy], rotation } = first;
+    const cos = Math.cos(rotation), sin = Math.sin(rotation);
+    for (const mesh of doc.getRoot().listMeshes()) for (const primitive of mesh.listPrimitives()) {
+      if (primitive.getMaterial() !== material) continue;
+      const source = primitive.getAttribute(`TEXCOORD_${uv}`);
+      if (!source) throw new GateError(ExitCode.Usage, `KHR_texture_transform: missing TEXCOORD_${uv}`);
+      const result = doc.createAccessor().setType('VEC2').setBuffer(source.getBuffer());
+      const data = new Float32Array(source.getCount() * 2);
+      const value = [0, 0];
+      for (let i = 0; i < source.getCount(); i++) {
+        const [u, v] = source.getElement(i, value);
+        data[i * 2] = dx! + cos * sx! * u! - sin * sy! * v!;
+        data[i * 2 + 1] = dy! + sin * sx! * u! + cos * sy! * v!;
+      }
+      primitive.setAttribute('TEXCOORD_0', result.setArray(data));
+    }
+    for (const info of infos) info.setTexCoord(0).setExtension('KHR_texture_transform', null);
+  }
+  extension.dispose();
+}
+
 export async function normalize(opts: NormalizeOptions): Promise<NormalizeResult> {
   const ledger = typeof opts.ledger === 'string' ? loadLedger(opts.ledger) : opts.ledger;
   setDefaultLedger(ledger);
@@ -180,7 +221,9 @@ export async function normalize(opts: NormalizeOptions): Promise<NormalizeResult
   }
 
   const io = new NodeIO();
+  if (opts.bakeTextureTransforms) io.registerExtensions([KHRTextureTransform]);
   const doc = await io.read(input);
+  if (opts.bakeTextureTransforms) bakeTextureTransforms(doc);
   const root = doc.getRoot();
   const warnings: string[] = [];
   const decl = declared(doc);
