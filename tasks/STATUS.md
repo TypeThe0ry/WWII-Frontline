@@ -6,6 +6,7 @@
 
 ## 摘要
 
+- **B6-linemerge-plan（2026-11-20，done，仅分析）**：两线核对完成：MS v4／P v10（v8 为历史），试算 131 个冲突路径；完整清单、分步策略和验证见 `docs/LINE_RECONCILE.md` / PI-B6-linemerge-plan-1。未合并产品线，不更改 M0/M1 验收状态。
 - **B6-histbackfill（2026-11-20，M1-070 / E1-16）**：复核剩余 8 项「未核实」并回填 2 项一手手册数据（`us_m3_grease` 初速 `280 m/s` 经 TM 9-1005-229-35/12 8.0 in 枪管 920 fps 核实；`ger_panzerfaust_60` 整件质量由 `6.25` 修订为 `6.1235 kg` 经 TM-E 30-451 `13 1/2 lbs` 与 Buchner p. 150 `6.1 kg` 核实），`us_m1911a1` 与 `us_m1_carbine` 实用射速改为显式 `"未核实"`；补齐 14 文件 67 个 `historical` 字段的结构化 `_source` 数组（`source-audit.mjs`：**61 已登记 / 6 声明未核实 / 0 违规**，原 18 / 49 / 0）及 Sherman 装甲/75 mm M3 弹种表核对与 `deviation_reason`。`DATA_HASH = 0x2637b94dda28a192`。M1-070 按验收 7 保持 `partial`，E1-16 因 M1-071 对标录像阻塞保持 `partial`。见 `docs/measurements/hist-review-m1.md`、PI-B6-histbackfill-1。
 - **B6-gapsdecide（2026-11-20，E1-17）**：在 `docs/ASSET_GAPS.md` §2/§3.8 与 `reports/m1-placeholders.md` 按零采购默认假设对 M1 72 个需求 ID（及 M0 延续 13 项）逐 ID 补齐"决定"或"推迟到 M2"（5 `real` 免费 CC0 采用 + 36 免费候选采用配程序化占位回退 + 15 纯程序化占位且真素材推迟到 M2 + 16 非 M1 范围推迟到 M2，逐项写明程序化占位规格）；需购买/人工下载项仅登记 `docs/NEEDS_HUMAN.md`（H-047/049/058/§11.7），未编造已采购。E1-17 保持 `partial`（待运行时接线与人类最终确认）。见 PI-B6-gapsdecide-1。
 - **B6-soakpin（PI-B6-soakpin-1）**：共享工作站 Carentan WT 无损 1800 s 两轮通过，最长连续超时 0/1；Carentan netem 与参考机未测，E1-2/M1-068 仍为 partial。

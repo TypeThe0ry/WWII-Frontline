@@ -76,3 +76,7 @@ E1-9 和 E1-14 的 Medium 构建门禁通过。运行时素材摆放、混音、
 ### B6-deploytiming-land（2026-11-20，E1-10）
 
 核对里程碑线已收录 #158 的部署测量脚本、`ManifestIndex` 回归和 PI-109 工作站结果（PI-B6-deploytiming-land-1）。本轮部署耗时未重测。参考机、实素材整包、预发布环境与主页面 UI 直连预取仍待验收，E1-10 为 `partial`。
+
+### B6-linemerge-plan（2026-11-20，分析，不新增验收结论）
+
+[双线合流评估](../docs/LINE_RECONCILE.md) 固定 MS `0e5b41f`／P `196a3de`（协议 v4／v10，v8 为 P 历史版）。预估 131 个冲突路径；保留现有网关和 M1 证据，不用 P1 本机试玩长跑代替 M1 实服矩阵。MS 工作站（PI-109，非参考机）`scripts/local-ci.sh determinism` 通过，配套严格比较 3×18,000 tick 的 native/WASM 哈希和位置完全一致。合流候选、跨版本实物互连、参考机、预发布与真人复测均未测，原 E1 判定不变（PI-B6-linemerge-plan-1）。

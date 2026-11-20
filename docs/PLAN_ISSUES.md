@@ -1529,3 +1529,8 @@ PrePass 速度会卡死渲染循环，改用自有速度 RTT（地形/薄实例/
 - #158 (`97e92ce`) 已把 `ManifestIndex` 改动、测量脚本及 E1-10 证据合入里程碑线。收尾 rebase 去重已落地内容，保留并行批次的验收与计划条目。`ManifestIndex` 继续索引 `chunk`、`collision`、`lods`、`textures`、`audio`、`meta`。
 - TS 首轮因工作树残留的 WASM 包缺少 `takeFireCmd` 而失败。按当前基线重建 WASM 后，741 个 TS 测试通过，严格确定性检查的 3 个种子各 18,000 tick 的 native/WASM 状态哈希完全一致。
 - 部署耗时沿用 `reports/m1-deploy-timing.{md,json}` 的 PI-109 工作站记录。E1-10 仍为 `partial`，参考机、预发布 HTTPS/CDN、M1-064 实素材整包和主页面 UI 直连预取尚未验收。
+
+## PI-B6-linemerge-plan-1 双线合流先定契约，不直接合并（2026-11-20）
+
+- **事实／偏差**：固定共同祖先 `873e2d7`，MS `0e5b41f` / P `196a3de` 分别独有 163 / 211 个提交。提示中的 P v8 是历史节点，当前 P v10，MS v4。`git merge-tree` 预估 131 个冲突路径（130 文本、1 二进制）及 39 个无显式冲突的双改路径；数据 hash、消息语义、票据、地图 ID 和 WASM 布局不能混用。
+- **建议**：保住 MS 网关/验收基线，在隔离分支按数据与 sim、协议/网关/服/WASM、客户端与打包分批集成；wire 不兼容时分配新版本。两线交叉联机、合流候选及发布回归未测；本次仅落文档，不做代码合并或改变 M1 判定。完整路径及门禁见 [双线合流评估](LINE_RECONCILE.md)。
