@@ -14,7 +14,7 @@ const DUE: usize = 12;
 fn fixture(players: u8, markers: usize) -> (MarkerRegistry, Vec<Member>) {
     use MarkerKind::*;
 
-    let mut registry = MarkerRegistry::new(GameData::embedded().comms, HZ);
+    let mut registry = MarkerRegistry::new(GameData::comms(), HZ);
     let viewers: Vec<_> = (0..players)
         .map(|player| {
             let lead = player % 5 == 0;

@@ -34,7 +34,7 @@ const KINDS: [MarkerKind; 25] = [
 ];
 
 fn registry() -> MarkerRegistry {
-    MarkerRegistry::new(GameData::embedded().comms, HZ)
+    MarkerRegistry::new(GameData::comms(), HZ)
 }
 
 fn member(player: u8, role: &'static str) -> Member {
@@ -439,7 +439,7 @@ fn forget_clears_same_tick_reused_slot_markers_cooldown_and_mutes() {
 #[test]
 fn registry_caps_each_team_and_releases_capacity_after_tick() {
     let limit = markers::MAX_ACTIVE_MARKERS_PER_TEAM;
-    let mut cfg = GameData::embedded().comms.clone();
+    let mut cfg = GameData::comms().clone();
     cfg.team_mark.spotter_max_markers = u8::MAX;
     let mut registry = MarkerRegistry::new(&cfg, HZ);
     for i in 0..limit {

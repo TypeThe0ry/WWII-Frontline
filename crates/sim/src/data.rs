@@ -41,8 +41,6 @@ pub struct GameData {
     pub vehicles: &'static [VehicleDef],
     /// Rule families from `data/rules/` (M0-013).
     pub rules: &'static RulesDef,
-    /// Marker / ping rules from `data/comms.json` (M2-019).
-    pub comms: &'static CommsDef,
     pub hash: u64,
 }
 
@@ -82,11 +80,16 @@ impl GameData {
                 aoi: serde_json::from_str(embedded::AOI_JSON)
                     .expect("embedded data parsed at build time"),
             })),
-            comms: Box::leak(Box::new(
-                serde_json::from_str(embedded::COMMS_JSON)
-                    .expect("embedded data parsed at build time"),
-            )),
             hash: DATA_HASH,
+        })
+    }
+
+    /// Authoritative match rules are parsed on first use. Their canonical bytes always enter
+    /// DATA_HASH, including in prediction builds which never run the server comms registry.
+    pub fn comms() -> &'static CommsDef {
+        static COMMS: OnceLock<CommsDef> = OnceLock::new();
+        COMMS.get_or_init(|| {
+            serde_json::from_str(embedded::COMMS_JSON).expect("embedded data parsed at build time")
         })
     }
 
@@ -187,7 +190,7 @@ mod tests {
             .find(|(path, _)| path == "comms.json")
             .unwrap();
         let cfg: CommsDef = serde_json::from_str(text).unwrap();
-        assert_eq!(GameData::embedded().comms, &cfg);
+        assert_eq!(GameData::comms(), &cfg);
         let mut changed: serde_json::Value = serde_json::from_str(text).unwrap();
         changed["ping"]["cooldown_s"] = serde_json::json!(cfg.ping.cooldown_s + 1);
         *text = changed.to_string();

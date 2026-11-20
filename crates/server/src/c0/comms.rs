@@ -102,7 +102,7 @@ impl Markers {
     pub fn new(hz: u8, map: MapFrame) -> Self {
         let hz = u32::from(hz);
         Self {
-            registry: MarkerRegistry::new(GameData::embedded().comms, hz),
+            registry: MarkerRegistry::new(GameData::comms(), hz),
             hz,
             map,
             members: [None; PLAYER_SLOTS],
@@ -258,7 +258,7 @@ impl Markers {
         for marker in self.registry.tick(now) {
             self.expire(marker.id, scheduler, now, new_session);
         }
-        let refresh_ticks = self.hz * u32::from(GameData::embedded().comms.enemy_refresh_s);
+        let refresh_ticks = self.hz * u32::from(GameData::comms().enemy_refresh_s);
         // Spread moving observations across ticks, and only run LOS for marked vehicles.
         for (&id, item) in &self.published {
             if item.marker.kind != MarkerKind::TeamVehicle
