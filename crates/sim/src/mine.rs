@@ -136,6 +136,8 @@ pub struct Minefield {
     rules: MineRules,
 }
 
+// The default rules are loaded from hashed game data, so this cannot use derived Default.
+#[allow(clippy::derivable_impls)]
 impl Default for Minefield {
     fn default() -> Self {
         Self {
@@ -317,6 +319,7 @@ impl Minefield {
         true
     }
 
+    #[allow(clippy::should_implement_trait)]
     pub fn hash(&self, h: &mut HashWriter) {
         h.write_u8(0xB6);
         h.write_u32(self.next_id);

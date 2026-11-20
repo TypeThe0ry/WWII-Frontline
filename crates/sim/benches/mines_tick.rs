@@ -2,8 +2,10 @@
 use std::hint::black_box;
 use std::time::Instant;
 
-use frontline_sim::mine::{InfantryContact, MineKind, Minefield, VehicleContact};
-use frontline_sim::Tick;
+use frontline_sim::{
+    mine::{InfantryContact, MineKind, Minefield, VehicleContact},
+    Tick,
+};
 use frontline_sim::{Team, Vec3};
 
 fn main() {

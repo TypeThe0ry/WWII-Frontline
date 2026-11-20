@@ -2,15 +2,15 @@
   "task": "M0-029",
   "generated_by": "tools/determinism/compare.mjs",
   "versions": {
-    "data_hash": "0xc14668250eed4ab9",
-    "protocol_version": 11,
+    "data_hash": "0x7d9da152e462b6ee",
+    "protocol_version": 12,
     "rustc": "rustc 1.97.0 (2d8144b78 2026-07-07)",
     "rapier3d": "0.36.1",
     "rapier_features": "dim3,f32,std,enhanced-determinism",
-    "wasm_sha256": "e8fcb9823524438ee54bd1c236692b285fcee72068df4a3bdf4008887507868f",
+    "wasm_sha256": "176cd830b28b6e8dfaba7e6bd814c471a74d0ec58ba7747a703c7ef3d332f161",
     "node": "v22.22.1"
   },
-  "mode": "warn",
+  "mode": "strict",
   "seeds": [
     {
       "seed": 1,

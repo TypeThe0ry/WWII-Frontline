@@ -101,6 +101,8 @@ pub struct Satchels {
     rules: SatchelRules,
 }
 
+// The default rules are loaded from hashed game data, so this cannot use derived Default.
+#[allow(clippy::derivable_impls)]
 impl Default for Satchels {
     fn default() -> Self {
         Self {
@@ -243,6 +245,7 @@ impl Satchels {
         Ok(s)
     }
 
+    #[allow(clippy::should_implement_trait)]
     pub fn hash(&self, h: &mut HashWriter) {
         h.write_u8(0xB7);
         h.write_u32(self.next_id);
