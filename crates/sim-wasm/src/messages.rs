@@ -9,7 +9,8 @@ use frontline_protocol::msg::input::{
     MAX_BUNDLE_FIRE,
 };
 use frontline_protocol::msg::{
-    decode_c0_server, encode_c0_client, ClientMsgC0, Disconnect, Hello, Ping, ServerMsgC0,
+    decode_c0_server, encode_c0_client, ClientMsgC0, Disconnect, ForgivePunish, Hello, MapVoteCast,
+    Ping, ServerMsgC0, TeamSwitchRequest, VoteCast, VoteKind, VoteStart,
 };
 use wasm_bindgen::prelude::*;
 
@@ -258,6 +259,66 @@ pub fn encode_disconnect(reason: u32) -> Result<Vec<u8>, JsError> {
     encode_c0_client(&ClientMsgC0::Disconnect(Disconnect { reason: r })).map_err(js_err)
 }
 
+fn rule_int(value: f64, max: u32, field: &str) -> Result<u32, JsError> {
+    // Keep the full JS number at the boundary so wasm-bindgen doesn't truncate/wrap it first.
+    if (0.0..=f64::from(max)).contains(&value) && value.fract() == 0.0 {
+        Ok(value as u32)
+    } else {
+        Err(js_err(format!("{field} out of range: {value}")))
+    }
+}
+
+fn rule_byte(value: f64, field: &str) -> Result<u8, JsError> {
+    Ok(rule_int(value, u32::from(u8::MAX), field)? as u8)
+}
+
+#[wasm_bindgen(js_name = encodeVoteStart)]
+pub fn encode_vote_start(kind: f64, target: f64) -> Result<Vec<u8>, JsError> {
+    let kind = VoteKind::from_u8(rule_byte(kind, "kind")?)
+        .ok_or_else(|| js_err("vote kind out of range"))?;
+    encode_c0_client(&ClientMsgC0::VoteStart(VoteStart {
+        kind,
+        target: rule_byte(target, "target")?,
+    }))
+    .map_err(js_err)
+}
+
+#[wasm_bindgen(js_name = encodeVoteCast)]
+pub fn encode_vote_cast(vote_id: f64, yes: bool) -> Result<Vec<u8>, JsError> {
+    encode_c0_client(&ClientMsgC0::VoteCast(VoteCast {
+        vote_id: rule_int(vote_id, u32::MAX, "voteId")?,
+        yes,
+    }))
+    .map_err(js_err)
+}
+
+#[wasm_bindgen(js_name = encodeTeamSwitchRequest)]
+pub fn encode_team_switch_request(team: f64, accept_offer: bool) -> Result<Vec<u8>, JsError> {
+    encode_c0_client(&ClientMsgC0::TeamSwitchRequest(TeamSwitchRequest {
+        team: rule_byte(team, "team")?,
+        accept_offer,
+    }))
+    .map_err(js_err)
+}
+
+#[wasm_bindgen(js_name = encodeForgivePunish)]
+pub fn encode_forgive_punish(victim_event: f64, punish: bool) -> Result<Vec<u8>, JsError> {
+    encode_c0_client(&ClientMsgC0::ForgivePunish(ForgivePunish {
+        victim_event: rule_int(victim_event, u32::from(u16::MAX), "victimEvent")? as u16,
+        punish,
+    }))
+    .map_err(js_err)
+}
+
+#[wasm_bindgen(js_name = encodeMapVoteCast)]
+pub fn encode_map_vote_cast(vote_id: f64, choice: f64) -> Result<Vec<u8>, JsError> {
+    encode_c0_client(&ClientMsgC0::MapVoteCast(MapVoteCast {
+        vote_id: rule_int(vote_id, u32::MAX, "voteId")?,
+        choice: rule_byte(choice, "choice")?,
+    }))
+    .map_err(js_err)
+}
+
 /// Thin §8.3 wrapper: `[kind, ...payload]` validated as a client C0 message.
 #[wasm_bindgen(js_name = encodeC0)]
 pub fn encode_c0(kind: u32, payload: &[u8]) -> Result<Vec<u8>, JsError> {
@@ -414,6 +475,30 @@ pub(crate) fn decode_c4_core(bytes: &[u8]) -> Result<String, String> {
         E::MatchPhase(m) => format!(
             r#"{{"type":"phase","phase":{},"endsAt":{}}}"#,
             m.phase as u8, m.ends_at
+        ),
+        E::VoteState(v) => format!(
+            r#"{{"type":"voteState","voteId":{},"kind":{},"target":{},"yes":{},"no":{},"endsInS":{}}}"#,
+            v.vote_id, v.kind as u8, v.target, v.yes, v.no, v.ends_in_s
+        ),
+        E::VoteResult(v) => format!(
+            r#"{{"type":"voteResult","voteId":{},"passed":{}}}"#,
+            v.vote_id, v.passed
+        ),
+        E::TkPrompt(p) => format!(
+            r#"{{"type":"tkPrompt","killer":{},"expiresS":{},"victimEvent":{}}}"#,
+            p.killer, p.expires_s, p.victim_event
+        ),
+        E::TeamBalanceNotice(n) => format!(
+            r#"{{"type":"teamBalanceNotice","code":{},"args":[{},{}]}}"#,
+            n.code as u8, n.args[0], n.args[1]
+        ),
+        E::MapVoteState(v) => format!(
+            r#"{{"type":"mapVoteState","voteId":{},"candidates":{:?},"votes":{:?},"endsInS":{}}}"#,
+            v.vote_id, v.candidates, v.votes, v.ends_in_s
+        ),
+        E::MapVoteResult(v) => format!(
+            r#"{{"type":"mapVoteResult","voteId":{},"winner":{}}}"#,
+            v.vote_id, v.winner
         ),
     })
 }

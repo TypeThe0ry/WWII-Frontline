@@ -44,6 +44,7 @@ pub struct SimBridge {
     map: Option<Arc<LoadedMap>>,
     cfg: ValidateCfg,
     resolved: Vec<(PlayerId, InputCmd)>,
+    real_inputs: Vec<(PlayerId, InputCmd)>,
     shot_origin_hints: Vec<ShotOriginHint>,
     last_origin_report: Instant,
     last_origin_total: u64,
@@ -71,6 +72,7 @@ impl SimBridge {
             map,
             cfg,
             resolved: Vec::new(),
+            real_inputs: Vec::new(),
             shot_origin_hints: Vec::new(),
             last_origin_report: now,
             last_origin_total: origin_total,
@@ -112,6 +114,19 @@ impl SimBridge {
     /// The commands of the last [`Self::resolve`].
     pub fn resolved(&self) -> &[(PlayerId, InputCmd)] {
         &self.resolved
+    }
+
+    pub(crate) fn real_inputs(&self) -> &[(PlayerId, InputCmd)] {
+        &self.real_inputs
+    }
+
+    pub(crate) fn set_team(&mut self, player: PlayerId, team: Team) {
+        if let Some(session) = self.table.get_mut(&player) {
+            session.team = team;
+        }
+        if let Some(net) = self.net() {
+            net.sessions.set_team(player, team);
+        }
     }
 
     /// Anti-cheat look at the commands about to be stepped (call after `resolve`).
@@ -333,11 +348,14 @@ impl SimBridge {
     /// Step 2: one command per joined player for `tick`, ascending by `PlayerId`.
     pub fn resolve(&mut self, tick: u32) -> &[(PlayerId, InputCmd)] {
         self.resolved.clear();
+        self.real_inputs.clear();
         self.shot_origin_hints.clear();
         for (&p, s) in self.table.iter_mut() {
             let r = s.input.resolve(tick);
             if r.kind != Resolution::Real {
                 self.metrics.input_missing_ticks_total.inc();
+            } else {
+                self.real_inputs.push((p, r.cmd));
             }
             if r.new_stall {
                 self.metrics.session_stall_total.inc();

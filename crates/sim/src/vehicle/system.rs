@@ -184,6 +184,13 @@ pub fn step_vehicles(
         // 7. Crushing.
         let speed = Vec3::new(v.vel.x, 0.0, v.vel.z).length();
         if speed >= CRUSH_HURT_MPS {
+            let driver = v
+                .seats
+                .first()
+                .copied()
+                .flatten()
+                .and_then(|o| index.map.get(&o.player))
+                .map(|&(entity, _)| entity);
             let repeat = (collision::CRUSH_REPEAT_S * hz) as u32;
             for (&pid, &(eid, e)) in &index.map {
                 let Ok((t, _, _, mut hp, life, inv)) = q.get_mut(e) else {
@@ -207,7 +214,7 @@ pub fn step_vehicles(
                 hp.hp -= dmg;
                 log.0.push(HitRec {
                     target: eid,
-                    shooter: v.id,
+                    shooter: driver.unwrap_or(v.id),
                     weapon: EXPLOSIVE_WEAPON_IDX,
                     zone: HitZone::Torso,
                     dist_m: 0.0,

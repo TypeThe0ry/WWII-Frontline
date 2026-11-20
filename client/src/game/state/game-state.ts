@@ -6,7 +6,7 @@
 import { signal, type ReadonlySignal } from '@preact/signals';
 import type { DeployResultMsg } from '../../net/codec';
 import type { EventBus, GameEvents } from '../event-bus';
-import { DIST_Q_M, ROSTER_ALIVE, type C4Event } from './c4';
+import { DIST_Q_M, ROSTER_ALIVE, TeamBalanceCode, type C4Event } from './c4';
 import { DeployFsm, type DeployEvent } from './deploy-fsm';
 import { KillFeed } from './kill-feed';
 import { Roster } from './roster';
@@ -40,12 +40,22 @@ export class GameState {
   readonly spawnPoints = new Map<number, SpawnPointInfo>();
   readonly scores = new Map<number, number>();
   matchPhase = { phase: 0, endsAt: 0 };
+  private teamValue: number | undefined;
+
+  get team(): number | undefined {
+    return this.teamValue;
+  }
 
   private readonly versionSig = signal(0);
   /** Bumped after every applied event; UI effects subscribe to this. */
   readonly version: ReadonlySignal<number> = this.versionSig;
 
   constructor(private readonly bus: EventBus<GameEvents>) {}
+
+  /** Welcome seeds the team before the reliable event stream is applied. */
+  seedTeam(team: number): void {
+    this.teamValue = team;
+  }
 
   /** An unsolicited/duplicate result cannot change the FSM outside Requested. */
   applyDeployResult(result: DeployResultMsg): boolean {
@@ -54,7 +64,7 @@ export class GameState {
       : { type: 'result', ok: false, reason: `deploy.reject.${DEPLOY_REJECT_REASONS[result.reason] ?? 'unknown'}` });
   }
 
-  /** Deploy transitions come from C0 / `self_state`, not C4. */
+  /** Deploy transitions come from C0 / `self_state`, or a C4 team move reset. */
   applyDeploy(ev: DeployEvent): boolean {
     const ok = this.deploy.apply(ev);
     if (ok) {
@@ -88,6 +98,7 @@ export class GameState {
         this.bus.emit('objective.changed', { objective: ev.objective, owner: ev.owner, reason: ev.reason });
         break;
       case 'spawnpoint':
+        if (this.teamValue !== undefined && ev.team !== this.teamValue) return;
         this.spawnPoints.set(ev.id, { id: ev.id, kind: ev.kind, team: ev.team, pos: ev.pos, state: ev.state });
         this.bus.emit('spawnpoint.changed', { id: ev.id, team: ev.team, state: ev.state });
         break;
@@ -110,6 +121,22 @@ export class GameState {
         this.matchPhase = { phase: ev.phase, endsAt: ev.endsAt };
         this.bus.emit('match.phase', { phase: ev.phase, endsAt: ev.endsAt });
         break;
+      case 'teamBalanceNotice': {
+        if (ev.code !== TeamBalanceCode.Moved) return;
+        const [sideAndFlags, tick] = ev.args;
+        const team = sideAndFlags & 0xff;
+        const flags = sideAndFlags >>> 8;
+        if ((team !== 0 && team !== 1) || team === this.teamValue) return;
+        this.teamValue = team;
+        this.spawnPoints.clear();
+        // Match-wide roster, objectives, scores and kill feed survive a team change.
+        this.deploy.apply({ type: 'reset' });
+        this.bus.emit('team.changed', { team, flags, tick: tick >>> 0 });
+        this.bus.emit('deploy.state', { phase: this.deploy.phase });
+        break;
+      }
+      default:
+        return; // Other server-rule events are exposed by the C4 wire callback.
     }
     this.versionSig.value++;
   }

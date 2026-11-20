@@ -44,6 +44,7 @@ export interface GameEvents {
   // --- M1-040 (game state, from C0 / C4): server-authoritative state changes. ---
   'kill.feed': { killer: number; victim: number; weapon: number; headshot: boolean; dist: number };
   'deploy.state': { phase: string; spawnTick?: number; reason?: string };
+  'team.changed': { team: number; flags: number; tick: number };
   'objective.changed': { objective: number; owner: number; reason: number };
   'revive': { medic: number; target: number };
   'player.alive': { player: number };

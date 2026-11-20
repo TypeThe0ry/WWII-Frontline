@@ -8,7 +8,7 @@
  * Message bodies are encoded/decoded by sim-wasm (`NetCodec`); nothing here touches bits.
  * `codec.test.ts` pins the byte layout against the golden bytes of `protocol::framing`.
  */
-import type { C4Event } from '../game/state/c4';
+import type { C4Event, VoteKind } from '../game/state/c4';
 import { LAYOUT_C0_DEPLOY_RESULT, LAYOUT_C0_DISCONNECT, LAYOUT_C0_PONG, LAYOUT_C0_REJECT, LAYOUT_C0_WELCOME, type SimWasmModule } from './wasm';
 
 export const Channel = { C0: 0, C1: 1, C2: 2, C3: 3, C4: 4, C5: 5 } as const;
@@ -116,6 +116,7 @@ export const DISCONNECT_REASONS: Readonly<Record<number, string>> = {
   2: 'kicked',
   3: 'server_shutdown',
   4: 'protocol_error',
+  5: 'server_rule',
 };
 
 export interface WelcomeMsg {
@@ -184,6 +185,26 @@ export class NetCodec {
 
   encodeDisconnect(reason: number): Uint8Array {
     return this.wasm.encodeDisconnect(reason);
+  }
+
+  encodeVoteStart(kind: VoteKind, target: number): Uint8Array {
+    return this.wasm.encodeVoteStart(kind, target);
+  }
+
+  encodeVoteCast(voteId: number, yes: boolean): Uint8Array {
+    return this.wasm.encodeVoteCast(voteId, yes);
+  }
+
+  encodeTeamSwitchRequest(team: number, acceptOffer: boolean): Uint8Array {
+    return this.wasm.encodeTeamSwitchRequest(team, acceptOffer);
+  }
+
+  encodeForgivePunish(victimEvent: number, punish: boolean): Uint8Array {
+    return this.wasm.encodeForgivePunish(victimEvent, punish);
+  }
+
+  encodeMapVoteCast(voteId: number, choice: number): Uint8Array {
+    return this.wasm.encodeMapVoteCast(voteId, choice);
   }
 
   private rosterSeq = 0;

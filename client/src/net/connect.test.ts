@@ -1,6 +1,8 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { EventBus, type GameEvents } from '../game/event-bus';
+import { TeamBalanceCode, TeamMoveFlags, VoteKind } from '../game/state/c4';
 import { GameState } from '../game/state/game-state';
+import { NetCodec } from './codec';
 import { connect, type ConnectOptions } from './connect';
 import { parseNetConfig, type NetConfig } from './config';
 import { disconnectBytes, FakeWebSocket, FakeWebTransport, type FakeServerOpts } from './fakes';
@@ -49,10 +51,40 @@ describe.skipIf(!HAVE_WASM)('connect / fallback / handshake (fake WebSocket + We
       const state = new GameState(bus);
       return {
         state,
+        onWelcome: ({ team }: { team: number }) => state.seedTeam(team),
         onC4Event: state.apply.bind(state),
         onDeployResult: state.applyDeployResult.bind(state),
       };
     }
+
+    it.each(['ws', 'wt'] as const)('routes rule requests and applies the authoritative team move over %s', async (kind) => {
+      const { state, onWelcome, onC4Event, onDeployResult } = bind();
+      const move = vi.fn();
+      bus.on('team.changed', move);
+      const s = await connect(opts({ config: cfg(`transport=${kind}`), onWelcome, onC4Event, onDeployResult }));
+      try {
+        const codec = new NetCodec(wasm);
+        const conn = (kind === 'wt' ? FakeWebTransport.instances[0] : FakeWebSocket.instances[0])!.conn;
+        expect(state.team).toBe(0);
+        const voteId = 0x89012345;
+        for (const packet of [codec.encodeVoteStart(VoteKind.Kick, 37), codec.encodeVoteCast(voteId, false),
+          codec.encodeTeamSwitchRequest(1, false), codec.encodeForgivePunish(0xbeef, true), codec.encodeMapVoteCast(voteId, 2)]) {
+          s.sendC0(packet);
+        }
+        await vi.waitFor(() => expect(conn.receivedC0.filter((b) => b[0]! >= 0x19).map((b) => [...b])).toEqual([
+          [0x19, 0, 37], [0x1a, 0x89, 1, 0x23, 0x45, 0], [0x1b, 1, 0], [0x1c, 0xbe, 0xef, 0x80], [0x1d, 0x89, 1, 0x23, 0x45, 2],
+        ]));
+        state.apply({ type: 'spawnpoint', id: 9, kind: 0, team: 0, pos: [0, 0], state: 1 });
+        state.applyDeploy({ type: 'sync', phase: 'Spawned' });
+        conn.c4(Uint8Array.of(0x0d, TeamBalanceCode.Moved, 0, 0, TeamMoveFlags.Forced, 1, 0, 0, 0, 40));
+        await vi.waitFor(() => expect(move).toHaveBeenCalledExactlyOnceWith({ team: 1, flags: TeamMoveFlags.Forced, tick: 40 }));
+        expect(state.team).toBe(1);
+        expect(state.deploy.phase).toBe('Idle');
+        expect(state.spawnPoints.size).toBe(0);
+      } finally {
+        s.close();
+      }
+    });
 
     it.each(['ws', 'wt'] as const)('applies C0 deploy results and C4 events over %s', async (kind) => {
       const { state, onC4Event, onDeployResult } = bind();
@@ -96,28 +128,32 @@ describe.skipIf(!HAVE_WASM)('connect / fallback / handshake (fake WebSocket + We
     });
 
     it.each(['welcome', 'reject'] as const)('WT buffers early C4 and only publishes after Welcome (%s)', async (answer) => {
-      const { state, onC4Event } = bind();
+      const { state, onWelcome, onC4Event } = bind();
       const objective = vi.fn();
       bus.on('objective.changed', objective);
       FakeWebTransport.reset({ ...server, silent: true });
-      const pending = connect(opts({ config: cfg('transport=wt'), onC4Event }));
+      const pending = connect(opts({ config: cfg('transport=wt'), onWelcome, onC4Event }));
       const rejection = answer === 'reject' ? expect(pending).rejects.toMatchObject({ code: 'rejected' }) : undefined;
       await vi.waitFor(() => expect(FakeWebTransport.instances[0]?.conn.receivedC0[0]?.[0]).toBe(1));
       const { conn } = FakeWebTransport.instances[0]!;
       conn.c4(Uint8Array.of(5, 2, 1, 0));
       conn.c4(Uint8Array.of(5, 2, 0, 0));
+      conn.c4(Uint8Array.of(0x0d, TeamBalanceCode.Moved, 0, 0, TeamMoveFlags.Forced, 1, 0, 0, 0, 40));
       await new Promise<void>((resolve) => setTimeout(resolve, 0));
       expect(objective).not.toHaveBeenCalled();
       if (answer === 'reject') {
         conn.c0(rejectBytes(1));
         await rejection;
         expect(state.objectives.size).toBe(0);
+        expect(state.team).toBeUndefined();
       } else {
         conn.c0(welcomeBytes({ dataHash: server.dataHash }));
         const s = await pending;
         try {
           expect(objective.mock.calls).toEqual([[{ objective: 2, owner: 1, reason: 0 }], [{ objective: 2, owner: 0, reason: 0 }]]);
           expect(state.objectives.get(2)?.owner).toBe(0);
+          expect(s.welcome.team).toBe(0);
+          expect(state.team).toBe(1);
         } finally {
           s.close();
         }
@@ -295,7 +331,7 @@ describe.skipIf(!HAVE_WASM)('connect / fallback / handshake (fake WebSocket + We
 
   describe('handshake failures are reported, not silent', () => {
     it('protocol_version mismatch -> Reject(version_mismatch) with a readable message', async () => {
-      const err = await connect(opts({ config: cfg('transport=ws'), hello: { protocolVersion: server.protocolVersion + 1 } })).catch((e: unknown) => e);
+      const err = await connect(opts({ config: cfg('transport=ws'), hello: { protocolVersion: 4 } })).catch((e: unknown) => e);
       expect(err).toBeInstanceOf(NetError);
       expect(err).toMatchObject({ code: 'rejected', reason: 'version_mismatch' });
       expect((err as Error).message).toMatch(/rejected.*version_mismatch.*protocol versions differ/i);

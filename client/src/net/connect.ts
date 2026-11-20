@@ -39,6 +39,8 @@ export interface ConnectOptions {
   config: NetConfig;
   wasm: SimWasmModule;
   bus?: EventBus<GameEvents>;
+  /** Seeds authority before any buffered C4 event is applied. */
+  onWelcome?: (welcome: WelcomeMsg) => void;
   /** Reliable game messages; subscribe at connect time to receive the initial C4 state. */
   onC4Event?: (event: C4Event) => void;
   onDeployResult?: (result: DeployResultMsg) => void;
@@ -245,6 +247,7 @@ export async function connect(opts: ConnectOptions): Promise<Session> {
     try {
       hs = await handshake(t, codec, { ...opts.hello, caps, timeoutMs: hsTimeoutMs, now });
       if (earlyC4Bytes > EARLY_C4_MAX_BYTES) throw new NetError('transport_failed', 'too much C4 data before Welcome');
+      opts.onWelcome?.(hs.welcome);
     } catch (e) {
       offC4();
       t.close();

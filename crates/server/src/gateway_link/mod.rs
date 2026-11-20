@@ -41,6 +41,12 @@ pub struct Admitted {
     pub is_admin: bool,
 }
 
+impl Admitted {
+    pub(crate) fn match_guest(&self) -> [u8; 8] {
+        self.jti[..8].try_into().expect("eight bytes")
+    }
+}
+
 impl TicketGate {
     pub fn new(now: NowSecs) -> Arc<TicketGate> {
         Arc::new(TicketGate {

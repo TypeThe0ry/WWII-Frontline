@@ -243,7 +243,8 @@ impl BotHost {
             let ti = team as usize;
             let grace = (REJOIN_GRACE_S * f32::from(world.config().tick_hz)) as u32;
             self.disconnected[ti].retain(|&id, left| {
-                bridge.session(id).is_none() && tick.saturating_sub(*left) < grace
+                bridge.session(id).is_none_or(|s| s.team != team)
+                    && tick.saturating_sub(*left) < grace
             });
             humans.extend(self.disconnected[ti].keys().map(|&id| (id, false)));
             let bots: Vec<BotInfo> = self

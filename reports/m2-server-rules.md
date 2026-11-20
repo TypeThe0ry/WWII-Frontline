@@ -1,0 +1,35 @@
+# M2-018 服务器规则验收
+
+2026-11-20，PI-109 工作站（EPYC 7402，非参考机）。本次未使用 GPU，未引入外部素材或依赖。任务状态 `partial`。
+
+| 任务卡验收 | 检查内容与边界 |
+|---|---|
+| 1. 阵营与换队 | 真人加队差 2 时允许、目标队差达到 3 时锁；179.9/180 s 入场锁、599/600 s 换队锁；50 人硬上限。合成 bot 候选顺序：未部署 → 存活 → 车内。 |
+| 2. 自动平衡 | 差 4 持续 89 s 无、90 s 邀请；邀请后 59.9 s 不强制，60 s 强制；6 组排序和排除输入，涵盖队长、Commander、刚移动、本局已强制。合成标签校验志愿者 +20% XP；实际计分由 M2-017 消费。 |
+| 3. TK | 30 min 记录，15 s 受害者专属提示；2 次/10 min 警告并禁止 MG/AT/Engineer/Crewman 部署 5 min，3 次限制 Rifleman 并禁止认领载具，5 次本局惩罚踢出。11 min 前的处罚不进入滚动阈值；签票访客 30 min 冷却在过期 tick 解锁，新访客不继承同槽处罚。扣分 −30 由 M2-017 负责。 |
+| 4. 投票 | 10 人时 Kick 5 赞/2 反通过、5/3 与 2/0 不通过；并发与离队清理、在线选民重算、Commander 2 联署/40%、Mute 6 票及 Surrender 禁用均有合成用例。3 候选 Map Vote 平票按种子复现。当前发行地图不足 3 张，正式局终轮转未测。 |
+| 5. AFK | 90 s 预警、119 s 不踢、120/150 s 开 30 s 倒计时、DEPLOY 300 s 踢出；覆盖有效活动取消、领导移交与驾驶席腾空。20 段合成输入（10 重复、10 仿真变化），0/20 误判；实际真人输入回放未测。 |
+| 6. 确定性和预算 | 同种子逐 tick 比较 `ServerAction` 和规则哈希；规则状态、签票访客重连状态及参数进入权威 World 状态哈希。基准见下。 |
+
+## 专项回环与性能
+
+- `cargo test --locked -p frontline-server --test server_rules`（在 `local-ci` 的 workspace 测试中执行）：两个用例各 30 个脚本 WS 客户端（0 真人），2/2 通过，测试二进制用时 3.34 s。第一轮逐步断言 World 与会话阵营人数、加入/离开/重入与手动换队后观察差 ≤ 2；第二轮实际开枪，处理 1 次原谅和 5 次处罚、验证只有加害者连接关闭，其他 29 个会话保留。受信任 TLS/预发布未测；案例没有替代真实地图长局、自然结算轮转或大规模退队测试。
+- `CARGO_BUILD_JOBS=8 cargo bench --locked -p frontline-sim --bench serverrules_tick`：默认规则下 100 真人纯 sim；每情景 50 个样本，每样本 1,000 tick，预算 ≤ 50 µs/tick。基准不含 World roster 抽取、物理、C4 编码或网络。
+
+| 100 人规则基准 | P50 | P95 | 最大样本均值 |
+|---|---:|---:|---:|
+| `step` | 2.94 µs/tick | 3.60 µs/tick | 4.04 µs/tick |
+| 100 份输入 + `step` | 8.09 µs/tick | 10.99 µs/tick | 11.05 µs/tick |
+
+`FRONTLINE_DETERMINISM_STRICT=1 CARGO_BUILD_JOBS=8 scripts/local-ci.sh lint ts data determinism wasm rust`：严格对比的 3 个种子各 18,000 tick，native×2、WASM×2 和 native/WASM 每 tick 哈希均完全一致，位置最大偏差 0 m。客户端 Vitest 645 通过、120 跳过；数据工具 75 测试通过、21 个有效及 47 个无效夹具符合预期、79 个数据文件 0 错误（其中 17 个仅做哈希）。
+
+WASM 9 组冒烟通过；另外 3,000 tick 的角色和武器状态与 native 逐字节一致。大小门禁为优化后 1,187,576 B / 1,200,000 B、Brotli 341,977 B / 400,000 B。
+
+合并 M2-020 基线 `e785de3` 后，重新运行 `FRONTLINE_DETERMINISM_STRICT=1 CARGO_BUILD_JOBS=8 scripts/local-ci.sh lint ts data determinism wasm`，5 组通过。`CARGO_BUILD_JOBS=8 CARGO_PROFILE_TEST_OPT_LEVEL=1 scripts/local-ci.sh rust` 在独立 `CARGO_TARGET_DIR` 下通过（含 workspace、doc-tests 和 sim `test-util`）。默认测试 profile 的 `cargo test --locked -p frontline-server -p frontline-protocol -p frontline-gateway` 通过，复测协议、两项 30 WS 用例和带宽通知。规则移队仍清除旧快照 baseline，带宽通知仍能通过 WS 和 WT 送达。
+
+## 协议与待验收项
+
+- 协议 v5，`DATA_HASH=0x7ff50022cf048e0b`；服务器、WASM 与浏览器同步。v4 客户端不能连接 v5 服务端；网关与服务器需同步升级签票格式 v2。只交付 M2-007 的服务器规则消息子集，不关闭 M2-007。
+- 已接入文字禁言、有效 C1、获准的聊天/标记/部署活动；LiveKit 语音活动与禁言未接线。Commander 按卡只测规则、不接 M2 席位。Party/局间重排规则可单测，网关 Party 与正式局间轮转未接线；不增加虚构地图。无票会话不识别跨连接身份；签票访客的规则重连与 TK 冷却都限于该比赛服进程。
+- 角色锁在部署校验执行，不替换当前已部署角色；载具锁阻止新认领，不追溯已占座。机器人让位与 10 s 补位宽限使用现有 bot 主控路径；独立满载 bot 端到端和长局调整未测。
+- UI 只同步协议及应用状态，待 Fable 设计（M2-043）。参考机性能、真人输入与阈值校准、受信任 TLS 未测（H-021/H-054/H-060/H-017）。不改变 M1 退出判定。

@@ -6,8 +6,9 @@ import { FakeSnapshotDecoder, HAVE_WASM, loadWasm, ScriptInput } from './test-ha
 
 async function setup() {
   let target = 11;
+  const bus = new EventBus<GameEvents>();
   const game = new GameLoop({
-    wasm: await loadWasm(), decoder: new FakeSnapshotDecoder(), bus: new EventBus<GameEvents>(),
+    wasm: await loadWasm(), decoder: new FakeSnapshotDecoder(), bus,
     net: {
       clock: { inputTargetTick: () => target, estimatedServerTick: () => target - 2, now: () => target - 2, applySlack: () => undefined, rtt: () => 0 },
       sendInputBundle: () => undefined,
@@ -32,10 +33,32 @@ async function setup() {
     game.update(1, 1, 1000 / 30);
     target++;
   };
-  return { game, snap, step };
+  return { game, snap, step, bus };
 }
 
 describe.skipIf(!HAVE_WASM)('GameLoop vehicle seats', () => {
+  it('clears the pre-move AOI and ignores replays at the old snapshot tick', async () => {
+    const { game, snap, bus } = await setup();
+    const removed: number[] = [];
+    bus.on('entity.removed', (e) => removed.push(e.id));
+    try {
+      snap(10, 129, 0, [[129, 72]]);
+      game.store.push(2, 10, 0, 0, 0, 0, 0, 0);
+      expect(game.vehiclePredictor?.state[0]).toBe(72);
+      game.resetTeamProjection(12);
+      expect(game.store.count).toBe(0);
+      expect(game.applier.vehicles.count).toBe(0);
+      expect(game.vehiclePredictor).toBeUndefined();
+      expect(removed).toEqual([2, 129]);
+      snap(11, 129, 0, [[129, 99]]);
+      expect(game.applier.vehicles.count).toBe(0);
+      snap(13, 0, 0, [[128, 80]]);
+      expect(game.applier.vehicles.ids()).toEqual([128]);
+    } finally {
+      game.dispose();
+    }
+  });
+
   it('waits for the selected hull row and switches vehicles, seats and back to foot', async () => {
     const { game, snap, step } = await setup();
     try {

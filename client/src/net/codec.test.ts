@@ -82,14 +82,15 @@ describe.skipIf(!HAVE_WASM)('message codec over sim-wasm (golden messages of cra
     expect(codec.decodeServerC0(hex('05000004d200015f91002dc6e1'))).toEqual({ kind: 'pong', clientTime: 1234, serverTick: 90001, serverTimeMs: 3000033 });
     expect(codec.decodeServerC0(hex('0305'))).toEqual({ kind: 'reject', reason: 5, reasonName: 'data_hash_mismatch' });
     expect(codec.decodeServerC0(hex('0600'))).toEqual({ kind: 'disconnect', reason: 0, reasonName: 'normal' });
+    expect(codec.decodeServerC0(hex('0605'))).toEqual({ kind: 'disconnect', reason: 5, reasonName: 'server_rule' });
     expect(() => codec.decodeServerC0(hex('0700'))).toThrow();
     expect(() => codec.decodeServerC0(new Uint8Array(0))).toThrow();
   });
 
   it('encodes Ping like the protocol golden and Hello with the wasm data hash', () => {
     expect([...codec.encodePing(1234)]).toEqual([...hex('04000004d2')]);
-    const h = codec.encodeHello({ protocolVersion: 3, dataHash: codec.dataHash, clientBuild: 0, caps: 2 });
-    expect(h[0]).toBe(1);
+    const h = codec.encodeHello({ protocolVersion: codec.protocolVersion, dataHash: codec.dataHash, clientBuild: 0, caps: 2 });
+    expect([...h.subarray(0, 3)]).toEqual([1, 0, 5]);
     expect(h.length).toBe(18);
   });
 

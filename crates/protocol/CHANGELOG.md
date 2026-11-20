@@ -3,6 +3,26 @@
 `PROTOCOL_VERSION` must match exactly at handshake. Fields are only appended at the end of a
 message; any other change bumps the version.
 
+## 5 — M2-018 subset of M2-007 (server rules)
+
+| Channel and type | Message | Fields (bits) |
+|---|---|---|
+| C0 0x19 | `VoteStart` | kind 8 (0 kick, 1 remove commander, 2 mute), target 8 |
+| C0 0x1a | `VoteCast` | vote_id 32, yes 1 |
+| C0 0x1b | `TeamSwitchRequest` | team 8 (0 US, 1 GER), accept_offer 1 |
+| C0 0x1c | `ForgivePunish` | victim_event 16, punish 1 |
+| C0 0x1d | `MapVoteCast` | vote_id 32, choice 8 (candidate index 0..2) |
+| C4 0x0a | `VoteState` | vote_id 32, kind 8, target 8, yes 8, no 8, ends_in_s 8 |
+| C4 0x0b | `VoteResult` | vote_id 32, passed 1 |
+| C4 0x0c | `TkPrompt` | killer 8, expires_s 8, victim_event 16 (echo in `ForgivePunish`) |
+| C4 0x0d | `TeamBalanceNotice` | code 8 (`TeamBalanceCode`), args 2x i32 |
+| C4 0x0e | `MapVoteState` | vote_id 32, candidates 3x8 (map IDs), votes 3x8, ends_in_s 8 |
+| C4 0x0f | `MapVoteResult` | vote_id 32, winner 8 (map ID) |
+
+Vote IDs keep the simulation's 32-bit width so an old vote ID cannot alias after 256 votes.
+`Disconnect.reason = 5` is an automatic server-rule removal. Existing message tags and
+layouts are unchanged other than the new version value in `Hello`.
+
 ## 4 — M1-041d (own vehicle seat)
 
 C2 `SelfState` reports `vehicle_slot` (128..=255, 0 on foot) and `seat` (0 driver, 1 gunner,

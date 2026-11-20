@@ -86,6 +86,11 @@ export interface SimWasmModule {
   encodeHello(protocolVersion: number, dataHash: bigint, ticket: Uint8Array, clientBuild: number, caps: number): Uint8Array;
   encodePing(clientTime: number): Uint8Array;
   encodeDisconnect(reason: number): Uint8Array;
+  encodeVoteStart(kind: number, target: number): Uint8Array;
+  encodeVoteCast(voteId: number, yes: boolean): Uint8Array;
+  encodeTeamSwitchRequest(team: number, acceptOffer: boolean): Uint8Array;
+  encodeForgivePunish(victimEvent: number, punish: boolean): Uint8Array;
+  encodeMapVoteCast(voteId: number, choice: number): Uint8Array;
   encodeC0(kind: number, payload: Uint8Array): Uint8Array;
   decodeServerC0(bytes: Uint8Array): WasmServerC0;
   decodeC0(bytes: Uint8Array): WasmServerC0;

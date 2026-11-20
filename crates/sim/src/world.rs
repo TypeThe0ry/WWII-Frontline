@@ -22,6 +22,7 @@ use crate::weapon::sidearm::{SpawnLoadout, WeaponSlots};
 use crate::weapon::WeaponState;
 
 mod placement_zones;
+mod server_rules;
 
 /// Role whose movement parameters every player uses until loadouts/roles are chosen (M0-012).
 pub const DEFAULT_ROLE: &str = "rifleman";
@@ -71,6 +72,7 @@ pub struct World {
     objective_views: Vec<ObjectiveView>,
     pending_events: Vec<SimEvent>,
     squads: crate::squad::SquadManager,
+    server_rules: Option<server_rules::Authority>,
     supply: Box<dyn crate::supply_iface::SupplyProvider>,
 }
 
@@ -170,6 +172,7 @@ impl World {
             objective_views: Vec::new(),
             pending_events: Vec::new(),
             squads,
+            server_rules: None,
             supply: Box::new(crate::supply_iface::NoSupply),
         }
     }
@@ -198,6 +201,15 @@ impl World {
 
     /// Advances one tick. Inputs must be ascending by `PlayerId` (see [`normalize_inputs`]).
     pub fn step(&mut self, inputs: &[(PlayerId, InputCmd)]) -> StepOutput {
+        self.step_with_rule_inputs(inputs, inputs)
+    }
+
+    /// `real_inputs` excludes server-generated C1 holds/repeats during packet loss.
+    pub fn step_with_rule_inputs(
+        &mut self,
+        inputs: &[(PlayerId, InputCmd)],
+        real_inputs: &[(PlayerId, InputCmd)],
+    ) -> StepOutput {
         let profile_clock = self.ecs.get_resource_mut::<StepProfiler>().map(|mut p| {
             p.timings = StepTimings::default();
             p.clock_ns
@@ -233,9 +245,11 @@ impl World {
         self.refresh_views();
         let refresh_views = lap();
         let produced = std::mem::take(&mut self.ecs.resource_mut::<EventBuf>().0);
+        let server_actions = self.step_server_rules(real_inputs, &produced);
         self.pending_events.extend(produced);
         let out = StepOutput {
             events: std::mem::take(&mut self.pending_events),
+            server_actions,
             rule_changes: std::mem::take(
                 &mut self.ecs.resource_mut::<crate::rules::RuleChangeBuf>().0,
             ),
@@ -434,6 +448,7 @@ impl World {
     }
 
     pub fn remove_player(&mut self, id: PlayerId) {
+        self.vacate_rule_seat(id);
         let Some((eid, e)) = self.ecs.resource_mut::<PlayerIndex>().map.remove(&id) else {
             return;
         };
@@ -591,6 +606,9 @@ impl World {
         seat: u8,
     ) -> Result<(), crate::vehicle::seats::SeatError> {
         use crate::vehicle::seats::*;
+        if self.rules_vehicle_locked(p) {
+            return Err(SeatError::ClaimLocked);
+        }
         let role = self.squads.entry(p).map(|e| e.role);
         match role {
             None => return Err(SeatError::NotOnRoster),
@@ -768,6 +786,9 @@ impl World {
     }
 
     pub fn roster_remove(&mut self, p: PlayerId) {
+        if let Some(r) = &mut self.server_rules {
+            r.forget(p, self.squads.entry(p).and_then(|e| e.last_switch));
+        }
         let now = self.tick();
         let d = self.squads.roster_remove(p, now);
         self.push_roster(d);
@@ -788,6 +809,7 @@ impl World {
         let now = self.tick();
         let d = self.squads.switch_team(p, now)?;
         self.push_roster(d);
+        self.remove_player(p);
         Ok(())
     }
 
@@ -1479,6 +1501,9 @@ impl World {
         }
         if !self.squads.is_empty() {
             self.squads.hash_into(&mut h);
+        }
+        if let Some(r) = &self.server_rules {
+            r.hash_into(&mut h);
         }
         let veh = self.ecs.resource::<crate::vehicle::Vehicles>();
         if !veh.list.is_empty() {

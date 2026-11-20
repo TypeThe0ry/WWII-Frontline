@@ -15,7 +15,7 @@ use frontline_protocol::msg::c0::{
 };
 use frontline_protocol::msg::input::{decode_input_bundle, InputBundle};
 use frontline_protocol::Channel;
-use frontline_sim::{PlayerId, Team};
+use frontline_sim::{PlayerId, Team, Tick};
 use tokio::time::timeout_at;
 
 use super::handshake::{check_hello, reject_label};
@@ -91,6 +91,7 @@ struct SessionsInner {
     /// Slot is unavailable until this instant (released recently).
     cooling_until: [Option<Instant>; 128],
     bot_reserved: [bool; 128],
+    tk_cooldowns: HashMap<[u8; 8], Tick>,
 }
 
 /// Connection admission (per IP / total) and `PlayerId` allocation.
@@ -143,6 +144,7 @@ impl Sessions {
                 team_count: [0; 2],
                 cooling_until: [None; 128],
                 bot_reserved: [false; 128],
+                tk_cooldowns: HashMap::new(),
             }),
             metrics,
             max_per_ip,
@@ -174,29 +176,63 @@ impl Sessions {
     }
 
     /// Smallest free `PlayerId` (0..=127) that is not cooling down, registering `handle` for it,
-    /// and the team it joins: the team with fewer players, US on a tie (so joins alternate
-    /// US, GER, US, ...).
+    /// and the team it joins. Human balance comes first; bots break human ties.
     pub fn alloc_player_team(&self, handle: &ClientHandle) -> Option<(PlayerId, Team)> {
-        self.alloc_player_team_with_identity(handle, None)
+        self.alloc_player_team_with_identity(handle, None, Tick(0))
+            .ok()
     }
 
     fn alloc_player_team_with_identity(
         &self,
         handle: &ClientHandle,
         ticket_identity: Option<Admitted>,
-    ) -> Option<(PlayerId, Team)> {
+        tick: Tick,
+    ) -> Result<(PlayerId, Team), RejectReason> {
         let now = Instant::now();
         let mut g = self.lock();
-        let id = (0..128usize).find(|&i| {
-            !g.bot_reserved[i]
-                && g.players[i].is_none()
-                && g.cooling_until[i].is_none_or(|t| t <= now)
-        })?;
-        let team = if g.team_count[Team::Ger as usize] < g.team_count[Team::Us as usize] {
-            Team::Ger
-        } else {
-            Team::Us
-        };
+        g.tk_cooldowns.retain(|_, until| tick.lt(*until));
+        if ticket_identity
+            .as_ref()
+            .is_some_and(|id| g.tk_cooldowns.contains_key(&id.match_guest()))
+        {
+            return Err(RejectReason::Banned);
+        }
+        if ticket_identity.as_ref().is_some_and(|identity| {
+            g.players.iter().flatten().any(|p| {
+                p.ticket_identity
+                    .as_ref()
+                    .is_some_and(|p| p.match_guest() == identity.match_guest())
+            })
+        }) {
+            return Err(RejectReason::InvalidTicket);
+        }
+        let id = (0..128usize)
+            .find(|&i| {
+                !g.bot_reserved[i]
+                    && g.players[i].is_none()
+                    && g.cooling_until[i].is_none_or(|t| t <= now)
+            })
+            .ok_or(RejectReason::ServerFull)?;
+        let mut humans = [0; 2];
+        for (slot, human) in g.players.iter().enumerate() {
+            if human.is_some() {
+                humans[g.team_of[slot] as usize] += 1;
+            }
+        }
+        let preferred = [Team::Us, Team::Ger]
+            .into_iter()
+            .min_by_key(|&t| (humans[t as usize], g.team_count[t as usize], t as u8))
+            .expect("two teams");
+        let team = preferred;
+        let own = team as usize;
+        let cfg = frontline_sim::serverrules::RuleConfig::default().balance;
+        frontline_sim::team::balance::can_join(
+            humans[own],
+            humans[1 - own],
+            u32::from(cfg.team_max_players),
+            u32::from(cfg.join_max_difference),
+        )
+        .map_err(|_| RejectReason::ServerFull)?;
         g.players[id] = Some(LivePlayer {
             handle: handle.clone(),
             ticket_identity,
@@ -204,7 +240,22 @@ impl Sessions {
         g.cooling_until[id] = None;
         g.team_of[id] = team;
         g.team_count[team as usize] += 1;
-        Some((id as PlayerId, team))
+        Ok((id as PlayerId, team))
+    }
+
+    pub(crate) fn set_team(&self, p: PlayerId, team: Team) {
+        let mut g = self.lock();
+        let p = usize::from(p);
+        if g.players[p].is_some() && g.team_of[p] != team {
+            let from = g.team_of[p] as usize;
+            g.team_count[from] -= 1;
+            g.team_count[team as usize] += 1;
+            g.team_of[p] = team;
+        }
+    }
+
+    pub(crate) fn set_tk_cooldown(&self, guest: [u8; 8], until: Tick) {
+        self.lock().tk_cooldowns.insert(guest, until);
     }
 
     /// Atomically claims a free seat and counts it for team balance. Returns false if occupied.
@@ -399,13 +450,17 @@ pub async fn run_connection<T: ClientTransport>(
     if hello.caps & frontline_protocol::msg::c0::CAP_TEAM_MARKERS != 0 {
         handle.enable_team_markers();
     }
-    let Some((player, team)) = ctx
-        .sessions
-        .alloc_player_team_with_identity(&handle, ticket_identity)
-    else {
-        reject_label_count(&ctx, "server_full");
-        send_reject(&handle, RejectReason::ServerFull);
-        return;
+    let (player, team) = match ctx.sessions.alloc_player_team_with_identity(
+        &handle,
+        ticket_identity,
+        Tick(ctx.server_tick.load(Ordering::Relaxed)),
+    ) {
+        Ok(slot) => slot,
+        Err(reason) => {
+            reject_label_count(&ctx, reject_label(reason));
+            send_reject(&handle, reason);
+            return;
+        }
     };
     // The sim learns about the player before the client can send its first C1 (it only starts
     // after Welcome), so `Join` is always ordered ahead of that player's inputs.
@@ -570,7 +625,12 @@ fn handle_frame(
                 | ClientMsgC0::MarkerPlace(_)
                 | ClientMsgC0::Settings(_)
                 | ClientMsgC0::Report(_)
-                | ClientMsgC0::PlacementRequest(_)),
+                | ClientMsgC0::PlacementRequest(_)
+                | ClientMsgC0::VoteStart(_)
+                | ClientMsgC0::VoteCast(_)
+                | ClientMsgC0::TeamSwitchRequest(_)
+                | ClientMsgC0::ForgivePunish(_)
+                | ClientMsgC0::MapVoteCast(_)),
             ) => {
                 let Some(kind) = crate::c0::C0Kind::of(&m) else {
                     return true;
@@ -623,14 +683,17 @@ fn handle_frame(
 }
 
 async fn cleanup(ctx: &NetCtx, player: PlayerId) {
-    ctx.sessions.release_player(player);
     for _ in 0..200 {
         match ctx.commands.try_send(Command::ClientGone(player)) {
-            Ok(()) => return,
+            Ok(()) | Err(TrySendError::Disconnected(_)) => {
+                // Queue the leave before a reconnect can enqueue another join for this guest.
+                ctx.sessions.release_player(player);
+                return;
+            }
             Err(TrySendError::Full(_)) => tokio::time::sleep(Duration::from_millis(5)).await,
-            Err(TrySendError::Disconnected(_)) => return,
         }
     }
+    ctx.sessions.release_player(player);
     tracing::warn!(
         event = "client_gone_dropped",
         player_id = player as u64,
@@ -666,7 +729,7 @@ mod tests {
         let m = Metrics::new();
         let s = Sessions::with_reuse_delay(m.clone(), 4, 128, Duration::ZERO);
         let hs: Vec<_> = (0..128).map(|_| ClientHandle::new(m.clone())).collect();
-        for (i, h) in hs.iter().enumerate() {
+        for (i, h) in hs.iter().take(100).enumerate() {
             assert_eq!(s.alloc_player(h), Some(i as u8));
         }
         assert_eq!(s.alloc_player(&hs[0]), None);
@@ -718,7 +781,42 @@ mod tests {
     }
 
     #[test]
-    fn reserved_bot_ids_are_never_allocated_and_count_in_the_team_balance() {
+    fn tk_cooldown_is_tick_exact_and_keyed_by_verified_guest_not_slot_or_nick() {
+        let m = Metrics::new();
+        let s = Sessions::with_reuse_delay(m.clone(), 4, 128, Duration::ZERO);
+        let h = ClientHandle::new(m);
+        let ticket = |guest, player, nick: &str| Admitted {
+            gateway_player: player,
+            jti: std::array::from_fn(|i| if i < 8 { guest } else { player }),
+            nick: nick.into(),
+            is_admin: false,
+        };
+        let (slot, _) = s
+            .alloc_player_team_with_identity(&h, Some(ticket(1, 42, "Old")), Tick(1))
+            .unwrap();
+        assert_eq!(
+            s.alloc_player_team_with_identity(&h, Some(ticket(1, 43, "New")), Tick(2)),
+            Err(RejectReason::InvalidTicket)
+        );
+        s.release_player(slot);
+        s.set_tk_cooldown(ticket(1, 42, "Old").match_guest(), Tick(54_001));
+        assert_eq!(
+            s.alloc_player_team_with_identity(&h, Some(ticket(1, 44, "Other")), Tick(54_000)),
+            Err(RejectReason::Banned)
+        );
+        assert_eq!(
+            s.alloc_player_team_with_identity(&h, Some(ticket(2, 42, "Old")), Tick(54_000))
+                .unwrap()
+                .0,
+            slot
+        );
+        assert!(s
+            .alloc_player_team_with_identity(&h, Some(ticket(1, 45, "Other")), Tick(54_001))
+            .is_ok());
+    }
+
+    #[test]
+    fn reserved_bot_ids_are_never_allocated_and_humans_count_separately() {
         let m = Metrics::new();
         let s = Sessions::with_reuse_delay(m.clone(), 4, 128, Duration::ZERO);
         let h = ClientHandle::new(m);
@@ -734,8 +832,8 @@ mod tests {
         }
         assert_eq!(
             ids,
-            (0..118).collect::<Vec<u8>>(),
-            "humans must fill 0..=117 only"
+            (0..100).collect::<Vec<u8>>(),
+            "at most 50 humans per side; reserved bots yield at roster admission"
         );
         // A human leaving does not free a bot's id.
         s.release_player(3);

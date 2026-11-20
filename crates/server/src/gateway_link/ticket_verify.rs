@@ -1,5 +1,5 @@
 //! Join-ticket verification (ARCHITECTURE §19.2). Format (shared with the gateway, which signs):
-//! `base64url(claims) "." base64url(Ed25519 signature)`, signature over `FLTK1 || claims`.
+//! `base64url(claims) "." base64url(Ed25519 signature)`, signature over `TICKET_DOMAIN || claims`.
 //! Several public keys are accepted (current + previous) so keys can be rotated; the ticket
 //! carries no key id, so every key is tried (PI-076).
 

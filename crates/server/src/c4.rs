@@ -60,6 +60,20 @@ impl Broadcast {
         self.clients.remove(&player);
     }
 
+    pub(crate) fn rule_private(&self, player: PlayerId, event: ServerEventC4) {
+        send_to(self.clients.get(&player).into_iter(), || event);
+    }
+
+    pub(crate) fn rule_group(&self, world: &World, team: Option<Team>, event: ServerEventC4) {
+        send_to(
+            self.clients.iter().filter_map(|(&player, client)| {
+                let roster = world.squads().entry(player)?;
+                team.is_none_or(|t| t == roster.team).then_some(client)
+            }),
+            || event,
+        );
+    }
+
     pub(crate) fn tick(
         &mut self,
         world: &World,

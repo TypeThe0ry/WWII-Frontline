@@ -337,6 +337,22 @@ impl SquadManager {
             return Err(TeamError::AlreadyOnRoster);
         }
         self.can_join_team(team)?;
+        self.admit(p, team, now)
+    }
+
+    /// Insert after the authoritative human-only admission check. Bots still use `roster_add`.
+    pub(crate) fn admit(
+        &mut self,
+        p: PlayerId,
+        team: Team,
+        now: Tick,
+    ) -> Result<Vec<RosterDelta>, TeamError> {
+        if self.roster.contains_key(&p) {
+            return Err(TeamError::AlreadyOnRoster);
+        }
+        if self.team_count(team) >= self.cfg.team_max {
+            return Err(TeamError::Full);
+        }
         self.roster.insert(
             p,
             RosterEntry {
@@ -387,6 +403,19 @@ impl SquadManager {
     /// Moves `p` to the other team (leaves the squad; the role is cleared).
     pub fn switch_team(&mut self, p: PlayerId, now: Tick) -> Result<Vec<RosterDelta>, TeamError> {
         self.can_switch_team(p, now)?;
+        self.move_team(p, now)
+    }
+
+    /// Applies a previously authorized move; the hard cap still applies.
+    pub(crate) fn move_team(
+        &mut self,
+        p: PlayerId,
+        now: Tick,
+    ) -> Result<Vec<RosterDelta>, TeamError> {
+        let team = Self::other(self.entry(p).ok_or(TeamError::Unknown)?.team);
+        if self.team_count(team) >= self.cfg.team_max {
+            return Err(TeamError::Full);
+        }
         let mut out = Vec::new();
         self.leave_squad(p, now, &mut out);
         let e = self.roster.get_mut(&p).expect("checked");
@@ -394,6 +423,9 @@ impl SquadManager {
         e.last_switch = Some(now);
         e.role = None;
         e.role_invalid = false;
+        e.loadout = None;
+        e.last_role_change = None;
+        e.dead_since = None;
         out.push(RosterDelta::TeamSwitched {
             player: p,
             team: e.team,
@@ -402,6 +434,12 @@ impl SquadManager {
     }
 
     // ---- facts fed by the server ----
+
+    pub(crate) fn restore_last_switch(&mut self, p: PlayerId, tick: Option<Tick>) {
+        if let Some(entry) = self.roster.get_mut(&p) {
+            entry.last_switch = tick;
+        }
+    }
 
     pub fn set_online(&mut self, p: PlayerId, online: bool) {
         if let Some(e) = self.roster.get_mut(&p) {

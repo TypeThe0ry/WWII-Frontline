@@ -19,6 +19,7 @@ JSON game data. **The numeric single source of truth** (ARCHITECTURE §4.4, GAME
 | `vehicles/{id}.json` | vehicle | no instances before M3 |
 | `rules/{name}.json` | rules | respawn timing (`respawn.json`, GAMEDESIGN §10.6); no `id`, `_meta` required |
 | `rules/bots.json` | bots | bot difficulty tiers + behaviour tuning (GAMEDESIGN §20.6, M0-026); schema `schemas/bots.schema.json`; read by `crates/bots` through `GameData::rules.bots` |
+| `server_rules.json` | rule_server | Tick-based team balance, TK, voting and AFK thresholds (GAMEDESIGN §19); schema `schemas/rule_server.schema.json`; embedded by `frontline_sim::serverrules::RuleConfig` and included in `DATA_HASH` |
 | `maps/{map}/meta.json`, `maps/{map}/spawns.json` | map_meta, spawns | MAPS §6.2; `_meta` optional here |
 | `schemas/**` | schemas and fixtures | never part of `DATA_HASH` |
 

@@ -29,7 +29,7 @@ const ok = (name) => {
 
 // --- version / data hash agree with the native build (meta.json comes from the native example).
 {
-  assert.equal(wasm.protocolVersion(), 4);
+  assert.equal(wasm.protocolVersion(), 5);
   // The data hash changes with every /data edit, so compare against the native build's own value
   // (`cargo run --example trace` writes it) and fall back to the committed file only without a trace.
   const traceMeta = join(root, 'target/wasm-trace/meta.json');
@@ -78,6 +78,36 @@ const ok = (name) => {
   assert.equal(wasm.inputBundleLen(bundle), 3);
   assert.deepEqual([...wasm.encodeInputCmd(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)], [...wasm.packInputCmd(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)]);
   ok('C0 / C1 messages match protocol golden bytes');
+}
+
+// --- M2-018: match the same wire bytes pinned by the native protocol tests.
+{
+  const fixtures = readFileSync(join(root, 'crates/protocol/tests/golden/server_rules.hex'), 'utf8')
+    .trim().split(/\r?\n/).map((line) => Buffer.from(line, 'hex'));
+  const id = 0x89012345;
+  const [start, cast, move, forgive, mapCast, vote, result, tk, balance, map, winner] = fixtures;
+  const victim = JSON.parse(wasm.decodeC4(tk));
+  const matches = (got, expected) => assert.deepEqual([...got], [...expected]);
+  matches(wasm.encodeVoteStart(2, 37), start);
+  matches(wasm.encodeVoteCast(id, true), cast);
+  matches(wasm.encodeTeamSwitchRequest(1, true), move);
+  matches(wasm.encodeForgivePunish(victim.victimEvent, true), forgive);
+  matches(wasm.encodeMapVoteCast(id, 2), mapCast);
+  const expectEvent = (bytes, expected) => assert.deepEqual(JSON.parse(wasm.decodeC4(bytes)), expected);
+  expectEvent(vote, { type: 'voteState', voteId: id, kind: 1, target: 37, yes: 5, no: 2, endsInS: 45 });
+  expectEvent(result, { type: 'voteResult', voteId: id, passed: false });
+  assert.deepEqual(victim, { type: 'tkPrompt', killer: 37, expiresS: 15, victimEvent: 0xbeef });
+  expectEvent(balance, { type: 'teamBalanceNotice', code: 2, args: [1, 2] });
+  expectEvent(map, { type: 'mapVoteState', voteId: id, candidates: [0, 2, 255], votes: [16, 0, 8], endsInS: 30 });
+  expectEvent(winner, { type: 'mapVoteResult', voteId: id, winner: 255 });
+  for (const bad of [-1, 0.5, NaN, Infinity, 0x1_0000_0000]) {
+    assert.throws(() => wasm.encodeVoteCast(bad, true), /out of range/);
+  }
+  assert.throws(() => wasm.encodeVoteStart(3, 0), /out of range/);
+  assert.throws(() => wasm.encodeForgivePunish(0x1_0000, false), /out of range/);
+  assert.throws(() => wasm.encodeMapVoteCast(id, 3), /out of range/);
+  assert.throws(() => wasm.decodeC4(tk.subarray(0, 4)), /unexpected end/);
+  ok('M2-018 C0/C4: native golden bytes, TK reply and strict bounds');
 }
 
 // --- snapshot decoder vs. natively decoded golden (key frame, then delta on the same decoder).

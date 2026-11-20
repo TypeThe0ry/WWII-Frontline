@@ -48,6 +48,17 @@ pub fn issue(secret: &[u8], guest_id: &str, now_s: u64) -> String {
     format!("{input}.{}", e.encode(sig))
 }
 
+/// Prevents exposing the guest account ID to a game server or linking it across matches.
+pub(crate) fn match_guest(secret: &[u8], match_id: &[u8; 16], guest_id: &str) -> [u8; 8] {
+    let mut m = Hmac::<Sha256>::new_from_slice(secret).expect("hmac accepts any key length");
+    m.update(b"frontline-match-guest-v2\0");
+    m.update(match_id);
+    m.update(guest_id.as_bytes());
+    let mut id = [0; 8];
+    id.copy_from_slice(&m.finalize().into_bytes()[..8]);
+    id
+}
+
 pub fn verify(secret: &[u8], token: &str, now_s: u64) -> Result<Claims, TokenError> {
     let mut parts = token.split('.');
     let (Some(h), Some(p), Some(s), None) =

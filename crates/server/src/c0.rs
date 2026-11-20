@@ -18,6 +18,7 @@ use crate::net::limits::RateLimiter;
 use crate::text::{sanitize_chat, DupFilter};
 
 mod placement;
+pub(crate) mod server_rules;
 
 /// Rate-limit classes; `label()` is the `c0_rate_limited_total{type}` label.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -49,7 +50,12 @@ impl C0Kind {
             ClientMsgC0::SquadOp(_)
             | ClientMsgC0::MarkerPlace(_)
             | ClientMsgC0::Settings(_)
-            | ClientMsgC0::PlacementRequest(_) => C0Kind::Other,
+            | ClientMsgC0::PlacementRequest(_)
+            | ClientMsgC0::VoteStart(_)
+            | ClientMsgC0::VoteCast(_)
+            | ClientMsgC0::TeamSwitchRequest(_)
+            | ClientMsgC0::ForgivePunish(_)
+            | ClientMsgC0::MapVoteCast(_) => C0Kind::Other,
             ClientMsgC0::Hello(_) | ClientMsgC0::Ping(_) | ClientMsgC0::Disconnect(_) => {
                 return None
             }
@@ -141,10 +147,16 @@ impl C0Handler {
         out: &mut Outbox,
     ) {
         match msg {
-            ClientMsgC0::DeployRequest(r) => out.push((
-                from,
-                ServerMsgC0::DeployResult(deploy(world, metrics, from, r)),
-            )),
+            ClientMsgC0::DeployRequest(r) => {
+                let result = deploy(world, metrics, from, r);
+                if result.ok {
+                    world.record_rule_activity(
+                        from,
+                        frontline_sim::serverrules::Activity::Interaction,
+                    );
+                }
+                out.push((from, ServerMsgC0::DeployResult(result)));
+            }
             ClientMsgC0::SquadOp(op) => {
                 squad_op(world, metrics, from, &op);
             }
@@ -152,7 +164,11 @@ impl C0Handler {
                 from,
                 ServerMsgC0::PlacementResult(self.placement.handle(world, from, req)),
             )),
-            ClientMsgC0::Chat(c) => self.chat(world, metrics, from, c, out),
+            ClientMsgC0::Chat(c) => {
+                if !world.is_rule_muted(from) && self.chat(world, metrics, from, c, out) {
+                    world.record_rule_activity(from, frontline_sim::serverrules::Activity::Chat);
+                }
+            }
             ClientMsgC0::Report(r) => {
                 metrics.reports_total.inc();
                 tracing::info!(
@@ -169,6 +185,11 @@ impl C0Handler {
             // The sim loop routes MarkerPlace through the C3 team channel. Settings are client-only.
             ClientMsgC0::MarkerPlace(_) | ClientMsgC0::Settings(_) => {}
             ClientMsgC0::Hello(_) | ClientMsgC0::Ping(_) | ClientMsgC0::Disconnect(_) => {}
+            ClientMsgC0::VoteStart(_)
+            | ClientMsgC0::VoteCast(_)
+            | ClientMsgC0::TeamSwitchRequest(_)
+            | ClientMsgC0::ForgivePunish(_)
+            | ClientMsgC0::MapVoteCast(_) => unreachable!("forwarded by SimLoop"),
         }
     }
 
@@ -179,12 +200,13 @@ impl C0Handler {
         from: PlayerId,
         c: Chat,
         out: &mut Outbox,
-    ) {
+    ) -> bool {
         let reject = |label: &str| {
             metrics
                 .chat_rejected_total
                 .with_label_values(&[label])
-                .inc()
+                .inc();
+            false
         };
         if self.muted.contains(&from) {
             return reject("muted");
@@ -229,6 +251,7 @@ impl C0Handler {
                 }),
             ));
         }
+        true
     }
 }
 

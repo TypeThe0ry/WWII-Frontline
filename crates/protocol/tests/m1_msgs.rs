@@ -404,7 +404,7 @@ fn invalid_enums() {
         Err(CodecError::InvalidTag)
     );
     assert_eq!(decode_c4(&[0x00]), Err(CodecError::InvalidTag));
-    assert_eq!(decode_c4(&[0x0A]), Err(CodecError::InvalidTag));
+    assert_eq!(decode_c4(&[0xFF]), Err(CodecError::InvalidTag));
 }
 
 #[test]
