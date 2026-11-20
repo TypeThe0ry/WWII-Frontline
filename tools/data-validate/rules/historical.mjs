@@ -7,7 +7,7 @@ export const REVIEWED_STATUSES = ['reviewed', 'measured'];
 
 export function checkHistorical(doc, kind) {
   const errors = [];
-  if (kind !== 'weapon' && kind !== 'vehicle') return errors;
+  if (kind !== 'weapon' && kind !== 'vehicle' && kind !== 'explosive') return errors;
   const meta = doc._meta;
   const hist = doc.historical;
   if (!meta || typeof meta !== 'object' || !REVIEWED_STATUSES.includes(meta.status)) return errors;

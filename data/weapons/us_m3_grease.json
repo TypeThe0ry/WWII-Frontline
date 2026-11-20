@@ -11,7 +11,74 @@
     "muzzle_velocity_mps": 280,
     "rate_of_fire_rpm_practical": "未核实",
     "mass_kg": 3.7,
-    "_source": "待 M1-070 按 REF §6 复核"
+    "_source": [
+      {
+        "field": "caliber",
+        "value": "11.43×23 mm",
+        "unit": "mm",
+        "source_id": "TM2200",
+        "title": "U.S. War Department TM 9-2200 (1943)",
+        "locator": "p. 55, §28 (caliber .45 in); CIP45 Tab. IV (45 Auto / 11.43×23 mm)",
+        "url": "https://www.ibiblio.org/hyperwar/USA/ref/TM/pdfs/TM9-2200.pdf",
+        "accessed": "2026-11-19",
+        "note": ".45 口径 M3；11.43×23 mm 为膛室规格简写。"
+      },
+      {
+        "field": "cartridge",
+        "value": ".45 ACP",
+        "unit": "",
+        "source_id": "FM41L",
+        "title": "U.S. Army FM 23-41 Submachineguns, Caliber .45, M3 and M3A1",
+        "locator": "Ch. 1, p. 3, §3.a; TM2200 pp. 196–197 §113; CIP45 Tab. IV",
+        "url": "https://www.biggerhammer.net/manuals/fm23_41/CH1.PDF",
+        "accessed": "2026-11-19",
+        "note": ".45 M1911 普通弹，对应 .45 ACP。"
+      },
+      {
+        "field": "magazine_capacity",
+        "value": 30,
+        "unit": "rounds",
+        "source_id": "TM2200",
+        "title": "U.S. War Department TM 9-2200 (1943)",
+        "locator": "p. 55, §28 (30-round magazine); FM41L Ch. 1 p. 4 §3.b; ORD44 p. 410",
+        "url": "https://www.ibiblio.org/hyperwar/USA/ref/TM/pdfs/TM9-2200.pdf",
+        "accessed": "2026-11-19",
+        "note": "每匣 30 发。"
+      },
+      {
+        "field": "magazine_type",
+        "value": "detachable_box",
+        "unit": "",
+        "source_id": "TM2200",
+        "title": "U.S. War Department TM 9-2200 (1943)",
+        "locator": "pp. 54–55, Fig. 26 & §28 (detachable box magazine)",
+        "url": "https://www.ibiblio.org/hyperwar/USA/ref/TM/pdfs/TM9-2200.pdf",
+        "accessed": "2026-11-19",
+        "note": "可拆卸盒式弹匣。"
+      },
+      {
+        "field": "muzzle_velocity_mps",
+        "value": 280,
+        "unit": "m/s",
+        "source_id": "TM229-35",
+        "title": "U.S. Department of the Army TM 9-1005-229-35 Submachine Guns, Caliber .45, M3 and M3A1 (1964)",
+        "locator": "Ch. 1, Sec. II, p. 7, §6 Tabulated Data (8.0-in barrel, standard cal. .45 ball: 920 fps ≈ 280.4 m/s); TM229-12 p. 1-2 §1-6",
+        "url": "https://www.airforcebase.net/uploads/marksmanship/TM_9-1005-229-35_Submachine_Guns_Cal_.45_M3_and%20M3A1_19641214.pdf",
+        "accessed": "2026-11-20",
+        "note": "美军 M3/M3A1 专项技术手册（8.0 英寸枪管、.45 普通弹）明列初速 920 ft/s（约 280.4 m/s，取整 280 m/s）；FM 23-41 另列约数 900 ft/s（约 274 m/s）。"
+      },
+      {
+        "field": "mass_kg",
+        "value": 3.7,
+        "unit": "kg",
+        "source_id": "TM2200",
+        "title": "U.S. War Department TM 9-2200 (1943)",
+        "locator": "p. 55, §28 (8.1 lb without magazine, oiler, and sling ≈ 3.674 kg); ORD44 p. 410; FM41L p. 6 §4.b",
+        "url": "https://www.ibiblio.org/hyperwar/USA/ref/TM/pdfs/TM9-2200.pdf",
+        "accessed": "2026-11-19",
+        "note": "不含弹匣、油壶与背带约 8.1 lb（约 3.67 kg，取整 3.7 kg）。"
+      }
+    ]
   },
   "gameplay": {
     "damage_torso_hp": 42,
@@ -70,6 +137,9 @@
   },
   "_meta": {
     "status": "initial",
+    "unverified": [
+      "historical.rate_of_fire_rpm_practical"
+    ],
     "tunable": [
       "gameplay.damage_torso_hp",
       "gameplay.part_mult.head",

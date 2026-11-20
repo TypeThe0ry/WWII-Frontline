@@ -4,8 +4,20 @@
   "faction": "ger",
   "class": "at_rocket",
   "historical": {
-    "mass_kg": 6.25,
-    "_source": "待 M1-070 按 REF §6 复核"
+    "mass_kg": 6.1235,
+    "_source": [
+      {
+        "field": "mass_kg",
+        "value": 6.1235,
+        "unit": "kg",
+        "source_id": "TME",
+        "title": "U.S. War Department TM-E 30-451 Handbook on German Military Forces (15 Mar 1945)",
+        "locator": "Ch. VII, Sec. II, par. 7.b(3) Panzerfaust 60, p. VII-10 (weight 13 1/2 lbs ≈ 6.1235 kg); Buchner (1991) p. 150 (6.1 kg)",
+        "url": "https://www.ibiblio.org/hyperwar/Germany/HB/HB-7.html#II-7b3",
+        "accessed": "2026-11-20",
+        "note": "战时美军情报手册 TM-E 30-451 明列 Panzerfaust 60 整件重 13 1/2 lb（换算后取四位小数 6.1235 kg，与 Nb.Hgr. 39 录法一致；按 0.1 kg 取整即德军步兵手册汇编 Buchner 第 150 页所列 6.1 kg）。旧初值 6.25 kg 未见于同型一手文献。"
+      }
+    ]
   },
   "gameplay": {
     "muzzle_velocity_mps": 45,
@@ -21,7 +33,7 @@
     "single_use": true
   },
   "_meta": {
-    "status": "initial",
+    "status": "reviewed",
     "tunable": [
       "gameplay.muzzle_velocity_mps",
       "gameplay.effective_range_m",

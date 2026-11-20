@@ -5,7 +5,19 @@
   "class": "frag_grenade",
   "historical": {
     "mass_kg": 0.595,
-    "_source": "待 M1-070 按 REF §6 复核"
+    "_source": [
+      {
+        "field": "mass_kg",
+        "value": 0.595,
+        "unit": "kg",
+        "source_id": "ENORD",
+        "title": "U.S. Office of the Chief of Ordnance, Catalog of Enemy Ordnance Materiel (1945)",
+        "locator": "p. 321, High-Explosive Hand Grenade, Model 24 (Stielhandgranate 24), Weight (1 lb 5 oz ≈ 0.5953 kg)",
+        "url": "https://stephentaylorhistorian.com/wp-content/uploads/2020/02/catalogofenemyordnancemateriel.pdf",
+        "accessed": "2026-11-19",
+        "note": "M24 整件 1 lb 5 oz（约 0.5953 kg，取三位小数 0.595 kg）。"
+      }
+    ]
   },
   "gameplay": {
     "fuse_s": 4.5,
@@ -18,7 +30,7 @@
     "lethal_radius_m": 3.8
   },
   "_meta": {
-    "status": "initial",
+    "status": "reviewed",
     "tunable": [
       "gameplay.fuse_s",
       "gameplay.throw_speed_mps",

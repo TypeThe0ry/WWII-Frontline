@@ -112,4 +112,7 @@ test('hist-source-required: record without locator does not count; text _source 
 test('hist-source-required: bogus unverified entry rejected; 未核实 value accepted', () => {
   assert.match(msgs(checkHistorical(hdoc('reviewed', { mass_kg: 4, _source: [rec('mass_kg')] }, ['historical.nope']), 'weapon'))[0], /does not name a historical field/);
   assert.deepEqual(checkHistorical(hdoc('reviewed', { mass_kg: '未核实', _source: [rec('x')] }, []), 'weapon'), []);
+  assert.deepEqual(checkHistorical(hdoc('reviewed', { mass_kg: 30527, _source: [rec('mass_kg')] }, []), 'vehicle'), []);
+  assert.deepEqual(checkHistorical(hdoc('reviewed', { mass_kg: 0.595, _source: [rec('mass_kg')] }, []), 'explosive'), []);
+  assert.match(msgs(checkHistorical(hdoc('reviewed', { mass_kg: 0.595, _source: 'text' }, []), 'explosive'))[0], /structured _source array/);
 });
