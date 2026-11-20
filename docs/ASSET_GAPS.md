@@ -607,7 +607,7 @@
 
 ### 3.6 M1-064 免费素材登记与占位回退（2026-11-19）
 
-从 `work/playable` 的免费采集索引登记 227 个文件（223 个 Poly Haven/Kenney CC0，4 个 Google Fonts OFL），仅保留来源页、许可证文本、候选需求 ID 和 SHA-256 等元数据，未搬运原档。`assets/manifests/missing-report.json` 的 `coverage_basis: source-metadata` 是**来源级**清单，不是 §3.4 的构建验收：`real` 有匹配的已登记免费来源；`placeholder` 有近似素材可作占位；`missing` 未登记匹配的来源或经选定的近似占位，仍使用 §3.2/3.3 回退；`internal-only` 尚无可计入 real 的公开来源，TT 已购转换件仅记录为内部试玩用途。报告列出的候选文件不表示整套需求已验收。M1 来源级为 **5 real / 7 placeholder / 56 missing / 4 internal-only**（72 个需求含非视觉），逐项见报告和 `tasks/STATUS.md` 的 M1-064 行。
+从 `work/playable` 的免费采集索引登记 227 个文件（223 个 Poly Haven/Kenney CC0，4 个 Google Fonts OFL），仅保留来源页、许可证文本、候选需求 ID 和 SHA-256 等元数据，未搬运原档。当时 `assets/manifests/missing-report.json` 的 `coverage_basis: source-metadata` 是**来源级**清单，不是 §3.4 的构建验收：`real` 有匹配的已登记免费来源；`placeholder` 有近似素材可作占位；`missing` 未登记匹配的来源或经选定的近似占位，仍使用 §3.2/3.3 回退；`internal-only` 尚无可计入 real 的公开来源，TT 已购转换件仅记录为内部试玩用途。报告列出的候选文件不表示整套需求已验收。M1 来源级为 **5 real / 7 placeholder / 56 missing / 4 internal-only**（72 个需求含非视觉），逐项见报告和 `tasks/STATUS.md` 的 M1-064 行。
 
 | 类别 | 本轮覆盖与现行占位决定 |
 |---|---|
@@ -620,3 +620,11 @@
 **TT 已购 UE 包**：六个采购包、16 个 GLB 输出（含德国士兵的额外 LOD），只在 `LICENSES.md` 的 `INTERNAL` 行登记。M1 的 `V-CHR-GE-001`、`V-WPN-GE-004`、`V-WPN-GE-005`、`V-WPN-GE-008` 仍用公开灰盒。转换件不计公开覆盖；普通 ingest、元数据 ingest 和发布 manifest 均拒绝已标记的 `INTERNAL` 素材。不得为替换灰盒而把转换件、`.uasset` 或其他中间产物放入主分支构建。
 
 **待 TT 手动下载或核验（候选，未验收）**：Sketchfab 的 Garand、Thompson、MP40、MG42、Sherman、Panzer IV 及 Regelbau M178 碉堡（见 `ASSET_SHOPPING_LIST.md` §8）；Quaternius 植被/角色/动作/建筑/武器/载具包的 Google Drive 下载；Mixamo 登录及 Mixamo/CMU 动作授权；OpenGameArt 枪口焰、弹孔及爆炸贴图候选的页面与许可。许可、来源或用途未核定前不进台账 `OK`，不改变占位决定。
+
+### 3.7 Carentan Medium 构建覆盖（B6-fpakmedium，2026-11-20）
+
+Medium 出包使用五个已登记的 Poly Haven 模型，分别覆盖 `V-NAT-002`、`V-NAT-004`、`V-NAT-005`、`V-PRP-004`、`V-PRP-006`。原始来源与所有候选保留在 `incoming-index.json`。`missing-report.json` 改用实际包清单统计，逐项记录仍缺、公开程序化占位、内部专用和实际入包的需求。
+
+- 建筑、掩体、树篱、角色、武器及载具的灰盒使用项目内程序化几何。四个 `INTERNAL` 需求继续沿用公开灰盒。
+- 武器、爆炸、命中、脚步和 UI 共有 22 个程序合成提示音，每个提供 Opus 与 AAC。实录、语音、音乐、专门动画和美术审阅继续按 §3.2、§3.3 处理。
+- 逐资产落位、混音和运行时接线仍待验收。交付清单与构建测量见 `reports/m1-fpak-medium.md`。

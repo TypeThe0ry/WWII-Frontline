@@ -382,3 +382,36 @@ Default ports (override with `GATEWAY_PORT`, `FRONTLINE_WS_PORT`, `FRONTLINE_WT_
 - Match server: `ws://127.0.0.1:7000`, `https://127.0.0.1:7001/wt`, `http://127.0.0.1:9100/metrics`
 
 Containerized templates (`deploy/dev/docker-compose.yml`, `Dockerfile.gateway`, `Dockerfile.server`, `.env.example`) are also provided for static-build testing; see `deploy/dev/README.md`.
+
+## Carentan Medium FPAK (M1-064)
+
+Build on a clean worktree with Python + numpy, pnpm, ffmpeg with Opus/AAC,
+and the already registered raw files. Point `--incoming` at a shared
+`assets/incoming` cache or use the pinned source list to populate a temporary cache.
+The build validates each source against the SHA-256 and size in `incoming-index.json`
+and the `OK` rows and archived licenses in `LICENSES.md`.
+
+```bash
+w=$(mktemp -d /data/scratch/carentan-medium.XXXXXX)
+# For a shared cache set incoming=/path/to/assets/incoming and skip this loop.
+while IFS=$'\t' read -r url path; do
+  mkdir -p "$w/sources/$(dirname "$path")"
+  curl -fsSL --retry 3 "$url" -o "$w/sources/$path" || break
+done < assets/manifests/carentan-medium-sources.tsv
+incoming="$w/sources/assets/incoming"
+export CARGO_BUILD_JOBS=8 TMPDIR="$w"
+pnpm install --frozen-lockfile
+pnpm -C tools/asset-pipeline build
+node tools/asset-pipeline/bin/asset-pipeline.mjs carentan-medium --incoming "$incoming" --out "$w/medium"
+wasm-pack build crates/sim-wasm --target web --profile wasm-release
+pnpm -C client build
+FRONTLINE_ASSET_PACKS="$w/medium" scripts/local-ci.sh assets
+```
+
+`--out` must be a new directory. The command builds the spatial terrain and
+content-addressed media packs as one Medium bundle, with `manifest.json` and
+`missing-report.json` alongside them. Only these two JSON outputs are tracked.
+The gate compares the checked-in manifest to the actual packs and verifies
+physical `.fpak` bytes ≤150,000,000 and client core Brotli bytes ≤8,000,000.
+The binary `a/` directory is disposable. Toolchain and measurement details are
+recorded in `reports/m1-fpak-medium.md`.

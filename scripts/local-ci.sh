@@ -71,9 +71,23 @@ g_assets() {
   fi
   run node tools/asset-pipeline/bin/asset-pipeline.mjs gen-requirements --out "$w/requirements.json" && diff -u assets/requirements.json "$w/requirements.json" || return 1
   run node tools/asset-pipeline/bin/asset-pipeline.mjs report --milestone M1 --placeholders data/placeholders --gaps --strict --work "$w" --out "$w/asset-report.json" || return 1
+  local packs=${FRONTLINE_ASSET_PACKS:-assets/processed} medium=0
+  if node -e 'const m = require("./assets/manifests/manifest.json"); process.exit(m.bundles.map_carentan_medium?.includes("terrain_carentan_*") ? 0 : 1)'; then
+    medium=1
+    run node tools/asset-pipeline/bin/asset-pipeline.mjs verify-carentan-medium --packs "$packs" || return 1
+    run node tools/asset-pipeline/bin/asset-pipeline.mjs report --manifest assets/manifests/manifest.json --strict --work "$w/manifest-only" --out "$w/medium-missing.json" \
+      && diff -u assets/manifests/missing-report.json "$w/medium-missing.json" || return 1
+  fi
   git show "origin/${BASE_BRANCH:-claude/serene-wright-lc7k1n}:assets/manifests/manifest.json" > "$w/base-manifest.json" 2>/dev/null || rm -f "$w/base-manifest.json"
   local core_arg=()
-  if [ -f client/dist/size-report.json ]; then
+  if [ "$medium" = 1 ]; then
+    if [ ! -s client/dist/wasm/frontline_sim_wasm_bg.wasm ]; then
+      echo "FAIL: Carentan Medium needs a production client/dist with sim-wasm (see DEVELOPING.md)"
+      return 1
+    fi
+    run node tools/ci/core-size.mjs --dist client/dist --max 8000000 --report "$w/size-report.json" || return 1
+    core_arg=(--core-size-file "$w/size-report.json")
+  elif [ -f client/dist/size-report.json ]; then
     core_arg=(--core-size-file client/dist/size-report.json)
   elif [ -d client/dist ]; then
     run node tools/ci/core-size.mjs --dist client/dist --report "$w/size-report.json" || return 1
@@ -81,7 +95,7 @@ g_assets() {
   else
     echo "WARN: client/dist missing (build the client first); core bundle check skipped"
   fi
-  run node tools/asset-pipeline/bin/asset-pipeline.mjs manifest-budget --base "$w/base-manifest.json" "${core_arg[@]}"
+  run node tools/asset-pipeline/bin/asset-pipeline.mjs manifest-budget --base "$w/base-manifest.json" --packs "$packs" "${core_arg[@]}"
 }
 g_map() { need python3 || return 2; (cd tools/map-pipeline && run python3 -m pytest -q) && run python3 -m map_pipeline validate-vectors data/maps/carentan && run python3 -m map_pipeline validate data/maps/carentan --slice m1; }
 
