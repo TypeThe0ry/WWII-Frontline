@@ -736,3 +736,7 @@ Medium 出包使用五个已登记的 Poly Haven 模型，分别覆盖 `V-NAT-00
 ### B6-suppress-e2e 验收夹具（E1-13）
 
 `client/e2e/suppress-loop.spec.ts` 在临时目录生成平地 FCOL 碰撞和 HQ 出生点。压制验收读取生产 WebAudio 滤波与增益参数。正式地图视觉、爆炸和救治实音（GAP-A08/A15）未测，既有素材决策继续适用。夹具没有第三方素材。
+
+### B6-carentan-netem 载具压测夹具（2026-11-20）
+
+- Carentan 工作站压测用临时的 Panzer IV H、Jeep 和 Kübelwagen 刚体占位，复用项目内载具数据和 Sherman 的履带物理接口。客户端为 headless。正式载具素材与画面未测，沿用 GAP-V01 / GAP-V10 的缺口与推迟决定。详见 `reports/m1-carentan-netem-b6.md`。
