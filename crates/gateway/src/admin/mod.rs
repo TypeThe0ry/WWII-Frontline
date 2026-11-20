@@ -48,13 +48,22 @@ pub(crate) fn routes() -> Router<Shared> {
             "/internal/matches/{id}/reports/{report_id}/replay",
             put(reports::confirm_replay),
         )
+        .route(
+            "/internal/matches/{id}/reports/{report_id}/chat",
+            put(reports::confirm_chat_context),
+        )
         .route("/internal/matches/{id}/actions", get(actions::pending))
         .route(
             "/internal/matches/{id}/actions/{action_id}/ack",
             post(actions::ack),
         )
-        .route("/internal/matches/{id}/chat", put(actions::update_chat))
         .layer(axum::extract::DefaultBodyLimit::max(MAX_MODERATION_BODY))
+        .merge(
+            Router::new()
+                .route("/internal/matches/{id}/chat", put(actions::update_chat))
+                // 100 lines of up to 200 four-byte scalars plus JSON metadata.
+                .layer(axum::extract::DefaultBodyLimit::max(96 * 1024)),
+        )
 }
 
 pub(crate) fn is_admin_path(path: &str) -> bool {

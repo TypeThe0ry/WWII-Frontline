@@ -16,8 +16,8 @@ mod embedded {
 }
 
 pub use defs::{
-    AmmoDef, BotsRulesDef, DataStatus, ExplosiveDef, Faction, GadgetDef, LoadoutDef, MaterialDef,
-    MeleeDef, RespawnRulesDef, RoleDef, RulesDef, VehicleDef, WeaponDef,
+    AmmoDef, BotsRulesDef, CommsDef, DataStatus, ExplosiveDef, Faction, GadgetDef, LoadoutDef,
+    MaterialDef, MeleeDef, RespawnRulesDef, RoleDef, RulesDef, VehicleDef, WeaponDef,
 };
 /// SHA-256 (first 8 bytes, little-endian) of the canonicalised `/data` tree. Sent as
 /// `Hello.data_hash`; client and server must agree (ARCHITECTURE 8.2).
@@ -81,6 +81,15 @@ impl GameData {
                     .expect("embedded data parsed at build time"),
             })),
             hash: DATA_HASH,
+        })
+    }
+
+    /// Authoritative match rules are parsed on first use. Their canonical bytes always enter
+    /// DATA_HASH, including in prediction builds which never run the server comms registry.
+    pub fn comms() -> &'static CommsDef {
+        static COMMS: OnceLock<CommsDef> = OnceLock::new();
+        COMMS.get_or_init(|| {
+            serde_json::from_str(embedded::COMMS_JSON).expect("embedded data parsed at build time")
         })
     }
 
@@ -171,6 +180,21 @@ mod tests {
         assert!(files.iter().all(|(p, _)| !p.starts_with("schemas/")));
         assert_eq!(hash_files(&files).unwrap(), DATA_HASH);
         assert_eq!(GameData::embedded().hash, DATA_HASH);
+    }
+
+    #[test]
+    fn comms_is_embedded_and_part_of_the_canonical_hash() {
+        let mut files = collect_data_files(&data_root()).unwrap();
+        let (_, text) = files
+            .iter_mut()
+            .find(|(path, _)| path == "comms.json")
+            .unwrap();
+        let cfg: CommsDef = serde_json::from_str(text).unwrap();
+        assert_eq!(GameData::comms(), &cfg);
+        let mut changed: serde_json::Value = serde_json::from_str(text).unwrap();
+        changed["ping"]["cooldown_s"] = serde_json::json!(cfg.ping.cooldown_s + 1);
+        *text = changed.to_string();
+        assert_ne!(hash_files(&files).unwrap(), DATA_HASH);
     }
 
     #[test]

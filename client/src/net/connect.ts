@@ -14,6 +14,7 @@ import { EventBus, type GameEvents } from '../game/event-bus';
 import type { C4Event } from '../game/state/c4';
 import { ClockSync, TICK_MS } from './clock';
 import { NetCodec, type DeployResultMsg, type WelcomeMsg } from './codec';
+import { CAP_TEAM_MARKERS, type ChatChannel, type ChatMessage, type PingKind } from './comms';
 import { wsUrl, wtUrl, type NetConfig } from './config';
 import { handshake, NetError, type HandshakeOptions } from './handshake';
 import type { Transport, TransportKind } from './transport';
@@ -44,6 +45,8 @@ export interface ConnectOptions {
   /** Reliable game messages; subscribe at connect time to receive the initial C4 state. */
   onC4Event?: (event: C4Event) => void;
   onDeployResult?: (result: DeployResultMsg) => void;
+  /** Opt into the C3 legacy marker projection. */
+  teamMarkers?: boolean;
   /** Handshake overrides (tests: wrong protocol version / data hash). */
   hello?: Pick<HandshakeOptions, 'protocolVersion' | 'dataHash' | 'clientBuild' | 'ticket'>;
   /** Injection points for tests; default to the browser globals. */
@@ -76,6 +79,9 @@ export interface Session {
   onDisconnect(cb: (reason: string) => void): () => void;
   sendInputBundle(bytes: Uint8Array): void;
   sendC0(bytes: Uint8Array): void;
+  sendPingPlace(kind: PingKind, pos: readonly [number, number], target?: number): void;
+  sendChat(channel: ChatChannel, text: string): void;
+  onChat(cb: (message: ChatMessage) => void): () => void;
   stats(): NetStats;
   close(): void;
 }
@@ -86,6 +92,7 @@ function describe(e: unknown): string {
 
 class SessionImpl implements Session {
   private readonly disconnectCbs: ((reason: string) => void)[] = [];
+  private readonly chatBus = new EventBus<Pick<GameEvents, 'comms.chat'>>();
   private disconnected = false;
   private readonly unsubs: (() => void)[] = [];
 
@@ -96,7 +103,7 @@ class SessionImpl implements Session {
     readonly handshakeRttMs: number,
     readonly connectMs: number,
     readonly fallbackReason: string | undefined,
-    codec: NetCodec,
+    private readonly codec: NetCodec,
     private readonly bus: EventBus<GameEvents> | undefined,
     now: () => number,
     onDeployResult: ConnectOptions['onDeployResult'],
@@ -115,6 +122,12 @@ class SessionImpl implements Session {
         if (m.kind === 'pong') clock.onPong(m.clientTime, m.serverTick, now());
         else if (m.kind === 'disconnect') this.fail(`server disconnect: ${m.reasonName}`);
         else if (m.kind === 'deployResult') onDeployResult?.(m);
+        else if (m.kind === 'notice') this.bus?.emit('comms.notice', { key: m.key });
+        else if (m.kind === 'chat') {
+          const message = { channel: m.channel, text: m.text, sender: m.sender };
+          this.chatBus.emit('comms.chat', message);
+          this.bus?.emit('comms.chat', message);
+        }
       }),
       transport.onClose((why) => this.fail(why)),
     );
@@ -124,6 +137,7 @@ class SessionImpl implements Session {
     if (this.disconnected) return;
     this.disconnected = true;
     this.clock.stop();
+    this.chatBus.clear();
     for (const u of this.unsubs) u();
     this.transport.close();
     this.bus?.emit('net.disconnected', { reason });
@@ -153,6 +167,18 @@ class SessionImpl implements Session {
   sendInputBundle(bytes: Uint8Array): void {
     if (!this.disconnected) this.transport.sendC1(bytes);
   }
+  sendPingPlace(kind: PingKind, pos: readonly [number, number], target?: number): void {
+    this.sendC0(this.codec.encodePingPlace(kind, pos, target));
+  }
+
+  sendChat(channel: ChatChannel, text: string): void {
+    if (!this.disconnected) this.sendC0(this.codec.encodeChat(channel, text));
+  }
+
+  onChat(cb: (message: ChatMessage) => void): () => void {
+    return this.chatBus.on('comms.chat', cb);
+  }
+
   sendC0(bytes: Uint8Array): void {
     if (!this.disconnected) this.transport.sendC0(bytes);
   }
@@ -178,6 +204,7 @@ class SessionImpl implements Session {
     if (this.disconnected) return;
     this.disconnected = true;
     this.clock.stop();
+    this.chatBus.clear();
     for (const u of this.unsubs) u();
     this.transport.close();
   }
@@ -235,7 +262,7 @@ export async function connect(opts: ConnectOptions): Promise<Session> {
       earlyC4Bytes += bytes.length + 2; // Count framing so even empty frames have a cost.
       if (earlyC4Bytes <= EARLY_C4_MAX_BYTES) earlyC4.push(bytes);
     }) : () => undefined;
-    const caps = (hasGpu ? 1 : 0) | (t.kind === 'wt' ? 2 : 0);
+    const caps = (hasGpu ? 1 : 0) | (t.kind === 'wt' ? 2 : 0) | (opts.teamMarkers ? CAP_TEAM_MARKERS : 0);
     try {
       await withTimeout(t.connect(), connectTimeoutMs, () => new NetError('transport_failed', `${t.kind} connection not ready after ${connectTimeoutMs} ms`));
     } catch (e) {

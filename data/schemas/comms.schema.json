@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://frontline.invalid/schemas/comms.schema.json",
+  "title": "Marker and ping rules (GAMEDESIGN §16.3–4, §17.1; M2-019)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["roles", "ping", "squad_order", "team_mark", "command_order_max_markers", "fire_request", "garrison_request", "supply_request", "enemy_cell_m", "enemy_refresh_s", "squad_mute", "_meta"],
+  "properties": {
+    "roles": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["commander", "officer", "spotter", "medic", "support", "engineer", "anti_tank"],
+      "properties": {
+        "commander": { "$ref": "#/$defs/role" },
+        "officer": { "$ref": "#/$defs/role" },
+        "spotter": { "$ref": "#/$defs/role" },
+        "medic": { "$ref": "#/$defs/role" },
+        "support": { "$ref": "#/$defs/role" },
+        "engineer": { "$ref": "#/$defs/role" },
+        "anti_tank": { "$ref": "#/$defs/role" }
+      }
+    },
+    "ping": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["attention_ttl_s", "enemy_ttl_s", "thanks_ttl_s", "need_ttl_s", "cooldown_s", "max_active_markers"],
+      "properties": {
+        "attention_ttl_s": { "$ref": "#/$defs/seconds" },
+        "enemy_ttl_s": { "$ref": "#/$defs/seconds" },
+        "thanks_ttl_s": { "$ref": "#/$defs/seconds" },
+        "need_ttl_s": { "$ref": "#/$defs/seconds" },
+        "cooldown_s": { "$ref": "#/$defs/seconds" },
+        "max_active_markers": { "$ref": "#/$defs/count" }
+      }
+    },
+    "squad_order": { "$ref": "#/$defs/limit" },
+    "team_mark": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["infantry_ttl_s", "vehicle_ttl_s", "emplacement_ttl_s", "spotter_max_markers", "officer_max_markers", "commander_max_markers"],
+      "properties": {
+        "infantry_ttl_s": { "$ref": "#/$defs/seconds" },
+        "vehicle_ttl_s": { "$ref": "#/$defs/seconds" },
+        "emplacement_ttl_s": { "$ref": "#/$defs/seconds" },
+        "spotter_max_markers": { "$ref": "#/$defs/count" },
+        "officer_max_markers": { "$ref": "#/$defs/count" },
+        "commander_max_markers": { "$ref": "#/$defs/count" }
+      }
+    },
+    "command_order_max_markers": { "$ref": "#/$defs/count" },
+    "fire_request": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ttl_s", "officer_max_markers", "commander_max_markers"],
+      "properties": {
+        "ttl_s": { "$ref": "#/$defs/seconds" },
+        "officer_max_markers": { "$ref": "#/$defs/count" },
+        "commander_max_markers": { "$ref": "#/$defs/count" }
+      }
+    },
+    "garrison_request": { "$ref": "#/$defs/limit" },
+    "supply_request": { "$ref": "#/$defs/limit" },
+    "enemy_cell_m": { "const": 5 },
+    "enemy_refresh_s": { "$ref": "#/$defs/seconds" },
+    "squad_mute": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["count", "duration_s"],
+      "properties": {
+        "count": { "$ref": "#/$defs/count" },
+        "duration_s": { "$ref": "#/$defs/seconds" }
+      }
+    },
+    "_meta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "tunable"],
+      "properties": {
+        "status": { "enum": ["initial", "reviewed", "measured"] },
+        "tunable": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "calibration_ref": { "type": "string" }
+      }
+    }
+  },
+  "$defs": {
+    "role": { "type": "string", "pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*$" },
+    "seconds": { "type": "integer", "minimum": 1, "maximum": 65535 },
+    "count": { "type": "integer", "minimum": 1, "maximum": 255 },
+    "limit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ttl_s", "max_active_markers"],
+      "properties": {
+        "ttl_s": { "$ref": "#/$defs/seconds" },
+        "max_active_markers": { "$ref": "#/$defs/count" }
+      }
+    }
+  }
+}

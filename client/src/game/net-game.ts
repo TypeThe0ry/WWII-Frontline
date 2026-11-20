@@ -8,6 +8,7 @@
  */
 import { InputSampler, PointerLockController } from '../input';
 import { connect, parseNetConfig, type NetConfig, type Session } from '../net';
+import { NetCodec } from '../net/codec';
 import { assertLayoutMatches, type SimWasmModule } from '../net/wasm';
 import { EventBus, type GameEvents } from './event-bus';
 import { FixedStepper } from './fixed-step';
@@ -68,6 +69,7 @@ export async function startNetGame(
   const gameState = new GameState(bus);
   const session = await connect({
     config, wasm, bus,
+    teamMarkers: true,
     ...(join ? { hello: { ticket: join.ticket } } : {}),
     onWelcome: ({ team }) => gameState.seedTeam(team),
     onC4Event: (event) => gameState.apply(event),
@@ -89,8 +91,16 @@ export async function startNetGame(
   // those chunks when the server is running a different map (e.g. Carentan).
   const game = new GameLoop({ wasm, decoder: new wasm.SnapshotDecoder(), bus, net: session, input: placement, matchSeed: w.matchSeed, mapId: w.mapId, playerId: w.playerId, fireOriginHints: w.mapId === 0 });
   game.loadCollision(chunks);
-  const offTeam = bus.on('team.changed', ({ tick }) => game.resetTeamProjection(tick));
+  const offTeamChange = bus.on('team.changed', ({ tick }) => game.resetTeamProjection(tick));
   const offSnap = session.onSnapshot((bytes) => game.onSnapshot(bytes));
+  const codec = new NetCodec(wasm);
+  const offTeamMarkers = session.onC3((bytes) => {
+    try {
+      game.events.markers.applyLegacy(codec.decodeTeamMarkers(bytes), performance.now());
+    } catch {
+      // Malformed C3 datagrams leave the previous projection intact until its TTL elapses.
+    }
+  });
 
   // A hidden tab gets no animation frames: keep stepping from a timer so inputs and the connection stay alive
   // (browsers throttle background timers, so this is best effort; see ARCHITECTURE section 20 #6).
@@ -139,7 +149,8 @@ export async function startNetGame(
     dispose: () => {
       onDispose?.();
       offSnap();
-      offTeam();
+      offTeamChange();
+      offTeamMarkers();
       offPlacement();
       lock.detach();
       document.removeEventListener('visibilitychange', onVisibility);

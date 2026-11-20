@@ -775,6 +775,43 @@ async fn internal_report_dedup_global_interval_and_per_match_cap() {
 }
 
 #[tokio::test]
+async fn report_chat_update_is_scoped_and_cannot_revive_expired_evidence() {
+    let mut r = Rig::new().await;
+    let m = r.register().await;
+    let other = r.register().await;
+    let reporter = r.player(&m, ALLOWED).await;
+    let target = r.player(&m, OUTSIDE).await;
+    let report = r
+        .report(report_body(&m, &reporter, &target))
+        .await
+        .expect(StatusCode::CREATED)
+        .json();
+    let report_id = id_path(&report);
+    let path = format!("/internal/matches/{m}/reports/{report_id}/chat");
+    let other_path = format!("/internal/matches/{other}/reports/{report_id}/chat");
+    let messages = json!([{"player_id":target.player_id,"text":"𐀀".repeat(200)}]);
+    let payload = json!({"messages":messages});
+    r.call(Method::PUT, &path, Some(ADMIN), payload.clone())
+        .await
+        .expect(StatusCode::UNAUTHORIZED);
+    r.call(Method::PUT, &other_path, Some(INTERNAL), payload.clone())
+        .await
+        .expect(StatusCode::NOT_FOUND);
+    r.call(Method::PUT, &path, Some(INTERNAL), payload.clone())
+        .await
+        .expect(StatusCode::NO_CONTENT);
+    let stored: String = sqlx::query_scalar("SELECT chat_excerpt FROM reports")
+        .fetch_one(&mut r.db)
+        .await
+        .unwrap();
+    assert_eq!(serde_json::from_str::<Value>(&stored).unwrap(), messages);
+    r.clock.advance_ms(14 * DAY_MS);
+    r.call(Method::PUT, &path, Some(INTERNAL), payload)
+        .await
+        .expect(StatusCode::NOT_FOUND);
+}
+
+#[tokio::test]
 async fn startup_sweep_applies_report_and_audit_retention() {
     let mut r = Rig::new().await;
     let mut previous_day = 0;

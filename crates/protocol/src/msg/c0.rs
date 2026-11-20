@@ -6,6 +6,7 @@
 use alloc::string::String;
 use alloc::vec::Vec;
 
+use super::ping::PingPlace;
 use super::vote::{ForgivePunish, MapVoteCast, TeamSwitchRequest, VoteCast, VoteStart};
 use crate::bitio::{BitReader, BitWriter};
 use crate::channel::c0_type;
@@ -204,9 +205,15 @@ impl Codec for Disconnect {
     }
 }
 
-/// String limits (ARCHITECTURE §19.1). Length prefix is 8 bits, in bytes.
+/// Nickname limit in UTF-8 bytes (ARCHITECTURE §19.1).
 pub const MAX_NICK_LEN: usize = 24;
+/// Maximum chat length in Unicode scalar values.
 pub const MAX_CHAT_LEN: usize = 200;
+/// Each scalar may encode to four UTF-8 bytes.
+pub const MAX_CHAT_BYTES: usize = MAX_CHAT_LEN * 4;
+const CHAT_LEN_BITS: u8 = 10;
+/// Maximum C0 notice translation key length in UTF-8 bytes.
+pub const MAX_NOTICE_KEY_LEN: usize = 64;
 pub const MAX_REPORT_NOTE_LEN: usize = 120;
 pub const MAX_NAME_KEY_LEN: usize = 32;
 
@@ -320,6 +327,7 @@ u8_enum!(ChatChannel { All = 0, Team = 1, Squad = 2, Command = 3 });
 
 /// Bidirectional. C->S: `sender` is ignored by the server (it uses the connection's player).
 /// S->C: `sender` is the originating `player_id`.
+/// Wire: `channel:8 | utf8_byte_count:10 | text | sender:8`.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Chat {
     pub channel: ChatChannel,
@@ -328,14 +336,23 @@ pub struct Chat {
 }
 impl Codec for Chat {
     fn encode(&self, w: &mut BitWriter) -> Result<(), CodecError> {
+        if self.text.len() > MAX_CHAT_BYTES || self.text.chars().count() > MAX_CHAT_LEN {
+            return Err(CodecError::TooLong);
+        }
         w8(w, self.channel as u8)?;
-        write_str(w, &self.text, MAX_CHAT_LEN)?;
+        w.write_bytes_len_prefixed(self.text.as_bytes(), CHAT_LEN_BITS)?;
         w8(w, self.sender)
     }
     fn decode(r: &mut BitReader<'_>) -> Result<Self, CodecError> {
+        let channel = ChatChannel::from_u8(r8(r)?).ok_or(CodecError::InvalidTag)?;
+        let bytes = r.read_bytes_len_prefixed(CHAT_LEN_BITS, MAX_CHAT_BYTES)?;
+        let text = String::from_utf8(bytes).map_err(|_| CodecError::InvalidValue)?;
+        if text.chars().count() > MAX_CHAT_LEN {
+            return Err(CodecError::TooLong);
+        }
         Ok(Self {
-            channel: ChatChannel::from_u8(r8(r)?).ok_or(CodecError::InvalidTag)?,
-            text: read_str(r, MAX_CHAT_LEN)?,
+            channel,
+            text,
             sender: r8(r)?,
         })
     }
@@ -363,6 +380,29 @@ impl Codec for MarkerPlace {
             pos: [r.read_bits(16)? as u16, r.read_bits(16)? as u16],
             ttl: r8(r)?,
         })
+    }
+}
+
+/// A reliable server response carrying a translation key for a comms rejection.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct NoticeC0 {
+    pub key: String,
+}
+
+impl Codec for NoticeC0 {
+    fn encode(&self, w: &mut BitWriter) -> Result<(), CodecError> {
+        if self.key.is_empty() {
+            return Err(CodecError::InvalidValue);
+        }
+        write_str(w, &self.key, MAX_NOTICE_KEY_LEN)
+    }
+
+    fn decode(r: &mut BitReader<'_>) -> Result<Self, CodecError> {
+        let key = read_str(r, MAX_NOTICE_KEY_LEN)?;
+        if key.is_empty() {
+            return Err(CodecError::InvalidValue);
+        }
+        Ok(Self { key })
     }
 }
 
@@ -532,6 +572,7 @@ pub enum ClientMsgC0 {
     TeamSwitchRequest(TeamSwitchRequest),
     ForgivePunish(ForgivePunish),
     MapVoteCast(MapVoteCast),
+    PingPlace(PingPlace),
 }
 
 /// Server -> client C0 messages.
@@ -544,6 +585,7 @@ pub enum ServerMsgC0 {
     DeployResult(DeployResult),
     Chat(Chat),
     PlacementResult(PlacementResult),
+    Notice(NoticeC0),
 }
 
 impl ClientMsgC0 {
@@ -565,6 +607,7 @@ impl ClientMsgC0 {
             Self::TeamSwitchRequest(_) => c0_type::TEAM_SWITCH_REQUEST,
             Self::ForgivePunish(_) => c0_type::FORGIVE_PUNISH,
             Self::MapVoteCast(_) => c0_type::MAP_VOTE_CAST,
+            Self::PingPlace(_) => c0_type::PING_PLACE,
         }
     }
 }
@@ -579,6 +622,7 @@ impl ServerMsgC0 {
             Self::Disconnect(_) => c0_type::DISCONNECT,
             Self::DeployResult(_) => c0_type::DEPLOY_RESULT,
             Self::PlacementResult(_) => c0_type::PLACEMENT_RESULT,
+            Self::Notice(_) => c0_type::NOTICE,
             Self::Chat(_) => c0_type::CHAT,
         }
     }
@@ -603,6 +647,7 @@ impl Codec for ClientMsgC0 {
             Self::TeamSwitchRequest(m) => m.encode(w),
             Self::ForgivePunish(m) => m.encode(w),
             Self::MapVoteCast(m) => m.encode(w),
+            Self::PingPlace(m) => m.encode(w),
         }
     }
     fn decode(r: &mut BitReader<'_>) -> Result<Self, CodecError> {
@@ -622,6 +667,7 @@ impl Codec for ClientMsgC0 {
             c0_type::TEAM_SWITCH_REQUEST => Self::TeamSwitchRequest(TeamSwitchRequest::decode(r)?),
             c0_type::FORGIVE_PUNISH => Self::ForgivePunish(ForgivePunish::decode(r)?),
             c0_type::MAP_VOTE_CAST => Self::MapVoteCast(MapVoteCast::decode(r)?),
+            c0_type::PING_PLACE => Self::PingPlace(PingPlace::decode(r)?),
             _ => return Err(CodecError::InvalidTag),
         })
     }
@@ -638,6 +684,7 @@ impl Codec for ServerMsgC0 {
             Self::DeployResult(m) => m.encode(w),
             Self::Chat(m) => m.encode(w),
             Self::PlacementResult(m) => m.encode(w),
+            Self::Notice(m) => m.encode(w),
         }
     }
     fn decode(r: &mut BitReader<'_>) -> Result<Self, CodecError> {
@@ -649,6 +696,7 @@ impl Codec for ServerMsgC0 {
             c0_type::DEPLOY_RESULT => Self::DeployResult(DeployResult::decode(r)?),
             c0_type::CHAT => Self::Chat(Chat::decode(r)?),
             c0_type::PLACEMENT_RESULT => Self::PlacementResult(PlacementResult::decode(r)?),
+            c0_type::NOTICE => Self::Notice(NoticeC0::decode(r)?),
             _ => return Err(CodecError::InvalidTag),
         })
     }

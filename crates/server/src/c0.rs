@@ -6,8 +6,7 @@ use std::collections::{BTreeSet, VecDeque};
 use std::time::{Duration, Instant};
 
 use frontline_protocol::msg::c0::{
-    Chat, ChatChannel, ClientMsgC0, DeployRequest, DeployResult, Report, ServerMsgC0, SquadOp,
-    SquadOpKind,
+    ClientMsgC0, DeployRequest, DeployResult, Report, ServerMsgC0, SquadOp, SquadOpKind,
 };
 use frontline_sim::deploy::DeployReq;
 use frontline_sim::squad::{SquadKind, SquadOp as SimSquadOp};
@@ -15,8 +14,8 @@ use frontline_sim::{PlayerId, World};
 
 use crate::metrics::Metrics;
 use crate::net::limits::RateLimiter;
-use crate::text::{sanitize_chat, DupFilter};
 
+pub(crate) mod comms;
 mod placement;
 pub(crate) mod server_rules;
 
@@ -49,6 +48,7 @@ impl C0Kind {
             ClientMsgC0::Report(_) => C0Kind::Report,
             ClientMsgC0::SquadOp(_)
             | ClientMsgC0::MarkerPlace(_)
+            | ClientMsgC0::PingPlace(_)
             | ClientMsgC0::Settings(_)
             | ClientMsgC0::PlacementRequest(_)
             | ClientMsgC0::VoteStart(_)
@@ -118,7 +118,7 @@ pub struct ReportRec {
 /// Sim-thread side: per-player chat duplicate filters, the report queue, outgoing messages.
 #[derive(Default)]
 pub struct C0Handler {
-    dup: std::collections::BTreeMap<PlayerId, DupFilter>,
+    chat: comms::ChatRouting,
     placement: placement::PlacementSlots,
     muted: BTreeSet<PlayerId>,
     pub reports: VecDeque<ReportRec>,
@@ -128,7 +128,7 @@ pub type Outbox = Vec<(PlayerId, ServerMsgC0)>;
 
 impl C0Handler {
     pub fn forget(&mut self, p: PlayerId) {
-        self.dup.remove(&p);
+        self.chat.forget(p);
         self.placement.forget(p);
         self.muted.remove(&p);
     }
@@ -165,7 +165,8 @@ impl C0Handler {
                 ServerMsgC0::PlacementResult(self.placement.handle(world, from, req)),
             )),
             ClientMsgC0::Chat(c) => {
-                if !world.is_rule_muted(from) && self.chat(world, metrics, from, c, out) {
+                let muted = world.is_rule_muted(from) || self.muted.contains(&from);
+                if self.chat.route(world, metrics, from, c, muted, out) {
                     world.record_rule_activity(from, frontline_sim::serverrules::Activity::Chat);
                 }
             }
@@ -182,8 +183,8 @@ impl C0Handler {
                 }
                 self.reports.push_back(ReportRec { from, report: r });
             }
-            // The sim loop routes MarkerPlace through the C3 team channel. Settings are client-only.
-            ClientMsgC0::MarkerPlace(_) | ClientMsgC0::Settings(_) => {}
+            // Comms markers are delivered through the snapshot scheduler.
+            ClientMsgC0::MarkerPlace(_) | ClientMsgC0::PingPlace(_) | ClientMsgC0::Settings(_) => {}
             ClientMsgC0::Hello(_) | ClientMsgC0::Ping(_) | ClientMsgC0::Disconnect(_) => {}
             ClientMsgC0::VoteStart(_)
             | ClientMsgC0::VoteCast(_)
@@ -191,67 +192,6 @@ impl C0Handler {
             | ClientMsgC0::ForgivePunish(_)
             | ClientMsgC0::MapVoteCast(_) => unreachable!("forwarded by SimLoop"),
         }
-    }
-
-    fn chat(
-        &mut self,
-        world: &World,
-        metrics: &Metrics,
-        from: PlayerId,
-        c: Chat,
-        out: &mut Outbox,
-    ) -> bool {
-        let reject = |label: &str| {
-            metrics
-                .chat_rejected_total
-                .with_label_values(&[label])
-                .inc();
-            false
-        };
-        if self.muted.contains(&from) {
-            return reject("muted");
-        }
-        let line = match sanitize_chat(&c.text) {
-            Ok(l) => l,
-            Err(e) => return reject(e.label()),
-        };
-        if let Err(e) = self.dup.entry(from).or_default().check(&line) {
-            return reject(e.label());
-        }
-        let Some(me) = world.squads().entry(from) else {
-            return reject("not_on_roster");
-        };
-        let recipients: Vec<PlayerId> = match c.channel {
-            ChatChannel::All => world.squads().roster().map(|(p, _)| p).collect(),
-            ChatChannel::Team => world
-                .squads()
-                .roster()
-                .filter(|(_, e)| e.team == me.team)
-                .map(|(p, _)| p)
-                .collect(),
-            ChatChannel::Squad => match me.squad {
-                Some(s) => world
-                    .squads()
-                    .roster()
-                    .filter(|(_, e)| e.squad == Some(s))
-                    .map(|(p, _)| p)
-                    .collect(),
-                None => return reject("no_squad"),
-            },
-            ChatChannel::Command => return reject("channel"),
-        };
-        metrics.chat_routed_total.inc();
-        for p in recipients {
-            out.push((
-                p,
-                ServerMsgC0::Chat(Chat {
-                    channel: c.channel,
-                    text: line.clone(),
-                    sender: from,
-                }),
-            ));
-        }
-        true
     }
 }
 

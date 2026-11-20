@@ -7,7 +7,7 @@ use std::time::Instant;
 use frontline_protocol::msg::c0::{Report, ServerMsgC0, MAX_REPORT_NOTE_LEN};
 use frontline_protocol::msg::input::InputCmd;
 use frontline_sim::{PlayerId, SimEvent};
-use tokio::sync::{mpsc, watch};
+use tokio::sync::{mpsc, oneshot, watch};
 
 use crate::c0::Outbox;
 use crate::gateway_link::reports::{ChatLine, ReportJob};
@@ -46,11 +46,24 @@ struct TimedChat {
     line: ChatLine,
 }
 
+struct FollowingChat {
+    submitted: u32,
+    lines: Vec<ChatLine>,
+    ready: oneshot::Sender<Vec<ChatLine>>,
+}
+
+impl FollowingChat {
+    fn finish(self) {
+        let _ = self.ready.send(self.lines);
+    }
+}
+
 struct PlayerEvidence {
     identity: Admitted,
     inputs: VecDeque<Sample>,
     events: VecDeque<Sample>,
     chat: VecDeque<Arc<TimedChat>>,
+    following_chat: Option<FollowingChat>,
     last_report: Option<u32>,
     reports_sent: u8,
 }
@@ -90,6 +103,7 @@ impl Recorder {
                 inputs: VecDeque::new(),
                 events: VecDeque::new(),
                 chat: VecDeque::new(),
+                following_chat: None,
                 last_report: None,
                 reports_sent: 0,
             },
@@ -97,7 +111,9 @@ impl Recorder {
     }
 
     pub(crate) fn leave(&mut self, slot: PlayerId) {
-        self.players.remove(&slot);
+        if let Some(context) = self.players.remove(&slot).and_then(|p| p.following_chat) {
+            context.finish();
+        }
     }
 
     fn ms(&self, now: Instant) -> u32 {
@@ -173,6 +189,17 @@ impl Recorder {
                 }
             }
         }
+        for player in self.players.values_mut() {
+            if player
+                .following_chat
+                .as_ref()
+                .is_some_and(|chat| at.wrapping_sub(chat.submitted) >= EXCERPT_MS)
+            {
+                if let Some(context) = player.following_chat.take() {
+                    context.finish();
+                }
+            }
+        }
         while self
             .live_chat
             .front()
@@ -216,6 +243,17 @@ impl Recorder {
         for (recipient, _) in routed {
             if let Some(p) = self.players.get_mut(recipient) {
                 push_bounded(&mut p.chat, line.clone(), CHAT_EXCERPT);
+                if let Some(context) = p.following_chat.as_mut() {
+                    let within_window = line.at.wrapping_sub(context.submitted) < EXCERPT_MS;
+                    if within_window {
+                        context.lines.push(line.line.clone());
+                    }
+                    if !within_window || context.lines.len() >= CHAT_EXCERPT {
+                        if let Some(context) = p.following_chat.take() {
+                            context.finish();
+                        }
+                    }
+                }
             }
         }
         push_bounded(&mut self.live_chat, line, LIVE_CHAT_HISTORY);
@@ -274,6 +312,14 @@ impl Recorder {
             .map(|line| line.line.clone())
             .collect();
         let reporter = self.players.get_mut(&from).expect("validated above");
+        let (ready, following_chat) = oneshot::channel();
+        if let Some(previous) = reporter.following_chat.replace(FollowingChat {
+            submitted: at,
+            lines: Vec::new(),
+            ready,
+        }) {
+            previous.finish();
+        }
         reporter.last_report = Some(at);
         reporter.reports_sent += 1;
         permit.send(ReportJob {
@@ -283,8 +329,19 @@ impl Recorder {
             note: report.note,
             replay,
             chat_excerpt,
+            following_chat,
         });
         true
+    }
+}
+
+impl Drop for Recorder {
+    fn drop(&mut self) {
+        for player in self.players.values_mut() {
+            if let Some(context) = player.following_chat.take() {
+                context.finish();
+            }
+        }
     }
 }
 
@@ -409,6 +466,37 @@ mod tests {
             .collect();
         assert_eq!(times, [241_000, 250_000, 301_000]);
         assert!(replay.len() <= MAX_EVIDENCE_BYTES);
+    }
+
+    #[test]
+    fn report_collects_only_twenty_visible_lines_after_submission() {
+        use frontline_protocol::msg::c0::{Chat, ChatChannel};
+        let (mut recorder, mut rx, start) = recorder(1);
+        let route = |recipient, tag: &str| {
+            vec![(
+                recipient,
+                ServerMsgC0::Chat(Chat {
+                    channel: ChatChannel::Team,
+                    text: tag.to_owned(),
+                    sender: 1,
+                }),
+            )]
+        };
+        for _ in 0..21 {
+            recorder.chat(start, &route(0, "before"));
+        }
+        assert!(recorder.submit(start, 0, REPORTER, TARGET, report(0)));
+        let mut job = rx.try_recv().unwrap();
+        assert_eq!(job.chat_excerpt.len(), 20);
+        for i in 0..21 {
+            let after = start + Duration::from_secs(1);
+            recorder.chat(after, &route(1, "invisible"));
+            recorder.chat(after, &route(0, &format!("post {i}")));
+        }
+        let following = job.following_chat.try_recv().unwrap();
+        assert_eq!(following.len(), 20);
+        assert_eq!(following.first().unwrap().text, "post 0");
+        assert_eq!(following.last().unwrap().text, "post 19");
     }
 
     #[test]

@@ -1,0 +1,48 @@
+{
+  "roles": {
+    "commander": "commander",
+    "officer": "officer",
+    "spotter": "spotter",
+    "medic": "medic",
+    "support": "support",
+    "engineer": "engineer",
+    "anti_tank": "anti_tank"
+  },
+  "ping": {
+    "attention_ttl_s": 8,
+    "enemy_ttl_s": 6,
+    "thanks_ttl_s": 8,
+    "need_ttl_s": 20,
+    "cooldown_s": 2,
+    "max_active_markers": 3
+  },
+  "squad_order": { "ttl_s": 180, "max_active_markers": 5 },
+  "team_mark": {
+    "infantry_ttl_s": 8,
+    "vehicle_ttl_s": 15,
+    "emplacement_ttl_s": 60,
+    "spotter_max_markers": 10,
+    "officer_max_markers": 5,
+    "commander_max_markers": 20
+  },
+  "command_order_max_markers": 12,
+  "fire_request": { "ttl_s": 90, "officer_max_markers": 1, "commander_max_markers": 3 },
+  "garrison_request": { "ttl_s": 120, "max_active_markers": 3 },
+  "supply_request": { "ttl_s": 120, "max_active_markers": 3 },
+  "enemy_cell_m": 5,
+  "enemy_refresh_s": 1,
+  "squad_mute": { "count": 4, "duration_s": 600 },
+  "_meta": {
+    "status": "initial",
+    "tunable": [
+      "ping.attention_ttl_s", "ping.enemy_ttl_s", "ping.thanks_ttl_s", "ping.need_ttl_s",
+      "ping.cooldown_s", "ping.max_active_markers", "squad_order.ttl_s", "squad_order.max_active_markers",
+      "team_mark.infantry_ttl_s", "team_mark.vehicle_ttl_s", "team_mark.emplacement_ttl_s",
+      "team_mark.spotter_max_markers", "team_mark.officer_max_markers", "team_mark.commander_max_markers",
+      "command_order_max_markers", "fire_request.ttl_s", "fire_request.officer_max_markers", "fire_request.commander_max_markers",
+      "garrison_request.ttl_s", "garrison_request.max_active_markers", "supply_request.ttl_s", "supply_request.max_active_markers",
+      "squad_mute.count", "squad_mute.duration_s"
+    ],
+    "calibration_ref": "GAMEDESIGN §16.3–4, §17.1; ARCHITECTURE §6.9.2"
+  }
+}

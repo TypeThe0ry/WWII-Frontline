@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { Channel, decodeDatagram, decodeWsFrame, encodeDatagram, encodeStreamFrame, encodeWsFrame, FrameError, NetCodec, StreamFrameReader } from './codec';
+import { C0_NOTICE, ChatChannel, PingKind } from './comms';
 import { HAVE_WASM, loadWasm, WASM_HOW } from './test-support';
 import type { SimWasmModule } from './wasm';
 
@@ -90,8 +91,36 @@ describe.skipIf(!HAVE_WASM)('message codec over sim-wasm (golden messages of cra
   it('encodes Ping like the protocol golden and Hello with the wasm data hash', () => {
     expect([...codec.encodePing(1234)]).toEqual([...hex('04000004d2')]);
     const h = codec.encodeHello({ protocolVersion: codec.protocolVersion, dataHash: codec.dataHash, clientBuild: 0, caps: 2 });
-    expect([...h.subarray(0, 3)]).toEqual([1, 0, 5]);
+    expect([...h.subarray(0, 3)]).toEqual([1, 0, 11]);
     expect(h.length).toBe(18);
+  });
+
+  it('uses the v11 chat fixture and enforces Unicode scalar limits through WASM', () => {
+    const chat = hex(readFileSync(`${GOLDEN_DIR}chat.hex`, 'utf8').trim());
+    expect(codec.decodeServerC0(chat)).toEqual({ kind: 'chat', channel: ChatChannel.Team, text: 'é界😀', sender: 42 });
+    expect(codec.encodeChat(ChatChannel.Team, 'é界😀')).toEqual(hex('13010270ea79e5633c27e6200000'));
+    expect(() => codec.decodeServerC0(chat.slice(0, -1))).toThrow();
+
+    const full = '😀'.repeat(200);
+    const bytes = codec.encodeChat(ChatChannel.Command, full);
+    expect(bytes.length).toBe(805);
+    expect(codec.decodeServerC0(bytes)).toEqual({ kind: 'chat', channel: ChatChannel.Command, text: full, sender: 0 });
+    expect(() => codec.encodeChat(ChatChannel.All, '界'.repeat(201))).toThrow();
+  });
+
+  it('encodes PingPlace and decodes bounded Notice and C3 marker frames', () => {
+    expect(codec.encodePingPlace(PingKind.Enemy, [0x1234, 0x5678], 0x9abc)).toEqual(hex('1e01123456789abc'));
+    expect(() => codec.encodePingPlace(PingKind.Enemy, [-1, 0])).toThrow(FrameError);
+    const key = new TextEncoder().encode('comms.ping.cooldown');
+    expect(codec.decodeServerC0(Uint8Array.of(C0_NOTICE, key.length, ...key)))
+      .toEqual({ kind: 'notice', key: 'comms.ping.cooldown' });
+    expect(() => codec.decodeServerC0(Uint8Array.of(C0_NOTICE, 65))).toThrow();
+    expect(() => codec.decodeServerC0(Uint8Array.of(C0_NOTICE, 1, 0xff))).toThrow();
+    expect(codec.decodeTeamMarkers(hex('000200010800400314'))).toEqual({
+      tick: 2, markers: [{ kind: 8, pos: [4, 3], ttl: 20 }],
+    });
+    expect(codec.decodeTeamMarkers(hex('000300'))).toEqual({ tick: 3, markers: [] });
+    expect(() => codec.decodeTeamMarkers(hex('0002000108004003'))).toThrow();
   });
 
   it.skipIf(!existsSync(`${GOLDEN_DIR}welcome.hex`))('golden files on disk equal the inline copies', () => {

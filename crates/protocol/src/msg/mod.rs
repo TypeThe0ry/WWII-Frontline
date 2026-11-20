@@ -3,11 +3,13 @@
 pub mod c0;
 pub mod c4;
 pub mod input;
+pub mod ping;
 pub mod team;
 pub mod vote;
 
 pub use c0::*;
 pub use c4::*;
 pub use input::*;
+pub use ping::*;
 pub use team::*;
 pub use vote::*;

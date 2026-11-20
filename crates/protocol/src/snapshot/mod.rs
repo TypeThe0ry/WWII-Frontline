@@ -36,7 +36,7 @@ pub use baseline::{ClientBaselines, BASELINE_RING};
 pub use decoder::{DecodedSnapshot, EntitiesSoA, SnapshotDecoder};
 pub use encoder::{ClientId, SnapshotBuilder, SnapshotEncoder, Tick};
 pub use entity::{EntityKind, EntityState, QPos, QVel, VehicleExtra, VEL_STEP};
-pub use events::{Event, EventEntry};
+pub use events::{Event, EventEntry, MarkerKind};
 pub use self_state::SelfState;
 
 /// Maximum snapshot datagram size in bytes.

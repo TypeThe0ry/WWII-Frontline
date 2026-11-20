@@ -570,6 +570,7 @@ fn send_reject(handle: &ClientHandle, reason: RejectReason) {
 struct C0Limits {
     ping: RateLimiter,
     gate: crate::c0::C0Gate,
+    comms_notice: RateLimiter,
 }
 
 impl C0Limits {
@@ -577,6 +578,7 @@ impl C0Limits {
         C0Limits {
             ping: RateLimiter::new(PING_PER_SEC, PING_PER_SEC, now),
             gate: crate::c0::C0Gate::new(now),
+            comms_notice: RateLimiter::new(1.0, 2.0, now),
         }
     }
 }
@@ -623,6 +625,7 @@ fn handle_frame(
                 | ClientMsgC0::SquadOp(_)
                 | ClientMsgC0::Chat(_)
                 | ClientMsgC0::MarkerPlace(_)
+                | ClientMsgC0::PingPlace(_)
                 | ClientMsgC0::Settings(_)
                 | ClientMsgC0::Report(_)
                 | ClientMsgC0::PlacementRequest(_)
@@ -640,6 +643,16 @@ fn handle_frame(
                         .c0_rate_limited_total
                         .with_label_values(&[kind.label()])
                         .inc();
+                    let key = match m {
+                        ClientMsgC0::Chat(_) => Some("comms.chat.rate"),
+                        ClientMsgC0::MarkerPlace(_) | ClientMsgC0::PingPlace(_) => {
+                            Some("comms.marker.rate")
+                        }
+                        _ => None,
+                    };
+                    if let Some(key) = key.filter(|_| c0.comms_notice.allow(Instant::now())) {
+                        return send_c0(handle, &crate::c0::comms::notice(key));
+                    }
                     return true;
                 }
                 if ctx

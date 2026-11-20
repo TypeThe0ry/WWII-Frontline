@@ -13,5 +13,9 @@ fuzz_target!(|data: &[u8]| {
         assert_eq!(decode_c0_server(&b).unwrap(), m);
     }
     let _ = decode_team_state(data);
+    if let Ok(m) = decode_team_state_with_markers(data) {
+        let b = encode_team_state_with_markers(&m).expect("decoded team state re-encodes");
+        assert_eq!(decode_team_state_with_markers(&b).unwrap(), m);
+    }
     let _ = decode_world_state(data);
 });

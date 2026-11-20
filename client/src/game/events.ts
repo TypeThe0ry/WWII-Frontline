@@ -4,6 +4,8 @@
  * repeats every event in up to 3 packets, so records are de-duplicated by their 16-bit event id.
  */
 import { LAYOUT_EVENT_RECORD_BYTES } from '../net/wasm';
+import { PingKind } from '../net/comms';
+import { NetworkMarkers } from './network-markers';
 import type { EventBus, GameEvents, Vec3 } from './event-bus';
 
 export const EV_SHOT = 1;
@@ -12,6 +14,8 @@ export const EV_HIT_CONFIRM = 3;
 export const EV_DAMAGE_DIR = 4;
 export const EV_EXPLOSION = 5;
 export const EV_SUPPRESS = 6;
+export const EV_MARKER_UPSERT = 10;
+export const EV_MARKER_EXPIRED = 11;
 /** Explosion radius code: 1/8 m per step (crates/server/src/snapshot/events_out.rs `EXPLOSION_RADIUS_STEP_M`). */
 export const EXPLOSION_RADIUS_STEP_M = 0.125;
 
@@ -25,6 +29,7 @@ const TAU = Math.PI * 2;
 const u16 = (b: Uint8Array, o: number): number => (b[o] as number) | ((b[o + 1] as number) << 8);
 
 export class EventDecoder {
+  readonly markers = new NetworkMarkers();
   private readonly seen = new Set<number>();
   private readonly order: number[] = [];
   private readonly muzzle: Vec3 = { x: 0, y: 0, z: 0 };
@@ -60,10 +65,11 @@ export class EventDecoder {
   reset(): void {
     this.seen.clear();
     this.order.length = 0;
+    this.markers.reset();
   }
 
   /** Decodes and emits the event records of one snapshot. */
-  decode(events: Uint8Array): void {
+  decode(events: Uint8Array, tick = 0, nowMs = performance.now()): void {
     const R = LAYOUT_EVENT_RECORD_BYTES;
     for (let o = 0; o + R <= events.length; o += R) {
       const id = u16(events, o);
@@ -129,6 +135,18 @@ export class EventDecoder {
           this.bus.emit('suppress', this.suppress);
           break;
         }
+        case EV_MARKER_UPSERT: {
+          const kind = events[p + 2]!;
+          const target = kind === PingKind.Thanks && events[p + 9] === 1 ? u16(events, p + 10) : undefined;
+          this.markers.upsert({
+            id: u16(events, p), kind, pos: [u16(events, p + 3), u16(events, p + 5)],
+            ttl: events[p + 7]!, owner: events[p + 8]!, ...(target === undefined ? {} : { target }),
+          }, tick, id, nowMs);
+          break;
+        }
+        case EV_MARKER_EXPIRED:
+          this.markers.remove(u16(events, p), tick, id);
+          break;
         default:
           break; // unknown type: ignore (forward compatible)
       }

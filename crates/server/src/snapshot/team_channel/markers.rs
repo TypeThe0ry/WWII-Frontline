@@ -129,6 +129,7 @@ impl Markers {
             TeamMarkerKind::OrderAttack
             | TeamMarkerKind::OrderDefend
             | TeamMarkerKind::OrderMove => (Scope::SquadOrder, 180),
+            _ => return Err(MarkerReject::UnsupportedKind),
         };
         if !matches!(scope, Scope::Role(_)) && author.squad.is_none() {
             return Err(MarkerReject::NeedSquad);

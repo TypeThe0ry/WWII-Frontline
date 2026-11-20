@@ -6,7 +6,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
-use tokio::sync::{mpsc, watch};
+use tokio::sync::{mpsc, oneshot, watch};
 
 use super::client::{bounded_json, GatewayClient, LinkError};
 use super::{lower_hex, parse_lower_hex};
@@ -71,6 +71,7 @@ pub struct ReportJob {
     pub(crate) note: String,
     pub(crate) replay: Option<Vec<u8>>,
     pub(crate) chat_excerpt: Vec<ChatLine>,
+    pub(crate) following_chat: oneshot::Receiver<Vec<ChatLine>>,
 }
 
 #[derive(Serialize)]
@@ -95,7 +96,13 @@ pub async fn run(
         tracing::error!(event = "report_worker_invalid_match");
         return;
     }
+    #[derive(Deserialize)]
+    struct Created {
+        id: i64,
+    }
+    let mut contexts = tokio::task::JoinSet::new();
     while let Some(report) = reports.recv().await {
+        while contexts.try_join_next().is_some() {}
         let request = ReportRequest {
             match_id: &match_id,
             reporter_jti: lower_hex(&report.reporter_jti),
@@ -106,8 +113,36 @@ pub async fn run(
         };
         match client.post("/internal/report", &request).await {
             Ok(r) if r.status().as_u16() == 201 => {
+                let id = match bounded_json::<Created>(r, 1024).await {
+                    Ok(created) if created.id > 0 => created.id,
+                    _ => {
+                        tracing::warn!(event = "report_invalid_creation_response");
+                        continue;
+                    }
+                };
                 if let Some(bytes) = report.replay {
-                    preserve_replay(&client, &match_id, &spool_dir, r, bytes).await;
+                    preserve_replay(&client, &match_id, &spool_dir, id, bytes).await;
+                }
+                if contexts.len() < 128 {
+                    let client = client.clone();
+                    let path = format!("/internal/matches/{match_id}/reports/{id}/chat");
+                    contexts.spawn(async move {
+                        #[derive(Serialize)]
+                        struct ChatContext {
+                            messages: Vec<ChatLine>,
+                        }
+                        let Ok(following) = report.following_chat.await else {
+                            return;
+                        };
+                        if following.is_empty() {
+                            return;
+                        }
+                        let mut messages = report.chat_excerpt;
+                        messages.extend(following);
+                        if let Err(error) = client.put(&path, &ChatContext { messages }).await {
+                            tracing::warn!(event = "report_chat_context_upload_failed", %error);
+                        }
+                    });
                 }
             }
             Ok(r) if r.status().as_u16() == 200 => {}
@@ -119,26 +154,16 @@ pub async fn run(
             Err(e) => tracing::warn!(event = "report_delivery_failed", error = %e),
         }
     }
+    while contexts.join_next().await.is_some() {}
 }
 
 async fn preserve_replay(
     client: &GatewayClient,
     match_id: &str,
     spool_dir: &Path,
-    response: reqwest::Response,
+    id: i64,
     bytes: Vec<u8>,
 ) {
-    #[derive(Deserialize)]
-    struct Created {
-        id: i64,
-    }
-    let id = match bounded_json::<Created>(response, 1024).await {
-        Ok(created) if created.id > 0 => created.id,
-        _ => {
-            tracing::warn!(event = "report_invalid_creation_response");
-            return;
-        }
-    };
     let replay_ref = format!("replays/{match_id}_{id}.bin");
     let path = spool_dir.join(&replay_ref);
     let result = tokio::task::spawn_blocking(move || persist(&path, &bytes)).await;

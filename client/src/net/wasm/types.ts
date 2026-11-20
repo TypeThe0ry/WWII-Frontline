@@ -1,3 +1,5 @@
+import type { ChatChannel } from '../comms';
+
 // Hand-written view of the wasm-pack package API (crates/sim-wasm/pkg/frontline_sim_wasm.d.ts), so
 // the client type-checks without the generated package. Views returned by `step`/`state` and by
 // SnapshotDecoder columns alias wasm memory: consume them before the next call into wasm.
@@ -66,6 +68,10 @@ export interface WasmServerC0 {
   spawnTick: number;
   clientTime: number;
   serverTimeMs: number;
+  readonly noticeKey: string;
+  readonly chatChannel: ChatChannel;
+  readonly chatSender: number;
+  readonly chatText: string;
   free(): void;
 }
 
@@ -85,6 +91,9 @@ export interface SimWasmModule {
   encodeInputBundle(cmds: Uint8Array, ackTick: number, predHash: number, fire?: Uint8Array): Uint8Array;
   encodeHello(protocolVersion: number, dataHash: bigint, ticket: Uint8Array, clientBuild: number, caps: number): Uint8Array;
   encodePing(clientTime: number): Uint8Array;
+  encodeChat(channel: ChatChannel, text: string): Uint8Array;
+  encodePingPlace(kind: number, x: number, z: number, target: number): Uint8Array;
+  decodeTeamMarkers(bytes: Uint8Array): Uint16Array;
   encodeDisconnect(reason: number): Uint8Array;
   encodeVoteStart(kind: number, target: number): Uint8Array;
   encodeVoteCast(voteId: number, yes: boolean): Uint8Array;

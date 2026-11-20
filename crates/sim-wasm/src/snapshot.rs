@@ -1,6 +1,7 @@
 //! `SnapshotDecoder`: wraps the protocol decoder and exposes the decoded snapshot as
 //! struct-of-arrays views into wasm memory (valid until the next `decode`/`reset`).
 
+use frontline_protocol::snapshot::events::{MARKER_EXPIRED_TAG, MARKER_UPSERT_TAG};
 use frontline_protocol::snapshot::{DecodedSnapshot, Event, EventEntry, SnapshotDecoder as Inner};
 use js_sys::{Float32Array, Uint8Array};
 use wasm_bindgen::prelude::*;
@@ -67,7 +68,9 @@ pub fn layout_table() -> &'static [(&'static str, u32)] {
 /// muzzle 3xu16, dir_yaw u16, dir_pitch u16; 2 Impact: pos 3xu16, normal u16, material u8;
 /// 3 HitConfirm: target u8, zone u8, damage_q u8; 4 DamageDir: angle u8, dmg_q u8;
 /// 5 Explosion: pos 3xu16, kind u8, radius_q u8; 6 Suppress: source_dir u8, intensity u8;
-/// 7 Marker: kind u8, pos 2xu16, ttl u8).
+/// 7 Marker: kind u8, pos 2xu16, ttl u8;
+/// 10 MarkerUpsert: marker_id u16, kind u8, pos 2xu16, ttl u8, owner u8,
+/// has_target u8, target u16 (zero when absent); 11 MarkerExpired: marker_id u16).
 pub fn pack_event(e: &EventEntry, out: &mut Vec<u8>) {
     let mut rec = [0u8; EVENT_RECORD_BYTES];
     rec[0..2].copy_from_slice(&e.id.to_le_bytes());
@@ -152,6 +155,30 @@ pub fn pack_event(e: &EventEntry, out: &mut Vec<u8>) {
                 }
             }
             put8(&mut rec, ttl);
+        }
+        Event::MarkerUpsert {
+            id,
+            kind,
+            pos,
+            ttl,
+            owner,
+            target,
+        } => {
+            rec[2] = MARKER_UPSERT_TAG;
+            rec[3..5].copy_from_slice(&id.to_le_bytes());
+            rec[5] = kind.wire_tag();
+            rec[6..8].copy_from_slice(&pos[0].to_le_bytes());
+            rec[8..10].copy_from_slice(&pos[1].to_le_bytes());
+            rec[10] = ttl;
+            rec[11] = owner;
+            if let Some(target) = target {
+                rec[12] = 1;
+                rec[13..15].copy_from_slice(&target.to_le_bytes());
+            }
+        }
+        Event::MarkerExpired { id } => {
+            rec[2] = MARKER_EXPIRED_TAG;
+            rec[3..5].copy_from_slice(&id.to_le_bytes());
         }
     }
     out.extend_from_slice(&rec);
@@ -363,6 +390,45 @@ mod tests {
     use frontline_protocol::snapshot::{
         EntityKind, EntityState, QPos, QVel, SnapshotEncoder, VehicleExtra,
     };
+
+    #[test]
+    fn marker_lifecycle_packets_expose_fixed_client_records() {
+        use frontline_protocol::msg::PingKind;
+        use frontline_protocol::snapshot::MarkerKind;
+
+        let mut encoder = SnapshotEncoder::new();
+        let mut snapshot = encoder.begin(1, 7, 1200);
+        let upsert = |seq, kind, target| EventEntry {
+            id: seq,
+            event: Event::MarkerUpsert {
+                id: 0x1234,
+                kind: MarkerKind::Ping(kind),
+                pos: [4095, 2],
+                ttl: 6,
+                owner: 9,
+                target,
+            },
+        };
+        let events = [
+            upsert(1, PingKind::Enemy, None),
+            upsert(2, PingKind::Thanks, Some(u16::MAX)),
+            EventEntry {
+                id: 3,
+                event: Event::MarkerExpired { id: 0x1234 },
+            },
+        ];
+        assert_eq!(snapshot.add_events(&events).unwrap(), events.len());
+        let mut decoder = SnapshotDecoder::new();
+        decoder.decode_core(&snapshot.finish()).unwrap();
+        assert_eq!(
+            decoder.events,
+            [
+                1, 0, 10, 0x34, 0x12, 1, 0xff, 0x0f, 2, 0, 6, 9, 0, 0, 0, 0, 2, 0, 10, 0x34, 0x12,
+                7, 0xff, 0x0f, 2, 0, 6, 9, 1, 0xff, 0xff, 0, 3, 0, 11, 0x34, 0x12, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0,
+            ]
+        );
+    }
 
     #[test]
     fn vehicle_rows_are_exposed_with_decoded_units() {

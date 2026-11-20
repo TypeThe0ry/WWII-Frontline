@@ -1106,12 +1106,14 @@ dependencies = [
  "frontline-protocol",
  "glam 0.34.3",
  "libm",
+ "proptest",
  "rand_core 0.10.1",
  "rand_pcg",
  "rapier3d",
  "serde",
  "serde_json",
  "sha2 0.10.9",
+ "unicode-normalization",
 ]
 
 [[package]]

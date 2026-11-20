@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { EventBus, type GameEvents } from './event-bus';
-import { EV_DAMAGE_DIR, EV_EXPLOSION, EV_HIT_CONFIRM, EV_IMPACT, EV_SHOT, EV_SUPPRESS, EVENT_POS_STEP_M, EventDecoder } from './events';
+import { EV_DAMAGE_DIR, EV_EXPLOSION, EV_HIT_CONFIRM, EV_IMPACT, EV_MARKER_EXPIRED, EV_MARKER_UPSERT, EV_SHOT, EV_SUPPRESS, EVENT_POS_STEP_M, EventDecoder } from './events';
 import { GameLoop, type ClockPort } from './game-loop';
 import { ScriptInput, HAVE_WASM, loadWasm } from './test-harness';
 import { LAYOUT_EVENT_RECORD_BYTES } from '../net/wasm';
@@ -31,6 +31,64 @@ describe('EventDecoder', () => {
     const d = new EventDecoder(bus, () => ({ x: 0, y: 0, z: 0 }));
     return { d, got, data };
   };
+
+  it('stores, refreshes, expires and de-duplicates marker lifecycle events', () => {
+    const { d } = rig();
+    const apply = (event: number[], tick: number, nowMs: number) => d.decode(Uint8Array.from(event), tick, nowMs);
+    const upsert = (seq: number, kind: number, ttl: number) => rec(seq, EV_MARKER_UPSERT,
+      [...u16(0x1234), kind, ...u16(4095), ...u16(2), ttl, 9, 1, ...u16(65535)]);
+    apply(upsert(0xfffd, 1, 6), 100, 1000);
+    expect(d.markers.lifecycle.get(0x1234)).toEqual({ id: 0x1234, kind: 1, pos: [4095, 2], ttl: 6, owner: 9, expiresAtMs: 7000 });
+    apply(upsert(0xfffd, 1, 6), 101, 1200);
+    expect(d.markers.lifecycle.get(0x1234)?.expiresAtMs).toBe(7000);
+    apply(upsert(0xffff, 7, 5), 102, 1400);
+    expect(d.markers.lifecycle.get(0x1234)).toMatchObject({ target: 65535, expiresAtMs: 6400 });
+    apply(rec(0, EV_MARKER_EXPIRED, u16(0x1234)), 104, 1500);
+    apply(upsert(0xfffe, 1, 6), 103, 1600);
+    expect(d.markers.lifecycle.size).toBe(0);
+    apply(upsert(1, 0x88, 1), 106, 1800);
+    expect(d.markers.lifecycle.get(0x1234)?.kind).toBe(0x88);
+    d.markers.expire(2800);
+    expect(d.markers.lifecycle.size).toBe(0);
+  });
+
+  it('keeps command orders until revoked and handles scope changes across delayed delivery', () => {
+    const { d } = rig();
+    const upsert = (seq: number, tick: number, nowMs: number) => d.decode(Uint8Array.from(
+      rec(seq, EV_MARKER_UPSERT, [...u16(7), 0x8f, ...u16(3), ...u16(2), 255, 4]),
+    ), tick, nowMs);
+    const expire = (seq: number, tick: number, nowMs: number) => d.decode(Uint8Array.from(
+      rec(seq, EV_MARKER_EXPIRED, u16(7)),
+    ), tick, nowMs);
+    upsert(1, 100, 1000);
+    d.markers.expire(300_000);
+    expect(d.markers.lifecycle.has(7)).toBe(true);
+    expire(3, 10_000, 300_010); // Lost scope.
+    d.markers.expire(310_000);
+    upsert(2, 9_999, 310_000); // Delayed old scope packet must stay revoked.
+    expect(d.markers.lifecycle.has(7)).toBe(false);
+    upsert(5, 12_000, 400_000); // Scope regained using the same marker ID.
+    expire(4, 11_999, 400_010); // Delayed revocation from the previous scope.
+    expect(d.markers.lifecycle.has(7)).toBe(true);
+    d.reset();
+    expect(d.markers.lifecycle.size).toBe(0);
+  });
+
+  it('replaces the C3 projection, ignoring stale frames across tick wrap', () => {
+    const { d } = rig();
+    const markers = [{ kind: 8, pos: [0, 4095], ttl: 1 }] as const;
+    d.markers.applyLegacy({ tick: 65535, markers }, 0);
+    d.markers.applyLegacy({ tick: 0, markers: [] }, 100);
+    d.markers.applyLegacy({ tick: 65535, markers }, 200);
+    expect(d.markers.legacyProjection).toEqual([]);
+    d.markers.applyLegacy({ tick: 1, markers }, 200);
+    expect(d.markers.legacyProjection).toMatchObject(markers);
+    d.markers.expire(1200);
+    expect(d.markers.legacyProjection).toEqual([]);
+    d.reset();
+    d.markers.applyLegacy({ tick: 65535, markers }, 1300);
+    expect(d.markers.legacyProjection).toMatchObject(markers);
+  });
 
   it('decodes the four event types', () => {
     const { d, got, data } = rig();
