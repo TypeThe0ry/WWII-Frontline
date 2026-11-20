@@ -204,7 +204,20 @@ for (const transport of ['ws', 'wt'] as const) {
         expect(result, JSON.stringify(result)).toMatchObject({ ok: true });
       }
       await Promise.all([officer, support].map((p) => expect.poll(async () => (await status(p)).health).toBeGreaterThan(0)));
-      if (demo) demoPass(2, '服务器列表显示已注册对局。2 个 Chromium 游客取得真实签票并通过 WS 入场，US 小队 Officer/Support 的 HQ 部署获 C0 确认和存活快照。');
+      if (demo) {
+        demoPass(2, '服务器列表显示已注册对局。2 个 Chromium 游客取得真实签票并通过 WS 入场，US 小队 Officer/Support 的 HQ 部署获 C0 确认和存活快照。');
+        const leadStance = () => support.evaluate((id) => window.garrisonFixture.peers(id)?.stance, lead.id);
+        await officer.evaluate(() => window.garrisonFixture.hold('KeyC'));
+        await expect.poll(leadStance).toBe(1); // C2 Stance::Crouch as seen by a teammate
+        await officer.evaluate(() => window.garrisonFixture.release('KeyC'));
+        await expect.poll(leadStance).toBe(0);
+
+        const garandAmmo = (await status(support)).ammo;
+        expect(garandAmmo).toBeGreaterThan(0);
+        await support.evaluate(() => window.garrisonFixture.hold('Mouse0'));
+        await expect.poll(async () => (await status(support)).ammo).toBeLessThan(garandAmmo);
+        await support.evaluate(() => window.garrisonFixture.release('Mouse0'));
+      }
 
       // The Depot starts empty and generates the first crate at tick 1350. Approach the site with
       // the officer concurrently; start the Support's hold only after stock can exist.
@@ -265,7 +278,7 @@ for (const transport of ['ws', 'wt'] as const) {
       expect(full.reserve).toBeGreaterThan(0);
       await officer.evaluate(() => window.garrisonFixture.hold('Mouse0'));
       await expect.poll(async () => (await status(officer)).ammo, { timeout: 9_000 }).toBe(0);
-      if (demo) demoPass(3, `步行到达放置点，射击消耗 ${full.ammo} 发，Garrison 扣除 50 补给并激活，重生距驻点 ${garrisonDistance.toFixed(2)} m。`);
+      if (demo) demoPass(3, `步行到达放置点，队友快照确认蹲下与站起，Garand 与 Thompson 均消耗权威弹药（Thompson ${full.ammo} 发），Garrison 扣除 50 补给并激活，重生距驻点 ${garrisonDistance.toFixed(2)} m。`);
       await officer.evaluate(() => {
         window.garrisonFixture.release('Mouse0');
         window.garrisonFixture.hold('KeyR');

@@ -24,7 +24,7 @@ steps=(
 human=(
   '未测（需人）：预发布域名、受信任 HTTPS 与正式包下载过程（H-017）。'
   '未测（需人）：20 人测试服、地图画布键鼠部署、倒计时内 Carentan 实图预取演示（H-054/H-057）。'
-  '未测（需人）：姿态/翻越、Thompson 与 Garand 双枪型、全息绿/红和实图真人队友操作（H-057）。'
+  '未测（需人）：翻越、全息绿/红和实图真人队友操作（H-057）。'
   '未测（需人）：实图真人搬运、放置与补弹（H-057）。'
   '未测（需人）：浏览器内真人 Medic 救援与压制音效/屏幕效果（H-057）。'
   '未测（需人）：三人乘员、实图路线、游戏内双方交战（H-054/H-057）。'
@@ -32,13 +32,18 @@ human=(
   '未测（需人）：预发布监控看板及真人对局自然结束后的结算展示（H-057）。'
 )
 
+# Invoked by the EXIT trap.
+# shellcheck disable=SC2329
 finish() {
-  local status=$? output="$run/report.md" n evidence count=0
+  local status=$1 output="$run/report.md" n evidence count=0
   trap - EXIT
   {
     printf '# M1 八步演示运行记录\n\n'
+    # Markdown backticks are literal.
+    # shellcheck disable=SC2016
     printf -- '- 运行日期 %s。检出提交 `%s`。命令 `scripts/demo-m1.sh`。\n' "$(date +%F)" "$base"
     printf -- '- PI-109 工作站（非参考机）。本机 HTTP/WS、无头 Chromium 软件 WebGL2，使用生成的战术碰撞图和独立 M0 驾驶夹具。\n'
+    # shellcheck disable=SC2016
     printf -- '- 脚本退出码 `%d`。下表的 PASS 对应本地子项。\n\n' "$status"
     printf '| §2.4 | 演示步骤 | 本地检查 | 待人工演示 |\n|---|---|---|---|\n'
     for n in "${!steps[@]}"; do
@@ -59,14 +64,14 @@ finish() {
   printf '报告 %s\n' "$report" >&2
   exit "$status"
 }
-trap finish EXIT
+trap 'finish "$?"' EXIT
 trap 'exit 130' INT
 trap 'exit 143' TERM
 
 cargo build --locked -p frontline-gateway -p frontline-server
 wasm-pack build crates/sim-wasm --target web --profile wasm-release
 pnpm -C client build
-core=$(node tools/ci/core-size.mjs --dist client/dist --max 8000000 --report "$run/core.json")
+core=$(node tools/ci/core-size.mjs --dist client/dist --max 8000000)
 [[ -s client/dist/wasm/frontline_sim_wasm_bg.wasm ]]
 
 status=0
