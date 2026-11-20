@@ -363,6 +363,23 @@ pnpm -C client exec playwright test -c playwright.garrison.config.ts
 
 The Linux fixture starts its own gateway, match server and Vite on ephemeral ports; it needs no running dev stack. It runs WS and pinned dev-cert WT separately (WT is skipped only if the Chromium API is absent on loopback). It uses two interactive browser pages, three undeployed balancing/roster sessions and generated collision data, without rendering or pointer lock. See `reports/m1-garrison-e2e.md` for coverage and timing definitions. Use `FRONTLINE_CHROME` to select a local Chromium executable.
 
+### Repeat the M1 acceptance demo (M1-072)
+
+```sh
+pnpm install --frozen-lockfile
+pnpm -C client exec playwright install chromium   # or set FRONTLINE_CHROME to an installed Chromium
+scripts/demo-m1.sh
+```
+
+The script builds the Gateway, server and client, then starts a disposable HTTP/WS stack on
+Linux using ephemeral ports and runs headless Chromium with software WebGL2. Python 3 with
+NumPy and SQLite support is required. It writes eight rows to `reports/m1-demo-run.md` and
+exits nonzero if a local check did not pass. The report marks the remaining human or staging
+checks separately. The automated match uses generated collision data, the Sherman run uses a
+separate M0 driving fixture, and settlement is checked with a controlled server shutdown.
+The match server binds WS and metrics to all interfaces on ephemeral ports as in the other
+network fixtures. Run it on a development workstation.
+
 ## Local dev stack (M1-066)
 
 `./dev.sh` starts the full local development stack (`frontline-gateway` + `frontline-server` + Vite client dev server) in one command, generates ephemeral local tokens into `.dev-stack/` (git-ignored), and maintains a 13-day WebTransport dev certificate in `dev-cert/`:

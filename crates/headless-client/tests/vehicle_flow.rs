@@ -89,6 +89,10 @@ impl Fixture {
                 .expect("start frontline-server"),
         );
 
+        eprintln!(
+            "[vehicle-flow] started frontline-server pid={}",
+            self.server.as_ref().unwrap().id()
+        );
         let deadline = Instant::now() + Duration::from_secs(15);
         loop {
             let text = fs::read_to_string(&log).unwrap();

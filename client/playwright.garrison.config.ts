@@ -12,7 +12,8 @@ export default defineConfig({
     headless: true,
     launchOptions: {
       executablePath: process.env.FRONTLINE_CHROME,
-      args: ['--disable-gpu', '--disable-background-timer-throttling', '--disable-renderer-backgrounding'],
+      args: ['--disable-gpu', '--disable-background-timer-throttling', '--disable-renderer-backgrounding',
+        ...(process.env.FRONTLINE_M1_DEMO_DIR ? ['--disable-features=Vulkan', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] : [])],
     },
   },
 });

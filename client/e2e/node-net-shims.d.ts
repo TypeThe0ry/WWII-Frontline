@@ -5,10 +5,11 @@ declare module 'node:child_process' {
     readonly stdout: { on(ev: 'data', cb: (d: { toString(): string }) => void): void } | null;
     readonly stderr: { on(ev: 'data', cb: (d: { toString(): string }) => void): void } | null;
     kill(signal?: string): boolean;
-    once(ev: 'exit', cb: () => void): void;
+    once(ev: 'exit', cb: (code: number | null) => void): void;
     once(ev: 'error', cb: (error: Error) => void): void;
   }
   export function spawn(cmd: string, args: string[], opts: { stdio: string[]; cwd?: string; env?: Record<string, string | undefined> }): ChildProcess;
+  export function execFileSync(cmd: string, args: string[], opts: { encoding: 'utf8'; timeout: number }): string;
   export function execFileSync(cmd: string, args: string[], opts?: { stdio?: string }): unknown;
 }
 declare module 'node:fs' {
