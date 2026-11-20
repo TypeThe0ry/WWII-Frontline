@@ -10,7 +10,7 @@ use frontline_sim::spawn::garrison::{
     GarrisonDamage, GarrisonState, PlaceError, SpawnRequestError,
 };
 use frontline_sim::supply_iface::SupplyProvider;
-use frontline_sim::{LifeStateView, ObjectiveSpec, Team, World};
+use frontline_sim::{LifeStateView, ObjectiveSpec, SimEvent, Team, World};
 use glam::Vec3;
 
 const HZ: u32 = 30;
@@ -320,8 +320,14 @@ fn build_times_and_health_ramp() {
     );
     // Health: 20 % at the start, ~60 % at half progress, full at the end.
     let mut f = fx(0);
-    f.w.place_garrison(0, at(500.0, 60.0)).unwrap();
+    let pos = at(500.0, 60.0);
+    let id = f.w.place_garrison(0, pos).unwrap();
     assert_eq!(f.w.garrison_list()[0].hp, 240.0);
+    let placed = f.w.step(&[]);
+    assert!(placed.events.iter().any(|ev| matches!(ev,
+        SimEvent::SpawnPointState { id: event_id, team: Team::Us, pos: event_pos, state: GarrisonState::Building }
+            if *event_id == id && *event_pos == pos
+    )));
     f.w.debug_teleport(0, Vec3::new(502.0, 5.02, 60.0));
     for _ in 0..300 {
         step_all(&mut f.w, &[(0, use_btn())]);

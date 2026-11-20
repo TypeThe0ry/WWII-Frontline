@@ -1,17 +1,19 @@
 // Minimal typings for the Node built-ins used by net-support.ts (the client has no @types/node; see src/node-test-shims.d.ts).
 declare module 'node:child_process' {
   export interface ChildProcess {
+    readonly pid?: number;
     readonly stdout: { on(ev: 'data', cb: (d: { toString(): string }) => void): void } | null;
     readonly stderr: { on(ev: 'data', cb: (d: { toString(): string }) => void): void } | null;
     kill(signal?: string): boolean;
     once(ev: 'exit', cb: () => void): void;
+    once(ev: 'error', cb: (error: Error) => void): void;
   }
-  export function spawn(cmd: string, args: string[], opts: { stdio: string[]; cwd?: string }): ChildProcess;
+  export function spawn(cmd: string, args: string[], opts: { stdio: string[]; cwd?: string; env?: Record<string, string | undefined> }): ChildProcess;
   export function execFileSync(cmd: string, args: string[], opts?: { stdio?: string }): unknown;
 }
 declare module 'node:fs' {
   export function mkdtempSync(prefix: string): string;
-  export function writeFileSync(path: string, data: string): void;
+  export function writeFileSync(path: string, data: string | Uint8Array): void;
   export function rmSync(path: string, opts?: { recursive?: boolean; force?: boolean }): void;
 }
 declare module 'node:dgram' {
@@ -37,4 +39,5 @@ declare module 'node:os' {
 declare module 'node:path' {
   export function join(...parts: string[]): string;
   export function resolve(...parts: string[]): string;
+  export function dirname(path: string): string;
 }

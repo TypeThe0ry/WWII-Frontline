@@ -169,7 +169,7 @@ async fn c4_over_real_listeners() {
     }
 
     // Set up near-capture progress, an in-range builder and a lethal hit. Advance the actual
-    // systems to emit ObjectiveOwner, Kill and the Garrison activation/destruction events.
+    // systems to emit ObjectiveOwner, Kill and the Garrison lifecycle events.
     let point = server.world.player_state(0).unwrap().pos;
     server.world.set_objectives(&[ObjectiveSpec {
         id: OBJECTIVE.into(),
@@ -325,7 +325,7 @@ fn verify(o: Observation, world: &World, garrison: u16) {
         );
     }
     if o.team == 0 {
-        assert_eq!(spawn_states, [1, 2]);
+        assert_eq!(spawn_states, [0, 1, 2]);
     } else {
         assert!(spawn_states.is_empty(), "enemy spawn point leaked");
     }

@@ -83,10 +83,7 @@ impl PlacementSlots {
                     // or specific enemy reason, and never affect the preview replies.
                     preview(world, player, team, p.slot, target)?;
                     match p.slot {
-                        Slot::Garrison => world
-                            .place_garrison(player, target)
-                            .map(|_| ())
-                            .map_err(garrison_reason),
+                        Slot::Garrison => place_garrison(world, player, team, target),
                         Slot::Supply => world
                             .drop_supply_crate(player)
                             .map(|_| ())
@@ -105,6 +102,40 @@ impl PlacementSlots {
         }
         result
     }
+}
+
+fn place_garrison(
+    world: &mut World,
+    player: PlayerId,
+    team: Team,
+    target: Vec3,
+) -> Result<(), Reason> {
+    fn crate_supplies(world: &World, team: Team) -> u32 {
+        world
+            .supply_world()
+            .crates
+            .values()
+            .filter(|c| c.team == team && c.carried_by.is_none())
+            .map(|c| c.supplies)
+            .sum()
+    }
+
+    // Authoritative stock audit; the C0 preview is only a price quote. Do not broadcast stock.
+    let before = tracing::enabled!(tracing::Level::DEBUG).then(|| crate_supplies(world, team));
+    let id = world
+        .place_garrison(player, target)
+        .map_err(garrison_reason)?;
+    if let Some(before) = before {
+        tracing::debug!(
+            event = "garrison_placed",
+            player,
+            garrison = id,
+            supplies_before = before,
+            supplies_after = crate_supplies(world, team),
+            "committed Garrison placement"
+        );
+    }
+    Ok(())
 }
 
 fn eligible(world: &World, player: PlayerId, slot: Slot) -> Result<Team, Reason> {

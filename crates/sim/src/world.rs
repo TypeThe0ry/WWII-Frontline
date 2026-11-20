@@ -1926,6 +1926,7 @@ impl World {
                         .0
                         .height_at(pos.x, pos.z)
                         .unwrap_or(pos.y);
+                    let pos = Vec3::new(pos.x, y, pos.z);
                     let mut gs = self.ecs.resource_mut::<Garrisons>();
                     let id = gs.next_id;
                     gs.next_id += 1;
@@ -1934,7 +1935,7 @@ impl World {
                         Garrison {
                             id,
                             team,
-                            pos: Vec3::new(pos.x, y, pos.z),
+                            pos,
                             owner: who,
                             state: GarrisonState::Building,
                             hp: HEALTH_HP * START_HP_FRAC,
@@ -1947,6 +1948,12 @@ impl World {
                             recent: Vec::new(),
                         },
                     );
+                    self.pending_events.push(SimEvent::SpawnPointState {
+                        id,
+                        team,
+                        pos,
+                        state: GarrisonState::Building,
+                    });
                     Ok(id)
                 }
             }
