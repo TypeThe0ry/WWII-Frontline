@@ -63,3 +63,7 @@ LOADTEST_SERVER_CPUS=24,29,41 LOADTEST_CLIENT_CPUS=6,10 \
 ## 合并 M2-018 后的协议与计分接线
 
 上述 Carentan 长跑使用 v4；最终基线 `d4887f4` 为 v5，计分不再额外升级版本。合并后的 `DATA_HASH=0x29aaf80610f4e251`；WASM 黄金握手样本同步。计分读取 M2-018 的权威 AFK 状态，无规则实例时默认为 false；换队保留同一会话账本，平衡规则从账本读取现有分数。真人 AFK 误判率及正式换队玩法未测；志愿换队 XP 奖励不纳入本任务的 GD §18.2 经验公式。
+
+- 世界级测试 `scoring_follows_afk_and_keeps_the_ledger_on_team_move` 以 120 s 模拟无活动触发 AFK，对同一计分事件验证正常、拦截、恢复；换队后仍为同一条 2 分记录，平衡读取权威分数。
+- v5 同口径 Carentan WS 冒烟将时长改为 65 s、采样间隔 5 s，10/10 HQ 部署，0 断线及解码错误；1,999 个服务端 tick、1,993 计分 tick、12 条记录合计 −30 分。未到时限即主动停止，摘要无赛果。v5 加速完整对账仍为 36,000 tick、145 增量、1,267 净分。
+- 最终本地门槛：`CARGO_BUILD_JOBS=8 CARGO_PROFILE_TEST_OPT_LEVEL=1 FRONTLINE_DETERMINISM_STRICT=1 scripts/local-ci.sh lint ts data determinism wasm rust` 的 lint/data/determinism/wasm/rust 通过。TS 首轮读到旧 v4 WASM，生成 v5 包后 `CARGO_BUILD_JOBS=8 scripts/local-ci.sh ts` 复跑 99 文件 / 766 项通过。数据校验 80 文件、0 错误；严格对照 3×18,000 tick 完全一致，WASM 另测 3,000 tick 逐位一致，优化后 1,187,716 B、Brotli 341,932 B，均在大小预算内。未用 GitHub Actions。
