@@ -15,6 +15,7 @@ export interface ManifestAsset {
   placeholder: boolean;
   req_id?: string;
   lods?: (EntryRef & { lod: number; suffix: string; tris?: number })[];
+  chunk?: EntryRef;
   collision?: EntryRef;
   textures?: (EntryRef & { name: string })[];
   audio?: (EntryRef & { codec: 'opus' | 'aac' })[];
@@ -42,7 +43,7 @@ export class ManifestIndex {
     if (manifest.schema !== 1) throw new ManifestError(`unsupported manifest schema ${manifest.schema}`);
     for (const [base, a] of Object.entries(manifest.assets)) {
       if (!a.tier.includes(tier)) continue;
-      const refs: EntryRef[] = [...(a.lods ?? []), ...(a.collision ? [a.collision] : []), ...(a.textures ?? []), ...(a.audio ?? []), ...(a.meta ? [a.meta] : [])];
+      const refs: EntryRef[] = [...(a.lods ?? []), ...(a.chunk ? [a.chunk] : []), ...(a.collision ? [a.collision] : []), ...(a.textures ?? []), ...(a.audio ?? []), ...(a.meta ? [a.meta] : [])];
       for (const r of refs) this.#entries.set(r.entry, { ref: r, asset: a, base });
     }
   }
