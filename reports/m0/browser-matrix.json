@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-17T12:42:15.073Z",
+  "generatedAt": "2026-11-20T02:58:22.788Z",
   "note": "Playwright-provided browser builds, headless, loopback. WebKit build != Safari release. Untested = not run on this machine, not a failure.",
   "probes": [
     {
@@ -9,11 +9,11 @@
       "supported": true,
       "serverCertificateHashesWorked": true,
       "connected": true,
-      "snapshotsReceived": 201,
+      "snapshotsReceived": 200,
       "snapshotSource": "server",
       "disconnects": 0,
       "usedTransport": "wt",
-      "rttMsMedian": 1.1436184443003006
+      "rttMsMedian": 1.0604600710762453
     },
     {
       "browser": "chromium",
@@ -26,7 +26,58 @@
       "snapshotSource": "server",
       "disconnects": 0,
       "usedTransport": "ws",
-      "rttMsMedian": 1.0710230987536367
+      "rttMsMedian": 0.7351142734176813
+    },
+    {
+      "browser": "firefox",
+      "version": "155.0",
+      "transport": "wt",
+      "supported": true,
+      "serverCertificateHashesWorked": true,
+      "connected": true,
+      "snapshotsReceived": 201,
+      "snapshotSource": "server",
+      "disconnects": 0,
+      "usedTransport": "wt",
+      "rttMsMedian": 1.498412279
+    },
+    {
+      "browser": "firefox",
+      "version": "155.0",
+      "transport": "ws",
+      "supported": true,
+      "serverCertificateHashesWorked": false,
+      "connected": true,
+      "snapshotsReceived": 150,
+      "snapshotSource": "server",
+      "disconnects": 0,
+      "usedTransport": "ws",
+      "rttMsMedian": 1.4263272199
+    },
+    {
+      "browser": "webkit",
+      "version": "26.6",
+      "transport": "wt",
+      "supported": false,
+      "serverCertificateHashesWorked": false,
+      "connected": false,
+      "snapshotsReceived": 0,
+      "snapshotSource": "server",
+      "disconnects": 0,
+      "error": "transport_failed: WebTransport is not available in this browser | log: wasm"
+    },
+    {
+      "browser": "webkit",
+      "version": "26.6",
+      "transport": "ws",
+      "supported": false,
+      "serverCertificateHashesWorked": false,
+      "connected": true,
+      "snapshotsReceived": 150,
+      "snapshotSource": "server",
+      "disconnects": 0,
+      "usedTransport": "ws",
+      "rttMsMedian": 0.454652442
     }
   ],
   "fallbackNoWebTransport": [
@@ -35,7 +86,23 @@
       "version": "153.0.8010.12",
       "connected": true,
       "transport": "ws",
-      "connectMs": 10,
+      "connectMs": 6.5,
+      "fallbackReason": "WebTransport undefined"
+    },
+    {
+      "browser": "firefox",
+      "version": "155.0",
+      "connected": true,
+      "transport": "ws",
+      "connectMs": 8,
+      "fallbackReason": "WebTransport undefined"
+    },
+    {
+      "browser": "webkit",
+      "version": "26.6",
+      "connected": true,
+      "transport": "ws",
+      "connectMs": 5,
       "fallbackReason": "WebTransport undefined"
     }
   ],
@@ -45,18 +112,9 @@
       "version": "153.0.8010.12",
       "connected": true,
       "transport": "ws",
-      "connectMs": 12,
+      "connectMs": 24.8,
       "fallbackReason": "wt connection failed: Opening handshake failed."
     }
   ],
-  "untested": [
-    {
-      "browser": "firefox",
-      "reason": "browser binary not installed (npx playwright install firefox)"
-    },
-    {
-      "browser": "webkit",
-      "reason": "browser binary not installed (npx playwright install webkit)"
-    }
-  ]
+  "untested": []
 }
