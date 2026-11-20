@@ -1,9 +1,12 @@
 //! Environment configuration (`GATEWAY_BIND`, `TICKET_SIGNING_KEY_FILE`, `INTERNAL_API_TOKEN`,
 //! `TOKEN_SECRET`, `ALLOWED_ORIGINS`, `DATABASE_URL`, `OAUTH_ENABLED`).
 
+use crate::admin::AdminConfig;
+
 #[derive(Clone)]
 pub struct Config {
     pub bind: String,
+    pub admin: AdminConfig,
     pub database_url: String,
     /// Ed25519 seed (32 raw bytes) file; generated and written when missing.
     pub ticket_key_file: Option<String>,
@@ -37,6 +40,11 @@ impl Config {
                 .unwrap_or_default(),
             oauth_enabled: get("OAUTH_ENABLED").as_deref() == Some("1"),
             trust_forwarded: get("TRUST_FORWARDED").is_some(),
+            admin: AdminConfig::parse(
+                get("ADMIN_TOKEN_HASH").as_deref(),
+                get("ADMIN_IP_ALLOWLIST").as_deref(),
+                get("ADMIN_TRUSTED_PROXIES").as_deref(),
+            )?,
             ..Config::test()
         })
     }
@@ -45,6 +53,7 @@ impl Config {
     pub fn test() -> Config {
         Config {
             bind: "127.0.0.1:0".into(),
+            admin: AdminConfig::default(),
             database_url: "sqlite::memory:".into(),
             ticket_key_file: None,
             internal_token: "internal-test-token".into(),

@@ -2,6 +2,7 @@
 //! match-server API. It holds no real-time match state and must not depend on `sim`, `server`
 //! or `bots` (ARCHITECTURE §4.3.5, enforced by `tools/ci/check-deps.mjs`).
 
+pub mod admin;
 pub mod app;
 pub mod auth;
 pub mod clock;

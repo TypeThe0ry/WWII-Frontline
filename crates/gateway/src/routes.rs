@@ -34,6 +34,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Map, Value};
 use sha2::{Digest, Sha256};
 
+use crate::admin::{self, ModerationIp};
 use crate::app::Shared;
 use crate::auth::{ct_eq, ticket, token};
 use crate::db::{Registration, SlotError};
@@ -54,6 +55,13 @@ pub const ROUTE_TABLE: &[&str] = &[
     "POST /internal/matches/{id}/result",
     "GET /healthz",
     "GET /metrics",
+    "GET /v1/announcements",
+    "POST /internal/report",
+    "PUT /internal/matches/{id}/reports/{report_id}/replay",
+    "GET /internal/matches/{id}/actions",
+    "POST /internal/matches/{id}/actions/{action_id}/ack",
+    "PUT /internal/matches/{id}/chat",
+    "ANY /admin/*",
 ];
 
 const TICKET_PATH: &str = "/v1/servers/{match_id}/ticket";
@@ -81,6 +89,7 @@ pub fn router(state: Shared) -> Router {
         .route("/internal/matches/{id}/result", post(result))
         .route("/healthz", get(|| async { "ok" }))
         .route("/metrics", get(metrics))
+        .merge(admin::routes())
         .layer(middleware::from_fn_with_state(state.clone(), edge))
         .with_state(state)
 }
@@ -99,19 +108,26 @@ async fn edge(State(st): State<Shared>, mut req: Request, next: Next) -> Respons
         .and_then(|v| v.to_str().ok())
         .and_then(|v| v.split(',').next())
         .map(|s| s.trim().to_owned());
+    let peer_known = peer.is_some();
     let ip = if st.cfg.trust_forwarded {
         fwd.or(peer)
     } else {
         peer
     }
     .unwrap_or_else(|| "unknown".into());
+    let moderation_ip = st.cfg.admin.client_ip(&req);
+    req.extensions_mut().insert(ModerationIp(
+        moderation_ip,
+        peer_known && moderation_ip.is_none(),
+    ));
     req.extensions_mut().insert(ClientIp(ip));
     let origin = req
         .headers()
         .get(header::ORIGIN)
         .and_then(|v| v.to_str().ok())
         .map(str::to_owned);
-    let preflight = req.method() == axum::http::Method::OPTIONS;
+    let preflight =
+        req.method() == axum::http::Method::OPTIONS && !admin::is_admin_path(req.uri().path());
     let mut resp = if preflight {
         StatusCode::NO_CONTENT.into_response()
     } else {
@@ -160,7 +176,7 @@ async fn metrics(State(st): State<Shared>) -> Response {
     }
 }
 
-fn db_error(error: &sqlx::Error) -> Response {
+pub(crate) fn db_error(error: &sqlx::Error) -> Response {
     let kind = match error {
         sqlx::Error::PoolTimedOut => "pool_timeout",
         sqlx::Error::Database(_) => "sqlite",
@@ -170,7 +186,7 @@ fn db_error(error: &sqlx::Error) -> Response {
     err(StatusCode::INTERNAL_SERVER_ERROR, "storage_unavailable")
 }
 
-fn err(code: StatusCode, msg: &'static str) -> Response {
+pub(crate) fn err(code: StatusCode, msg: &'static str) -> Response {
     (code, Json(json!({ "error": msg }))).into_response()
 }
 
@@ -182,7 +198,7 @@ fn too_many(retry_after_s: u64) -> Response {
     r
 }
 
-fn bearer(h: &HeaderMap) -> Option<&str> {
+pub(crate) fn bearer(h: &HeaderMap) -> Option<&str> {
     h.get(header::AUTHORIZATION)?
         .to_str()
         .ok()?
@@ -223,8 +239,12 @@ struct GuestResp {
 async fn guest(
     State(st): State<Shared>,
     Extension(ip): Extension<ClientIp>,
+    Extension(moderation_ip): Extension<ModerationIp>,
     body: Bytes,
 ) -> Response {
+    if moderation_ip.1 {
+        return err(StatusCode::FORBIDDEN, "client_ip_unavailable");
+    }
     let now = st.clock.now_ms();
     if let Err(r) = st.ip_limiter.check(&ip.0, now) {
         st.metrics.auth("guest_login", "rate_limited");
@@ -242,6 +262,19 @@ async fn guest(
             "guest_renewal",
             if renewed.is_some() { "ok" } else { "invalid" },
         );
+    }
+    match admin::bans::check(
+        &st,
+        now,
+        moderation_ip.0,
+        renewed.as_ref().map(|c| c.sub.as_str()),
+        req.token.as_deref().filter(|_| renewed.is_some()),
+    )
+    .await
+    {
+        Ok(Some(rejection)) => return rejection,
+        Ok(None) => {}
+        Err(error) => return db_error(&error),
     }
     let guest_id = renewed.map_or_else(|| to_hex(&random_16()), |c| c.sub);
     let suggestion = guest_nick(&guest_id);
@@ -390,16 +423,21 @@ struct TicketResp {
 async fn issue_ticket(
     State(st): State<Shared>,
     Extension(ip): Extension<ClientIp>,
+    Extension(moderation_ip): Extension<ModerationIp>,
     Path(match_id): Path<String>,
     headers: HeaderMap,
     body: Bytes,
 ) -> Response {
+    if moderation_ip.1 {
+        return err(StatusCode::FORBIDDEN, "client_ip_unavailable");
+    }
     let auth_timer = st.metrics.ticket_auth.start_timer();
     let now_ms = st.clock.now_ms();
     if let Err(r) = st.ip_limiter.check(&ip.0, now_ms) {
         return too_many(r);
     }
-    let Some(claims) = bearer(&headers)
+    let session_token = bearer(&headers);
+    let Some(claims) = session_token
         .and_then(|t| token::verify(&st.cfg.token_secret, t, now_ms / 1000).ok())
         .filter(|claims| from_hex(&claims.sub).is_some())
     else {
@@ -409,6 +447,19 @@ async fn issue_ticket(
     st.metrics.auth("ticket", "ok");
     if let Err(r) = st.account_limiter.check(&claims.sub, now_ms) {
         return too_many(r);
+    }
+    match admin::bans::check(
+        &st,
+        now_ms,
+        moderation_ip.0,
+        Some(&claims.sub),
+        session_token,
+    )
+    .await
+    {
+        Ok(Some(rejection)) => return rejection,
+        Ok(None) => {}
+        Err(error) => return db_error(&error),
     }
     auth_timer.observe_duration();
     let parse_timer = st.metrics.ticket_parse.start_timer();
@@ -441,6 +492,7 @@ async fn issue_ticket(
         Err(SlotError::Full) => return err(StatusCode::CONFLICT, "match_full"),
         Err(SlotError::Database(error)) => return db_error(&error),
     };
+    let guest_id = claims.sub;
     let claims = TicketClaims {
         player_id,
         match_id: id,
@@ -449,6 +501,11 @@ async fn issue_ticket(
         jti: random_16(),
         is_admin: false,
     };
+    match admin::record_ticket(&st, &claims, moderation_ip.0, &guest_id, session_token).await {
+        Ok(Some(rejection)) => return rejection,
+        Ok(None) => {}
+        Err(error) => return db_error(&error),
+    }
     let mut sign_elapsed = std::time::Duration::ZERO;
     let serialization_started = Instant::now();
     let t = ticket::issue_with_signer(claims, now_ms / 1000, |message| {
@@ -477,7 +534,7 @@ async fn issue_ticket(
 
 // ------------------------------------------------------------------ internal
 
-fn internal_ok(st: &Shared, h: &HeaderMap) -> bool {
+pub(crate) fn internal_ok(st: &Shared, h: &HeaderMap) -> bool {
     bearer(h).is_some_and(|t| ct_eq(t.as_bytes(), st.cfg.internal_token.as_bytes()))
 }
 
@@ -559,7 +616,10 @@ async fn result(
         return err(StatusCode::NOT_FOUND, "no_such_match");
     };
     match st.db.store_result(&id, result, st.clock.now_ms()).await {
-        Ok(true) => StatusCode::NO_CONTENT.into_response(),
+        Ok(true) => {
+            st.live_chat.remove(&to_hex(&id)).await;
+            StatusCode::NO_CONTENT.into_response()
+        }
         Ok(false) => err(StatusCode::NOT_FOUND, "no_such_match"),
         Err(error) => db_error(&error),
     }

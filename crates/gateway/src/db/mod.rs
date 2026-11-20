@@ -106,7 +106,7 @@ impl Database {
         })
     }
 
-    async fn connection(&self) -> Result<MutexGuard<'_, SqliteConnection>, sqlx::Error> {
+    pub(crate) async fn connection(&self) -> Result<MutexGuard<'_, SqliteConnection>, sqlx::Error> {
         lock(&self.connection).await
     }
 
@@ -181,7 +181,7 @@ impl Database {
     ) -> Result<Vec<ServerInfo>, sqlx::Error> {
         let rows = sqlx::query_as::<_, ServerRow>(
             "SELECT id, registration, phase, time_left_s, humans, bots FROM matches
-             WHERE ended = 0 AND ticket_key = ? AND last_heartbeat_ms >= ? ORDER BY id",
+             WHERE ended = 0 AND listed = 1 AND ticket_key = ? AND last_heartbeat_ms >= ? ORDER BY id",
         )
         .bind(self.ticket_key.as_slice())
         .bind(timestamp(now_ms.saturating_sub(timeout_ms)))
