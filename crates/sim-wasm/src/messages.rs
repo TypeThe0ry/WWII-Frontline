@@ -34,7 +34,7 @@ pub fn layout_table() -> &'static [(&'static str, u32)] {
 /// Bytes of one full-width `FireCmd` (`packFireCmd`): 16+16+8+16+16+3*14+16 = 130 bits.
 pub const FIRE_CMD_BYTES: usize = 17;
 
-fn whole<T: Codec>(m: &T) -> Result<Vec<u8>, String> {
+pub(crate) fn whole<T: Codec>(m: &T) -> Result<Vec<u8>, String> {
     let mut w = BitWriter::new();
     m.encode(&mut w).map_err(|e| e.to_string())?;
     Ok(w.finish())

@@ -84,7 +84,9 @@ export async function startNetGame(
   lock.attach();
   const placement = new LivePlacement(sampler, (bytes) => session.sendC0(bytes));
   const offPlacement = session.onC0((bytes) => placement.receive(bytes));
-  const game = new GameLoop({ wasm, decoder: new wasm.SnapshotDecoder(), bus, net: session, input: placement, matchSeed: w.matchSeed, mapId: w.mapId, playerId: w.playerId });
+  // Network prediction currently loads only M0 chunks. Do not report a muzzle based on
+  // those chunks when the server is running a different map (e.g. Carentan).
+  const game = new GameLoop({ wasm, decoder: new wasm.SnapshotDecoder(), bus, net: session, input: placement, matchSeed: w.matchSeed, mapId: w.mapId, playerId: w.playerId, fireOriginHints: w.mapId === 0 });
   game.loadCollision(chunks);
   const offSnap = session.onSnapshot((bytes) => game.onSnapshot(bytes));
 

@@ -70,9 +70,12 @@ pub struct Args {
     /// Client 0 boards a nearby friendly M4A1, drives, then holds the exit button before disconnecting.
     #[arg(long, conflicts_with = "hash_only")]
     pub drive_vehicle: bool,
+    /// Run a legal-input control, with 3000 deg/s mouse flicks on even-numbered clients.
+    #[arg(long, conflicts_with_all = ["hash_only", "drive_vehicle"])]
+    pub anticheat_control: bool,
     /// Exercise mixed anticheat input fixtures on a local server.
     #[cfg(feature = "anticheat-test")]
-    #[arg(long, conflicts_with_all = ["hash_only", "drive_vehicle"])]
+    #[arg(long, conflicts_with_all = ["hash_only", "drive_vehicle", "anticheat_control"])]
     pub anticheat_mix: bool,
     /// Print the kinematic input-sequence hash of each client for this many ticks and exit
     /// (determinism check: equal for equal `--seed`).

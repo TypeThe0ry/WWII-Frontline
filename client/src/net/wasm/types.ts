@@ -14,6 +14,8 @@ export interface WasmPredictor {
   /** One vehicle tick: `pos vel quat yawRate forwardSpeed` (12 floats), or `undefined` without a vehicle. */
   stepVehicle(cmd: Uint8Array): Float32Array | undefined;
   step(cmd: Uint8Array): Float32Array;
+  /** Consumes the packed metadata of a shot predicted by the last infantry step, if available. */
+  takeFireCmd(): Uint8Array | undefined;
   state(): Float32Array;
   weaponState(): Uint8Array;
   authState(): Uint8Array;

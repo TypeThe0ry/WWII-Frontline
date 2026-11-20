@@ -419,8 +419,7 @@ fn each_rejection_reason_has_its_own_counter() {
     });
     only(&m, "move_clamped", 1);
     assert_eq!(m.input_accepted_total.get(), 1);
-    // turn rate: with the shipped 8000 deg/s nothing a 16-bit angle can express between two
-    // ticks exceeds the limit (PI-022); with a lower cap the clamp and its counter work.
+    // The default cap catches a 180-degree yaw snap, but this pitch change is only 90 degrees.
     let m = with_player(d, |b, _| {
         b.ingest_cmd(3, &cmd(10, 1), 10);
         let mut c = cmd(11, 2);
@@ -428,7 +427,7 @@ fn each_rejection_reason_has_its_own_counter() {
         c.pitch = i16::MAX;
         b.ingest_cmd(3, &c, 10);
     });
-    only(&m, "yaw_rate", 0);
+    only(&m, "yaw_rate", 1);
     let low = ValidateCfg {
         max_turn_dps: 2000.0, // 66.7 deg per tick
         ..d
@@ -438,7 +437,7 @@ fn each_rejection_reason_has_its_own_counter() {
         first.pitch = -20000;
         b.ingest_cmd(3, &first, 10);
         let mut c = cmd(11, 2);
-        c.yaw = 0x4000; // +90 deg in one tick (> 266 deg/s * ... = 66.7)
+        c.yaw = 0x4000; // +90 deg in one tick (> 66.7 deg)
         c.pitch = 20000; // +110 deg
         b.ingest_cmd(3, &c, 10);
     });

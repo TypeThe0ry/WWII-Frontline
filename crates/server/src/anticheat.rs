@@ -28,7 +28,8 @@ pub struct Rules {
 pub static RULES: LazyLock<Rules> = LazyLock::new(|| {
     let rules: Rules = serde_json::from_str(include_str!("../../../data/rules/anticheat.json"))
         .expect("valid embedded anti-cheat rules");
-    assert!(rules.view_max_deg_s > 0.0 && rules.view_max_deg_s <= 8000.0);
+    // At 30 Hz the largest per-axis change is 180 degrees. Keep the cap reachable.
+    assert!(rules.view_max_deg_s > 0.0 && rules.view_max_deg_s < 5400.0);
     assert!((1..=300).contains(&rules.window_ticks));
     assert!((1..=300).contains(&rules.warn_count));
     assert!((1..=300).contains(&rules.invalid_streak_ticks));

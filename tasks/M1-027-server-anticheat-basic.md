@@ -14,7 +14,7 @@ M1 校验清单（ARCHITECTURE §15.1 的子集）：
 - **输入**：`seq` 单调、`tick` 在窗口内（< 当前 −2 或 > 当前 +10 丢弃）、重复/回放输入丢弃 + 计数；连续异常 → 断开。
 - **移动速度**：位移/tick ≤ `sprint_mps × dt × 1.15`（含坡度/载具修正）；加速度上限；服务器权威直接纠正，累计偏差记 `suspicion_move`（由 M1-011 的 `validate.rs` 提供 `check_displacement`）。
 - **瞬移/穿墙**：客户端 `pred_hash` 与权威不一致次数（每 10 s 滚动窗口）。
-- **视角**：yaw/pitch 角速度 ≤ **8000°/s**【待调参】；单帧突变阈值；钳制 + 计数。
+- **视角**：yaw/pitch 每轴默认 ≤ **3600°/s**（PI-B6-antiche-1）；钳制 + 计数。
 - **射速**：每武器冷却/射速含 **5% 容差**；弹匣扣除；拒绝多余射击（由 M1-013 在 sim 内强制，本任务计数/日志）。
 - **出射点**：`origin_hint` 与权威位置偏差 ≤ 0.5 m，使用权威位置（与 M1-025 共享计数 `origin_corrected`）。
 - **弹药/伤害**：全由服务器持有，客户端无写权限（本任务做代码审计测试：`InputCmd`/`FireCmd` 中无弹药/伤害字段）。
@@ -30,14 +30,14 @@ M1 校验清单（ARCHITECTURE §15.1 的子集）：
 - `crates/server/src/anticheat/view_check.rs` —— 角速度限幅与计数
 - `crates/server/src/anticheat/fire_check.rs` —— 射速异常计数（读取 sim 返回的 `FireRejected` 事件）
 - `crates/server/src/anticheat/report.rs` —— 汇总到 `suspicion_*` 指标与结构化日志（tracing JSON）；每 60 s 打印前 5 名可疑玩家
-- `data/rules/anticheat.json` —— 阈值（`view_max_dps 8000`、`move_tolerance 1.15`、`fire_tolerance 1.05`、断开阈值）
+- `data/rules/anticheat.json` —— `view_max_deg_s`（默认 3600）及断开阈值；移动与武器冷却仍复用现有规则。
 - `crates/server/tests/anticheat_*.rs`；`crates/headless-client/src/cheats/{speedhack,firerate,aimsnap}.rs`（注入器，仅测试用）
 ### 要实现的行为
 1. 输入摄取阶段按顺序检查：窗口 → 重复 → 视角角速度 → 移动向量模长（≤1）→ 按键合法性。
 2. 违规处置：丢弃/钳制并计数；`window_10s` 内同类违规 ≥ N（默认 30）→ 记 `warn`；≥ 3N 或连续 9 tick 全异常 → 断开（`Disconnect{reason}`）。
 3. 速度作弊注入：客户端发送 1.3× 速度的移动（位置自报不被信任，因协议不含位置；实质为 `pred_hash` 与权威持续不匹配 + 位移校验）→ 服务器仍按权威速度移动（纠正）并 `suspicion_move++`。
 4. 射速注入：以 2× cap 速度发 fire 位，sim 拒绝多余发射，`fire_rate_rejected_total++`。
-5. 视角注入：单帧 180° 瞬转，钳制到 `8000°/s × dt`，`view_rate_clamped_total++`。
+5. 视角注入：单 tick 180° 瞬转，默认钳制到 `3600°/s × dt`，`view_rate_clamped_total++`。
 6. 所有计数按玩家、按局保存；局终输出摘要日志（M2 接复核队列）。
 7. 不得误伤：合法高灵敏度玩家（鼠标 3000°/s 峰值）和网络抖动下的乱序输入不触发断开（用真实录制轨迹/合成抖动测误报）。
 ### 接口与数据
@@ -57,7 +57,7 @@ pub enum Verdict { Accept, Clamp(Violation), Drop(Violation), Disconnect(Violati
 ## 验收标准
 1. 注入 **1.3× 速度**输入（`speedhack` 注入器，持续 30 s）：服务器权威速度不超过 `sprint×1.0`（对比位置轨迹最大速度 ≤ 6.4 m/s×1.02），`suspicion_move` 计数在 30 s 内 ≥ 100（`/metrics` 断言）。
 2. **射速超限**被拒：`firerate` 注入器以 2× cap 开火，服务器实际发射数 ≤ `cap×1.05×T`（T=10 s），`fire_rate_rejected_total` ≥ 实际超限发数的 90%（单测 + headless）。
-3. 视角瞬转 180° 单帧被钳制至 ≤ `8000°/s × (1/30) ≈ 266.7°`/tick 内的合法值，`view_rate_clamped_total` 递增；合法 3000°/s 甩枪 0 误报（1000 条合成轨迹，误报率 = 0）。
+3. 视角瞬转 180° 单 tick 按默认值钳制至 ≤ `3600°/s × (1/30) = 120°`，`view_rate_clamped_total` 递增；合法 3000°/s 合成甩枪不触发钳制。
 4. 乱序/重复/过期输入：seq 重放 100 次全部丢弃（`input_rejected_total{reason="replay"}`=100）；窗口外（−3、+11 tick）丢弃；窗口内（−2、+10）接受（边界单测）。
 5. 持续异常断开：连续 9 tick 全部无效输入或 `3N` 违规 → 收到 `Disconnect`；正常玩家 30 min 20 客户端场景中被误断开数 = 0。
 6. 出射点 0.51 m 偏差使用权威位置并计数（与 M1-025 共享，单测）。
@@ -84,5 +84,5 @@ pub enum Verdict { Accept, Clamp(Violation), Drop(Violation), Disconnect(Violati
 
 ## 备注/已知风险
 - 因协议不下发位置，"速度作弊"的实际表现是预测与权威分歧；校验价值在于计数与告警，权威本身已免疫。
-- 阈值（8000°/s、1.15、5%）均【待调参】，误报率比漏报更需控制；M2 以真实对局数据重新标定。
+- 默认视角阈值已按合成对照选定；真人样本与真实对局重新标定仍待后续（H-056）。
 - 注入器放在 `headless-client`，不得出现在发布的服务器二进制中（`cfg(feature = "cheat-injectors")`）。

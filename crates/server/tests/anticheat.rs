@@ -214,13 +214,7 @@ fn replay_and_window_boundaries_do_not_trigger_enforcement() {
 
 #[test]
 fn aim_snap_is_clamped_and_legit_flicks_are_not() {
-    // At 30 Hz a single tick can turn at most 180 degrees (5400 deg/s), so the spec's 8000 deg/s
-    // limit can never trip (PI-074); the limit is a config value and the test uses 3600 deg/s.
-    let cfg = ValidateCfg {
-        max_turn_dps: 3600.0,
-        ..ValidateCfg::default()
-    };
-    let mut r = Rig::with_cfg(cfg);
+    let mut r = Rig::new();
     // A 180 degree snap in one tick.
     r.tick(|mut c| {
         c.yaw = 16384 + 32768;
@@ -230,9 +224,9 @@ fn aim_snap_is_clamped_and_legit_flicks_are_not() {
     let applied = r.br.resolved()[0].1.yaw;
     let turned = f32::from((applied.wrapping_sub(16384) as i16).unsigned_abs()) * 360.0 / 65536.0;
     eprintln!("180° snap clamped to {turned:.4}°; 1000 legal inputs up to 3000°/s checked");
-    assert!((119.99..=120.01).contains(&turned));
+    assert!((turned - RULES.view_max_deg_s / 30.0).abs() < 0.01);
     // 1000 synthetic human flicks peaking at 3000 deg/s (100 deg/tick) never trip it.
-    let mut r = Rig::with_cfg(cfg);
+    let mut r = Rig::new();
     let mut yaw = 16384f32;
     for i in 0..1000u32 {
         let step_deg = 100.0 * ((i % 7) as f32 / 6.0);
@@ -339,10 +333,9 @@ fn redundant_origin_hints_count_only_for_matching_shots_and_do_not_move_them() {
     assert_eq!(baseline.w.projectiles()[0].origin, muzzle);
     assert_eq!(baseline.w.projectiles()[0].rewind, 3);
     assert_eq!(baseline.m.origin_corrected_total.get(), 0);
-    let near = (muzzle + 0.25 * Vec3::X)
-        .to_array()
-        .map(|m| (64.0 * m).round() as u16);
-    for (codes, seq_delta, count) in [(near, 0, 0), ([0; 3], 0, 1), ([0; 3], 1, 0)] {
+    let origin = |dx: f32| FireCmd::encode_origin_hint((muzzle + Vec3::X * dx).to_array()).unwrap();
+    let (near, far) = (origin(0.25), origin(2.0));
+    for (codes, seq_delta, count) in [(near, 0, 0), (far, 0, 1), (far, 1, 0), ([0; 3], 0, 0)] {
         let mut trial = Rig::new();
         let cmd = fire(trial.next_cmd());
         let meta = fire_metadata(cmd.seq.wrapping_add(seq_delta), codes);
@@ -375,11 +368,12 @@ fn origin_hints_for_blocked_triggers_or_late_redundancy_do_not_count() {
 
     // This is the first time the server sees a hint for the shot, but it has already stepped.
     let idle = r.next_cmd();
-    r.bundled_tick(idle, [fire_metadata(fire.seq, [0; 3])]);
+    let far = FireCmd::encode_origin_hint([256.0, 32.0, 256.0]).unwrap();
+    r.bundled_tick(idle, [fire_metadata(fire.seq, far)]);
     let mut blocked = r.next_cmd();
     blocked.buttons = buttons::FIRE;
     assert!(!r
-        .bundled_tick(blocked, [fire_metadata(blocked.seq, [0; 3])])
+        .bundled_tick(blocked, [fire_metadata(blocked.seq, far)])
         .iter()
         .any(|e| matches!(e, SimEvent::Shot { .. })));
     assert_eq!(r.m.fire_rate_rejected_total.get(), 1);

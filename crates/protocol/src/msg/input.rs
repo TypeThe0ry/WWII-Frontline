@@ -205,14 +205,72 @@ pub struct FireCmd {
     pub seq: u16,
     /// Difference relative to the current tick.
     pub view_tick: u16,
+    /// Client input weapon slot (same domain as `InputCmd.weapon_slot`, not a definition ID).
     pub weapon: u8,
     /// Hinted direction: yaw 16 bit over [0, 2π), pitch 16 bit over [-π/2, π/2].
     pub dir_yaw: u16,
     pub dir_pitch: u16,
-    /// Hinted origin, three raw 14-bit codes (each must be <= 0x3FFF). Their metric meaning
-    /// is defined by the consumer (M1); the server only uses it as an untrusted hint.
+    /// Untrusted muzzle position: world XYZ, 0.25 m per 14-bit code, base (0, -128, 0) m.
+    /// `[0; 3]` means unavailable; never use this field to set the authoritative muzzle.
     pub origin_hint: [u16; 3],
     pub spread_seed: u16,
+}
+
+impl FireCmd {
+    const ORIGIN_BASE_M: [f32; 3] = [0.0, -128.0, 0.0];
+    const ORIGIN_STEP_M: f32 = 0.25;
+    const ORIGIN_MAX_CODE: u16 = 0x3fff;
+
+    /// Round the predicted muzzle to the nearest grid point. Omit an absent, invalid or
+    /// out-of-grid origin rather than sending a position that was clamped to the map edge.
+    pub fn encode_origin_hint(world_xyz: [f32; 3]) -> Option<[u16; 3]> {
+        let mut codes = [0; 3];
+        for ((code, metres), base) in codes.iter_mut().zip(world_xyz).zip(Self::ORIGIN_BASE_M) {
+            let grid = (metres - base) / Self::ORIGIN_STEP_M;
+            if !(0.0..=f32::from(Self::ORIGIN_MAX_CODE)).contains(&grid) {
+                return None;
+            }
+            *code = (grid + 0.5) as u16;
+        }
+        (codes != [0; 3]).then_some(codes)
+    }
+
+    pub fn decode_origin_hint(codes: [u16; 3]) -> Option<[f32; 3]> {
+        if codes == [0; 3] || codes.iter().any(|&c| c > Self::ORIGIN_MAX_CODE) {
+            return None;
+        }
+        Some(core::array::from_fn(|i| {
+            Self::ORIGIN_BASE_M[i] + f32::from(codes[i]) * Self::ORIGIN_STEP_M
+        }))
+    }
+}
+
+#[cfg(test)]
+mod origin_hint_tests {
+    use super::FireCmd;
+
+    #[test]
+    fn world_grid_covers_carentan_and_rejects_unrepresentable_points() {
+        let codes = FireCmd::encode_origin_hint([2048.0, -7.1, 1024.13]);
+        assert_eq!(codes, Some([8192, 484, 4097]));
+        assert_eq!(
+            FireCmd::decode_origin_hint(codes.unwrap()),
+            Some([2048.0, -7.0, 1024.25])
+        );
+        assert!(FireCmd::encode_origin_hint([0.0, 0.0, 0.0]).is_some());
+        for pos in [
+            [0.0, -128.0, 0.0], // reserved
+            [0.0, -129.0, 0.0],
+            [-0.01, 0.0, 0.0],
+            [0.0, 0.0, 4096.0],
+            [f32::NAN, 0.0, 0.0],
+            [0.0, f32::INFINITY, 0.0],
+        ] {
+            assert_eq!(FireCmd::encode_origin_hint(pos), None);
+        }
+        assert_eq!(FireCmd::decode_origin_hint([0; 3]), None);
+        assert_eq!(FireCmd::decode_origin_hint([0x4000, 512, 9]), None);
+    }
 }
 
 impl Codec for FireCmd {

@@ -14,7 +14,7 @@
     "view_max_deg_s": {
       "type": "number",
       "exclusiveMinimum": 0,
-      "maximum": 8000
+      "exclusiveMaximum": 5400
     },
     "window_ticks": {
       "type": "integer",
