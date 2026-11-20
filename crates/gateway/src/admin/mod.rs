@@ -92,32 +92,6 @@ async fn active_match(
         .bind(now.saturating_sub(ts(st.cfg.heartbeat_timeout_ms))).fetch_one(conn).await
 }
 
-/// Serialize the ban decision and the identity write against administrator mutations.
-pub(crate) async fn record_ticket(
-    st: &Shared,
-    claims: &frontline_protocol::dto::TicketClaims,
-    ip: Option<IpAddr>,
-    guest_id: &str,
-    token: Option<&str>,
-) -> Result<Option<Response>, sqlx::Error> {
-    let mut conn = st.db.connection().await?;
-    if let Some(expiry) =
-        bans::lookup(&mut conn, ts(st.clock.now_ms()), ip, Some(guest_id), token).await?
-    {
-        return Ok(Some(bans::banned(expiry)));
-    }
-    sqlx::query(
-        "INSERT INTO moderation_tickets (match_id, jti, player_id, guest_id) VALUES (?, ?, ?, ?)",
-    )
-    .bind(crate::registry::to_hex(&claims.match_id))
-    .bind(crate::registry::to_hex(&claims.jti))
-    .bind(claims.player_id)
-    .bind(guest_id)
-    .execute(&mut *conn)
-    .await?;
-    Ok(None)
-}
-
 /// Start with a sweep so restarted gateways catch up before serving normal traffic.
 /// The periodic task only holds a weak reference to application state.
 pub(crate) async fn start_retention(st: &Shared) -> Result<(), sqlx::Error> {

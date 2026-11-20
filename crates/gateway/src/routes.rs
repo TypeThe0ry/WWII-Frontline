@@ -37,7 +37,7 @@ use sha2::{Digest, Sha256};
 use crate::admin::{self, ModerationIp};
 use crate::app::Shared;
 use crate::auth::{ct_eq, ticket, token};
-use crate::db::{Registration, SlotError};
+use crate::db::{Registration, SlotError, TicketReservation};
 use crate::nick::validate_nick;
 use crate::registry::{from_hex, to_hex};
 
@@ -448,19 +448,6 @@ async fn issue_ticket(
     if let Err(r) = st.account_limiter.check(&claims.sub, now_ms) {
         return too_many(r);
     }
-    match admin::bans::check(
-        &st,
-        now_ms,
-        moderation_ip.0,
-        Some(&claims.sub),
-        session_token,
-    )
-    .await
-    {
-        Ok(Some(rejection)) => return rejection,
-        Ok(None) => {}
-        Err(error) => return db_error(&error),
-    }
     auth_timer.observe_duration();
     let parse_timer = st.metrics.ticket_parse.start_timer();
     let Ok(req) = serde_json::from_slice::<TicketReq>(&body) else {
@@ -473,14 +460,20 @@ async fn issue_ticket(
         return err(StatusCode::NOT_FOUND, "no_such_match");
     };
     parse_timer.observe_duration();
+    let jti = random_16();
     let (m, player_id) = match st
         .db
         .reserve_slot(
-            &id,
-            now_ms,
-            st.cfg.heartbeat_timeout_ms,
-            &claims.sub,
-            &nick,
+            TicketReservation {
+                id: &id,
+                now_ms,
+                timeout_ms: st.cfg.heartbeat_timeout_ms,
+                guest_id: &claims.sub,
+                nick: &nick,
+                jti: &jti,
+                ip: moderation_ip.0,
+                fingerprint: session_token.map(admin::bans::fingerprint),
+            },
             &st.metrics,
         )
         .await
@@ -490,22 +483,17 @@ async fn issue_ticket(
         Err(SlotError::Stale) => return err(StatusCode::GONE, "match_unavailable"),
         Err(SlotError::Incompatible) => return err(StatusCode::CONFLICT, "protocol_mismatch"),
         Err(SlotError::Full) => return err(StatusCode::CONFLICT, "match_full"),
+        Err(SlotError::Banned(expiry)) => return admin::bans::banned(expiry),
         Err(SlotError::Database(error)) => return db_error(&error),
     };
-    let guest_id = claims.sub;
     let claims = TicketClaims {
         player_id,
         match_id: id,
         nick,
         exp: 0,
-        jti: random_16(),
+        jti,
         is_admin: false,
     };
-    match admin::record_ticket(&st, &claims, moderation_ip.0, &guest_id, session_token).await {
-        Ok(Some(rejection)) => return rejection,
-        Ok(None) => {}
-        Err(error) => return db_error(&error),
-    }
     let mut sign_elapsed = std::time::Duration::ZERO;
     let serialization_started = Instant::now();
     let t = ticket::issue_with_signer(claims, now_ms / 1000, |message| {

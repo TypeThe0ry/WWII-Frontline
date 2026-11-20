@@ -1,5 +1,6 @@
 //! Batch only ready, unchanged-nickname ticket writes; do not wait to fill a batch.
 
+use std::net::IpAddr;
 use std::sync::Arc;
 use std::time::Instant;
 
@@ -9,8 +10,10 @@ use sqlx::{Connection, SqliteConnection};
 use tokio::sync::{mpsc, oneshot, Mutex};
 use tokio::time::{timeout_at, Instant as Deadline};
 
-use super::{lock, reserve_one, Registration, SlotError, WAIT_LIMIT};
+use super::{lock, reserve_one, timestamp, Registration, SlotError, TicketReservation, WAIT_LIMIT};
+use crate::admin::bans::BanSnapshot;
 use crate::metrics::Metrics;
+use crate::registry::to_hex;
 use frontline_protocol::PROTOCOL_VERSION;
 
 const QUEUE_SIZE: usize = 512;
@@ -26,6 +29,10 @@ struct Request {
     cutoff: i64,
     guest_id: String,
     nick: String,
+    jti: String,
+    now: i64,
+    ip: Option<IpAddr>,
+    fingerprint: Option<String>,
     queued: Instant,
     wait: Histogram,
     transaction: Histogram,
@@ -42,20 +49,21 @@ impl Queue {
 
     pub(super) async fn reserve(
         &self,
-        id: String,
-        cutoff: i64,
-        guest_id: &str,
-        nick: &str,
+        ticket: TicketReservation<'_>,
         metrics: &Metrics,
     ) -> Result<Slot, SlotError> {
         let (reply, response) = oneshot::channel();
         let (claim, claimed) = oneshot::channel();
         let deadline = Deadline::now() + WAIT_LIMIT;
         let request = Request {
-            id,
-            cutoff,
-            guest_id: guest_id.to_owned(),
-            nick: nick.to_owned(),
+            id: to_hex(ticket.id),
+            cutoff: timestamp(ticket.now_ms.saturating_sub(ticket.timeout_ms)),
+            guest_id: ticket.guest_id.to_owned(),
+            nick: ticket.nick.to_owned(),
+            jti: to_hex(ticket.jti),
+            now: timestamp(ticket.now_ms),
+            ip: ticket.ip,
+            fingerprint: ticket.fingerprint,
             queued: Instant::now(),
             wait: metrics.ticket_pool_wait.clone(),
             transaction: metrics.ticket_transaction.clone(),
@@ -107,6 +115,10 @@ async fn run(
             !req.reply.is_closed() && claim.send(Ok(())).is_ok()
         });
         let started = Instant::now();
+        if let Err(error) = reject_banned(&mut conn, &mut pending, started).await {
+            fail_batch(&mut pending, started, &error);
+            continue;
+        }
         let slots = if pending.len() > 1 {
             let inputs: Vec<_> = pending
                 .iter()
@@ -116,18 +128,14 @@ async fn run(
                         req.cutoff,
                         req.guest_id.as_str(),
                         req.nick.as_str(),
+                        req.jti.as_str(),
                     )
                 })
                 .collect();
             match reserve_batch(&mut conn, &ticket_key, &inputs).await {
                 Ok(slots) => slots,
                 Err(err) => {
-                    for req in pending.drain(..) {
-                        req.transaction.observe(started.elapsed().as_secs_f64());
-                        let _ = req
-                            .reply
-                            .send(Err(sqlx::Error::Protocol(err.to_string()).into()));
-                    }
+                    fail_batch(&mut pending, started, &err);
                     continue;
                 }
             }
@@ -156,6 +164,7 @@ async fn run(
                 req.cutoff,
                 &req.guest_id,
                 &req.nick,
+                &req.jti,
             )
             .await;
             req.transaction.observe(started.elapsed().as_secs_f64());
@@ -164,10 +173,55 @@ async fn run(
     }
 }
 
+fn fail_batch(pending: &mut Vec<Request>, started: Instant, error: &sqlx::Error) {
+    for request in pending.drain(..) {
+        request.transaction.observe(started.elapsed().as_secs_f64());
+        let _ = request
+            .reply
+            .send(Err(sqlx::Error::Protocol(error.to_string()).into()));
+    }
+}
+
+async fn reject_banned(
+    conn: &mut SqliteConnection,
+    pending: &mut Vec<Request>,
+    started: Instant,
+) -> Result<(), sqlx::Error> {
+    let Some(now) = pending.iter().map(|r| r.now).min() else {
+        return Ok(());
+    };
+    let ids: Vec<_> = pending.iter().map(|r| r.guest_id.as_str()).collect();
+    let fingerprints: Vec<_> = pending
+        .iter()
+        .filter_map(|r| r.fingerprint.as_deref())
+        .collect();
+    let has_ip = pending.iter().any(|r| r.ip.is_some());
+    // Keep the same connection lock from this check through commit. Admin ban mutations
+    // cannot interleave between the decision and the ticket identity write.
+    let rules = BanSnapshot::load(conn, now, &ids, &fingerprints, has_ip).await?;
+    let mut blocked = Vec::new();
+    for (index, req) in pending.iter().enumerate() {
+        if let Some(expiry) = rules.decision(
+            req.now,
+            req.ip,
+            Some(&req.guest_id),
+            req.fingerprint.as_deref(),
+        ) {
+            blocked.push((index, expiry));
+        }
+    }
+    for (index, expiry) in blocked.into_iter().rev() {
+        let req = pending.remove(index);
+        req.transaction.observe(started.elapsed().as_secs_f64());
+        let _ = req.reply.send(Err(SlotError::Banned(expiry)));
+    }
+    Ok(())
+}
+
 async fn reserve_batch(
     conn: &mut SqliteConnection,
     key: &[u8; 32],
-    inputs: &[(&str, i64, &str, &str)],
+    inputs: &[(&str, i64, &str, &str, &str)],
 ) -> Result<Vec<Option<Slot>>, sqlx::Error> {
     let mut txn = conn.begin().await?;
     // Materialize request eligibility before moving any cursor. Each returned index is
@@ -203,6 +257,24 @@ async fn reserve_batch(
             slots[ordinal] = Some((registration.clone(), ((start + offset) % CURSOR_SIZE) as u8));
         }
     }
+    let identities: Vec<_> = inputs
+        .iter()
+        .zip(&slots)
+        .filter_map(|(input, slot)| {
+            slot.as_ref()
+                .map(|(_, player)| (input.0, input.4, *player, input.2))
+        })
+        .collect();
+    if !identities.is_empty() {
+        sqlx::query(
+            "INSERT INTO moderation_tickets (match_id, jti, player_id, guest_id)
+            SELECT json_extract(value, '$[0]'), json_extract(value, '$[1]'),
+                   json_extract(value, '$[2]'), json_extract(value, '$[3]') FROM json_each(?)",
+        )
+        .bind(Json(identities))
+        .execute(&mut *txn)
+        .await?;
+    }
     txn.commit().await?;
     Ok(slots)
 }
@@ -226,9 +298,18 @@ mod tests {
             .unwrap();
         let held = db.connection().await.unwrap();
         let metrics = Metrics::default();
+        let ticket = || TicketReservation {
+            id: &match_id,
+            now_ms: 100,
+            timeout_ms: 5,
+            guest_id: &guest,
+            nick: "Guest",
+            jti: &[1; 16],
+            ip: None,
+            fingerprint: None,
+        };
         {
-            let mut cancelled =
-                std::pin::pin!(db.reserve_slot(&match_id, 100, 5, &guest, "Guest", &metrics,));
+            let mut cancelled = std::pin::pin!(db.reserve_slot(ticket(), &metrics));
             poll_fn(|cx| {
                 assert!(cancelled.as_mut().poll(cx).is_pending());
                 Poll::Ready(())
@@ -236,10 +317,7 @@ mod tests {
             .await;
         }
         drop(held);
-        let (_, id) = db
-            .reserve_slot(&match_id, 100, 5, &guest, "Guest", &metrics)
-            .await
-            .unwrap();
+        let (_, id) = db.reserve_slot(ticket(), &metrics).await.unwrap();
         assert_eq!(id, 0);
     }
 
@@ -302,11 +380,16 @@ mod tests {
             ('0', 100, "Guest"),
         ]
         .into_iter()
-        .map(|(id, cutoff, nick)| (id.to_string().repeat(32), cutoff, nick))
+        .enumerate()
+        .map(|(i, (id, cutoff, nick))| {
+            (id.to_string().repeat(32), cutoff, nick, format!("{i:032x}"))
+        })
         .collect();
         let inputs: Vec<_> = inputs
             .iter()
-            .map(|(id, cutoff, nick)| (id.as_str(), *cutoff, guest.as_str(), *nick))
+            .map(|(id, cutoff, nick, jti)| {
+                (id.as_str(), *cutoff, guest.as_str(), *nick, jti.as_str())
+            })
             .collect();
         let slots: Vec<_> = reserve_batch(&mut conn, &key, &inputs)
             .await
