@@ -29,7 +29,7 @@ const ok = (name) => {
 
 // --- version / data hash agree with the native build (meta.json comes from the native example).
 {
-  assert.equal(wasm.protocolVersion(), 11);
+  assert.equal(wasm.protocolVersion(), 12);
   // The data hash changes with every /data edit, so compare against the native build's own value
   // (`cargo run --example trace` writes it) and fall back to the committed file only without a trace.
   const traceMeta = join(root, 'target/wasm-trace/meta.json');
@@ -108,6 +108,15 @@ const ok = (name) => {
   assert.throws(() => wasm.encodeMapVoteCast(id, 3), /out of range/);
   assert.throws(() => wasm.decodeC4(tk.subarray(0, 4)), /unexpected end/);
   ok('M2-018 C0/C4: native golden bytes, TK reply and strict bounds');
+}
+
+// --- M2-011: the same C4 structure bytes pinned by `m2_facilities_wire`.
+{
+  const bytes = Uint8Array.of(0x10, 0x12, 0x34, 1, 0x10, 0x20, 0x30, 0x40, 2);
+  assert.deepEqual(JSON.parse(wasm.decodeC4(bytes)), {
+    type: 'structure', id: 0x1234, kind: 1, pos: [0x1020, 0x3040], state: 2,
+  });
+  ok('M2-011 C4: native facility bytes');
 }
 
 // --- snapshot decoder vs. natively decoded golden (key frame, then delta on the same decoder).

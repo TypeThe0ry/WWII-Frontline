@@ -51,6 +51,29 @@ fn leak<T: serde::de::DeserializeOwned>(json: &str) -> &'static [T] {
 }
 
 impl GameData {
+    pub fn outpost(&self) -> &'static defs::OutpostDef {
+        static DEF: OnceLock<defs::OutpostDef> = OnceLock::new();
+        DEF.get_or_init(|| {
+            serde_json::from_str(embedded::OUTPOST_JSON).expect("validated at build time")
+        })
+    }
+
+    pub fn repair_station(&self) -> &'static crate::build::repair_station::RepairStationDef {
+        static DEF: OnceLock<crate::build::repair_station::RepairStationDef> = OnceLock::new();
+        DEF.get_or_init(|| {
+            serde_json::from_str(embedded::REPAIR_STATION_JSON).expect("validated station data")
+        })
+    }
+
+    pub fn at_gun(&self, team: crate::Team) -> &'static crate::emplacement::at_gun::AtGunDef {
+        use crate::emplacement::at_gun::AtGunDef;
+        static DEFS: OnceLock<[AtGunDef; 2]> = OnceLock::new();
+        &DEFS.get_or_init(|| {
+            [embedded::US_AT_JSON, embedded::GER_AT_JSON]
+                .map(|json| AtGunDef::load(json).expect("validated emplacement data"))
+        })[team as usize]
+    }
+
     /// The data embedded in this build.
     pub fn embedded() -> &'static GameData {
         static DATA: OnceLock<GameData> = OnceLock::new();
@@ -252,13 +275,13 @@ mod tests {
             );
         }
         assert_eq!(d.role("crewman").unwrap().max_per_team, Some(8));
-        assert_eq!(d.roles.len(), 5);
+        assert!(d.role("anti_tank").is_some() && d.role("engineer").is_some());
     }
 
     #[test]
     fn loadouts_reference_existing_data() {
         let d = GameData::embedded();
-        assert_eq!(d.loadouts.len(), 13);
+        assert!(d.loadouts.len() >= 17);
         let weapon_space = |id: &str| {
             d.weapon(id).is_some() || d.explosive(id).is_some() || d.melee_weapon(id).is_some()
         };

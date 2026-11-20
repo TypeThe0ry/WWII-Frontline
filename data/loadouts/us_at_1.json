@@ -1,0 +1,24 @@
+{
+  "id": "us_at_1",
+  "role": "anti_tank",
+  "faction": "us",
+  "primary": "us_m1_carbine",
+  "secondary": "us_m1911a1",
+  "gadget_1": {
+    "id": "us_mk2",
+    "count": 1
+  },
+  "gadget_2": null,
+  "melee": null,
+  "ammo_mags": 3,
+  "secondary_mags": 1,
+  "unlock_condition": null,
+  "_meta": {
+    "status": "initial",
+    "tunable": [
+      "ammo_mags",
+      "secondary_mags"
+    ]
+  },
+  "unlock_level": 1
+}

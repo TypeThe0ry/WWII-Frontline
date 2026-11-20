@@ -25,7 +25,14 @@ impl SeatInput {
             let was_held = previous & bit != 0;
             if held {
                 self.held |= bit;
-                if world.seat_of(player).is_some() {
+                if world
+                    .seat_of(player)
+                    .is_some_and(|(id, _)| world.at_gun(id).is_some())
+                {
+                    if !was_held {
+                        world.exit_at_gun(player);
+                    }
+                } else if world.seat_of(player).is_some() {
                     // Repeated calls preserve the original simulation deadline.
                     let _ = world.seat_exit_begin(player);
                 } else if !was_held {
@@ -40,6 +47,12 @@ impl SeatInput {
 
 fn board_nearest(world: &mut World, player: PlayerId) {
     let Some(id) = nearest_vehicle(world, player) else {
+        use frontline_sim::emplacement::at_gun::Seat;
+        if let Some(id) = world.nearest_at_gun(player) {
+            if !world.enter_at_gun(player, id, Seat::Gunner) {
+                world.enter_at_gun(player, id, Seat::Loader);
+            }
+        }
         return;
     };
     for seat in 0..3 {

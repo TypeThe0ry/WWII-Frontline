@@ -5,7 +5,8 @@ use std::collections::BTreeMap;
 use bytes::Bytes;
 use frontline_protocol::msg::c4::{
     encode_c4, roster_flags, Death, Kill, MatchPhase, ObjectiveChange, Phase, PlayerRoster, Revive,
-    ScoreDelta, ServerEventC4, SpawnKind, SpawnPointState, KILLER_ENV, KILL_DIST_BITS,
+    ScoreDelta, ServerEventC4, SpawnKind, SpawnPointState, StructureState, KILLER_ENV,
+    KILL_DIST_BITS,
 };
 use frontline_protocol::{quant::quant_pos_xz, Channel};
 use frontline_sim::medical::CreditKind;
@@ -21,6 +22,8 @@ struct Client {
     handle: ClientHandle,
     team: Team,
     previous_team: Option<Team>,
+    outpost: Option<SpawnPointState>,
+    structures: BTreeMap<u16, StructureState>,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -52,6 +55,8 @@ impl Broadcast {
                 handle,
                 team: session.team,
                 previous_team: None,
+                outpost: None,
+                structures: BTreeMap::new(),
             },
         );
     }
@@ -106,6 +111,8 @@ impl Broadcast {
         // covers squad/role ops, leader changes, removals and downed/revived status without
         // applying queued pre-join events to a newcomer after its baseline.
         self.roster(world, bots);
+        self.outposts(world);
+        self.structures(world);
 
         for (i, event) in events.iter().enumerate() {
             match *event {
@@ -340,6 +347,95 @@ impl Broadcast {
                 can_be_revived,
             })
         });
+    }
+
+    fn structures(&mut self, world: &World) {
+        use frontline_sim::build::BuildState;
+        if world.structures().next().is_none()
+            && self.clients.values().all(|c| c.structures.is_empty())
+        {
+            return;
+        }
+        let mut live: [BTreeMap<u16, StructureState>; 2] = Default::default();
+        for s in world.structures() {
+            let [x, z] = [quant_pos_xz(s.pos.x), quant_pos_xz(s.pos.z)];
+            if !x.valid || !z.valid {
+                continue;
+            }
+            live[s.team as usize].insert(
+                s.id,
+                StructureState {
+                    id: s.id,
+                    kind: s.kind as u8,
+                    pos: [x.code, z.code],
+                    state: u8::from(s.state == BuildState::Done),
+                },
+            );
+        }
+        for client in self.clients.values_mut() {
+            let desired = &live[client.team as usize];
+            if &client.structures == desired {
+                continue;
+            }
+            for old in client
+                .structures
+                .values()
+                .filter(|s| !desired.contains_key(&s.id))
+            {
+                send_to(std::iter::once(&*client), || {
+                    ServerEventC4::StructureState(StructureState { state: 2, ..*old })
+                });
+            }
+            for new in desired
+                .values()
+                .filter(|s| client.structures.get(&s.id) != Some(s))
+            {
+                send_to(std::iter::once(&*client), || {
+                    ServerEventC4::StructureState(*new)
+                });
+            }
+            client.structures.clone_from(desired);
+        }
+    }
+
+    fn outposts(&mut self, world: &World) {
+        if world.outpost_list().next().is_none()
+            && self.clients.values().all(|c| c.outpost.is_none())
+        {
+            return;
+        }
+        for (&player, client) in &mut self.clients {
+            let desired = world.squads().squad_of(player).and_then(|squad| {
+                let point = world
+                    .outpost_list()
+                    .find(|p| p.team == squad.team && p.squad == squad.id)?;
+                let [x, z] = [quant_pos_xz(point.pos.x), quant_pos_xz(point.pos.z)];
+                (x.valid && z.valid).then_some(SpawnPointState {
+                    id: point.id,
+                    kind: SpawnKind::Outpost,
+                    team: point.team as u8,
+                    pos: [x.code, z.code],
+                    state: if point.blocked { 3 } else { 1 },
+                })
+            });
+            if client.outpost == desired {
+                continue;
+            }
+            if let Some(old) = client
+                .outpost
+                .filter(|old| desired.is_none_or(|current| current.id != old.id))
+            {
+                send_to(std::iter::once(&*client), || {
+                    ServerEventC4::SpawnPointState(SpawnPointState { state: 2, ..old })
+                });
+            }
+            if let Some(current) = desired {
+                send_to(std::iter::once(&*client), || {
+                    ServerEventC4::SpawnPointState(current)
+                });
+            }
+            client.outpost = desired;
+        }
     }
 
     fn send(&self, team: Option<Team>, event: ServerEventC4) {

@@ -1,0 +1,42 @@
+{
+  "id": "repair_station",
+  "status": "initial",
+  "construction": {
+    "role": "engineer",
+    "cost_supplies": 120,
+    "build_s": 15,
+    "hp": 600,
+    "team_cap": 3,
+    "armor": {
+      "bullet": 0.02,
+      "explosion": 1.0,
+      "he": 0.7,
+      "heat": 1.0
+    }
+  },
+  "service": {
+    "radius_m": 8,
+    "repair_hp_per_s": 20,
+    "hp_per_supply": 5,
+    "initial_supplies": 200,
+    "restock_supplies": 100,
+    "ammo_interval_s": 2,
+    "ammo_cost_supplies": 4
+  },
+  "_meta": {
+    "tunable": [
+      "construction.cost_supplies",
+      "construction.build_s",
+      "construction.hp",
+      "construction.team_cap",
+      "construction.armor",
+      "service.radius_m",
+      "service.repair_hp_per_s",
+      "service.hp_per_supply",
+      "service.initial_supplies",
+      "service.restock_supplies",
+      "service.ammo_interval_s",
+      "service.ammo_cost_supplies"
+    ]
+  }
+}

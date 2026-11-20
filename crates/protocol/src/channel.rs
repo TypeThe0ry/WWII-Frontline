@@ -78,6 +78,7 @@ pub mod c4_type {
     pub const TEAM_BALANCE_NOTICE: u8 = 0x0d;
     pub const MAP_VOTE_STATE: u8 = 0x0e;
     pub const MAP_VOTE_RESULT: u8 = 0x0f;
+    pub const STRUCTURE_STATE: u8 = 0x10;
 }
 
 /// C1 `msg_type` values. Not written on the wire (the channel identifies the message, to keep

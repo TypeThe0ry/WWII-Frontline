@@ -21,6 +21,8 @@ use crate::view::*;
 use crate::weapon::sidearm::{SpawnLoadout, WeaponSlots};
 use crate::weapon::WeaponState;
 
+mod facilities;
+mod outposts;
 mod placement_zones;
 mod server_rules;
 
@@ -115,6 +117,9 @@ impl World {
         });
         ecs.insert_resource(TestJitter::default());
         ecs.insert_resource(crate::vehicle::Vehicles::default());
+        ecs.insert_resource(crate::build::BuildSystem::default());
+        ecs.insert_resource(crate::build::damage::FacilityHits::default());
+        ecs.insert_resource(crate::emplacement::at_gun::AtGuns::default());
         ecs.insert_resource(crate::vehicle::shells::Shells::default());
         ecs.insert_resource(MoveParamsRes(
             cfg.data
@@ -143,6 +148,7 @@ impl World {
         ecs.insert_resource(crate::suppression::SuppressSeen::default());
         ecs.insert_resource(crate::spawn::SpawnRules::default());
         ecs.insert_resource(crate::spawn::garrison::Garrisons::default());
+        ecs.insert_resource(crate::spawn::outpost::Outposts::default());
         ecs.insert_resource(crate::supply::SupplyWorld::default());
         ecs.insert_resource(crate::supply::SupplyCfg::from_data(cfg.data, cfg.tick_hz));
         ecs.insert_resource(crate::supply::ammo::AmmoCfg::from_data(
@@ -239,10 +245,13 @@ impl World {
             q.0.clear();
             q.0.extend_from_slice(&inputs);
         }
+        self.sync_outpost_permissions();
         self.apply_warmup_wait();
         let prepare = lap();
         self.schedule.run(&mut self.ecs);
         let schedule = lap();
+        self.tick_facilities(&inputs);
+        let facility_rules = lap();
         self.record_lagcomp();
         let lagcomp = lap();
         self.reap_wrecks();
@@ -285,6 +294,7 @@ impl World {
             t.other = previous.saturating_sub(start).saturating_sub(systems);
             t.prepare = prepare;
             t.schedule_other = schedule.saturating_sub(systems);
+            t.facility_rules = facility_rules;
             t.lagcomp = lagcomp;
             t.reap_wrecks = reap_wrecks;
             t.sync_squads = sync_squads;
@@ -472,6 +482,13 @@ impl World {
 
     fn despawn_player_body(&mut self, id: PlayerId) {
         self.vacate_rule_seat(id);
+        self.ecs
+            .resource_mut::<crate::build::BuildSystem>()
+            .leave_all_builds(id);
+        self.ecs
+            .resource_mut::<crate::spawn::outpost::Outposts>()
+            .choice
+            .remove(&id);
         let Some((eid, e)) = self.ecs.resource_mut::<PlayerIndex>().map.remove(&id) else {
             return;
         };
@@ -928,6 +945,10 @@ impl World {
             .entity_mut(entity)
             .insert(SpawnLoadout(Some(req.loadout)));
         if req.spawn_point == SPAWN_HQ {
+            self.ecs
+                .resource_mut::<crate::spawn::outpost::Outposts>()
+                .choice
+                .remove(&p);
             self.ecs
                 .resource_mut::<crate::spawn::SpawnRules>()
                 .choice
@@ -1588,6 +1609,16 @@ impl World {
                 h.write_u8(c.carried_by.unwrap_or(255));
             }
         }
+        self.ecs
+            .resource::<crate::spawn::outpost::Outposts>()
+            .hash_into(&mut h);
+        self.ecs
+            .resource::<crate::build::BuildSystem>()
+            .hash_into(&mut h);
+        let guns = self.ecs.resource::<crate::emplacement::at_gun::AtGuns>();
+        if !guns.list.is_empty() {
+            guns.hash_into(&mut h);
+        }
         let gs = self.ecs.resource::<crate::spawn::garrison::Garrisons>();
         if gs.next_id > 0 {
             h.write_u8(0xD2);
@@ -1986,6 +2017,11 @@ impl World {
         let res = self.validate_garrison_place(who, pos, &*sup);
         let out = match res {
             Err(e) => Err(e),
+            Ok(_)
+                if self.ecs.resource::<Garrisons>().next_id >= crate::spawn::outpost::ID_START =>
+            {
+                Err(PlaceError::TeamCap)
+            }
             Ok(cost) => {
                 let &(_, e) = self.ecs.resource::<PlayerIndex>().map.get(&who).unwrap();
                 let team = *self.ecs.entity(e).get::<Team>().unwrap();
@@ -2132,7 +2168,14 @@ impl World {
             };
             (*er.get::<Team>().unwrap(), t_kia)
         };
+        if crate::spawn::outpost::is_outpost(garrison) {
+            return self.queue_outpost_spawn(who, garrison, t_kia);
+        }
         self.check_garrison_point(team, garrison)?;
+        self.ecs
+            .resource_mut::<crate::spawn::outpost::Outposts>()
+            .choice
+            .remove(&who);
         let extra = {
             let rules = self.ecs.resource::<crate::spawn::SpawnRules>();
             let g = &self.ecs.resource::<Garrisons>().list[&garrison];

@@ -6,12 +6,14 @@
 //! executor only. See [`components`] for the sorted-iteration rule.
 
 pub mod ballistics;
+pub mod build;
 pub mod collision;
 pub mod combat;
 pub mod comms;
 pub mod components;
 pub mod data;
 pub mod deploy;
+pub mod emplacement;
 pub mod hash;
 pub mod health;
 pub mod ids;

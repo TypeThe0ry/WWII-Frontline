@@ -6,9 +6,12 @@ import { decodePlacementResult, placementCommit, placementPreview } from '../net
 import { PLACE_ERROR_KEY as ERR, PLACEMENT_IDLE, placementNext, type PlacementKind } from './placement';
 import type { PlacementView } from './placement-actions';
 
-const SLOT = { garrison: 0, supply_crate: 1, ammo_crate: 2 } as const;
+const SLOT = { garrison: 0, supply_crate: 1, ammo_crate: 2, outpost: 4, repair_station: 5, at_gun: 6 } as const;
 // Temporary bindings for the logic slice; the future tool panel can call select() directly.
-const KEYS: Readonly<Record<string, PlacementKind>> = { Digit6: 'garrison', Digit7: 'supply_crate', Digit8: 'ammo_crate' };
+const KEYS: Readonly<Record<string, PlacementKind>> = {
+  Digit6: 'garrison', Digit7: 'supply_crate', Digit8: 'ammo_crate',
+  Digit9: 'outpost', Digit0: 'repair_station', BracketRight: 'at_gun',
+};
 const REASON = [
   '', ERR.NotAlive, ERR.WrongRole, 'ui.officer.tool.needSquad', 'ui.officer.tool.needSupport',
   'ui.officer.err.notCarrying', 'ui.officer.err.noTarget', ERR.InNoBuildZone, ERR.TooCloseHq,
@@ -106,7 +109,8 @@ export class LivePlacement implements InputSource {
 
     const token = this.token;
     const yawDelta = token ? ((cmd.yaw - token.aim.yaw + 32768) & 0xffff) - 32768 : 0;
-    const moved = state.kind === 'garrison' && token && (Math.abs(yawDelta) > 256 || Math.abs(cmd.pitch - token.aim.pitch) > 256);
+    const aimedPlacement = SLOT[state.kind] === 0 || SLOT[state.kind] >= 4;
+    const moved = aimedPlacement && token && (Math.abs(yawDelta) > 256 || Math.abs(cmd.pitch - token.aim.pitch) > 256);
     if (token && (moved || now - token.at >= 750)) {
       const preview = { legal: false, reasonKey: 'ui.officer.err.previewUnavailable' };
       this.current.value = { ...IDLE, state: placementNext(state, { t: 'check', result: preview }), preview };

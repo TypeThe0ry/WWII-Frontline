@@ -171,7 +171,11 @@ pub(crate) fn weapons(
         &MeleeState,
         &crate::medical::FireLock,
         &crate::suppression::SuppressionState,
-        (&WeaponSlots, &crate::supply::Carrying),
+        (
+            &WeaponSlots,
+            &crate::supply::Carrying,
+            &crate::vehicle::seats::InVehicle,
+        ),
     )>,
     mut profiler: Option<ResMut<crate::step::StepProfiler>>,
 ) {
@@ -180,11 +184,12 @@ pub(crate) fn weapons(
         return;
     };
     for (id, e) in table.sorted() {
-        let Ok((t, m, last, team, mut w, life, melee, lock, supp, (slots, carry))) = q.get_mut(e)
+        let Ok((t, m, last, team, mut w, life, melee, lock, supp, (slots, carry, seat))) =
+            q.get_mut(e)
         else {
             continue;
         };
-        if !life.is_alive() {
+        if !life.is_alive() || seat.0.is_some() {
             continue;
         }
         let Some(wp) = wt.params(w.def_id) else {
@@ -457,6 +462,7 @@ pub(crate) fn respawns(
     mut events: ResMut<EventBuf>,
     mut rules: ResMut<crate::spawn::SpawnRules>,
     mut gs: ResMut<crate::spawn::garrison::Garrisons>,
+    mut outposts: ResMut<crate::spawn::outpost::Outposts>,
     wt: Res<WeaponTable>,
     mut commands: Commands,
     mut q: Query<(
@@ -483,7 +489,12 @@ pub(crate) fn respawns(
             Ok((.., team, _, _, _)) if rules.active() => rules.hq_of(*team),
             _ => None,
         };
-        if let Some(hq) = hq_pos {
+        let outpost_id = outposts
+            .choice
+            .remove(&pid)
+            .filter(|&id| outposts.usable(id, tick.0 .0));
+        let base = outpost_id.map(|id| outposts.list[&id].pos).or(hq_pos);
+        if let Some(hq) = base {
             let Ok((_, _, _, life, _, team, ..)) = q.get(e) else {
                 continue;
             };
@@ -492,7 +503,11 @@ pub(crate) fn respawns(
             };
             let team = *team;
             // A picked Garrison, if it is still usable; otherwise back to the HQ.
-            let mut gid = rules.choice.get(&pid).copied();
+            let mut gid = rules
+                .choice
+                .get(&pid)
+                .copied()
+                .filter(|_| outpost_id.is_none());
             if let Some(id) = gid {
                 let g = &gs.list[&id];
                 let usable = g.state == crate::spawn::garrison::GarrisonState::Active
@@ -531,7 +546,7 @@ pub(crate) fn respawns(
                     cfg.hz,
                 )
             };
-            if extra > 0 {
+            if extra > 0 && outpost_id.is_none() {
                 let due = match gid {
                     Some(_) => crate::spawn::timing::garrison_spawn_tick(
                         t_kia,
@@ -603,6 +618,18 @@ pub(crate) fn respawns(
             rules.last_spawn.insert(pid, tick.0 .0);
             let win = crate::spawn::FLOOD_WINDOW_S * u32::from(cfg.hz);
             let now = tick.0 .0;
+            if let Some(id) = outpost_id {
+                let def = cfg.data.outpost();
+                prot.until = now + crate::respawn::ms_to_ticks(def.protection_ms, cfg.hz);
+                let point = outposts.list.get_mut(&id).unwrap();
+                point.spawns_left -= 1;
+                if point.spawns_left == 0 {
+                    events.0.extend(outposts.remove(id, now, def, cfg.hz));
+                }
+                rules.choice.remove(&pid);
+                events.0.push(SimEvent::Spawn { player: pid, pos });
+                continue;
+            }
             let rec = match gid {
                 Some(id) => {
                     let g = gs.list.get_mut(&id).unwrap();
@@ -680,7 +707,7 @@ fn reset_equipment(
 }
 
 /// End-of-tick housekeeping. Currently a no-op slot (the view cache is refreshed by `World`).
-pub use crate::throwables::system::throwables;
+use crate::throwables::system::throwables;
 
 pub fn bookkeeping(_table: Res<EntityTable>) {}
 
@@ -741,6 +768,7 @@ pub fn build_schedule() -> Schedule {
             crate::rules::match_state,
             (
                 crate::spawn::garrison::garrisons,
+                crate::spawn::outpost::tick_outposts,
                 crate::supply::system::supply,
                 crate::supply::ammo::ammo,
             )
@@ -780,6 +808,7 @@ pub fn build_schedule() -> Schedule {
             crate::rules::match_state,
             (
                 crate::spawn::garrison::garrisons,
+                crate::spawn::outpost::tick_outposts,
                 crate::supply::system::supply,
                 crate::supply::ammo::ammo,
             )

@@ -91,7 +91,7 @@ describe.skipIf(!HAVE_WASM)('message codec over sim-wasm (golden messages of cra
   it('encodes Ping like the protocol golden and Hello with the wasm data hash', () => {
     expect([...codec.encodePing(1234)]).toEqual([...hex('04000004d2')]);
     const h = codec.encodeHello({ protocolVersion: codec.protocolVersion, dataHash: codec.dataHash, clientBuild: 0, caps: 2 });
-    expect([...h.subarray(0, 3)]).toEqual([1, 0, 11]);
+    expect([...h.subarray(0, 3)]).toEqual([1, 0, 12]);
     expect(h.length).toBe(18);
   });
 

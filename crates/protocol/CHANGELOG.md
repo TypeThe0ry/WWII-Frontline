@@ -3,6 +3,12 @@
 `PROTOCOL_VERSION` must match exactly at handshake. Fields are only appended at the end of a
 message; any other change bumps the version.
 
+## 12 — M2-011 facilities
+
+C0 `PlacementRequest` adds Outpost, Repair Station and AT gun slots (4–6) and facility
+actions (tag 7). C4 `SpawnPoint` carries squad-only Outposts in IDs `0x8000..=0xfffe`.
+C4 `StructureState` (0x10) adds team-scoped construction and removal records.
+
 ## 11 — M2-019 comms wire prerequisites
 
 Version 11 includes the M2-018 messages from version 5 with their existing tags and layouts.

@@ -2,7 +2,7 @@
  * Placement mode and vehicle-seat input logic (M1-060a/b). Legality itself is decided by sim (`PlaceError`, mirrored here
  * as a code → i18n key table) — the client only displays what the sim-wasm pre-check or the server returns.
  */
-export type PlacementKind = 'garrison' | 'supply_crate' | 'ammo_crate';
+export type PlacementKind = 'garrison' | 'supply_crate' | 'ammo_crate' | 'outpost' | 'repair_station' | 'at_gun';
 export type PlacementMode = 'idle' | 'placing' | 'invalid' | 'committing';
 
 /** Mirrors `crates/sim/src/spawn/garrison.rs::PlaceError` (same order/names). */
@@ -80,9 +80,13 @@ export function placementNext(s: PlacementState, e: PlacementEvent): PlacementSt
 /** Tool availability: Garrison kit = Officer in a squad of ≥ 2; crates = Support; reasons are tooltip keys. */
 export function toolAvailable(kind: PlacementKind, role: string, squadSize: number, alive: boolean): { ok: boolean; reasonKey?: string } {
   if (!alive) return { ok: false, reasonKey: PLACE_ERROR_KEY.NotAlive };
-  if (kind === 'garrison') {
+  if (kind === 'repair_station' || kind === 'at_gun') {
+    return role === (kind === 'repair_station' ? 'engineer' : 'anti_tank')
+      ? { ok: true } : { ok: false, reasonKey: PLACE_ERROR_KEY.WrongRole };
+  }
+  if (kind === 'garrison' || kind === 'outpost') {
     if (role !== 'officer') return { ok: false, reasonKey: 'ui.officer.tool.needOfficer' };
-    if (squadSize < 2) return { ok: false, reasonKey: 'ui.officer.tool.needSquad' };
+    if (squadSize < (kind === 'outpost' ? 3 : 2)) return { ok: false, reasonKey: 'ui.officer.tool.needSquad' };
     return { ok: true };
   }
   return role === 'support' ? { ok: true } : { ok: false, reasonKey: 'ui.officer.tool.needSupport' };

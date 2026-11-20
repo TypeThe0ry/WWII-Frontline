@@ -1283,6 +1283,8 @@ export function decodeC0(bytes: Uint8Array): { kind: number; payload: Uint8Array
 - `data/rules/bots.json`：bot 难度档与行为参数（反应延迟、瞄准误差、命中率上限、协同程度，对应 GAMEDESIGN §20.6；规则式指挥官评估间隔 15 s；LLM 指挥官间隔 60 s 与成本上限 0.5 美元/局，见 §16.4）。
 - 以上均走与 §8.5 相同的 JSON Schema 校验与 `DATA_HASH` 机制；schema 随对应任务落地。
 
+> **变更说明（PI-B6-outpost-1）**：`data/structures/` 与 `data/emplacements/` 提供 M2-011 初始参数并参与共享 `DATA_HASH`。Outpost 在构建时类型校验，维修站与 AT 炮由 sim 类型解析。协议 v12 的 C0/C4 变更见 `crates/protocol/CHANGELOG.md`。
+
 #### 8.5.5 `data/maps/{id}/map.json`
 
 ```json

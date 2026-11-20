@@ -1,0 +1,98 @@
+{
+  "id": "us_at_57mm_m1",
+  "team": "us",
+  "build": {
+    "supplies": 200,
+    "time_s": 20.0,
+    "team_limit": 3,
+    "sector_limit": 1
+  },
+  "hp": 600.0,
+  "ammo": {
+    "ap": 18,
+    "he": 8,
+    "resupply_ap": 8,
+    "resupply_supplies": 100
+  },
+  "reload": {
+    "with_loader_s": 3.0,
+    "solo_s": 4.2,
+    "untrained_mult": 1.25,
+    "switch_s": 1.0
+  },
+  "aim": {
+    "traverse_deg": 40.0,
+    "min_pitch_deg": -5.0,
+    "max_pitch_deg": 15,
+    "reorient_s": 3.0
+  },
+  "shield": {
+    "thickness_mm": 7.0,
+    "slope_deg": 0.0,
+    "arc_deg": 60.0,
+    "offset_m": [
+      0.0,
+      0.95,
+      0.7
+    ],
+    "half_width_m": 0.85,
+    "half_height_m": 0.45
+  },
+  "chassis": {
+    "offset_m": [
+      0.0,
+      0.35,
+      0.0
+    ],
+    "half_extents_m": [
+      0.8,
+      0.35,
+      0.6
+    ]
+  },
+  "muzzle": {
+    "height_m": 1.1,
+    "forward_m": 1.4,
+    "visual_s": 3.0,
+    "exposure_s": 5.0,
+    "audience_radius_m": 350.0,
+    "error_radius_m": 25.0
+  },
+  "ap": {
+    "id": "ap",
+    "type": "ap",
+    "caliber_mm": 57,
+    "muzzle_velocity_mps": 600.0,
+    "p100_mm": 92,
+    "drop_pct_per_100m": 3.0,
+    "structure_damage_hp": 350
+  },
+  "he": {
+    "id": "he",
+    "type": "he",
+    "caliber_mm": 57,
+    "muzzle_velocity_mps": 600.0,
+    "he_pen_mm": 11.4,
+    "explosion_damage_max_hp": 140,
+    "explosion_radius_m": 4
+  },
+  "_meta": {
+    "status": "initial",
+    "tunable": [
+      "build",
+      "hp",
+      "ammo",
+      "reload",
+      "aim",
+      "shield",
+      "chassis",
+      "muzzle",
+      "ap",
+      "he"
+    ],
+    "deviation_reason": {
+      "ap.muzzle_velocity_mps": "Synthetic gameplay placeholder",
+      "he.muzzle_velocity_mps": "Synthetic gameplay placeholder"
+    }
+  }
+}

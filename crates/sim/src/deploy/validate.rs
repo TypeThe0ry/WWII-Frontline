@@ -218,7 +218,14 @@ impl World {
             if entry.squad.is_none() {
                 return Err(DeployError::UnassignedNeedsHq);
             }
-            self.check_garrison_point(team, req.spawn_point)?;
+            if crate::spawn::outpost::is_outpost(req.spawn_point) {
+                if self.player_life(p).is_none() {
+                    return Err(DeployError::NotDeployable);
+                }
+                self.check_outpost_point(p, req.spawn_point)?;
+            } else {
+                self.check_garrison_point(team, req.spawn_point)?;
+            }
         }
         // 6. Role-switch cooldown (changing role at most once per window).
         if entry.role.is_some_and(|r| r != role.id) {

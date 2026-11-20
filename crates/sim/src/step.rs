@@ -74,6 +74,14 @@ pub enum SimEvent {
         pos: glam::Vec3,
         state: crate::spawn::garrison::GarrisonState,
     },
+    StructureDestroyed {
+        id: EntityId,
+    },
+    MuzzleFlash(crate::emplacement::at_gun::MuzzleFlash),
+    OutpostChanged {
+        point: crate::spawn::outpost::OutpostState,
+        status: crate::spawn::outpost::OutpostStatus,
+    },
     /// A Supply Crate was put on the ground (M1-020).
     CratePlaced {
         id: u32,
@@ -261,6 +269,8 @@ pub struct StepTimings {
     pub other: u64,
     pub prepare: u64,
     pub schedule_other: u64,
+    pub outpost_rules: u64,
+    pub facility_rules: u64,
     pub lagcomp: u64,
     pub reap_wrecks: u64,
     pub sync_squads: u64,

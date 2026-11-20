@@ -1095,3 +1095,30 @@ pub struct SquadMuteDef {
     pub count: u8,
     pub duration_s: u16,
 }
+
+/// M2-011 squad spawn-point tuning.
+#[derive(Debug, Clone, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct OutpostDef {
+    pub id: String,
+    pub status: String,
+    pub hp: f32,
+    pub bullet_mult: f32,
+    pub explosion_mult: f32,
+    pub place_ms: u32,
+    pub placement_slope_deg: f32,
+    pub placement_reach_m: f32,
+    pub required_squadmates: u8,
+    pub squadmate_radius_m: f32,
+    pub blocked_radius_m: f32,
+    pub friendly_spawn_spacing_m: f32,
+    pub enemy_strongpoint_buffer_m: f32,
+    pub sector_loss_radius_m: f32,
+    pub capacity: u8,
+    pub respawn_ms: u32,
+    pub cooldown_ms: u32,
+    pub lifetime_ms: u32,
+    pub overrun_radius_m: f32,
+    pub overrun_ms: u32,
+    pub protection_ms: u32,
+}

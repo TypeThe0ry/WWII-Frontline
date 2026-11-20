@@ -333,6 +333,42 @@ impl Codec for MatchPhase {
     }
 }
 
+/// Team-scoped M2-011 facility. State is building (0), done (1), or removed (2).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct StructureState {
+    pub id: u16,
+    /// Repair station (0) or AT gun (1).
+    pub kind: u8,
+    pub pos: [u16; 2],
+    pub state: u8,
+}
+
+impl Codec for StructureState {
+    fn encode(&self, w: &mut BitWriter) -> Result<(), CodecError> {
+        if self.kind > 1 || self.state > 2 {
+            return Err(CodecError::InvalidTag);
+        }
+        w.write_bits(u64::from(self.id), 16)?;
+        w8(w, self.kind)?;
+        w.write_bits(u64::from(self.pos[0]), 16)?;
+        w.write_bits(u64::from(self.pos[1]), 16)?;
+        w8(w, self.state)
+    }
+    fn decode(r: &mut BitReader<'_>) -> Result<Self, CodecError> {
+        let s = Self {
+            id: r.read_bits(16)? as u16,
+            kind: r8(r)?,
+            pos: [r.read_bits(16)? as u16, r.read_bits(16)? as u16],
+            state: r8(r)?,
+        };
+        if s.kind > 1 || s.state > 2 {
+            Err(CodecError::InvalidTag)
+        } else {
+            Ok(s)
+        }
+    }
+}
+
 /// Server -> client reliable events.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ServerEventC4 {
@@ -351,6 +387,7 @@ pub enum ServerEventC4 {
     TeamBalanceNotice(TeamBalanceNotice),
     MapVoteState(MapVoteState),
     MapVoteResult(MapVoteResult),
+    StructureState(StructureState),
 }
 
 impl ServerEventC4 {
@@ -371,6 +408,7 @@ impl ServerEventC4 {
             Self::TeamBalanceNotice(_) => c4_type::TEAM_BALANCE_NOTICE,
             Self::MapVoteState(_) => c4_type::MAP_VOTE_STATE,
             Self::MapVoteResult(_) => c4_type::MAP_VOTE_RESULT,
+            Self::StructureState(_) => c4_type::STRUCTURE_STATE,
         }
     }
 }
@@ -394,6 +432,7 @@ impl Codec for ServerEventC4 {
             Self::TeamBalanceNotice(m) => m.encode(w),
             Self::MapVoteState(m) => m.encode(w),
             Self::MapVoteResult(m) => m.encode(w),
+            Self::StructureState(m) => m.encode(w),
         }
     }
     fn decode(r: &mut BitReader<'_>) -> Result<Self, CodecError> {
@@ -413,6 +452,7 @@ impl Codec for ServerEventC4 {
             c4_type::TEAM_BALANCE_NOTICE => Self::TeamBalanceNotice(TeamBalanceNotice::decode(r)?),
             c4_type::MAP_VOTE_STATE => Self::MapVoteState(MapVoteState::decode(r)?),
             c4_type::MAP_VOTE_RESULT => Self::MapVoteResult(MapVoteResult::decode(r)?),
+            c4_type::STRUCTURE_STATE => Self::StructureState(StructureState::decode(r)?),
             _ => return Err(CodecError::InvalidTag),
         })
     }

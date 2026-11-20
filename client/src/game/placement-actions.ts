@@ -11,7 +11,7 @@ export type PlacementChecker = (state: PlacementState, point: PlacementPoint) =>
 const unavailable: PlacementResult = { legal: false, reasonKey: 'ui.officer.err.previewUnavailable' };
 
 export type PlacementCommand =
-  | { kind: 'garrison'; pos: PlacementPoint }
+  | { kind: 'garrison' | 'outpost' | 'repair_station' | 'at_gun'; pos: PlacementPoint }
   // Crates are dropped/placed at the local player's feet by the sim, never at a remote ray hit.
   | { kind: 'supply_crate' | 'ammo_crate' };
 export type PlacementReply = { ok: true } | { ok: false; reasonKey: string };
@@ -68,7 +68,7 @@ export class PlacementActions {
     const kind = state.kind;
     let reply: PlacementReply;
     try {
-      reply = await this.send(kind === 'garrison' ? { kind, pos: target } : { kind });
+      reply = await this.send(kind === 'supply_crate' || kind === 'ammo_crate' ? { kind } : { kind, pos: target });
     } catch (error) {
       // No authoritative rejection reason on a transport failure. Do not retry automatically.
       this.#view.value = { ...current, state, preview: unavailable };

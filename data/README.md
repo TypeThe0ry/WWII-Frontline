@@ -21,6 +21,8 @@ JSON game data. **The numeric single source of truth** (ARCHITECTURE §4.4, GAME
 | `rules/bots.json` | bots | bot difficulty tiers + behaviour tuning (GAMEDESIGN §20.6, M0-026); schema `schemas/bots.schema.json`; read by `crates/bots` through `GameData::rules.bots` |
 | `server_rules.json` | rule_server | Tick-based team balance, TK, voting and AFK thresholds (GAMEDESIGN §19); schema `schemas/rule_server.schema.json`; embedded by `frontline_sim::serverrules::RuleConfig` and included in `DATA_HASH` |
 | `maps/{map}/meta.json`, `maps/{map}/spawns.json` | map_meta, spawns | MAPS §6.2; `_meta` optional here |
+| `structures/{outpost,repair_station}.json` | M2-011 设施 | Outpost 构建时解析，维修站运行时类型解析 |
+| `emplacements/{id}.json` | M2-011 AT 炮 | sim 类型解析，弹种复用车辆穿深数据类型 |
 | `schemas/**` | schemas and fixtures | never part of `DATA_HASH` |
 
 Fixtures are flat files named `<kind>.<name>.json`. Every invalid fixture carries a top-level

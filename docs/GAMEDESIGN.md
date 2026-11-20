@@ -1223,6 +1223,8 @@ Medic 等 Support 不提供解压；Rally 效果见 §13.8（累积 ×0.7）
 | 寿命 | 600 s（10 min） |
 | 小队长死亡 | Outpost 保留；小队长转交后新队长可用 |
 
+> **变更说明（PI-B6-outpost-1）**：Outpost 位置与时序从 `data/structures/outpost.json` 读取。待 M2-008 接入正式 Sector。
+
 ### 10.4 Airhead（Commander 能力）
 
 | 项 | 规则 |
@@ -1909,6 +1911,8 @@ Registration（校射）：若一发炮弹落点距目标 ≤ 40 m 且被友方 
 - **操作权限**：任何友军均可占用炮手/装填手座位（座位不挑兵种）；Anti-Tank 与 Engineer 作装填手时用上表装填时间，其它兵种装填时间 ×1.25【待调参】。重新定向仅 Engineer 可做。
 - 炮口火光与烟尘在发射后 3 s 内可见，暴露位置；对敌地图不显示标记（除非被 Spotter 标记）。
 - 被击毁：HP 归零；防盾对来袭枪弹有效（炮手视野前方枪弹被盾阻挡）。
+
+> **变更说明（PI-B6-outpost-1）**：炮位参数与弹种来自 `data/emplacements/`。正式 Sector 合入前，炮位上限暂按最近据点计算。
 
 ---
 

@@ -448,7 +448,7 @@ impl Codec for Report {
     }
 }
 
-u8_enum!(PlacementSlot { Garrison = 0, Supply = 1, Ammo = 2 });
+u8_enum!(PlacementSlot { Garrison = 0, Supply = 1, Ammo = 2, Outpost = 4, RepairStation = 5, AtGun = 6 });
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PlacementRequest {
@@ -458,6 +458,11 @@ pub struct PlacementRequest {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PlacementAction {
+    Facility {
+        op: FacilityOp,
+        structure: u16,
+        arg: u16,
+    },
     Preview {
         slot: PlacementSlot,
         yaw: u16,
@@ -468,6 +473,8 @@ pub enum PlacementAction {
     },
 }
 
+u8_enum!(FacilityOp { Join = 0, Cancel = 1, Reorient = 2, Resupply = 3, SelectAmmo = 4 });
+
 impl Codec for PlacementRequest {
     fn encode(&self, w: &mut BitWriter) -> Result<(), CodecError> {
         w.write_bits(self.id as u64, 16)?;
@@ -476,6 +483,12 @@ impl Codec for PlacementRequest {
                 w8(w, slot as u8)?;
                 w.write_bits(yaw as u64, 16)?;
                 w.write_bits(pitch as u16 as u64, 16)
+            }
+            PlacementAction::Facility { op, structure, arg } => {
+                w8(w, 7)?;
+                w8(w, op as u8)?;
+                w.write_bits(u64::from(structure), 16)?;
+                w.write_bits(u64::from(arg), 16)
             }
             PlacementAction::Commit { preview_id } => {
                 w8(w, 3)?;
@@ -490,6 +503,12 @@ impl Codec for PlacementRequest {
         let action = if kind == 3 {
             PlacementAction::Commit {
                 preview_id: r.read_bits(16)? as u16,
+            }
+        } else if kind == 7 {
+            PlacementAction::Facility {
+                op: FacilityOp::from_u8(r8(r)?).ok_or(CodecError::InvalidTag)?,
+                structure: r.read_bits(16)? as u16,
+                arg: r.read_bits(16)? as u16,
             }
         } else {
             PlacementAction::Preview {

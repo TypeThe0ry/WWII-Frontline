@@ -82,7 +82,10 @@ async function join(nick: string, transport: TransportKind, hash: string) {
   };
 
   function place(kind: PlacementKind, commit = true) {
-    const slot = { garrison: 'Digit6', supply_crate: 'Digit7', ammo_crate: 'Digit8' }[kind];
+    const slot = {
+      garrison: 'Digit6', supply_crate: 'Digit7', ammo_crate: 'Digit8',
+      outpost: 'Digit9', repair_station: 'Digit0', at_gun: 'BracketRight',
+    }[kind];
     sampler.setView(0, -1.39); // short terrain ray, within range of the stationary builder
     const start = performance.now();
     sampler.press(slot);

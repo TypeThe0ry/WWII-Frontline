@@ -19,9 +19,11 @@ pub const NOTICE_NO_PLACE: u8 = 1;
 pub const NOTICE_NOTHING_TO_RESUPPLY: u8 = 2;
 pub const NOTICE_IN_NO_BUILD_ZONE: u8 = 3;
 
-#[allow(clippy::type_complexity)]
+#[allow(clippy::type_complexity, clippy::too_many_arguments)]
 pub fn supply(
     cfg: Res<SupplyCfg>,
+    sim: Res<crate::components::SimCfgRes>,
+    mut build: ResMut<crate::build::BuildSystem>,
     table: Res<EntityTable>,
     objs: Res<Objectives>,
     no_build_zones: Res<crate::NoBuildZones>,
@@ -114,7 +116,24 @@ pub fn supply(
             continue;
         }
         match carry.0 {
-            Some(_) => {
+            Some(crate_id) => {
+                if build
+                    .deposit_nearby(
+                        crate::build::BuildActor {
+                            id: pid,
+                            team: *team,
+                            pos: tr.pos,
+                            role: "support",
+                        },
+                        sim.data.repair_station().service,
+                        sw,
+                        &mut carry,
+                    )
+                    .is_some()
+                {
+                    events.0.push(SimEvent::CrateDestroyed { id: crate_id });
+                    continue;
+                }
                 let result = check_supply_crate_place(
                     objs.0.iter().map(|o| (o.owner, o.pos)),
                     *team,

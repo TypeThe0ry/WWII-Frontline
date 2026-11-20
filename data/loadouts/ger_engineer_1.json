@@ -1,0 +1,21 @@
+{
+  "id": "ger_engineer_1",
+  "role": "engineer",
+  "faction": "ger",
+  "primary": "ger_kar98k",
+  "secondary": "ger_p38",
+  "gadget_1": {
+    "id": "ger_m24",
+    "count": 1
+  },
+  "ammo_mags": 8,
+  "secondary_mags": 1,
+  "_meta": {
+    "status": "initial",
+    "tunable": [
+      "ammo_mags",
+      "secondary_mags"
+    ]
+  },
+  "unlock_level": 1
+}

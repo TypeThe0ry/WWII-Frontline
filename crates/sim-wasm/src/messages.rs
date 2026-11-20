@@ -533,6 +533,10 @@ pub(crate) fn decode_c4_core(bytes: &[u8]) -> Result<String, String> {
             r#"{{"type":"spawnpoint","id":{},"kind":{},"team":{},"pos":[{},{}],"state":{}}}"#,
             p.id, p.kind as u8, p.team, p.pos[0], p.pos[1], p.state
         ),
+        E::StructureState(s) => format!(
+            r#"{{"type":"structure","id":{},"kind":{},"pos":[{},{}],"state":{}}}"#,
+            s.id, s.kind, s.pos[0], s.pos[1], s.state
+        ),
         E::PlayerRoster(r) => format!(
             r#"{{"type":"roster","player":{},"nick":{},"team":{},"squad":{},"role":{},"flags":{},"left":{}}}"#,
             r.player,

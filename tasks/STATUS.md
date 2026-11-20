@@ -6,6 +6,8 @@
 
 ## 摘要
 
+- **B6-outpost（2026-11-20，M2-011）**：Outpost、维修站和反坦克炮已联通 sim/协议/服务端/WASM/客户端逻辑。PI-109 工作站通过规则与无头测试。依赖联验和参考机未测，状态 `partial`，见 `reports/m2-outpost.md` 与 PI-B6-outpost-1。
+
 - **B6-bwreg（2026-11-20，M2-020）**：接入 WT/WS 带宽档位、远场数量裁剪和 C4 通知。PI-109 工作站：无损合成快照 700 包逐字节一致；40% 档 T3 P99 500 ms、饥饿 0/min；100 客户端调节器 2.389 µs/tick。按典型可见混合、实服事件率与参考机余项保留 `partial`。见 `reports/m2-bandwidth-regulator.md` 和 PI-B6-bwreg-1。
 - **B6-pingchat（2026-11-20，M2-019）**：700/700 权限断言，10 个本机无头 WS 会话通过分组路由。200 标记 / 100 玩家，缓存、移动扇出、过期 P95 分别为 0.76 / 9.09 / 3.82 µs（PI-109，非参考机）。参考机未测，状态 `partial`。
 
@@ -193,7 +195,7 @@
 | M2-008 | sim：Frontline 模式规则 | todo | | | |
 | M2-009 | sim：战略资源与资源节点 | todo | | | |
 | M2-010 | sim：Engineer 建造系统 | todo | | | |
-| M2-011 | sim：Outpost、维修站与反坦克炮 | todo | | | |
+| M2-011 | sim：Outpost、维修站与反坦克炮 | partial | 放置 180 tick，冷却 3,600 tick，18 次出生，Overrun 450 tick。维修首秒 19.99878 HP，200 Supplies 修 1,000 HP。12 组 AP 向量，7 发击毁 Sherman。规则 1.8885–2.2316 µs/tick，合成 400 弹体扫描 1.5697–1.8878 ms/tick（PI-109）。见 `reports/m2-outpost.md`。 | PI-B6-outpost-1、H-021 | 33b1ad8, ceac5ff, ab7b12f |
 | M2-012 | sim：M2 兵种特有能力 | todo | | | |
 | M2-013 | sim：M2 武器类（自动步枪、机枪、霰弹） | todo | | | |
 | M2-014 | sim：火箭、地雷与炸药 | todo | | | |

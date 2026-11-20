@@ -211,3 +211,8 @@ harness = false
 [[bench]]
 name = "comms_tick"
 harness = false
+
+[[bench]]
+name = "outpost_repair_atgun"
+harness = false
+required-features = ["test-util"]

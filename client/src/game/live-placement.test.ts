@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { BUTTONS } from '../input/buttons';
 import { InputSampler } from '../input/sampler';
-import { decodePlacementResult, placementCommit, placementPreview } from '../net/placement';
+import { decodePlacementResult, facilityAction, placementCommit, placementPreview } from '../net/placement';
 import { LivePlacement } from './live-placement';
 
 function fixture() {
@@ -25,6 +25,14 @@ describe('live placement input and C0', () => {
     expect(decodePlacementResult(Uint8Array.of(0x18, 0x12, 0x34, 7, 0, 1, 0xff, 0xff, 0xff, 0x9c, 0, 0, 1, 0xf4, 0, 0, 9, 0x60)))
       .toEqual({ id: 0x1234, reason: 7, cost: 0, target: [-1, 5, 24] });
     expect(decodePlacementResult(Uint8Array.of(0x18, 0, 0, 0, 0, 1))).toBeNull();
+    expect([...facilityAction(1, 'reorient', 0x1234, 0x4321)]).toEqual([0x17, 0, 1, 7, 2, 0x12, 0x34, 0x43, 0x21]);
+  });
+
+  it.each([['Digit9', 4], ['Digit0', 5], ['BracketRight', 6]] as const)('previews facility with %s', (key, slot) => {
+    const f = fixture();
+    f.sampler.press(key);
+    f.step();
+    expect(f.sent).toEqual([placementPreview(0, slot, 0, 0)]);
   });
 
   it('commits only a matched legal preview and suppresses firing through release', () => {
