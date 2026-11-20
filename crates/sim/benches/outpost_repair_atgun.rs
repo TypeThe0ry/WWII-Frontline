@@ -1,4 +1,4 @@
-//! Stage-5 CPU budget, sampled inside the rules phases of a full World tick.
+//! Stage-4 and stage-5 CPU budgets, sampled inside a full World tick.
 #[path = "../tests/common/mod.rs"]
 mod common;
 
@@ -8,8 +8,11 @@ use std::time::{Duration, Instant};
 use common::{flat, sim_cfg};
 use criterion::{criterion_group, criterion_main, Criterion};
 use frontline_sim::build::StructureKind;
+use frontline_sim::emplacement::at_gun::{Actor, AtGunState, Seat};
+use frontline_sim::projectile::Projectiles;
 use frontline_sim::squad::{SquadKind, SquadOp};
-use frontline_sim::{GameData, ObjectiveSpec, SpawnReq, Team, Vec3, World};
+use frontline_sim::vehicle::shells::Shells;
+use frontline_sim::{GameData, ObjectiveSpec, SpawnReq, Team, Vec3, World, WorldView};
 
 fn ns() -> u64 {
     static START: OnceLock<Instant> = OnceLock::new();
@@ -107,6 +110,51 @@ fn fixture() -> World {
     w
 }
 
+fn flight_sample(world: &World) -> (Projectiles, Shells) {
+    let mut bullets = Projectiles::default();
+    let shooter = world
+        .players()
+        .iter()
+        .find(|p| p.player == 32)
+        .unwrap()
+        .entity;
+    let weapon = GameData::embedded()
+        .weapons
+        .iter()
+        .position(|w| w.id == "ger_kar98k")
+        .unwrap();
+    for i in 0..399u16 {
+        // Miss the facilities while exercising their nearest-hit scans at all three sites.
+        let x = 110.0 + 180.0 * f32::from(i % 3) + 0.1 * f32::from(i % 17);
+        bullets.spawn(
+            shooter,
+            Team::Ger,
+            weapon as u16,
+            Vec3::new(x, 8.0, 215.0),
+            Vec3::NEG_Z * 750.0,
+        );
+    }
+    let gun = world.structures().find_map(|s| world.at_gun(s.id)).unwrap();
+    let mut ready = AtGunState::new(
+        gun.id,
+        gun.sector,
+        gun.pos,
+        gun.yaw,
+        GameData::embedded().at_gun(gun.team),
+    );
+    let mut shells = Shells::default();
+    assert!(ready.occupy(
+        Actor {
+            player: 2,
+            team: Team::Us,
+            role_id: "anti_tank"
+        },
+        Seat::Gunner
+    ));
+    assert!(ready.fire(2, None, 30, &mut shells).is_some());
+    (bullets, shells)
+}
+
 fn bench(c: &mut Criterion) {
     c.bench_function("outpost_repair_atgun", |b| {
         b.iter_custom(|iterations| {
@@ -119,6 +167,23 @@ fn bench(c: &mut Criterion) {
                 world.step(&[]);
                 let perf = world.step_timings().unwrap();
                 measured += perf.outpost_rules + perf.facility_rules;
+            }
+            Duration::from_nanos(measured)
+        })
+    });
+    c.bench_function("outpost_400_projectile_scan", |b| {
+        b.iter_custom(|iterations| {
+            let mut world = fixture();
+            let mut measured = 0u64;
+            for i in 0..iterations {
+                if i > 0 && i % 15_000 == 0 {
+                    world = fixture();
+                }
+                let (projectiles, shells) = flight_sample(&world);
+                world.debug_seed_facility_flight(projectiles, shells);
+                world.step(&[]);
+                let perf = world.step_timings().unwrap();
+                measured += perf.projectiles + perf.rockets + perf.shells + perf.throwables;
             }
             Duration::from_nanos(measured)
         })

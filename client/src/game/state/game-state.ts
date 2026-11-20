@@ -146,6 +146,7 @@ export class GameState {
         if ((team !== 0 && team !== 1) || team === this.teamValue) return;
         this.teamValue = team;
         this.spawnPoints.clear();
+        this.structures.clear();
         // Match-wide roster, objectives, scores and kill feed survive a team change.
         this.deploy.apply({ type: 'reset' });
         this.bus.emit('team.changed', { team, flags, tick: tick >>> 0 });

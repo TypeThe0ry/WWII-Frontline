@@ -16,6 +16,17 @@ use crate::vehicle::{seats::InVehicle, shells::Shells, Vehicles};
 use crate::{EntityId, PlayerId, SimEvent, Team, Vec3};
 
 impl World {
+    /// Replace in-flight entities between stage-4 benchmark samples.
+    #[cfg(feature = "test-util")]
+    pub fn debug_seed_facility_flight(
+        &mut self,
+        projectiles: crate::projectile::Projectiles,
+        shells: Shells,
+    ) {
+        self.ecs.insert_resource(projectiles);
+        self.ecs.insert_resource(shells);
+    }
+
     pub fn structures(&self) -> impl Iterator<Item = &Structure> {
         self.ecs.resource::<BuildSystem>().structures()
     }

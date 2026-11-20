@@ -253,6 +253,9 @@ impl World {
     }
 
     pub fn vacate_rule_seat(&mut self, p: PlayerId) {
+        if self.exit_at_gun(p) {
+            return;
+        }
         let Some((vehicle, seat)) = self.seat_of(p) else {
             return;
         };

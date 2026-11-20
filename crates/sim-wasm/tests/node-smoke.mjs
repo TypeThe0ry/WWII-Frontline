@@ -110,6 +110,15 @@ const ok = (name) => {
   ok('M2-018 C0/C4: native golden bytes, TK reply and strict bounds');
 }
 
+// --- M2-011: the same C4 structure bytes pinned by `m2_facilities_wire`.
+{
+  const bytes = Uint8Array.of(0x10, 0x12, 0x34, 1, 0x10, 0x20, 0x30, 0x40, 2);
+  assert.deepEqual(JSON.parse(wasm.decodeC4(bytes)), {
+    type: 'structure', id: 0x1234, kind: 1, pos: [0x1020, 0x3040], state: 2,
+  });
+  ok('M2-011 C4: native facility bytes');
+}
+
 // --- snapshot decoder vs. natively decoded golden (key frame, then delta on the same decoder).
 {
   const expected = JSON.parse(readFileSync(golden('snapshot_expected.json'), 'utf8'));

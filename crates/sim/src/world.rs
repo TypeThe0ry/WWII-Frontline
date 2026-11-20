@@ -482,7 +482,6 @@ impl World {
 
     fn despawn_player_body(&mut self, id: PlayerId) {
         self.vacate_rule_seat(id);
-        self.exit_at_gun(id);
         self.ecs
             .resource_mut::<crate::build::BuildSystem>()
             .leave_all_builds(id);
