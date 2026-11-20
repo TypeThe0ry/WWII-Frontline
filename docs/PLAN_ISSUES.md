@@ -1564,3 +1564,9 @@ PrePass 速度会卡死渲染循环，改用自有速度 RTT（地形/薄实例/
 
 - 按 PI-109：选启动前空闲的 RTX 3080 GPU1（`0000:23:00.0`），隔离浏览器的其他 GPU 设备节点，用 `nvidia-smi pmon` 核对用卡并记录实时负载。High 未观察到 GPU1 其他进程，Low 若干窗口有其它 Chromium 进程，照实保留。三机位各 3×60 s；High P95 16.70–16.80 ms、>50 ms 卡顿 0–2 帧/轮、draw call 83–211、三角形 347532–444075，Low 59.88–60.02 rAF FPS、P95 16.70–16.80 ms、>50 ms 卡顿 0–1 帧/轮、draw call 71–181、三角形 125572–143173。RTX 3060 / Iris Xe 参考机未测，E1-6/E1-7 不做 PASS/FAIL 判定。
 - Low 已有地形和植被路径；本批仅接入 Carentan 固定 75% 内部比例，并让采集器可在 NVIDIA 上为硬件 WebGL2 选择 ANGLE Vulkan。沿用原基准的默认设置：High 与 Low 自写 CSM 和 TAA 均未启用，未测完整档位及最终素材。Xvfb + 仅 NVIDIA ICD 的 WSI/合成初始化失败，正式采集使用 Chromium Headless Shell、系统默认 ICD 搜索路径和进程私有设备视图；这不验证显示器实际呈现。原始记录见 `reports/m1-perf-raw/`。
+
+## PI-B6-carentan-netem-1 Carentan WT 满编载具夹具的丢包长跑（2026-11-20）
+
+- PI-109 工作站私有 netns 配置单向 25±10 ms、2% 随机丢包，实测丢弃 52,118/2,594,297 包（2.009%）。复用 `FRONTLINE_SIM_CPU` 线程亲和与 tmpfs。20 headless 与 12 bot，20 客户端 HQ 部署后重叠 1808.767 s。
+- 里程碑线只有 Sherman 的正式载具定义。Panzer IV H、Jeep 和 Kübelwagen 借用可玩线车身参数，放入里程碑物理接口的临时夹具。双方各部署一坦一轻车，182 次采样均为四辆在场且有血量。驾驶、交战、独立载具 AOI 审计与参考机未测。
+- 本轮 tick P50/P99 3.809/8.027 ms。7 次超时，最长连续 1，均由 runq 等待主导。最差客户端下行 P99 27.544、上行 P99 21.456 kbps。已解码快照同 tick 匹配 709,320/709,320，审计敌方玩家记录 397,531 条，越界 0。E1-2/3/4 与 M1-068 保持 `partial`。见 `reports/m1-carentan-netem-b6.md`。
