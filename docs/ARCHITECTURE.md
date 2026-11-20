@@ -708,6 +708,8 @@ M2-020：服务端构建时读取 `crates/server/config/server_net.json`（不�
 
 字段类型：`u8/u16/u32`、`i16`、`q(n,r)` = 量化为 n 位、范围 r、`bits(n)`、`id8/id16` = 实体/事件 ID、`[T;N]` 定长。完整 Rust 定义见 §8.2。所有消息头：`msg_type: u8`（`C0` 通道内）。
 
+> **变更说明（PI-B6-resources-1）** · v11 资源扩展由 `Hello.caps` bit 3 协商。C2 每秒发送独立标记 `0x20`、`tick:u32`、`team:u8` 和既有 `WorldState`，资源为接收方所属队伍的绝对值。可靠 C4 `ResourceDelta`（`0x10`）追加 `reason:u8`，0–4 分别表示收入、花费、退款、维持和战利品。`WorldView::team_resources(team)` 返回三资源整数池，`StepOutput::resource_history()` 在结算 tick 返回两队快照。编码细节见 `crates/protocol/CHANGELOG.md`。
+
 #### 6.8.1 C0 control（可靠）
 
 | 消息 | 方向 | 字段（草案） |

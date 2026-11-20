@@ -1306,6 +1306,8 @@ ready_time(P) = t_kia + base_wait(P)
 
 ## 11. 资源系统
 
+> **变更说明（PI-B6-resources-1）** · 起始储备、收入、上限、维持和战利品由 `data/economy.json` 驱动。`data/structures/resource_node_*.json` 提供完成态节点及拆除数据。点位可由 `zones.json` 的据点候选配置 `resource_sites: [{id, kind, pos: [x, z]}]`，地面高度由碰撞数据解析。五线地图点位随 M2-008 联验。
+
 ### 11.1 三种战略资源
 
 | 资源 | 主要用途 | 主要产出来源 |
