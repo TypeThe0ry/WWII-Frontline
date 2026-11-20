@@ -1658,3 +1658,9 @@ PrePass 速度会卡死渲染循环，改用自有速度 RTT（地形/薄实例/
 ### PI-B6-landall-bots100-1 · bots100 合入 M2-009 基线后的复验（2026-11-20）
 
 - rebase 同时保留了 M2-009 economy/resource-node 校验和 bot difficulty 校验、`frontline-sim` 资源节点与难度数据 typed embedding，以及资源溢出和 bot metrics 注册。工作站 `lint rust determinism ts data` 全绿；协议 v12 下严格 native/WASM 三种子各 18,000 tick 一致、最大位置误差 0 m；客户端 778/778，data 92 文件 0 错误。性能验收仍按 M2-029 原结论 `partial`，参考机、逐 bot 延迟阈值及 M2-027/028 前置未解决。
+
+### PI-B6-landall-1：批量合入边界与 vehmod 尺寸阻塞（2026-11-20）
+
+- resources、mines、cpu100、bots100 分别经 PR #178、#179、#180、#181 合并；各任务的依赖、参考机及未测边界见对应报告与 `out/batch6/landall-NOTES.md`。工作站证据均按 PI-109 视为非参考机结果。
+- vehmod 变基到 PR #179（协议 v12）后修复了 Satchel 邻接表未覆盖四种轮胎枚举的编译问题，定向 `explosive::` 测试 3/3。固定 Binaryen 132 的 WASM 为 1,202,326 B，超过 1,200,000 B 上限 2,326 B；Brotli 347,995 B 未超 400,000 B。试验 `-Oz --converge` 后仍为 1,202,315 B，故撤回配置并跳过。未放宽门槛；部分实现保留于本地 `b6/vehmod`，里程碑 M2-016 未合入。
+- bots100 在 PR #179 基线上首次 TS 组运行时 Vitest worker 报 Node SIGTRAP；单独重跑 99 个文件、778 项通过，数据验证 93 个文件零错误。此前 92 文件结果属于资源基线；未更新或替代既有性能验收。

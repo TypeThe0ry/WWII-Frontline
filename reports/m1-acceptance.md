@@ -138,9 +138,14 @@ Carentan 本机 1,225 s WS 复验 10/10 HQ 部署、0 断线和 0 解码错；36
 ### B6-landall-mines（2026-11-20，M2-014）
 
 在资源 M2-009 / 协议 v12 基线上，工作站（PI-109，非参考机）`lint rust determinism data` 通过。严格 native/WASM 三种子各 18,000 tick 哈希一致，最大位置误差 0 m；data 92 个文件零错误。Minefield、Satchels、Launcher 与 HEAT 的 sim 规则单测通过。该分支没有接入权威 World tick、实际武器定义、服务端输入与玩法事件，M2-014 保持 `partial`；参考机及参数/真人校准未测。详见 `reports/m2-mines.md`、PI-B6-landall-mines-1。
+
 ### B6-resources（2026-11-20，M2-009）
 
 战略资源、节点规则和客户端投影的 PI-109 工作站结果见 [M2 资源验收](m2-resources.md) 与 PI-B6-resources-1。参考机及 Carentan 五线地图联验未测，M2-009 记 `partial`。
 ### B6-cpu100（2026-11-20，M2-021）
 
 server 已将 6 个现有大阶段计入 `server_tick_stage_ms{stage}`，并把连续 3 次超限后的快照降频保持时间从 90 tick 改为 60 tick（30 Hz 下 2 s）。工作站单测与 server clippy 通过。此为逻辑接线，不是 M2 性能验收：工作站为 PI-109 非参考机，100 人负载、P50/P99、RSS、11 个架构阶段预算及参考机数字均未测；M2-021 保持 `partial`，见 `reports/m2-perf100-b6.md` / PI-B6-cpu100-1。
+
+### B6-landall 收尾（2026-11-20）
+
+resources、mines、cpu100、bots100 分别通过 PR #178、#179、#180、#181 合入。vehmod 在 PR #179 基线修复轮胎枚举编译兼容后，固定 Binaryen 132 的优化 WASM 仍为 1,202,326 B，超过 1,200,000 B 门槛 2,326 B，因此跳过合并；门槛未调整。逐项门禁、非参考机边界和未测项见 `out/batch6/landall-NOTES.md`；本批不改变 M1 退出判定。
