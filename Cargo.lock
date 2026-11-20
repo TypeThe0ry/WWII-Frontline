@@ -1011,6 +1011,7 @@ dependencies = [
 name = "frontline-bots"
 version = "0.0.0"
 dependencies = [
+ "criterion",
  "frontline-protocol",
  "frontline-sim",
  "libm",

@@ -811,6 +811,41 @@ pub struct BotDifficultiesDef {
     pub veteran: BotDifficultyDef,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum BotDifficultyName {
+    Recruit,
+    Regular,
+    Veteran,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ConfiguredBotDifficultyDef {
+    pub reaction_ms: [u16; 2],
+    pub aim_error_mult: f32,
+    pub memory_s: f32,
+    pub view_distance_m: f32,
+    pub suppression_sensitivity_mult: f32,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct BotDifficultyConfigDef {
+    pub default_difficulty: BotDifficultyName,
+    pub difficulties: ConfiguredBotDifficultiesDef,
+    #[serde(rename = "_meta")]
+    pub meta: Meta,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ConfiguredBotDifficultiesDef {
+    pub recruit: ConfiguredBotDifficultyDef,
+    pub regular: ConfiguredBotDifficultyDef,
+    pub veteran: ConfiguredBotDifficultyDef,
+}
+
 #[derive(Debug, Clone, PartialEq, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct BotPerceptionDef {

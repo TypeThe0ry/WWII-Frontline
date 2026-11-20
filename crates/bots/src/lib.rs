@@ -12,7 +12,8 @@
 //! * [`soldier`]: the Patrol / Engage / Reload / Dead state machine ([`SoldierBrain`]).
 //!
 //! All decisions are deterministic: randomness comes from `frontline_sim::rng::Rng::for_`
-//! keyed by the match seed, the tick and the bot; nothing reads a clock or a system RNG.
+//! keyed by the match seed, the tick and the bot in replay mode. Live hosts additionally
+//! enforce cooperative wall-clock budgets via [`scheduler::BotRuntime`].
 
 pub mod aim;
 pub mod brain;
@@ -22,8 +23,11 @@ pub mod difficulty;
 pub mod fill;
 pub mod grid_nav;
 pub mod nav;
+pub mod path_budget;
 pub mod perception;
+pub mod perception_cache;
 pub mod role_select;
+pub mod scheduler;
 pub mod soldier;
 pub mod squad_leader;
 pub mod tactics;

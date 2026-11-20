@@ -15,7 +15,7 @@ use frontline_sim::{
     CollisionData, GameData, GameMode, MapId, PlayerId, SimConfig, SimEvent, SpawnReq, Team, World,
 };
 
-use crate::bot_host::BotHost;
+use crate::bot_host::{BotHost, BotOptions};
 use crate::gateway_link::admin::{Action, ActionResult};
 use crate::gateway_link::reports::{ChatLine, ReportJob};
 use crate::seat_input::SeatInput;
@@ -285,6 +285,7 @@ pub struct SimLoop<C: Clock> {
     outgoing: Vec<Outgoing>,
     /// Bots hosted in this process (`--bots N`, M0-026); `None` without bots.
     bot_host: Option<BotHost>,
+    bot_options: BotOptions,
     /// Per-team target for dynamic bot fill; `None` keeps the static `--bots N`.
     bot_fill: Option<u8>,
     tactical_map_ready: bool,
@@ -451,6 +452,7 @@ pub fn build_loop_with_bots<C: Clock>(
         clients_in: Vec::new(),
         outgoing: Vec::new(),
         bot_host,
+        bot_options: BotOptions::default(),
         bot_fill: None,
         tactical_map_ready: false,
         tally: EventTally::default(),
@@ -474,7 +476,22 @@ pub fn spawn_with_bots(
     metrics: Arc<Metrics>,
     stop: StopFlag,
 ) -> std::io::Result<SimThreadHandle> {
-    let (lp, inputs_tx, commands_tx) = build_loop_with_bots(SystemClock, &cfg, bots, metrics, stop);
+    spawn_with_bot_options(cfg, bots, BotOptions::default(), metrics, stop)
+}
+
+pub fn spawn_with_bot_options(
+    cfg: SimThreadConfig,
+    bots: u16,
+    options: BotOptions,
+    metrics: Arc<Metrics>,
+    stop: StopFlag,
+) -> std::io::Result<SimThreadHandle> {
+    let (mut lp, inputs_tx, commands_tx) =
+        build_loop_with_bots(SystemClock, &cfg, bots, metrics, stop);
+    if let Some(host) = &mut lp.bot_host {
+        host.configure(options.clone());
+    }
+    lp.bot_options = options;
     let pin = cfg.pin_core;
     let join = std::thread::Builder::new()
         .name("sim".into())
@@ -1120,7 +1137,7 @@ impl<C: Clock> SimLoop<C> {
         }
         if self.bot_host.is_none() {
             let sessions = self.bridge.net().map(|link| link.sessions.clone());
-            self.bot_host = Some(BotHost::with_soldiers(
+            let mut host = BotHost::with_soldiers(
                 0,
                 self.world.config().match_seed,
                 &mut self.world,
@@ -1128,7 +1145,9 @@ impl<C: Clock> SimLoop<C> {
                 map.as_deref(),
                 sessions.as_ref(),
                 self.metrics.clone(),
-            ));
+            );
+            host.configure(self.bot_options.clone());
+            self.bot_host = Some(host);
         }
         self.tactical_map_ready = true;
     }

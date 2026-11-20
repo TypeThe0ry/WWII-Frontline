@@ -127,6 +127,10 @@ Carentan 本机 1,225 s WS 复验 10/10 HQ 部署、0 断线和 0 解码错；36
 
 设施规则复用 M1 出生、补给、弹道和装甲路径。PI-109 工作站验证第 18 次小队出生成功、第 19 次被拒，以及 7 发无头击毁 Sherman。M2 验收与依赖偏差见 [M2-011 验收](m2-outpost.md) 及 PI-B6-outpost-1。
 
+### B6-landall-bots100（2026-11-20，M2-029）
+
+在资源 M2-009 合入基线后，工作站（PI-109，非参考机）`lint rust determinism ts data` 全绿。协议 v12 严格 native/WASM 确定性三种子各 18,000 tick 哈希一致，最大位置误差 0 m；Vitest 778/778，92 个 data 文件 0 错误。M2-029 原有工作站 bot 基准保留为非参考机证据；逐 bot 识敌到开火门槛未通过，参考机与 M2-027/028 前置未测，状态 `partial`。详见 `reports/m2-bots-scale.md` 和 PI-B6-landall-bots100-1。
+
 ### B6-landall-resources（2026-11-20，M2-009）
 
 在 M2-011 / 协议 v12 基线上复验资源分支：工作站（PI-109，非参考机）`lint rust determinism ts data wasm` 全绿，严格 native/WASM 确定性比较通过；Binaryen 132 下 WASM 为 1,191,370 B、Brotli 344,816 B。M2-009 保持 `partial`；参考机、Carentan 五线联验、真人/参考作品校准未测。见 PI-B6-landall-resources-1 和 `reports/m2-resources.md`。

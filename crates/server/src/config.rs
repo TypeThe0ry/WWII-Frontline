@@ -33,6 +33,22 @@ pub struct Config {
     /// (static `--bots N`). Needs `--bots` > 0 so the bot host exists.
     #[arg(long, env = "FRONTLINE_BOT_FILL", default_value_t = 0)]
     pub bot_fill: u8,
+    /// US bot difficulty (recruit, regular, veteran).
+    #[arg(long, env = "FRONTLINE_BOT_DIFFICULTY_US")]
+    pub bot_difficulty_us: Option<String>,
+    /// German bot difficulty (recruit, regular, veteran).
+    #[arg(long, env = "FRONTLINE_BOT_DIFFICULTY_GER")]
+    pub bot_difficulty_ger: Option<String>,
+    /// Per-bot difficulty override, repeatable: ID=TIER. IDs start at 127.
+    #[arg(
+        long = "bot-difficulty",
+        env = "FRONTLINE_BOT_DIFFICULTY",
+        value_delimiter = ','
+    )]
+    pub bot_difficulty: Vec<String>,
+    /// Match-wide time budget in ms for batched bot navigation queries.
+    #[arg(long, env = "FRONTLINE_BOT_PATH_BUDGET_MS", default_value_t = 1.0)]
+    pub bot_path_budget_ms: f32,
     /// WebSocket port. 0 = ephemeral.
     #[arg(long, env = "FRONTLINE_WS_PORT", default_value_t = 7000)]
     pub ws_port: u16,

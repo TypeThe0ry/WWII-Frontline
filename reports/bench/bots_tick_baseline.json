@@ -1,0 +1,85 @@
+{
+  "cases": [
+    {
+      "benchmark": "bots_tick_60",
+      "bots": 60,
+      "bots_path_ms": {
+        "max": 0.426436,
+        "p50": 0.00007,
+        "p99": 0.200208
+      },
+      "bots_perception_ms": {
+        "max": 0.057539,
+        "p50": 0.0176,
+        "p99": 0.04441
+      },
+      "bots_tactical_ms": {
+        "max": 0.0168,
+        "p50": 0.00545,
+        "p99": 0.00996
+      },
+      "bots_tick_ms": {
+        "max": 0.467515,
+        "p50": 0.0412345,
+        "p99": 0.238528
+      },
+      "deferred": 0,
+      "kills": 22,
+      "limits_ms": {
+        "p50": 3.0,
+        "p99": null
+      },
+      "measured_ticks": 900,
+      "shots": 84,
+      "spawns": 0,
+      "stuck": 0,
+      "timeouts": 0,
+      "warmup_ticks": 450
+    },
+    {
+      "benchmark": "bots_tick_100",
+      "bots": 100,
+      "bots_path_ms": {
+        "max": 0.418646,
+        "p50": 0.00211,
+        "p99": 0.262278
+      },
+      "bots_perception_ms": {
+        "max": 0.121948,
+        "p50": 0.02374,
+        "p99": 0.09821
+      },
+      "bots_tactical_ms": {
+        "max": 0.03016,
+        "p50": 0.009275,
+        "p99": 0.02322
+      },
+      "bots_tick_ms": {
+        "max": 0.514825,
+        "p50": 0.0744945,
+        "p99": 0.330566
+      },
+      "deferred": 0,
+      "kills": 53,
+      "limits_ms": {
+        "p50": 5.0,
+        "p99": 8.0
+      },
+      "measured_ticks": 900,
+      "shots": 104,
+      "spawns": 0,
+      "stuck": 0,
+      "timeouts": 0,
+      "warmup_ticks": 450
+    }
+  ],
+  "difficulty": "legacy Regular",
+  "environment": "PI-109 workstation/non-reference (default label; confirm hardware separately)",
+  "profile": "optimized",
+  "reference_machine": "unmeasured",
+  "schema_version": 1,
+  "seed": 43371038,
+  "terrain": "m0-terrain",
+  "tick_hz": 30,
+  "timing": "BotRuntime::default, no sim step or server transport; P50 midpoint, P99 nearest rank"
+}

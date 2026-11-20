@@ -61,6 +61,57 @@ fn count(m: &Metrics, r: Reject) -> u64 {
 }
 
 #[test]
+fn scale_100_inputs_take_the_human_validation_path() {
+    use frontline_bots::{BotMap, SoldierBrain, Tuning};
+    use std::sync::Arc;
+
+    let metrics = Metrics::new();
+    let mut world = world();
+    let mut bridge = SimBridge::new(metrics.clone(), None, None, ValidateCfg::default());
+    let mut host = BotHost::new(7, Difficulty::configured_default(), metrics.clone());
+    host.use_deterministic_budget();
+    let map = Arc::new(BotMap::without_nav(Tuning::embedded(), Vec::new()));
+    for index in 0..100 {
+        let (id, team) = bot_slot(index);
+        bridge.join(&mut world, id, team).unwrap();
+        host.add(
+            id,
+            team,
+            bot_nickname(index),
+            Box::new(SoldierBrain::with_tactics(map.clone())),
+        );
+    }
+    for tick in 1..=3000 {
+        assert_eq!(host.tick(&world, &mut bridge), (100, 100));
+        world.step(bridge.resolve(tick));
+    }
+    assert_eq!(metrics.input_accepted_total.get(), 300_000);
+    for label in Reject::LABELS {
+        assert_eq!(
+            metrics
+                .input_rejected_total
+                .with_label_values(&[label])
+                .get(),
+            0,
+            "{label}"
+        );
+    }
+    let families = metrics.registry.gather();
+    for name in [
+        "bots_tick_ms",
+        "bots_path_ms",
+        "bots_perception_ms",
+        "bots_tactical_ms",
+    ] {
+        let family = families.iter().find(|f| f.name() == name).unwrap();
+        assert_eq!(
+            family.get_metric()[0].get_histogram().get_sample_count(),
+            3000
+        );
+    }
+}
+
+#[test]
 fn bot_input_goes_through_validation() {
     let m = Metrics::new();
     let mut w = world();

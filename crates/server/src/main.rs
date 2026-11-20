@@ -42,6 +42,12 @@ fn main() -> ExitCode {
 }
 
 fn run(cfg: Config) -> Result<(), String> {
+    let bot_options = frontline_server::bot_host::BotOptions::parse(
+        cfg.bot_difficulty_us.as_deref(),
+        cfg.bot_difficulty_ger.as_deref(),
+        &cfg.bot_difficulty,
+        cfg.bot_path_budget_ms,
+    )?;
     tracing::info!(
         event = "startup",
         git_sha = GIT_SHA,
@@ -109,7 +115,7 @@ fn run(cfg: Config) -> Result<(), String> {
             "no terrain loaded: bots will stand still"
         );
     }
-    let handle = sim_thread::spawn_with_bots(
+    let handle = sim_thread::spawn_with_bot_options(
         SimThreadConfig {
             match_seed: seed,
             map: MapId(u16::from(cfg.map_id())),
@@ -124,6 +130,7 @@ fn run(cfg: Config) -> Result<(), String> {
             }),
         },
         cfg.bots,
+        bot_options,
         metrics.clone(),
         stop.clone(),
     )

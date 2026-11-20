@@ -9,6 +9,7 @@
 - **B6-outpost（2026-11-20，M2-011）**：Outpost、维修站和反坦克炮已联通 sim/协议/服务端/WASM/客户端逻辑。PI-109 工作站通过规则与无头测试。依赖联验和参考机未测，状态 `partial`，见 `reports/m2-outpost.md` 与 PI-B6-outpost-1。
 - **B6-resources（2026-11-20，M2-009）** · 战略资源、节点、整分钟快照及浏览器/无头接线已实现。PI-109 工作站首分钟 242 / 98 / 50，满负载资源阶段 P99 7.640 µs。参考机性能与正式五线地图联验未测。见 `reports/m2-resources.md` / PI-B6-resources-1。
 
+- **B6-bots100（2026-11-20，M2-029）**：共享感知、每 bot 成本预测最大堆准入（估计上限 120 µs、整 tick 3/5 ms）、可恢复路径预算、三档难度数据和分段 `/metrics` 已接入。PI-109 工作站 60/100 bot tick P50/P99 为 0.041/0.239 与 0.074/0.331 ms；路径 burst 100/100 在 5 tick、最大 0.992181 ms；双回放 3000 tick 逐 tick 一致，10 分钟 stuck 最大 2/bot。逐 bot 识敌到开火仅 23/98 配对在 ±10%，参考机未测，M2-027/028 前置仍 todo，记 `partial`。见 `reports/m2-bots-scale.md` / PI-B6-bots100-1。
 - **B6-bwreg（2026-11-20，M2-020）**：接入 WT/WS 带宽档位、远场数量裁剪和 C4 通知。PI-109 工作站：无损合成快照 700 包逐字节一致；40% 档 T3 P99 500 ms、饥饿 0/min；100 客户端调节器 2.389 µs/tick。按典型可见混合、实服事件率与参考机余项保留 `partial`。见 `reports/m2-bandwidth-regulator.md` 和 PI-B6-bwreg-1。
 - **B6-pingchat（2026-11-20，M2-019）**：700/700 权限断言，10 个本机无头 WS 会话通过分组路由。200 标记 / 100 玩家，缓存、移动扇出、过期 P95 分别为 0.76 / 9.09 / 3.82 µs（PI-109，非参考机）。参考机未测，状态 `partial`。
 
@@ -214,7 +215,7 @@
 | M2-026 | 语音：客户端接入与空间化 | todo | | | |
 | M2-027 | bots：Frontline 目标与战术行为 | todo | | | |
 | M2-028 | bots：规则式指挥官 | todo | | | |
-| M2-029 | bots：100 bot 规模优化 | todo | | | |
+| M2-029 | bots：100 bot 规模优化 | partial | 见 `reports/m2-bots-scale.md`：PI-109 工作站 60/100 bot tick P50/P99 0.041/0.239、0.074/0.331 ms；路径 burst 100 请求 5 tick 全完成，max 0.992181 ms；固定种子 100 bot 双跑 3000 tick 哈希一致，末哈希 `a226709036fb4111`；10 min stuck max 2/bot。逐 bot 延迟标准仅 23/98 在 ±10%。合入 M2-009 后 `lint rust determinism ts data` 通过，v12 严格三种子 native/WASM 各 18,000 tick 一致。 | H-021 参考机未测；M2-027/028 仍 todo；逐 bot 延迟阈值未达，PI-B6-bots100-1 | PI-B6-bots100-1 |
 | M2-030 | render：GTAO/SSAO | todo | | | |
 | M2-031 | render：体积雾 | todo | | | |
 | M2-032 | render：TAAU 时间性超分 | todo | | | |

@@ -1649,3 +1649,12 @@ PrePass 速度会卡死渲染循环，改用自有速度 RTT（地形/薄实例/
 
 - 接入的 `server_tick_stage_ms{stage}` 只覆盖现有六个整体区间（inputs、sim_step、post_step、bots、aoi_snapshot、send），不是任务卡要求的 11 个预算阶段；AOI 与快照编码仍在 sim 线程同步执行，尚无 3 线程编码池、局部排序实现、tick_100 基准或热点优化。不能将六段总区间误读成对应 11 项预算测量。
 - 超限仍沿用绝对 tick schedule 的跳过过期 slot（不追赶）；连续 3 次超限触发现有快照 15 Hz 降频，hold 改为 60 tick（30 Hz 下 2 s）。对应逻辑单测覆盖 40 ms 注入及恢复。协议、sim 规则及数据哈希未改。
+### PI-B6-bots100-1：M2-029 预测准入、验收偏差与依赖边界（2026-11-20）
+
+- `BotRuntime` 在执行前按 60 µs 初始成本估计建立最大堆，按预测成本从高到低选择；同成本时先满足较早延期者，再按 PlayerId 升序。已完成决策按带 25% headroom 的衰减高水位更新预测，决策超时的 bot 下一次估计升到 120 µs。实时单 bot 截止与整 tick 3/5 ms 约束为协作式预算，非硬实时；路径队列独立按 1 ms/tick 限额。
+- 按任务卡公式 `(tick + bot_id) % 3 == 0` 分片，和旧实现的 `tick % 3 == bot_id % 3` 存在相位差异。100 bot 固定种子五分钟 A/B pooled 发现到开火中位数同为 18 tick，但逐 bot 只有 23/98 配对中位数差异在 ±10%，配对相对绝对差异中位数 38.9%；不得用 pooled 结果代替逐 bot 验收。当前夹具每 bot 样本数有限且分片相位改变，建议后续控制相位并延长/多种子复测；在有证据显示逐 bot 阈值满足前，验收项记未通过，任务为 `partial`。
+- 其它 PI-109 工作站数值、100 bot 确定性、路径 burst、10 分钟 stuck 与未测项见 `reports/m2-bots-scale.md`。E2-4 参考 CPU 未测（H-021），100 真人/载具/弹体参考服务器压力未测（H-067）。本任务依赖的 M2-027、M2-028 当前仍是 todo，本地 M0/M1 tactical harness 不代表完整 Frontline/RuleCommander 对局。M2-029 保持 `partial`，不关闭 M2 或改变其它验收状态。
+
+### PI-B6-landall-bots100-1 · bots100 合入 M2-009 基线后的复验（2026-11-20）
+
+- rebase 同时保留了 M2-009 economy/resource-node 校验和 bot difficulty 校验、`frontline-sim` 资源节点与难度数据 typed embedding，以及资源溢出和 bot metrics 注册。工作站 `lint rust determinism ts data` 全绿；协议 v12 下严格 native/WASM 三种子各 18,000 tick 一致、最大位置误差 0 m；客户端 778/778，data 92 文件 0 错误。性能验收仍按 M2-029 原结论 `partial`，参考机、逐 bot 延迟阈值及 M2-027/028 前置未解决。

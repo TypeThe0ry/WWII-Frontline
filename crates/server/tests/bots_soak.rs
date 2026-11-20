@@ -102,7 +102,9 @@ fn run_soak(bots: u16, ticks: u32, seed: u64, map: Arc<LoadedMap>) -> Soak {
         metrics.clone(),
         StopFlag::new(),
     );
-    lp.bot_host_mut().expect("bots").record_hashes(true);
+    let host = lp.bot_host_mut().expect("bots");
+    host.use_deterministic_budget();
+    host.record_hashes(true);
     let mut out = Soak {
         bots_alive_min: usize::MAX,
         server_bots_gauge: metrics.bots.get(),

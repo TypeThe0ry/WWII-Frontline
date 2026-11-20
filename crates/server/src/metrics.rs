@@ -59,6 +59,7 @@ pub struct Metrics {
     pub bot_think_ms: Histogram,
     /// Time of that step spent in path queries (ms).
     pub bot_path_ms: Histogram,
+    pub(crate) bot_scale: bots::BotScaleMetrics,
     pub uptime_seconds: Gauge,
     // ---- net (M0-016) ----
     pub net_connections: IntGauge,
@@ -135,6 +136,8 @@ pub struct Metrics {
 // Indexed by frontline_sim::rules::resources::ResourceKind.
 const RESOURCE_KIND_LABELS: [&str; 3] = ["manpower", "munitions", "fuel"];
 
+mod bots;
+
 impl Metrics {
     pub(crate) fn observe_resource_overflow(&self, overflow: [u64; 3]) {
         for (kind, units) in RESOURCE_KIND_LABELS.into_iter().zip(overflow) {
@@ -155,6 +158,7 @@ impl Metrics {
         let counter = |name: &str, help: &str| IntCounter::new(name, help).expect("counter");
         let gauge = |name: &str, help: &str| IntGauge::new(name, help).expect("gauge");
         let m = Metrics {
+            bot_scale: bots::BotScaleMetrics::new(&registry),
             tick_ms: hist(
                 "server_tick_ms",
                 "Wall time of one server tick's work (ms)",

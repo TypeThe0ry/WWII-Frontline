@@ -11,7 +11,7 @@ import { checkRefs } from './rules/refs.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 export const REPO_ROOT = resolve(here, '..', '..');
-export const KINDS = ['weapon', 'explosive', 'melee', 'ammo', 'material', 'gadget', 'role', 'loadout', 'vehicle', 'economy', 'resource_node', 'map_meta', 'spawns', 'rules', 'rule_capture', 'rule_match', 'rule_spawn', 'rule_supplies', 'rule_squads', 'rule_aoi', 'rule_ordnance', 'rule_anticheat', 'rule_lagcomp', 'rule_server', 'bots', 'audio_params', 'comms', 'scoring'];
+export const KINDS = ['weapon', 'explosive', 'melee', 'ammo', 'material', 'gadget', 'role', 'loadout', 'vehicle', 'economy', 'resource_node', 'map_meta', 'spawns', 'rules', 'rule_capture', 'rule_match', 'rule_spawn', 'rule_supplies', 'rule_squads', 'rule_aoi', 'rule_ordnance', 'rule_anticheat', 'rule_lagcomp', 'rule_server', 'bots', 'bots_difficulty', 'audio_params', 'comms', 'scoring'];
 const DIR_KIND = { weapons: 'weapon', explosives: 'explosive', melee: 'melee', ammo: 'ammo', materials: 'material', gadgets: 'gadget', roles: 'role', loadouts: 'loadout', vehicles: 'vehicle' };
 const RULE_FILE_KIND = { 'rules/capture.json': 'rule_capture', 'rules/match_m1.json': 'rule_match', 'rules/spawn.json': 'rule_spawn', 'rules/supplies.json': 'rule_supplies', 'rules/squads.json': 'rule_squads', 'rules/aoi.json': 'rule_aoi', 'rules/ordnance_m2.json': 'rule_ordnance', 'rules/anticheat.json': 'rule_anticheat', 'rules/lagcomp.json': 'rule_lagcomp', 'rules/bots.json': 'bots' };
 const MAP_FILE_KIND = { 'meta.json': 'map_meta', 'spawns.json': 'spawns' };
@@ -92,6 +92,7 @@ export function discover(root) {
     else if (rel === 'economy.json') kind = 'economy';
     else if (rel === 'server_rules.json') kind = 'rule_server';
     else if (rel === 'comms.json') kind = 'comms';
+    else if (rel === 'bots/difficulty.json') kind = 'bots_difficulty';
     else if (rel === 'audio/params.json') kind = 'audio_params';
     else if (rel === 'scoring.json') kind = 'scoring';
     else if (parts.length === 3 && parts[0] === 'maps' && MAP_FILE_KIND[parts[2]]) kind = MAP_FILE_KIND[parts[2]];

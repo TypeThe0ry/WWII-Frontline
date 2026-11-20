@@ -126,6 +126,16 @@ impl GameData {
         })
     }
 
+    /// Production bot difficulty is loaded only by consumers that need it. Its canonical
+    /// data is included in DATA_HASH for every build.
+    pub fn bot_difficulty() -> &'static defs::BotDifficultyConfigDef {
+        static DIFFICULTY: OnceLock<defs::BotDifficultyConfigDef> = OnceLock::new();
+        DIFFICULTY.get_or_init(|| {
+            serde_json::from_str(embedded::BOTS_DIFFICULTY_JSON)
+                .expect("embedded data parsed at build time")
+        })
+    }
+
     pub fn weapon(&self, id: &str) -> Option<&'static WeaponDef> {
         self.weapons.iter().find(|w| w.id == id)
     }
@@ -243,6 +253,23 @@ mod tests {
         assert_eq!(GameData::comms(), &cfg);
         let mut changed: serde_json::Value = serde_json::from_str(text).unwrap();
         changed["ping"]["cooldown_s"] = serde_json::json!(cfg.ping.cooldown_s + 1);
+        *text = changed.to_string();
+        assert_ne!(hash_files(&files).unwrap(), DATA_HASH);
+    }
+
+    #[test]
+    fn data_bot_difficulty_loads_and_participates_in_hash() {
+        let mut files = collect_data_files(&data_root()).unwrap();
+        let (_, text) = files
+            .iter_mut()
+            .find(|(path, _)| path == "bots/difficulty.json")
+            .unwrap();
+        let cfg: defs::BotDifficultyConfigDef = serde_json::from_str(text).unwrap();
+        assert_eq!(GameData::bot_difficulty(), &cfg);
+        assert_eq!(cfg.meta.status, DataStatus::Initial);
+        let mut changed: serde_json::Value = serde_json::from_str(text).unwrap();
+        changed["difficulties"]["regular"]["suppression_sensitivity_mult"] =
+            serde_json::json!(cfg.difficulties.regular.suppression_sensitivity_mult + 0.25);
         *text = changed.to_string();
         assert_ne!(hash_files(&files).unwrap(), DATA_HASH);
     }

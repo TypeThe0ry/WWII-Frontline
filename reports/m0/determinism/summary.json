@@ -2,12 +2,12 @@
   "task": "M0-029",
   "generated_by": "tools/determinism/compare.mjs",
   "versions": {
-    "data_hash": "0x7d9da152e462b6ee",
+    "data_hash": "0x4fd0b9149eac3b4e",
     "protocol_version": 12,
     "rustc": "rustc 1.97.0 (2d8144b78 2026-07-07)",
     "rapier3d": "0.36.1",
     "rapier_features": "dim3,f32,std,enhanced-determinism",
-    "wasm_sha256": "176cd830b28b6e8dfaba7e6bd814c471a74d0ec58ba7747a703c7ef3d332f161",
+    "wasm_sha256": "ef7df9c40ac749e0a1cffc6adc11ccb215342b23f65b55f12c6b3b1be26918ca",
     "node": "v22.22.1"
   },
   "mode": "strict",

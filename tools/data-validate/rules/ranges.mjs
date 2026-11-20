@@ -183,5 +183,6 @@ export function checkRanges(doc, kind) {
   else if (kind === 'bots') checkBots(doc, errors);
   else if (kind === 'economy') checkEconomy(doc, errors);
   else if (kind === 'resource_node') checkResourceNode(doc, errors);
+  else if (kind === 'bots_difficulty') checkBots(doc, errors);
   return errors;
 }

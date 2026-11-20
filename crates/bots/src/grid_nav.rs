@@ -170,6 +170,8 @@ pub struct PathFinder {
     epoch: u32,
     heap: BinaryHeap<Reverse<(u32, u32, u32)>>,
     cells: Vec<u32>,
+    goal_cell: (usize, usize),
+    goal_point: [f32; 2],
     /// Nodes expanded by the last query (diagnostics).
     pub last_expanded: u32,
 }
@@ -214,13 +216,24 @@ impl PathFinder {
         to: [f32; 2],
         out: &mut Vec<[f32; 2]>,
     ) -> bool {
+        self.begin(grid, from, to, out)
+            .unwrap_or_else(|| self.step(grid, from, out, || false).unwrap())
+    }
+
+    /// `None` means the initialised search needs `step` with the same grid and start.
+    pub(crate) fn begin(
+        &mut self,
+        grid: &NavGrid,
+        from: [f32; 2],
+        to: [f32; 2],
+        out: &mut Vec<[f32; 2]>,
+    ) -> Option<bool> {
         out.clear();
         self.last_expanded = 0;
-        let Some((sx, sz)) = grid.snap(from[0], from[1], 3) else {
-            return false;
-        };
-        let Some((gx, gz)) = grid.snap(to[0], to[1], 4) else {
-            return false;
+        let (Some((sx, sz)), Some((gx, gz))) =
+            (grid.snap(from[0], from[1], 3), grid.snap(to[0], to[1], 4))
+        else {
+            return Some(false);
         };
         let goal_point = if grid.walkable_at(to[0], to[1]) {
             to
@@ -229,18 +242,33 @@ impl PathFinder {
         };
         if (sx, sz) == (gx, gz) {
             out.push(goal_point);
-            return true;
+            return Some(true);
         }
         let (nx, nz) = grid.size();
         self.prepare(nx * nz);
-        let idx = |x: usize, z: usize| (z * nx + x) as u32;
-        let start = idx(sx, sz);
-        let goal = idx(gx, gz);
+        let start = (sz * nx + sx) as u32;
         self.stamp[start as usize] = self.epoch;
         self.g[start as usize] = 0;
         self.parent[start as usize] = u32::MAX;
         let h0 = Self::heuristic(sx as i32, sz as i32, gx as i32, gz as i32);
         self.heap.push(Reverse((h0, u32::MAX, start)));
+        self.goal_cell = (gx, gz);
+        self.goal_point = goal_point;
+        None
+    }
+
+    /// `None` means budget exhausted, not that the path is unreachable.
+    pub(crate) fn step(
+        &mut self,
+        grid: &NavGrid,
+        from: [f32; 2],
+        out: &mut Vec<[f32; 2]>,
+        mut should_yield: impl FnMut() -> bool,
+    ) -> Option<bool> {
+        let (nx, nz) = grid.size();
+        let idx = |x: usize, z: usize| (z * nx + x) as u32;
+        let (gx, gz) = self.goal_cell;
+        let goal = idx(gx, gz);
 
         const DIRS: [(i32, i32, u32); 8] = [
             (1, 0, ORTHO),
@@ -253,7 +281,13 @@ impl PathFinder {
             (-1, -1, DIAG),
         ];
         let mut found = false;
-        while let Some(Reverse((_, _, cur))) = self.heap.pop() {
+        let mut pops = 0usize;
+        while !self.heap.is_empty() {
+            if pops.is_multiple_of(32) && should_yield() {
+                return None;
+            }
+            pops += 1;
+            let Reverse((_, _, cur)) = self.heap.pop().unwrap();
             let ci = cur as usize;
             if self.closed[ci] == self.epoch {
                 continue;
@@ -297,7 +331,7 @@ impl PathFinder {
             }
         }
         if !found {
-            return false;
+            return Some(false);
         }
         // Reconstruct goal -> start, then reverse.
         self.cells.clear();
@@ -307,8 +341,8 @@ impl PathFinder {
             c = self.parent[c as usize];
         }
         self.cells.reverse();
-        self.smooth(grid, from, goal_point, out);
-        true
+        self.smooth(grid, from, self.goal_point, out);
+        Some(true)
     }
 
     /// Greedy line-of-walk smoothing over `self.cells` (start cell first).
