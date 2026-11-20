@@ -4,6 +4,11 @@
 //! POST /v1/guest                         guest id + session token (optional renewal)
 //! GET  /v1/servers                       live servers
 //! POST /v1/servers/{match_id}/ticket     join ticket (Bearer session token)
+//! GET  /v1/matches/{match_id}/result     stored match result (Bearer session token)
+//! GET  /v1/me/settings                   read settings (Bearer session token)
+//! PUT  /v1/me/settings                   replace settings (Bearer session token)
+//! GET  /v1/oauth/{provider}/start        OAuth reservation (disabled by default)
+//! GET  /v1/oauth/{provider}/callback     OAuth reservation (disabled by default)
 //! POST /internal/matches/register        match server registers (Bearer internal token)
 //! POST /internal/matches/{id}/heartbeat  match server heartbeat
 //! POST /internal/matches/{id}/result     match result
@@ -15,7 +20,7 @@ use std::net::SocketAddr;
 use std::time::Instant;
 
 use axum::body::Bytes;
-use axum::extract::{ConnectInfo, MatchedPath, Path, Request, State};
+use axum::extract::{ConnectInfo, DefaultBodyLimit, MatchedPath, Path, Request, State};
 use axum::http::{header, HeaderMap, HeaderValue, StatusCode};
 use axum::middleware::{self, Next};
 use axum::response::{IntoResponse, Response};
@@ -26,7 +31,7 @@ use ed25519_dalek::Signer;
 use frontline_protocol::dto::TicketClaims;
 use rand::RngCore;
 use serde::{Deserialize, Serialize};
-use serde_json::json;
+use serde_json::{json, Map, Value};
 use sha2::{Digest, Sha256};
 
 use crate::app::Shared;
@@ -39,6 +44,11 @@ pub const ROUTE_TABLE: &[&str] = &[
     "POST /v1/guest",
     "GET /v1/servers",
     "POST /v1/servers/{match_id}/ticket",
+    "GET /v1/matches/{match_id}/result",
+    "GET /v1/me/settings",
+    "PUT /v1/me/settings",
+    "GET /v1/oauth/{provider}/start",
+    "GET /v1/oauth/{provider}/callback",
     "POST /internal/matches/register",
     "POST /internal/matches/{id}/heartbeat",
     "POST /internal/matches/{id}/result",
@@ -47,6 +57,7 @@ pub const ROUTE_TABLE: &[&str] = &[
 ];
 
 const TICKET_PATH: &str = "/v1/servers/{match_id}/ticket";
+const SETTINGS_MAX_BYTES: usize = 16 * 1024;
 
 #[derive(Clone)]
 pub struct ClientIp(pub String);
@@ -56,6 +67,15 @@ pub fn router(state: Shared) -> Router {
         .route("/v1/guest", post(guest))
         .route("/v1/servers", get(servers))
         .route(TICKET_PATH, post(issue_ticket))
+        .route("/v1/matches/{match_id}/result", get(match_result))
+        .route(
+            "/v1/me/settings",
+            get(get_settings)
+                .put(put_settings)
+                .layer(DefaultBodyLimit::max(SETTINGS_MAX_BYTES)),
+        )
+        .route("/v1/oauth/{provider}/start", get(oauth_placeholder))
+        .route("/v1/oauth/{provider}/callback", get(oauth_placeholder))
         .route("/internal/matches/register", post(register))
         .route("/internal/matches/{id}/heartbeat", post(heartbeat))
         .route("/internal/matches/{id}/result", post(result))
@@ -110,7 +130,7 @@ async fn edge(State(st): State<Shared>, mut req: Request, next: Next) -> Respons
                 );
                 h.insert(
                     header::ACCESS_CONTROL_ALLOW_METHODS,
-                    HeaderValue::from_static("GET, POST, OPTIONS"),
+                    HeaderValue::from_static("GET, POST, PUT, OPTIONS"),
                 );
             }
         }
@@ -169,6 +189,16 @@ fn bearer(h: &HeaderMap) -> Option<&str> {
         .strip_prefix("Bearer ")
 }
 
+fn guest_session(st: &Shared, headers: &HeaderMap) -> Option<token::Claims> {
+    token::verify(&st.cfg.token_secret, bearer(headers)?, st.clock.now_s())
+        .ok()
+        .filter(|claims| from_hex(&claims.sub).is_some())
+}
+
+fn guest_nick(id: &str) -> String {
+    format!("Guest-{}", &id[..4])
+}
+
 fn random_16() -> [u8; 16] {
     let mut b = [0u8; 16];
     rand::rngs::OsRng.fill_bytes(&mut b);
@@ -214,7 +244,7 @@ async fn guest(
         );
     }
     let guest_id = renewed.map_or_else(|| to_hex(&random_16()), |c| c.sub);
-    let suggestion = format!("Guest-{}", &guest_id[..4]);
+    let suggestion = guest_nick(&guest_id);
     let nick_suggestion = match st.db.guest(&guest_id, &suggestion).await {
         Ok(nick) => nick,
         Err(error) => {
@@ -231,6 +261,60 @@ async fn guest(
         expires_in_s: token::TOKEN_TTL_S,
     })
     .into_response()
+}
+
+// ------------------------------------------------------------------ M2 player settings, match results, and reserved OAuth
+
+async fn get_settings(State(st): State<Shared>, headers: HeaderMap) -> Response {
+    let Some(claims) = guest_session(&st, &headers) else {
+        return err(StatusCode::UNAUTHORIZED, "unauthorized");
+    };
+    match st.db.settings(&claims.sub).await {
+        Ok(settings) => Json(settings).into_response(),
+        Err(error) => db_error(&error),
+    }
+}
+
+async fn put_settings(State(st): State<Shared>, headers: HeaderMap, body: Bytes) -> Response {
+    let Some(claims) = guest_session(&st, &headers) else {
+        return err(StatusCode::UNAUTHORIZED, "unauthorized");
+    };
+    let Ok(settings) = serde_json::from_slice::<Map<String, Value>>(&body) else {
+        return err(StatusCode::UNPROCESSABLE_ENTITY, "bad_body");
+    };
+    match st
+        .db
+        .replace_settings(&claims.sub, &guest_nick(&claims.sub), &settings)
+        .await
+    {
+        Ok(()) => Json(settings).into_response(),
+        Err(error) => db_error(&error),
+    }
+}
+
+async fn match_result(
+    State(st): State<Shared>,
+    Path(id): Path<String>,
+    headers: HeaderMap,
+) -> Response {
+    if guest_session(&st, &headers).is_none() {
+        return err(StatusCode::UNAUTHORIZED, "unauthorized");
+    }
+    let Some(id) = from_hex(&id) else {
+        return err(StatusCode::NOT_FOUND, "no_such_result");
+    };
+    match st.db.match_result(&id).await {
+        Ok(Some(result)) => Json(result).into_response(),
+        Ok(None) => err(StatusCode::NOT_FOUND, "no_such_result"),
+        Err(error) => db_error(&error),
+    }
+}
+
+async fn oauth_placeholder(State(st): State<Shared>, Path(provider): Path<String>) -> Response {
+    if !st.cfg.oauth_enabled || !matches!(provider.as_str(), "discord" | "google") {
+        return err(StatusCode::NOT_FOUND, "not_found");
+    }
+    err(StatusCode::NOT_IMPLEMENTED, "oauth_not_implemented")
 }
 
 // ------------------------------------------------------------------ server list
@@ -468,13 +552,13 @@ async fn result(
     if !internal_ok(&st, &headers) {
         return err(StatusCode::UNAUTHORIZED, "unauthorized");
     }
-    let Ok(v) = serde_json::from_slice::<serde_json::Value>(&body) else {
+    let Ok(result) = serde_json::from_slice::<Value>(&body) else {
         return err(StatusCode::UNPROCESSABLE_ENTITY, "bad_body");
     };
     let Some(id) = from_hex(&id) else {
         return err(StatusCode::NOT_FOUND, "no_such_match");
     };
-    match st.db.store_result(&id, v).await {
+    match st.db.store_result(&id, result, st.clock.now_ms()).await {
         Ok(true) => StatusCode::NO_CONTENT.into_response(),
         Ok(false) => err(StatusCode::NOT_FOUND, "no_such_match"),
         Err(error) => db_error(&error),

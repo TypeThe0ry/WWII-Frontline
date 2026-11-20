@@ -631,6 +631,11 @@ fn route_table_snapshot() {
             "POST /v1/guest",
             "GET /v1/servers",
             "POST /v1/servers/{match_id}/ticket",
+            "GET /v1/matches/{match_id}/result",
+            "GET /v1/me/settings",
+            "PUT /v1/me/settings",
+            "GET /v1/oauth/{provider}/start",
+            "GET /v1/oauth/{provider}/callback",
             "POST /internal/matches/register",
             "POST /internal/matches/{id}/heartbeat",
             "POST /internal/matches/{id}/result",
@@ -684,6 +689,37 @@ async fn sqlite_reopen_preserves_guest_match_ticket_cursor_and_first_result() {
     assert_eq!(first.player_id, 0);
     assert_eq!(first.nick, "1fiA");
     let res = format!("/internal/matches/{ended}/result");
+    let query = format!("/v1/matches/{ended}/result");
+    let get_result = |app: Router, uri: String, auth: Option<String>| async move {
+        call(
+            &app,
+            Method::GET,
+            &uri,
+            "1.2.3.4",
+            auth.as_deref(),
+            Value::Null,
+        )
+        .await
+    };
+    assert_eq!(
+        get_result(r.app.clone(), query.clone(), None).await.0,
+        StatusCode::UNAUTHORIZED
+    );
+    for id in [ended.as_str(), &"ab".repeat(16), "bad-id"] {
+        assert_eq!(
+            get_result(
+                r.app.clone(),
+                format!("/v1/matches/{id}/result"),
+                Some(token.into())
+            )
+            .await
+            .0,
+            StatusCode::NOT_FOUND
+        );
+    }
+    // Same envelope that server::gateway_link sends (including an empty M1 scoreboard).
+    let result = json!({"players": 4, "bots": 2, "objectives": 5,
+                        "duration_s": 90, "ticks": 2700, "rows": []});
     assert_eq!(
         call(
             &r.app,
@@ -691,7 +727,7 @@ async fn sqlite_reopen_preserves_guest_match_ticket_cursor_and_first_result() {
             &res,
             "1.2.3.4",
             Some(INTERNAL),
-            json!({"winner":1})
+            result.clone()
         )
         .await
         .0,
@@ -700,6 +736,7 @@ async fn sqlite_reopen_preserves_guest_match_ticket_cursor_and_first_result() {
     drop(r);
 
     let r = rig_with(cfg.clone(), [5; 32]).await;
+    r.clock.advance_ms(100);
     let (_, _, renewed) = call(
         &r.app,
         Method::POST,
@@ -739,12 +776,21 @@ async fn sqlite_reopen_preserves_guest_match_ticket_cursor_and_first_result() {
         StatusCode::NO_CONTENT
     );
 
+    let (status, headers, stored) = get_result(r.app.clone(), query, Some(token.into())).await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(headers[header::CACHE_CONTROL], "no-store");
+    assert_eq!(
+        stored,
+        json!({"match_id": ended, "map": "carentan", "mode": "conquest",
+                             "received_at_ms": T0, "result": result})
+    );
+
     let mut conn = SqliteConnection::connect(&cfg.database_url).await.unwrap();
     let payloads: Vec<String> = sqlx::query_scalar("SELECT payload FROM results")
         .fetch_all(&mut conn)
         .await
         .unwrap();
-    assert_eq!(payloads, [r#"{"winner":1}"#]);
+    assert_eq!(payloads, [result.to_string()]);
     let hash: String = sqlx::query_scalar("SELECT registration FROM matches WHERE id = ?")
         .bind(&live)
         .fetch_one(&mut conn)
@@ -760,6 +806,65 @@ async fn sqlite_reopen_preserves_guest_match_ticket_cursor_and_first_result() {
     assert_eq!(
         ticket_req(&rotated, &live, "1.2.3.4", Some(token), "Guest").await,
         StatusCode::GONE
+    );
+}
+
+#[tokio::test]
+async fn migration_keeps_existing_results_queryable_without_inventing_receipt_time() {
+    use sqlx::sqlite::SqliteConnectOptions;
+    use sqlx::{ConnectOptions, Connection};
+
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("gateway.db");
+    let mut db = SqliteConnectOptions::new()
+        .filename(&path)
+        .create_if_missing(true)
+        .connect()
+        .await
+        .unwrap();
+    sqlx::migrate!("./src/db/migrations")
+        .run_to(1, &mut db)
+        .await
+        .unwrap();
+    let id = "aa".repeat(16);
+    sqlx::query(
+        r#"INSERT INTO matches (id, registration, ticket_key, cap, last_heartbeat_ms, ended)
+                 VALUES (?, '{"map":"m0","mode":"sandbox"}', zeroblob(32), 16, 1, 1)"#,
+    )
+    .bind(&id)
+    .execute(&mut db)
+    .await
+    .unwrap();
+    sqlx::query(r#"INSERT INTO results (match_id, payload) VALUES (?, '{"ticks":90}')"#)
+        .bind(&id)
+        .execute(&mut db)
+        .await
+        .unwrap();
+    db.close().await.unwrap();
+
+    let r = rig_with(
+        Config {
+            database_url: format!("sqlite://{}", path.display()),
+            ..Config::test()
+        },
+        [5; 32],
+    )
+    .await;
+    let (_, profile) = guest(&r, "1.2.3.4").await;
+    let (status, _, result) = call(
+        &r.app,
+        Method::GET,
+        &format!("/v1/matches/{id}/result"),
+        "1.2.3.4",
+        profile["token"].as_str(),
+        Value::Null,
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(
+        result,
+        json!({"match_id": id, "map": "m0", "mode": "sandbox",
+                              "received_at_ms": null, "result": {"ticks": 90}})
     );
 }
 

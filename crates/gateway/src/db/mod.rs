@@ -7,6 +7,7 @@ use std::time::Duration;
 use frontline_protocol::dto::ServerInfo;
 use frontline_protocol::PROTOCOL_VERSION;
 use serde::{Deserialize, Serialize};
+use serde_json::{Map, Value};
 use sqlx::sqlite::{SqliteConnectOptions, SqliteJournalMode, SqliteSynchronous};
 use sqlx::types::Json;
 use sqlx::{ConnectOptions, Connection, FromRow, SqliteConnection};
@@ -52,6 +53,15 @@ struct ServerRow {
     time_left_s: u32,
     humans: u8,
     bots: u8,
+}
+
+#[derive(FromRow, Serialize)]
+pub(crate) struct StoredResult {
+    match_id: String,
+    map: String,
+    mode: String,
+    received_at_ms: Option<i64>,
+    result: Json<Value>,
 }
 
 #[derive(Debug)]
@@ -221,7 +231,8 @@ impl Database {
     pub async fn store_result(
         &self,
         id: &MatchId,
-        payload: serde_json::Value,
+        payload: Value,
+        now_ms: u64,
     ) -> Result<bool, sqlx::Error> {
         let id = to_hex(id);
         let mut conn = self.connection().await?;
@@ -233,13 +244,66 @@ impl Database {
         if updated.rows_affected() == 0 {
             return Ok(false);
         }
-        sqlx::query("INSERT INTO results (match_id, payload) VALUES (?, ?) ON CONFLICT DO NOTHING")
-            .bind(&id)
-            .bind(Json(payload))
-            .execute(&mut *txn)
-            .await?;
+        sqlx::query(
+            "INSERT INTO results (match_id, payload, received_at_ms) VALUES (?, ?, ?)
+             ON CONFLICT (match_id) DO NOTHING",
+        )
+        .bind(&id)
+        .bind(Json(payload))
+        .bind(timestamp(now_ms))
+        .execute(&mut *txn)
+        .await?;
         txn.commit().await?;
         Ok(true)
+    }
+
+    pub(crate) async fn match_result(
+        &self,
+        id: &MatchId,
+    ) -> Result<Option<StoredResult>, sqlx::Error> {
+        sqlx::query_as(
+            "SELECT r.match_id, json_extract(m.registration, '$.map') AS map,
+                    json_extract(m.registration, '$.mode') AS mode,
+                    r.received_at_ms, r.payload AS result
+             FROM results r JOIN matches m ON m.id = r.match_id WHERE r.match_id = ?",
+        )
+        .bind(to_hex(id))
+        .fetch_optional(&mut *self.connection().await?)
+        .await
+    }
+
+    pub(crate) async fn settings(&self, guest_id: &str) -> Result<Map<String, Value>, sqlx::Error> {
+        let settings: Option<Json<Map<String, Value>>> =
+            sqlx::query_scalar("SELECT settings FROM player_settings WHERE guest_id = ?")
+                .bind(guest_id)
+                .fetch_optional(&mut *self.connection().await?)
+                .await?;
+        Ok(settings.map_or_else(Map::new, |Json(value)| value))
+    }
+
+    pub(crate) async fn replace_settings(
+        &self,
+        guest_id: &str,
+        suggested_nick: &str,
+        settings: &Map<String, Value>,
+    ) -> Result<(), sqlx::Error> {
+        let mut conn = self.connection().await?;
+        let mut txn = conn.begin().await?;
+        // Backfill sessions issued before guest profiles were stored. Keep existing nicknames.
+        sqlx::query("INSERT INTO guests (id, nick) VALUES (?, ?) ON CONFLICT (id) DO NOTHING")
+            .bind(guest_id)
+            .bind(suggested_nick)
+            .execute(&mut *txn)
+            .await?;
+        sqlx::query(
+            "INSERT INTO player_settings (guest_id, settings) VALUES (?, ?)
+             ON CONFLICT (guest_id) DO UPDATE SET settings = excluded.settings",
+        )
+        .bind(guest_id)
+        .bind(Json(settings))
+        .execute(&mut *txn)
+        .await?;
+        txn.commit().await
     }
 }
 
