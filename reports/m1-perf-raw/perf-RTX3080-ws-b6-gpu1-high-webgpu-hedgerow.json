@@ -1,0 +1,843 @@
+{
+  "meta": {
+    "machine": "RTX3080-ws-b6-gpu1-high",
+    "cpu": "AMD EPYC 7402 24-Core Processor",
+    "cores": 96,
+    "mem_gb": 405,
+    "os": "Linux 7.0.0-14-generic",
+    "node": "v22.22.1",
+    "chromium": "153.0.8010.12",
+    "gpu_mode": "hardware",
+    "renderer_requested": "webgpu",
+    "viewport": "1920x1080",
+    "quality": "high",
+    "commit": "26fbc46",
+    "dirty": true,
+    "date": "2026-11-20T04:21:53.845Z",
+    "command": "node tools/perf/capture.mjs --m1 --gpu --renderer webgpu --viewport 1920x1080 --quality high --machine RTX3080-ws-b6-gpu1-high --veg 1 --out-dir /data/scratch/b6-perf-gpu12/raw"
+  },
+  "cam": "hedgerow",
+  "runs": [
+    {
+      "schema": 2,
+      "timestamp_ms": 1795148820503,
+      "renderer": "webgpu",
+      "fallback_reason": null,
+      "frames": 3587,
+      "fps": 59.213058453122706,
+      "cpu_ms": {
+        "count": 600,
+        "mean": 10.467666667550802,
+        "p50": 9.799999982118607,
+        "p99": 21.100000023841858,
+        "max": 71.19999998807907
+      },
+      "interval_ms": {
+        "count": 600,
+        "mean": 16.8881666666766,
+        "p50": 16.69999998807907,
+        "p99": 21.900000005960464,
+        "max": 73
+      },
+      "gpu_ms": {
+        "value": 5.159936,
+        "source": "timestamp-query",
+        "reason": null
+      },
+      "draw_calls": 211,
+      "active_meshes": 3,
+      "triangles": 359839,
+      "render_scale": 1,
+      "resolution": {
+        "width": 1920,
+        "height": 1080
+      },
+      "sim": {
+        "steps_total": 2104,
+        "stepper_clamped": 0
+      },
+      "stages": {
+        "game_update": {
+          "count": 600,
+          "mean": 0.751666667064031,
+          "p50": 0.699999988079071,
+          "p99": 1.5999999940395355,
+          "max": 4.699999988079071
+        },
+        "terrain_update": {
+          "count": 600,
+          "mean": 0.48566666727264723,
+          "p50": 0.5,
+          "p99": 0.800000011920929,
+          "max": 3.699999988079071
+        },
+        "vegetation_update": {
+          "count": 600,
+          "mean": 0.09749999980131785,
+          "p50": 0.09999999403953552,
+          "p99": 0.20000001788139343,
+          "max": 5.5
+        },
+        "hedgerow_update": {
+          "count": 600,
+          "mean": 0.02399999996026357,
+          "p50": 0,
+          "p99": 0.10000002384185791,
+          "max": 0.5
+        },
+        "building_update": {
+          "count": 600,
+          "mean": 0.01583333358168602,
+          "p50": 0,
+          "p99": 0.10000002384185791,
+          "max": 0.5
+        },
+        "overlay": {
+          "count": 600,
+          "mean": 1.7814999998609224,
+          "p50": 1.800000011920929,
+          "p99": 3,
+          "max": 4.600000023841858
+        },
+        "scene_render": {
+          "count": 600,
+          "mean": 7.306333333502213,
+          "p50": 6.700000017881393,
+          "p99": 16.5,
+          "max": 60.80000001192093
+        },
+        "babylon_active_meshes_eval": {
+          "count": 600,
+          "mean": 1.263333333482345,
+          "p50": 1.0999999940395355,
+          "p99": 3,
+          "max": 10.900000005960464
+        },
+        "babylon_render_pass": {
+          "count": 600,
+          "mean": 0.07899999996026356,
+          "p50": 0.09999999403953552,
+          "p99": 0.20000001788139343,
+          "max": 0.699999988079071
+        }
+      },
+      "vegetation": {
+        "drawCalls": 0,
+        "instances": 0,
+        "tris": 0
+      },
+      "slots": {
+        "rtt": "n/a",
+        "transport": "n/a",
+        "corrections": "n/a"
+      },
+      "frame_ms": {
+        "count": 3587,
+        "p50": 16.69999999999709,
+        "p95": 16.70000000001164,
+        "p99": 16.80000000000291,
+        "max": 100
+      },
+      "hitches_gt_50ms": 2,
+      "meta": {
+        "scene": "hedgerow",
+        "run": 0,
+        "load_ms": 5367,
+        "warmup_s": 10,
+        "captured_s": 60.007,
+        "capture_start_utc": "2026-11-20T04:26:00.484Z",
+        "js_heap_mb": 186.24449348449707,
+        "world": {
+          "hedge_segments": 424,
+          "hedge_length_m": 2394.498662871738,
+          "hedge_meshes": 12,
+          "building_count": 2839,
+          "building_cells": 173,
+          "building_triangles": 69807,
+          "building_roof_failures": 0,
+          "enterable": 70,
+          "interiors": 70,
+          "interior_probes": 146,
+          "load_ms": 152
+        },
+        "canvas_px": [
+          1920,
+          1080
+        ],
+        "vegetation_tier": "high",
+        "custom_shadows": false,
+        "page_errors": [],
+        "caps": {
+          "kind": "webgpu",
+          "fallbackReason": null,
+          "gpuTimerSource": "timestamp-query"
+        }
+      }
+    },
+    {
+      "schema": 2,
+      "timestamp_ms": 1795148896159,
+      "renderer": "webgpu",
+      "fallback_reason": null,
+      "frames": 3588,
+      "fps": 59.38183509667897,
+      "cpu_ms": {
+        "count": 600,
+        "mean": 11.128000001311301,
+        "p50": 10.100000023841858,
+        "p99": 22.900000005960464,
+        "max": 42.20000001788139
+      },
+      "interval_ms": {
+        "count": 600,
+        "mean": 16.84016666665673,
+        "p50": 16.69999998807907,
+        "p99": 26.30000001192093,
+        "max": 45
+      },
+      "gpu_ms": {
+        "value": 4.529152,
+        "source": "timestamp-query",
+        "reason": null
+      },
+      "draw_calls": 211,
+      "active_meshes": 3,
+      "triangles": 359827,
+      "render_scale": 1,
+      "resolution": {
+        "width": 1920,
+        "height": 1080
+      },
+      "sim": {
+        "steps_total": 2105,
+        "stepper_clamped": 0
+      },
+      "stages": {
+        "game_update": {
+          "count": 600,
+          "mean": 0.657166667530934,
+          "p50": 0.5999999940395355,
+          "p99": 1.300000011920929,
+          "max": 2.5
+        },
+        "terrain_update": {
+          "count": 600,
+          "mean": 0.46016666616002716,
+          "p50": 0.5,
+          "p99": 0.7000000178813934,
+          "max": 1.399999976158142
+        },
+        "vegetation_update": {
+          "count": 600,
+          "mean": 0.07666666761040687,
+          "p50": 0.09999999403953552,
+          "p99": 0.20000001788139343,
+          "max": 0.29999998211860657
+        },
+        "hedgerow_update": {
+          "count": 600,
+          "mean": 0.018499999940395355,
+          "p50": 0,
+          "p99": 0.19999998807907104,
+          "max": 0.20000001788139343
+        },
+        "building_update": {
+          "count": 600,
+          "mean": 0.015999999940395356,
+          "p50": 0,
+          "p99": 0.10000002384185791,
+          "max": 0.20000001788139343
+        },
+        "overlay": {
+          "count": 600,
+          "mean": 1.7231666670242944,
+          "p50": 1.5999999940395355,
+          "p99": 4.699999988079071,
+          "max": 10.899999976158142
+        },
+        "scene_render": {
+          "count": 600,
+          "mean": 8.171999999930462,
+          "p50": 7.199999988079071,
+          "p99": 18.400000005960464,
+          "max": 39
+        },
+        "babylon_active_meshes_eval": {
+          "count": 600,
+          "mean": 1.4096666668355464,
+          "p50": 1.0999999940395355,
+          "p99": 4,
+          "max": 22.099999994039536
+        },
+        "babylon_render_pass": {
+          "count": 600,
+          "mean": 0.0775,
+          "p50": 0.09999999403953552,
+          "p99": 0.20000001788139343,
+          "max": 0.30000001192092896
+        }
+      },
+      "vegetation": {
+        "drawCalls": 0,
+        "instances": 0,
+        "tris": 0
+      },
+      "slots": {
+        "rtt": "n/a",
+        "transport": "n/a",
+        "corrections": "n/a"
+      },
+      "frame_ms": {
+        "count": 3588,
+        "p50": 16.69999999999709,
+        "p95": 16.70000000001164,
+        "p99": 16.80000000000291,
+        "max": 66.59999999999854
+      },
+      "hitches_gt_50ms": 2,
+      "meta": {
+        "scene": "hedgerow",
+        "run": 1,
+        "load_ms": 5509,
+        "warmup_s": 10,
+        "captured_s": 60.017,
+        "capture_start_utc": "2026-11-20T04:27:16.136Z",
+        "js_heap_mb": 176.59661293029785,
+        "world": {
+          "hedge_segments": 424,
+          "hedge_length_m": 2394.498662871738,
+          "hedge_meshes": 12,
+          "building_count": 2839,
+          "building_cells": 173,
+          "building_triangles": 69807,
+          "building_roof_failures": 0,
+          "enterable": 70,
+          "interiors": 70,
+          "interior_probes": 146,
+          "load_ms": 137.40000000596046
+        },
+        "canvas_px": [
+          1920,
+          1080
+        ],
+        "vegetation_tier": "high",
+        "custom_shadows": false,
+        "page_errors": [],
+        "caps": {
+          "kind": "webgpu",
+          "fallbackReason": null,
+          "gpuTimerSource": "timestamp-query"
+        }
+      }
+    },
+    {
+      "schema": 2,
+      "timestamp_ms": 1795148972677,
+      "renderer": "webgpu",
+      "fallback_reason": null,
+      "frames": 3541,
+      "fps": 58.44364571472147,
+      "cpu_ms": {
+        "count": 600,
+        "mean": 12.441499999910594,
+        "p50": 11.5,
+        "p99": 21.399999976158142,
+        "max": 26.69999998807907
+      },
+      "interval_ms": {
+        "count": 600,
+        "mean": 17.110499999970198,
+        "p50": 16.69999998807907,
+        "p99": 22.5,
+        "max": 27.19999998807907
+      },
+      "gpu_ms": {
+        "value": 5.118976,
+        "source": "timestamp-query",
+        "reason": null
+      },
+      "draw_calls": 211,
+      "active_meshes": 3,
+      "triangles": 359815,
+      "render_scale": 1,
+      "resolution": {
+        "width": 1920,
+        "height": 1080
+      },
+      "sim": {
+        "steps_total": 2106,
+        "stepper_clamped": 0
+      },
+      "stages": {
+        "game_update": {
+          "count": 600,
+          "mean": 0.8313333327571552,
+          "p50": 0.7999999821186066,
+          "p99": 1.899999976158142,
+          "max": 2.7000000178813934
+        },
+        "terrain_update": {
+          "count": 600,
+          "mean": 0.4694999999801318,
+          "p50": 0.5,
+          "p99": 0.7999999821186066,
+          "max": 3.300000011920929
+        },
+        "vegetation_update": {
+          "count": 600,
+          "mean": 0.09500000034769376,
+          "p50": 0.09999999403953552,
+          "p99": 0.20000001788139343,
+          "max": 0.5
+        },
+        "hedgerow_update": {
+          "count": 600,
+          "mean": 0.030500000019868214,
+          "p50": 0,
+          "p99": 0.19999998807907104,
+          "max": 1
+        },
+        "building_update": {
+          "count": 600,
+          "mean": 0.022666666557391486,
+          "p50": 0,
+          "p99": 0.10000002384185791,
+          "max": 0.6000000238418579
+        },
+        "overlay": {
+          "count": 600,
+          "mean": 1.8699999994039536,
+          "p50": 1.699999988079071,
+          "p99": 3.300000011920929,
+          "max": 3.9000000059604645
+        },
+        "scene_render": {
+          "count": 600,
+          "mean": 9.116166667491198,
+          "p50": 8.5,
+          "p99": 16.400000005960464,
+          "max": 20.69999998807907
+        },
+        "babylon_active_meshes_eval": {
+          "count": 600,
+          "mean": 1.4155000003178915,
+          "p50": 1.0999999940395355,
+          "p99": 3.800000011920929,
+          "max": 5.100000023841858
+        },
+        "babylon_render_pass": {
+          "count": 600,
+          "mean": 0.09600000023841858,
+          "p50": 0.09999999403953552,
+          "p99": 0.30000001192092896,
+          "max": 0.699999988079071
+        }
+      },
+      "vegetation": {
+        "drawCalls": 0,
+        "instances": 0,
+        "tris": 0
+      },
+      "slots": {
+        "rtt": "n/a",
+        "transport": "n/a",
+        "corrections": "n/a"
+      },
+      "frame_ms": {
+        "count": 3541,
+        "p50": 16.69999999999709,
+        "p95": 16.799999999999272,
+        "p99": 33.30000000000291,
+        "max": 133.40000000000146
+      },
+      "hitches_gt_50ms": 1,
+      "meta": {
+        "scene": "hedgerow",
+        "run": 2,
+        "load_ms": 6378,
+        "warmup_s": 10,
+        "captured_s": 60.009,
+        "capture_start_utc": "2026-11-20T04:28:32.664Z",
+        "js_heap_mb": 184.3984317779541,
+        "world": {
+          "hedge_segments": 424,
+          "hedge_length_m": 2394.498662871738,
+          "hedge_meshes": 12,
+          "building_count": 2839,
+          "building_cells": 173,
+          "building_triangles": 69807,
+          "building_roof_failures": 0,
+          "enterable": 70,
+          "interiors": 70,
+          "interior_probes": 146,
+          "load_ms": 169.39999997615814
+        },
+        "canvas_px": [
+          1920,
+          1080
+        ],
+        "vegetation_tier": "high",
+        "custom_shadows": false,
+        "page_errors": [],
+        "caps": {
+          "kind": "webgpu",
+          "fallbackReason": null,
+          "gpuTimerSource": "timestamp-query"
+        }
+      }
+    }
+  ],
+  "aggregate": {
+    "runs": 3,
+    "fps_mean": {
+      "median": 59.213058453122706,
+      "range_pct": 1.584429864740457,
+      "min": 58.44364571472147,
+      "max": 59.38183509667897,
+      "runs": [
+        59.213058453122706,
+        59.38183509667897,
+        58.44364571472147
+      ]
+    },
+    "cpu_ms_p50": {
+      "median": 10.100000023841858,
+      "range_pct": 16.831683305627795,
+      "min": 9.799999982118607,
+      "max": 11.5,
+      "runs": [
+        9.799999982118607,
+        10.100000023841858,
+        11.5
+      ]
+    },
+    "cpu_ms_p99": {
+      "median": 21.399999976158142,
+      "range_pct": 8.411214879084095,
+      "min": 21.100000023841858,
+      "max": 22.900000005960464,
+      "runs": [
+        21.100000023841858,
+        22.900000005960464,
+        21.399999976158142
+      ]
+    },
+    "interval_ms_p50": {
+      "median": 16.69999998807907,
+      "range_pct": 0,
+      "min": 16.69999998807907,
+      "max": 16.69999998807907,
+      "runs": [
+        16.69999998807907,
+        16.69999998807907,
+        16.69999998807907
+      ]
+    },
+    "draw_calls": {
+      "median": 211,
+      "range_pct": 0,
+      "min": 211,
+      "max": 211,
+      "runs": [
+        211,
+        211,
+        211
+      ]
+    },
+    "active_meshes": {
+      "median": 3,
+      "range_pct": 0,
+      "min": 3,
+      "max": 3,
+      "runs": [
+        3,
+        3,
+        3
+      ]
+    },
+    "triangles": {
+      "median": 359827,
+      "range_pct": 0.006669871910668182,
+      "min": 359815,
+      "max": 359839,
+      "runs": [
+        359839,
+        359827,
+        359815
+      ]
+    },
+    "vegetation_draw_calls": {
+      "median": 0,
+      "range_pct": 0,
+      "min": 0,
+      "max": 0,
+      "runs": [
+        0,
+        0,
+        0
+      ]
+    },
+    "vegetation_instances": {
+      "median": 0,
+      "range_pct": 0,
+      "min": 0,
+      "max": 0,
+      "runs": [
+        0,
+        0,
+        0
+      ]
+    },
+    "vegetation_tris": {
+      "median": 0,
+      "range_pct": 0,
+      "min": 0,
+      "max": 0,
+      "runs": [
+        0,
+        0,
+        0
+      ]
+    },
+    "js_heap_mb": {
+      "median": 184.3984317779541,
+      "range_pct": 5.232083842132045,
+      "min": 176.59661293029785,
+      "max": 186.24449348449707,
+      "runs": [
+        186.24449348449707,
+        176.59661293029785,
+        184.3984317779541
+      ]
+    },
+    "frames": {
+      "median": 3587,
+      "range_pct": 1.3102871480345692,
+      "min": 3541,
+      "max": 3588,
+      "runs": [
+        3587,
+        3588,
+        3541
+      ]
+    },
+    "stages": {
+      "babylon_active_meshes_eval": {
+        "p50": {
+          "median": 1.0999999940395355,
+          "range_pct": 0,
+          "min": 1.0999999940395355,
+          "max": 1.0999999940395355,
+          "runs": [
+            1.0999999940395355,
+            1.0999999940395355,
+            1.0999999940395355
+          ]
+        },
+        "p99": {
+          "median": 3.800000011920929,
+          "range_pct": 26.3157893911293,
+          "min": 3,
+          "max": 4,
+          "runs": [
+            3,
+            4,
+            3.800000011920929
+          ]
+        }
+      },
+      "babylon_render_pass": {
+        "p50": {
+          "median": 0.09999999403953552,
+          "range_pct": 0,
+          "min": 0.09999999403953552,
+          "max": 0.09999999403953552,
+          "runs": [
+            0.09999999403953552,
+            0.09999999403953552,
+            0.09999999403953552
+          ]
+        },
+        "p99": {
+          "median": 0.20000001788139343,
+          "range_pct": 49.99999254942007,
+          "min": 0.20000001788139343,
+          "max": 0.30000001192092896,
+          "runs": [
+            0.20000001788139343,
+            0.20000001788139343,
+            0.30000001192092896
+          ]
+        }
+      },
+      "building_update": {
+        "p50": {
+          "median": 0,
+          "range_pct": 0,
+          "min": 0,
+          "max": 0,
+          "runs": [
+            0,
+            0,
+            0
+          ]
+        },
+        "p99": {
+          "median": 0.10000002384185791,
+          "range_pct": 0,
+          "min": 0.10000002384185791,
+          "max": 0.10000002384185791,
+          "runs": [
+            0.10000002384185791,
+            0.10000002384185791,
+            0.10000002384185791
+          ]
+        }
+      },
+      "game_update": {
+        "p50": {
+          "median": 0.699999988079071,
+          "range_pct": 28.571427355007227,
+          "min": 0.5999999940395355,
+          "max": 0.7999999821186066,
+          "runs": [
+            0.699999988079071,
+            0.5999999940395355,
+            0.7999999821186066
+          ]
+        },
+        "p99": {
+          "median": 1.5999999940395355,
+          "range_pct": 37.4999979045242,
+          "min": 1.300000011920929,
+          "max": 1.899999976158142,
+          "runs": [
+            1.5999999940395355,
+            1.300000011920929,
+            1.899999976158142
+          ]
+        }
+      },
+      "hedgerow_update": {
+        "p50": {
+          "median": 0,
+          "range_pct": 0,
+          "min": 0,
+          "max": 0,
+          "runs": [
+            0,
+            0,
+            0
+          ]
+        },
+        "p99": {
+          "median": 0.19999998807907104,
+          "range_pct": 49.99998509883792,
+          "min": 0.10000002384185791,
+          "max": 0.19999998807907104,
+          "runs": [
+            0.10000002384185791,
+            0.19999998807907104,
+            0.19999998807907104
+          ]
+        }
+      },
+      "overlay": {
+        "p50": {
+          "median": 1.699999988079071,
+          "range_pct": 11.7647070166974,
+          "min": 1.5999999940395355,
+          "max": 1.800000011920929,
+          "runs": [
+            1.800000011920929,
+            1.5999999940395355,
+            1.699999988079071
+          ]
+        },
+        "p99": {
+          "median": 3.300000011920929,
+          "range_pct": 51.51515096781777,
+          "min": 3,
+          "max": 4.699999988079071,
+          "runs": [
+            3,
+            4.699999988079071,
+            3.300000011920929
+          ]
+        }
+      },
+      "scene_render": {
+        "p50": {
+          "median": 7.199999988079071,
+          "range_pct": 24.999999793039425,
+          "min": 6.700000017881393,
+          "max": 8.5,
+          "runs": [
+            6.700000017881393,
+            7.199999988079071,
+            8.5
+          ]
+        },
+        "p99": {
+          "median": 16.5,
+          "range_pct": 12.121212121212121,
+          "min": 16.400000005960464,
+          "max": 18.400000005960464,
+          "runs": [
+            16.5,
+            18.400000005960464,
+            16.400000005960464
+          ]
+        }
+      },
+      "terrain_update": {
+        "p50": {
+          "median": 0.5,
+          "range_pct": 0,
+          "min": 0.5,
+          "max": 0.5,
+          "runs": [
+            0.5,
+            0.5,
+            0.5
+          ]
+        },
+        "p99": {
+          "median": 0.7999999821186066,
+          "range_pct": 12.499999534338702,
+          "min": 0.7000000178813934,
+          "max": 0.800000011920929,
+          "runs": [
+            0.800000011920929,
+            0.7000000178813934,
+            0.7999999821186066
+          ]
+        }
+      },
+      "vegetation_update": {
+        "p50": {
+          "median": 0.09999999403953552,
+          "range_pct": 0,
+          "min": 0.09999999403953552,
+          "max": 0.09999999403953552,
+          "runs": [
+            0.09999999403953552,
+            0.09999999403953552,
+            0.09999999403953552
+          ]
+        },
+        "p99": {
+          "median": 0.20000001788139343,
+          "range_pct": 0,
+          "min": 0.20000001788139343,
+          "max": 0.20000001788139343,
+          "runs": [
+            0.20000001788139343,
+            0.20000001788139343,
+            0.20000001788139343
+          ]
+        }
+      }
+    }
+  }
+}

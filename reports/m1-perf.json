@@ -756,5 +756,1656 @@
     "value": null,
     "limit": 60,
     "verdict": "UNMEASURED"
+  },
+  "B6-perf-gpu12": {
+    "machine_class": "workstation (PI-109, non-reference)",
+    "acceptance": {
+      "E1_6_rtx3060": "未测",
+      "E1_7_iris_xe": "未测"
+    },
+    "source_commit": "26fbc46",
+    "gpu": {
+      "index": 1,
+      "model": "NVIDIA GeForce RTX 3080",
+      "vram_mib": 20480,
+      "pci": "0000:23:00.0",
+      "uuid": "GPU-b64d67e4-4cc7-dcf0-5aa2-a16bd85586e3",
+      "driver": "595.58.03"
+    },
+    "telemetry": "reports/m1-perf-raw/perf-RTX3080-ws-b6-gpu1-load.csv",
+    "tier_captures": {
+      "high": {
+        "renderer": "webgpu",
+        "tier": "high",
+        "canvas_px": [
+          1920,
+          1080
+        ],
+        "prelaunch_load": {
+          "samples": 3,
+          "utilization_pct": [
+            {
+              "min": 37,
+              "median": 41,
+              "max": 42
+            },
+            {
+              "min": 0,
+              "median": 0,
+              "max": 0
+            },
+            {
+              "min": 91,
+              "median": 100,
+              "max": 100
+            },
+            {
+              "min": 0,
+              "median": 0,
+              "max": 0
+            }
+          ],
+          "gpu1_vram_mib": {
+            "min": 2,
+            "median": 2,
+            "max": 2
+          },
+          "loadavg_1min": {
+            "min": 45.11,
+            "median": 45.11,
+            "max": 46.6
+          },
+          "chrome_gpu_observations": 0,
+          "chrome_gpu_indices": [],
+          "samples_with_other_gpu1_processes": 0,
+          "other_gpu1_processes": []
+        },
+        "capture_load": {
+          "samples": 216,
+          "utilization_pct": [
+            {
+              "min": 27,
+              "median": 41,
+              "max": 70
+            },
+            {
+              "min": 25,
+              "median": 38,
+              "max": 45
+            },
+            {
+              "min": 3,
+              "median": 100,
+              "max": 100
+            },
+            {
+              "min": 0,
+              "median": 14,
+              "max": 50
+            }
+          ],
+          "gpu1_vram_mib": {
+            "min": 638,
+            "median": 656,
+            "max": 672
+          },
+          "loadavg_1min": {
+            "min": 29.72,
+            "median": 39,
+            "max": 60.21
+          },
+          "chrome_gpu_observations": 216,
+          "chrome_gpu_indices": [
+            1
+          ],
+          "samples_with_other_gpu1_processes": 0,
+          "other_gpu1_processes": []
+        },
+        "rows": {
+          "open_field": {
+            "machine": "RTX3080-ws-b6-gpu1-high",
+            "scene": "open_field",
+            "tier": "high",
+            "runs": 3,
+            "frame_ms": {
+              "p50": 16.69999999999709,
+              "p95": 16.70000000001164,
+              "p99": 16.80000000000291
+            },
+            "frame_p95_runs": [
+              16.70000000001164,
+              16.70000000001164,
+              16.70000000001164
+            ],
+            "range_pct": 0,
+            "draw_calls": 83,
+            "tris": 444075,
+            "cpu_ms_p50": 9.400000005960464,
+            "gpu_ms_total": 4.631552,
+            "hitches_gt_50ms": 2,
+            "js_heap_mb": 177.10549354553223,
+            "vegetation_instances": 0,
+            "world": {
+              "hedge_segments": 424,
+              "hedge_length_m": 2394.498662871738,
+              "hedge_meshes": 0,
+              "building_count": 2839,
+              "building_cells": 173,
+              "building_triangles": 69807,
+              "building_roof_failures": 0,
+              "enterable": 70,
+              "interiors": 70,
+              "interior_probes": 146,
+              "load_ms": 127.39999997615814
+            },
+            "raw_capture": "reports/m1-perf-raw/perf-RTX3080-ws-b6-gpu1-high-webgpu-open_field.json",
+            "fps_full_capture_runs": [
+              59.78106932804612,
+              59.84601026598227,
+              59.79773071860578
+            ],
+            "hitches_runs": [
+              2,
+              0,
+              2
+            ],
+            "draw_calls_runs": [
+              83,
+              83,
+              83
+            ],
+            "triangles_runs": [
+              444075,
+              444075,
+              444075
+            ],
+            "load_runs": [
+              {
+                "samples": 24,
+                "utilization_pct": [
+                  {
+                    "min": 27,
+                    "median": 40,
+                    "max": 70
+                  },
+                  {
+                    "min": 32,
+                    "median": 37,
+                    "max": 41
+                  },
+                  {
+                    "min": 90,
+                    "median": 100,
+                    "max": 100
+                  },
+                  {
+                    "min": 0,
+                    "median": 25.5,
+                    "max": 50
+                  }
+                ],
+                "gpu1_vram_mib": {
+                  "min": 672,
+                  "median": 672,
+                  "max": 672
+                },
+                "loadavg_1min": {
+                  "min": 34.42,
+                  "median": 36.74,
+                  "max": 41.47
+                },
+                "chrome_gpu_observations": 24,
+                "chrome_gpu_indices": [
+                  1
+                ],
+                "samples_with_other_gpu1_processes": 0,
+                "other_gpu1_processes": []
+              },
+              {
+                "samples": 23,
+                "utilization_pct": [
+                  {
+                    "min": 27,
+                    "median": 38,
+                    "max": 42
+                  },
+                  {
+                    "min": 30,
+                    "median": 38,
+                    "max": 45
+                  },
+                  {
+                    "min": 92,
+                    "median": 100,
+                    "max": 100
+                  },
+                  {
+                    "min": 15,
+                    "median": 28,
+                    "max": 42
+                  }
+                ],
+                "gpu1_vram_mib": {
+                  "min": 672,
+                  "median": 672,
+                  "max": 672
+                },
+                "loadavg_1min": {
+                  "min": 36.64,
+                  "median": 46.65,
+                  "max": 53.7
+                },
+                "chrome_gpu_observations": 23,
+                "chrome_gpu_indices": [
+                  1
+                ],
+                "samples_with_other_gpu1_processes": 0,
+                "other_gpu1_processes": []
+              },
+              {
+                "samples": 24,
+                "utilization_pct": [
+                  {
+                    "min": 38,
+                    "median": 42,
+                    "max": 43
+                  },
+                  {
+                    "min": 32,
+                    "median": 38,
+                    "max": 42
+                  },
+                  {
+                    "min": 91,
+                    "median": 100,
+                    "max": 100
+                  },
+                  {
+                    "min": 7,
+                    "median": 24.5,
+                    "max": 44
+                  }
+                ],
+                "gpu1_vram_mib": {
+                  "min": 672,
+                  "median": 672,
+                  "max": 672
+                },
+                "loadavg_1min": {
+                  "min": 35.4,
+                  "median": 39.35,
+                  "max": 43.73
+                },
+                "chrome_gpu_observations": 24,
+                "chrome_gpu_indices": [
+                  1
+                ],
+                "samples_with_other_gpu1_processes": 0,
+                "other_gpu1_processes": []
+              }
+            ]
+          },
+          "hedgerow": {
+            "machine": "RTX3080-ws-b6-gpu1-high",
+            "scene": "hedgerow",
+            "tier": "high",
+            "runs": 3,
+            "frame_ms": {
+              "p50": 16.69999999999709,
+              "p95": 16.70000000001164,
+              "p99": 16.80000000000291
+            },
+            "frame_p95_runs": [
+              16.70000000001164,
+              16.70000000001164,
+              16.799999999999272
+            ],
+            "range_pct": 0.5988023951350968,
+            "draw_calls": 211,
+            "tris": 359827,
+            "cpu_ms_p50": 10.100000023841858,
+            "gpu_ms_total": 5.118976,
+            "hitches_gt_50ms": 2,
+            "js_heap_mb": 184.3984317779541,
+            "vegetation_instances": 0,
+            "world": {
+              "hedge_segments": 424,
+              "hedge_length_m": 2394.498662871738,
+              "hedge_meshes": 12,
+              "building_count": 2839,
+              "building_cells": 173,
+              "building_triangles": 69807,
+              "building_roof_failures": 0,
+              "enterable": 70,
+              "interiors": 70,
+              "interior_probes": 146,
+              "load_ms": 152
+            },
+            "raw_capture": "reports/m1-perf-raw/perf-RTX3080-ws-b6-gpu1-high-webgpu-hedgerow.json",
+            "fps_full_capture_runs": [
+              59.77635942473378,
+              59.78306146591799,
+              59.007815494342516
+            ],
+            "hitches_runs": [
+              2,
+              2,
+              1
+            ],
+            "draw_calls_runs": [
+              211,
+              211,
+              211
+            ],
+            "triangles_runs": [
+              359839,
+              359827,
+              359815
+            ],
+            "load_runs": [
+              {
+                "samples": 24,
+                "utilization_pct": [
+                  {
+                    "min": 30,
+                    "median": 42,
+                    "max": 43
+                  },
+                  {
+                    "min": 34,
+                    "median": 37.5,
+                    "max": 45
+                  },
+                  {
+                    "min": 91,
+                    "median": 100,
+                    "max": 100
+                  },
+                  {
+                    "min": 14,
+                    "median": 32,
+                    "max": 45
+                  }
+                ],
+                "gpu1_vram_mib": {
+                  "min": 638,
+                  "median": 648,
+                  "max": 648
+                },
+                "loadavg_1min": {
+                  "min": 30.25,
+                  "median": 31.02,
+                  "max": 32.79
+                },
+                "chrome_gpu_observations": 24,
+                "chrome_gpu_indices": [
+                  1
+                ],
+                "samples_with_other_gpu1_processes": 0,
+                "other_gpu1_processes": []
+              },
+              {
+                "samples": 24,
+                "utilization_pct": [
+                  {
+                    "min": 30,
+                    "median": 40,
+                    "max": 43
+                  },
+                  {
+                    "min": 32,
+                    "median": 37,
+                    "max": 43
+                  },
+                  {
+                    "min": 3,
+                    "median": 96,
+                    "max": 100
+                  },
+                  {
+                    "min": 14,
+                    "median": 24.5,
+                    "max": 41
+                  }
+                ],
+                "gpu1_vram_mib": {
+                  "min": 648,
+                  "median": 648,
+                  "max": 648
+                },
+                "loadavg_1min": {
+                  "min": 29.72,
+                  "median": 32.995000000000005,
+                  "max": 35.36
+                },
+                "chrome_gpu_observations": 24,
+                "chrome_gpu_indices": [
+                  1
+                ],
+                "samples_with_other_gpu1_processes": 0,
+                "other_gpu1_processes": []
+              },
+              {
+                "samples": 24,
+                "utilization_pct": [
+                  {
+                    "min": 33,
+                    "median": 41,
+                    "max": 43
+                  },
+                  {
+                    "min": 25,
+                    "median": 38,
+                    "max": 42
+                  },
+                  {
+                    "min": 57,
+                    "median": 100,
+                    "max": 100
+                  },
+                  {
+                    "min": 0,
+                    "median": 0,
+                    "max": 0
+                  }
+                ],
+                "gpu1_vram_mib": {
+                  "min": 648,
+                  "median": 648,
+                  "max": 648
+                },
+                "loadavg_1min": {
+                  "min": 36.71,
+                  "median": 48.79,
+                  "max": 50.51
+                },
+                "chrome_gpu_observations": 24,
+                "chrome_gpu_indices": [
+                  1
+                ],
+                "samples_with_other_gpu1_processes": 0,
+                "other_gpu1_processes": []
+              }
+            ]
+          },
+          "old_town": {
+            "machine": "RTX3080-ws-b6-gpu1-high",
+            "scene": "old_town",
+            "tier": "high",
+            "runs": 3,
+            "frame_ms": {
+              "p50": 16.69999999999709,
+              "p95": 16.79999999998836,
+              "p99": 16.80000000000291
+            },
+            "frame_p95_runs": [
+              16.799999999999272,
+              16.70000000001164,
+              16.79999999998836
+            ],
+            "range_pct": 0.595238095164882,
+            "draw_calls": 148,
+            "tris": 347532,
+            "cpu_ms_p50": 10.599999994039536,
+            "gpu_ms_total": 4.535296,
+            "hitches_gt_50ms": 1,
+            "js_heap_mb": 179.24880409240723,
+            "vegetation_instances": 0,
+            "world": {
+              "hedge_segments": 424,
+              "hedge_length_m": 2394.498662871738,
+              "hedge_meshes": 13,
+              "building_count": 2839,
+              "building_cells": 173,
+              "building_triangles": 69807,
+              "building_roof_failures": 0,
+              "enterable": 70,
+              "interiors": 70,
+              "interior_probes": 146,
+              "load_ms": 139.90000000596046
+            },
+            "raw_capture": "reports/m1-perf-raw/perf-RTX3080-ws-b6-gpu1-high-webgpu-old_town.json",
+            "fps_full_capture_runs": [
+              59.16755531858171,
+              59.904685729520764,
+              59.866371194828126
+            ],
+            "hitches_runs": [
+              0,
+              1,
+              1
+            ],
+            "draw_calls_runs": [
+              148,
+              148,
+              148
+            ],
+            "triangles_runs": [
+              347532,
+              347532,
+              347532
+            ],
+            "load_runs": [
+              {
+                "samples": 24,
+                "utilization_pct": [
+                  {
+                    "min": 27,
+                    "median": 40,
+                    "max": 42
+                  },
+                  {
+                    "min": 26,
+                    "median": 37.5,
+                    "max": 45
+                  },
+                  {
+                    "min": 91,
+                    "median": 100,
+                    "max": 100
+                  },
+                  {
+                    "min": 0,
+                    "median": 0,
+                    "max": 0
+                  }
+                ],
+                "gpu1_vram_mib": {
+                  "min": 656,
+                  "median": 656,
+                  "max": 656
+                },
+                "loadavg_1min": {
+                  "min": 51.96,
+                  "median": 57.405,
+                  "max": 60.21
+                },
+                "chrome_gpu_observations": 24,
+                "chrome_gpu_indices": [
+                  1
+                ],
+                "samples_with_other_gpu1_processes": 0,
+                "other_gpu1_processes": []
+              },
+              {
+                "samples": 24,
+                "utilization_pct": [
+                  {
+                    "min": 31,
+                    "median": 41,
+                    "max": 43
+                  },
+                  {
+                    "min": 35,
+                    "median": 38,
+                    "max": 44
+                  },
+                  {
+                    "min": 91,
+                    "median": 100,
+                    "max": 100
+                  },
+                  {
+                    "min": 0,
+                    "median": 0,
+                    "max": 0
+                  }
+                ],
+                "gpu1_vram_mib": {
+                  "min": 656,
+                  "median": 656,
+                  "max": 656
+                },
+                "loadavg_1min": {
+                  "min": 46.15,
+                  "median": 53.84,
+                  "max": 55.26
+                },
+                "chrome_gpu_observations": 24,
+                "chrome_gpu_indices": [
+                  1
+                ],
+                "samples_with_other_gpu1_processes": 0,
+                "other_gpu1_processes": []
+              },
+              {
+                "samples": 25,
+                "utilization_pct": [
+                  {
+                    "min": 38,
+                    "median": 42,
+                    "max": 43
+                  },
+                  {
+                    "min": 33,
+                    "median": 38,
+                    "max": 41
+                  },
+                  {
+                    "min": 92,
+                    "median": 100,
+                    "max": 100
+                  },
+                  {
+                    "min": 0,
+                    "median": 0,
+                    "max": 2
+                  }
+                ],
+                "gpu1_vram_mib": {
+                  "min": 656,
+                  "median": 656,
+                  "max": 656
+                },
+                "loadavg_1min": {
+                  "min": 32.56,
+                  "median": 35.67,
+                  "max": 41.54
+                },
+                "chrome_gpu_observations": 25,
+                "chrome_gpu_indices": [
+                  1
+                ],
+                "samples_with_other_gpu1_processes": 0,
+                "other_gpu1_processes": []
+              }
+            ]
+          }
+        },
+        "workstation_budget_comparison": {
+          "tier": "high",
+          "overall": "FAIL",
+          "missing_scenes": 0,
+          "checks": [
+            {
+              "scene": "open_field",
+              "check": "frame_ms.p95",
+              "value": 16.7,
+              "limit": 16.7,
+              "verdict": "PASS"
+            },
+            {
+              "scene": "open_field",
+              "check": "draw_calls",
+              "value": 83,
+              "limit": 1200,
+              "verdict": "PASS"
+            },
+            {
+              "scene": "open_field",
+              "check": "tris",
+              "value": 444075,
+              "limit": 4000000,
+              "verdict": "PASS"
+            },
+            {
+              "scene": "open_field",
+              "check": "hitches_gt_50ms",
+              "value": 2,
+              "limit": 2,
+              "verdict": "PASS"
+            },
+            {
+              "scene": "open_field",
+              "check": "gpu_ms.csm",
+              "value": null,
+              "limit": 2.2,
+              "verdict": "UNMEASURED"
+            },
+            {
+              "scene": "open_field",
+              "check": "gpu_ms.opaque",
+              "value": null,
+              "limit": 4,
+              "verdict": "UNMEASURED"
+            },
+            {
+              "scene": "open_field",
+              "check": "gpu_ms.transparent",
+              "value": null,
+              "limit": 0.7,
+              "verdict": "UNMEASURED"
+            },
+            {
+              "scene": "open_field",
+              "check": "gpu_ms.taa",
+              "value": null,
+              "limit": 0.8,
+              "verdict": "UNMEASURED"
+            },
+            {
+              "scene": "open_field",
+              "check": "gpu_ms.post",
+              "value": null,
+              "limit": 0.7,
+              "verdict": "UNMEASURED"
+            },
+            {
+              "scene": "open_field",
+              "check": "js_heap_mb+wasm_mb",
+              "value": null,
+              "limit": 1536,
+              "verdict": "UNMEASURED"
+            },
+            {
+              "scene": "open_field",
+              "check": "vram_mb_est",
+              "value": null,
+              "limit": 4096,
+              "verdict": "UNMEASURED"
+            },
+            {
+              "scene": "hedgerow",
+              "check": "frame_ms.p95",
+              "value": 16.7,
+              "limit": 16.7,
+              "verdict": "PASS"
+            },
+            {
+              "scene": "hedgerow",
+              "check": "draw_calls",
+              "value": 211,
+              "limit": 1200,
+              "verdict": "PASS"
+            },
+            {
+              "scene": "hedgerow",
+              "check": "tris",
+              "value": 359827,
+              "limit": 4000000,
+              "verdict": "PASS"
+            },
+            {
+              "scene": "hedgerow",
+              "check": "hitches_gt_50ms",
+              "value": 2,
+              "limit": 2,
+              "verdict": "PASS"
+            },
+            {
+              "scene": "hedgerow",
+              "check": "gpu_ms.csm",
+              "value": null,
+              "limit": 2.2,
+              "verdict": "UNMEASURED"
+            },
+            {
+              "scene": "hedgerow",
+              "check": "gpu_ms.opaque",
+              "value": null,
+              "limit": 4,
+              "verdict": "UNMEASURED"
+            },
+            {
+              "scene": "hedgerow",
+              "check": "gpu_ms.transparent",
+              "value": null,
+              "limit": 0.7,
+              "verdict": "UNMEASURED"
+            },
+            {
+              "scene": "hedgerow",
+              "check": "gpu_ms.taa",
+              "value": null,
+              "limit": 0.8,
+              "verdict": "UNMEASURED"
+            },
+            {
+              "scene": "hedgerow",
+              "check": "gpu_ms.post",
+              "value": null,
+              "limit": 0.7,
+              "verdict": "UNMEASURED"
+            },
+            {
+              "scene": "hedgerow",
+              "check": "js_heap_mb+wasm_mb",
+              "value": null,
+              "limit": 1536,
+              "verdict": "UNMEASURED"
+            },
+            {
+              "scene": "hedgerow",
+              "check": "vram_mb_est",
+              "value": null,
+              "limit": 4096,
+              "verdict": "UNMEASURED"
+            },
+            {
+              "scene": "old_town",
+              "check": "frame_ms.p95",
+              "value": 16.8,
+              "limit": 16.7,
+              "verdict": "FAIL",
+              "over": 0.1
+            },
+            {
+              "scene": "old_town",
+              "check": "draw_calls",
+              "value": 148,
+              "limit": 1200,
+              "verdict": "PASS"
+            },
+            {
+              "scene": "old_town",
+              "check": "tris",
+              "value": 347532,
+              "limit": 4000000,
+              "verdict": "PASS"
+            },
+            {
+              "scene": "old_town",
+              "check": "hitches_gt_50ms",
+              "value": 1,
+              "limit": 2,
+              "verdict": "PASS"
+            },
+            {
+              "scene": "old_town",
+              "check": "gpu_ms.csm",
+              "value": null,
+              "limit": 2.2,
+              "verdict": "UNMEASURED"
+            },
+            {
+              "scene": "old_town",
+              "check": "gpu_ms.opaque",
+              "value": null,
+              "limit": 4,
+              "verdict": "UNMEASURED"
+            },
+            {
+              "scene": "old_town",
+              "check": "gpu_ms.transparent",
+              "value": null,
+              "limit": 0.7,
+              "verdict": "UNMEASURED"
+            },
+            {
+              "scene": "old_town",
+              "check": "gpu_ms.taa",
+              "value": null,
+              "limit": 0.8,
+              "verdict": "UNMEASURED"
+            },
+            {
+              "scene": "old_town",
+              "check": "gpu_ms.post",
+              "value": null,
+              "limit": 0.7,
+              "verdict": "UNMEASURED"
+            },
+            {
+              "scene": "old_town",
+              "check": "js_heap_mb+wasm_mb",
+              "value": null,
+              "limit": 1536,
+              "verdict": "UNMEASURED"
+            },
+            {
+              "scene": "old_town",
+              "check": "vram_mb_est",
+              "value": null,
+              "limit": 4096,
+              "verdict": "UNMEASURED"
+            }
+          ]
+        }
+      },
+      "low": {
+        "renderer": "webgl2",
+        "tier": "low_webgl2_medium",
+        "canvas_px": [
+          960,
+          540
+        ],
+        "prelaunch_load": {
+          "samples": 3,
+          "utilization_pct": [
+            {
+              "min": 39,
+              "median": 42,
+              "max": 42
+            },
+            {
+              "min": 0,
+              "median": 0,
+              "max": 0
+            },
+            {
+              "min": 100,
+              "median": 100,
+              "max": 100
+            },
+            {
+              "min": 3,
+              "median": 8,
+              "max": 25
+            }
+          ],
+          "gpu1_vram_mib": {
+            "min": 2,
+            "median": 2,
+            "max": 2
+          },
+          "loadavg_1min": {
+            "min": 38.2,
+            "median": 38.43,
+            "max": 38.43
+          },
+          "chrome_gpu_observations": 0,
+          "chrome_gpu_indices": [],
+          "samples_with_other_gpu1_processes": 0,
+          "other_gpu1_processes": []
+        },
+        "capture_load": {
+          "samples": 221,
+          "utilization_pct": [
+            {
+              "min": 0,
+              "median": 42,
+              "max": 82
+            },
+            {
+              "min": 2,
+              "median": 23,
+              "max": 57
+            },
+            {
+              "min": 67,
+              "median": 100,
+              "max": 100
+            },
+            {
+              "min": 0,
+              "median": 30,
+              "max": 55
+            }
+          ],
+          "gpu1_vram_mib": {
+            "min": 506,
+            "median": 510,
+            "max": 832
+          },
+          "loadavg_1min": {
+            "min": 20.23,
+            "median": 26.68,
+            "max": 63.4
+          },
+          "chrome_gpu_observations": 221,
+          "chrome_gpu_indices": [
+            1
+          ],
+          "samples_with_other_gpu1_processes": 91,
+          "other_gpu1_processes": [
+            "3550471:C+G:profile-pZyTco",
+            "3559109:C+G:chrome-p",
+            "3574774:C+G:chrome-p",
+            "3587276:C+G:chrome-p",
+            "3594839:C+G:chrome-p",
+            "3621232:C+G:chrome-p"
+          ]
+        },
+        "rows": {
+          "open_field": {
+            "machine": "RTX3080-ws-b6-gpu1-low",
+            "scene": "open_field",
+            "tier": "low_webgl2_medium",
+            "runs": 3,
+            "frame_ms": {
+              "p50": 16.69999999999709,
+              "p95": 16.70000000001164,
+              "p99": 16.80000000000291
+            },
+            "frame_p95_runs": [
+              16.70000000001164,
+              16.70000000001164,
+              16.79999999998836
+            ],
+            "range_pct": 0.5988023950697439,
+            "draw_calls": 71,
+            "tris": 143173,
+            "cpu_ms_p50": 8.900000005960464,
+            "gpu_ms_total": 2.568192,
+            "hitches_gt_50ms": 1,
+            "js_heap_mb": 152.92390060424805,
+            "vegetation_instances": 0,
+            "world": {
+              "hedge_segments": 424,
+              "hedge_length_m": 2394.498662871738,
+              "hedge_meshes": 0,
+              "building_count": 2839,
+              "building_cells": 173,
+              "building_triangles": 69807,
+              "building_roof_failures": 0,
+              "enterable": 70,
+              "interiors": 70,
+              "interior_probes": 146,
+              "load_ms": 154.19999998807907
+            },
+            "raw_capture": "reports/m1-perf-raw/perf-RTX3080-ws-b6-gpu1-low-webgl2-open_field.json",
+            "fps_full_capture_runs": [
+              59.88303314061016,
+              59.965667238879355,
+              60.018328751145546
+            ],
+            "hitches_runs": [
+              1,
+              0,
+              0
+            ],
+            "draw_calls_runs": [
+              71,
+              71,
+              71
+            ],
+            "triangles_runs": [
+              143173,
+              143173,
+              143173
+            ],
+            "load_runs": [
+              {
+                "samples": 24,
+                "utilization_pct": [
+                  {
+                    "min": 32,
+                    "median": 40.5,
+                    "max": 43
+                  },
+                  {
+                    "min": 20,
+                    "median": 24,
+                    "max": 27
+                  },
+                  {
+                    "min": 91,
+                    "median": 100,
+                    "max": 100
+                  },
+                  {
+                    "min": 10,
+                    "median": 30,
+                    "max": 49
+                  }
+                ],
+                "gpu1_vram_mib": {
+                  "min": 506,
+                  "median": 510,
+                  "max": 510
+                },
+                "loadavg_1min": {
+                  "min": 42.72,
+                  "median": 43.870000000000005,
+                  "max": 47.17
+                },
+                "chrome_gpu_observations": 24,
+                "chrome_gpu_indices": [
+                  1
+                ],
+                "samples_with_other_gpu1_processes": 0,
+                "other_gpu1_processes": []
+              },
+              {
+                "samples": 25,
+                "utilization_pct": [
+                  {
+                    "min": 0,
+                    "median": 40,
+                    "max": 76
+                  },
+                  {
+                    "min": 21,
+                    "median": 23,
+                    "max": 25
+                  },
+                  {
+                    "min": 67,
+                    "median": 100,
+                    "max": 100
+                  },
+                  {
+                    "min": 10,
+                    "median": 28,
+                    "max": 53
+                  }
+                ],
+                "gpu1_vram_mib": {
+                  "min": 508,
+                  "median": 508,
+                  "max": 508
+                },
+                "loadavg_1min": {
+                  "min": 50.35,
+                  "median": 51.87,
+                  "max": 55.81
+                },
+                "chrome_gpu_observations": 25,
+                "chrome_gpu_indices": [
+                  1
+                ],
+                "samples_with_other_gpu1_processes": 0,
+                "other_gpu1_processes": []
+              },
+              {
+                "samples": 24,
+                "utilization_pct": [
+                  {
+                    "min": 0,
+                    "median": 42,
+                    "max": 44
+                  },
+                  {
+                    "min": 23,
+                    "median": 24,
+                    "max": 24
+                  },
+                  {
+                    "min": 90,
+                    "median": 100,
+                    "max": 100
+                  },
+                  {
+                    "min": 15,
+                    "median": 30.5,
+                    "max": 40
+                  }
+                ],
+                "gpu1_vram_mib": {
+                  "min": 508,
+                  "median": 508,
+                  "max": 508
+                },
+                "loadavg_1min": {
+                  "min": 37.76,
+                  "median": 49.215,
+                  "max": 63.4
+                },
+                "chrome_gpu_observations": 24,
+                "chrome_gpu_indices": [
+                  1
+                ],
+                "samples_with_other_gpu1_processes": 0,
+                "other_gpu1_processes": []
+              }
+            ]
+          },
+          "hedgerow": {
+            "machine": "RTX3080-ws-b6-gpu1-low",
+            "scene": "hedgerow",
+            "tier": "low_webgl2_medium",
+            "runs": 3,
+            "frame_ms": {
+              "p50": 16.69999999999709,
+              "p95": 16.70000000001164,
+              "p99": 16.80000000000291
+            },
+            "frame_p95_runs": [
+              16.70000000001164,
+              16.70000000001164,
+              16.70000000001164
+            ],
+            "range_pct": 0,
+            "draw_calls": 181,
+            "tris": 131244,
+            "cpu_ms_p50": 8.200000017881393,
+            "gpu_ms_total": 2.254848,
+            "hitches_gt_50ms": 0,
+            "js_heap_mb": 150.23689651489258,
+            "vegetation_instances": 0,
+            "world": {
+              "hedge_segments": 424,
+              "hedge_length_m": 2394.498662871738,
+              "hedge_meshes": 12,
+              "building_count": 2839,
+              "building_cells": 173,
+              "building_triangles": 69807,
+              "building_roof_failures": 0,
+              "enterable": 70,
+              "interiors": 70,
+              "interior_probes": 146,
+              "load_ms": 149.69999998807907
+            },
+            "raw_capture": "reports/m1-perf-raw/perf-RTX3080-ws-b6-gpu1-low-webgl2-hedgerow.json",
+            "fps_full_capture_runs": [
+              60.002666044589596,
+              60.01732871234338,
+              60.01566640555991
+            ],
+            "hitches_runs": [
+              0,
+              0,
+              0
+            ],
+            "draw_calls_runs": [
+              181,
+              181,
+              181
+            ],
+            "triangles_runs": [
+              131244,
+              131244,
+              131244
+            ],
+            "load_runs": [
+              {
+                "samples": 25,
+                "utilization_pct": [
+                  {
+                    "min": 37,
+                    "median": 43,
+                    "max": 43
+                  },
+                  {
+                    "min": 18,
+                    "median": 22,
+                    "max": 23
+                  },
+                  {
+                    "min": 91,
+                    "median": 100,
+                    "max": 100
+                  },
+                  {
+                    "min": 17,
+                    "median": 29,
+                    "max": 47
+                  }
+                ],
+                "gpu1_vram_mib": {
+                  "min": 508,
+                  "median": 508,
+                  "max": 523
+                },
+                "loadavg_1min": {
+                  "min": 28.14,
+                  "median": 33.86,
+                  "max": 40.66
+                },
+                "chrome_gpu_observations": 25,
+                "chrome_gpu_indices": [
+                  1
+                ],
+                "samples_with_other_gpu1_processes": 1,
+                "other_gpu1_processes": [
+                  "3550471:C+G:profile-pZyTco"
+                ]
+              },
+              {
+                "samples": 25,
+                "utilization_pct": [
+                  {
+                    "min": 40,
+                    "median": 43,
+                    "max": 44
+                  },
+                  {
+                    "min": 21,
+                    "median": 22,
+                    "max": 23
+                  },
+                  {
+                    "min": 91,
+                    "median": 100,
+                    "max": 100
+                  },
+                  {
+                    "min": 0,
+                    "median": 31,
+                    "max": 43
+                  }
+                ],
+                "gpu1_vram_mib": {
+                  "min": 508,
+                  "median": 508,
+                  "max": 508
+                },
+                "loadavg_1min": {
+                  "min": 23.62,
+                  "median": 24.63,
+                  "max": 27.02
+                },
+                "chrome_gpu_observations": 25,
+                "chrome_gpu_indices": [
+                  1
+                ],
+                "samples_with_other_gpu1_processes": 1,
+                "other_gpu1_processes": [
+                  "3559109:C+G:chrome-p"
+                ]
+              },
+              {
+                "samples": 24,
+                "utilization_pct": [
+                  {
+                    "min": 3,
+                    "median": 41.5,
+                    "max": 44
+                  },
+                  {
+                    "min": 2,
+                    "median": 22,
+                    "max": 43
+                  },
+                  {
+                    "min": 91,
+                    "median": 100,
+                    "max": 100
+                  },
+                  {
+                    "min": 0,
+                    "median": 19,
+                    "max": 44
+                  }
+                ],
+                "gpu1_vram_mib": {
+                  "min": 508,
+                  "median": 731,
+                  "max": 800
+                },
+                "loadavg_1min": {
+                  "min": 23.54,
+                  "median": 26.4,
+                  "max": 27.52
+                },
+                "chrome_gpu_observations": 24,
+                "chrome_gpu_indices": [
+                  1
+                ],
+                "samples_with_other_gpu1_processes": 20,
+                "other_gpu1_processes": [
+                  "3559109:C+G:chrome-p",
+                  "3574774:C+G:chrome-p",
+                  "3587276:C+G:chrome-p"
+                ]
+              }
+            ]
+          },
+          "old_town": {
+            "machine": "RTX3080-ws-b6-gpu1-low",
+            "scene": "old_town",
+            "tier": "low_webgl2_medium",
+            "runs": 3,
+            "frame_ms": {
+              "p50": 16.69999999999709,
+              "p95": 16.70000000001164,
+              "p99": 16.80000000000291
+            },
+            "frame_p95_runs": [
+              16.70000000001164,
+              16.70000000001164,
+              16.70000000001164
+            ],
+            "range_pct": 0,
+            "draw_calls": 116,
+            "tris": 125572,
+            "cpu_ms_p50": 9.099999994039536,
+            "gpu_ms_total": 1.917952,
+            "hitches_gt_50ms": 0,
+            "js_heap_mb": 150.08764839172363,
+            "vegetation_instances": 0,
+            "world": {
+              "hedge_segments": 424,
+              "hedge_length_m": 2394.498662871738,
+              "hedge_meshes": 13,
+              "building_count": 2839,
+              "building_cells": 173,
+              "building_triangles": 69807,
+              "building_roof_failures": 0,
+              "enterable": 70,
+              "interiors": 70,
+              "interior_probes": 146,
+              "load_ms": 135.5
+            },
+            "raw_capture": "reports/m1-perf-raw/perf-RTX3080-ws-b6-gpu1-low-webgl2-old_town.json",
+            "fps_full_capture_runs": [
+              60.02032892873211,
+              60.018328751145546,
+              60.02032892873211
+            ],
+            "hitches_runs": [
+              0,
+              0,
+              0
+            ],
+            "draw_calls_runs": [
+              116,
+              116,
+              116
+            ],
+            "triangles_runs": [
+              125572,
+              125572,
+              125572
+            ],
+            "load_runs": [
+              {
+                "samples": 25,
+                "utilization_pct": [
+                  {
+                    "min": 35,
+                    "median": 43,
+                    "max": 82
+                  },
+                  {
+                    "min": 3,
+                    "median": 20,
+                    "max": 56
+                  },
+                  {
+                    "min": 90,
+                    "median": 100,
+                    "max": 100
+                  },
+                  {
+                    "min": 0,
+                    "median": 32,
+                    "max": 48
+                  }
+                ],
+                "gpu1_vram_mib": {
+                  "min": 508,
+                  "median": 800,
+                  "max": 816
+                },
+                "loadavg_1min": {
+                  "min": 20.23,
+                  "median": 21.8,
+                  "max": 25.94
+                },
+                "chrome_gpu_observations": 25,
+                "chrome_gpu_indices": [
+                  1
+                ],
+                "samples_with_other_gpu1_processes": 22,
+                "other_gpu1_processes": [
+                  "3587276:C+G:chrome-p",
+                  "3594839:C+G:chrome-p"
+                ]
+              },
+              {
+                "samples": 25,
+                "utilization_pct": [
+                  {
+                    "min": 39,
+                    "median": 41,
+                    "max": 43
+                  },
+                  {
+                    "min": 3,
+                    "median": 20,
+                    "max": 57
+                  },
+                  {
+                    "min": 92,
+                    "median": 100,
+                    "max": 100
+                  },
+                  {
+                    "min": 0,
+                    "median": 9,
+                    "max": 42
+                  }
+                ],
+                "gpu1_vram_mib": {
+                  "min": 509,
+                  "median": 800,
+                  "max": 832
+                },
+                "loadavg_1min": {
+                  "min": 22.12,
+                  "median": 25.43,
+                  "max": 26.7
+                },
+                "chrome_gpu_observations": 25,
+                "chrome_gpu_indices": [
+                  1
+                ],
+                "samples_with_other_gpu1_processes": 23,
+                "other_gpu1_processes": [
+                  "3594839:C+G:chrome-p",
+                  "3621232:C+G:chrome-p"
+                ]
+              },
+              {
+                "samples": 24,
+                "utilization_pct": [
+                  {
+                    "min": 40,
+                    "median": 42,
+                    "max": 44
+                  },
+                  {
+                    "min": 18,
+                    "median": 20,
+                    "max": 29
+                  },
+                  {
+                    "min": 90,
+                    "median": 100,
+                    "max": 100
+                  },
+                  {
+                    "min": 0,
+                    "median": 31,
+                    "max": 55
+                  }
+                ],
+                "gpu1_vram_mib": {
+                  "min": 800,
+                  "median": 816,
+                  "max": 832
+                },
+                "loadavg_1min": {
+                  "min": 22.69,
+                  "median": 23.369999999999997,
+                  "max": 25.68
+                },
+                "chrome_gpu_observations": 24,
+                "chrome_gpu_indices": [
+                  1
+                ],
+                "samples_with_other_gpu1_processes": 24,
+                "other_gpu1_processes": [
+                  "3621232:C+G:chrome-p"
+                ]
+              }
+            ]
+          }
+        },
+        "workstation_budget_comparison": {
+          "tier": "low_webgl2_medium",
+          "overall": "UNMEASURED",
+          "missing_scenes": 0,
+          "checks": [
+            {
+              "scene": "open_field",
+              "check": "frame_ms.p95",
+              "value": 16.7,
+              "limit": 33.3,
+              "verdict": "PASS"
+            },
+            {
+              "scene": "open_field",
+              "check": "draw_calls",
+              "value": 71,
+              "limit": 900,
+              "verdict": "PASS"
+            },
+            {
+              "scene": "open_field",
+              "check": "hitches_gt_50ms",
+              "value": 1,
+              "limit": 2,
+              "verdict": "PASS"
+            },
+            {
+              "scene": "open_field",
+              "check": "js_heap_mb+wasm_mb",
+              "value": null,
+              "limit": 1536,
+              "verdict": "UNMEASURED"
+            },
+            {
+              "scene": "hedgerow",
+              "check": "frame_ms.p95",
+              "value": 16.7,
+              "limit": 33.3,
+              "verdict": "PASS"
+            },
+            {
+              "scene": "hedgerow",
+              "check": "draw_calls",
+              "value": 181,
+              "limit": 900,
+              "verdict": "PASS"
+            },
+            {
+              "scene": "hedgerow",
+              "check": "hitches_gt_50ms",
+              "value": 0,
+              "limit": 2,
+              "verdict": "PASS"
+            },
+            {
+              "scene": "hedgerow",
+              "check": "js_heap_mb+wasm_mb",
+              "value": null,
+              "limit": 1536,
+              "verdict": "UNMEASURED"
+            },
+            {
+              "scene": "old_town",
+              "check": "frame_ms.p95",
+              "value": 16.7,
+              "limit": 33.3,
+              "verdict": "PASS"
+            },
+            {
+              "scene": "old_town",
+              "check": "draw_calls",
+              "value": 116,
+              "limit": 900,
+              "verdict": "PASS"
+            },
+            {
+              "scene": "old_town",
+              "check": "hitches_gt_50ms",
+              "value": 0,
+              "limit": 2,
+              "verdict": "PASS"
+            },
+            {
+              "scene": "old_town",
+              "check": "js_heap_mb+wasm_mb",
+              "value": null,
+              "limit": 1536,
+              "verdict": "UNMEASURED"
+            }
+          ]
+        },
+        "strict_low_draw_calls": true
+      }
+    }
   }
 }

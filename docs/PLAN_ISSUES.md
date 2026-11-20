@@ -1559,3 +1559,8 @@ PrePass 速度会卡死渲染循环，改用自有速度 RTT（地形/薄实例/
 - 查询 API 按对局 ID 返回原结算 JSON 和地图、模式、接收时间。当前 server 结算在停服时发送，计分行仍为空。设置按游客 Bearer 会话的 `sub` 隔离，使用 16 KiB 上限的 JSON 整对象替换。
 - `OAUTH_ENABLED=1` 只展示 Discord/Google 的 `501` 占位路由，默认 `404`。真实客户端、PKCE、游客升级和第三方凭据审计未测，登记 H-063。按 INDEX 验收口径，M2-022 保持 `partial`。
 - 验证见 `reports/m2-gateway-stats.md`（PI-109 工作站，非参考机）。
+
+## PI-B6-perf-gpu12-1 Carentan High/Low 的工作站 PCI 绑卡复测（2026-11-20）
+
+- 按 PI-109：选启动前空闲的 RTX 3080 GPU1（`0000:23:00.0`），隔离浏览器的其他 GPU 设备节点，用 `nvidia-smi pmon` 核对用卡并记录实时负载。High 未观察到 GPU1 其他进程，Low 若干窗口有其它 Chromium 进程，照实保留。三机位各 3×60 s；High P95 16.70–16.80 ms、>50 ms 卡顿 0–2 帧/轮、draw call 83–211、三角形 347532–444075，Low 59.88–60.02 rAF FPS、P95 16.70–16.80 ms、>50 ms 卡顿 0–1 帧/轮、draw call 71–181、三角形 125572–143173。RTX 3060 / Iris Xe 参考机未测，E1-6/E1-7 不做 PASS/FAIL 判定。
+- Low 已有地形和植被路径；本批仅接入 Carentan 固定 75% 内部比例，并让采集器可在 NVIDIA 上为硬件 WebGL2 选择 ANGLE Vulkan。沿用原基准的默认设置：High 与 Low 自写 CSM 和 TAA 均未启用，未测完整档位及最终素材。Xvfb + 仅 NVIDIA ICD 的 WSI/合成初始化失败，正式采集使用 Chromium Headless Shell、系统默认 ICD 搜索路径和进程私有设备视图；这不验证显示器实际呈现。原始记录见 `reports/m1-perf-raw/`。
