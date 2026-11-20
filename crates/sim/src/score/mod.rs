@@ -296,12 +296,7 @@ impl ScoreEngine {
         let category = kind.category();
         l.stats.categories[category as usize] += i64::from(value);
         l.stats.total_score += i64::from(value);
-        if actor.alive
-            || matches!(
-                kind,
-                K::GarrisonSpawn | K::ForwardGarrisonSpawn | K::OutpostSpawn | K::AmmoCrateUse
-            )
-        {
+        if actor.alive {
             let bonus = bonuses
                 .get(actor.role as usize)
                 .is_some_and(|mask| mask[kind as usize]);

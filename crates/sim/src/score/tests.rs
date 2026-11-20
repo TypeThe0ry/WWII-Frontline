@@ -307,6 +307,29 @@ fn summary_schema_and_session_isolation() {
 }
 
 #[test]
+fn downed_placer_receives_match_score_not_role_xp() {
+    let mut e = engine();
+    let officer = e.role("officer");
+    e.observe(
+        0,
+        Actor {
+            alive: false,
+            ..actor(Team::Us, officer)
+        },
+    );
+    assert_eq!(
+        action(&mut e, 0, Action::GarrisonSpawn { forward: true }).len(),
+        2
+    );
+    let summary = e.summary(1, "frontline", None, None);
+    assert_eq!(summary.players[0].total_score, 3);
+    assert!(summary.players[0]
+        .role_xp
+        .iter()
+        .all(|r| r.score == 0 && r.xp_hundredths == 0));
+}
+
+#[test]
 fn live_capture_awards_and_hash_replay() {
     use crate::{
         CollisionChunk, CollisionData, GameData, GameMode, MapId, ObjectiveSpec, SimConfig,
