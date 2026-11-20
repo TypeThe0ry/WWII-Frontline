@@ -6,3 +6,4 @@
 - 在线强制换队、在线换图、举报后聊天证据、参考机与生产环境待验收。H-065/H-075 跟踪线上配置和人工处置。没有新增依赖和素材。
 - `FRONTLINE_TEST_GATEWAY_BIN=$PWD/target/release/frontline-gateway cargo test --locked -p frontline-server --test gateway_link -- --ignored --nocapture real_gateway_process` 通过 2/2。实服测试踢出 189.5 ms、回放 270 B。200 并发签票五轮 1,000/1,000 唯一票据，最慢轮 P95 21.923 ms。
 - 保留并行 `gwstats` 已落地的设置/OAuth 占位、结算接收时间和迁移 `0002_stats_and_settings.sql`。
+- 本地门禁 `scripts/local-ci.sh lint`、`rust`、`data`、`determinism` 分组均通过。Rust 包含工作区及额外的 sim `test-util` 回归。
