@@ -121,7 +121,10 @@ fn placement_error_matrix() {
     );
     assert_eq!(
         w.validate_garrison_place(0, at(400.0, 60.0), &stub(50)),
-        Ok(frontline_sim::spawn::garrison::GarrisonCost { supplies: 50 })
+        Ok(frontline_sim::spawn::garrison::GarrisonCost {
+            supplies: 50,
+            enemy_sector: false
+        })
     );
 }
 
@@ -168,7 +171,10 @@ fn objective_exclusion_and_enemy_sector_cost() {
     assert_eq!(ok(&f.w, 800.0 - 200.0, 99), Err(PlaceError::NoSupplies));
     assert_eq!(
         ok(&f.w, 800.0 - 200.0, 100),
-        Ok(frontline_sim::spawn::garrison::GarrisonCost { supplies: 100 })
+        Ok(frontline_sim::spawn::garrison::GarrisonCost {
+            supplies: 100,
+            enemy_sector: true
+        })
     );
 }
 

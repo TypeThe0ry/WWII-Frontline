@@ -34,6 +34,10 @@ pub(super) struct Authority {
 }
 
 impl Authority {
+    pub(super) fn is_afk(&self, p: PlayerId) -> bool {
+        self.rules.is_afk(p)
+    }
+
     pub(super) fn forget(&mut self, p: PlayerId, last_switch: Option<Tick>) {
         let slot = usize::from(p);
         if let Some(guest) = self.guests[slot].take() {
@@ -223,7 +227,7 @@ impl World {
         }
         let deltas = self.squads.move_team(player, self.tick())?;
         self.push_roster(deltas);
-        self.remove_player(player);
+        self.despawn_player_body(player);
         self.ecs
             .resource_mut::<crate::spawn::SpawnRules>()
             .choice
@@ -297,7 +301,9 @@ impl World {
             is_squad_leader: squad.is_some_and(|s| s.leader == player),
             commander_since: None,
             is_officer: e.role == Some("officer") && !e.role_invalid,
-            score: e.score,
+            score: self.score.active_total(player).map_or(e.score, |score| {
+                score.clamp(i64::from(i32::MIN), i64::from(i32::MAX)) as i32
+            }),
             is_admin: flags & ADMIN != 0,
             party: None,
         })
@@ -425,6 +431,72 @@ impl Authority {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn scoring_follows_afk_and_keeps_the_ledger_on_team_move() {
+        let ground = CollisionData::from_chunks(vec![crate::CollisionChunk::new(
+            0,
+            0,
+            vec![5.0; 65 * 65],
+            vec![0; 64 * 64],
+        )]);
+        let mut world = World::new(
+            SimConfig {
+                tick_hz: 30,
+                match_seed: 5,
+                map: MapId(0),
+                mode: GameMode::Assault,
+                data: GameData::embedded(),
+            },
+            &ground,
+        );
+        world.enable_server_rules(None);
+        world.admit_human(0, Team::Us, false, None).unwrap();
+        world
+            .spawn_player(SpawnReq {
+                player: 0,
+                team: Team::Us,
+                pos: Vec3::new(10.0, 5.02, 10.0),
+                yaw: 0.0,
+            })
+            .unwrap();
+        world.configure_match(0.0, 180.0);
+        world.begin_warmup();
+        world.step(&[]);
+
+        let build = |world: &mut World| {
+            world.pending_events.push(SimEvent::ScoreAction {
+                player: 0,
+                action: crate::score::Action::Build(10),
+            });
+            world
+                .step(&[])
+                .events
+                .into_iter()
+                .any(|e| matches!(e, SimEvent::ScoreDelta(_)))
+        };
+        assert!(build(&mut world));
+        assert_eq!(
+            world.rule_facts(world.server_rules.as_ref().unwrap())[0].score,
+            1
+        );
+        for _ in 0..120 * 30 {
+            world.step(&[]);
+        }
+        assert!(world.server_rules.as_ref().unwrap().is_afk(0));
+        assert!(!build(&mut world));
+        world.record_rule_activity(0, Activity::Interaction);
+        assert!(build(&mut world));
+
+        world
+            .apply_rule_move(0, Team::Ger, MoveKind::Forced)
+            .unwrap();
+        world.step(&[]);
+        let summary = world.score_summary();
+        assert_eq!(summary.players.len(), 1);
+        assert_eq!(summary.players[0].total_score, 2);
+        assert_eq!(summary.players[0].team, Team::Ger as u8);
+    }
 
     #[test]
     fn serverrules_reconnect_retains_identity_state_but_not_slot_state() {

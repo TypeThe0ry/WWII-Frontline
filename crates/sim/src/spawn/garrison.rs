@@ -124,6 +124,7 @@ pub enum PlaceError {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct GarrisonCost {
     pub supplies: u32,
+    pub enemy_sector: bool,
 }
 
 fn dist_xz(a: Vec3, b: Vec3) -> f32 {
@@ -234,7 +235,10 @@ impl GarrisonPlacement<'_> {
         if available_supplies() < cost {
             return Err(PlaceError::NoSupplies);
         }
-        Ok(GarrisonCost { supplies: cost })
+        Ok(GarrisonCost {
+            supplies: cost,
+            enemy_sector,
+        })
     }
 }
 

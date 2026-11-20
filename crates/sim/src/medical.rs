@@ -4,7 +4,7 @@
 //! [`Health::hp`](crate::health::Health) holds the downed hit points; bleeding and further hits
 //! lower it and `hp <= 0` is KIA. Credit: the downing counts as a kill for the player who dealt it,
 //! the player who finishes a downed enemy gets a "finish" instead, and anyone else who dealt at
-//! least [`ASSIST_MIN_HP`] in the last 15 s is an assist (GAMEDESIGN 7.5).
+//! least the configured damage in the scoring assist window is an assist (GAMEDESIGN 18.1).
 //!
 //! Numbers are constants here (PI-055), not yet in `/data/health.json`.
 
@@ -44,8 +44,6 @@ pub const REVIVE_RESUME_S: f32 = 3.0;
 /// The medic loses progress when they lose this much hp during the revive.
 pub const REVIVE_INTERRUPT_HP: f32 = 20.0;
 pub const REVIVE_FIRE_LOCK_S: f32 = 2.0;
-/// Damage inside this window from other players counts for assists, and must reach the minimum.
-pub const ASSIST_MIN_HP: f32 = 25.0;
 
 /// Natural recovery below this hp after `REGEN_DELAY_S` without damage, at `REGEN_HPS`.
 pub const REGEN_BELOW_HP: f32 = 60.0;
@@ -189,6 +187,8 @@ pub fn deaths(
     if log.0.is_empty() {
         return;
     }
+    let scoring = crate::score::ScoreRules::embedded();
+    let assist_ticks = scoring.assist_s * u32::from(cfg.hz);
     for rec in std::mem::take(&mut log.0) {
         let Some(victim_e) = table.get(rec.target) else {
             continue;
@@ -212,7 +212,7 @@ pub fn deaths(
                 .filter(|t| tick.0 .0.saturating_sub(t.0) <= FATIGUE_WINDOW_S * u32::from(cfg.hz))
                 .count()
                 .min(255) as u8;
-            let mut att = recent.attackers();
+            let mut att = recent.attackers_within(tick.0, assist_ticks);
             if rec.damage > 0.0 && rec.shooter != rec.target {
                 match att.iter_mut().find(|(a, _)| *a == rec.shooter) {
                     Some((_, t)) => *t += rec.damage,
@@ -224,7 +224,7 @@ pub fn deaths(
         let outcome = classify_outcome(hp_now, rec.kind, rec.zone, downed_before, rec.direct_kia);
         if let Ok((_, _, _, _, mut recent, _, mut vitals)) = q.get_mut(victim_e) {
             if rec.damage > 0.0 && rec.shooter != rec.target {
-                recent.record(rec.shooter, rec.damage, tick.0, cfg.hz);
+                recent.record(rec.shooter, rec.damage, tick.0, assist_ticks);
             }
             if rec.damage > 0.0 {
                 vitals.last_damage = tick.0;
@@ -238,7 +238,7 @@ pub fn deaths(
         if outcome == DamageOutcome::Hit {
             continue;
         }
-        attackers.retain(|&(a, amount)| a != rec.shooter && amount >= ASSIST_MIN_HP);
+        attackers.retain(|&(a, amount)| a != rec.shooter && amount >= scoring.assist_min_hp);
         let killer_id = killer
             .map(|(id, _)| id)
             .filter(|_| rec.shooter != rec.target);
@@ -272,6 +272,7 @@ pub fn deaths(
                 killer: killer_id,
                 weapon,
                 headshot,
+                dist_m: rec.dist_m,
             });
             events.0.push(SimEvent::KillCredit {
                 victim: vid,
@@ -280,7 +281,6 @@ pub fn deaths(
                 kind: CreditKind::Down,
                 team_kill,
             });
-            recent.prune(tick.0, cfg.hz);
             continue;
         }
         // KIA.
@@ -591,6 +591,8 @@ pub fn vitals(
     tick: Res<CurrentTick>,
     cfg: Res<SimCfgRes>,
     table: Res<EntityTable>,
+    players: Res<crate::components::PlayerIndex>,
+    mut events: ResMut<EventBuf>,
     mut q: Query<(
         &Team,
         &Transform,
@@ -740,8 +742,16 @@ pub fn vitals(
                     tv.bleeding = false;
                 }
                 BandageKind::Friend => {
+                    let before = thp.hp;
                     thp.hp = (thp.hp + MEDIC_BANDAGE_HP).min(thp.max_hp);
                     tv.bleeding = false;
+                    if let Some((&player, _)) = players.map.iter().find(|(_, (sim, _))| *sim == id)
+                    {
+                        events.0.push(SimEvent::ScoreAction {
+                            player,
+                            action: crate::score::Action::Heal((thp.hp - before) as u32),
+                        });
+                    }
                 }
                 BandageKind::Stabilise => {
                     if let LifeState::Downed {

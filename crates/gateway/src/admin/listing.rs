@@ -146,8 +146,8 @@ pub(super) async fn player(conn: &mut SqliteConnection, id: &str) -> Result<Resp
     .bind(id)
     .fetch_one(&mut *conn)
     .await?;
-    // Older result rows identify only a match slot. Omit ambiguous recycled slots so a
-    // player's score is never attributed to a different account by the gateway.
+    // Keep the legacy rollup. Scoring summaries identify simulation sessions, and their
+    // slot numbers do not necessarily equal the slots reserved by the ticket queue.
     let (matches, kills, deaths, score): (i64, i64, i64, i64) = sqlx::query_as(
         "WITH slots AS (SELECT DISTINCT match_id, player_id FROM moderation_tickets AS t WHERE guest_id = ?1
              AND NOT EXISTS (SELECT 1 FROM moderation_tickets AS other WHERE other.match_id = t.match_id
@@ -155,7 +155,8 @@ pub(super) async fn player(conn: &mut SqliteConnection, id: &str) -> Result<Resp
          SELECT COUNT(DISTINCT slots.match_id), COALESCE(SUM(json_extract(row.value, '$.kills')),0),
                 COALESCE(SUM(json_extract(row.value, '$.deaths')),0), COALESCE(SUM(json_extract(row.value, '$.score')),0)
          FROM slots JOIN results USING (match_id), json_each(results.payload, '$.rows') AS row
-         WHERE row.type = 'object' AND json_extract(row.value, '$.player') = slots.player_id",
+         WHERE json_type(results.payload, '$.score_summary') IS NULL
+           AND row.type = 'object' AND json_extract(row.value, '$.player') = slots.player_id",
     ).bind(id).fetch_one(conn).await?;
     Ok(Json(json!({"id":id,"nick":nick,
        "stats":{"matches":matches,"kills":kills,"deaths":deaths,"score":score},

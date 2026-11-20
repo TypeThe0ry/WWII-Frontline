@@ -184,7 +184,7 @@ pub struct Quantiles {
     pub mean: f64,
 }
 
-#[derive(Debug, Clone, Serialize, Default)]
+#[derive(Debug, Clone, Serialize)]
 pub struct Report {
     pub ticks: u64,
     pub tick_ms: Quantiles,
@@ -197,6 +197,8 @@ pub struct Report {
     /// Gameplay events seen by the sim during the run (shots, hits, kills, spawns; M0-027 load
     /// reports).
     pub events: EventTally,
+    /// Authoritative end-of-run scoring and XP, built only when exporting a report.
+    pub score_summary: frontline_sim::score::stats::MatchSummary,
 }
 
 fn quantiles(samples_ns: &mut [u32]) -> Quantiles {
@@ -356,6 +358,9 @@ pub fn build_loop_with_bots<C: Clock>(
         m.apply_to(&mut world);
         if m.uses_tactical_deploy() {
             m.apply_tactical(&mut world);
+            if cfg.mode != GameMode::Sandbox {
+                world.begin_warmup();
+            }
         }
         if cfg.dev_spawn_vehicle {
             // Bots alternate US/GER before the first human joins; US wins ties.
@@ -1128,27 +1133,27 @@ impl<C: Clock> SimLoop<C> {
         }
     }
 
-    fn update_player_gauges(&self) {
+    fn update_player_gauges(&mut self) {
         // `server_players` counts connected humans; bots have their own gauge (`server_bots`).
         let bots = |t: Team| self.bot_host.as_ref().map_or(0, |b| b.count_team(t));
-        self.metrics.players.with_label_values(&["us"]).set(
-            self.bridge
-                .count_team(Team::Us)
-                .saturating_sub(bots(Team::Us)) as i64,
-        );
-        self.metrics.players.with_label_values(&["ger"]).set(
-            self.bridge
-                .count_team(Team::Ger)
-                .saturating_sub(bots(Team::Ger)) as i64,
-        );
-        self.metrics
-            .bots_active
-            .with_label_values(&["us"])
-            .set(bots(Team::Us) as i64);
-        self.metrics
-            .bots_active
-            .with_label_values(&["ger"])
-            .set(bots(Team::Ger) as i64);
+        let mut humans = 0;
+        for (team, label) in [(Team::Us, "us"), (Team::Ger, "ger")] {
+            let bots = bots(team);
+            let count = self.bridge.count_team(team).saturating_sub(bots);
+            humans += count;
+            self.metrics
+                .players
+                .with_label_values(&[label])
+                .set(count as i64);
+            self.metrics
+                .bots_active
+                .with_label_values(&[label])
+                .set(bots as i64);
+        }
+        if self.world.match_state().phase == frontline_sim::MatchPhaseKind::Warmup {
+            self.world
+                .set_human_players(humans.min(usize::from(u8::MAX)) as u8);
+        }
     }
 
     /// Step 1: drain the network->sim channels (bounded by their capacity) into the per-player
@@ -1319,12 +1324,16 @@ impl<C: Clock> SimLoop<C> {
             input_queue_full_total: self.metrics.input_queue_full_total.get(),
             elapsed_s: elapsed.as_secs_f64(),
             events: self.tally,
+            score_summary: self.world.score_summary(),
         }
     }
 }
 
 #[cfg(test)]
 mod c4_netem;
+
+#[cfg(test)]
+mod score_audit;
 
 #[cfg(test)]
 mod seat_input_tests;
@@ -1342,6 +1351,37 @@ mod tests {
         let m = Metrics::new();
         let (lp, _tx, _ctx) = build_loop(c, &cfg(), m.clone(), StopFlag::new());
         (lp, m)
+    }
+
+    #[test]
+    fn score_summary_is_exported_and_projects_losslessly_to_gateway_rows() {
+        use crate::gateway_link::result::MatchResult;
+        use frontline_sim::score::stats::PlayerStats;
+
+        let c = FakeClock::new();
+        let (mut lp, _) = mk(&c);
+        lp.tick();
+        let mut report = lp.report();
+        assert_eq!(report.ticks, 1);
+        assert_eq!(report.score_summary, lp.world.score_summary());
+        report.score_summary.players = vec![PlayerStats {
+            player: 7,
+            kills: 70_000,
+            deaths: 80_000,
+            total_score: -3_000_000_000,
+            ..Default::default()
+        }];
+        let export = serde_json::to_value(&report).unwrap();
+        assert_eq!(
+            export["score_summary"]["players"][0]["total_score"],
+            -3_000_000_000i64
+        );
+        let result = MatchResult::from_report(1, 0, 0, &report);
+        assert_eq!(result.score_summary.as_ref(), Some(&report.score_summary));
+        assert_eq!(
+            serde_json::to_value(&result.rows).unwrap(),
+            serde_json::json!([{ "player": 7, "kills": 70_000, "deaths": 80_000, "score": -3_000_000_000i64 }]),
+        );
     }
 
     #[test]

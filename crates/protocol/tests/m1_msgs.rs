@@ -516,6 +516,29 @@ fn event_wire_sizes() {
 }
 
 #[test]
+fn score_kind_preserves_all_bytes_and_decodes_category_and_reason() {
+    let categories = [
+        ScoreCategory::Combat,
+        ScoreCategory::Offense,
+        ScoreCategory::Defense,
+        ScoreCategory::Support,
+    ];
+    for kind in 0u8..=255 {
+        let score = ScoreDelta {
+            player: 42,
+            kind,
+            value: -30,
+        };
+        let event = ServerEventC4::ScoreDelta(score);
+        let bytes = encode_c4(&event).unwrap();
+        assert_eq!(bytes.as_slice(), &[0x04, 42, kind, 0xff, 0xe2]);
+        assert_eq!(decode_c4(&bytes).unwrap(), event);
+        assert_eq!(score.category(), categories[usize::from(kind / 64)]);
+        assert_eq!(score.reason(), kind % 64);
+    }
+}
+
+#[test]
 fn boundary_values() {
     let m = ServerEventC4::Notice(Notice {
         code: u16::MAX,

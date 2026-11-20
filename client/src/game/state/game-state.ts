@@ -38,7 +38,10 @@ export class GameState {
   readonly deploy = new DeployFsm();
   readonly objectives = new Map<number, ObjectiveState>();
   readonly spawnPoints = new Map<number, SpawnPointInfo>();
+  /** Deltas observed since joining, not a replay of earlier scoring. */
   readonly scores = new Map<number, number>();
+  /** Category order matches C4 ScoreCategory: Combat, Offense, Defense, Support. */
+  readonly scoresByCategory = new Map<number, [number, number, number, number]>();
   matchPhase = { phase: 0, endsAt: 0 };
   private teamValue: number | undefined;
 
@@ -90,9 +93,13 @@ export class GameState {
       case 'revive':
         this.bus.emit('revive', { medic: ev.medic, target: ev.target });
         break;
-      case 'score':
+      case 'score': {
         this.scores.set(ev.player, (this.scores.get(ev.player) ?? 0) + ev.value);
+        const categories = this.scoresByCategory.get(ev.player) ?? [0, 0, 0, 0];
+        categories[ev.category] += ev.value;
+        this.scoresByCategory.set(ev.player, categories);
         break;
+      }
       case 'objective':
         this.objectives.set(ev.objective, { owner: ev.owner, reason: ev.reason });
         this.bus.emit('objective.changed', { objective: ev.objective, owner: ev.owner, reason: ev.reason });
@@ -109,6 +116,10 @@ export class GameState {
           entry: ev.left ? undefined : { team: ev.team, squad: ev.squad, role: ev.role, name: ev.nick },
         });
         if (changed) {
+          if (ev.left) {
+            this.scores.delete(ev.player);
+            this.scoresByCategory.delete(ev.player);
+          }
           this.bus.emit('roster.changed', { player: ev.player, joined: !ev.left });
           if (!ev.left && (ev.flags & ROSTER_ALIVE) !== 0) this.bus.emit('player.alive', { player: ev.player });
         }

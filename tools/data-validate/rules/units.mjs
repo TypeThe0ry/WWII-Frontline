@@ -19,6 +19,7 @@ export const DIMENSIONLESS = new Set([
   'manpower', 'munitions', 'fuel', 'friction_forward', 'friction_lateral',
   'unlock_level', 'secondary_mags', 'epsg', 'samples', 'seed', 'origin_e', 'origin_n', 'e', 'n', 'dx', 'dy', 'design', 'pos', 'mult',
   'warning_strike_count', 'rifleman_strike_count', 'kick_match_strike_count', 'repeat_count',
+  'duplicate_kill_count', 'streak_count', 'units', 'account_xp_coefficient', 'role_xp_coefficient', 'account_max_level', 'role_max_level',
 ]);
 
 /** Container keys whose numeric children share the unit (part_mult.head, armor_mm.front). */

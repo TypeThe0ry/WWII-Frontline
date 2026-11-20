@@ -608,6 +608,10 @@ pub(crate) fn respawns(
                     let g = gs.list.get_mut(&id).unwrap();
                     g.slots -= 1.0;
                     g.last_spawn = Some(now);
+                    events.0.push(SimEvent::ScoreAction {
+                        player: pid,
+                        action: crate::score::Action::SpawnedAtGarrison(id),
+                    });
                     // No spawn protection at a Garrison (GAMEDESIGN 10.6).
                     &mut g.recent
                 }

@@ -9,6 +9,8 @@
 - **B6-bwreg（2026-11-20，M2-020）**：接入 WT/WS 带宽档位、远场数量裁剪和 C4 通知。PI-109 工作站：无损合成快照 700 包逐字节一致；40% 档 T3 P99 500 ms、饥饿 0/min；100 客户端调节器 2.389 µs/tick。按典型可见混合、实服事件率与参考机余项保留 `partial`。见 `reports/m2-bandwidth-regulator.md` 和 PI-B6-bwreg-1。
 - **B6-pingchat（2026-11-20，M2-019）**：700/700 权限断言，10 个本机无头 WS 会话通过分组路由。200 标记 / 100 玩家，缓存、移动扇出、过期 P95 分别为 0.76 / 9.09 / 3.82 µs（PI-109，非参考机）。参考机未测，状态 `partial`。
 
+- **B6-scoring（2026-11-20，M2-017）**：47 项计分表、四类 C4 增量、Match/Role XP 与结算回投已接入。加速 5v5 + 2 bot 跑 36,000 计分 tick，145 条增量与 1,267 净分逐人逐类一致；Carentan WS 10/10 HQ 部署、0 断线、36,000 计分 tick 自然结算，12 人/1,560 净分。隔离计分复测 P50/P99 5.660/8.510 µs（PI-109，非参考机）；M2 缺生产者、参考机未测，`partial`。见 `reports/m2-scoring-b6.md`。
+
 - **B6-balance（2026-11-20，M2-018）**：阵营、TK、投票、AFK 规则和协议 v5 已接入。30 脚本 WS 客户端阵营与 TK 两案、AFK 20 段合成输入和工作站规则基准见 `reports/m2-server-rules.md`（PI-109，非参考机）。真实回放、参考机及正式地图轮转未测，`partial`；PI-B6-balance-1。
 - **B6-carentan-netem（2026-11-20，PI-B6-carentan-netem-1）**：Carentan WT，私有 netns 单向 25±10 ms、实测 2.009% 丢包，20 headless + 12 bot，四辆 HQ 测试载具。20 个客户端部署后重叠 1808.767 s，tick P50/P99 3.809/8.027 ms、7 次超时、最长连续 1。下行/上行 P99 25.336/21.376 kbps。AOI 709,320/709,320 同 tick 配对，397,531 条敌方玩家记录、0 越界。PI-109 非参考机。E1-2/3/4 与 M1-068 保持 `partial`，见 `reports/m1-carentan-netem-b6.md`。
 - **B6-perf-gpu12（2026-11-20，M1-069 / E1-6/E1-7）**：RTX 3080 GPU1 绑定工作站（PI-109）完成 High/WebGPU、Low/WebGL2 的 Carentan 三机位各 3×60 s。High P95 16.70–16.80 ms、>50 ms 卡顿 0–2 帧/轮、draw call 83–211、三角形 347532–444075；Low 59.88–60.02 rAF FPS、P95 16.70–16.80 ms、>50 ms 卡顿 0–1 帧/轮、draw call 71–181、三角形 125572–143173。参考机仍未测，不改变 E1-6/E1-7 判定或关闭 M1。见 `reports/m1-perf.md`、PI-B6-perf-gpu12-1。
@@ -197,7 +199,7 @@
 | M2-014 | sim：火箭、地雷与炸药 | todo | | | |
 | M2-015 | sim：M2 载具（轻型车、卡车、Panzer IV）与刷新 | todo | | | |
 | M2-016 | sim：载具模块损伤与维修 | todo | | | |
-| M2-017 | sim：计分与经验 | todo | | | |
+| M2-017 | sim：计分与经验 | partial | 47 项（含 8 项禁用）、60/90/120 s 防刷、XP 阈值、摘要字段及 C4/网关接线；接入 M2-018 的 AFK、换队保留账本；v11 5v5 + 2 bot 加速审计 36,000 tick / 145 增量 / 1,267 净分，Carentan WS 65 s 10/10 部署、0 断线和解码错；v4 Carentan WS 1,225 s 自然结算 1,560 净分；100 人 × 50 事件/tick P50/P99/max 5.660/8.510/290.177 µs | 非参考机；M2 规则/结构/载具等生产者、跨局 XP、真人调参和预发布未测；PI-B6-scoring-1/2/3/4 | `reports/m2-scoring-b6.md` |
 | M2-018 | sim：自动平衡、TK、投票与挂机 | partial | Codex | 2026-11-20 | PI-B6-balance-1；差 4 持续 90 s、邀请后 60 s、TK 第 5 次处罚断线；30 WS×2、合成 AFK 0/20 误判；[验收与实测](../reports/m2-server-rules.md)，参考机/真人回放未测。 |
 | M2-019 | sim：标记、Ping 与聊天频道规则 | partial | B6-pingchat | 2026-11-20 | 700/700，10 WS 客户端。57 tick 拒 / 60 tick 过，5 m / 30 tick，静音 4 人 / 18,000 tick。缓存最慢场景 P95 9.09 µs（PI-109），参考机未测。`reports/m2-019-pingchat.md` |
 | M2-020 | server：带宽调节器 | partial | Codex | 2026-11-20 | PI-109：弱网撤除后 WT/WS 9.056/8.041 s 采到满档；40% 模拟 T3 P99 500 ms、0 饥饿/min；100 客户端 2.389 µs/tick；密集合成 P99 88.304 kbps。实服精确可见/事件混合与参考机未测，见 `reports/m2-bandwidth-regulator.md`。Carentan 补测：实链路保留友军 T3 P99 503.1 ms；20 连接各 30 min 的 WT/WS 夹具下行估算均值 21.428/26.042 kbps，样本 P99 均 ≤54 kbps；共享机两轮均有 tick 超时。 |

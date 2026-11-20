@@ -518,8 +518,12 @@ pub(crate) fn decode_c4_core(bytes: &[u8]) -> Result<String, String> {
             r.medic, r.target
         ),
         E::ScoreDelta(s) => format!(
-            r#"{{"type":"score","player":{},"kind":{},"value":{}}}"#,
-            s.player, s.kind, s.value
+            r#"{{"type":"score","player":{},"kind":{},"category":{},"reason":{},"value":{}}}"#,
+            s.player,
+            s.kind,
+            s.category() as u8,
+            s.reason(),
+            s.value
         ),
         E::ObjectiveChange(o) => format!(
             r#"{{"type":"objective","objective":{},"owner":{},"reason":{}}}"#,
@@ -600,6 +604,19 @@ mod tests {
         assert!(bundle_core(&mk(0), &[], 70_000, 0).is_err());
         let gap: Vec<u8> = [mk(0), mk(2)].concat();
         assert!(bundle_core(&gap, &[], 0, 0).is_err());
+    }
+
+    #[test]
+    fn c4_score_keeps_packed_kind_and_exposes_category_and_reason() {
+        // C4 type, player, Support with reason 63, signed i16 in big-endian order.
+        let json = decode_c4_core(&[0x04, 7, 0xff, 0x80, 0x00]).unwrap();
+        assert_eq!(
+            serde_json::from_str::<serde_json::Value>(&json).unwrap(),
+            serde_json::json!({
+                "type": "score", "player": 7, "kind": 255,
+                "category": 3, "reason": 63, "value": -32768,
+            }),
+        );
     }
 
     #[test]

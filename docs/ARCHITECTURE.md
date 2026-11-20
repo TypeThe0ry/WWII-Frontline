@@ -757,6 +757,8 @@ M2-020：服务端构建时读取 `crates/server/config/server_net.json`（不�
 | `PlayerRoster` | `player:u8`, `nick_key_or_str`, `team:u8`, `squad:u8`, `role:u8`, `flags:u8`（增量）。`ALIVE`（`0x20`）表示服务器已有存活且未倒地的角色；客户端据此退出阵亡 HUD。 |
 | `Notice` | `code:u16`, `args:[i32;3]`（用 i18n key + 参数，A7） |
 
+**M2-017 变更说明**：`ScoreDelta` 保持 v4 消息长度不变，`kind >> 6` 为 Combat/Offense/Defense/Support（0–3），`kind & 0x3F` 为该类理由编号。编号以 `sim::score::ScoreKind` 为准。只发给得分者所在队伍，避免对手从救起、出生等原因推断活动。WASM 解码保留 `kind` 并提供 `category`、`reason`；客户端累加收到的增量，不重算权威规则。迟加入时尚无历史分数快照。`role_at_time` 只在 sim 增量中保存；兵种 XP 已在服务端结算。`data/scoring.json` 走现有 `DATA_HASH` 路径。
+
 #### 6.8.4 C2.events（不可靠冗余事件段）
 
 | 事件 | 字段 | 备注 |

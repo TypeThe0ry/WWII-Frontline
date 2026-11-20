@@ -123,6 +123,12 @@ describe.skipIf(!HAVE_WASM)('message codec over sim-wasm (golden messages of cra
     expect(() => codec.decodeTeamMarkers(hex('0002000108004003'))).toThrow();
   });
 
+  it('decodes packed score kinds without changing the C4 payload', () => {
+    expect(codec.decodeC4(hex('0407ffffe2'))).toEqual({
+      type: 'score', player: 7, kind: 255, category: 3, reason: 63, value: -30,
+    });
+  });
+
   it.skipIf(!existsSync(`${GOLDEN_DIR}welcome.hex`))('golden files on disk equal the inline copies', () => {
     const f = (n: string): string => readFileSync(`${GOLDEN_DIR}${n}.hex`, 'utf8').trim();
     expect(f('welcome')).toBe('020300015f901edeadbeef000000010123456789abcdef010001fffc');

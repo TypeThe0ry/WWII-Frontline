@@ -98,11 +98,36 @@ impl Codec for Revive {
     }
 }
 
+/// The two high bits of [`ScoreDelta::kind`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(u8)]
+pub enum ScoreCategory {
+    Combat = 0,
+    Offense = 1,
+    Defense = 2,
+    Support = 3,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ScoreDelta {
     pub player: u8,
+    /// Packed category (bits 7-6) and stable category-local reason ID (bits 5-0).
     pub kind: u8,
     pub value: i16,
+}
+impl ScoreDelta {
+    pub const fn category(&self) -> ScoreCategory {
+        match self.kind >> 6 {
+            0 => ScoreCategory::Combat,
+            1 => ScoreCategory::Offense,
+            2 => ScoreCategory::Defense,
+            _ => ScoreCategory::Support,
+        }
+    }
+
+    pub const fn reason(&self) -> u8 {
+        self.kind & 0x3f
+    }
 }
 impl Codec for ScoreDelta {
     fn encode(&self, w: &mut BitWriter) -> Result<(), CodecError> {

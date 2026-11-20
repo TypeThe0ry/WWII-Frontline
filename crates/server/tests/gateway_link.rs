@@ -552,6 +552,7 @@ async fn result_is_posted_and_spooled_when_undeliverable() {
         duration_s: 600,
         ticks: 18_000,
         rows: vec![],
+        score_summary: None,
     };
     GatewayClient::new(&url, TOKEN)
         .unwrap()

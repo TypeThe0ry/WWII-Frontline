@@ -33,3 +33,5 @@ Domains below are placeholders (`*.example.invalid`).
 ## Release / rollback
 Bump `min_supported_protocol` in the gateway when `PROTOCOL_VERSION` or `data_hash` changes; old matches finish on the old image (blue/green).
 Rollback: point the gateway at the previous image tag for new matches. **Rehearsal not done.**
+
+For a data-only change (such as B6-scoring), protocol discovery alone does not distinguish builds. Deploy matching client/WASM and match-server artifacts together, and delist old-hash matches while existing sessions drain. Use a scoring-capable binary to replay the `scoring-v1` subdirectory of `FRONTLINE_SPOOL_DIR` after rollback; legacy binaries only replay the spool root. Do not move scoring payloads into the legacy root.

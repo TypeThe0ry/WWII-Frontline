@@ -187,14 +187,17 @@ fn stance_volumes_heights() {
 #[test]
 fn recent_damage_window() {
     let mut r = RecentDamage::default();
-    r.record(3, 40.0, Tick(0), 30);
-    r.record(4, 20.0, Tick(100), 30);
-    r.record(3, 10.0, Tick(200), 30);
+    let window = frontline_sim::score::ScoreRules::embedded().assist_s * 30;
+    r.record(3, 40.0, Tick(0), window);
+    r.record(4, 20.0, Tick(100), window);
+    r.record(3, 10.0, Tick(200), window);
     assert_eq!(r.total_from(3), 50.0);
-    assert_eq!(r.attackers(), vec![(3, 50.0), (4, 20.0)]);
+    assert_eq!(
+        r.attackers_within(Tick(200), window),
+        vec![(3, 50.0), (4, 20.0)]
+    );
     assert_eq!(r.last_hit().unwrap().attacker, 3);
-    // 15 s = 450 ticks: the first hit expires after tick 450.
-    r.record(5, 1.0, Tick(451), 30);
+    r.record(5, 1.0, Tick(window + 1), window);
     assert_eq!(r.total_from(3), 10.0);
     r.clear();
     assert!(r.is_empty());

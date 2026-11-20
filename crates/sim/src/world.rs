@@ -74,6 +74,7 @@ pub struct World {
     squads: crate::squad::SquadManager,
     server_rules: Option<server_rules::Authority>,
     supply: Box<dyn crate::supply_iface::SupplyProvider>,
+    score: crate::score::ScoreEngine,
 }
 
 /// Debug: panics unless ids are strictly ascending. Release: returns a sorted (stable, last
@@ -170,6 +171,7 @@ impl World {
             alloc: EntityAllocator::new(),
             players: Vec::new(),
             objective_views: Vec::new(),
+            score: crate::score::ScoreEngine::new(cfg.tick_hz, cfg.data.roles),
             pending_events: Vec::new(),
             squads,
             server_rules: None,
@@ -210,6 +212,11 @@ impl World {
         inputs: &[(PlayerId, InputCmd)],
         real_inputs: &[(PlayerId, InputCmd)],
     ) -> StepOutput {
+        use crate::rules::MatchPhaseKind;
+        let scoring = matches!(
+            self.match_state().phase,
+            MatchPhaseKind::Live | MatchPhaseKind::Overtime
+        );
         let profile_clock = self.ecs.get_resource_mut::<StepProfiler>().map(|mut p| {
             p.timings = StepTimings::default();
             p.clock_ns
@@ -242,18 +249,29 @@ impl World {
         let reap_wrecks = lap();
         self.sync_squads();
         let sync_squads = lap();
-        self.refresh_views();
-        let refresh_views = lap();
         let produced = std::mem::take(&mut self.ecs.resource_mut::<EventBuf>().0);
         let server_actions = self.step_server_rules(real_inputs, &produced);
         self.pending_events.extend(produced);
-        let out = StepOutput {
+        let mut out = StepOutput {
             events: std::mem::take(&mut self.pending_events),
             server_actions,
             rule_changes: std::mem::take(
                 &mut self.ecs.resource_mut::<crate::rules::RuleChangeBuf>().0,
             ),
         };
+        if scoring {
+            let rules = self.server_rules.as_ref();
+            self.score.world_tick(
+                self.tick().0,
+                &self.ecs,
+                &self.squads,
+                &self.objective_views,
+                &mut out,
+                |p| rules.is_some_and(|r| r.is_afk(p)),
+            );
+        }
+        self.refresh_views();
+        let refresh_views = lap();
         if profile_clock.is_some() {
             let collect_output = lap();
             let t = &mut self.ecs.resource_mut::<StepProfiler>().timings;
@@ -448,6 +466,11 @@ impl World {
     }
 
     pub fn remove_player(&mut self, id: PlayerId) {
+        self.score.disconnect(id);
+        self.despawn_player_body(id);
+    }
+
+    fn despawn_player_body(&mut self, id: PlayerId) {
         self.vacate_rule_seat(id);
         let Some((eid, e)) = self.ecs.resource_mut::<PlayerIndex>().map.remove(&id) else {
             return;
@@ -789,6 +812,7 @@ impl World {
         if let Some(r) = &mut self.server_rules {
             r.forget(p, self.squads.entry(p).and_then(|e| e.last_switch));
         }
+        self.score.disconnect(p);
         let now = self.tick();
         let d = self.squads.roster_remove(p, now);
         self.push_roster(d);
@@ -809,7 +833,7 @@ impl World {
         let now = self.tick();
         let d = self.squads.switch_team(p, now)?;
         self.push_roster(d);
-        self.remove_player(p);
+        self.despawn_player_body(p);
         Ok(())
     }
 
@@ -1049,6 +1073,29 @@ impl World {
 
     pub fn match_state(&self) -> &crate::rules::MatchState {
         self.ecs.resource::<crate::rules::MatchState>()
+    }
+
+    pub fn score_summary(&self) -> crate::score::stats::MatchSummary {
+        use crate::rules::VictoryReason;
+        let result = self.match_state().result;
+        self.score.summary(
+            self.cfg.map.0,
+            match self.cfg.mode {
+                GameMode::Frontline => "frontline",
+                GameMode::Assault => "assault",
+                GameMode::Skirmish => "skirmish",
+                GameMode::Sandbox => "sandbox",
+            },
+            result.and_then(|r| r.winner),
+            result.map(|r| {
+                match r.reason {
+                    VictoryReason::FullControl => "full_control",
+                    VictoryReason::TimeLimitLead => "time_limit_lead",
+                    VictoryReason::Draw => "draw",
+                }
+                .to_owned()
+            }),
+        )
     }
 
     /// Overrides the match timing (tests, sandbox): warm-up and time limit in seconds.
@@ -1621,6 +1668,7 @@ impl World {
                 }
             }
         }
+        self.score.hash(&mut h);
         h.finish()
     }
 
@@ -1979,6 +2027,14 @@ impl World {
                         pos,
                         state: GarrisonState::Building,
                     });
+                    self.pending_events.push(SimEvent::ScoreAction {
+                        player: who,
+                        action: crate::score::Action::GarrisonPlaced {
+                            id,
+                            supplies: cost.supplies,
+                            forward: cost.enemy_sector,
+                        },
+                    });
                     Ok(id)
                 }
             }
@@ -2239,6 +2295,10 @@ impl World {
         sw.ammo_last.insert(who, now);
         self.pending_events
             .push(SimEvent::CratePlaced { id, team, pos });
+        self.pending_events.push(SimEvent::ScoreAction {
+            player: who,
+            action: crate::score::Action::AmmoCratePlaced(id),
+        });
         Ok(id)
     }
 
