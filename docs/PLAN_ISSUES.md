@@ -1630,7 +1630,6 @@ PrePass 速度会卡死渲染循环，改用自有速度 RTT（地形/薄实例/
 - 任务记 `partial`。PI-109 规则微基准低于 0.1 ms/tick，阶段 4 合成 400 弹体低于 2.5 ms/tick。参考机及真实地图阶段 4 满载未测（H-021）。正式设施视觉与炮口表现待 Fable。逐项证据见 [M2-011 验收](../reports/m2-outpost.md)。
 - 与 M2-019 合流后 WASM 超限 1,842 B。设施 C4 适配沿用整数坐标，修正 wasm-pack 自定义构建档的元数据键并启用 `-Oz`。现有 `-O3` 门禁实测 1,194,606 B，保持原有门槛。
 
-<<<<<<< HEAD
 ### PI-B6-resources-1 · M2-009 战略资源与资源节点（2026-11-20）
 
 - 收入按服务器整分钟 tick 结算。先应用本 tick 的据点易手与节点销毁，再应用收入上限，最后扣除 Fuel upkeep。低燃料标志直接读取结算后的池，Fuel 为 0 即生效。普通退款和战利品复用同一上限与溢出计数。
@@ -1655,3 +1654,7 @@ PrePass 速度会卡死渲染循环，改用自有速度 RTT（地形/薄实例/
 - `BotRuntime` 在执行前按 60 µs 初始成本估计建立最大堆，按预测成本从高到低选择；同成本时先满足较早延期者，再按 PlayerId 升序。已完成决策按带 25% headroom 的衰减高水位更新预测，决策超时的 bot 下一次估计升到 120 µs。实时单 bot 截止与整 tick 3/5 ms 约束为协作式预算，非硬实时；路径队列独立按 1 ms/tick 限额。
 - 按任务卡公式 `(tick + bot_id) % 3 == 0` 分片，和旧实现的 `tick % 3 == bot_id % 3` 存在相位差异。100 bot 固定种子五分钟 A/B pooled 发现到开火中位数同为 18 tick，但逐 bot 只有 23/98 配对中位数差异在 ±10%，配对相对绝对差异中位数 38.9%；不得用 pooled 结果代替逐 bot 验收。当前夹具每 bot 样本数有限且分片相位改变，建议后续控制相位并延长/多种子复测；在有证据显示逐 bot 阈值满足前，验收项记未通过，任务为 `partial`。
 - 其它 PI-109 工作站数值、100 bot 确定性、路径 burst、10 分钟 stuck 与未测项见 `reports/m2-bots-scale.md`。E2-4 参考 CPU 未测（H-021），100 真人/载具/弹体参考服务器压力未测（H-067）。本任务依赖的 M2-027、M2-028 当前仍是 todo，本地 M0/M1 tactical harness 不代表完整 Frontline/RuleCommander 对局。M2-029 保持 `partial`，不关闭 M2 或改变其它验收状态。
+
+### PI-B6-landall-bots100-1 · bots100 合入 M2-009 基线后的复验（2026-11-20）
+
+- rebase 同时保留了 M2-009 economy/resource-node 校验和 bot difficulty 校验、`frontline-sim` 资源节点与难度数据 typed embedding，以及资源溢出和 bot metrics 注册。工作站 `lint rust determinism ts data` 全绿；协议 v12 下严格 native/WASM 三种子各 18,000 tick 一致、最大位置误差 0 m；客户端 778/778，data 92 文件 0 错误。性能验收仍按 M2-029 原结论 `partial`，参考机、逐 bot 延迟阈值及 M2-027/028 前置未解决。

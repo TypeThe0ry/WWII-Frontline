@@ -215,7 +215,7 @@
 | M2-026 | 语音：客户端接入与空间化 | todo | | | |
 | M2-027 | bots：Frontline 目标与战术行为 | todo | | | |
 | M2-028 | bots：规则式指挥官 | todo | | | |
-| M2-029 | bots：100 bot 规模优化 | partial | 见 `reports/m2-bots-scale.md`：PI-109 工作站 60/100 bot tick P50/P99 0.041/0.239、0.074/0.331 ms；路径 burst 100 请求 5 tick 全完成，max 0.992181 ms；固定种子 100 bot 双跑 3000 tick 哈希一致，末哈希 `a226709036fb4111`；10 min stuck max 2/bot。逐 bot 延迟标准仅 23/98 在 ±10%。 | H-021 参考机未测；M2-027/028 仍 todo；逐 bot 延迟阈值未达，PI-B6-bots100-1 | PI-B6-bots100-1 |
+| M2-029 | bots：100 bot 规模优化 | partial | 见 `reports/m2-bots-scale.md`：PI-109 工作站 60/100 bot tick P50/P99 0.041/0.239、0.074/0.331 ms；路径 burst 100 请求 5 tick 全完成，max 0.992181 ms；固定种子 100 bot 双跑 3000 tick 哈希一致，末哈希 `a226709036fb4111`；10 min stuck max 2/bot。逐 bot 延迟标准仅 23/98 在 ±10%。合入 M2-009 后 `lint rust determinism ts data` 通过，v12 严格三种子 native/WASM 各 18,000 tick 一致。 | H-021 参考机未测；M2-027/028 仍 todo；逐 bot 延迟阈值未达，PI-B6-bots100-1 | PI-B6-bots100-1 |
 | M2-030 | render：GTAO/SSAO | todo | | | |
 | M2-031 | render：体积雾 | todo | | | |
 | M2-032 | render：TAAU 时间性超分 | todo | | | |
