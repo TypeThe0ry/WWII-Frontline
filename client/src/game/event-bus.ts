@@ -46,6 +46,7 @@ export interface GameEvents {
   'deploy.state': { phase: string; spawnTick?: number; reason?: string };
   'objective.changed': { objective: number; owner: number; reason: number };
   'revive': { medic: number; target: number };
+  'player.alive': { player: number };
   'roster.changed': { player: number; joined: boolean };
   'spawnpoint.changed': { id: number; team: number; state: number };
   'match.phase': { phase: number; endsAt: number };

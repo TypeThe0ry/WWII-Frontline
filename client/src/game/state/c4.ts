@@ -12,3 +12,6 @@ export type C4Event =
 
 /** `Kill.dist_q` is 0.25 m steps. */
 export const DIST_Q_M = 0.25;
+
+/** `PlayerRoster.flags::ALIVE` in protocol/src/msg/c4.rs. */
+export const ROSTER_ALIVE = 1 << 5;

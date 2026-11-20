@@ -4,14 +4,14 @@ use std::collections::BTreeMap;
 
 use bytes::Bytes;
 use frontline_protocol::msg::c4::{
-    encode_c4, roster_flags, Kill, MatchPhase, ObjectiveChange, Phase, PlayerRoster, Revive,
+    encode_c4, roster_flags, Death, Kill, MatchPhase, ObjectiveChange, Phase, PlayerRoster, Revive,
     ServerEventC4, SpawnKind, SpawnPointState, KILLER_ENV, KILL_DIST_BITS,
 };
 use frontline_protocol::{quant::quant_pos_xz, Channel};
 use frontline_sim::medical::CreditKind;
 use frontline_sim::rules::{CaptureReason, MatchPhaseKind};
 use frontline_sim::spawn::garrison::GarrisonState;
-use frontline_sim::{PlayerId, RuleChange, SimEvent, Team, World, WorldView};
+use frontline_sim::{LifeState, PlayerId, RuleChange, SimEvent, Team, World, WorldView};
 
 use crate::bot_host::BotHost;
 use crate::net::transport::{ClientHandle, Rel};
@@ -95,6 +95,7 @@ impl Broadcast {
 
         for (i, event) in events.iter().enumerate() {
             match *event {
+                SimEvent::Downed { victim, .. } => self.death(victim, 0, true),
                 SimEvent::Kill {
                     victim,
                     killer,
@@ -102,6 +103,11 @@ impl Broadcast {
                     headshot,
                     dist_m,
                 } => {
+                    if let Some(LifeState::Dead { respawn_tick, .. }) = world.player_life(victim) {
+                        let remaining = respawn_tick.0.saturating_sub(world.tick().0);
+                        let seconds = remaining.div_ceil(u32::from(world.config().tick_hz));
+                        self.death(victim, u8::try_from(seconds).unwrap_or(u8::MAX), false);
+                    }
                     let Some(team) = team_of(killer.unwrap_or(victim)) else {
                         continue;
                     };
@@ -206,11 +212,10 @@ impl Broadcast {
                 continue;
             };
             let mut flags = 0;
-            if world
-                .player_life(player)
-                .is_some_and(|life| life.is_downed())
-            {
-                flags |= roster_flags::DOWNED;
+            match world.player_life(player) {
+                Some(LifeState::Alive) => flags |= roster_flags::ALIVE,
+                Some(LifeState::Downed { .. }) => flags |= roster_flags::DOWNED,
+                _ => {}
             }
             if world
                 .squads()
@@ -292,6 +297,16 @@ impl Broadcast {
         for client in self.clients.values_mut() {
             client.previous_team = Some(client.team);
         }
+    }
+
+    fn death(&self, victim: PlayerId, respawn_after: u8, can_be_revived: bool) {
+        send_to(self.clients.get(&victim).into_iter(), || {
+            ServerEventC4::Death(Death {
+                victim,
+                respawn_after,
+                can_be_revived,
+            })
+        });
     }
 
     fn send(&self, team: Option<Team>, event: ServerEventC4) {
@@ -432,16 +447,26 @@ mod tests {
                 .collect::<Vec<_>>()
         };
         assert!(sim.world().player_life(0).is_some_and(|l| l.is_alive()));
-        assert_eq!(rows(drain(&handles[2]).await), [(0, 0, 0), (2, 0, 0)]);
-        assert_eq!(rows(drain(&handles[1]).await), [(1, 1, 0), (3, 1, 0)]);
+        let alive = roster_flags::ALIVE;
+        assert_eq!(
+            rows(drain(&handles[2]).await),
+            [(0, 0, alive), (2, 0, alive)]
+        );
+        assert_eq!(
+            rows(drain(&handles[1]).await),
+            [(1, 1, alive), (3, 1, alive)]
+        );
 
         commands.send(Command::RemovePlayer(0)).unwrap();
         join(4);
         sim.tick();
-        assert_eq!(rows(drain(&handles[4]).await), [(2, 0, 0), (4, 0, 0)]);
+        assert_eq!(
+            rows(drain(&handles[4]).await),
+            [(2, 0, alive), (4, 0, alive)]
+        );
         assert_eq!(
             rows(drain(&handles[2]).await),
-            [(0, 0, roster_flags::LEFT), (4, 0, 0)]
+            [(0, 0, roster_flags::LEFT), (4, 0, alive)]
         );
         assert!(rows(drain(&handles[1]).await).is_empty());
         sim.tick();

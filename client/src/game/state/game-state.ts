@@ -6,7 +6,7 @@
 import { signal, type ReadonlySignal } from '@preact/signals';
 import type { DeployResultMsg } from '../../net/codec';
 import type { EventBus, GameEvents } from '../event-bus';
-import { DIST_Q_M, type C4Event } from './c4';
+import { DIST_Q_M, ROSTER_ALIVE, type C4Event } from './c4';
 import { DeployFsm, type DeployEvent } from './deploy-fsm';
 import { KillFeed } from './kill-feed';
 import { Roster } from './roster';
@@ -97,7 +97,10 @@ export class GameState {
           seq: ev.seq,
           entry: ev.left ? undefined : { team: ev.team, squad: ev.squad, role: ev.role, name: ev.nick },
         });
-        if (changed) this.bus.emit('roster.changed', { player: ev.player, joined: !ev.left });
+        if (changed) {
+          this.bus.emit('roster.changed', { player: ev.player, joined: !ev.left });
+          if (!ev.left && (ev.flags & ROSTER_ALIVE) !== 0) this.bus.emit('player.alive', { player: ev.player });
+        }
         break;
       }
       case 'notice':

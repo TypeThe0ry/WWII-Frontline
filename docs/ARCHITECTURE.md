@@ -738,7 +738,7 @@ C3 v4 实现（PI-127D1）：每 30 tick 发送，原有 `tick:16 + members:6 + 
 | 事件 | 字段 |
 |---|---|
 | `Kill` | `victim:u8`, `killer:u8`(0xFF=环境), `weapon:u8`, `headshot:bool`, `dist:q(12b,0..1024 m)`, `assist1:u8`, `assist2:u8` |
-| `Death` | `victim:u8`, `respawn_after:u8(s)`, `can_be_revived:bool` |
+| `Death` | `victim:u8`, `respawn_after:u8(s)`（倒地时为 0），`can_be_revived:bool`。仅发给受害者。 |
 | `Revive` | `medic:u8`, `target:u8` |
 | `ScoreDelta` | `player:u8`, `kind:u8`, `value:i16` |
 | `ObjectiveChange` | `objective:u8`, `owner:u8`, `reason:u8` |
@@ -746,7 +746,7 @@ C3 v4 实现（PI-127D1）：每 30 tick 发送，原有 `tick:16 + members:6 + 
 | `ResourceDelta` | `team:u8`, `kind:u8`, `value:i32` |
 | `AbilityExecuted` | `ability:u8`, `team:u8`, `pos:q`, `eta:u16(ms)` |
 | `MatchPhase` | `phase:u8{warmup,live,overtime,ended}`, `ends_at:u32` |
-| `PlayerRoster` | `player:u8`, `nick_key_or_str`, `team:u8`, `squad:u8`, `role:u8`, `flags:u8`（增量） |
+| `PlayerRoster` | `player:u8`, `nick_key_or_str`, `team:u8`, `squad:u8`, `role:u8`, `flags:u8`（增量）。`ALIVE`（`0x20`）表示服务器已有存活且未倒地的角色；客户端据此退出阵亡 HUD。 |
 | `Notice` | `code:u16`, `args:[i32;3]`（用 i18n key + 参数，A7） |
 
 #### 6.8.4 C2.events（不可靠冗余事件段）

@@ -380,6 +380,16 @@ separate M0 driving fixture, and settlement is checked with a controlled server 
 The match server binds WS and metrics to all interfaces on ephemeral ports as in the other
 network fixtures. Run it on a development workstation.
 
+### Live browser suppression and life cycle (E1-13)
+
+```sh
+CARGO_BUILD_JOBS=8 cargo build --locked -p frontline-server --bin frontline-server
+CARGO_BUILD_JOBS=8 wasm-pack build crates/sim-wasm --target web --profile wasm-release
+scripts/suppress-e2e.sh
+```
+
+Install the Playwright Chromium bundle first if needed. The script starts a debug match server and Vite on ephemeral ports and runs the same browser assertions over plain WS and a private Linux network namespace with 5% loopback packet loss. The netem run needs `unshare`, `ip`, `tc` and permission to create and configure a network namespace. The standalone Playwright config runs the plain WS case by default. See `reports/m1-suppress-e2e.md` for the assertions and results.
+
 ## Local dev stack (M1-066)
 
 `./dev.sh` starts the full local development stack (`frontline-gateway` + `frontline-server` + Vite client dev server) in one command, generates ephemeral local tokens into `.dev-stack/` (git-ignored), and maintains a 13-day WebTransport dev certificate in `dev-cert/`:
