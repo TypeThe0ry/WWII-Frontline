@@ -109,9 +109,11 @@ pub struct Config {
     /// Where a result that could not be delivered is kept.
     #[arg(long, env = "FRONTLINE_SPOOL_DIR", default_value = "spool")]
     pub spool_dir: std::path::PathBuf,
-    /// Pin the sim thread to this CPU core (deployment item M1-067; accepted, not applied).
-    #[arg(long, env = "FRONTLINE_PIN_SIM_CORE")]
+    /// Pin only the sim thread to this Linux logical CPU. Other threads inherit launch affinity.
+    #[arg(long, env = "FRONTLINE_SIM_CPU")]
     pub pin_sim_core: Option<usize>,
+    #[arg(long, hide = true, env = "FRONTLINE_PIN_SIM_CORE")]
+    legacy_pin_sim_core: Option<usize>,
 }
 
 fn is_uuid(s: &str) -> bool {
@@ -244,6 +246,7 @@ impl Config {
             Some(id) => self.match_id = Some(id.to_ascii_lowercase()),
             None => self.match_id = Some(random_uuid()),
         }
+        self.pin_sim_core = self.pin_sim_core.or(self.legacy_pin_sim_core);
         Ok(self)
     }
 
@@ -301,6 +304,17 @@ mod tests {
         let c = parse(&[]).unwrap();
         assert_eq!((c.map.as_str(), c.mode.as_str()), ("m0", "sandbox"));
         assert!(is_uuid(c.match_id()));
+    }
+
+    #[test]
+    fn pin_sim_core_is_one_nonnegative_cpu_id() {
+        assert_eq!(
+            parse(&["--pin-sim-core", "0"]).unwrap().pin_sim_core,
+            Some(0)
+        );
+        for invalid in ["", "-1", "1,2", "1-2", "cpu", "18446744073709551616"] {
+            assert!(parse(&["--pin-sim-core", invalid]).is_err(), "{invalid:?}");
+        }
     }
 
     #[test]
