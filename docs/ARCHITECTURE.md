@@ -704,6 +704,8 @@ M2-020：服务端构建时读取 `crates/server/config/server_net.json`（不�
 
 ### 6.8 消息目录（草案）
 
+> **变更说明（PI-B6-balance-1）**：里程碑线协议 v5 增加 `VoteStart`、`VoteCast`、`TeamSwitchRequest`、`ForgivePunish`、`MapVoteCast` 及对应的投票、TK、移队 C4 事件。Vote ID 为 32 位，TK 回执 ID 为 16 位；`Disconnect.reason=5` 为服务器规则踢出。字段和编号以 `crates/protocol/CHANGELOG.md` 为准。`Moved` 携带有效 tick，客户端清除旧阵营投影并拒收该 tick 及以前的快照。生产升级需同时部署匹配的客户端/WASM、比赛服及签发 v2 票据的网关；`data/server_rules.json` 参与 `DATA_HASH`。
+
 字段类型：`u8/u16/u32`、`i16`、`q(n,r)` = 量化为 n 位、范围 r、`bits(n)`、`id8/id16` = 实体/事件 ID、`[T;N]` 定长。完整 Rust 定义见 §8.2。所有消息头：`msg_type: u8`（`C0` 通道内）。
 
 #### 6.8.1 C0 control（可靠）
