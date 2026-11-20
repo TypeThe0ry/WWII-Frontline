@@ -121,6 +121,52 @@
 
 至此 10 个差异均已处置：8 项有依据回填、2 项明确标为 `"未核实"`。本轮结构审计 18 已登记、49 缺口、0 违规；Sherman 的字符串出处不计为结构化登记。独立 WASM smoke 回退金样只更新 `native.json:dataHash`（合并 #145/#146 新数据后为 `0x0e56163cbce945b7`）；协议版本、快照及行为金样不改。
 
+## B6-histbackfill：结构化出处回填、剩余未核实复核与 Sherman 装甲/弹种表核对（2026-11-20）
+
+针对 PI-124G 遗留的 49 个结构化出处缺口、8 项「未核实」（原表 6 项 + B3-C7 标为 `"未核实"` 的 2 项实用射速）及 Sherman 装甲/火炮弹种全表，补充检索美军技术手册与权威战史二手文献并回填 `data/{weapons,explosives,vehicles}/*.json`：
+
+### 1. 剩余 8 项「未核实」逐项复核与回填
+
+| `data/` 文件 / `historical` 字段 | 复核前值 | 合入值 | 复核结论 | 来源及定位 | 处置说明 |
+| --- | --- | --- | --- | --- | --- |
+| `weapons/us_m3_grease.json` / `muzzle_velocity_mps` | `280`（未核实） | **`280`**（已核实） | **已核实** | [TM229-35] 第 7 页 §6 Tabulated Data；[TM229-12] 第 1-2 页 §1-6 Tabulated Data | 两部 M3/M3A1 专册的技术数据表均在 8.0 in 枪管条目下明列初速 920 fps（280.42 m/s，取整 280 m/s），消除了 [TM2200] 仅按 10.5 in 枪管列弹药表造成的枪管长度疑义。 |
+| `explosives/ger_panzerfaust_60.json` / `mass_kg` | `6.25`（未核实） | **`6.1235`**（已核实） | **已核实并修订** | [TME] Ch. VII, Sec. II, par. 7.b(3), p. VII-10；[BUCHNER] 第 150 页 | 战时 [TME] 专节列 Panzerfaust 60 整件全重 13½ lb（6.1235 kg，沿用 `ger_nb39.json` 四位小数惯例；按 0.1 kg 取整为 6.1 kg，与 [BUCHNER] 第 150 页的 6.1 kg 一致）。原 `6.25` 为 GD §6.2 近似初值，记入 `_meta.deviation_reason` 与 PI-B6-histbackfill-1。 |
+| `weapons/us_m1911a1.json` / `rate_of_fire_rpm_practical` | `300`（未核实） | **`"未核实"`** | **保持未核实** | [FM35] 第 1 页 §1.d；[TM2200] 第 7 页 §4；[ORD44] 第 432 页；[TM211-12] 第 1-1 页 §1-6 | 战时与战后手册均只写射速受限于射手换匣与扣扳机速度，未给固定实用射速数值；原 `300` 为游戏点击上限（`gameplay.fire.cap_rpm`），按 B3-C7 口径改为显式 `"未核实"` 并登记 `_meta.unverified`。 |
+| `weapons/us_m1_carbine.json` / `rate_of_fire_rpm_practical` | `40`（未核实） | **`"未核实"`** | **保持未核实** | [FM7] 第 52 页 §51.b、第 99 页 §74.b；[TM2200] 第 13 页 §7；[ORD44] 第 410 页；[TM1276] 第 8 页 §6 | 技术数据表均未给半自动 M1 的通用实用射速（[FM7] 仅在特定速射训练课目写约 30 发/分）；原 `40` 为 GD §6.2 初值，改为显式 `"未核实"` 并登记 `_meta.unverified`。 |
+| `weapons/us_m3_grease.json` / `rate_of_fire_rpm_practical` | `"未核实"` | **`"未核实"`** | **保持未核实** | [TM2200] 第 55 页 §28；[ORD44] 第 410 页；[FM41L] 第 4–6 页 §3.c、§4.c；[TM229-35] 第 7 页 §6；[TM229-12] 第 1-2 页 §1-6 | 各手册数据表仅列理论/周期射速 350–450（或 460）rpm，未规定通用实用射速标量；保持 `"未核实"` 并登记 `_meta.unverified`。 |
+| `weapons/us_thompson_m1a1.json` / `rate_of_fire_rpm_practical` | `"未核实"` | **`"未核实"`** | **保持未核实** | [TM2200] 第 57 页 §29；[NCJ] Thompson M1A1 说明 | 战时技术手册与战后对照资料仅列周期射速 700–800 rpm，未给 M1A1 同口径实用射速；保持 `"未核实"` 并登记 `_meta.unverified`。 |
+| `weapons/ger_kar98k.json` / `muzzle_velocity_mps` | `760`（`_meta.unverified`） | **`760`**（保持 `_meta.unverified`） | **保持未核实** | [SS14] §II.3.c(2)；[WB] Ch. I；[BICC] 第 47 页；[BUCHNER] 第 36 页 | 沿用 M0-031 结论（[BUCHNER] 第 36 页同列 755 m/s，[WB] 跨武器范围 732–762 m/s，仍缺同一装药/枪管确认 760 m/s 的一手出处），保留在 `_meta.unverified`。 |
+| `weapons/ger_kar98k.json` / `rate_of_fire_rpm_practical` | `15`（`_meta.unverified`） | **`15`**（保持 `_meta.unverified`） | **保持未核实** | [BICC] 第 47 页；[SS14] §II.3.c(2)；[BUCHNER] 第 36 页 | 沿用 M0-031 结论（[BUCHNER] 第 36 页记至多 10 发/分，[BICC] 记约 15 发/分但无测试定义），保留在 `_meta.unverified`。 |
+
+### 2. 结构化 `_source` 全量回填与 `_meta.status` 流转
+
+- **Schema 与校验器扩展**：`data/schemas/vehicle.schema.json`（及 `crates/sim/src/data_defs.rs` 的 `VehicleHistorical.source`）由仅接受字符串扩展为 `HistSource`（字符串或 `source_record[]`），`source_record.value` 支持标量与复合对象（如 `dimensions_m`）；`data/schemas/explosive.schema.json` 补齐 `source_record` 结构约束；`tools/data-validate/rules/historical.mjs` 将 `explosive` 纳入 `hist-source-required` 检查。
+- **结构审计结果（`node tools/data-validate/source-audit.mjs --root data`）**：14 个文件 67 个 `historical` 字段——**61 个已登记结构化 `_source`（`sourced`）、6 个显式声明未核实（`gap`）、0 个违规（`problem`）**；此前 49 个结构化出处缺口已清零至 6 个真实无一手出处的未核实项。
+- **状态流转（按 M1-070 验收标准 4）**：
+  - 全部 M1 字段已核实的 8 个文件（`ger_mp40`、`ger_p38`、`ger_m24`、`ger_nb39`、`ger_panzerfaust_60`、`us_m18`、`us_mk2`、`us_m4a1_75`）连同 M0 已审的 `us_m1_garand`、`ger_kar98k` 共 **10 个文件**为 `_meta.status: "reviewed"`。
+  - 含 `"未核实"` 实用射速的 **4 个美军武器文件**（`us_m1911a1`、`us_m1_carbine`、`us_m3_grease`、`us_thompson_m1a1`）保持 `_meta.status: "initial"`，并在 `_meta.unverified` 显式列出 `["historical.rate_of_fire_rpm_practical"]`。
+
+### 3. M4A1 Sherman (75) 装甲与火炮/弹种全表核对（GD §14.3 / M1-070 验收 2）
+
+以下核对 `data/vehicles/us_m4a1_75.json`（及客户端镜像 `client/public/data/vehicles/us_m4a1_75.json`）中 `gameplay` 的装甲厚度/法线倾角与车载武器/弹种参数；穿深遵循 GD §0.4 与 M1-070 备注标注为**游戏标称值**（不作为靶场实验穿深复核），偏离项已登记于 `us_m4a1_75.json` 的 `_meta.deviation_reason` 与 PI-B6-histbackfill-1：
+
+| 类别 / 字段 | JSON 值（`gameplay`） | 史实对照值 | 核对结果 | 来源及定位 | 对照与偏离说明（`deviation_reason`） |
+| --- | --- | --- | --- | --- | --- |
+| 车体前上 `front_upper` / `hull_glacis` | `51 mm / 56°` | 2 in (50.8 mm) / 56°（与竖直面夹角） | 一致（取整） | [TM2800B] 第 109 页 Armor；[AFVDB] M4A1 Armor 表 | 2 in = 50.8 mm 按整毫米取 51 mm；56° 与早期铸造车体首上法线倾角一致。 |
+| 车体前下 `hull_lower` | `51 mm / 45°` | 2 in (50.8 mm)（差速器壳体 2–4.25 in，倾角 0°–56° 弧面） | 游戏简化（已标偏离） | [TM2800B] 第 109 页 Armor；[AFVDB] M4A1 Armor 表 | 游戏用单一平面 `51 mm / 45°` 折中表征三片式/铸造差速器弧面壳体。 |
+| 车体侧/后 `side` / `rear` | `38 mm / 0°` | 1.5 in (38.1 mm) / 侧 0°、后 0°–10° | 一致（取整） | [TM2800B] 第 109 页 Armor；[AFVDB] M4A1 Armor 表 | 1.5 in = 38.1 mm 取整 38 mm；后部小倾角在盒式命中区简化为 0°。 |
+| 车体顶/底 `top` / `bottom` | `19 mm / 90°`、`13 mm` | 顶 0.75 in (19.05 mm) / 90°；底前 1 in (25.4 mm)、底后 0.5 in (12.7 mm) | 一致（底取后部薄值） | [AFVDB] M4A1 Armor 表 | 顶板 19.05 mm 取整 19 mm；底板取后部 0.5 in (12.7 mm ≈ 13 mm) 的保守单值。 |
+| 炮塔前（含防盾）`turret_front` | `76 mm / 30°` | 炮塔前 3 in (76.2 mm) / 30°（M34A1 防盾另外 2 in / 0°） | 一致（取炮塔前本体） | [TM2800B] 第 109 页 Armor；[AFVDB] M4A1 Armor 表 | 3 in = 76.2 mm 取整 76 mm，倾角 30° 与铸造炮塔前部一致。 |
+| 炮塔侧/后 `turret_side` / `turret_rear` | `51 mm / 25°` | 2 in (50.8 mm) / 侧 5°、后 0° | 游戏性偏离（已标偏离） | [TM2800B] 第 109 页 Armor；[AFVDB] M4A1 Armor 表 | 厚度 2 in (50.8 mm ≈ 51 mm) 一致；法线倾角 25° 来自 GD §14.3 表格对铸造炮塔圆弧曲面的等效折算（史实基准面倾角为侧 5°、后 0°）。 |
+| 炮塔顶 `turret_top` | `25 mm / 90°` | 1 in (25.4 mm) / 90° | 一致（取整） | [AFVDB] M4A1 Armor 表 | 1 in = 25.4 mm 取整 25 mm。 |
+| 主炮 `75mm_m3` / `M61 APC` | `619 m/s`、`p100_mm: 82`、`30 发` | M61 APCBC 初速 2,030 ft/s (618.7 m/s)；整车 75 mm 备弹 90 发 | 初速一致；穿深为**游戏标称值**；携弹为**游戏配额** | [TM2800A] 第 108 页；[TM731A] 第 18–20 页；[TM1901] 第 101–104 页 §87、§89；GD §0.4、§14.3 | 2,030 ft/s = 618.74 m/s，取整 619 m/s；`p100_mm = 82`（及距离衰减曲线）按 GD §0.4 标为游戏标称穿深；AP 30 / HE 24 / WP 6（共 60 发）及装填 `3.0 s`（20 rpm）为 GD §14.3 游戏平衡配额。 |
+| 主炮 `75mm_m3` / `M48 HE` | `450 m/s`（游戏投射）、`24 发` | M48 HE 减装药初速 1,515 ft/s (461.8 m/s)、全装药 1,980 ft/s (603.5 m/s) | 游戏性偏离（已标偏离） | [TM1901] 第 104–106 页 §94–95；GD §14.3 | `450 m/s` 为近减装药（462 m/s）的 GD §14.3 标称游戏弹道初速。 |
+| 主炮 `75mm_m3` / `M64 WP Smoke` | `450 m/s`（游戏投射）、`6 发` | M64 WP 初速 1,980 ft/s (603.5 m/s) | 游戏性偏离（已标偏离） | [TM1901] 第 109 页 §107；GD §14.3 | 游戏将烟雾弹与 HE 统一为 `450 m/s` 低伸度轨迹，便于同表尺瞄准。 |
+| 同轴/航向机枪 `M1919A4` | `600 rpm`（10 rps）、`853 m/s`、同轴 `250×4` / 航向 `100×4` | 周期射速 400–550 rpm；M2 普通弹初速 2,800 ft/s (853.4 m/s)；备弹共 4,750 发 | 初速一致；射速与备弹为**游戏性设定** | [TM2800A] 第 108 页；[TM2800B] 第 109 页；[TM2200] 第 69 页 §35、第 182 页 §103 | 初速 2,800 ft/s ≈ 853 m/s 一致；`600 rpm` 为 30 Hz tick 下整数间隔（3 tick/发）与 GD §14.3 设定，分舱备弹（1,000 / 400 发）与过热参数为游戏平衡配额。 |
+| 车顶机枪 `M2HB` | `480 rpm`（8 rps）、`890 m/s`、`100×2` | 周期射速 400–500 rpm；M2 普通弹初速 2,935 ft/s (894.6 m/s)；备弹 300 发 | 射速一致；初速标称近似；备弹为**游戏配额** | [TM2800A] 第 108 页；[TM2800B] 第 109 页；[TM2200] 第 87 页 §43、第 206 页 §117 | `480 rpm` 落在史实 400–500 rpm 区间内；`890 m/s` 为 .50 BMG 标称取整值（手册 M2 普通弹 895 m/s、M1 曳光弹 872 m/s）；200 发为 GD §14.3 单局配额。 |
+
+独立 WASM smoke 回退金样更新 `crates/sim-wasm/tests/golden/native.json:dataHash` 为 `0x2637b94dda28a192`（十进制 `"2753873441184063890"`，此前为 `0x0e56163cbce945b7`）；协议版本、快照及行为金样不变。
+
 ## 在线来源
 
 链接指向所用原始文献扫描、转录或发布机构的馆藏/资料页；没有复制手册正文。
@@ -159,3 +205,11 @@
 [ORD44]: https://archive.org/details/CatalogOfStandardOrdnanceItemsVolume3 "U.S. Office of Chief of Ordnance, Catalog of Standard Ordnance Items (1944), Vol. III, p. 410，扫描"
 [FM41L]: https://www.biggerhammer.net/manuals/fm23_41/CH1.PDF "U.S. Army FM 23-41，战后 M3/M3A1 手册，第 1 章扫描"
 [NCJ]: https://ojp.gov/pdffiles1/Digitization/9639NCJRS.pdf "Submachine Guns in Police Operations，NCJRS 数字馆藏，战后周期射速对照"
+[TM229-35]: https://www.airforcebase.net/uploads/marksmanship/TM_9-1005-229-35_Submachine_Guns_Cal_.45_M3_and%20M3A1_19641214.pdf "U.S. Army TM 9-1005-229-35 (1964), Submachine Guns, Cal. .45, M3 and M3A1, p. 7 §6，扫描"
+[TM229-12]: https://upload.wikimedia.org/wikipedia/commons/d/d1/TM-9-1005-229-12.pdf "U.S. Army TM 9-1005-229-12 (1969), Operator and Organizational Maintenance Manual: Submachine Guns, Cal. .45, M3 and M3A1, p. 1-2 §1-6，扫描"
+[TM211-12]: https://archive.org/details/TM9-1005-211-12 "U.S. Army TM 9-1005-211-12 (1968), Pistol, Caliber .45, Automatic: M1911A1, p. 1-1 §1-6，扫描"
+[TM1276]: https://archive.org/details/tm-9-1276-carbines-cal.-.-30-m-1-m-1-a-1-m-2-and-m-3-1947 "U.S. War Department TM 9-1276 (1947), Carbines, Cal. .30, M1, M1A1, M2, and M3, p. 8 §6，扫描"
+[BUCHNER]: https://archive.org/details/buchner-alex-the-german-infantry-handbook-1939-1945-organization "Alex Buchner, The German Infantry Handbook 1939–1945 (Schiffer, 1991), pp. 36, 150，借阅扫描"
+[TM731A]: https://archive.org/details/tm9731a00unse "U.S. War Department TM 9-731A (1942), Medium Tank M4A1, pp. 18–20，扫描"
+[TM1901]: https://archive.org/details/Tm9-1901 "U.S. War Department TM 9-1901 (1944), Artillery Ammunition, pp. 101–109 §§87–107，扫描"
+[AFVDB]: https://afvdatabase.com/usa/m4sherman.html#M4A1 "AFV Database, Medium Tank M4A1 Sherman 装甲与武器规格表（汇总 TM 9-731A / Hunnicutt Sherman）"
