@@ -305,6 +305,8 @@
 
 #### GAP-V16 UI 图标
 
+- **B6-uilogic**：开发画廊的 `PH_gallery_marker` 是空 SVG symbol，仅验证 `Icon` / `Frame` 的本地引用和无障碍名称；不引入外部素材，不计正式图标覆盖。待 Fable 设计。
+
 - **对应需求 ID**：无专属需求 ID（`ASSET_SHOPPING_LIST.md` §4.1.6 图标备注）。
 - **缺什么**：军事/战术类原创图标集。
 - **为什么现有候选不合格**：总纲要求 UI 表达层原创；通用开源图标集（Material Symbols/Lucide 等，Apache-2.0/ISC，凭记忆，未核实）难以满足军事/战术图标。
