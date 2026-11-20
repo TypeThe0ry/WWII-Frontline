@@ -64,6 +64,7 @@ name = "ballistics"
 harness = false
 
 [dev-dependencies]
+proptest = "1"
 criterion = { version = "0.7", default-features = false }
 proptest = "1"
 
@@ -216,3 +217,7 @@ harness = false
 name = "outpost_repair_atgun"
 harness = false
 required-features = ["test-util"]
+
+[[bench]]
+name = "resources_tick"
+harness = false

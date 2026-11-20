@@ -156,6 +156,24 @@ function checkBots(doc, errors) {
   }
 }
 
+function checkEconomy(doc, errors) {
+  for (const kind of ['manpower', 'munitions', 'fuel']) {
+    const resource = doc[kind];
+    if (num(resource?.initial) && num(resource.cap) && resource.initial > resource.cap) {
+      errors.push({ pointer: `/${kind}/initial`, message: 'initial must be <= cap' });
+    }
+  }
+}
+
+function checkResourceNode(doc, errors) {
+  if (typeof doc.kind === 'string' && typeof doc.id === 'string' && doc.id !== `resource_node_${doc.kind}`) {
+    errors.push({ pointer: '/id', message: 'id must match resource_node_<kind>' });
+  }
+  if (num(doc.max_per_team_per_kind) && num(doc.max_per_team) && doc.max_per_team_per_kind > doc.max_per_team) {
+    errors.push({ pointer: '/max_per_team_per_kind', message: 'max_per_team_per_kind must be <= max_per_team' });
+  }
+}
+
 export function checkRanges(doc, kind) {
   const errors = [];
   if (kind === 'weapon') checkWeapon(doc, errors);
@@ -163,5 +181,7 @@ export function checkRanges(doc, kind) {
   else if (kind === 'vehicle') checkVehicle(doc, errors);
   else if (kind === 'map_meta') checkMapMeta(doc, errors);
   else if (kind === 'bots') checkBots(doc, errors);
+  else if (kind === 'economy') checkEconomy(doc, errors);
+  else if (kind === 'resource_node') checkResourceNode(doc, errors);
   return errors;
 }

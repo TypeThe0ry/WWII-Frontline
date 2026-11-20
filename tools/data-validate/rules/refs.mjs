@@ -6,6 +6,15 @@ export function checkRefs(files) {
   const ids = { gadget: new Set(), weapon: new Set(), role: new Set(), loadout: new Set(), vehicle: new Set() };
   const byKind = (k) => files.filter((f) => f.kind === k && f.doc && typeof f.doc === 'object');
 
+  // max_per_team controls the combined count of all resource node kinds.
+  const nodes = byKind('resource_node').filter((f) => Number.isInteger(f.doc.max_per_team));
+  const firstNode = nodes[0];
+  for (const f of nodes.slice(1)) {
+    if (f.doc.max_per_team !== firstNode.doc.max_per_team) {
+      errors.push({ file: f.file, pointer: '/max_per_team', message: `max_per_team must match ${firstNode.file}` });
+    }
+  }
+
   // explosives and melee weapons are carried in loadout weapon slots: they share the weapon id space
   const idKinds = { gadget: ['gadget'], weapon: ['weapon', 'explosive', 'melee'], role: ['role'], loadout: ['loadout'], vehicle: ['vehicle'] };
   for (const k of Object.keys(ids)) {

@@ -36,12 +36,7 @@ pub struct EntityStateView {
     pub alive: bool,
 }
 
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-pub struct Resources {
-    pub manpower: i32,
-    pub fuel: i32,
-    pub ammo: i32,
-}
+pub use crate::rules::resources::Resources;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct ObjectiveView {

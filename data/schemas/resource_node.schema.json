@@ -1,0 +1,134 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://frontline.invalid/schemas/resource_node.schema.json",
+  "title": "Resource node (GAMEDESIGN §11.3; M2-009)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "kind",
+    "build_cost_supplies",
+    "refund_percent",
+    "overrun_radius_m",
+    "overrun_s",
+    "max_hp",
+    "bullet_mult",
+    "explosive_mult",
+    "hostile_build_radius_m",
+    "max_per_team_per_kind",
+    "max_per_team",
+    "_meta"
+  ],
+  "properties": {
+    "id": {
+      "enum": [
+        "resource_node_manpower",
+        "resource_node_munitions",
+        "resource_node_fuel"
+      ]
+    },
+    "kind": {
+      "enum": [
+        "manpower",
+        "munitions",
+        "fuel"
+      ]
+    },
+    "build_cost_supplies": {
+      "$ref": "#/$defs/positive_u32"
+    },
+    "refund_percent": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "overrun_radius_m": {
+      "$ref": "#/$defs/positive"
+    },
+    "overrun_s": {
+      "$ref": "#/$defs/positive"
+    },
+    "max_hp": {
+      "$ref": "#/$defs/positive"
+    },
+    "bullet_mult": {
+      "$ref": "#/$defs/nonnegative"
+    },
+    "explosive_mult": {
+      "$ref": "#/$defs/nonnegative"
+    },
+    "hostile_build_radius_m": {
+      "$ref": "#/$defs/positive"
+    },
+    "max_per_team_per_kind": {
+      "$ref": "#/$defs/positive_u32"
+    },
+    "max_per_team": {
+      "$ref": "#/$defs/positive_u32"
+    },
+    "_meta": {
+      "$ref": "#/$defs/meta"
+    }
+  },
+  "$defs": {
+    "positive_u32": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 4294967295
+    },
+    "positive": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "nonnegative": {
+      "type": "number",
+      "minimum": 0
+    },
+    "meta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "tunable"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "initial",
+            "reviewed",
+            "measured"
+          ]
+        },
+        "tunable": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "calibration_ref": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "unverified": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "deviation_reason": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  }
+}

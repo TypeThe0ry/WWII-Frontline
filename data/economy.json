@@ -1,0 +1,54 @@
+{
+  "manpower": {
+    "initial": 200,
+    "base": 30,
+    "sector_rate": 6,
+    "node_rate": 25,
+    "cap": 1500
+  },
+  "munitions": {
+    "initial": 80,
+    "base": 12,
+    "sector_rate": 3,
+    "node_rate": 10,
+    "cap": 800
+  },
+  "fuel": {
+    "initial": 40,
+    "base": 6,
+    "sector_rate": 2,
+    "node_rate": 6,
+    "cap": 400
+  },
+  "upkeep": {
+    "light": 1,
+    "medium": 2,
+    "heavy": 3
+  },
+  "spoils_manpower": 50,
+  "_meta": {
+    "status": "initial",
+    "tunable": [
+      "manpower.initial",
+      "manpower.base",
+      "manpower.sector_rate",
+      "manpower.node_rate",
+      "manpower.cap",
+      "munitions.initial",
+      "munitions.base",
+      "munitions.sector_rate",
+      "munitions.node_rate",
+      "munitions.cap",
+      "fuel.initial",
+      "fuel.base",
+      "fuel.sector_rate",
+      "fuel.node_rate",
+      "fuel.cap",
+      "upkeep.light",
+      "upkeep.medium",
+      "upkeep.heavy",
+      "spoils_manpower"
+    ],
+    "calibration_ref": "GAMEDESIGN §11.2–11.4"
+  }
+}

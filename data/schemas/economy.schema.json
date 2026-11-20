@@ -1,0 +1,135 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://frontline.invalid/schemas/economy.schema.json",
+  "title": "Strategic resource economy (GAMEDESIGN §11.2–11.4; M2-009)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "manpower",
+    "munitions",
+    "fuel",
+    "upkeep",
+    "spoils_manpower",
+    "_meta"
+  ],
+  "properties": {
+    "manpower": {
+      "$ref": "#/$defs/resource"
+    },
+    "munitions": {
+      "$ref": "#/$defs/resource"
+    },
+    "fuel": {
+      "$ref": "#/$defs/resource"
+    },
+    "upkeep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "light",
+        "medium",
+        "heavy"
+      ],
+      "properties": {
+        "light": {
+          "$ref": "#/$defs/amount"
+        },
+        "medium": {
+          "$ref": "#/$defs/amount"
+        },
+        "heavy": {
+          "$ref": "#/$defs/amount"
+        }
+      }
+    },
+    "spoils_manpower": {
+      "$ref": "#/$defs/amount"
+    },
+    "_meta": {
+      "$ref": "#/$defs/meta"
+    }
+  },
+  "$defs": {
+    "resource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "initial",
+        "base",
+        "sector_rate",
+        "node_rate",
+        "cap"
+      ],
+      "properties": {
+        "initial": {
+          "$ref": "#/$defs/amount"
+        },
+        "base": {
+          "$ref": "#/$defs/amount"
+        },
+        "sector_rate": {
+          "$ref": "#/$defs/amount"
+        },
+        "node_rate": {
+          "$ref": "#/$defs/amount"
+        },
+        "cap": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        }
+      }
+    },
+    "amount": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483647
+    },
+    "meta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "tunable"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "initial",
+            "reviewed",
+            "measured"
+          ]
+        },
+        "tunable": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "calibration_ref": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "unverified": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "deviation_reason": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  }
+}

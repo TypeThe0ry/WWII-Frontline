@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { REPO_ROOT, checkFile, discover, loadValidators, runFixtures, validateRoot } from '../lib.mjs';
+import { REPO_ROOT, checkFile, discover, loadValidators, runFixtures, validateRoot, validateSet } from '../lib.mjs';
 
 const root = join(REPO_ROOT, 'data');
 
@@ -16,6 +16,31 @@ test('fixtures: all valid pass, every invalid fails with its _expect_error', () 
 test('real /data validates clean', () => {
   const r = validateRoot(root);
   assert.deepEqual(r.errors, []);
+});
+
+test('M2-009 files are discovered and invalid economy and node settings are rejected', () => {
+  const { files } = discover(root);
+  const economy = files.find((f) => f.kind === 'economy');
+  assert.equal(economy?.file, 'economy.json');
+  const nodes = files.filter((f) => f.kind === 'resource_node');
+  assert.deepEqual(nodes.map((f) => f.stemId), [
+    'resource_node_fuel', 'resource_node_manpower', 'resource_node_munitions',
+  ]);
+
+  economy.doc = JSON.parse(readFileSync(economy.abs, 'utf8'));
+  economy.doc.fuel.initial = economy.doc.fuel.cap + 1;
+  const munitions = nodes[2];
+  munitions.doc = JSON.parse(readFileSync(munitions.abs, 'utf8'));
+  munitions.doc.kind = 'fuel';
+  munitions.doc.refund_percent = 101;
+  munitions.doc.max_per_team++;
+  const errors = validateSet([economy, ...nodes], loadValidators(root));
+  assert.deepEqual(errors.map(({ file, pointer }) => [file, pointer]), [
+    [economy.file, '/fuel/initial'],
+    [munitions.file, '/refund_percent'],
+    [munitions.file, '/id'],
+    [munitions.file, '/max_per_team'],
+  ]);
 });
 
 test('invalid fixtures cover many rule families', () => {

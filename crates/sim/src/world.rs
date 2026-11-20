@@ -24,6 +24,7 @@ use crate::weapon::WeaponState;
 mod facilities;
 mod outposts;
 mod placement_zones;
+mod resources;
 mod server_rules;
 
 /// Role whose movement parameters every player uses until loadouts/roles are chosen (M0-012).
@@ -155,6 +156,15 @@ impl World {
             cfg.data,
             cfg.tick_hz,
         ));
+        let economy_enabled = matches!(cfg.mode, GameMode::Frontline | GameMode::Assault);
+        ecs.insert_resource(crate::rules::resources::TeamResources::new(
+            economy_enabled,
+            cfg.data.economy(),
+        ));
+        ecs.insert_resource(crate::rules::resource_node::ResourceNodes::new(
+            cfg.data.resource_nodes(),
+            cfg.tick_hz,
+        ));
         ecs.insert_resource(crate::rules::Objectives::default());
         ecs.insert_resource(crate::rules::MatchState::default());
         ecs.insert_resource(crate::rules::MatchCfg::from_data(cfg.data, cfg.tick_hz));
@@ -261,7 +271,10 @@ impl World {
         let produced = std::mem::take(&mut self.ecs.resource_mut::<EventBuf>().0);
         let server_actions = self.step_server_rules(real_inputs, &produced);
         self.pending_events.extend(produced);
+        let (resource_history, resource_overflow) = self.take_resource_output();
         let mut out = StepOutput {
+            resource_history,
+            resource_overflow,
             events: std::mem::take(&mut self.pending_events),
             server_actions,
             rule_changes: std::mem::take(
@@ -1700,6 +1713,15 @@ impl World {
             }
         }
         self.score.hash(&mut h);
+        let resources = self
+            .ecs
+            .resource::<crate::rules::resources::TeamResources>();
+        if resources.enabled {
+            resources.hash(&mut h);
+            self.ecs
+                .resource::<crate::rules::resource_node::ResourceNodes>()
+                .hash(&mut h);
+        }
         h.finish()
     }
 
@@ -1827,8 +1849,10 @@ impl WorldView for World {
     fn slope_deg_at(&self, x: f32, z: f32) -> Option<f32> {
         self.collision().slope_deg_at(x, z)
     }
-    fn team_resources(&self, _team: Team) -> Resources {
-        Resources::default() // resources arrive with M1 scoring
+    fn team_resources(&self, team: Team) -> Resources {
+        self.ecs
+            .resource::<crate::rules::resources::TeamResources>()
+            .get(team)
     }
     fn objectives(&self) -> &[ObjectiveView] {
         &self.objective_views

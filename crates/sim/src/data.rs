@@ -16,8 +16,9 @@ mod embedded {
 }
 
 pub use defs::{
-    AmmoDef, BotsRulesDef, CommsDef, DataStatus, ExplosiveDef, Faction, GadgetDef, LoadoutDef,
-    MaterialDef, MeleeDef, RespawnRulesDef, RoleDef, RulesDef, VehicleDef, WeaponDef,
+    AmmoDef, BotsRulesDef, CommsDef, DataStatus, EconomyDef, ExplosiveDef, Faction, FuelUpkeepDef,
+    GadgetDef, LoadoutDef, MaterialDef, MeleeDef, ResourceEconomyDef, ResourceNodeDef,
+    ResourceNodeKind, RespawnRulesDef, RoleDef, RulesDef, VehicleDef, WeaponDef,
 };
 /// SHA-256 (first 8 bytes, little-endian) of the canonicalised `/data` tree. Sent as
 /// `Hello.data_hash`; client and server must agree (ARCHITECTURE 8.2).
@@ -142,6 +143,23 @@ impl GameData {
     }
     pub fn vehicle(&self, id: &str) -> Option<&'static VehicleDef> {
         self.vehicles.iter().find(|v| v.id == id)
+    }
+    /// Strategic economy settings shared by all instances of `GameData` in this build.
+    pub fn economy(&self) -> &'static EconomyDef {
+        static ECONOMY: OnceLock<EconomyDef> = OnceLock::new();
+        ECONOMY.get_or_init(|| {
+            serde_json::from_str(embedded::ECONOMY_JSON)
+                .expect("embedded data parsed at build time")
+        })
+    }
+
+    /// Resource node settings shared by all instances of `GameData` in this build.
+    pub fn resource_nodes(&self) -> &'static [ResourceNodeDef] {
+        static RESOURCE_NODES: OnceLock<Box<[ResourceNodeDef]>> = OnceLock::new();
+        RESOURCE_NODES.get_or_init(|| {
+            serde_json::from_str(embedded::RESOURCE_NODES_JSON)
+                .expect("embedded data parsed at build time")
+        })
     }
 }
 

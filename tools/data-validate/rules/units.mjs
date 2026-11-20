@@ -25,11 +25,15 @@ export const DIMENSIONLESS = new Set([
 /** Container keys whose numeric children share the unit (part_mult.head, armor_mm.front). */
 const hasUnit = (k) => UNIT_SUFFIXES.some((s) => k.endsWith(s));
 
-export function checkUnits(doc) {
+const ECONOMY_COUNTS = new Set(['initial', 'base', 'sector_rate', 'node_rate', 'cap', 'light', 'medium', 'heavy', 'spoils_manpower']);
+const RESOURCE_NODE_FIELDS = new Set(['refund_percent', 'max_per_team_per_kind']);
+
+export function checkUnits(doc, kind) {
+  const kindFields = kind === 'economy' ? ECONOMY_COUNTS : kind === 'resource_node' ? RESOURCE_NODE_FIELDS : undefined;
   const errors = [];
   const walk = (node, key, pointer, inUnit) => {
     if (typeof node === 'number') {
-      if (inUnit || DIMENSIONLESS.has(key)) return;
+      if (inUnit || DIMENSIONLESS.has(key) || kindFields?.has(key)) return;
       if (UNIT_SUFFIXES.some((s) => key.endsWith(s))) return;
       const bad = BAD_UNIT_SUFFIXES.find((s) => key.endsWith(s));
       errors.push({
