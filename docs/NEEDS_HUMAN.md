@@ -681,6 +681,7 @@
 - **参考**：ASSET_GAPS §1.4、§2、§3；RISKS R-24。
 - **进展（2026-11-20，B6-assetlod）**：背景法线保留 1024² 与完整 mip，样例 B 的 LOD0 为 24.35%。解码法线 P95 角误差 3.219°（原设定 0.904°）。Fable 可对照 `reports/m1-002-lod.md` 复核背景画质，近景资产可逐图选 hero。
 - **进展（2026-11-20，B6-fpakmedium）**：Medium 已打包公开灰盒与程序合成提示音。实素材取舍、实录及美术验收待裁决，逐项缺口见 `assets/manifests/missing-report.json`。
+- **进展（2026-11-20，B6-gapsdecide）**：已按本表零采购默认假设（`ASSET_SHOPPING_LIST.md` §8/§9 与 `PLAYABLE_SCOPE.md`）在 `docs/ASSET_GAPS.md` §2 与 §3.8、`reports/m1-placeholders.md` 对 M1 范围内全部 72 个需求 ID 逐项写入"决定"或"推迟到 M2"（5 项来源级 `real` 免费 CC0 采用 + 36 项免费候选采用配程序化占位回退 + 15 项纯程序化占位且真素材推迟到 M2 + 16 项非 M1 兵种/载具/混响/配乐推迟到 M2）。凡需人类外包询价（H-047/H-048）、付费购买（H-049/H-100）、手动下载 Sketchfab/Mixamo/Sonniss GDC/Freesound（H-099）或批准 B 档许可（H-101）的项均未编造已采购，保持待办由人类裁决。
 - 状态：[ ] 待办
 - 决定/备注：____
 
@@ -705,6 +706,7 @@
 - **默认假设**：无默认；执行者用灰盒占位 + 已 OK 的素材继续。
 - **阻塞**：M1 视觉/音频验收；`ingest` 与 `.fpak`。
 - **参考**：ASSET_SHOPPING_LIST §4.2、§5.2；LICENSES §1/§3；RISKS R-21、R-23。
+- **进展（2026-11-20，B6-gapsdecide）**：零采购基线下未发生任何新增付费采购；TT 已购的 6 个 UE 商城包在 `LICENSES.md` 保持 `INTERNAL`（仅限内部试玩，不进主分支构建）。M1 72 项需求中需付费才能获得真素材的缺口（如带绑定二战美/德步兵 `V-CHR-US-001`/`V-CHR-GE-001`、第一人称高精度武器 `GAP-V06`、写实工事道具 `V-PRP-001..003`、75mm Sherman 主炮近场实录 `D-TNK-004` 等）已在 `docs/ASSET_GAPS.md` §3.7 裁决为 M1 使用程序化占位并推迟真素材至 M2，是否购买付费备选统一留 H-100 待人类决定。
 - 状态：[ ] 待办
 - 决定/备注：____
 
@@ -829,6 +831,7 @@
 - **阻塞**：M2 地图内容与音频。
 - **参考**：ASSET_GAPS §1.4、§2。
 - **进展（2026-11-20，B6-fpakmedium）**：本次构建限 Carentan M1 Medium。M2 素材决定沿用表中开放项。
+- **进展（2026-11-20，B6-gapsdecide）**：已在 `docs/ASSET_GAPS.md` §2 与 §3.8 按默认建议完成 M1 关联项（`GAP-V14` 农作物、`GAP-V15` 血迹/弹孔贴花、`GAP-V17` 军事版通用动画、`GAP-V18` 兵种变体角色、`GAP-A09` 德/美战场喊话）推迟到 M2 的逐 ID 登记，M1 运行时保持程序化灰盒/0.1 s 静音占位。
 - 状态：[ ] 待办
 - 决定/备注：____
 
@@ -1401,3 +1404,15 @@ M0 全部用代码生成的基本几何体占位（命名 `PH_{需求ID}`，`win
 | ID | 事项 | 类型 | 时点 | 添加日期 | 状态 |
 |---|---|---|---|---|---|
 | H-104 | **批 M0 对标录像（M0-032 B 部分）**：分析工具链、记录模板、我方同法复测（`docs/measurements/own_m0.{json,md}`）和一页录像清单都已完成；参考作品的测量值全部仍是"待测"，没有一个数是估的。按 `docs/measurements/CAPTURE_GUIDE_M0.md` 完成：①H-011（EULA 确认允许录制）→ ②H-025（≥120 fps 录制设备）→ ③H-026（3 个会话：A 步枪射击 S-RANGE、B 基础移动 S-FIELD/S-OBST、C 生存 S-DUMMY，需 H-027 协助者），录像放私有目录并设 `REF_CAPTURE_DIR`。录完告诉执行者（任务 M0-032b），按清单第 4 节跑 `python3 -m ref_analysis ...`，`status -v` 为 0 缺项即完成。**默认假设**：未确认前不录；STATUS 里 M0-032 保持 partial，不影响 M0 其它任务。 | 录制测量 | M0 退出前（E0-7，批 M0 校准 GAMEDESIGN §21 待测项） | 2026-11-17 | 待办 |
+
+### 11.7 E1-17 M1 72 项需求 ID 占位决定与人工待办分流（2026-11-20，B6-gapsdecide 追加）
+
+已在 `docs/ASSET_GAPS.md` §2/§3.7 与 `reports/m1-placeholders.md` 按零采购默认假设（`docs/ASSET_SHOPPING_LIST.md` §8/§9、`PLAYABLE_SCOPE.md`）对 `assets/manifests/missing-report.json` 中 M1 全部 72 个需求 ID 逐项登记决定（5 `real` 免费 CC0 采用 + 36 免费候选采用配程序化占位回退 + 15 纯程序化占位且真素材推迟到 M2 + 16 非 M1 范围推迟到 M2），**未编造任何已采购素材**。其中需人类后续处理（不阻塞 M1 代码与程序化占位闭环）的分流如下：
+
+1. **H-099（手动下载免费候选并放入 `assets/incoming/`）**：
+   - 视觉 A 档免费候选：Sketchfab CC-BY 模型 `V-WPN-US-001`（Garand）、`V-WPN-US-003`（Thompson）、`V-WPN-GE-004`（MP40）、`V-VEH-US-003`（Sherman 外壳），以及 M2 储备 `V-WPN-GE-005`（StG 44）、`V-WPN-GE-007`（MG42）、`V-VEH-GE-003`（Panzer IV）；itch.io `3dmodelscc0` CC0 军械包（`V-WPN-US-010`、`V-WPN-GE-008`、`V-WPN-GE-011`）；Adobe Mixamo / CMU 通用动作（`V-ANM-001`/`002`/`004`/`005`）。
+   - 音频 A 档免费候选：Sonniss GameAudioGDC（2015–2024、2026）与 Freesound CC0 条目，覆盖 `A-WPN-002`/`003`/`004`/`006`/`008`/`011`/`015`/`017`、`B-EXP-001`、`C-BUL-002`..`005`、`D-TNK-001`..`004`、`E-GER-001`、`F-AMB-001`/`003`、`G-VOX-001`/`002`、`H-RAD-001`、`H-UI-002`（以及 M0 延续的 `A-WPN-001`/`009`、`C-BUL-001`、`E-FTS-001`、`H-UI-001`）。未下载入包前，M1 运行时统一保持程序化灰盒与 48 kHz 0.1 s 静音 `AudioBuffer`。
+2. **H-098 / H-100（免费完全空白项的补搜或决定是否购买付费备选）**：
+   - 带绑定的二战美/德步兵角色 `V-CHR-US-001`、`V-CHR-GE-001`（及 M2 `V-CHR-US-002`/`003`；注：TT 已购 UE 包 `AST-UE-INTERNAL-01/02/06` 保持 `INTERNAL`，不进主分支）；第一人称手臂 `V-CHR-FPA-001`、第一人称高精度武器 `GAP-V06` 与第一人称栓动/换弹动画 `V-ANM-009`；写实诺曼底民居/农舍/教堂模块 `V-BLD-001`..`003`（`GAP-V02`）与扫描 bocage `V-NAT-001`（`GAP-V03`）；写实沙袋/铁丝网/反坦克障碍 `V-PRP-001`..`003`、M1911A1 模型 `V-WPN-US-008`、写实特效/弹孔贴花 `V-FX-001`..`004`/`006`；75mm Sherman 主炮近场实录 `D-TNK-004`、G43 音效 `A-WPN-010`、德语语句喊话 `G-VOX-002`、主菜单配乐 `I-MUS-001`。默认不买（$0），真素材全部推迟到 M2。
+3. **H-101（B 档免费候选是否批准使用）**：
+   - `V-PRP-001`..`003`（itch.io `nuclearwinter94` 战壕包，许可未写明）、`V-WPN-US-005`（OGA BAR，CC-BY-SA/GPL v2，已随兵种推迟到 M2）、`V-WPN-US-008`（Sketchfab/itch M1911，许可未写明）。默认不使用 B 档，不进主分支。
