@@ -340,3 +340,32 @@ fn reports_are_queued_and_logged() {
     assert_eq!(h.reports[0].from, 10);
     assert_eq!(m.reports_total.get(), 1);
 }
+
+#[test]
+fn server_rule_mute_blocks_chat_without_broadcasting() {
+    let mut handler = C0Handler::default();
+    let metrics = Metrics::new();
+    let mut world = world();
+    let mut out = Outbox::new();
+    world.enable_server_rules(None);
+    world.apply_rule_mute(10);
+
+    handler.handle(
+        &mut world,
+        &metrics,
+        10,
+        chat(ChatChannel::All, "muted line"),
+        &mut out,
+    );
+    assert!(
+        matches!(out.as_slice(), [(10, ServerMsgC0::Notice(notice))] if notice.key == "comms.chat.muted")
+    );
+    assert_eq!(metrics.chat_routed_total.get(), 0);
+    assert_eq!(
+        metrics
+            .chat_rejected_total
+            .with_label_values(&["muted"])
+            .get(),
+        1
+    );
+}

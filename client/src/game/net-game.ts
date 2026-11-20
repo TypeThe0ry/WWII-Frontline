@@ -91,10 +91,10 @@ export async function startNetGame(
   // those chunks when the server is running a different map (e.g. Carentan).
   const game = new GameLoop({ wasm, decoder: new wasm.SnapshotDecoder(), bus, net: session, input: placement, matchSeed: w.matchSeed, mapId: w.mapId, playerId: w.playerId, fireOriginHints: w.mapId === 0 });
   game.loadCollision(chunks);
-  const offTeam = bus.on('team.changed', ({ tick }) => game.resetTeamProjection(tick));
+  const offTeamChange = bus.on('team.changed', ({ tick }) => game.resetTeamProjection(tick));
   const offSnap = session.onSnapshot((bytes) => game.onSnapshot(bytes));
   const codec = new NetCodec(wasm);
-  const offTeam = session.onC3((bytes) => {
+  const offTeamMarkers = session.onC3((bytes) => {
     try {
       game.events.markers.applyLegacy(codec.decodeTeamMarkers(bytes), performance.now());
     } catch {
@@ -149,7 +149,8 @@ export async function startNetGame(
     dispose: () => {
       onDispose?.();
       offSnap();
-      offTeam();
+      offTeamChange();
+      offTeamMarkers();
       offPlacement();
       lock.detach();
       document.removeEventListener('visibilitychange', onVisibility);

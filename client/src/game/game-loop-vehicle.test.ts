@@ -37,7 +37,7 @@ async function setup() {
 }
 
 describe.skipIf(!HAVE_WASM)('GameLoop vehicle seats', () => {
-  it('clears the pre-move AOI and ignores replays at the old snapshot tick', async () => {
+  it('clears the pre-move AOI and markers and ignores old frames', async () => {
     const { game, snap, bus } = await setup();
     const removed: number[] = [];
     bus.on('entity.removed', (e) => removed.push(e.id));
@@ -45,7 +45,17 @@ describe.skipIf(!HAVE_WASM)('GameLoop vehicle seats', () => {
       snap(10, 129, 0, [[129, 72]]);
       game.store.push(2, 10, 0, 0, 0, 0, 0, 0);
       expect(game.vehiclePredictor?.state[0]).toBe(72);
+      const markers = game.events.markers;
+      const marker = { kind: 0x8f, pos: [1, 2], ttl: 255 } as const;
+      markers.upsert({ ...marker, id: 5, owner: 2 }, 10, 1, 0);
+      markers.applyLegacy({ tick: 10, markers: [marker] }, 0);
       game.resetTeamProjection(12);
+      expect(markers.lifecycle.size).toBe(0);
+      expect(markers.legacyProjection).toHaveLength(0);
+      markers.applyLegacy({ tick: 11, markers: [marker] }, 0);
+      expect(markers.legacyProjection).toHaveLength(0);
+      markers.applyLegacy({ tick: 13, markers: [marker] }, 0);
+      expect(markers.legacyProjection).toHaveLength(1);
       expect(game.store.count).toBe(0);
       expect(game.applier.vehicles.count).toBe(0);
       expect(game.vehiclePredictor).toBeUndefined();

@@ -65,10 +65,10 @@ export class NetworkMarkers {
     }
   }
 
-  reset(): void {
+  reset(teamTick?: number): void {
     this.active.clear();
     this.order.clear();
-    this.legacyTick = undefined;
+    this.legacyTick = teamTick === undefined ? undefined : teamTick & 0xffff;
     this.legacy = [];
   }
 }

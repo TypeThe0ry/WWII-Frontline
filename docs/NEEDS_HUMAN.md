@@ -317,6 +317,7 @@
 - **进展（B6-suppress-e2e，2026-11-20）**：E1-13 使用本地 WS。正式域名、受信任 TLS 与部署环境未测。
 - **进展（B6-carentan-netem，2026-11-20）**：Carentan WT netem 长跑使用私有回环、临时自签名证书及指纹固定。受信任 TLS、预发布域名与跨机 WT 未测。见 `reports/m1-carentan-netem-b6.md`。
 - **进展（B6-balance，2026-11-20）**：M2-018 专项使用工作站回环 WS；预发布网关至比赛服的受信任 TLS 真人链路未测。
+- **进展（B6-pingchat，2026-11-20）**：10 个本机无头 WS 会话已验证分组通讯。正式受信任 TLS 下的客户端联测未测。
 
 ### H-018 LiveKit：自托管还是 Cloud
 
