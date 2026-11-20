@@ -42,7 +42,15 @@ fn mm(v: f32) -> u32 {
     (v * 1000.0).round().clamp(0.0, u32::MAX as f32) as u32
 }
 
-/// Reusable search buffers (a bot owns one; nothing is allocated per query after warm-up).
+#[derive(Default)]
+struct Search {
+    start: V2,
+    goal: (u32, V2),
+    best: (f32, u32),
+    open: BinaryHeap<Reverse<(u32, u32, u32)>>,
+}
+
+/// Reusable A* scratch, also retaining the frontier across cooperative yields.
 #[derive(Default)]
 pub struct PathFinder {
     g: Vec<u32>,
@@ -50,6 +58,7 @@ pub struct PathFinder {
     entry: Vec<V2>,
     stamp: Vec<u32>,
     now: u32,
+    search: Search,
     pub last_expanded: usize,
 }
 
@@ -60,6 +69,18 @@ impl PathFinder {
 
     /// `area_mask`: bit `a` set means polygons of area `a` are walkable.
     pub fn find(&mut self, mesh: &NavMesh, from: V2, to: V2, area_mask: u64) -> PathResult {
+        self.begin(mesh, from, to, area_mask)
+            .unwrap_or_else(|| self.step(mesh, area_mask, || false).unwrap())
+    }
+
+    /// `None` means the initialised search needs `step` with the same mesh and mask.
+    pub(crate) fn begin(
+        &mut self,
+        mesh: &NavMesh,
+        from: V2,
+        to: V2,
+        area_mask: u64,
+    ) -> Option<PathResult> {
         let n = mesh.polys.len();
         if self.stamp.len() != n {
             self.g = vec![0; n];
@@ -68,24 +89,47 @@ impl PathFinder {
             self.stamp = vec![0; n];
             self.now = 0;
         }
-        self.now += 1;
+        self.now = self.now.wrapping_add(1);
+        if self.now == 0 {
+            self.stamp.fill(0);
+            self.now = 1;
+        }
         self.last_expanded = 0;
         let (Some((sp, sq)), Some((gp, gq))) =
             (mesh.nearest(from, SNAP_M), mesh.nearest(to, SNAP_M))
         else {
-            return PathResult::NoPath;
+            return Some(PathResult::NoPath);
         };
         if area_mask >> mesh.polys[sp as usize].area & 1 == 0
             || area_mask >> mesh.polys[gp as usize].area & 1 == 0
         {
-            return PathResult::NoPath;
+            return Some(PathResult::NoPath);
         }
-        let mut open: BinaryHeap<Reverse<(u32, u32, u32)>> = BinaryHeap::new();
         self.visit(sp, 0, (super::NO_POLY, 0), sq);
-        open.push(Reverse((mm(dist(sq, gq)), sp, 0)));
-        let mut best = (f32::MAX, sp);
+        self.search.open.clear();
+        self.search.open.push(Reverse((mm(dist(sq, gq)), sp, 0)));
+        self.search.start = sq;
+        self.search.goal = (gp, gq);
+        self.search.best = (f32::MAX, sp);
+        None
+    }
+
+    /// `None` means budget exhausted, not that the path is unreachable.
+    pub(crate) fn step(
+        &mut self,
+        mesh: &NavMesh,
+        area_mask: u64,
+        mut should_yield: impl FnMut() -> bool,
+    ) -> Option<PathResult> {
+        let (gp, gq) = self.search.goal;
+        let mut pops = 0usize;
         let mut found = false;
-        while let Some(Reverse((_, id, gpush))) = open.pop() {
+        while !self.search.open.is_empty() {
+            if pops.is_multiple_of(32) && should_yield() {
+                return None;
+            }
+            pops += 1;
+            let Reverse((_, id, gpush)) = self.search.open.pop().unwrap();
             if gpush > self.g[id as usize] {
                 continue; // a cheaper route to this polygon was found after this entry was queued
             }
@@ -99,8 +143,8 @@ impl PathFinder {
             }
             let p = &mesh.polys[id as usize];
             let h = dist(self.entry[id as usize], gq);
-            if h < best.0 {
-                best = (h, id);
+            if h < self.search.best.0 {
+                self.search.best = (h, id);
             }
             for (e, portal) in p.edges.iter().enumerate() {
                 let Some(pt) = portal else { continue };
@@ -114,10 +158,10 @@ impl PathFinder {
                 }
                 self.visit(pt.to, cost, (id, e as u8), m);
                 let hh = mm(dist(m, gq) * 0.999);
-                open.push(Reverse((cost + hh, pt.to, cost)));
+                self.search.open.push(Reverse((cost + hh, pt.to, cost)));
             }
         }
-        let end = if found { gp } else { best.1 };
+        let end = if found { gp } else { self.search.best.1 };
         let mut corridor = vec![end];
         let mut cur = end;
         while self.parent[cur as usize].0 != super::NO_POLY {
@@ -126,16 +170,16 @@ impl PathFinder {
         }
         corridor.reverse();
         let goal = if found { gq } else { self.entry[end as usize] };
-        let points = funnel(mesh, &corridor, sq, goal);
+        let points = funnel(mesh, &corridor, self.search.start, goal);
         let length_m = points.windows(2).map(|w| dist(w[0], w[1])).sum();
         let path = Path { points, length_m };
-        if found {
+        Some(if found {
             PathResult::Found(path)
         } else if corridor.len() > 1 {
             PathResult::Partial(path)
         } else {
             PathResult::NoPath
-        }
+        })
     }
 
     fn visit(&mut self, id: u32, g: u32, parent: (u32, u8), entry: V2) {

@@ -1,6 +1,10 @@
-//! Difficulty tiers and behaviour tuning, read from `data/rules/bots.json` (never hard-coded).
+//! Production tiers come from `data/bots/difficulty.json`; legacy tiers and shared
+//! behaviour tuning remain in `data/rules/bots.json`.
 
-use frontline_sim::data::defs::{BotDifficultyDef, BotsRulesDef};
+use frontline_sim::data::defs::{
+    BotDifficultyConfigDef, BotDifficultyDef, BotDifficultyName, BotsRulesDef,
+};
+use frontline_sim::GameData;
 
 /// Sim tick rate the bots are written for.
 pub const TICK_HZ: f32 = 30.0;
@@ -15,6 +19,8 @@ pub struct Difficulty {
     pub memory_s: f32,
     /// Maximum distance at which an enemy can be seen.
     pub view_distance_m: f32,
+    /// Multiplier on suppression when making tactical decisions (1.0 for legacy callers).
+    pub suppression_sensitivity: f32,
 }
 
 impl Difficulty {
@@ -24,10 +30,11 @@ impl Difficulty {
             aim_error_mult: d.aim_error_mult as f32,
             memory_s: d.memory_s as f32,
             view_distance_m: d.view_distance_m as f32,
+            suppression_sensitivity: 1.0,
         }
     }
 
-    /// `recruit`, `regular` or `veteran`.
+    /// Legacy lookup in `data/rules/bots.json`: `recruit`, `regular` or `veteran`.
     pub fn named(rules: &BotsRulesDef, name: &str) -> Option<Self> {
         let d = &rules.difficulties;
         Some(Self::from_def(match name {
@@ -44,9 +51,95 @@ impl Difficulty {
             .unwrap_or_else(|| Self::from_def(&rules.difficulties.regular))
     }
 
-    /// The default tier of the embedded game data.
+    /// The legacy default, retained for the M0 fixtures and golden replay.
     pub fn embedded_default() -> Self {
-        Self::default_from(&frontline_sim::GameData::embedded().rules.bots)
+        Self::default_from(&GameData::embedded().rules.bots)
+    }
+
+    /// Production lookup in `data/bots/difficulty.json` (lowercase tier names).
+    pub fn configured(name: &str) -> Option<Self> {
+        let name = match name {
+            "recruit" => BotDifficultyName::Recruit,
+            "regular" => BotDifficultyName::Regular,
+            "veteran" => BotDifficultyName::Veteran,
+            _ => return None,
+        };
+        Some(Self::configured_tier(GameData::bot_difficulty(), name))
+    }
+
+    /// The production default selected by `data/bots/difficulty.json` (initially Regular).
+    pub fn configured_default() -> Self {
+        let config = GameData::bot_difficulty();
+        Self::configured_tier(config, config.default_difficulty)
+    }
+
+    fn configured_tier(config: &BotDifficultyConfigDef, name: BotDifficultyName) -> Self {
+        let tier = match name {
+            BotDifficultyName::Recruit => &config.difficulties.recruit,
+            BotDifficultyName::Regular => &config.difficulties.regular,
+            BotDifficultyName::Veteran => &config.difficulties.veteran,
+        };
+        let [lo, hi] = tier.reaction_ms;
+        Self {
+            reaction_ms: (lo, hi),
+            aim_error_mult: tier.aim_error_mult,
+            memory_s: tier.memory_s,
+            view_distance_m: tier.view_distance_m,
+            suppression_sensitivity: tier.suppression_sensitivity_mult,
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn configured_difficulties_match_gamedesign() {
+        for (
+            name,
+            reaction_ms,
+            aim_error_mult,
+            memory_s,
+            view_distance_m,
+            suppression_sensitivity,
+        ) in [
+            ("recruit", (550, 850), 2.0, 2.0, 150.0, 0.7),
+            ("regular", (350, 600), 1.3, 4.0, 220.0, 1.0),
+            ("veteran", (250, 450), 1.0, 6.0, 300.0, 1.2),
+        ] {
+            assert_eq!(
+                Difficulty::configured(name),
+                Some(Difficulty {
+                    reaction_ms,
+                    aim_error_mult,
+                    memory_s,
+                    view_distance_m,
+                    suppression_sensitivity,
+                }),
+                "configured {name}"
+            );
+        }
+        assert_eq!(
+            Some(Difficulty::configured_default()),
+            Difficulty::configured("regular")
+        );
+        assert_eq!(Difficulty::configured("unknown"), None);
+    }
+
+    #[test]
+    fn legacy_default_is_independent_of_production_difficulty() {
+        let rules = &GameData::embedded().rules.bots;
+        let legacy = Difficulty::embedded_default();
+        assert_eq!(legacy, Difficulty::default_from(rules));
+        assert_eq!(Some(legacy), Difficulty::named(rules, "regular"));
+        assert_eq!(legacy.suppression_sensitivity, 1.0);
+        assert_eq!(
+            Difficulty::named(rules, "veteran")
+                .unwrap()
+                .suppression_sensitivity,
+            1.0
+        );
     }
 }
 

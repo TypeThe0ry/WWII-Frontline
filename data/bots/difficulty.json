@@ -1,0 +1,47 @@
+{
+  "default_difficulty": "regular",
+  "difficulties": {
+    "recruit": {
+      "reaction_ms": [550, 850],
+      "aim_error_mult": 2.0,
+      "memory_s": 2.0,
+      "view_distance_m": 150.0,
+      "suppression_sensitivity_mult": 0.7
+    },
+    "regular": {
+      "reaction_ms": [350, 600],
+      "aim_error_mult": 1.3,
+      "memory_s": 4.0,
+      "view_distance_m": 220.0,
+      "suppression_sensitivity_mult": 1.0
+    },
+    "veteran": {
+      "reaction_ms": [250, 450],
+      "aim_error_mult": 1.0,
+      "memory_s": 6.0,
+      "view_distance_m": 300.0,
+      "suppression_sensitivity_mult": 1.2
+    }
+  },
+  "_meta": {
+    "status": "initial",
+    "tunable": [
+      "difficulties.recruit.reaction_ms",
+      "difficulties.recruit.aim_error_mult",
+      "difficulties.recruit.memory_s",
+      "difficulties.recruit.view_distance_m",
+      "difficulties.recruit.suppression_sensitivity_mult",
+      "difficulties.regular.reaction_ms",
+      "difficulties.regular.aim_error_mult",
+      "difficulties.regular.memory_s",
+      "difficulties.regular.view_distance_m",
+      "difficulties.regular.suppression_sensitivity_mult",
+      "difficulties.veteran.reaction_ms",
+      "difficulties.veteran.aim_error_mult",
+      "difficulties.veteran.memory_s",
+      "difficulties.veteran.view_distance_m",
+      "difficulties.veteran.suppression_sensitivity_mult"
+    ],
+    "calibration_ref": "GAMEDESIGN 20.6 (initial values); T-51"
+  }
+}

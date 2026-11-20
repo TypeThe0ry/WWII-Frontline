@@ -43,6 +43,17 @@ test('M2-009 files are discovered and invalid economy and node settings are reje
   ]);
 });
 
+test('production bot difficulty is discovered and validates whole, ordered reaction bounds', () => {
+  assert.ok(discover(root).files.some(({ file, kind }) => file === 'bots/difficulty.json' && kind === 'bots_difficulty'));
+  const validators = loadValidators(root);
+  const doc = JSON.parse(readFileSync(join(root, 'bots/difficulty.json'), 'utf8'));
+  doc.difficulties.recruit.reaction_ms = [850, 550];
+  doc.difficulties.veteran.reaction_ms = [250.5, 450];
+  const errors = checkFile('bots_difficulty', doc, validators);
+  assert.ok(errors.some((e) => e.pointer === '/difficulties/recruit/reaction_ms' && e.message.includes('min <= max')));
+  assert.ok(errors.some((e) => e.pointer === '/difficulties/veteran/reaction_ms/0' && e.message.includes('integer')));
+});
+
 test('invalid fixtures cover many rule families', () => {
   const names = readdirSync(join(root, 'schemas/fixtures/invalid'));
   for (const kind of ['weapon', 'role', 'loadout', 'vehicle', 'map_meta', 'spawns']) {

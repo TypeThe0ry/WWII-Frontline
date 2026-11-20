@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://frontline.invalid/schemas/bots_difficulty.schema.json",
+  "title": "Production bot difficulty (GAMEDESIGN 20.6, M2-029); data/bots/difficulty.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["default_difficulty", "difficulties", "_meta"],
+  "$defs": {
+    "tier": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reaction_ms", "aim_error_mult", "memory_s", "view_distance_m", "suppression_sensitivity_mult"],
+      "properties": {
+        "reaction_ms": {
+          "type": "array", "minItems": 2, "maxItems": 2,
+          "items": { "type": "integer", "minimum": 0, "maximum": 5000 }
+        },
+        "aim_error_mult": { "type": "number", "minimum": 0, "maximum": 10 },
+        "memory_s": { "type": "number", "minimum": 0, "maximum": 60 },
+        "view_distance_m": { "type": "number", "exclusiveMinimum": 0, "maximum": 1000 },
+        "suppression_sensitivity_mult": { "type": "number", "minimum": 0, "maximum": 10 }
+      }
+    }
+  },
+  "properties": {
+    "default_difficulty": { "enum": ["recruit", "regular", "veteran"] },
+    "difficulties": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["recruit", "regular", "veteran"],
+      "properties": {
+        "recruit": { "$ref": "#/$defs/tier" },
+        "regular": { "$ref": "#/$defs/tier" },
+        "veteran": { "$ref": "#/$defs/tier" }
+      }
+    },
+    "_meta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "tunable"],
+      "properties": {
+        "status": { "enum": ["initial", "reviewed", "measured"] },
+        "tunable": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+        "calibration_ref": { "type": ["string", "null"] }
+      }
+    }
+  }
+}

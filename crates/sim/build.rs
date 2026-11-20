@@ -37,6 +37,7 @@ fn parse_typed(rel: &str, text: &str) -> Result<(), String> {
         {
             typed!(defs::ResourceNodeDef)
         }
+        "bots" if rel == "bots/difficulty.json" => typed!(defs::BotDifficultyConfigDef),
         "rules" if rel == "rules/respawn.json" => typed!(defs::RespawnRulesDef),
         "rules" if rel == "rules/bots.json" => typed!(defs::BotsRulesDef),
         "rules" if rel == "rules/capture.json" => typed!(defs::CaptureRulesDef),
@@ -134,6 +135,11 @@ fn main() {
         ("economy.json", "economy.json", "ECONOMY_JSON"),
         ("rules/respawn.json", "respawn.json", "RESPAWN_JSON"),
         ("rules/bots.json", "bots.json", "BOTS_JSON"),
+        (
+            "bots/difficulty.json",
+            "bots_difficulty.json",
+            "BOTS_DIFFICULTY_JSON",
+        ),
         ("rules/capture.json", "capture.json", "CAPTURE_JSON"),
         ("rules/match_m1.json", "match_m1.json", "MATCH_M1_JSON"),
         ("rules/supplies.json", "supplies.json", "SUPPLIES_JSON"),

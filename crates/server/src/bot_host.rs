@@ -14,6 +14,7 @@ use std::time::Instant;
 use frontline_bots::ctx::SoldierStatus;
 use frontline_bots::fill::{BotInfo, BotState, FillAction, FillManager, REJOIN_GRACE_S};
 use frontline_bots::perception::Sound;
+use frontline_bots::scheduler::{phase_due, BotRuntime};
 use frontline_bots::squad_leader::{ObjView, SquadLeader, SquadOrder, REPICK_TICKS};
 use frontline_bots::{BotBrain, BotCtx, BotMap, Difficulty, SoldierBrain, Tuning};
 use frontline_protocol::msg::input::InputCmd;
@@ -26,6 +27,8 @@ use crate::sim_bridge::SimBridge;
 use crate::world_loader::LoadedMap;
 
 mod gameplay;
+mod settings;
+pub use settings::BotOptions;
 
 /// Nickname prefix of every bot (GAMEDESIGN 20.2).
 pub use frontline_bots::fill::BOT_NAME_PREFIX;
@@ -71,7 +74,8 @@ pub struct BotTickTiming {
 pub struct BotHost {
     slots: Vec<BotSlot>,
     seed: u64,
-    difficulty: Difficulty,
+    options: BotOptions,
+    runtime: BotRuntime,
     metrics: Arc<Metrics>,
     timings: Vec<BotTickTiming>,
     /// FNV-1a of all commands of the last [`tick`](Self::tick) (determinism checks).
@@ -95,7 +99,11 @@ impl BotHost {
         BotHost {
             slots: Vec::new(),
             seed,
-            difficulty,
+            options: BotOptions {
+                teams: [difficulty; 2],
+                ..BotOptions::default()
+            },
+            runtime: BotRuntime::default(),
             metrics,
             timings: Vec::new(),
             last_hash: 0,
@@ -135,7 +143,7 @@ impl BotHost {
             ),
             None => BotMap::without_nav(tuning, Vec::new()),
         });
-        let mut host = BotHost::new(seed, Difficulty::default_from(rules), metrics.clone());
+        let mut host = BotHost::new(seed, Difficulty::configured_default(), metrics.clone());
         for i in 0..count {
             let (id, team) = bot_slot(i);
             if sessions.is_some_and(|s| !s.reserve_bot(id, team)) {
@@ -159,6 +167,17 @@ impl BotHost {
         host.sessions = sessions.cloned();
         metrics.bots.set(host.len() as i64);
         host
+    }
+
+    pub fn configure(&mut self, options: BotOptions) {
+        self.runtime.set_path_ms_per_tick(options.path_ms);
+        self.options = options;
+    }
+
+    /// In-process replay and verification use fixed work limits, not wall deadlines.
+    pub fn use_deterministic_budget(&mut self) {
+        self.runtime = BotRuntime::deterministic();
+        self.runtime.set_path_ms_per_tick(self.options.path_ms);
     }
 
     /// Registers a brain for a player that already joined the world / bridge.
@@ -195,6 +214,7 @@ impl BotHost {
     pub(crate) fn forget(&mut self, player: PlayerId) {
         if let Some(i) = self.slots.iter().position(|s| s.player == player) {
             self.slots.remove(i);
+            self.runtime.forget(player);
             if let Some(s) = &self.sessions {
                 s.unreserve_bot(player);
             }
@@ -331,9 +351,7 @@ impl BotHost {
         }
         let now = world.tick().0;
         gameplay::record_sounds(&mut self.sounds, now, events);
-        if now.is_multiple_of(REPICK_TICKS) {
-            self.update_orders(world, now);
-        }
+        self.update_orders(world, now);
         for s in &mut self.slots {
             let Some(state) = &mut s.tactics else {
                 continue;
@@ -348,18 +366,37 @@ impl BotHost {
     }
 
     fn update_orders(&mut self, world: &World, now: u32) {
-        self.leaders.retain(|id, (leader, _)| {
-            world
-                .squads()
-                .squad(*id)
-                .is_some_and(|sq| sq.leader == *leader)
-        });
+        if now.is_multiple_of(REPICK_TICKS) {
+            self.leaders.retain(|id, (leader, _)| {
+                world
+                    .squads()
+                    .squad(*id)
+                    .is_some_and(|sq| sq.leader == *leader)
+            });
+        }
         let view = world.view();
         if view.objectives().is_empty() {
             self.leaders.clear();
             return;
         }
         for team in [Team::Us, Team::Ger] {
+            let mut due = self
+                .slots
+                .iter()
+                .filter(|s| s.team == team && s.tactics.is_some())
+                .filter(|s| phase_due(now, u32::from(s.player), REPICK_TICKS))
+                .filter_map(|s| {
+                    let sq = world
+                        .squads()
+                        .squad_of(s.player)
+                        .filter(|sq| sq.leader == s.player)?;
+                    let from = world.player_state(s.player)?.pos;
+                    Some((sq.id, s.player, from))
+                })
+                .peekable();
+            if due.peek().is_none() {
+                continue;
+            }
             let objs: Vec<_> = view
                 .objectives()
                 .iter()
@@ -384,26 +421,15 @@ impl BotHost {
                     }
                 })
                 .collect();
-            for s in self
-                .slots
-                .iter()
-                .filter(|s| s.team == team && s.tactics.is_some())
-            {
-                let Some(sq) = world
-                    .squads()
-                    .squad_of(s.player)
-                    .filter(|sq| sq.leader == s.player)
-                else {
-                    continue;
-                };
-                let Some(from) = world.player_state(s.player).map(|p| p.pos) else {
-                    continue;
-                };
-                self.leaders
-                    .entry(sq.id)
-                    .or_insert_with(|| (s.player, SquadLeader::new()))
-                    .1
-                    .update(now, from, &objs);
+            for (id, player, from) in due {
+                let leader = self
+                    .leaders
+                    .entry(id)
+                    .or_insert_with(|| (player, SquadLeader::new()));
+                if leader.0 != player {
+                    *leader = (player, SquadLeader::new());
+                }
+                leader.1.update(now, from, &objs);
             }
         }
     }
@@ -469,10 +495,12 @@ impl BotHost {
         t0: Instant,
     ) -> (usize, usize) {
         let now = world.tick().0 + 1;
-        let mut path_ns = 0u64;
         let mut hash: u64 = 0xcbf2_9ce4_8422_2325;
         let mut accepted = 0usize;
         let view: &dyn WorldView = world.view();
+        self.runtime.begin_tick(view, now);
+        let bot_ids: Vec<_> = self.slots.iter().map(|s| s.player).collect();
+        self.runtime.plan(&bot_ids);
         for s in &mut self.slots {
             let alive = world.player_life(s.player) == Some(LifeState::Alive);
             let squad = s
@@ -486,7 +514,7 @@ impl BotHost {
                 bot_id: s.player,
                 team: s.team,
                 tick: now,
-                difficulty: self.difficulty,
+                difficulty: self.options.difficulty(s.player, s.team),
                 rng_seed: self.seed,
                 self_weapon: alive.then(|| world.weapon_state(s.player)).flatten(),
                 squad_order: role_order
@@ -503,22 +531,28 @@ impl BotHost {
                     .as_ref()
                     .map_or_else(SoldierStatus::default, |st| st.survival(world, s.player)),
             };
-            let mut cmd = s.brain.think(view, &ctx);
+            let mut cmd = self.runtime.think_with_suppression(
+                s.brain.as_mut(),
+                view,
+                &ctx,
+                world.suppression(s.player).unwrap_or_default(),
+            );
             if let Some((intent, from)) = role_order
                 .filter(|_| alive)
                 .zip(world.player_state(s.player))
             {
                 intent.apply(from.pos, &mut cmd);
             }
-            let st = s.brain.take_stats();
-            path_ns += st.path_ns;
-            self.stuck_total += u64::from(st.stuck_events);
             hash = fold(hash, s.player, &cmd);
             if bridge.ingest_cmd(s.player, &cmd, now).is_accepted() {
                 accepted += 1;
             }
         }
         let total_ns = t0.elapsed().as_nanos() as u64;
+        let sample = self.runtime.finish_tick();
+        let path_ns = sample.path_ns;
+        self.stuck_total += sample.stuck;
+        self.metrics.bot_scale.observe(sample, total_ns);
         self.metrics.bot_think_ms.observe(total_ns as f64 / 1e6);
         self.metrics.bot_path_ms.observe(path_ns as f64 / 1e6);
         if self.timings.len() < MAX_SAMPLES {
@@ -540,12 +574,15 @@ impl BotHost {
         out: &mut Vec<(PlayerId, InputCmd)>,
     ) {
         out.clear();
+        self.runtime.begin_tick(view, now);
+        let bot_ids: Vec<_> = self.slots.iter().map(|s| s.player).collect();
+        self.runtime.plan(&bot_ids);
         for s in &mut self.slots {
             let ctx = BotCtx {
                 bot_id: s.player,
                 team: s.team,
                 tick: now,
-                difficulty: self.difficulty,
+                difficulty: self.options.difficulty(s.player, s.team),
                 rng_seed: self.seed,
                 self_weapon: weapon(s.player),
                 squad_order: None,
@@ -553,9 +590,8 @@ impl BotHost {
                 hearing: &[],
                 survival: SoldierStatus::default(),
             };
-            let cmd = s.brain.think(view, &ctx);
+            let cmd = self.runtime.think(s.brain.as_mut(), view, &ctx);
             out.push((s.player, cmd));
-            let _ = s.brain.take_stats();
         }
     }
 }

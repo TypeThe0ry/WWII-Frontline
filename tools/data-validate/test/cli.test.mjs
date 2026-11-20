@@ -17,6 +17,8 @@ function place(root, kind, srcFile, id) {
     ? join(root, 'rules', `${kind.slice(5)}.json`)
     : kind === 'rules' || kind === 'bots'
     ? join(root, 'rules', kind === 'bots' ? 'bots.json' : 'respawn.json')
+    : kind === 'bots_difficulty'
+    ? join(root, 'bots', 'difficulty.json')
     : join(root, 'maps', 'fixture_map', kind === 'map_meta' ? 'meta.json' : 'spawns.json');
   mkdirSync(join(dest, '..'), { recursive: true });
   const doc = JSON.parse(readFileSync(srcFile, 'utf8'));

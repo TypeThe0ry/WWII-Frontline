@@ -263,6 +263,31 @@ cargo test --release -p frontline-server --test bots_soak -- --ignored --nocaptu
 cargo bench -p frontline-bots --bench think                     # think_10 / think_60 / think_100 / path_query -> reports/baselines/bots-m0.json
 ```
 
+### Bot scale (M2-029)
+
+Match-server defaults read the `initial` tiers from `data/bots/difficulty.json`. Use
+`--bot-difficulty-us recruit --bot-difficulty-ger regular --bot-difficulty 127=veteran`
+to override defaults; per-player overrides win over team settings. `--bot-path-budget-ms`
+defaults to 1.0 (allowed 0.05–1.0). Equivalent environment variables are
+`FRONTLINE_BOT_DIFFICULTY_US`, `FRONTLINE_BOT_DIFFICULTY_GER`, `FRONTLINE_BOT_DIFFICULTY`
+(comma-separated `ID=TIER` list), and `FRONTLINE_BOT_PATH_BUDGET_MS`.
+
+Each live match reports `bots_{tick,path,perception,tactical}_ms`,
+`bots_deferred_total`, `bots_think_timeout_total` and `bots_stuck_total`. Deadlines
+are cooperative; a live timeout rolls back the pending decision, but OS preemption
+and an in-flight raycast are not interruptible. Use `BotRuntime::deterministic()` for
+seed-only local replay rather than replaying live wall-clock decisions.
+
+```sh
+FRONTLINE_REQUIRE_TERRAIN=1 cargo bench --locked -p frontline-bots --bench bots_tick
+cargo test --release --locked -p frontline-bots --test scale_100 -- --include-ignored --nocapture --test-threads=1
+cargo test --release --locked -p frontline-bots --lib path_budget -- --include-ignored --nocapture --test-threads=1
+cargo test --locked -p frontline-server --test bots_validation
+```
+
+Generate M0 terrain first for a comparable fixture. A full benchmark writes
+`reports/bench/bots_tick_baseline.json`; set `FRONTLINE_BOTS_BASELINE_PATH` for a noncanonical run.
+
 ## Headless client and load tests (M0-027)
 
 `headless-client` (`crates/headless-client`) runs N synthetic players over the real WebSocket / WebTransport paths (30 Hz waypoint walking

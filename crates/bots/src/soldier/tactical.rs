@@ -44,8 +44,22 @@ pub(super) fn scan(
     rng: &mut Pcg64Mcg,
     out: &mut Vec<Contact>,
     rays: &mut u8,
+    cache: Option<&PerceptionCache>,
+    deadline: Option<Instant>,
 ) {
     let range = view_distance(tuning, diff);
+    if let Some(cache) = cache {
+        cache.candidates(me, eye, tuning, diff, out);
+        out.retain(|c| {
+            if *rays == 0 || deadline.is_some_and(|d| Instant::now() >= d) {
+                return false;
+            }
+            *rays -= 1;
+            view.los(eye, c.pos + Vec3::Y * TORSO_Y)
+                && unit_f32(rng) < recognition_probability(c.dist, range, tuning.min_recognition)
+        });
+        return;
+    }
     out.clear();
     out.extend(view.players().iter().filter_map(|p| {
         let dist = eye.distance(p.pos + Vec3::Y * TORSO_Y);
@@ -63,8 +77,9 @@ pub(super) fn scan(
     });
 }
 
+#[derive(Clone)]
 pub(super) struct Tactical {
-    tree: Tree,
+    tree: Arc<Tree>,
     bb: Blackboard,
     goals: GoalSelector,
     scores: Vec<(Goal, f32)>,
@@ -76,7 +91,7 @@ impl Tactical {
         let tree = tactics::combat_tree().expect("built-in combat tree");
         let bb = Blackboard::for_tree(&tree);
         Self {
-            tree,
+            tree: Arc::new(tree),
             bb,
             goals: GoalSelector::new(HYSTERESIS),
             scores: Vec::with_capacity(8),
@@ -101,6 +116,8 @@ impl Tactical {
         weapon: Option<WeaponInfo>,
         visible: bool,
         rng: &mut Pcg64Mcg,
+        cache: Option<&PerceptionCache>,
+        suppression: f32,
     ) {
         let tick = ctx.tick;
         let memory = (ctx.difficulty.memory_s * TICK_HZ) as u32;
@@ -115,11 +132,11 @@ impl Tactical {
             .filter(|(t, _)| tick.saturating_sub(*t) <= memory);
 
         let objective = select_objective(view, ctx, me);
-        let leader = ctx.squad_leader.and_then(|id| {
-            view.players()
-                .iter()
-                .find(|p| p.player == id && id != me.player && p.team == me.team)
-        });
+        let leader = ctx
+            .squad_leader
+            .filter(|&id| id != me.player)
+            .and_then(|id| lookup(view, cache, id))
+            .filter(|p| p.team == me.team);
         let follower = leader.map(|p| {
             let side = if ctx.bot_id.is_multiple_of(2) {
                 -1.0
@@ -132,13 +149,12 @@ impl Tactical {
         });
         let target = brain.target;
         let enemy = target.map(|g| (g.player, me.pos.distance(g.last_pos)));
-        let aimed_at = visible
-            && target.is_some_and(|g| {
-                view.players()
-                    .iter()
-                    .find(|p| p.player == g.player)
-                    .is_some_and(|p| in_view_cone(p.pos, p.yaw, me.pos, 18.0))
-            });
+        let aimed_at = suppression * ctx.difficulty.suppression_sensitivity >= 60.0
+            || visible
+                && target.is_some_and(|g| {
+                    lookup(view, cache, g.player)
+                        .is_some_and(|p| in_view_cone(p.pos, p.yaw, me.pos, 18.0))
+                });
         let casualty = ctx.survival.downed_ally;
         let crate_pos = ctx.survival.ammo_crate;
         let order = ctx.squad_order;
