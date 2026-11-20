@@ -433,11 +433,15 @@ pub fn spawn_with_bots(
         .name("sim".into())
         .spawn(move || {
             if let Some(core) = pin {
-                tracing::warn!(
-                    event = "pin_sim_core_ignored",
-                    core,
-                    "CPU pinning is a deployment item (M1-067); ignored"
-                );
+                match pin_current_thread(core) {
+                    Ok(()) => tracing::info!(event = "sim_cpu_pinned", core),
+                    Err(error) => tracing::warn!(
+                        event = "sim_cpu_pin_failed",
+                        core,
+                        %error,
+                        "sim CPU pinning failed; retaining inherited affinity"
+                    ),
+                }
             }
             let mut lp = lp;
             // A spawned loop's scheduler statistics are unreachable (only `Report` leaves the thread), so keeping the
@@ -451,6 +455,49 @@ pub fn spawn_with_bots(
         commands_tx,
         join,
     })
+}
+
+#[cfg(target_os = "linux")]
+fn pin_current_thread(core: usize) -> std::io::Result<()> {
+    use rustix::thread::{sched_setaffinity, CpuSet};
+
+    if core >= CpuSet::MAX_CPU {
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::InvalidInput,
+            "CPU id is outside the supported affinity mask",
+        ));
+    }
+    let mut mask = CpuSet::new();
+    mask.set(core);
+    // None targets the calling thread (sim), not the process's main thread.
+    Ok(sched_setaffinity(None, &mask)?)
+}
+
+#[cfg(not(target_os = "linux"))]
+fn pin_current_thread(_core: usize) -> std::io::Result<()> {
+    Err(std::io::Error::new(
+        std::io::ErrorKind::Unsupported,
+        "sim CPU pinning requires Linux",
+    ))
+}
+
+#[cfg(all(test, target_os = "linux"))]
+#[test]
+fn affinity_changes_only_calling_thread() {
+    use rustix::thread::{sched_getaffinity, CpuSet};
+
+    let allowed = sched_getaffinity(None).unwrap();
+    let core = (0..CpuSet::MAX_CPU).find(|&id| allowed.is_set(id)).unwrap();
+    std::thread::spawn(move || {
+        assert!(pin_current_thread(CpuSet::MAX_CPU).is_err());
+        pin_current_thread(core).unwrap();
+        let pinned = sched_getaffinity(None).unwrap();
+        assert!((0..CpuSet::MAX_CPU).all(|id| pinned.is_set(id) == (id == core)));
+    })
+    .join()
+    .unwrap();
+    let caller = sched_getaffinity(None).unwrap();
+    assert!((0..CpuSet::MAX_CPU).all(|id| caller.is_set(id) == allowed.is_set(id)));
 }
 
 /// (on-CPU ns, run-queue wait ns) of the calling thread from `/proc/thread-self/schedstat` (Linux only).
