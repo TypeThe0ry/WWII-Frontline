@@ -90,6 +90,10 @@ pub struct Metrics {
     pub snapshot_budget_utilization: Histogram,
     /// Entities that did not fit a packet (budget or record limit).
     pub aoi_starved_total: IntCounter,
+    pub net_budget_scale: Histogram,
+    pub net_regulated_clients: IntGauge,
+    pub net_far_shed_total: IntCounter,
+    pub ws_snapshot_dropped_total: IntCounter,
     /// Enemies sent outside the R3 rules (must stay 0; audit).
     pub aoi_enemy_leak_total: IntCounter,
     pub c0_rate_limited_total: IntCounterVec,
@@ -275,7 +279,28 @@ impl Metrics {
             ),
             aoi_starved_total: counter(
                 "aoi_starved_total",
-                "Candidate entities that did not fit into a snapshot packet",
+                "Candidate entities with accumulator >= 2 that did not fit into a snapshot packet",
+            ),
+            net_budget_scale: hist(
+                "net_budget_scale",
+                "Per-client C2 budget scale sampled at regulator evaluations",
+                &[
+                    0.399, 0.400001, 0.500001, 0.600001, 0.700001, 0.800001, 0.900001, 0.950001,
+                    1.0,
+                ],
+            ),
+            net_regulated_clients: IntGauge::new(
+                "net_regulated_clients",
+                "Connected clients with C2 budget scale below one",
+            )
+            .unwrap(),
+            net_far_shed_total: counter(
+                "net_far_shed_total",
+                "Far candidates excluded by the C2 regulator (per evaluation)",
+            ),
+            ws_snapshot_dropped_total: counter(
+                "ws_snapshot_dropped_total",
+                "Unwritten C2 snapshots superseded in WS outbound queues",
             ),
             aoi_enemy_leak_total: counter(
                 "aoi_enemy_leak_total",
@@ -432,6 +457,10 @@ impl Metrics {
             Box::new(m.snapshot_bytes.clone()) as Box<dyn prometheus::core::Collector>,
             Box::new(m.snapshot_budget_utilization.clone()),
             Box::new(m.aoi_starved_total.clone()),
+            Box::new(m.net_budget_scale.clone()),
+            Box::new(m.net_regulated_clients.clone()),
+            Box::new(m.net_far_shed_total.clone()),
+            Box::new(m.ws_snapshot_dropped_total.clone()),
             Box::new(m.aoi_enemy_leak_total.clone()),
             Box::new(m.lagcomp_clamped_total.clone()),
             Box::new(m.origin_corrected_total.clone()),

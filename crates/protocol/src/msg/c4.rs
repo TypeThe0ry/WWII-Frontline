@@ -235,6 +235,12 @@ impl Codec for PlayerRoster {
     }
 }
 
+/// `Notice` codes for server-side snapshot budget changes. The envelope is unchanged.
+pub mod notice_code {
+    pub const NET_DEGRADED: u16 = 0x0200;
+    pub const NET_RECOVERED: u16 = 0x0201;
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Notice {
     pub code: u16,

@@ -153,6 +153,14 @@ impl SnapshotBuilder<'_> {
         self.used_bits()
     }
 
+    /// Apply a lower budget to subsequent records without discarding fixed fields already
+    /// written. The original transport/codec limit remains a hard ceiling.
+    pub fn cap_remaining(&mut self, budget_bytes: usize) {
+        let budget_bits = budget_bytes.saturating_mul(8);
+        let used_bits = self.used_bits().div_ceil(8) * 8;
+        self.budget_bits = self.budget_bits.min(used_bits.max(budget_bits));
+    }
+
     /// Bits used by entity records so far (excludes the 7-bit count).
     pub fn entity_bits(&self) -> usize {
         self.ent_w.bit_len()
@@ -216,6 +224,20 @@ impl SnapshotBuilder<'_> {
     /// baseline value. Returns `Ok(false)` (and writes nothing) when it does not fit or the
     /// 127-record limit is reached. A repeated `id` in one packet is an error.
     pub fn add_entity(&mut self, s: &EntityState, near: bool) -> Result<bool, CodecError> {
+        self.add_entity_inner(s, near, false)
+    }
+
+    /// Force a keyframe on re-entry after the server removed an entity from the AOI.
+    pub fn add_entity_keyframe(&mut self, s: &EntityState) -> Result<bool, CodecError> {
+        self.add_entity_inner(s, false, true)
+    }
+
+    fn add_entity_inner(
+        &mut self,
+        s: &EntityState,
+        near: bool,
+        keyframe: bool,
+    ) -> Result<bool, CodecError> {
         s.validate()?;
         if self.is_seen(s.id) {
             return Err(CodecError::InvalidValue);
@@ -225,6 +247,7 @@ impl SnapshotBuilder<'_> {
         }
         let base = self
             .baseline_tick
+            .filter(|_| !keyframe)
             .and(self.st.baseline.as_ref())
             .and_then(|b| find_state(&b.states, s.id))
             .copied();

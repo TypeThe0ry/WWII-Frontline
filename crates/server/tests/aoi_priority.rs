@@ -278,7 +278,7 @@ fn starvation_protection_under_a_tiny_budget() {
     }
     let c = s.client(0);
     assert!(
-        s.sched.stats.starved > 0,
+        s.sched.stats.budget_skipped > 0,
         "scene should overflow the budget"
     );
     for id in 1..=60u8 {

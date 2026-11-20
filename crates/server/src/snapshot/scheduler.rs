@@ -27,6 +27,8 @@ use super::occlusion::terrain_occludes;
 use super::priority::*;
 use super::self_state;
 use crate::metrics::Metrics;
+use crate::net::regulator::{BandwidthRegulator, BudgetNotice, RegulatorCfg};
+use crate::net::transport_stats::LinkSample;
 
 pub const TICK_HZ: f32 = 30.0;
 /// Default packet budget (bytes of snapshot payload).
@@ -47,6 +49,9 @@ pub struct LinkInfo {
     pub crc: bool,
     /// 15 Hz instead of 20 Hz (WebSocket, ARCHITECTURE §6.6.2).
     pub hz15: bool,
+    /// Only connection-driven runs feed controller samples. M1 synthetic fixtures remain
+    /// usable as byte-for-byte unregulated references.
+    pub sample: Option<LinkSample>,
 }
 
 impl LinkInfo {
@@ -55,6 +60,7 @@ impl LinkInfo {
         budget: PACKET_BUDGET,
         crc: false,
         hz15: true,
+        sample: None,
     };
     /// A datagram transport with the given `ClientHandle::max_datagram_size()`; without a
     /// datagram path the link behaves like WebSocket.
@@ -65,6 +71,7 @@ impl LinkInfo {
                 budget: PACKET_BUDGET.min(m.saturating_sub(1)).max(64),
                 crc: true,
                 hz15: false,
+                sample: None,
             },
         }
     }
@@ -73,7 +80,13 @@ impl LinkInfo {
         budget: PACKET_BUDGET,
         crc: true,
         hz15: false,
+        sample: None,
     };
+
+    pub fn with_sample(mut self, sample: LinkSample) -> Self {
+        self.sample = Some(sample);
+        self
+    }
 }
 
 /// Per-client inputs of one scheduler pass (read from the session layer).
@@ -104,6 +117,8 @@ pub struct SchedStats {
     pub keyframe_records: u64,
     pub delta_records: u64,
     pub remove_records: u64,
+    /// Due records that did not fit, including those not yet considered starved.
+    pub budget_skipped: u64,
     pub starved: u64,
     pub degraded_ticks: u64,
     pub encode_errors: u64,
@@ -181,10 +196,13 @@ pub struct SnapshotScheduler {
     pub collect: bool,
     /// Entities within 96 m go into every packet (default off, see `client_pass`).
     pub near_every_packet: bool,
+    regulator_cfg: RegulatorCfg,
+    notices: Vec<(PlayerId, BudgetNotice)>,
     // scratch
     cand_ids: Vec<u8>,
     cands: Vec<Cand>,
     near: [bool; MAX_SLOTS],
+    far_tier: [u8; MAX_SLOTS],
     /// Wire id (128..=255) of each live vehicle.
     veh_slot: BTreeMap<EntityId, u8>,
     params: AoiParams,
@@ -212,9 +230,12 @@ impl SnapshotScheduler {
             stats: SchedStats::default(),
             collect: true,
             near_every_packet: false,
+            regulator_cfg: RegulatorCfg::default(),
+            notices: Vec::new(),
             cand_ids: Vec::new(),
             cands: Vec::new(),
             near: [false; MAX_SLOTS],
+            far_tier: [0; MAX_SLOTS],
             veh_slot: BTreeMap::new(),
             params: AoiParams::from_rules(&frontline_sim::GameData::embedded().rules.aoi, TICK_HZ),
             trace_aoi: crate::logging::aoi_output(),
@@ -237,6 +258,10 @@ impl SnapshotScheduler {
 
     pub fn client_count(&self) -> usize {
         self.clients.len()
+    }
+
+    pub fn drain_budget_notices(&mut self) -> impl Iterator<Item = (PlayerId, BudgetNotice)> + '_ {
+        self.notices.drain(..)
     }
 
     /// Whether `player`'s packet is due at `tick`: 20 Hz = every tick except those with
@@ -279,6 +304,7 @@ impl SnapshotScheduler {
         out: &mut Vec<Outgoing>,
     ) {
         let t0 = Instant::now();
+        self.notices.clear();
         self.refresh_frames(world, events, now);
 
         // client set
@@ -331,8 +357,13 @@ impl SnapshotScheduler {
         }
 
         // 1 s bandwidth windows (ticks without a packet count too)
+        let mut regulated = 0;
         for c in clients {
             if let Some(b) = self.clients.get_mut(&c.player) {
+                if let Some(r) = &mut b.regulator {
+                    r.on_send(b.tick_bytes);
+                    regulated += i64::from(r.scale() < 1.0);
+                }
                 let sample = b.meter.tick(b.tick_bytes, b.tick_packets);
                 b.tick_bytes = 0;
                 b.tick_packets = 0;
@@ -358,6 +389,7 @@ impl SnapshotScheduler {
         }
         if let Some(m) = &self.metrics {
             m.aoi_encode_ms.observe(ns as f64 / 1e6);
+            m.net_regulated_clients.set(regulated);
         }
     }
 
@@ -731,6 +763,7 @@ impl SnapshotScheduler {
             &mut self.cand_ids,
         );
         self.cands.clear();
+        let regulated = book.regulator.as_ref().is_some_and(|r| r.scale() < 1.0);
         for &id in &self.cand_ids {
             if id == p {
                 continue;
@@ -771,12 +804,6 @@ impl SnapshotScheduler {
                 // R3 decides enemy visibility. The visibility rate discount applies to friends.
                 rel.cos_h = 1.0;
             }
-            slot.touched = ec;
-            if !was {
-                slot.state = SlotState::InRange;
-                slot.acc = 1.0;
-                slot.remove_left = 0;
-            }
             // Option (default off): PI-010 notes that a delta needs the entity to be in the
             // acknowledged baseline packet. Forcing everything within 96 m into every packet
             // makes them all deltas but measured 20 % MORE bytes than the spec rates with
@@ -792,9 +819,33 @@ impl SnapshotScheduler {
                 };
                 rate.min(packet_hz)
             };
-            slot.acc = (slot.acc + rate * dt).min(ACC_CAP);
             self.near[id as usize] = rel.dist <= self.params.enemy_close_m;
-            self.cands.push(Cand { id, acc: slot.acc });
+            if regulated {
+                self.far_tier[id as usize] = super::far_admission::tier(rel.dist);
+            }
+            let acc = ((if was { slot.acc } else { 1.0 }) + rate * dt).min(ACC_CAP);
+            self.cands.push(Cand { id, acc });
+        }
+        if regulated {
+            let shed = super::far_admission::trim(
+                &mut self.cands,
+                &self.far_tier,
+                &book.prio.slots,
+                &mut book.force_full,
+                book.regulator.as_ref().expect("regulated"),
+            );
+            if shed != 0 {
+                if let Some(m) = &self.metrics {
+                    m.net_far_shed_total.inc_by(shed as u64);
+                }
+            }
+        }
+        for c in &self.cands {
+            let slot = &mut book.prio.slots[c.id as usize];
+            slot.touched = ec;
+            slot.state = SlotState::InRange;
+            slot.remove_left = 0;
+            slot.acc = c.acc;
         }
         for slot in &mut book.prio.slots {
             if slot.state == SlotState::InRange && slot.touched != ec {
@@ -804,6 +855,11 @@ impl SnapshotScheduler {
             }
         }
         order(&mut self.cands);
+        if regulated {
+            // Preserve due T3 service even when near candidates fill the scaled budget.
+            self.cands
+                .sort_by_key(|c| self.far_tier[c.id as usize] != super::far_admission::T3);
+        }
     }
 
     fn client_pass(
@@ -823,7 +879,8 @@ impl SnapshotScheduler {
         let Some(book) = self.clients.get_mut(&p) else {
             return;
         };
-        if let Some(report) = book.on_client_report(c.ack_low, c.pred_hash, now) {
+        let report = book.on_client_report(c.ack_low, c.pred_hash, now);
+        if let Some(report) = report {
             if report.hash_mismatch {
                 if let Some(m) = &self.metrics {
                     m.pred_hash_mismatch_total.inc();
@@ -837,7 +894,30 @@ impl SnapshotScheduler {
                 );
             }
         }
-        if !Self::is_due(hz15, p, now) {
+        let due = Self::is_due(hz15, p, now);
+        if let Some(sample) = c.link.sample {
+            let r = book
+                .regulator
+                .get_or_insert_with(|| BandwidthRegulator::new(self.regulator_cfg, c.link.budget));
+            if let Some(report) = report {
+                r.on_ack(report.ack);
+                if sample.rtt_micros == 0 {
+                    r.on_rtt(now.wrapping_sub(report.ack) as f32 * 1000.0 / TICK_HZ);
+                }
+            }
+            if sample.rtt_micros > 0 {
+                r.on_rtt(sample.rtt_micros as f32 / 1000.0);
+            }
+            if r.tick(now, due, sample.capacity_bytes_per_sec) {
+                if let Some(m) = &self.metrics {
+                    m.net_budget_scale.observe(f64::from(r.scale()));
+                }
+            }
+            if let Some(notice) = r.notice(now) {
+                self.notices.push((p, notice));
+            }
+        }
+        if !due {
             return;
         }
         let packet_hz = if hz15 { 15.0 } else { 20.0 };
@@ -864,6 +944,11 @@ impl SnapshotScheduler {
         }
         let evs = book.events.entries();
         let n_ev = b.add_events(&evs).unwrap_or(0);
+        let budget = book
+            .regulator
+            .as_ref()
+            .map_or(c.link.budget, |r| r.budget(c.link.budget));
+        b.cap_remaining(budget);
 
         let mut removes: [u8; MAX_SLOTS] = [0; MAX_SLOTS];
         let mut n_rm = 0usize;
@@ -877,16 +962,26 @@ impl SnapshotScheduler {
             }
         }
         let mut starved = 0u64;
+        let mut budget_skipped = 0u64;
         let mut sent_ids: [u8; MAX_SLOTS] = [0; MAX_SLOTS];
         let mut n_sent = 0usize;
         for cd in &self.cands {
             let f = &self.frames[cd.id as usize];
-            match b.add_entity(&f.state, self.near[cd.id as usize]) {
+            let id = cd.id as usize;
+            let encoded = if book.force_full[id] {
+                b.add_entity_keyframe(&f.state)
+            } else {
+                b.add_entity(&f.state, self.near[id])
+            };
+            match encoded {
                 Ok(true) => {
                     sent_ids[n_sent] = cd.id;
                     n_sent += 1;
                 }
-                Ok(false) => starved += 1,
+                Ok(false) => {
+                    budget_skipped += 1;
+                    starved += u64::from(cd.acc >= 2.0);
+                }
                 Err(_) => self.stats.encode_errors += 1,
             }
         }
@@ -897,6 +992,7 @@ impl SnapshotScheduler {
         // (hysteresis) as the hard bound ----
         let mut leaks = 0u64;
         for &id in &sent_ids[..n_sent] {
+            book.force_full[id as usize] = false;
             let f = &self.frames[id as usize];
             if f.team as u8 == o.team {
                 continue;
@@ -928,6 +1024,9 @@ impl SnapshotScheduler {
         }
         book.events.mark_sent(n_ev, now);
         book.record_sent(now, pred_hash_q(q));
+        if let Some(r) = &mut book.regulator {
+            r.track_snapshot(now);
+        }
         book.packets += 1;
         book.bytes += bytes.len() as u64;
         book.keyframe_records += kf as u64;
@@ -942,16 +1041,17 @@ impl SnapshotScheduler {
         st.keyframe_records += kf as u64;
         st.delta_records += dl as u64;
         st.remove_records += n_rm as u64;
+        st.budget_skipped += budget_skipped;
         st.starved += starved;
         if self.collect && st.sizes.len() < MAX_SAMPLES {
             st.sizes.push(bytes.len() as u16);
             st.budget_util
-                .push(bytes.len() as f32 / c.link.budget as f32);
+                .push(bytes.len() as f32 / budget.max(1) as f32);
         }
         if let Some(m) = &self.metrics {
             m.snapshot_bytes.observe(bytes.len() as f64);
             m.snapshot_budget_utilization
-                .observe(bytes.len() as f64 / c.link.budget as f64);
+                .observe(bytes.len() as f64 / budget.max(1) as f64);
             m.snapshots_sent_total.inc();
             m.snapshot_keyframe_records_total.inc_by(kf as u64);
             m.snapshot_delta_records_total.inc_by(dl as u64);

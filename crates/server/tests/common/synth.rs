@@ -182,8 +182,20 @@ impl Synth {
             .collect()
     }
 
+    pub fn outgoing(&self) -> &[Outgoing] {
+        &self.out
+    }
+
     /// One tick: `input(player, tick)` for every player alive in the world (ascending ids).
-    pub fn step(&mut self, mut input: impl FnMut(u8, u32) -> InputCmd) -> Vec<SimEvent> {
+    pub fn step(&mut self, input: impl FnMut(u8, u32) -> InputCmd) -> Vec<SimEvent> {
+        self.step_with_events(input, &[])
+    }
+
+    pub fn step_with_events(
+        &mut self,
+        mut input: impl FnMut(u8, u32) -> InputCmd,
+        injected: &[SimEvent],
+    ) -> Vec<SimEvent> {
         let t = self.world.tick().0 + 1;
         self.tick = t;
         let mut inputs: Vec<(u8, InputCmd)> = Vec::new();
@@ -191,7 +203,8 @@ impl Synth {
             inputs.push((p, input(p, t)));
         }
         // dead players are not in `players()`: they get no input (the sim keeps them dead)
-        let out = self.world.step(&inputs);
+        let mut out = self.world.step(&inputs);
+        out.events.extend_from_slice(injected);
         let mut cin = Vec::new();
         for c in &mut self.clients {
             while c.pending_acks.front().is_some_and(|a| a.0 <= t) {

@@ -15,3 +15,6 @@ export const DIST_Q_M = 0.25;
 
 /** `PlayerRoster.flags::ALIVE` in protocol/src/msg/c4.rs. */
 export const ROSTER_ALIVE = 1 << 5;
+// Existing C4 Notice envelope; keep identifiers in sync with protocol::msg::c4::notice_code.
+export const NET_DEGRADED = 0x0200;
+export const NET_RECOVERED = 0x0201;

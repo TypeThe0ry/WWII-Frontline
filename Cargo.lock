@@ -1083,6 +1083,7 @@ dependencies = [
  "frontline-sim",
  "futures-util",
  "prometheus",
+ "proptest",
  "reqwest",
  "rustix",
  "serde",
