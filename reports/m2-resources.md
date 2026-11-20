@@ -14,7 +14,7 @@
 | 8 · 燃料维持 | 轻、中、重各 1 台产生 −6 Fuel。入账和扣除后为 44。额外维持将 Fuel 扣到 0 并置低燃料，撤销额外注册后下分钟回到 4。 |
 | 9 · 资源阶段 ≤ 0.1 ms/tick | 100 人、18 节点、3,600 tick，P50 4.600 µs、P99 7.640 µs、最大 34.859 µs。两个结算 tick 为 8.570 / 34.859 µs。参考机及与 M2-008 的阶段 5 联合预算未测（H-021）。 |
 
-- `GameMode::Frontline` 和 `Assault` 启用，`Skirmish` 和 `Sandbox` 的资源池及规则保持关闭。资源、节点和注册表参与启用模式的 `state_hash`，五点夹具的首分钟快照为 `0x9fe58dd08d955880`。现有确定性测试严格比较 3×18,000 tick，native / WASM 的逐 tick 哈希与位置均完全一致。原生与 WASM 的数据哈希均为 `0xdae38a4cc07c5b2c`，协议 v11。
+- `GameMode::Frontline` 和 `Assault` 启用，`Skirmish` 和 `Sandbox` 的资源池及规则保持关闭。资源、节点和注册表参与启用模式的 `state_hash`，五点夹具的首分钟快照为 `0x9fe58dd08d955880`。现有确定性测试严格比较 3×18,000 tick，native / WASM 的逐 tick 哈希与位置均完全一致。与 M2-017/018/019 合流后的原生与 WASM 数据哈希为 `0xc944399ecdabcb74`，协议 v11。
 - 服务器可从 `zones.json` 候选点载入资源点，安装时与对应 Strongpoint ID 关联。五线候选选择、扇区地图点位和真实 Carentan 联验依赖 M2-008，未测。Engineer 建造、可命中的结构几何与工兵权限由 M2-010 接入，车辆生成和限速由 M2-015 接入。视觉待 Fable。本卡素材需求为无。
 
 ## 5v5 联网
