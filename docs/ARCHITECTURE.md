@@ -2060,6 +2060,8 @@ pub struct LlmCommander { client: LlmClient, model: String, interval_s: u32 /*60
 - LiveKit token：见 §14.3；TTL 15 min；API key/secret 仅在 gateway 与对局服务器服务账户。
 - 管理 API：独立 token + IP 白名单 + 审计。
 
+> **变更说明（PI-B6-gwadmin-1）**：管理 API 使用独立令牌的 SHA-256 摘要和 CIDR 白名单。网关验证代理链、记录管理请求，并将最终审计结果与数据库变更一起提交。玩家举报使用比赛服签名票据的 JTI 关联稳定访客身份，网关统一去重及限速。配置、接口和保留期限见 [网关运维说明](../crates/gateway/README.md#moderation-api-m2-023)。
+
 ### 19.3 速率限制与滥用防护
 
 | 面 | 限制 |

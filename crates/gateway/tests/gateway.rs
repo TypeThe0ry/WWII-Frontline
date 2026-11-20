@@ -641,6 +641,13 @@ fn route_table_snapshot() {
             "POST /internal/matches/{id}/result",
             "GET /healthz",
             "GET /metrics",
+            "GET /v1/announcements",
+            "POST /internal/report",
+            "PUT /internal/matches/{id}/reports/{report_id}/replay",
+            "GET /internal/matches/{id}/actions",
+            "POST /internal/matches/{id}/actions/{action_id}/ack",
+            "PUT /internal/matches/{id}/chat",
+            "ANY /admin/*",
         ]
     );
 }

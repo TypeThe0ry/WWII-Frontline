@@ -2,6 +2,7 @@
 //! messages and the `sim` rules API. No game rules live here (ARCHITECTURE §4.3.4): deploy and
 //! squad checks are `World::deploy` / `World::squad_op`; this module limits, routes and replies.
 
+use std::collections::{BTreeSet, VecDeque};
 use std::time::{Duration, Instant};
 
 use frontline_protocol::msg::c0::{
@@ -101,7 +102,7 @@ impl C0Gate {
     }
 }
 
-/// A stored player report (M2 adds the review queue).
+/// A local report used by standalone servers. Gateway-backed matches use `report::Recorder`.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ReportRec {
     pub from: PlayerId,
@@ -113,7 +114,8 @@ pub struct ReportRec {
 pub struct C0Handler {
     dup: std::collections::BTreeMap<PlayerId, DupFilter>,
     placement: placement::PlacementSlots,
-    pub reports: Vec<ReportRec>,
+    muted: BTreeSet<PlayerId>,
+    pub reports: VecDeque<ReportRec>,
 }
 
 pub type Outbox = Vec<(PlayerId, ServerMsgC0)>;
@@ -122,6 +124,11 @@ impl C0Handler {
     pub fn forget(&mut self, p: PlayerId) {
         self.dup.remove(&p);
         self.placement.forget(p);
+        self.muted.remove(&p);
+    }
+
+    pub(crate) fn mute(&mut self, p: PlayerId) {
+        self.muted.insert(p);
     }
 
     /// Handles one gameplay message of `from`; replies and routed chat are pushed to `out`.
@@ -154,7 +161,10 @@ impl C0Handler {
                     target = r.target as u64,
                     reason = r.reason as u64,
                 );
-                self.reports.push(ReportRec { from, report: r });
+                if self.reports.len() == 256 {
+                    self.reports.pop_front();
+                }
+                self.reports.push_back(ReportRec { from, report: r });
             }
             // The sim loop routes MarkerPlace through the C3 team channel. Settings are client-only.
             ClientMsgC0::MarkerPlace(_) | ClientMsgC0::Settings(_) => {}
@@ -176,6 +186,9 @@ impl C0Handler {
                 .with_label_values(&[label])
                 .inc()
         };
+        if self.muted.contains(&from) {
+            return reject("muted");
+        }
         let line = match sanitize_chat(&c.text) {
             Ok(l) => l,
             Err(e) => return reject(e.label()),

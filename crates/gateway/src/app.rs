@@ -19,6 +19,7 @@ pub struct AppState {
     pub ip_limiter: SlidingLimiter<String>,
     pub account_limiter: SlidingLimiter<String>,
     pub ticket_key: SigningKey,
+    pub(crate) live_chat: crate::admin::LiveChat,
 }
 
 pub type Shared = Arc<AppState>;
@@ -30,7 +31,7 @@ impl AppState {
         ticket_key: SigningKey,
     ) -> Result<Shared, sqlx::Error> {
         let db = Database::open(&cfg.database_url, ticket_key.verifying_key().to_bytes()).await?;
-        Ok(Arc::new(AppState {
+        let state = Arc::new(AppState {
             ip_limiter: SlidingLimiter::new(cfg.ip_limit_per_min),
             account_limiter: SlidingLimiter::new(cfg.account_limit_per_min),
             cfg,
@@ -38,7 +39,10 @@ impl AppState {
             db,
             metrics: Metrics::default(),
             ticket_key,
-        }))
+            live_chat: crate::admin::LiveChat::default(),
+        });
+        crate::admin::start_retention(&state).await?;
+        Ok(state)
     }
 }
 

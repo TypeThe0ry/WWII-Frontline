@@ -2,8 +2,10 @@
 //! join-ticket verification and the end-of-match result. The `gateway` crate is *not* a
 //! dependency; the shared wire types live in `protocol::dto`, the JSON bodies below.
 
+pub mod admin;
 pub mod client;
 pub mod heartbeat;
+pub mod reports;
 pub mod result;
 pub mod ticket_verify;
 
@@ -34,6 +36,7 @@ pub struct TicketGate {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Admitted {
     pub gateway_player: u8,
+    pub jti: [u8; 16],
     pub nick: String,
     pub is_admin: bool,
 }
@@ -68,6 +71,7 @@ impl TicketGate {
         let c = v.verify(raw, (self.now)(), id)?;
         Ok(Admitted {
             gateway_player: c.player_id,
+            jti: c.jti,
             nick: c.nick,
             is_admin: c.is_admin,
         })
@@ -76,3 +80,34 @@ impl TicketGate {
 
 /// Shared handle type used by `NetCtx`.
 pub type SharedGate = Arc<TicketGate>;
+
+pub fn lower_hex(id: &[u8; 16]) -> String {
+    use std::fmt::Write;
+    let mut hex = String::with_capacity(32);
+    for b in id {
+        write!(hex, "{b:02x}").expect("writing to String cannot fail");
+    }
+    hex
+}
+
+pub fn parse_lower_hex(s: &str) -> Option<[u8; 16]> {
+    if s.len() != 32
+        || !s
+            .bytes()
+            .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+    {
+        return None;
+    }
+    let mut id = [0; 16];
+    for (byte, pair) in id.iter_mut().zip(s.as_bytes().chunks_exact(2)) {
+        let digit = |b: u8| {
+            if b.is_ascii_digit() {
+                b - b'0'
+            } else {
+                b - b'a' + 10
+            }
+        };
+        *byte = digit(pair[0]) * 16 + digit(pair[1]);
+    }
+    Some(id)
+}

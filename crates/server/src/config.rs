@@ -106,7 +106,7 @@ pub struct Config {
     pub region: String,
     #[arg(long, env = "FRONTLINE_SERVER_NAME", default_value = "Frontline")]
     pub server_name: String,
-    /// Where a result that could not be delivered is kept.
+    /// Private storage for undelivered results and report replay evidence.
     #[arg(long, env = "FRONTLINE_SPOOL_DIR", default_value = "spool")]
     pub spool_dir: std::path::PathBuf,
     /// Pin only the sim thread to this Linux logical CPU. Other threads inherit launch affinity.

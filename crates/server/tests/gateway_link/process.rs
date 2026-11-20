@@ -499,3 +499,431 @@ async fn real_gateway_process_ticket_and_staleness() {
         .all(|v| v["match_id"] != graceful_id));
     eprintln!("real gateway: registered=1, Welcome, replay/expired/signature rejects=1 each, delisted {:.3} s after last observed heartbeat, graceful match delisted on result", gone_after.as_secs_f64());
 }
+
+async fn send(client: &mut Client, msg: frontline_protocol::msg::c0::ClientMsgC0) {
+    assert!(
+        client
+            .send(
+                Channel::C0,
+                &frontline_protocol::msg::c0::encode_c0_client(&msg).unwrap()
+            )
+            .await
+    );
+}
+async fn next_c0(client: &mut Client) -> ServerMsgC0 {
+    tokio::time::timeout(T, async {
+        loop {
+            use crate::Got;
+            match client.recv_within(T).await {
+                Got::Frame(Channel::C0, bytes) => {
+                    return frontline_protocol::msg::c0::decode_c0_server(&bytes).unwrap()
+                }
+                Got::Frame(..) => {}
+                Got::Closed => panic!("connection closed before C0 arrived"),
+                Got::Timeout => panic!("timed out waiting for C0"),
+            }
+        }
+    })
+    .await
+    .unwrap()
+}
+
+#[tokio::test]
+async fn process_moderation_live_c0_report_chat_and_kick() {
+    use serde_json::json;
+
+    use crate::{claims, sign_claim_bytes, wait_until};
+    use frontline_protocol::msg::c0::{disconnect_reason, Chat, ChatChannel, ClientMsgC0, Report};
+    use frontline_server::gateway_link::{lower_hex, parse_lower_hex};
+
+    let fake = Arc::new(Fake::default());
+    let url = spawn_fake(fake.clone()).await;
+    let dir = tempfile::tempdir().unwrap();
+    let mut s = server(dir.path(), &url, "30", "moderation");
+    let port = s.event("ws_listening").await["port"].as_u64().unwrap();
+    let event = s.event("gateway_registered").await;
+    let match_id = event["gateway_match_id"].as_str().unwrap();
+    let match_bytes = parse_lower_hex(match_id).unwrap();
+    let issued = frontline_server::gateway_link::system_now_secs()();
+    let join = |jti, gateway_id| {
+        let mut c = claims(jti, issued);
+        c.match_id = match_bytes;
+        c.player_id = gateway_id;
+        hello(port, sign_claim_bytes(&c.encode()))
+    };
+    let (mut reporter, r) = join(10, 42).await;
+    let (mut target, t) = join(11, 43).await;
+    let (mut dup, _) = join(12, 44).await;
+    let (mut limited, _) = join(13, 45).await;
+    assert!(matches!(r, ServerMsgC0::Welcome(w) if w.player_id != 42));
+    let ServerMsgC0::Welcome(w) = t else {
+        panic!("target did not join")
+    };
+    assert_ne!(w.player_id, 43);
+    let target_slot = w.player_id;
+    let spool = dir.path().join("spool");
+
+    let chat = |channel, text: &str| {
+        ClientMsgC0::Chat(Chat {
+            channel,
+            sender: 120,
+            text: text.to_owned(),
+        })
+    };
+    // Slots 0 and 1 are on opposite teams. The reporter must not get the target's team chat.
+    send(&mut target, chat(ChatChannel::Team, "team secret")).await;
+    send(&mut target, chat(ChatChannel::All, " hello  ")).await;
+    assert!(
+        matches!(next_c0(&mut reporter).await, ServerMsgC0::Chat(c) if c.text == "hello" && c.sender == target_slot)
+    );
+    assert!(wait_until(T, || fake.chat.lock().unwrap().last().is_some_and(|snapshot| snapshot == &json!({"messages":[{"player_id":43,"text":"team secret"},{"player_id":43,"text":"hello"}]}))).await);
+    assert!(!spool.join("replays").exists());
+
+    let report = |reason, note: &str| {
+        ClientMsgC0::Report(Report {
+            target: target_slot,
+            reason,
+            note: note.to_owned(),
+        })
+    };
+    send(&mut reporter, report(1, "valid report")).await;
+    send(&mut reporter, report(0, "too soon")).await;
+    send(&mut dup, report(0, "duplicate")).await;
+    send(&mut limited, report(0, "rate limited")).await;
+    assert!(
+        wait_until(T, || fake.reports.lock().unwrap().len() >= 3
+            && !fake.report_replays.lock().unwrap().is_empty())
+        .await,
+        "{}",
+        s.logs()
+    );
+    let replay_ref = format!("replays/{match_id}_20.bin");
+    let replay = fs::read(spool.join(&replay_ref)).unwrap();
+    assert_eq!(&replay[..4], b"FLE1");
+    assert!(replay.len() <= 300_000);
+    assert_eq!(
+        *fake.report_replays.lock().unwrap(),
+        vec![(20, json!({"replay_ref":replay_ref}))]
+    );
+    let reports = fake.reports.lock().unwrap().clone();
+    assert_eq!(
+        reports
+            .iter()
+            .find(|r| r["note"] == "valid report")
+            .unwrap(),
+        &json!({
+            "match_id":match_id,"reporter_jti":lower_hex(&[10;16]),"target_jti":lower_hex(&[11;16]),
+            "reason":1,"note":"valid report","chat_excerpt":[{"player_id":43,"text":"hello"}]
+        })
+    );
+    assert_eq!(reports.len(), 3);
+    assert_eq!(fs::read_dir(spool.join("replays")).unwrap().count(), 1);
+
+    fake.fail_ack_once.store(2, Ordering::SeqCst);
+    fake.actions.lock().unwrap().extend([
+        json!({"id":1,"action":"kick","player_id":43,"jti":lower_hex(&[12;16])}),
+        json!({"id":2,"action":"broadcast","text":"announcement"}),
+        json!({"id":3,"action":"mute","player_id":43}),
+        json!({"id":4,"action":"force_team","player_id":43,"team":0}),
+        json!({"id":5,"action":"map_change","map":"other"}),
+    ]);
+    assert!(
+        matches!(next_c0(&mut reporter).await, ServerMsgC0::Chat(c) if c.text == "[Admin] announcement")
+    );
+    assert!(
+        wait_until(T, || fake
+            .action_acks
+            .lock()
+            .unwrap()
+            .iter()
+            .any(|(id, _)| *id == 5))
+        .await
+    );
+    send(&mut target, chat(ChatChannel::All, "muted text")).await;
+    send(&mut reporter, chat(ChatChannel::All, "still live")).await;
+    assert!(matches!(next_c0(&mut reporter).await, ServerMsgC0::Chat(c) if c.text == "still live"));
+    // Verify the muted command reached the authoritative C0 handler and was rejected.
+    let mp = s.event("metrics_listening").await["port"].as_u64().unwrap();
+    let deadline = Instant::now() + T;
+    while !metrics(&http(), mp)
+        .await
+        .contains("chat_rejected_total{reason=\"muted\"} 1\n")
+    {
+        assert!(Instant::now() < deadline, "mute did not reject chat");
+        sleep(POLL).await;
+    }
+
+    fake.actions
+        .lock()
+        .unwrap()
+        .push(json!({"id":6,"action":"kick","player_id":43,"jti":lower_hex(&[11;16])}));
+    // Target still has its own preceding chat / the broadcast in its read queue.
+    loop {
+        if let ServerMsgC0::Disconnect(d) = next_c0(&mut target).await {
+            assert_eq!(d.reason, disconnect_reason::KICKED);
+            break;
+        }
+    }
+    assert!(target.expect_closed(T).await);
+    assert!(
+        wait_until(T, || fake
+            .action_acks
+            .lock()
+            .unwrap()
+            .iter()
+            .any(|(id, _)| *id == 6))
+        .await
+    );
+    let acks = fake.action_acks.lock().unwrap().clone();
+    assert_eq!(
+        acks.into_iter()
+            .map(|(id, val)| (id, val["result"].as_str().unwrap().to_owned()))
+            .collect::<Vec<_>>(),
+        [
+            (1, "target_missing"),
+            (2, "applied"),
+            (2, "applied"),
+            (3, "applied"),
+            (4, "unsupported"),
+            (5, "unsupported"),
+            (6, "applied")
+        ]
+        .map(|(id, result)| (id, result.to_owned()))
+    );
+    let counts = metrics(&http(), mp).await;
+    assert_eq!(
+        metric(&counts, "server_players{team=\"us\"}")
+            + metric(&counts, "server_players{team=\"ger\"}"),
+        3
+    );
+}
+
+#[tokio::test]
+#[ignore = "requires a real frontline-gateway binary via FRONTLINE_TEST_GATEWAY_BIN"]
+async fn real_gateway_process_report_review_replay_and_kick() {
+    use serde_json::json;
+    use sha2::{Digest, Sha256};
+
+    use crate::common::sim_harness::bundle_upto;
+    use frontline_protocol::msg::c0::{disconnect_reason, Chat, ChatChannel, ClientMsgC0, Report};
+    use frontline_protocol::msg::input::encode_input_bundle;
+    use frontline_server::gateway_link::lower_hex;
+
+    const ADMIN: &str = "fixture-only-admin-token";
+    let dir = tempfile::tempdir().unwrap();
+    let seed = dir.path().join("ticket.seed");
+    fs::write(&seed, sk().to_bytes()).unwrap();
+    let socket = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+    let addr = socket.local_addr().unwrap();
+    let url = format!("http://{addr}");
+    let binary = fs::canonicalize(
+        std::env::var_os("FRONTLINE_TEST_GATEWAY_BIN").expect("set FRONTLINE_TEST_GATEWAY_BIN"),
+    )
+    .unwrap();
+    let mut cmd = Command::new(binary);
+    cmd.env_clear()
+        .env("GATEWAY_BIND", addr.to_string())
+        .env("TICKET_SIGNING_KEY_FILE", seed)
+        .env("INTERNAL_API_TOKEN", TOKEN)
+        .env("TOKEN_SECRET", "fixture-only-guest-token-signing-key")
+        .env("TOKIO_WORKER_THREADS", "2")
+        .env(
+            "ADMIN_TOKEN_HASH",
+            format!("{:x}", Sha256::digest(ADMIN.as_bytes())),
+        )
+        .env("ADMIN_IP_ALLOWLIST", "127.0.0.1/32");
+    drop(socket);
+    let mut gateway = Process::spawn(cmd, dir.path(), "moderation-gateway");
+    let http = http();
+    let deadline = Instant::now() + START_TIMEOUT;
+    while servers(&http, &url).await.is_err() {
+        assert!(
+            Instant::now() < deadline && gateway.child.try_wait().unwrap().is_none(),
+            "{}",
+            gateway.logs()
+        );
+        sleep(POLL).await;
+    }
+    let mut s = server(dir.path(), &url, "30", "moderation-server");
+    let port = s.event("ws_listening").await["port"].as_u64().unwrap();
+    let event = s.event("gateway_registered").await;
+    let match_id = event["gateway_match_id"].as_str().unwrap();
+    let join = |nick: &'static str| {
+        let (http, url) = (&http, &url);
+        async move {
+            let guest: Value = http
+                .post(format!("{url}/v1/guest"))
+                .json(&json!({}))
+                .send()
+                .await
+                .unwrap()
+                .error_for_status()
+                .unwrap()
+                .json()
+                .await
+                .unwrap();
+            let response: Value = http
+                .post(format!("{url}/v1/servers/{match_id}/ticket"))
+                .bearer_auth(guest["token"].as_str().unwrap())
+                .json(&json!({"nick":nick}))
+                .send()
+                .await
+                .unwrap()
+                .error_for_status()
+                .unwrap()
+                .json()
+                .await
+                .unwrap();
+            let raw = response["ticket"].as_str().unwrap();
+            let ticket =
+                TicketClaims::decode(&URL64.decode(raw.split_once('.').unwrap().0).unwrap())
+                    .unwrap();
+            let (client, msg) = hello(port, raw.as_bytes().to_vec()).await;
+            let ServerMsgC0::Welcome(welcome) = msg else {
+                panic!("ticket did not admit {nick}: {msg:?}")
+            };
+            (client, welcome, ticket)
+        }
+    };
+    let (mut reporter, _, _) = join("Reporter").await;
+    let (mut target, target_welcome, target_ticket) = join("Target").await;
+    let mut bundle = bundle_upto(target_welcome.player_id, target_welcome.server_tick + 5);
+    for cmd in &mut bundle.cmds {
+        cmd.move_x = 74;
+        cmd.buttons = 0;
+    }
+    assert!(
+        target
+            .send(Channel::C1, &encode_input_bundle(&bundle).unwrap())
+            .await
+    );
+    send(
+        &mut target,
+        ClientMsgC0::Chat(Chat {
+            channel: ChatChannel::All,
+            text: "evidence from live chat".into(),
+            sender: 0,
+        }),
+    )
+    .await;
+    assert!(
+        matches!(next_c0(&mut reporter).await, ServerMsgC0::Chat(c) if c.text == "evidence from live chat")
+    );
+    // Wait for the sim to consume the target's future C1 input in the evidence window.
+    sleep(Duration::from_millis(250)).await;
+    send(
+        &mut reporter,
+        ClientMsgC0::Report(Report {
+            target: target_welcome.player_id,
+            reason: 1,
+            note: "live gateway report".into(),
+        }),
+    )
+    .await;
+    let admin_get = |path: String| http.get(format!("{url}{path}")).bearer_auth(ADMIN);
+    let deadline = Instant::now() + T;
+    let report = loop {
+        let rows: Vec<Value> = admin_get("/admin/reports?status=open".into())
+            .send()
+            .await
+            .unwrap()
+            .error_for_status()
+            .unwrap()
+            .json()
+            .await
+            .unwrap();
+        if let Some(row) = rows.into_iter().find(|r| r["replay_ref"].is_string()) {
+            break row;
+        }
+        assert!(
+            Instant::now() < deadline,
+            "{}\n{}",
+            s.logs(),
+            gateway.logs()
+        );
+        sleep(POLL).await;
+    };
+    assert_eq!(report["match_id"], match_id);
+    assert_eq!(report["reason"], 1);
+    assert_eq!(report["note"], "live gateway report");
+    assert_eq!(
+        report["chat_excerpt"],
+        json!([{"player_id":target_ticket.player_id,"text":"evidence from live chat"}])
+    );
+    let report_id = report["id"].as_i64().unwrap();
+    let reference = format!("replays/{match_id}_{report_id}.bin");
+    assert_eq!(report["replay_ref"], reference);
+    let replay = fs::read(dir.path().join("spool").join(&reference)).unwrap();
+    assert_eq!(&replay[..4], b"FLE1");
+    assert!(replay.len() <= 300_000);
+    // Skip the reporter group, then read the target's accepted movement bytes.
+    let group_count = |start| usize::from(u16::from_le_bytes([replay[start], replay[start + 1]]));
+    let target_group = 12 + group_count(10) * 12;
+    let first = target_group + 2;
+    let end = first + 12 * group_count(target_group);
+    assert!(replay[first..end]
+        .chunks_exact(12)
+        .any(|sample| sample[4] == 74));
+    let live_chat: Value = admin_get(format!("/admin/chat/{match_id}"))
+        .send()
+        .await
+        .unwrap()
+        .error_for_status()
+        .unwrap()
+        .json()
+        .await
+        .unwrap();
+    assert_eq!(live_chat, report["chat_excerpt"]);
+    let resolved = http
+        .post(format!("{url}/admin/reports/{report_id}/resolve"))
+        .bearer_auth(ADMIN)
+        .send()
+        .await
+        .unwrap()
+        .error_for_status()
+        .unwrap();
+    assert_eq!(resolved.status(), reqwest::StatusCode::NO_CONTENT);
+
+    let started = Instant::now();
+    let kick: Value = http.post(format!("{url}/admin/kick")).bearer_auth(ADMIN)
+        .json(&json!({"match_id":match_id,"player_id":target_ticket.player_id,"jti":lower_hex(&target_ticket.jti)}))
+        .send().await.unwrap().error_for_status().unwrap().json().await.unwrap();
+    tokio::time::timeout(T, async {
+        loop {
+            if let ServerMsgC0::Disconnect(d) = next_c0(&mut target).await {
+                assert_eq!(d.reason, disconnect_reason::KICKED);
+                break;
+            }
+        }
+    })
+    .await
+    .unwrap();
+    let kick_elapsed = started.elapsed();
+    assert!(target.expect_closed(T).await);
+    let action_id = kick["id"].as_i64().unwrap();
+    let deadline = Instant::now() + T;
+    loop {
+        let action: Value = admin_get(format!("/admin/actions/{action_id}"))
+            .send()
+            .await
+            .unwrap()
+            .error_for_status()
+            .unwrap()
+            .json()
+            .await
+            .unwrap();
+        if action["result"] == "applied" {
+            break;
+        }
+        assert!(
+            Instant::now() < deadline,
+            "kick was not acknowledged: {action}"
+        );
+        sleep(POLL).await;
+    }
+    println!(
+        "real gateway + server: kick to C0 KICKED = {:.1} ms, replay = {} bytes",
+        kick_elapsed.as_secs_f64() * 1000.0,
+        replay.len()
+    );
+}

@@ -2,7 +2,7 @@
 
 use std::time::Duration;
 
-use serde::{Deserialize, Serialize};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
 use super::result::MatchResult;
 
@@ -76,6 +76,7 @@ impl GatewayClient {
         }
         let http = reqwest::Client::builder()
             .timeout(REQUEST_TIMEOUT)
+            .redirect(reqwest::redirect::Policy::none())
             .build()
             .map_err(|e| format!("http client: {e}"))?;
         Ok(GatewayClient {
@@ -85,24 +86,48 @@ impl GatewayClient {
         })
     }
 
-    async fn post<B: Serialize>(
+    pub(super) async fn post<B: Serialize>(
         &self,
+        path: &str,
+        body: &B,
+    ) -> Result<reqwest::Response, LinkError> {
+        self.send_json(reqwest::Method::POST, path, body).await
+    }
+
+    pub(super) async fn put<B: Serialize>(
+        &self,
+        path: &str,
+        body: &B,
+    ) -> Result<reqwest::Response, LinkError> {
+        self.send_json(reqwest::Method::PUT, path, body).await
+    }
+
+    async fn send_json<B: Serialize>(
+        &self,
+        method: reqwest::Method,
         path: &str,
         body: &B,
     ) -> Result<reqwest::Response, LinkError> {
         let r = self
             .http
-            .post(format!("{}{path}", self.base))
+            .request(method, format!("{}{path}", self.base))
             .bearer_auth(&self.token)
             .json(body)
             .send()
             .await
             .map_err(|e| LinkError::Http(e.without_url().to_string()))?;
-        if r.status().is_success() {
-            Ok(r)
-        } else {
-            Err(LinkError::Status(r.status().as_u16()))
-        }
+        checked(r)
+    }
+
+    pub(super) async fn get(&self, path: &str) -> Result<reqwest::Response, LinkError> {
+        let r = self
+            .http
+            .get(format!("{}{path}", self.base))
+            .bearer_auth(&self.token)
+            .send()
+            .await
+            .map_err(|e| LinkError::Http(e.without_url().to_string()))?;
+        checked(r)
     }
 
     pub async fn register(&self, r: &RegisterReq) -> Result<RegisterResp, LinkError> {
@@ -154,4 +179,32 @@ impl GatewayClient {
             .await
             .map(|_| ())
     }
+}
+
+fn checked(r: reqwest::Response) -> Result<reqwest::Response, LinkError> {
+    if r.status().is_success() {
+        Ok(r)
+    } else {
+        Err(LinkError::Status(r.status().as_u16()))
+    }
+}
+
+pub(super) async fn bounded_json<T: DeserializeOwned>(
+    mut response: reqwest::Response,
+    limit: usize,
+) -> Result<T, LinkError> {
+    let mut body = Vec::new();
+    while let Some(chunk) = response
+        .chunk()
+        .await
+        .map_err(|e| LinkError::Http(e.without_url().to_string()))?
+    {
+        if chunk.len() > limit - body.len() {
+            return Err(LinkError::Http(
+                "gateway response exceeded its byte limit".into(),
+            ));
+        }
+        body.extend_from_slice(&chunk);
+    }
+    serde_json::from_slice(&body).map_err(|_| LinkError::Http("invalid gateway response".into()))
 }

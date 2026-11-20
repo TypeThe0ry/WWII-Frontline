@@ -62,3 +62,24 @@ both the first payload and its receipt time.
 return `404` by default. `OAUTH_ENABLED=1` exposes `501` placeholders for
 `discord` and `google`. The placeholders make no provider requests and issue no tokens.
 Guest sign-in remains available. Provider registration is tracked under H-063.
+
+## Moderation API (M2-023)
+
+Set `ADMIN_TOKEN_HASH` to the SHA-256 hex digest of a high-entropy, dedicated administrator token. Set `ADMIN_IP_ALLOWLIST` to a comma-separated list of client CIDRs. Pass the raw token in `Authorization: Bearer …`. Both checks must pass. Omitted configuration disables administrator authorization. Configure `ADMIN_TRUSTED_PROXIES` with the immediate proxy CIDRs when proxies append the preceding hop to `X-Forwarded-For`. The gateway walks the chain from right to left and uses the first untrusted address. Login and ticket ban checks use the same source address policy. The legacy `TRUST_FORWARDED` switch still controls the M1 public rate limiter.
+
+| Method and path | Behavior |
+| --- | --- |
+| `GET /admin/reports?status=open&limit=50&before=123` | Review queue with descending ID pagination. `status` also accepts `resolved`. |
+| `POST /admin/reports/{id}/resolve` | Resolve a report. |
+| `POST /admin/ban` | Accepts `subject_kind`, `subject_hash`, optional `ip_cidr`, `reason`, and `duration`. `account` uses the current stable guest/profile ID. `guest` uses the SHA-256 hex digest of a session bearer. `ip` uses the CIDR alone. Accepted durations are `1h`, `24h`, `7d`, and `perm` for identity bans. |
+| `DELETE /admin/ban/{id}` | Remove the ban. Use the ID returned at creation. Guest login and ticket exchange return `403` with `expires_at` in Unix milliseconds, or `null` for a permanent ban. Use kick to terminate a live connection. |
+| `POST /admin/{kick, mute, force_team, broadcast, map_change}` | Queue a `match_id` and its action parameters. Player actions accept `player_id` from the signed ticket and optional `jti` to pin the target connection. Broadcast accepts `text`, force-team accepts `team` (`0` or `1`), and map-change accepts `map`. |
+| `GET /admin/actions/{id}` | Delivery result: `pending`, `applied`, `target_missing`, `unsupported`, or `expired`. Pending commands expire after 60 seconds. The current server executes kick, text mute, and broadcast. Live forced team and map transitions report `unsupported`. |
+| `GET /admin/chat/{match_id}` | Bounded in-memory snapshot of recent text chat for an active match. |
+| `GET /admin/players/{id}` | Profile, unambiguous match results, and report counts. |
+| `GET /admin/servers`, `PUT /admin/servers/{match_id}` | List active registrations including hidden ones and change public discovery with `{ "listed": false }` or `{ "listed": true }`. A client with a known match ID can still request a ticket. |
+| `POST /admin/announcements`, `DELETE /admin/announcements/{id}` | Publish plain `text` with optional `duration_s` (default 86,400, maximum 604,800) or retract an announcement. `GET /v1/announcements` returns up to 20 active announcements. |
+
+The existing server bearer authenticates internal report submission and match-scoped replay, chat, and action routes. Registering tickets stores the JTI-to-profile association without changing wire claims. `POST /internal/report` accepts the `match_id`, reporter and target JTIs, reason `0..=3`, optional note, and optional linked text chat. The gateway returns `201` for a new report and `200` for an existing report with the same match, reporter, target and reason. One new report per 60 seconds per profile and ten per match are enforced in SQLite. Replay confirmation uses the accepted report's ID and the exact relative reference `replays/{match_id}_{id}.bin`.
+
+An audit row is written before dispatch. Final status and successful database mutations commit together. Aborted operations may leave a `pending` row for diagnosis. Audit retains structured targets and outcome, with credentials and free text excluded. A startup and periodic sweep removes linked chat at 14 days, administrator source IPs and ban CIDRs at 30 days, and audit rows at 365 days. Voice is outside the evidence pipeline.

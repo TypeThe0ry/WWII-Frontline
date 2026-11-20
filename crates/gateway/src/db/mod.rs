@@ -1,5 +1,6 @@
 //! SQLite is the authoritative store for guest profiles, match registrations and results.
 
+use std::net::IpAddr;
 use std::str::FromStr;
 use std::sync::Arc;
 use std::time::Duration;
@@ -70,6 +71,7 @@ pub enum SlotError {
     Stale,
     Incompatible,
     Full,
+    Banned(Option<i64>),
     Database(sqlx::Error),
 }
 
@@ -106,7 +108,7 @@ impl Database {
         })
     }
 
-    async fn connection(&self) -> Result<MutexGuard<'_, SqliteConnection>, sqlx::Error> {
+    pub(crate) async fn connection(&self) -> Result<MutexGuard<'_, SqliteConnection>, sqlx::Error> {
         lock(&self.connection).await
     }
 
@@ -181,7 +183,7 @@ impl Database {
     ) -> Result<Vec<ServerInfo>, sqlx::Error> {
         let rows = sqlx::query_as::<_, ServerRow>(
             "SELECT id, registration, phase, time_left_s, humans, bots FROM matches
-             WHERE ended = 0 AND ticket_key = ? AND last_heartbeat_ms >= ? ORDER BY id",
+             WHERE ended = 0 AND listed = 1 AND ticket_key = ? AND last_heartbeat_ms >= ? ORDER BY id",
         )
         .bind(self.ticket_key.as_slice())
         .bind(timestamp(now_ms.saturating_sub(timeout_ms)))
@@ -211,20 +213,12 @@ impl Database {
             .collect()
     }
 
-    pub async fn reserve_slot(
+    pub(crate) async fn reserve_slot(
         &self,
-        id: &MatchId,
-        now_ms: u64,
-        timeout_ms: u64,
-        guest_id: &str,
-        nick: &str,
+        request: TicketReservation<'_>,
         metrics: &Metrics,
     ) -> Result<(Registration, u8), SlotError> {
-        let id = to_hex(id);
-        let cutoff = timestamp(now_ms.saturating_sub(timeout_ms));
-        self.tickets
-            .reserve(id, cutoff, guest_id, nick, metrics)
-            .await
+        self.tickets.reserve(request, metrics).await
     }
 
     /// A result is terminal. Retrying a delivery is safe and preserves the first payload.
@@ -319,6 +313,17 @@ async fn lock(
         .map_err(|_| sqlx::Error::PoolTimedOut)
 }
 
+pub(crate) struct TicketReservation<'a> {
+    pub(crate) id: &'a MatchId,
+    pub(crate) now_ms: u64,
+    pub(crate) timeout_ms: u64,
+    pub(crate) guest_id: &'a str,
+    pub(crate) nick: &'a str,
+    pub(crate) jti: &'a [u8; 16],
+    pub(crate) ip: Option<IpAddr>,
+    pub(crate) fingerprint: Option<String>,
+}
+
 async fn reserve_one(
     conn: &mut SqliteConnection,
     ticket_key: &[u8; 32],
@@ -326,17 +331,11 @@ async fn reserve_one(
     cutoff: i64,
     guest_id: &str,
     nick: &str,
+    jti: &str,
 ) -> Result<(Registration, u8), SlotError> {
-    // When the guest already has this nickname, check it in the cursor UPDATE itself.
-    // One autocommit statement then replaces BEGIN, UPDATE, UPSERT, and COMMIT.
-    if let Some(slot) = advance_slot(conn, ticket_key, id, cutoff, Some((guest_id, nick))).await? {
-        return Ok(slot);
-    }
-
-    // Nick changes and guest backfills still commit atomically with the cursor. A miss
-    // above may also be a refused match, so recheck eligibility in this transaction.
+    // Both nickname backfills and moderation identity associations commit with the slot.
     let mut txn = conn.begin().await?;
-    let Some(slot) = advance_slot(&mut txn, ticket_key, id, cutoff, None).await? else {
+    let Some(slot) = advance_slot(&mut txn, ticket_key, id, cutoff).await? else {
         let status: Option<(bool, bool)> = sqlx::query_as(
             "SELECT ended = 0 AND ticket_key = ? AND last_heartbeat_ms >= ?,
                         json_extract(registration, '$.protocol_version') = ?
@@ -356,13 +355,23 @@ async fn reserve_one(
         });
     };
     sqlx::query(
-            "INSERT INTO guests (id, nick) VALUES (?, ?)
-             ON CONFLICT (id) DO UPDATE SET nick = excluded.nick WHERE guests.nick <> excluded.nick",
-        )
-        .bind(guest_id)
-        .bind(nick)
-        .execute(&mut *txn)
-        .await?;
+        "INSERT INTO guests (id, nick) SELECT ?1, ?2 WHERE NOT EXISTS (
+                SELECT 1 FROM guests WHERE id = ?1 AND nick = ?2)
+             ON CONFLICT (id) DO UPDATE SET nick = excluded.nick",
+    )
+    .bind(guest_id)
+    .bind(nick)
+    .execute(&mut *txn)
+    .await?;
+    sqlx::query(
+        "INSERT INTO moderation_tickets (match_id, jti, player_id, guest_id) VALUES (?, ?, ?, ?)",
+    )
+    .bind(id)
+    .bind(jti)
+    .bind(slot.1)
+    .bind(guest_id)
+    .execute(&mut *txn)
+    .await?;
     txn.commit().await?;
     Ok(slot)
 }
@@ -372,24 +381,18 @@ async fn advance_slot(
     ticket_key: &[u8; 32],
     id: &str,
     cutoff: i64,
-    unchanged_guest: Option<(&str, &str)>,
 ) -> Result<Option<(Registration, u8)>, sqlx::Error> {
-    let (guest_id, nick) = unchanged_guest.unzip();
     let mut rows: Vec<(Json<Registration>, u8)> = sqlx::query_as(
         "UPDATE matches SET next_player = (next_player + 1) % 128
              WHERE id = ?1 AND ended = 0 AND ticket_key = ?2 AND last_heartbeat_ms >= ?3
                  AND json_extract(registration, '$.protocol_version') = ?4 AND humans + bots < cap
-                 AND (?5 IS NULL OR EXISTS (SELECT 1 FROM guests WHERE id = ?5 AND nick = ?6))
              RETURNING registration, (next_player + 127) % 128",
     )
     .bind(id)
     .bind(ticket_key.as_slice())
     .bind(cutoff)
     .bind(PROTOCOL_VERSION)
-    .bind(guest_id)
-    .bind(nick)
-    // At most one row. Drain through statement completion to catch commit errors
-    // after RETURNING produces its row in the autocommit case.
+    // Drain RETURNING through statement completion.
     .fetch_all(conn)
     .await?;
     Ok(rows
