@@ -64,7 +64,6 @@ name = "ballistics"
 harness = false
 
 [dev-dependencies]
-
 criterion = { version = "0.7", default-features = false }
 proptest = "1"
 
