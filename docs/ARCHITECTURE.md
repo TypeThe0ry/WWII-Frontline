@@ -727,6 +727,8 @@ M2-020：服务端构建时读取 `crates/server/config/server_net.json`（不�
 | `Ping/Pong` | 双向 | `client_time:u32` / + `server_tick:u32`, `server_time_ms:u32` |
 | `Disconnect` | 双向 | `reason:u8` |
 
+> **变更说明（PI-B6-pingchat-1）**：v11 新增 C0 `PingPlace` 和 `Notice`。聊天 `byte_len:10`，最多 800 UTF-8 字节和 200 Unicode 标量。C2 标记按标记 ID 更新与过期，敌方图标发送 5 m 网格坐标，单标记更新不超过 1 Hz。C3 的已有非敌情标记投影继续按接收者授权输出。详见 `crates/protocol/CHANGELOG.md`。
+
 #### 6.8.2 C1/C2/C3（不可靠）
 
 | 消息 | 方向 | 字段（草案） |
@@ -2080,6 +2082,8 @@ pub struct LlmCommander { client: LlmClient, model: String, interval_s: u32 /*60
 | 举报 | 每玩家 1/min、10/局 |
 | 连接 | 每 IP 4 并发；SYN/QUIC 初始包洪泛由主机防火墙/云厂商 DDoS 防护兜底（能力未核实） |
 
+> **变更说明（PI-B6-pingchat-1）**：文字聊天同时经过 C0 传输令牌桶和比赛 tick 滚动限速，重复判定按 NFKC 后的文本。受信任静音上报影响同小队看到的 Ping。
+
 ### 19.4 语音与聊天数据
 
 - **语音不录制、不存档**（SFU 仅转发）；LiveKit 关闭 egress/录制功能；服务器日志不含音频；举报时也无语音证据（明确告知用户：举报依赖文字/行为/统计）。
@@ -2087,6 +2091,8 @@ pub struct LlmCommander { client: LlmClient, model: String, interval_s: u32 /*60
 - 个人数据最小化：存储昵称、设置、基础战绩、可选 OAuth 的 `provider_id`（哈希）；不存邮箱（除非 OAuth 必须，待人定）。IP 仅短期（≤ 30 天）用于封禁/滥用，之后哈希或删除。
 - 合规：面向欧洲区需 GDPR 流程（数据导出/删除端点）；隐私政策与 Cookie/本地存储说明【待人定与法务审阅，本文不构成法律意见】。
 - 客户端遥测：匿名、默认关闭或首次明确同意；不含麦克风/IP 信息；不采集 GPU 以外的硬件指纹。
+
+> **变更说明（PI-B6-pingchat-1）**：举报保存来源可见的前后各最多 20 条文字。后半段采集截至 60 秒、离线或局终，初次提交和后续补交分别确认。保留期从举报创建起算 14 天。
 
 ### 19.5 供应链与前端安全
 
