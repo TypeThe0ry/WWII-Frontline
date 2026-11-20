@@ -72,3 +72,7 @@ E1-9 和 E1-14 的 Medium 构建门禁通过。运行时素材摆放、混音、
 ### B6-gapsdecide（2026-11-20，E1-17）
 
 已在 `docs/ASSET_GAPS.md` §2（34 个 GAP）与 §3.8（M1 72 个需求 ID）及 `reports/m1-placeholders.md` 按 `docs/ASSET_SHOPPING_LIST.md` §8/§9、`docs/MILESTONES.md` §2.1/§2.2 与 `PLAYABLE_SCOPE.md` 零采购默认假设完成 72/72 项逐 ID 裁决：5 项来源级 `real`（`V-NAT-002`/`004`/`005`、`V-PRP-004`/`006`）免费 CC0 采用、36 项（视觉 12 + 音频 24）免费候选采用配程序化占位回退、15 项（视觉 15）纯程序化占位且真素材推迟到 M2、16 项（视觉 7 + 音频 9）非 M1 垂直切片范围推迟到 M2，并逐项写明程序化几何/位姿/粒子/8 边形弹孔环或 48 kHz 0.1 s 静音 `AudioBuffer` 占位规格；TT 已购 6 个 UE 包保持 `INTERNAL` 不入主分支，需人类购买/外包/手动下载项仅登记 `docs/NEEDS_HUMAN.md`（H-047/H-049/H-058/§11.7），未编造已采购。因运行时接线与人工签字未闭环，E1-17 结论保持 `partial`（PI-B6-gapsdecide-1）。
+
+### B6-deploytiming-land（2026-11-20，E1-10）
+
+核对里程碑线已收录 #158 的部署测量脚本、`ManifestIndex` 回归和 PI-109 工作站结果（PI-B6-deploytiming-land-1）。本轮部署耗时未重测。参考机、实素材整包、预发布环境与主页面 UI 直连预取仍待验收，E1-10 为 `partial`。

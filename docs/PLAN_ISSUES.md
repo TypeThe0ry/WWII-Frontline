@@ -1523,3 +1523,9 @@ PrePass 速度会卡死渲染循环，改用自有速度 RTT（地形/薄实例/
 - **确定性与门禁验证**：
   - `DATA_HASH` 由 `0x0e56163cbce945b7` 更新为 **`0x2637b94dda28a192`**（十进制 `"2753873441184063890"`），同步更新 `crates/sim-wasm/tests/golden/native.json`；`pnpm data:validate`（78 文件 0 错）、`pnpm data:test`（75/75）、`cargo test -p frontline-sim --features test-util --locked`、`cargo test -p frontline-sim-wasm --test determinism_native --locked`（4/4）全部通过。
   - M1-070 因仍有 6 个无法由公开一手技术手册确认的字段标为 `"未核实"`（按验收标准 7）保持 `partial`；E1-16 的「`historical` 100% 有出处或 `"未核实"`」与 Sherman 装甲/弹种核对已满足，整体仍因 M1-071 对标录像回填与复测阻塞（H-011/025/026）保持 `partial`。
+
+## PI-B6-deploytiming-land-1 B6-deploytiming 里程碑线收尾（2026-11-20）
+
+- #158 (`97e92ce`) 已把 `ManifestIndex` 改动、测量脚本及 E1-10 证据合入里程碑线。收尾 rebase 去重已落地内容，保留并行批次的验收与计划条目。`ManifestIndex` 继续索引 `chunk`、`collision`、`lods`、`textures`、`audio`、`meta`。
+- TS 首轮因工作树残留的 WASM 包缺少 `takeFireCmd` 而失败。按当前基线重建 WASM 后，741 个 TS 测试通过，严格确定性检查的 3 个种子各 18,000 tick 的 native/WASM 状态哈希完全一致。
+- 部署耗时沿用 `reports/m1-deploy-timing.{md,json}` 的 PI-109 工作站记录。E1-10 仍为 `partial`，参考机、预发布 HTTPS/CDN、M1-064 实素材整包和主页面 UI 直连预取尚未验收。
