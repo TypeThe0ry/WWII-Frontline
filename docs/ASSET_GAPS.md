@@ -730,3 +730,7 @@ Medium 出包使用五个已登记的 Poly Haven 模型，分别覆盖 `V-NAT-00
 | `C-BUL-001` | 音频：子弹掠过 whizz / 超音速 crack | `missing` (0) | **免费素材采用 + 程序化静音占位**：采用 §8.13 Sonniss `GDC2017-p6` Pole Position `The Warfare Library`（99.7 MB 真实军演机枪掠过）与 `GDC2020-p5` PMSFX `Bullet Bys & Impacts`（待 `H-099` 下载）；入 `.fpak` 前回退 48 kHz 0.1 s 静音 `AudioBuffer`。 |
 | `E-FTS-001` | 音频：军靴脚步（泥/草/石板/碎石/木地板/雪/沙/浅水） | `missing` (0) | **免费素材采用 + 程序化静音占位**：采用 §8.15 Freesound CC0 `BenDrain` 泥地军靴脚步（≥8 变体）与 Sonniss `GDC2016-p2` `Soldier Footsteps` / `GDC2019-p6` `Ultimate Footstep Collection`（待 `H-099` 下载）；入 `.fpak` 前回退 48 kHz 0.1 s 静音 `AudioBuffer`（≤8 并发限制由 M1-063 实施）。 |
 | `H-UI-001` | 音频：UI 点击/确认/拒绝/倒计时 | `missing` (0) | **免费素材采用 + 程序化静音占位**：采用 §8.18 Kenney `Impact/Interface Sounds` CC0、Freesound CC0 UI 包与 Sonniss GDC UI 库（待 `H-099` 下载）；入 `.fpak` 前回退 48 kHz 0.1 s 静音 `AudioBuffer`。 |
+
+### B6-suppress-e2e 验收夹具（E1-13）
+
+`client/e2e/suppress-loop.spec.ts` 在临时目录生成平地 FCOL 碰撞和 HQ 出生点。压制验收读取生产 WebAudio 滤波与增益参数。正式地图视觉、爆炸和救治实音（GAP-A08/A15）未测，既有素材决策继续适用。夹具没有第三方素材。
