@@ -94,6 +94,15 @@ describe('processTextures on a document', () => {
     expect(doc.getRoot().listExtensionsRequired().map((e) => e.extensionName)).toContain('KHR_texture_basisu');
   }, 60_000);
 
+  it('a per-texture hero override retains the full-quality UASTC normal stream', async () => {
+    const png = normalPng(64);
+    const raw = toRrrg(decodePng(png));
+    const expected = await encodeKtx2(raw, { format: 'UASTC', srgb: false, normal: true, channels: 2 });
+    const doc = buildDoc(sphereData(8, 8), { normal: png });
+    await processTextures(doc, { cls: { texture_profile: 'bg', textures: { normal: 'hero' } } });
+    expect(doc.getRoot().listMaterials()[0]!.getNormalTexture()!.getImage()).toEqual(expected);
+  });
+
   it('NPOT texture warns and is padded', async () => {
     const doc = buildDoc(sphereData(8, 8), { baseColor: albedoPng(30) });
     const out = await processTextures(doc, { cls: {} });

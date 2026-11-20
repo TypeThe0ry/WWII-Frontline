@@ -133,14 +133,14 @@ function hasUsedAlpha(r: Raster): boolean {
   return false;
 }
 
-const imageDecoder = async (buffer: Uint8Array) => decodePng(buffer);
-
 export interface EncodeOptions {
   format: Ktx2Format;
   /** sRGB colour data (true) or linear data (normal / ORM). */
   srgb: boolean;
   /** Mark the file as the 2-channel normal layout. */
   normal?: boolean;
+  /** Use rate-distortion optimization for background normal maps. */
+  backgroundNormal?: boolean;
   channels?: number;
 }
 
@@ -159,7 +159,7 @@ export async function encodeKtx2(raster: Raster, opts: EncodeOptions): Promise<U
 }
 
 function encode(raster: Raster, opts: EncodeOptions, kv: Record<string, string>): Promise<Uint8Array> {
-  return encodeToKTX2(encodePng(raster), {
+  return encodeToKTX2(raster.data, {
     isUASTC: opts.format === 'UASTC',
     generateMipmap: true,
     isKTX2File: true,
@@ -167,8 +167,10 @@ function encode(raster: Raster, opts: EncodeOptions, kv: Record<string, string>)
     isSetKTX2SRGBTransferFunc: opts.srgb,
     needSupercompression: opts.format === 'UASTC',
     ...(opts.format === 'ETC1S' ? { qualityLevel: 128, compressionLevel: 1 } : { uastcLDRQualityLevel: 1 }),
+    ...(opts.backgroundNormal ? { enableRDO: true, rdoQualityLevel: 2 } : {}),
     kvData: kv,
-    imageDecoder,
+    // Pixels are already decoded and swizzled. Avoid a PNG encode/decode per texture.
+    imageDecoder: async (data) => ({ width: raster.width, height: raster.height, data }),
   });
 }
 
@@ -341,7 +343,8 @@ export async function processTextures(doc: Document, o: ProcessTexturesOptions):
     const isNormal = slot === 'normal';
     const channels = isNormal ? 2 : hasUsedAlpha(raster) ? 4 : 3;
     const input = isNormal ? toRrrg(raster) : raster;
-    const out = await encodeKtx2(input, { format, srgb: slot === 'color', normal: isNormal, channels });
+    const backgroundNormal = isNormal && (o.cls.textures?.[name] ?? o.cls.texture_profile ?? 'bg') === 'bg';
+    const out = await encodeKtx2(input, { format, srgb: slot === 'color', normal: isNormal, backgroundNormal, channels });
     const info = inspectKtx2(out);
     tex.setImage(out).setMimeType('image/ktx2');
     results.push({
