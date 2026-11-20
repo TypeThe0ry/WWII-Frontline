@@ -28,3 +28,8 @@
 
 ## 未做
 真实 `.ktx2` 纹理与 mip 分层（等 M1-064）、`variant-count` 的 CI 接线（`local-ci.sh` 未加该步骤）、材质在 CSM 阴影 pass 里的实际使用（M1-043b）、PBR 材质对 M1 场景现有占位 ShaderMaterial 的替换。
+
+## 变体统计与 CI 门禁更新（B3-C3 / B6-variantci，2026-11-20）
+- **自写着色器纳入变体注册表**：`client/src/render/materials/variants.ts` 已定义 `CUSTOM_VARIANTS` 5 项——自写 CSM 深度通道（`csm:plain`、`csm:instanced`，`custom-csm.ts`）与 TAA 速度通道（`velocity:plain`、`velocity:instanced`、`velocity:terrain`，`velocity.ts`），经 `VariantRegistry.registerCustom` 统一计入上限并在超限时抛错。
+- **CI 门禁接线**：`scripts/local-ci.sh ts` 已运行 `pnpm -C client run variant-count`（随后运行 `pnpm -C client test`），每后端门禁实测 **High 37/60**（PBR 32 + custom 5）、**Low 25/40**（PBR 20 + custom 5），并含 `custom-csm.ts`/`velocity.ts` `registerCustom` 与 `CUSTOM_VARIANTS` 一致性断言（`variants.test.ts` 8/8 通过）。
+- **状态说明**：上文“未做”中的 `variant-count` CI 接线已完成；其余项（真实 `.ktx2` 与 mip 分层、PBR 替换全场景占位材质、RTX 3060 / Iris Xe 参考机预热实测，见 H-021 / M1-064 / PI-109）仍未完成。
