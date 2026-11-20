@@ -4,7 +4,7 @@ import base from './playwright.config';
 const PORT = Number(process.env.FRONTLINE_UI_PORT ?? 5217);
 export default defineConfig({
   ...base,
-  testMatch: ['ui-lobby.spec.ts', 'ui-match.spec.ts'],
+  testMatch: ['ui-lobby.spec.ts', 'ui-match.spec.ts', 'ui-gallery*.spec.ts'],
   use: {
     ...base.use,
     baseURL: `http://127.0.0.1:${PORT}`,
