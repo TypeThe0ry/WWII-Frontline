@@ -69,3 +69,40 @@ node tools/perf/m1-report.mjs        # -> reports/m1-perf.json
 ## 补充：M0 vegetation 场景（上一版，PR #89）
 
 仍保留在 `reports/m1-perf-raw/perf-RTX3080-ws-{vsync,novsync}-webgpu-cam*.json`；只说明工作站 GPU 路径可用，不是 M1 负载。
+
+## B6-perf-gpu12 GPU1 绑卡复测（2026-11-20）
+
+**PI-109 工作站数据。RTX 3060 和 Iris Xe 参考机仍未测（H-021）。** 同一共享工作站的 NVIDIA GeForce RTX 3080 20 GB（GPU1，PCI `0000:23:00.0`，驱动 `595.58.03`），2× EPYC 7402（96 线程），Chromium Headless Shell `153.0.8010.12`。两个档位各在启动前用 `nvidia-smi` 检查三次，GPU1 均为 0%，且 `pmon` 无进程。启动时用 `DRI_PRIME=pci-0000_23_00_0!` 和 GPU1 的 `CUDA_VISIBLE_DEVICES`，并在私有挂载命名空间内屏蔽其余三张卡的 NVIDIA 与 DRM 设备节点。采样同时用独立进程记录各卡实时利用率、GPU1 显存占用、宿主 1 分钟负载、Chromium GPU 进程所在卡和其他 GPU1 进程。完整记录在 `reports/m1-perf-raw/perf-RTX3080-ws-b6-gpu1-load.csv`。
+
+沿用上文 M1 方法。Carentan `scene=world`，三处固定机位、每处 3 轮，60 个演示实体、植被开启，`debug=1`，每轮预热 10 s、采集 60 s，保留 Chromium 默认帧率限制。High 用 WebGPU，输出和内部均为 1920×1080。Low 用 WebGL2/ANGLE Vulkan，输出 1280×720，`?quality=low` 沿用已有地形 LOD 和植被配置，新增固定 75% 内部比例，实测画布 960×540。三处均使用现有占位场景，沿用历史命令的缺省阴影及后处理设置（自写 CSM、TAA、完整 HUD 未启用）。使用冻结时的采集源码提交 `26fbc46`。High 的采集器 `dirty` 标记来自确定性检查更新了历史 `reports/m0/determinism/summary.json`，该产物随后撤回；无运行时代码改动。渲染后端、分辨率和档位同时变化，因此本组数据不能单独量化某一项的收益。
+
+P95 和卡顿是每轮完整的页面 rAF 间隔统计，FPS 为该轮 rAF 样本数除以实测采集时长。draw call 和三角形按既有工具取每轮末帧快照，表内为三轮中位数。卡顿定义为帧间隔严格大于 50 ms。原始 `vegetation.instances` 是末相机的可见网格快照，第一人称独立武器相机排在世界相机后，因此该字段的 `0` 不表示世界植被关闭；主表使用既有逐帧场景 draw call / active-index 计数。
+
+| 档位 | 机位 | rAF P95 ms（3 轮） | rAF FPS（3 轮） | >50 ms（3 轮） | draw call | 三角形 |
+| --- | --- | --- | --- | --- | ---: | ---: |
+| High | open_field | 16.70 / 16.70 / 16.70 | 59.78 / 59.85 / 59.80 | 2 / 0 / 2 | 83 | 444,075 |
+| High | hedgerow | 16.70 / 16.70 / 16.80 | 59.78 / 59.78 / 59.01 | 2 / 2 / 1 | 211 | 359,827 |
+| High | old_town | 16.80 / 16.70 / 16.80 | 59.17 / 59.90 / 59.87 | 0 / 1 / 1 | 148 | 347,532 |
+| Low | open_field | 16.70 / 16.70 / 16.80 | 59.88 / 59.97 / 60.02 | 1 / 0 / 0 | 71 | 143,173 |
+| Low | hedgerow | 16.70 / 16.70 / 16.70 | 60.00 / 60.02 / 60.02 | 0 / 0 / 0 | 181 | 131,244 |
+| Low | old_town | 16.70 / 16.70 / 16.70 | 60.02 / 60.02 / 60.02 | 0 / 0 / 0 | 116 | 125,572 |
+
+- **High**：采集窗口内 216 个主机负载点。GPU1 利用率 25/38/45%（最小/中位/最大），显存 638/656/672 MiB；GPU0 / GPU2 / GPU3 利用率分别为 27/41/70% / 3/100/100% / 0/14/50%，宿主 loadavg(1m) 29.72/39.00/60.21。`pmon` 216 个点观察到 Chromium GPU 进程，均在 GPU1；未见其他 GPU1 进程。
+- **Low**：采集窗口内 221 个主机负载点。GPU1 利用率 2/23/57%（最小/中位/最大），显存 506/510/832 MiB；GPU0 / GPU2 / GPU3 利用率分别为 0/42/82% / 67/100/100% / 0/30/55%，宿主 loadavg(1m) 20.23/26.68/63.40。`pmon` 221 个点观察到 Chromium GPU 进程，均在 GPU1；91/221 个点同时观察到非本批的 GPU1 进程；不能视为全程独占。
+
+Low 的非独占窗口：hedgerow 第 1 轮 1/25 点、hedgerow 第 2 轮 1/25 点、hedgerow 第 3 轮 20/24 点、old_town 第 1 轮 22/25 点、old_town 第 2 轮 23/25 点、old_town 第 3 轮 24/24 点。其余 Low 轮未观察到其他 GPU1 进程。共用窗口原样保留，不将无归因的负载解读为本项目性能。
+
+对照数值预算（不是 E1 参考机判定）：High 9/9 轮的 draw call 与三角形低于上限；P95 按 0.001 ms 去除浮点尾差后有 3/9 轮 >16.7 ms，有 0/9 轮超过 2 个卡顿帧。Low 有 9/9 轮达到 30 FPS，draw call 9/9 轮同时低于 900 和 500；有 0/9 轮 P95 >33.3 ms、0/9 轮超过 2 个卡顿帧。不同批次的宿主负载与客户端版本并非受控变量，不能将这些差异单独归因于 GPU 隔离，也不能把 rAF 的约 60 Hz 当作实屏呈现验证。
+
+复现命令（本批先运行 `wasm-pack build crates/sim-wasm --target web --profile wasm-release`，再用 `pnpm -C client sync-map carentan` 同步地图和 sim-wasm；以下命令在上文的 GPU1 私有设备视图中运行，使用本机正常 ICD 搜索路径）：
+
+```bash
+export TMPDIR=/tmp/pg12 DRI_PRIME='pci-0000_23_00_0!'
+export CUDA_VISIBLE_DEVICES=GPU-b64d67e4-4cc7-dcf0-5aa2-a16bd85586e3
+node tools/perf/capture.mjs --m1 --gpu --renderer webgpu --viewport 1920x1080 --quality high --machine RTX3080-ws-b6-gpu1-high --veg 1 --out-dir reports/m1-perf-raw
+node tools/perf/capture.mjs --m1 --gpu --renderer webgl2 --angle-vulkan --viewport 1280x720 --quality low --machine RTX3080-ws-b6-gpu1-low --veg 1 --out-dir reports/m1-perf-raw
+```
+
+本次聚合采用 `tools/perf/m1-report.mjs` 的 `rowFromCapture` 与 `tools/perf/budget.mjs`，结果追加于 `reports/m1-perf.json` 的 `B6-perf-gpu12`；六个采集文件保留在 `reports/m1-perf-raw/`。GPU 绑卡与负载记录不能替代参考机、最终素材、完整画质、分 pass GPU 计时及 wasm 内存验收；这些均未测。
+
+旧版 `m1-report.mjs` 命令只重建历史的 WebGPU/植被 A/B；如单独复跑旧版聚合，请用 `--out` 输出到临时文件，不要覆盖本报告的追加数据。

@@ -8,7 +8,7 @@
 //
 // Options: --renderer webgl2|webgpu (default webgl2)  --cams 0,1,2  --repeats N (3)  --warmup S (5)  --duration S (30)
 //          --viewport WxH (640x360 without --gpu, 1920x1080 with)  --quality high|low  --machine NAME (default: hostname)
-//          --out-dir DIR (reports/m0/perf)  --gpu (use the machine's GPU: no SwiftShader flags)  --headed
+//          --out-dir DIR (reports/m0/perf)  --gpu (use the machine's GPU: no SwiftShader flags)  --headed  --angle-vulkan (Linux hardware WebGL2 on Xvfb)
 //          --m1 (M1-069: the three M1 scenes of tools/perf/m1-scenes.json on ?scene=world&map=carentan with 60 demo entities; warm-up/capture/repeats from that file unless given; writes perf-<machine>-<renderer>-<scene>.json)
 //          --extra "k=v&k2=v2" (with --m1: extra query parameters for the page, e.g. veg_budget=0)  --veg 0|1 (with --m1: vegetation scatter on the world scene; default 1)  --novsync (uncap the frame rate: --disable-frame-rate-limit --disable-gpu-vsync)
 //          --url URL (an already running client instead of starting a Vite dev server)
@@ -43,6 +43,7 @@ function parseArgs(argv) {
     else if (a === '--out-dir') o.outDir = path.resolve(next());
     else if (a === '--gpu') o.gpu = true;
     else if (a === '--headed') o.headed = true;
+    else if (a === '--angle-vulkan') o.angleVulkan = true;
     else if (a === '--m1') o.m1 = true;
     else if (a === '--veg') o.veg = next();
     else if (a === '--extra') o.extra = next();
@@ -97,8 +98,10 @@ function chromiumArgs(o) {
   if (o.renderer === 'webgpu') {
     args.push('--enable-unsafe-webgpu', '--enable-features=Vulkan,WebGPU');
     if (!o.gpu) args.push('--use-webgpu-adapter=swiftshader');
-    // Linux + NVIDIA: without these the browser reports no WebGPU adapter (blocklist / non-Vulkan ANGLE backend).
-    else if (process.platform === 'linux') args.push('--use-angle=vulkan', '--ignore-gpu-blocklist');
+  }
+  // Linux NVIDIA WebGPU needs Vulkan ANGLE and a blocklist override; opt in to the same ANGLE backend for WebGL2 on Xvfb.
+  if (o.gpu && process.platform === 'linux' && (o.renderer === 'webgpu' || o.angleVulkan)) {
+    args.push('--use-angle=vulkan', '--ignore-gpu-blocklist');
   }
   return args;
 }
@@ -177,7 +180,13 @@ async function runOnceM1(browser, o, baseUrl, scene, runIndex, cfg) {
     window.__ivl.on = false;
     const mem = performance.memory;
     const caps = window.__caps ?? {};
-    return { dump: window.__perf.dump(), samples: window.__ivl.samples, heap: mem ? mem.usedJSHeapSize / 1048576 : null, world: window.__world.stats, caps: { kind: caps.kind, fallbackReason: caps.fallbackReason, gpuTimerSource: caps.gpuTimerSource } };
+    const canvas = document.querySelector('#game-canvas');
+    return {
+      dump: window.__perf.dump(), samples: window.__ivl.samples, heap: mem ? mem.usedJSHeapSize / 1048576 : null,
+      world: window.__world.stats, canvas_px: canvas ? [canvas.width, canvas.height] : null,
+      vegetation_tier: window.__vegetation?.veg.qualityTier ?? null, custom_shadows: Boolean(window.__csm),
+      caps: { kind: caps.kind, fallbackReason: caps.fallbackReason, gpuTimerSource: caps.gpuTimerSource },
+    };
   });
   await context.close();
   const iv = res.samples;
@@ -185,7 +194,12 @@ async function runOnceM1(browser, o, baseUrl, scene, runIndex, cfg) {
     ...res.dump,
     frame_ms: { count: iv.length, p50: percentile(iv, 0.5), p95: percentile(iv, 0.95), p99: percentile(iv, 0.99), max: iv.length ? Math.max(...iv) : 0 },
     hitches_gt_50ms: iv.filter((v) => v > 50).length,
-    meta: { scene, run: runIndex, load_ms: loadMs, warmup_s: o.warmup, captured_s: captured, js_heap_mb: res.heap, world: res.world, page_errors: errors, caps: res.caps },
+    meta: {
+      scene, run: runIndex, load_ms: loadMs, warmup_s: o.warmup, captured_s: captured,
+      capture_start_utc: new Date(c0).toISOString(), js_heap_mb: res.heap, world: res.world,
+      canvas_px: res.canvas_px, vegetation_tier: res.vegetation_tier, custom_shadows: res.custom_shadows,
+      page_errors: errors, caps: res.caps,
+    },
   };
 }
 

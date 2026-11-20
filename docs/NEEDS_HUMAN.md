@@ -369,6 +369,7 @@
 - **进展（B6-linemerge-plan，2026-11-20）**：仅复跑 MS 工作站功能确定性（PI-109，非参考机）；两线合流后的参考机渲染、输入和性能未测。
 - **进展（B6-acceptdemo，2026-11-20）**：RTX 3060/1080p 与 Iris Xe/WebGL2/720p 均未测（需人）。PI-109 工作站仅执行本地功能检查。
 - **进展（B6-suppress-e2e，2026-11-20）**：E1-13 使用工作站无头 Chromium SwiftShader 验证 HUD 和 WebAudio 参数（PI-109，非参考机）。参考机帧时间、显存及音画实机未测。
+- **进展（B6-perf-gpu12，2026-11-20）**：工作站绑定 RTX 3080 GPU1 已完成 Carentan High/WebGPU/1080p 和 Low/WebGL2/720p 三机位各 3×60 s（PI-109）。仍需 RTX 3060、Iris Xe 参考机按同口径复测；不能用工作站数据替代。见 `reports/m1-perf.md`。
 
 ### H-022 受限网络测试台（UDP/HTTP3 被阻断场景）
 
