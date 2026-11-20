@@ -88,6 +88,11 @@ export function mountMatchUi({ canvas, game: net, bus, settings, persist, audio,
   const offRevive = bus.on('revive', ({ target }) => {
     if (target === playerId && downed.transition('revive')) uiScreen.value = mapOpen.peek() ? 'map' : 'hud';
   });
+  // Use the reliable roster on the same channel as Death and Revive. A positive C2 health byte
+  // may describe a downed body or arrive out of order with respect to C4 on WebTransport.
+  const offAlive = bus.on('player.alive', ({ player }) => {
+    if (player === playerId && downed.transition('respawn')) uiScreen.value = mapOpen.peek() ? 'map' : 'hud';
+  });
   const offDisconnect = net.session.onDisconnect(() => { connected.value = false; pause.releaseInput(); changeMap(false); });
   const offFrame = onFrame(() => {
     const now = performance.now();
@@ -127,7 +132,7 @@ export function mountMatchUi({ canvas, game: net, bus, settings, persist, audio,
   return () => {
     if (disposed) return;
     disposed = true;
-    offFrame(); offDisconnect(); offRevive(); offDeath(); offSetting();
+    offFrame(); offDisconnect(); offAlive(); offRevive(); offDeath(); offSetting();
     pause.dispose(); downed.dispose(); hud.dispose();
     render(null, host);
     pauseHost.remove(); host.remove();

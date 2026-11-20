@@ -85,6 +85,7 @@ export interface ServerProc {
 
 async function spawnServer(args: string[]): Promise<ServerProc> {
   const proc = spawn(SERVER_BIN, args, { stdio: ['ignore', 'pipe', 'pipe'], cwd: REPO_ROOT });
+  console.log(`[net-e2e] started frontline-server pid=${proc.pid}`);
   const lines: Record<string, unknown>[] = [];
   let stderr = '';
   proc.stderr?.on('data', (d) => (stderr += d.toString()));
@@ -138,13 +139,14 @@ export interface StartOptions {
   cert?: DevCert;
   wsPort?: number;
   wtPort?: number;
+  args?: string[];
   /** `true`: pass `--dev-echo` (C1 -> C2 echo scaffold, no simulation). Default (M0-019): off, so the server sends its real snapshots. */
   echo?: boolean;
 }
 
 /** Starts the server (ephemeral ports unless given). Real snapshots by default; `--dev-echo` only on request (`echo: true`). */
 export async function startServer(o: StartOptions = {}): Promise<ServerProc> {
-  const base = ['--ws-port', String(o.wsPort ?? 0), '--wt-port', String(o.wtPort ?? 0), '--metrics-port', '0'];
+  const base = ['--ws-port', String(o.wsPort ?? 0), '--wt-port', String(o.wtPort ?? 0), '--metrics-port', '0', ...(o.args ?? [])];
   if (o.cert) base.push('--cert', o.cert.cert, '--key', o.cert.key);
   if (o.echo !== true) return spawnServer(base);
   try {

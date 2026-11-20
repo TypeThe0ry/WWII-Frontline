@@ -200,6 +200,8 @@ pub mod roster_flags {
     pub const LEFT: u8 = 8;
     /// Bot-controlled.
     pub const BOT: u8 = 16;
+    /// The player has a living, standing body. Absent for undeployed, downed and KIA players.
+    pub const ALIVE: u8 = 32;
 }
 
 /// Incremental roster entry; the latest entry for a `player` replaces the previous one.

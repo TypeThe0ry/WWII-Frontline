@@ -7,7 +7,7 @@ const PORT = Number(process.env.FRONTLINE_PLAYWRIGHT_PORT ?? 5199);
 export default defineConfig({
   testDir: 'e2e',
   // *.test.ts under e2e/ are vitest files (e2e/interop/fixtures.test.ts), not Playwright specs.
-  testIgnore: ['**/*.test.ts', '**/garrison-loop.spec.ts'], // The live stack has its own config.
+  testIgnore: ['**/*.test.ts', '**/garrison-loop.spec.ts', '**/suppress-loop.spec.ts'], // The live stack has its own config.
   timeout: 60_000,
   workers: 1,
   reporter: [['list']],
