@@ -6,6 +6,8 @@
 
 ## 摘要
 
+- **B6-landall（2026-11-20）**：本批依次处理 resources、mines、vehmod、cpu100、bots100；#178、#179、#180、#181 已合入。vehmod 在 v12 基线补齐轮胎邻接枚举后仍因固定 Binaryen 132 WASM 1,202,326 B 超 1,200,000 B 门禁 2,326 B 而跳过；不放宽门槛。详见 `out/batch6/landall-NOTES.md` 与 PI-B6-landall-1。
+
 - **B6-outpost（2026-11-20，M2-011）**：Outpost、维修站和反坦克炮已联通 sim/协议/服务端/WASM/客户端逻辑。PI-109 工作站通过规则与无头测试。依赖联验和参考机未测，状态 `partial`，见 `reports/m2-outpost.md` 与 PI-B6-outpost-1。
 - **B6-resources（2026-11-20，M2-009）** · 战略资源、节点、整分钟快照及浏览器/无头接线已实现。PI-109 工作站首分钟 242 / 98 / 50，满负载资源阶段 P99 7.640 µs。参考机性能与正式五线地图联验未测。见 `reports/m2-resources.md` / PI-B6-resources-1。
 
@@ -202,7 +204,7 @@
 | M2-013 | sim：M2 武器类（自动步枪、机枪、霰弹） | todo | | | |
 | M2-014 | sim：火箭、地雷与炸药 | partial | B6-mines | 2026-11-20 | ordnance typed data、launcher 状态、HEAT、AP/AT minefield、satchel 独立 sim APIs 与单测已入库。`lint rust determinism data` 通过；严格 native/WASM 3 种子各 18,000 tick 哈希一致，最大位置差 0 m；定向 mine/explosive/launcher/heat 测试通过。尚未接入 World tick、服务器输入/事件和实际武器数据/玩法闭环；M2-013/012 与参考机未测。详见 `reports/m2-mines.md`、`out/batch6/mines-NOTES.md` 与 PI-B6-landall-mines-1。 |
 | M2-015 | sim：M2 载具（轻型车、卡车、Panzer IV）与刷新 | todo | | | |
-| M2-016 | sim：载具模块损伤与维修 | todo | | | |
+| M2-016 | sim：载具模块损伤与维修 | blocked | B6-vehmod | 2026-11-20 | 本地 `b6/vehmod` 有部分实现，未合入里程碑。PR #179 基线的 Binaryen 132 WASM 为 1,202,326 B（上限 1,200,000 B）；参考机和依赖联验未测。见 PI-B6-landall-1。 |
 | M2-017 | sim：计分与经验 | partial | 47 项（含 8 项禁用）、60/90/120 s 防刷、XP 阈值、摘要字段及 C4/网关接线；接入 M2-018 的 AFK、换队保留账本；v11 5v5 + 2 bot 加速审计 36,000 tick / 145 增量 / 1,267 净分，Carentan WS 65 s 10/10 部署、0 断线和解码错；v4 Carentan WS 1,225 s 自然结算 1,560 净分；100 人 × 50 事件/tick P50/P99/max 5.660/8.510/290.177 µs | 非参考机；M2 规则/结构/载具等生产者、跨局 XP、真人调参和预发布未测；PI-B6-scoring-1/2/3/4 | `reports/m2-scoring-b6.md` |
 | M2-018 | sim：自动平衡、TK、投票与挂机 | partial | Codex | 2026-11-20 | PI-B6-balance-1；差 4 持续 90 s、邀请后 60 s、TK 第 5 次处罚断线；30 WS×2、合成 AFK 0/20 误判；[验收与实测](../reports/m2-server-rules.md)，参考机/真人回放未测。 |
 | M2-019 | sim：标记、Ping 与聊天频道规则 | partial | B6-pingchat | 2026-11-20 | 700/700，10 WS 客户端。57 tick 拒 / 60 tick 过，5 m / 30 tick，静音 4 人 / 18,000 tick。缓存最慢场景 P95 9.09 µs（PI-109），参考机未测。`reports/m2-019-pingchat.md` |
