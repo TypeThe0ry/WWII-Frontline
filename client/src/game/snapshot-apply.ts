@@ -17,7 +17,7 @@ import {
   type WasmSnapshotDecoder,
 } from '../net/wasm';
 import type { EventBus, GameEvents } from './event-bus';
-import type { EntityStore } from './interpolation';
+import { MAX_ENTITIES, type EntityStore } from './interpolation';
 import { RemoteVehicleStore, VEHICLE_ID_BASE } from './vehicle-store';
 
 export interface SnapshotSummary {
@@ -144,6 +144,21 @@ export class SnapshotApplier {
         this.removedEv.reason = 'removed';
         this.bus.emit('entity.removed', this.removedEv);
       }
+    }
+  }
+
+  /** Discard the prior team's presentation without invalidating wire decode baselines. */
+  clearEntities(): void {
+    this.removedEv.reason = 'removed';
+    for (let id = 0; id < MAX_ENTITIES; id++) {
+      if (!this.store.remove(id)) continue;
+      this.removedEv.id = id;
+      this.bus.emit('entity.removed', this.removedEv);
+    }
+    for (const id of this.vehicles.ids()) {
+      this.vehicles.remove(id);
+      this.removedEv.id = id;
+      this.bus.emit('entity.removed', this.removedEv);
     }
   }
 

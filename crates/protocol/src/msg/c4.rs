@@ -6,6 +6,9 @@ use alloc::string::String;
 use alloc::vec::Vec;
 
 use super::c0::{decode_whole, encode_whole, read_str, write_str, MAX_NICK_LEN};
+use super::vote::{
+    MapVoteResult, MapVoteState, TeamBalanceNotice, TkPrompt, VoteResult, VoteState,
+};
 use crate::bitio::{BitReader, BitWriter};
 use crate::channel::c4_type;
 use crate::codec::{Codec, CodecError};
@@ -317,6 +320,12 @@ pub enum ServerEventC4 {
     PlayerRoster(PlayerRoster),
     Notice(Notice),
     MatchPhase(MatchPhase),
+    VoteState(VoteState),
+    VoteResult(VoteResult),
+    TkPrompt(TkPrompt),
+    TeamBalanceNotice(TeamBalanceNotice),
+    MapVoteState(MapVoteState),
+    MapVoteResult(MapVoteResult),
 }
 
 impl ServerEventC4 {
@@ -331,6 +340,12 @@ impl ServerEventC4 {
             Self::PlayerRoster(_) => c4_type::PLAYER_ROSTER,
             Self::Notice(_) => c4_type::NOTICE,
             Self::MatchPhase(_) => c4_type::MATCH_PHASE,
+            Self::VoteState(_) => c4_type::VOTE_STATE,
+            Self::VoteResult(_) => c4_type::VOTE_RESULT,
+            Self::TkPrompt(_) => c4_type::TK_PROMPT,
+            Self::TeamBalanceNotice(_) => c4_type::TEAM_BALANCE_NOTICE,
+            Self::MapVoteState(_) => c4_type::MAP_VOTE_STATE,
+            Self::MapVoteResult(_) => c4_type::MAP_VOTE_RESULT,
         }
     }
 }
@@ -348,6 +363,12 @@ impl Codec for ServerEventC4 {
             Self::PlayerRoster(m) => m.encode(w),
             Self::Notice(m) => m.encode(w),
             Self::MatchPhase(m) => m.encode(w),
+            Self::VoteState(m) => m.encode(w),
+            Self::VoteResult(m) => m.encode(w),
+            Self::TkPrompt(m) => m.encode(w),
+            Self::TeamBalanceNotice(m) => m.encode(w),
+            Self::MapVoteState(m) => m.encode(w),
+            Self::MapVoteResult(m) => m.encode(w),
         }
     }
     fn decode(r: &mut BitReader<'_>) -> Result<Self, CodecError> {
@@ -361,6 +382,12 @@ impl Codec for ServerEventC4 {
             c4_type::PLAYER_ROSTER => Self::PlayerRoster(PlayerRoster::decode(r)?),
             c4_type::NOTICE => Self::Notice(Notice::decode(r)?),
             c4_type::MATCH_PHASE => Self::MatchPhase(MatchPhase::decode(r)?),
+            c4_type::VOTE_STATE => Self::VoteState(VoteState::decode(r)?),
+            c4_type::VOTE_RESULT => Self::VoteResult(VoteResult::decode(r)?),
+            c4_type::TK_PROMPT => Self::TkPrompt(TkPrompt::decode(r)?),
+            c4_type::TEAM_BALANCE_NOTICE => Self::TeamBalanceNotice(TeamBalanceNotice::decode(r)?),
+            c4_type::MAP_VOTE_STATE => Self::MapVoteState(MapVoteState::decode(r)?),
+            c4_type::MAP_VOTE_RESULT => Self::MapVoteResult(MapVoteResult::decode(r)?),
             _ => return Err(CodecError::InvalidTag),
         })
     }

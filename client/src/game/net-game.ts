@@ -69,6 +69,7 @@ export async function startNetGame(
   const session = await connect({
     config, wasm, bus,
     ...(join ? { hello: { ticket: join.ticket } } : {}),
+    onWelcome: ({ team }) => gameState.seedTeam(team),
     onC4Event: (event) => gameState.apply(event),
     onDeployResult: (result) => gameState.applyDeployResult(result),
   });
@@ -88,6 +89,7 @@ export async function startNetGame(
   // those chunks when the server is running a different map (e.g. Carentan).
   const game = new GameLoop({ wasm, decoder: new wasm.SnapshotDecoder(), bus, net: session, input: placement, matchSeed: w.matchSeed, mapId: w.mapId, playerId: w.playerId, fireOriginHints: w.mapId === 0 });
   game.loadCollision(chunks);
+  const offTeam = bus.on('team.changed', ({ tick }) => game.resetTeamProjection(tick));
   const offSnap = session.onSnapshot((bytes) => game.onSnapshot(bytes));
 
   // A hidden tab gets no animation frames: keep stepping from a timer so inputs and the connection stay alive
@@ -137,6 +139,7 @@ export async function startNetGame(
     dispose: () => {
       onDispose?.();
       offSnap();
+      offTeam();
       offPlacement();
       lock.detach();
       document.removeEventListener('visibilitychange', onVisibility);

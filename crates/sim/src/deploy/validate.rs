@@ -191,6 +191,9 @@ impl World {
             .roles
             .get(usize::from(req.role))
             .ok_or(DeployError::UnknownRole)?;
+        if self.rules_role_locked(p, &role.id) {
+            return Err(DeployError::RoleCooldown);
+        }
         sq.role_available(p, &role.id)?;
         // 4. Loadout: belongs to the role and the faction, unlocked.
         let lo = data

@@ -196,3 +196,7 @@ required-features = ["test-util"]
 [[bench]]
 name = "lagcomp"
 harness = false
+
+[[bench]]
+name = "serverrules_tick"
+harness = false

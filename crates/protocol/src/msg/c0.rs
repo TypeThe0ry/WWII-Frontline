@@ -6,6 +6,7 @@
 use alloc::string::String;
 use alloc::vec::Vec;
 
+use super::vote::{ForgivePunish, MapVoteCast, TeamSwitchRequest, VoteCast, VoteStart};
 use crate::bitio::{BitReader, BitWriter};
 use crate::channel::c0_type;
 use crate::codec::{Codec, CodecError};
@@ -18,10 +19,10 @@ const TICKET_LEN_BITS: u8 = 9;
 /// server must send the original member-only C3 payload, even when markers are active.
 pub const CAP_TEAM_MARKERS: u8 = 1 << 2;
 
-fn w8(w: &mut BitWriter, v: u8) -> Result<(), CodecError> {
+pub(super) fn w8(w: &mut BitWriter, v: u8) -> Result<(), CodecError> {
     w.write_bits(v as u64, 8)
 }
-fn r8(r: &mut BitReader<'_>) -> Result<u8, CodecError> {
+pub(super) fn r8(r: &mut BitReader<'_>) -> Result<u8, CodecError> {
     Ok(r.read_bits(8)? as u8)
 }
 
@@ -185,6 +186,8 @@ pub mod disconnect_reason {
     pub const KICKED: u8 = 2;
     pub const SERVER_SHUTDOWN: u8 = 3;
     pub const PROTOCOL_ERROR: u8 = 4;
+    /// Removal by an automatic server rule (e.g. AFK or team-kill penalties).
+    pub const SERVER_RULE: u8 = 5;
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -234,6 +237,7 @@ macro_rules! u8_enum {
         }
     };
 }
+pub(super) use u8_enum;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct DeployRequest {
@@ -523,6 +527,11 @@ pub enum ClientMsgC0 {
     Settings(Settings),
     Report(Report),
     PlacementRequest(PlacementRequest),
+    VoteStart(VoteStart),
+    VoteCast(VoteCast),
+    TeamSwitchRequest(TeamSwitchRequest),
+    ForgivePunish(ForgivePunish),
+    MapVoteCast(MapVoteCast),
 }
 
 /// Server -> client C0 messages.
@@ -551,6 +560,11 @@ impl ClientMsgC0 {
             Self::Settings(_) => c0_type::SETTINGS,
             Self::Report(_) => c0_type::REPORT,
             Self::PlacementRequest(_) => c0_type::PLACEMENT_REQUEST,
+            Self::VoteStart(_) => c0_type::VOTE_START,
+            Self::VoteCast(_) => c0_type::VOTE_CAST,
+            Self::TeamSwitchRequest(_) => c0_type::TEAM_SWITCH_REQUEST,
+            Self::ForgivePunish(_) => c0_type::FORGIVE_PUNISH,
+            Self::MapVoteCast(_) => c0_type::MAP_VOTE_CAST,
         }
     }
 }
@@ -584,6 +598,11 @@ impl Codec for ClientMsgC0 {
             Self::Settings(m) => m.encode(w),
             Self::Report(m) => m.encode(w),
             Self::PlacementRequest(m) => m.encode(w),
+            Self::VoteStart(m) => m.encode(w),
+            Self::VoteCast(m) => m.encode(w),
+            Self::TeamSwitchRequest(m) => m.encode(w),
+            Self::ForgivePunish(m) => m.encode(w),
+            Self::MapVoteCast(m) => m.encode(w),
         }
     }
     fn decode(r: &mut BitReader<'_>) -> Result<Self, CodecError> {
@@ -598,6 +617,11 @@ impl Codec for ClientMsgC0 {
             c0_type::SETTINGS => Self::Settings(Settings::decode(r)?),
             c0_type::REPORT => Self::Report(Report::decode(r)?),
             c0_type::PLACEMENT_REQUEST => Self::PlacementRequest(PlacementRequest::decode(r)?),
+            c0_type::VOTE_START => Self::VoteStart(VoteStart::decode(r)?),
+            c0_type::VOTE_CAST => Self::VoteCast(VoteCast::decode(r)?),
+            c0_type::TEAM_SWITCH_REQUEST => Self::TeamSwitchRequest(TeamSwitchRequest::decode(r)?),
+            c0_type::FORGIVE_PUNISH => Self::ForgivePunish(ForgivePunish::decode(r)?),
+            c0_type::MAP_VOTE_CAST => Self::MapVoteCast(MapVoteCast::decode(r)?),
             _ => return Err(CodecError::InvalidTag),
         })
     }

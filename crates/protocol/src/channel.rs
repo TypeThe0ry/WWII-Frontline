@@ -52,6 +52,11 @@ pub mod c0_type {
     pub const REPORT: u8 = 0x16;
     pub const PLACEMENT_REQUEST: u8 = 0x17;
     pub const PLACEMENT_RESULT: u8 = 0x18;
+    pub const VOTE_START: u8 = 0x19;
+    pub const VOTE_CAST: u8 = 0x1a;
+    pub const TEAM_SWITCH_REQUEST: u8 = 0x1b;
+    pub const FORGIVE_PUNISH: u8 = 0x1c;
+    pub const MAP_VOTE_CAST: u8 = 0x1d;
 }
 
 /// C4 (reliable server events) `msg_type` values.
@@ -65,6 +70,12 @@ pub mod c4_type {
     pub const PLAYER_ROSTER: u8 = 0x07;
     pub const NOTICE: u8 = 0x08;
     pub const MATCH_PHASE: u8 = 0x09;
+    pub const VOTE_STATE: u8 = 0x0a;
+    pub const VOTE_RESULT: u8 = 0x0b;
+    pub const TK_PROMPT: u8 = 0x0c;
+    pub const TEAM_BALANCE_NOTICE: u8 = 0x0d;
+    pub const MAP_VOTE_STATE: u8 = 0x0e;
+    pub const MAP_VOTE_RESULT: u8 = 0x0f;
 }
 
 /// C1 `msg_type` values. Not written on the wire (the channel identifies the message, to keep

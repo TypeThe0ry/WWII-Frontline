@@ -4,6 +4,14 @@ use super::{RosterDelta, SquadId, SquadManager};
 use crate::ids::{PlayerId, Tick};
 
 impl SquadManager {
+    pub(crate) fn relinquish_leader(&mut self, p: PlayerId, now: Tick) -> Vec<RosterDelta> {
+        let mut out = Vec::new();
+        if let Some(s) = self.squad_of(p).filter(|s| s.leader == p) {
+            self.leave_squad_for_absence(s.id, p, now, &mut out);
+        }
+        out
+    }
+
     /// Best successor to the lead of `sid`, never `excluding`: Officer first, then the
     /// highest match score, then the earliest joiner (then the lowest id).
     pub fn pick_successor(&self, sid: SquadId, excluding: PlayerId) -> Option<PlayerId> {

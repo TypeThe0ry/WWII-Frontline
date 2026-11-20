@@ -460,7 +460,8 @@ async fn issue_ticket(
         return err(StatusCode::NOT_FOUND, "no_such_match");
     };
     parse_timer.observe_duration();
-    let jti = random_16();
+    let mut jti = random_16();
+    jti[..8].copy_from_slice(&token::match_guest(&st.cfg.token_secret, &id, &claims.sub));
     let (m, player_id) = match st
         .db
         .reserve_slot(

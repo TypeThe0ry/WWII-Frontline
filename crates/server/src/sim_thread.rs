@@ -31,6 +31,8 @@ use crate::logging::CURRENT_TICK;
 use crate::metrics::Metrics;
 use crate::shutdown::StopFlag;
 
+mod server_rules;
+
 pub const INPUT_CHANNEL_CAP: usize = 1024;
 pub const COMMAND_CHANNEL_CAP: usize = 256;
 /// 1/30 s in nanoseconds (PI-006: fixed step 1000/30 ms).
@@ -343,6 +345,10 @@ pub fn build_loop_with_bots<C: Clock>(
         sim_cfg,
         cfg.map_data.as_ref().map_or(&empty, |m| &m.collision),
     );
+    if cfg.net.is_some() {
+        let rotation = crate::config::KNOWN_MAPS.get(..3).map(|_| [0, 1, 2]);
+        world.enable_server_rules(rotation);
+    }
     if let Some(m) = &cfg.map_data {
         m.apply_to(&mut world);
         if m.uses_tactical_deploy() {
@@ -771,7 +777,9 @@ impl<C: Clock> SimLoop<C> {
             .apply(&mut self.world, self.bridge.resolved());
         lap(0, &mut self.phase_ms);
         let lagcomp_before = self.world.lagcomp_stats();
-        let out = self.world.step(self.bridge.resolved());
+        let out = self
+            .world
+            .step_with_rule_inputs(self.bridge.resolved(), self.bridge.real_inputs());
         lap(1, &mut self.phase_ms);
         self.step_events = out.events;
         if let Some(recorder) = &mut self.reports {
@@ -784,6 +792,7 @@ impl<C: Clock> SimLoop<C> {
             &self.step_events,
             &out.rule_changes,
         );
+        self.apply_server_actions(out.server_actions);
         self.bridge.anticheat_after_step(&self.step_events);
         self.bridge.report_if_due(std::time::Instant::now());
         CURRENT_TICK.store(self.world.tick().0, Ordering::Relaxed);
@@ -807,12 +816,24 @@ impl<C: Clock> SimLoop<C> {
         while let Ok(c) = self.commands_rx.try_recv() {
             match c {
                 Command::Join { player, team } => {
-                    if let (Some(recorder), Some(identity)) = (
-                        &mut self.reports,
-                        self.bridge
+                    self.make_room_for_human(team);
+                    let identity = self
+                        .bridge
+                        .net()
+                        .and_then(|net| net.sessions.ticket_identity_of(player));
+                    let admin = identity.as_ref().is_some_and(|ticket| ticket.is_admin);
+                    if let Err(error) = self.world.admit_human(player, team, admin) {
+                        tracing::warn!(?error, player, "roster rejected join");
+                        if let Some(handle) = self
+                            .bridge
                             .net()
-                            .and_then(|net| net.sessions.ticket_identity_of(player)),
-                    ) {
+                            .and_then(|net| net.sessions.handle_of(player))
+                        {
+                            handle.close_graceful();
+                        }
+                        continue;
+                    }
+                    if let (Some(recorder), Some(identity)) = (&mut self.reports, identity) {
                         recorder.join(player, identity);
                     }
                     if !self.dev_spawn_vehicle {
@@ -820,43 +841,31 @@ impl<C: Clock> SimLoop<C> {
                             // Tactical maps use C0 SquadOp/DeployRequest for role and first body.
                             // The compact M0 sandbox and vehicle fixture keep immediate spawn.
                             let (_, yaw) = map.join_spawn(player, team);
-                            match self.world.roster_add(player, team) {
-                                Ok(()) => {
-                                    self.bridge.open_session(player, team, yaw);
-                                    self.c4.join(&self.bridge, player);
-                                }
-                                Err(error) => {
-                                    tracing::warn!(?error, player, "tactical roster rejected join")
-                                }
-                            }
+                            self.bridge.open_session(player, team, yaw);
+                            self.c4.join(&self.bridge, player);
                             self.update_player_gauges();
                             continue;
                         }
                     }
                     match self.bridge.join(&mut self.world, player, team) {
                         Ok(()) => {
-                            if self.world.squads().entry(player).is_none() {
-                                if let Err(error) = self.world.roster_add(player, team) {
-                                    tracing::warn!(
-                                        event = "join_roster_rejected",
-                                        player,
-                                        ?error,
-                                        "player joined the sim without a roster seat"
-                                    );
-                                }
-                            }
                             if self.dev_spawn_vehicle && player == 0 {
                                 self.setup_fixture_driver(player);
                             }
                             self.c4.join(&self.bridge, player);
                             self.update_player_gauges();
                         }
-                        Err(e) => tracing::warn!(
-                            event = "join_failed",
-                            player_id = player as u64,
-                            error = ?e,
-                            "spawn_player rejected a join"
-                        ),
+                        Err(e) => {
+                            self.world.roster_remove(player);
+                            if let Some(handle) = self
+                                .bridge
+                                .net()
+                                .and_then(|net| net.sessions.handle_of(player))
+                            {
+                                handle.close_graceful();
+                            }
+                            tracing::warn!(player, ?e, "spawn_player rejected a join");
+                        }
                     }
                 }
                 Command::SpawnPlayer { req } => match self.bridge.spawn(&mut self.world, req) {
@@ -875,12 +884,21 @@ impl<C: Clock> SimLoop<C> {
                     player,
                     msg: ClientMsgC0::MarkerPlace(marker),
                 } => {
-                    let _ = self.team_channel.place_marker(
+                    let placed = self.team_channel.place_marker(
                         &self.world,
                         player,
                         marker,
                         self.world.tick().0,
                     );
+                    if placed.is_ok() {
+                        self.world.record_rule_activity(
+                            player,
+                            frontline_sim::serverrules::Activity::Map,
+                        );
+                    }
+                }
+                Command::C0 { player, msg } if crate::c0::server_rules::is_request(&msg) => {
+                    self.handle_server_rule(player, msg);
                 }
                 Command::C0 {
                     player,
@@ -933,6 +951,7 @@ impl<C: Clock> SimLoop<C> {
         self.c0.forget(p);
         self.team_channel.forget(p);
         self.seat_input.forget(p);
+        self.snap.forget(p);
         self.c4.leave(p);
         self.bridge.leave(&mut self.world, p);
         self.update_player_gauges();

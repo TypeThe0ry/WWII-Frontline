@@ -234,6 +234,7 @@ pub enum RuleChange {
 pub struct StepOutput {
     pub events: Vec<SimEvent>,
     pub rule_changes: Vec<RuleChange>,
+    pub server_actions: Vec<crate::serverrules::ServerAction>,
 }
 
 /// Wall-time samples in nanoseconds. Movement player timings are nested in `movement`.

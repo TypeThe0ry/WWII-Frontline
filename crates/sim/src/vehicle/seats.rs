@@ -43,4 +43,5 @@ pub enum SeatError {
     Occupied,
     /// An exit is already running.
     Exiting,
+    ClaimLocked,
 }

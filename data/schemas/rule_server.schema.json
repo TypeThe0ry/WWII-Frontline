@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Authoritative server rules (M2-018)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["balance", "tk", "vote", "afk"],
+  "$defs": {
+    "seconds": { "type": "integer", "minimum": 1, "maximum": 65535 },
+    "wireSeconds": { "type": "integer", "minimum": 1, "maximum": 255 },
+    "count": { "type": "integer", "minimum": 1, "maximum": 50 },
+    "percent": { "type": "integer", "minimum": 1, "maximum": 100 },
+    "byte": { "type": "integer", "minimum": 1, "maximum": 255 }
+  },
+  "properties": {
+    "balance": {
+      "type": "object", "additionalProperties": false,
+      "required": ["team_max_players", "join_max_difference_players", "switch_min_after_join_s", "switch_cooldown_s", "check_period_s", "trigger_difference_players", "persist_s", "offer_s", "recent_move_s", "volunteer_xp_bonus_pct", "party_max_players"],
+      "properties": {
+        "team_max_players": { "$ref": "#/$defs/count" }, "join_max_difference_players": { "$ref": "#/$defs/count" },
+        "switch_min_after_join_s": { "$ref": "#/$defs/seconds" }, "switch_cooldown_s": { "$ref": "#/$defs/seconds" },
+        "check_period_s": { "$ref": "#/$defs/seconds" }, "trigger_difference_players": { "$ref": "#/$defs/count" },
+        "persist_s": { "$ref": "#/$defs/seconds" }, "offer_s": { "$ref": "#/$defs/seconds" },
+        "recent_move_s": { "$ref": "#/$defs/seconds" }, "volunteer_xp_bonus_pct": { "$ref": "#/$defs/percent" },
+        "party_max_players": { "type": "integer", "minimum": 1, "maximum": 6 }
+      }
+    },
+    "tk": {
+      "type": "object", "additionalProperties": false,
+      "required": ["history_s", "prompt_s", "strike_window_s", "warning_strike_count", "rifleman_strike_count", "kick_match_strike_count", "lock_s", "kick_cooldown_s"],
+      "properties": {
+        "history_s": { "$ref": "#/$defs/seconds" }, "prompt_s": { "$ref": "#/$defs/wireSeconds" },
+        "strike_window_s": { "$ref": "#/$defs/seconds" }, "warning_strike_count": { "$ref": "#/$defs/byte" },
+        "rifleman_strike_count": { "$ref": "#/$defs/byte" }, "kick_match_strike_count": { "$ref": "#/$defs/byte" },
+        "lock_s": { "$ref": "#/$defs/seconds" }, "kick_cooldown_s": { "$ref": "#/$defs/seconds" }
+      }
+    },
+    "vote": {
+      "type": "object", "additionalProperties": false,
+      "required": ["kick_min_match_age_s", "kick_start_cooldown_s", "kick_duration_s", "kick_yes_pct", "kick_min_yes_players", "kick_no_mult", "commander_duration_s", "commander_min_tenure_s", "commander_min_officer_players", "commander_yes_pct", "mute_duration_s", "mute_min_yes_players", "map_duration_s"],
+      "properties": {
+        "kick_min_match_age_s": { "$ref": "#/$defs/seconds" }, "kick_start_cooldown_s": { "$ref": "#/$defs/seconds" },
+        "kick_duration_s": { "$ref": "#/$defs/wireSeconds" }, "kick_yes_pct": { "$ref": "#/$defs/percent" },
+        "kick_min_yes_players": { "$ref": "#/$defs/count" }, "kick_no_mult": { "$ref": "#/$defs/byte" },
+        "commander_duration_s": { "$ref": "#/$defs/wireSeconds" }, "commander_min_tenure_s": { "$ref": "#/$defs/seconds" },
+        "commander_min_officer_players": { "$ref": "#/$defs/count" }, "commander_yes_pct": { "$ref": "#/$defs/percent" },
+        "mute_duration_s": { "$ref": "#/$defs/wireSeconds" }, "mute_min_yes_players": { "$ref": "#/$defs/count" },
+        "map_duration_s": { "$ref": "#/$defs/wireSeconds" }
+      }
+    },
+    "afk": {
+      "type": "object", "additionalProperties": false,
+      "required": ["warning_s", "alive_s", "leader_s", "countdown_s", "deploy_s", "repeat_window_s", "repeat_count"],
+      "properties": {
+        "warning_s": { "$ref": "#/$defs/seconds" }, "alive_s": { "$ref": "#/$defs/seconds" },
+        "leader_s": { "$ref": "#/$defs/seconds" }, "countdown_s": { "$ref": "#/$defs/seconds" },
+        "deploy_s": { "$ref": "#/$defs/seconds" }, "repeat_window_s": { "$ref": "#/$defs/seconds" },
+        "repeat_count": { "type": "integer", "minimum": 2, "maximum": 255 }
+      }
+    }
+  }
+}

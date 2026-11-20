@@ -10,9 +10,9 @@ pub const MAX_NICK_BYTES: usize = 80;
 /// Join ticket lifetime in seconds.
 pub const TICKET_TTL_S: u64 = 60;
 /// Canonical encoding version byte.
-pub const TICKET_FORMAT: u8 = 1;
+pub const TICKET_FORMAT: u8 = 2;
 /// Domain separator prepended to the claim bytes before signing.
-pub const TICKET_DOMAIN: &[u8] = b"FLTK1";
+pub const TICKET_DOMAIN: &[u8] = b"FLTK2";
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TicketClaims {
@@ -21,6 +21,8 @@ pub struct TicketClaims {
     pub nick: String,
     /// Expiry, seconds since the Unix epoch.
     pub exp: u64,
+    /// Per-match guest pseudonym (first 8 bytes) and a fresh random nonce (last 8).
+    /// The whole value is the replay key; the pseudonym alone survives ticket reissue.
     pub jti: [u8; 16],
     pub is_admin: bool,
 }
@@ -122,7 +124,7 @@ mod tests {
     fn round_trip_and_golden_prefix() {
         let c = claims();
         let b = c.encode();
-        assert_eq!(&b[..2], &[1, 7]);
+        assert_eq!(&b[..2], &[2, 7]);
         assert_eq!(TicketClaims::decode(&b).unwrap(), c);
     }
 
@@ -138,7 +140,7 @@ mod tests {
         t.push(0);
         assert_eq!(TicketClaims::decode(&t), Err(DtoError::Trailing));
         let mut v = b.clone();
-        v[0] = 2;
+        v[0] = 1;
         assert_eq!(TicketClaims::decode(&v), Err(DtoError::BadVersion));
         let mut u = b;
         *u.last_mut().unwrap() = 0xFF;

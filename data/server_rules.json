@@ -1,0 +1,49 @@
+{
+  "balance": {
+    "team_max_players": 50,
+    "join_max_difference_players": 2,
+    "switch_min_after_join_s": 180,
+    "switch_cooldown_s": 600,
+    "check_period_s": 30,
+    "trigger_difference_players": 4,
+    "persist_s": 90,
+    "offer_s": 60,
+    "recent_move_s": 90,
+    "volunteer_xp_bonus_pct": 20,
+    "party_max_players": 6
+  },
+  "tk": {
+    "history_s": 1800,
+    "prompt_s": 15,
+    "strike_window_s": 600,
+    "warning_strike_count": 2,
+    "rifleman_strike_count": 3,
+    "kick_match_strike_count": 5,
+    "lock_s": 300,
+    "kick_cooldown_s": 1800
+  },
+  "vote": {
+    "kick_min_match_age_s": 180,
+    "kick_start_cooldown_s": 300,
+    "kick_duration_s": 45,
+    "kick_yes_pct": 50,
+    "kick_min_yes_players": 3,
+    "kick_no_mult": 2,
+    "commander_duration_s": 45,
+    "commander_min_tenure_s": 600,
+    "commander_min_officer_players": 2,
+    "commander_yes_pct": 40,
+    "mute_duration_s": 45,
+    "mute_min_yes_players": 6,
+    "map_duration_s": 45
+  },
+  "afk": {
+    "warning_s": 90,
+    "alive_s": 120,
+    "leader_s": 150,
+    "countdown_s": 30,
+    "deploy_s": 300,
+    "repeat_window_s": 10,
+    "repeat_count": 8
+  }
+}

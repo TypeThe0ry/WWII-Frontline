@@ -33,8 +33,8 @@ Local checks:
 cargo test -p frontline-gateway --locked
 cargo bench -p frontline-gateway --bench ticket_issue --locked
 cargo build --release -p frontline-gateway --locked
-python3 scripts/gateway-ticket-load.py target/release/frontline-gateway --protocol-version 4
-python3 scripts/gateway-ticket-load.py target/release/frontline-gateway --protocol-version 4 \
+python3 scripts/gateway-ticket-load.py target/release/frontline-gateway --protocol-version 5
+python3 scripts/gateway-ticket-load.py target/release/frontline-gateway --protocol-version 5 \
   --concurrency 500 --runs 7 --report-only --metrics
 ```
 

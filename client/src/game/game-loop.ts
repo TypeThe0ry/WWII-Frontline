@@ -144,6 +144,7 @@ export class GameLoop {
   private readonly log: (m: string) => void;
   private nextSeq = 1;
   private lastSnapshotTick = -1;
+  private teamProjectionFloor = -1;
   private hasAuthoritativePosition = false;
   private ackSnapshotTick = 0;
   private hash = 0;
@@ -249,6 +250,18 @@ export class GameLoop {
     this.input.releaseAll();
   }
 
+  /** A C4 move invalidates old AOI samples and the local vehicle seat. */
+  resetTeamProjection(tick: number): void {
+    this.teamProjectionFloor = tick;
+    this.hasAuthoritativePosition = false;
+    this.predictor.frozen = this.reconciler.frozen = true;
+    this.vehicle?.leave();
+    this.vehicleSlot = this.vehicleSeat = 0;
+    this.suspendInput();
+    this.state.entities.count = 0;
+    this.applier.clearEntities();
+  }
+
   private stepOnce(nowMs: number): void {
     const clock = this.net.clock;
     const count = this.planner.plan(clock.inputTargetTick(), nowMs);
@@ -335,6 +348,10 @@ export class GameLoop {
       return;
     }
     this.stats.snapshots++;
+    if (this.teamProjectionFloor >= 0 && ((s.tick - this.teamProjectionFloor) | 0) <= 0) {
+      this.stats.staleSnapshots++;
+      return;
+    }
     const newer = this.lastSnapshotTick < 0 || ((s.tick - this.lastSnapshotTick) | 0) > 0;
     if (newer) {
       this.net.clock.applySlack(s.inputSlack);

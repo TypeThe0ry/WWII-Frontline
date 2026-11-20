@@ -266,6 +266,10 @@ impl SnapshotScheduler {
         self.notices.drain(..)
     }
 
+    pub(crate) fn forget(&mut self, player: PlayerId) {
+        self.clients.remove(&player);
+    }
+
     /// Whether `player`'s packet is due at `tick`: 20 Hz = every tick except those with
     /// `tick % 3 == player % 3` (two packets per three ticks, staggered per client); 15 Hz =
     /// every second tick (`(tick + player) % 2 == 0`), the "every 2 ticks" equivalent of 3

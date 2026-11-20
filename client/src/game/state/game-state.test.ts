@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { EventBus, type GameEvents } from '../event-bus';
+import { TeamBalanceCode, TeamMoveFlags } from './c4';
 import { GameState } from './game-state';
 
 function make() {
@@ -53,6 +54,36 @@ describe('GameState.apply', () => {
     expect(gs.applyDeploy({ type: 'request' })).toBe(false);
     expect(gs.applyDeploy({ type: 'open' })).toBe(true);
     expect(seen).toEqual(['deploy.state']);
+  });
+
+  it('switches only on valid Moved, resets pending deploy, and accepts only the new team projection', () => {
+    const { gs, bus } = make();
+    gs.seedTeam(0);
+    const spawn = { type: 'spawnpoint', id: 9, kind: 0, team: 0, pos: [10, 20], state: 1 } as const;
+    gs.apply(spawn);
+    gs.apply({ type: 'objective', objective: 3, owner: 0, reason: 0 });
+    gs.applyDeploy({ type: 'open' });
+    gs.applyDeploy({ type: 'request' });
+    gs.apply({ type: 'teamBalanceNotice', code: TeamBalanceCode.Invite, args: [1, 20] });
+    gs.apply({ type: 'teamBalanceNotice', code: TeamBalanceCode.Moved, args: [9, 0] });
+    expect(gs.team).toBe(0);
+    expect(gs.deploy.phase).toBe('Requested');
+
+    const moves: GameEvents['team.changed'][] = [];
+    bus.on('team.changed', (move) => {
+      expect(gs.spawnPoints.size).toBe(0);
+      expect(gs.deploy.phase).toBe('Idle');
+      moves.push(move);
+    });
+    const move = { type: 'teamBalanceNotice', code: TeamBalanceCode.Moved, args: [1 | (TeamMoveFlags.VolunteerBonus << 8), 40] } as const;
+    gs.apply(move);
+    expect(gs.applyDeployResult({ kind: 'deployResult', ok: true, spawnTick: 123, reason: 0 })).toBe(false);
+    gs.apply(spawn);
+    gs.apply({ ...spawn, id: 10, team: 1 });
+    gs.apply(move); // Duplicate must not clear a projection rebuilt since the move.
+    expect([...gs.spawnPoints.keys()]).toEqual([10]);
+    expect(gs.objectives.has(3)).toBe(true);
+    expect(moves).toEqual([{ team: 1, flags: TeamMoveFlags.VolunteerBonus, tick: 40 }]);
   });
 
   /** reconnect_rebuild: Welcome + full roster reproduces the pre-disconnect roster. */
