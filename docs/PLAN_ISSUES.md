@@ -1487,3 +1487,8 @@ PrePass 速度会卡死渲染循环，改用自有速度 RTT（地形/薄实例/
   - `firefox 155.0`：WT 通过（201 快照/10 s，RTT 中位 1.5 ms，`serverCertificateHashesWorked: true`，Playwright Firefox 155 支持开发证书指纹固定）；WS 通过（150 快照/10 s，RTT 中位 1.4 ms）；删除 WebTransport 回退 WS 8 ms。
   - `webkit 26.6`：WT 失败（`WebTransport is not available in this browser`，0 快照，`supported: false`）；WS 通过（150 快照/10 s，RTT 中位 0.5 ms）；删除 WebTransport 回退 WS 5 ms。
 - **一致性和遗留**：`reports/m0/browser-matrix.{json,md}` 与 `tasks/STATUS.md` 的 M0-028 行已通过 `node --experimental-strip-types scripts/check-interop-table.mjs` 校验一致。Playwright Linux WebKit 构建不支持 WebTransport，且不代表 Safari 正式版；Safari 实机手测与受信任证书下的 WT 仍留待 H-103 / H-017。
+## PI-B6-soakpin-1 B6-soakpin：Carentan WT 长测的 CPU 与日志隔离（2026-11-20）
+
+- Linux `FRONTLINE_SIM_CPU`/`--pin-sim-core` 只固定 `sim`；系统拒绝则记录警告并保留继承亲和。压测先用 `taskset` 分开网络、日志和客户端，运行时核对实际掩码，`LOADTEST_LOG_DIR` 显式要求 tmpfs。不启用实时调度或调整宿主设置。
+- 工作站（PI-109，非参考机）沿 B5-E1 的 Carentan WT 无损参数串行跑两次 1800 s：20/20 HQ/C3，P50/P99 各 4.568/8.767、4.162/8.059 ms，最长连续超时 0/1，均退出 0。第二次 9 个单发超时，8 个 runq、1 个 on-CPU 主导。共享宿主负载不同，不能归因单项收益。
+- E1-2/M1-068 保持 `partial`：Carentan WT netem、参考机、宿主独占核未测。若再失败，先在独立主机或经管理授权的隔离 cpuset 上复测；不自行重启。复现及逐轮证据见 [B6-soakpin 报告](../reports/m1-server-tail-b6-soakpin.md)。
