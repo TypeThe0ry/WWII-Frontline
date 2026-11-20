@@ -154,7 +154,7 @@ fn resources_extension_wire_and_validation() {
         reason: 3,
     });
     let mut bytes = encode_c4(&event).unwrap();
-    assert_eq!(bytes, [0x10, 1, 2, 0xff, 0xff, 0xff, 0xfa, 3]);
+    assert_eq!(bytes, [0x11, 1, 2, 0xff, 0xff, 0xff, 0xfa, 3]);
     assert_eq!(decode_c4(&bytes), Ok(event));
     bytes[7] = 5;
     assert_eq!(decode_c4(&bytes), Err(CodecError::InvalidValue));

@@ -3,11 +3,12 @@
 `PROTOCOL_VERSION` must match exactly at handshake. Fields are only appended at the end of a
 message; any other change bumps the version.
 
-## 12 — M2-011 facilities
+## 12 — M2-011 facilities and M2-009 resources
 
 C0 `PlacementRequest` adds Outpost, Repair Station and AT gun slots (4–6) and facility
 actions (tag 7). C4 `SpawnPoint` carries squad-only Outposts in IDs `0x8000..=0xfffe`.
 C4 `StructureState` (0x10) adds team-scoped construction and removal records.
+M2-009 `ResourceDelta` uses C4 `0x11` to avoid colliding with `StructureState`.
 
 ## 11 — M2-019 comms wire prerequisites
 
@@ -42,7 +43,7 @@ on the affected team. Clients without this capability receive their existing pac
 | Channel and type | Message | Fields (bits) |
 |---|---|---|
 | C2 0x20 | `WorldStateC2` (1 Hz) | tick 32, team 8 (0 US, 1 GER), existing 16-byte `WorldState` |
-| C4 0x10 | `ResourceDelta` | team 8, kind 8 (0 manpower, 1 munitions, 2 fuel), signed change 32, reason 8 (0 income, 1 spend, 2 refund, 3 upkeep, 4 spoils) |
+| C4 0x11 | `ResourceDelta` | team 8, kind 8 (0 manpower, 1 munitions, 2 fuel), signed change 32, reason 8 (0 income, 1 spend, 2 refund, 3 upkeep, 4 spoils) |
 
 The C2 packet is independent of entity snapshots and their acknowledgement/baseline state.
 It contains the recipient's absolute pool. C4 provides change notifications, independently of C2 ordering.
