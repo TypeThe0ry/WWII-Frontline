@@ -14,10 +14,12 @@ pub mod components;
 pub mod data;
 pub mod deploy;
 pub mod emplacement;
+pub mod explosive;
 pub mod hash;
 pub mod health;
 pub mod ids;
 pub mod medical;
+pub mod mine;
 pub mod movement;
 pub mod placement;
 #[cfg(feature = "client-predict")]

@@ -1059,6 +1059,96 @@ pub struct RulesDef {
     pub aoi: AoiRulesDef,
 }
 
+/// `data/rules/ordnance_m2.json` (GAMEDESIGN 6.9.3–6.9.5; M2-014).
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct OrdnanceRulesDef {
+    pub launchers: OrdnanceLaunchersDef,
+    pub mines: OrdnanceMinesDef,
+    pub satchel: SatchelRulesDef,
+    #[serde(rename = "_meta")]
+    pub meta: Meta,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct OrdnanceLaunchersDef {
+    pub bazooka: LauncherRulesDef,
+    pub panzerschreck: LauncherRulesDef,
+    pub panzerfaust: LauncherRulesDef,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct LauncherRulesDef {
+    pub muzzle_velocity_mps: f64,
+    pub effective_range_m: f64,
+    pub max_range_m: f64,
+    pub heat_pen_mm: f64,
+    pub caliber_mm: f64,
+    pub reload_s: f64,
+    pub loader_reload_s: f64,
+    pub thrust_m: f64,
+    pub backblast_m: f64,
+    pub backblast_half_angle_deg: f64,
+    pub backblast_damage_hp: f64,
+    pub backblast_duration_s: f64,
+    pub structure_damage_hp: f64,
+    pub infantry_damage_hp: f64,
+    pub blast_radius_m: f64,
+    pub single_use: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct OrdnanceMinesDef {
+    pub ap: ApMineRulesDef,
+    pub at: AtMineRulesDef,
+    pub health_hp: f64,
+    pub chain_damage_hp: f64,
+    pub chain_radius_m: f64,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ApMineRulesDef {
+    pub trigger_distance_m: f64,
+    pub arming_s: f64,
+    pub disarm_s: f64,
+    pub blast_damage_hp: f64,
+    pub blast_radius_m: f64,
+    pub team_slots: usize,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct AtMineRulesDef {
+    pub min_vehicle_mass_kg: f64,
+    pub arming_s: f64,
+    pub disarm_s: f64,
+    pub track_damage_hp: f64,
+    pub hull_damage_hp: f64,
+    pub team_slots: usize,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct SatchelRulesDef {
+    pub placement_distance_m: f64,
+    pub placement_s: f64,
+    pub fuse_s: f64,
+    pub disarm_s: f64,
+    pub disarm_distance_m: f64,
+    pub vehicle_damage_hp: f64,
+    pub adjacent_module_mult: f64,
+    pub structure_damage_hp: f64,
+    pub infantry_damage_hp: f64,
+    pub infantry_radius_m: f64,
+    pub throw_range_m: f64,
+    pub thrown_vehicle_mult: f64,
+    pub team_slots: usize,
+}
+
 /// `data/rules/aoi.json` (ARCHITECTURE 6.5.4, R3; M1-024).
 #[derive(Debug, Clone, PartialEq, Deserialize)]
 #[serde(deny_unknown_fields)]

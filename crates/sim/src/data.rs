@@ -17,8 +17,8 @@ mod embedded {
 
 pub use defs::{
     AmmoDef, BotsRulesDef, CommsDef, DataStatus, EconomyDef, ExplosiveDef, Faction, FuelUpkeepDef,
-    GadgetDef, LoadoutDef, MaterialDef, MeleeDef, ResourceEconomyDef, ResourceNodeDef,
-    ResourceNodeKind, RespawnRulesDef, RoleDef, RulesDef, VehicleDef, WeaponDef,
+    GadgetDef, LoadoutDef, MaterialDef, MeleeDef, OrdnanceRulesDef, ResourceEconomyDef,
+    ResourceNodeDef, ResourceNodeKind, RespawnRulesDef, RoleDef, RulesDef, VehicleDef, WeaponDef,
 };
 /// SHA-256 (first 8 bytes, little-endian) of the canonicalised `/data` tree. Sent as
 /// `Hello.data_hash`; client and server must agree (ARCHITECTURE 8.2).
@@ -105,6 +105,15 @@ impl GameData {
                     .expect("embedded data parsed at build time"),
             })),
             hash: DATA_HASH,
+        })
+    }
+
+    /// M2 launcher, mine and satchel rules, embedded and hashed with the rest of `/data`.
+    pub fn ordnance() -> &'static OrdnanceRulesDef {
+        static ORDNANCE: OnceLock<OrdnanceRulesDef> = OnceLock::new();
+        ORDNANCE.get_or_init(|| {
+            serde_json::from_str(embedded::ORDNANCE_M2_JSON)
+                .expect("embedded ordnance data parsed at build time")
         })
     }
 

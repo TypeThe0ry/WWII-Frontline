@@ -3,7 +3,11 @@
 export const STATUSES = ['initial', 'reviewed', 'measured'];
 
 /** Kinds whose files must carry `_meta` (map files may omit it, see data/README.md). */
+<<<<<<< HEAD
 export const META_REQUIRED = new Set(['weapon', 'explosive', 'melee', 'ammo', 'material', 'gadget', 'rule_capture', 'rule_match', 'rule_spawn', 'rule_supplies', 'rule_squads', 'rule_aoi', 'role', 'loadout', 'vehicle', 'economy', 'resource_node', 'rules', 'bots', 'comms']);
+=======
+export const META_REQUIRED = new Set(['weapon', 'explosive', 'melee', 'ammo', 'material', 'gadget', 'rule_capture', 'rule_match', 'rule_spawn', 'rule_supplies', 'rule_squads', 'rule_aoi', 'rule_ordnance', 'role', 'loadout', 'vehicle', 'rules', 'bots', 'comms']);
+>>>>>>> 9a2b458 (B6-mines: WIP (stopped by user, unmerged))
 
 export function resolvePath(doc, dotted) {
   let cur = doc;

@@ -330,3 +330,4 @@ fn fire(
         spread_seed: crate::rng::spread_seed(ctx.match_seed, ctx.tick, ctx.entity),
     }
 }
+pub mod launcher;

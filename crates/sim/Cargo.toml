@@ -88,6 +88,10 @@ harness = false
 name = "explosion"
 harness = false
 
+[[bench]]
+name = "mines_tick"
+harness = false
+
 [[test]]
 name = "health_vitals"
 required-features = ["test-util"]
