@@ -1472,3 +1472,9 @@ PrePass 速度会卡死渲染循环，改用自有速度 RTT（地形/薄实例/
 - **接线缺口修复**：`map_pipeline pack-chunks` 产出的 `assets/manifests/terrain_carentan.json` 使用 `chunk` 字段承载 FCHK 视觉块条目，但 `client/src/render/assets/manifest.ts` 的 `ManifestAsset` / `ManifestIndex` 原未索引 `chunk`（仅索引 `lods`/`collision`/`textures`/`audio`/`meta`），导致 `AssetLoader` 无法直接解析生产 Carentan 地形清单。已在 `manifest.ts` 补齐 `chunk?: EntryRef` 并在 `loader.test.ts` 增加回归单测。
 - **测量方法与边界**：新增 `scripts/measure-deploy.mjs`，在本机拉起真实 `frontline-gateway`、`frontline-server`（`--map carentan/m1 --mode assault`，380 块解压 FCOL）与支持 HTTP 206 Range 的静态/代理服，托管生产 `client/dist` 与 30 个 Carentan M1 地形 `.fpak`（5,714,050 B）。用 Playwright 无头 Chromium `153.0.8010.12`（SwiftShader WebGL2 软件渲染）施加 CDP 节流（20 Mbps / 50 ms RTT 与 5 Mbps / 100 ms RTT）并在冷/热 OPFS（2 MiB 内存 LRU 强制跨页走持久化 `FileSystemSyncAccessHandle`）各测 5 次（共 20 次）。代理在回环按轮次轮换 `127.0.1.x` 源地址以遵循生产网关每 IP `10 req/min` 限速而不放宽代码限制。因 US HQ `(476, 1600)` 位于 1/3 切片边界（`R_NEAR=4` 仅 42/81 块已烘焙），`R_near` 预取以切片内完整 81/81 覆盖的 US 驻点候选 `(650, 1470)` 实测。
 - **结果与未测项**：四组 20 次点击到可操作均 ≤ 15 s（20 Mbps 冷/热 P50 6,249.2 / 1,419.4 ms；5 Mbps 冷/热 P50 12,850.8 / 1,832.6 ms，max 12,997.6 ms），`R_near` 预取 20/20 轮 81/81（100%），热缓存 `.fpak` 请求 0/0 B（预取降耗 83.5%–90.9%）。详见 [E1-10 专项报告](../reports/m1-deploy-timing.md) 与 `reports/m1-deploy-timing.json`。结果属 PI-109 工作站非参考机，且不含 M1-064 真实美术/音频整包与 M1-067 预发布公网环境，主页面部署 UI 亦未直连 `ChunkStreamer`，故 E1-10 保持 `partial`。
+
+### PI-B6-fpakmedium-1 Carentan 1/3 Medium 构建与预算
+
+- 2026-11-20。沿用 M1-035 空间分包，将五项 M1 已登记为 real 的需求各选一个 `OK` CC0 模型入包。模型与所有外部依赖按 `incoming-index.json` 的 SHA-256 校验，树枝 UV 变换烘入 UV0。二进制本地生成，提交内容寻址清单、构建级缺失报告和上游来源路径。
+- 加入 15 个程序几何和 22 个 Opus/AAC 合成提示音。仍缺的真素材与实录沿用 H-047/H-058 待裁决。`INTERNAL` 需求以程序几何作公开回退。
+- `local-ci.sh assets` 对实际 FPAK 字节实施 150,000,000 B 上限，对生产 core Brotli 字节实施 8,000,000 B 上限，并保留 manifest-budget 门禁。整包读回重写检查包含头、对齐、索引和 footer。工作站结果与验收范围见 `reports/m1-fpak-medium.md`（PI-109）。
