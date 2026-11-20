@@ -55,8 +55,13 @@ curl -fsS "http://127.0.0.1:$METRICS_PORT/metrics" > "$OUT_DIR/metrics-after.txt
 
 判据：20/20 入场且每个连接 ≥1,800 s，10 个偶数客户端生成非零 `flick_peaks`，0 客户端异常断开或解码错误；`view_rate_clamped_total`、`suspicion_move_total`、`fire_rate_rejected_total` 与 `session_kicked_total` 的前后差均为 0。C1 冗余重复包、时序丢弃与网络停顿是另一类统计，`pos_corr` 预测回滚也不是反作弊处罚。
 
+**实测通过。** 20/20 入场，每人连接 1,800.0318–1,800.0329 s，客户端退出码 0。共生成 1,080,005 条输入、发送 1,079,914 个 C1 包；10 个偶数客户端共生成 4,500 个峰值，奇数组为 0。服务端共 54,036 tick、130 次实际发射，移动纠正、yaw/pitch 钳制、射速拒绝、踢出均 0→0。客户端异常断开、解码错误、基线缺失各 0。
+
+另计 2,159,674 次 C1 冗余重复、2 次无会话输入、0 次输入停顿，以及客户端 198 次普通预测回滚（0 次 ≥1 m 硬纠正）。起点偏差计数 0，但本场未发送起点提示；网络提示的证据是上表的 WT 回归和真实 WASM 接线测试。
+
 ## 本地门禁
 
-- `CARGO_BUILD_JOBS=8 scripts/local-ci.sh lint data determinism wasm ts` 对应组通过（实跑分组）；TS 97 文件、739 用例通过，含真实 WASM C1 提示打包、去重与缺状态省略回归。
+- `CARGO_BUILD_JOBS=8 scripts/local-ci.sh` 的 `lint`、`rust`、`data`、`determinism`、`wasm`、`ts` 分组通过；Rust 包含 workspace 和 sim `test-util` 套件。合入 #153/#154 后重跑 `ts`，97 文件、740 用例通过，含真实 WASM C1 提示附带、重传与缺状态省略回归。
 - 确定性 3 个种子 × 18,000 tick：native 重复、WASM 重复、跨端状态哈希均逐 tick 相同，位置 RMS / max 均为 0 m；WASM 组另测 3,000 tick，80 B `PlayerAuthState`、33 B `WeaponState` 均逐 tick 比特一致。
 - WASM 体积 1,161,592 B（上限 1,200,000 B），Brotli 336,239 B（上限 400,000 B）。
+- 合入 #155 后，`FRONTLINE_DETERMINISM_STRICT=1 scripts/local-ci.sh lint determinism ts` 全绿；3×18,000 tick 跨端仍完全一致、740 个 TS 用例通过。另复跑 anti-cheat、input buffer、lagcomp WT 和 Garrison 共 33 项，全部通过。M0 长跑不涉及 #155 新增的 Garrison 建造事件。
