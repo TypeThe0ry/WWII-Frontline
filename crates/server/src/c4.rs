@@ -275,10 +275,16 @@ impl Broadcast {
                 }
             }
         }
+        // A new connection can occupy a former teammate's slot before this roster tick.
+        let replaced = |slot| {
+            self.clients
+                .get(&slot)
+                .is_some_and(|c| c.previous_team.is_none())
+        };
         // Only receivers who had an old row get its tombstone. In particular, a same-tick
         // join never sees a departure it didn't know about, nor any row from the other team.
         for (&player, old) in &self.roster {
-            let removed = next.get(&player).is_none_or(|r| r.team != old.team);
+            let removed = replaced(player) || next.get(&player).is_none_or(|r| r.team != old.team);
             if !removed && !exited[old.team as usize] {
                 continue;
             }
@@ -298,7 +304,7 @@ impl Broadcast {
             });
         }
         for (&player, row) in &next {
-            let changed = self.roster.get(&player) != Some(row);
+            let changed = replaced(player) || self.roster.get(&player) != Some(row);
             if !changed && !entered[row.team as usize] {
                 continue;
             }
@@ -446,7 +452,7 @@ mod tests {
     #[tokio::test]
     async fn join_baseline_skips_same_tick_departure_and_opponent_rows() {
         let metrics = Metrics::new();
-        let sessions = Sessions::new(metrics.clone());
+        let sessions = Sessions::with_reuse_delay(metrics.clone(), 8, 8, std::time::Duration::ZERO);
         let queue = InboundQueue::new();
         let mut config = SimThreadConfig::bare(0, MapId(0), GameMode::Sandbox);
         config.net = Some(NetLink {
@@ -455,7 +461,7 @@ mod tests {
         });
         let (mut sim, _, commands) =
             build_loop(FakeClock::new(), &config, metrics.clone(), StopFlag::new());
-        let handles: [_; 5] = std::array::from_fn(|_| ClientHandle::new(metrics.clone()));
+        let handles: [_; 6] = std::array::from_fn(|_| ClientHandle::new(metrics.clone()));
         let join = |i: usize| {
             let (player, team) = sessions.alloc_player_team(&handles[i]).unwrap();
             assert_eq!(usize::from(player), i);
@@ -498,6 +504,23 @@ mod tests {
         assert!(rows(drain(&handles[1]).await).is_empty());
         sim.tick();
         assert!(rows(drain(&handles[4]).await).is_empty());
+
+        // No intermediate roster tick: the new alive player has the same team and slot.
+        sessions.release_player(2);
+        commands.send(Command::RemovePlayer(2)).unwrap();
+        let (player, team) = sessions.alloc_player_team(&handles[5]).unwrap();
+        assert_eq!((player, team), (2, Team::Us));
+        commands.send(Command::Join { player, team }).unwrap();
+        sim.tick();
+        assert_eq!(
+            rows(drain(&handles[4]).await),
+            [(2, 0, roster_flags::LEFT), (2, 0, alive)]
+        );
+        assert_eq!(
+            rows(drain(&handles[5]).await),
+            [(2, 0, alive), (4, 0, alive)]
+        );
+        assert!(rows(drain(&handles[1]).await).is_empty());
     }
 
     #[tokio::test]

@@ -865,6 +865,45 @@ async fn startup_sweep_applies_report_and_audit_retention() {
 }
 
 #[tokio::test]
+async fn admin_score_rollup_skips_unbound_simulation_slots() {
+    let mut rig = Rig::new().await;
+    let guest = rig.guest(ALLOWED).await;
+    let token = guest["token"].as_str().unwrap();
+    let guest_id = guest["guest_id"].as_str().unwrap();
+    for scored in [false, true] {
+        let id = rig.register().await;
+        rig.heartbeat(&id).await;
+        let claims = rig.claims(&id, token, ALLOWED).await;
+        let mut payload =
+            json!({"rows":[{"player":claims.player_id,"kills":2,"deaths":1,"score":20}]});
+        if scored {
+            payload["score_summary"] = json!({"players": []});
+        }
+        rig.call(
+            Method::POST,
+            &format!("/internal/matches/{id}/result"),
+            Some(INTERNAL),
+            payload,
+        )
+        .await
+        .expect(StatusCode::NO_CONTENT);
+    }
+    let player = rig
+        .admin(
+            Method::GET,
+            &format!("/admin/players/{guest_id}"),
+            Value::Null,
+        )
+        .await
+        .expect(StatusCode::OK)
+        .json();
+    assert_eq!(
+        player["stats"],
+        json!({"matches":1,"kills":2,"deaths":1,"score":20})
+    );
+}
+
+#[tokio::test]
 async fn admin_live_chat_snapshots_replace_and_end_with_match() {
     let mut r = Rig::new().await;
     let m = r.register().await;
