@@ -27,7 +27,7 @@ use crate::hash::HashWriter;
 use crate::ids::EntityId;
 
 pub use rocket::rockets;
-pub use shells::shell_flight;
+pub(crate) use shells::shell_flight;
 
 pub const GRAVITY: f32 = 9.81;
 /// Integration sub-steps per tick (spring stiffness needs `dt <= ~1/90 s`).

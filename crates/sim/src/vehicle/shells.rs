@@ -5,7 +5,7 @@
 use bevy_ecs::prelude::*;
 use glam::Vec3;
 
-use super::armor::{ShellKind, ShellParams};
+use super::armor::{luck_factor, ShellKind, ShellParams};
 use super::shell::{self, ArmorKind, HitReport, HitRolls, ShellDef, ShellType};
 use super::{Vehicle, Vehicles, GRAVITY};
 use crate::combat::DamageKind;
@@ -13,11 +13,15 @@ use crate::components::{
     CollisionRes, CurrentTick, EntityTable, EventBuf, PlayerIndex, SimCfgRes, SimRng, Team,
     Transform,
 };
+use crate::data::defs::OutpostDef;
+use crate::emplacement::at_gun::AtGuns;
 use crate::hash::HashWriter;
 use crate::health::{Health, HitLog, HitRec, LifeState};
 use crate::ids::EntityId;
 use crate::rng::{unit_f32, Purpose};
+use crate::spawn::outpost::Outposts;
 use crate::step::SimEvent;
+use crate::throwables::explosion::{explosion_damage, RAY_LIFT_M};
 use crate::throwables::smoke::{SmokeCloud, SmokeParams};
 use crate::throwables::system::{explode, Smokes};
 use crate::weapon::HitZone;
@@ -358,7 +362,7 @@ fn wreck_step(
 
 /// The shell stage: wreck timers, then every shell flies one tick.
 #[allow(clippy::too_many_arguments)]
-pub fn shell_flight(
+pub(crate) fn shell_flight(
     cfg: Res<SimCfgRes>,
     col: Res<CollisionRes>,
     tick: Res<CurrentTick>,
@@ -367,6 +371,8 @@ pub fn shell_flight(
     mut rng: ResMut<SimRng>,
     mut shells: ResMut<Shells>,
     mut vehicles: ResMut<Vehicles>,
+    mut at_guns: Option<ResMut<AtGuns>>,
+    mut outposts: Option<ResMut<Outposts>>,
     mut smokes: ResMut<Smokes>,
     mut events: ResMut<EventBuf>,
     mut log: ResMut<HitLog>,
@@ -421,68 +427,67 @@ pub fn shell_flight(
                 }
             }
             let t_terr = terrain.map(|r| r.t);
-            match (best, t_terr) {
-                (Some((tv, vid)), tt) if tt.is_none_or(|tt| tv <= tt) => {
-                    let at = s.pos + dir * tv;
-                    let dist = (at - s.origin).length();
+            let at_hit = at_guns
+                .as_deref()
+                .and_then(|guns| guns.raycast_shell(&s, dir, len))
+                .filter(|(_, hit)| {
+                    best.is_none_or(|(t, _)| hit.t < t) && t_terr.is_none_or(|t| hit.t <= t)
+                });
+            let impact = if let Some((id, hit)) = at_hit {
+                if let Some(gun) = at_guns.as_deref_mut().and_then(|g| g.list.get_mut(&id)) {
                     let mut r = rng.stream(tick.0, s.owner, Purpose::Armor);
-                    let rolls = HitRolls {
-                        armor: unit_f32(&mut r),
-                        damage: unit_f32(&mut r),
-                        cookoff: unit_f32(&mut r),
-                        fire: unit_f32(&mut r),
-                    };
-                    if let Some(v) = vehicles.list.get_mut(&vid) {
-                        let alive = crew_alive(v, &index, &q);
-                        let params = s.params;
-                        if let Some(rep) =
-                            shell::resolve_ap_hit(v, &params, s.pos, dir, dist, alive, rolls, len)
-                        {
-                            apply_report(
-                                v,
-                                &rep,
-                                s.owner,
-                                hz,
-                                &index,
-                                &mut q,
-                                &table,
-                                &col.0,
-                                &mut events.0,
-                                &mut log.0,
-                            );
-                        }
+                    gun.apply_shell_hit(hit, &s, dir, luck_factor(unit_f32(&mut r)));
+                }
+                Some(s.pos + dir * hit.t)
+            } else if let Some((tv, vid)) = best.filter(|(tv, _)| t_terr.is_none_or(|t| *tv <= t)) {
+                let at = s.pos + dir * tv;
+                let dist = (at - s.origin).length();
+                let mut r = rng.stream(tick.0, s.owner, Purpose::Armor);
+                let rolls = HitRolls {
+                    armor: unit_f32(&mut r),
+                    damage: unit_f32(&mut r),
+                    cookoff: unit_f32(&mut r),
+                    fire: unit_f32(&mut r),
+                };
+                if let Some(v) = vehicles.list.get_mut(&vid) {
+                    let alive = crew_alive(v, &index, &q);
+                    if let Some(rep) =
+                        shell::resolve_ap_hit(v, &s.params, s.pos, dir, dist, alive, rolls, len)
+                    {
+                        apply_report(
+                            v,
+                            &rep,
+                            s.owner,
+                            hz,
+                            &index,
+                            &mut q,
+                            &table,
+                            &col.0,
+                            &mut events.0,
+                            &mut log.0,
+                        );
                     }
-                    burst(
-                        &s,
-                        at,
-                        &col.0,
-                        &table,
-                        &mut q,
-                        &mut events.0,
-                        &mut log.0,
-                        &mut smokes,
-                        tick.0,
-                        hz,
-                    );
-                    continue 'shells;
                 }
-                (_, Some(tt)) => {
-                    let at = s.pos + dir * tt;
-                    burst(
-                        &s,
-                        at,
-                        &col.0,
-                        &table,
-                        &mut q,
-                        &mut events.0,
-                        &mut log.0,
-                        &mut smokes,
-                        tick.0,
-                        hz,
-                    );
-                    continue 'shells;
-                }
-                _ => {}
+                Some(at)
+            } else {
+                t_terr.map(|t| s.pos + dir * t)
+            };
+            if let Some(at) = impact {
+                burst(
+                    &s,
+                    at,
+                    &col.0,
+                    &table,
+                    &mut q,
+                    &mut events.0,
+                    &mut log.0,
+                    &mut smokes,
+                    outposts.as_deref_mut(),
+                    cfg.data.outpost(),
+                    tick.0,
+                    hz,
+                );
+                continue 'shells;
             }
             s.pos += seg;
         }
@@ -502,6 +507,8 @@ fn burst(
     events: &mut Vec<SimEvent>,
     log: &mut Vec<HitRec>,
     smokes: &mut Smokes,
+    outposts: Option<&mut Outposts>,
+    outpost_def: &OutpostDef,
     now: crate::ids::Tick,
     hz: u8,
 ) {
@@ -525,6 +532,26 @@ fn burst(
                 events,
                 log,
             );
+            if let Some(outposts) = outposts {
+                let hits: Vec<_> = outposts
+                    .list
+                    .values()
+                    .filter(|p| p.team != s.team)
+                    .filter_map(|p| {
+                        let distance = at.distance(p.pos);
+                        (distance < s.blast_radius).then(|| {
+                            let lift = Vec3::Y * RAY_LIFT_M;
+                            let cover = col.blast_cover(at + lift, p.pos + lift);
+                            let damage =
+                                explosion_damage(s.blast_dmax, distance, s.blast_radius, cover);
+                            (p.id, damage)
+                        })
+                    })
+                    .collect();
+                for (id, damage) in hits {
+                    events.extend(outposts.damage(id, damage, true, now.0, outpost_def, hz));
+                }
+            }
         }
         Warhead::Smoke => {
             let t = |sec: f32| (sec * f32::from(hz)) as u32;
