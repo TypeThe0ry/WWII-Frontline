@@ -1636,3 +1636,7 @@ PrePass 速度会卡死渲染循环，改用自有速度 RTT（地形/薄实例/
 - 里程碑基线缺少 M2-008 的五线选择和扇区多边形。资源规则目前按现有 Strongpoint ID 读取 Sector 所有权。测试使用开局 2/中立/2 的五点夹具。`zones.json` 可在据点候选下配置可选的 `resource_sites`，实际 Carentan 点位留给 M2-008 联验。M2-010 负责 Engineer 授权、建造和命中几何。完成态通过 `spawn_node` 接入，拆除将 125 Supplies 归还成同队地面箱。M2-015 负责车辆注册和使用低燃料标志。
 - v11 通过 `Hello.caps` bit 3 协商 C2 1 Hz 绝对资源池和 C4 `ResourceDelta`。两者只下发给所属队伍。C4 reason 使用 0–4。客户端依据团队和 tick 接受 C2 投影，将 C4 用于通知。经济与节点定义纳入 `DATA_HASH`，部署时需同步客户端 WASM 与比赛服。
 - 参考机预算与 M2-008 五线地图联验未测。证据和细项见 `reports/m2-resources.md`，人工参考机进展见 H-021。
+
+### PI-B6-landall-resources-1 · resources 合入 M2-011 基线后的复验（2026-11-20）
+
+- 保留基线 M2-011 的 `emplacement` 与 M2-009 的资源规则；没有更改资源功能或协议行为。按 Binaryen `version_132` 复建后 WASM 为 1,191,370 B、Brotli 344,816 B，均通过现有上限。`lint rust determinism ts data wasm` 全绿，determinism 使用严格比较；资源参考机、M2-008 五线地图和真人联测仍未测（PI-109，H-021/H-060）。

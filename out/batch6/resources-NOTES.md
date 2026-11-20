@@ -10,3 +10,10 @@
 参考机与完整阶段 5 联合预算未测，见 H-021。里程碑基线缺少 M2-008 正式五线地图联验，状态 `partial`。M2-010 消费完工与节点受损 API，M2-015 消费维持注册和低燃料 API。资源 HUD 待 Fable 设计。本任务素材需求 ID 为无。
 
 逐项证据见 `reports/m2-resources.md`。规则与接口决定见 PI-B6-resources-1。
+
+## B6 landall 复验（2026-11-20）
+
+- 基线：`8be586c`（M2-011，协议 v12）。没有额外功能改动；M2-009 保持 `partial`。
+- 命令：`CARGO_BUILD_JOBS=8 FRONTLINE_DETERMINISM_STRICT=1 scripts/local-ci.sh lint rust determinism ts data`；全部通过。Rust 全工作区与 test-util sim 用例通过；Vitest 778/778；data fixtures 21 valid / 47 invalid，91 文件 0 错误。
+- 命令：Binaryen `version_132` 下 `CARGO_BUILD_JOBS=8 scripts/local-ci.sh wasm`；通过。优化 WASM 1,191,370 B（上限 1,200,000），Brotli 344,816 B（上限 400,000）；native/WASM 回放 3,000 tick 逐 tick 一致。
+- 未测：参考机和 M2-008 五线地图联验、参考作品/真人资源规模校准。所有工作站结果均为 PI-109 非参考机。人工进展记于 H-021/H-060。
